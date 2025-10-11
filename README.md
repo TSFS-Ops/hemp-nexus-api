@@ -658,4 +658,3 @@ Proprietary - SignalRank API
 
 ---
 
-**Built with ❤️ using Lovable Cloud**
