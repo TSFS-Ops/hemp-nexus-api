@@ -1,0 +1,145 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { corsHeaders, handleCors } from '../_shared/cors.ts';
+import { errorResponse, ApiException } from '../_shared/errors.ts';
+import { authenticateRequest, requireRole } from '../_shared/auth.ts';
+
+Deno.serve(async (req) => {
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS') || '*';
+  const headers = corsHeaders(allowedOrigins);
+
+  try {
+    const corsResponse = handleCors(req, allowedOrigins);
+    if (corsResponse) return corsResponse;
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    requireRole(authCtx, 'admin'); // Only admins can manage orgs
+
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+
+    // GET /orgs - List organizations
+    if (req.method === 'GET' && pathParts.length === 1) {
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      const status = url.searchParams.get('status');
+
+      let query = supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ data }),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...headers } }
+      );
+    }
+
+    // POST /orgs - Create organization
+    if (req.method === 'POST' && pathParts.length === 1) {
+      const { name, status } = await req.json();
+
+      if (!name) {
+        throw new ApiException('VALIDATION_ERROR', 'Name is required', 400);
+      }
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .insert({ name, status: status || 'active' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase.from('audit_logs').insert({
+        org_id: data.id,
+        actor_user_id: authCtx.userId || null,
+        action: 'organization.created',
+        entity_type: 'organization',
+        entity_id: data.id,
+        metadata: { name },
+      });
+
+      return new Response(
+        JSON.stringify(data),
+        { status: 201, headers: { 'Content-Type': 'application/json', ...headers } }
+      );
+    }
+
+    // GET /orgs/:id - Get organization
+    if (req.method === 'GET' && pathParts.length === 2) {
+      const orgId = pathParts[1];
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', orgId)
+        .single();
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify(data),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...headers } }
+      );
+    }
+
+    // PATCH /orgs/:id - Update organization
+    if (req.method === 'PATCH' && pathParts.length === 2) {
+      const orgId = pathParts[1];
+      const updates = await req.json();
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .update(updates)
+        .eq('id', orgId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase.from('audit_logs').insert({
+        org_id: orgId,
+        actor_user_id: authCtx.userId || null,
+        action: 'organization.updated',
+        entity_type: 'organization',
+        entity_id: orgId,
+        metadata: updates,
+      });
+
+      return new Response(
+        JSON.stringify(data),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...headers } }
+      );
+    }
+
+    // DELETE /orgs/:id - Delete organization
+    if (req.method === 'DELETE' && pathParts.length === 2) {
+      const orgId = pathParts[1];
+
+      const { error } = await supabase
+        .from('organizations')
+        .delete()
+        .eq('id', orgId);
+
+      if (error) throw error;
+
+      return new Response(null, { status: 204, headers });
+    }
+
+    throw new ApiException('NOT_FOUND', 'Endpoint not found', 404);
+  } catch (error) {
+    return errorResponse(error as Error, requestId, headers);
+  }
+});

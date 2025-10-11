@@ -1,0 +1,16 @@
+project_id = "ugrfyhwlonlmlcmcpcdm"
+
+[functions.healthz]
+verify_jwt = false
+
+[functions.api-keys]
+verify_jwt = false
+
+[functions.compliance]
+verify_jwt = false
+
+[functions.orgs]
+verify_jwt = false
+
+[functions.orders]
+verify_jwt = false
