@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException } from '../_shared/errors.ts';
 import { authenticateRequest } from '../_shared/auth.ts';
+import { validateApiKey } from '../_shared/api-key-middleware.ts';
 
 // Simple scoring algorithm for options
 function scoreOption(option: any, signal: any): number {
@@ -36,13 +37,22 @@ Deno.serve(async (req) => {
     const corsResponse = handleCors(req, allowedOrigins);
     if (corsResponse) return corsResponse;
 
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+
+    // Check if this is a /v1/* endpoint and validate API key
+    if (pathParts.length > 0 && pathParts[0] === 'v1') {
+      const apiKeyError = validateApiKey(req);
+      if (apiKeyError) return apiKeyError;
+      // Remove 'v1' from path for processing
+      pathParts.shift();
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split('/').filter(Boolean);
 
     // POST /signals - Create new signal and trigger search
     if (req.method === 'POST' && pathParts.length === 1) {
