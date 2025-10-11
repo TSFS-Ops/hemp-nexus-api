@@ -121,7 +121,7 @@
 <body>
   <div class="container">
     <h1>🚀 SignalRank API</h1>
-    <p class="subtitle">Multi-tenant B2B marketplace API</p>
+    <p class="subtitle">Signal-based matching service</p>
     <div class="status">API Online</div>
 
     <div class="section">
@@ -136,19 +136,23 @@
       <h2>🔑 Core Endpoints</h2>
       <div class="endpoint">
         <span class="method post">POST</span>
-        /v1/api-keys
+        /v1/signals
+      </div>
+      <div class="endpoint">
+        <span class="method get">GET</span>
+        /v1/signals/:id
       </div>
       <div class="endpoint">
         <span class="method post">POST</span>
-        /v1/compliance/documents
+        /v1/signals/:id/select
       </div>
       <div class="endpoint">
-        <span class="method get">GET</span>
-        /v1/compliance/status
+        <span class="method post">POST</span>
+        /v1/data-sources
       </div>
       <div class="endpoint">
-        <span class="method get">GET</span>
-        /v1/orders
+        <span class="method post">POST</span>
+        /v1/consents
       </div>
     </div>
 
@@ -156,20 +160,20 @@
       <h2>✨ Features</h2>
       <div class="features">
         <div class="feature">
-          <strong>Multi-tenant</strong>
-          <span>Org-scoped data isolation</span>
+          <strong>Signals First</strong>
+          <span>Send needs, get options</span>
         </div>
         <div class="feature">
-          <strong>API Keys</strong>
-          <span>Machine-to-machine auth</span>
+          <strong>Consent-Based</strong>
+          <span>Privacy-first lookups</span>
         </div>
         <div class="feature">
-          <strong>Compliance</strong>
-          <span>Ask-once document upload</span>
+          <strong>Fast Results</strong>
+          <span>Top matches immediately</span>
         </div>
         <div class="feature">
-          <strong>Webhooks</strong>
-          <span>HMAC-signed events</span>
+          <strong>Hand-off</strong>
+          <span>Route to home systems</span>
         </div>
       </div>
     </div>

@@ -112,141 +112,98 @@ export type Database = {
           },
         ]
       }
-      broker_mandates: {
+      consents: {
         Row: {
-          broker_org_id: string
-          created_at: string
+          data_source_id: string
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
           id: string
-          principal_org_id: string
+          org_id: string
+          revoked_at: string | null
           scope: Json
-          status: string
-          updated_at: string
-          valid_from: string
-          valid_to: string
         }
         Insert: {
-          broker_org_id: string
-          created_at?: string
+          data_source_id: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
           id?: string
-          principal_org_id: string
-          scope?: Json
-          status?: string
-          updated_at?: string
-          valid_from?: string
-          valid_to: string
-        }
-        Update: {
-          broker_org_id?: string
-          created_at?: string
-          id?: string
-          principal_org_id?: string
-          scope?: Json
-          status?: string
-          updated_at?: string
-          valid_from?: string
-          valid_to?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "broker_mandates_broker_org_id_fkey"
-            columns: ["broker_org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "broker_mandates_principal_org_id_fkey"
-            columns: ["principal_org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      categories: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          parent_id: string | null
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          parent_id?: string | null
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          parent_id?: string | null
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      certificates: {
-        Row: {
-          file_hash: string
-          file_url: string
-          id: string
-          mime_type: string
           org_id: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          reviewer_note: string | null
-          status: string
-          type: string
-          uploaded_at: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          file_hash: string
-          file_url: string
-          id?: string
-          mime_type: string
-          org_id: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          reviewer_note?: string | null
-          status?: string
-          type: string
-          uploaded_at?: string
-          uploaded_by?: string | null
+          revoked_at?: string | null
+          scope?: Json
         }
         Update: {
-          file_hash?: string
-          file_url?: string
+          data_source_id?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
           id?: string
-          mime_type?: string
           org_id?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          reviewer_note?: string | null
+          revoked_at?: string | null
+          scope?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consents_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consents_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_sources: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          last_queried_at: string | null
+          name: string
+          org_id: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          last_queried_at?: string | null
+          name: string
+          org_id: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          last_queried_at?: string | null
+          name?: string
+          org_id?: string
           status?: string
           type?: string
-          uploaded_at?: string
-          uploaded_by?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "certificates_org_id_fkey"
+            foreignKeyName: "data_sources_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -254,123 +211,74 @@ export type Database = {
           },
         ]
       }
-      listings: {
+      options: {
         Row: {
+          confidence_score: number | null
           created_at: string
-          currency: string
+          currency: string | null
+          data_source_id: string
+          freshness: string
+          how_much: number
           id: string
-          location: string | null
-          org_id: string
-          price: number
-          product_id: string
-          quantity: number
-          status: string
+          price: number | null
+          quality_flags: Json | null
+          score: number | null
+          signal_id: string
+          source_link: string | null
           unit: string
-          updated_at: string
+          what: string
+          when_available: string | null
+          where_location: string | null
         }
         Insert: {
+          confidence_score?: number | null
           created_at?: string
-          currency?: string
+          currency?: string | null
+          data_source_id: string
+          freshness?: string
+          how_much: number
           id?: string
-          location?: string | null
-          org_id: string
-          price: number
-          product_id: string
-          quantity: number
-          status?: string
+          price?: number | null
+          quality_flags?: Json | null
+          score?: number | null
+          signal_id: string
+          source_link?: string | null
           unit: string
-          updated_at?: string
+          what: string
+          when_available?: string | null
+          where_location?: string | null
         }
         Update: {
+          confidence_score?: number | null
           created_at?: string
-          currency?: string
+          currency?: string | null
+          data_source_id?: string
+          freshness?: string
+          how_much?: number
           id?: string
-          location?: string | null
-          org_id?: string
-          price?: number
-          product_id?: string
-          quantity?: number
-          status?: string
+          price?: number | null
+          quality_flags?: Json | null
+          score?: number | null
+          signal_id?: string
+          source_link?: string | null
           unit?: string
-          updated_at?: string
+          what?: string
+          when_available?: string | null
+          where_location?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "listings_org_id_fkey"
-            columns: ["org_id"]
+            foreignKeyName: "options_data_source_id_fkey"
+            columns: ["data_source_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "data_sources"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "listings_product_id_fkey"
-            columns: ["product_id"]
+            foreignKeyName: "options_signal_id_fkey"
+            columns: ["signal_id"]
             isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      orders: {
-        Row: {
-          buyer_org_id: string
-          created_at: string
-          currency: string
-          id: string
-          idempotency_key: string | null
-          listing_id: string
-          price: number
-          quantity: number
-          seller_org_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          buyer_org_id: string
-          created_at?: string
-          currency?: string
-          id?: string
-          idempotency_key?: string | null
-          listing_id: string
-          price: number
-          quantity: number
-          seller_org_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          buyer_org_id?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          idempotency_key?: string | null
-          listing_id?: string
-          price?: number
-          quantity?: number
-          seller_org_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orders_buyer_org_id_fkey"
-            columns: ["buyer_org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_seller_org_id_fkey"
-            columns: ["seller_org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "signals"
             referencedColumns: ["id"]
           },
         ]
@@ -398,54 +306,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      products: {
-        Row: {
-          attributes: Json | null
-          category_id: string | null
-          created_at: string
-          id: string
-          name: string
-          org_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          attributes?: Json | null
-          category_id?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          org_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          attributes?: Json | null
-          category_id?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          org_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
@@ -478,6 +338,112 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      selections: {
+        Row: {
+          handoff_data: Json | null
+          handoff_status: string | null
+          handoff_token: string | null
+          id: string
+          option_id: string
+          selected_at: string
+          selected_by: string | null
+          signal_id: string
+        }
+        Insert: {
+          handoff_data?: Json | null
+          handoff_status?: string | null
+          handoff_token?: string | null
+          id?: string
+          option_id: string
+          selected_at?: string
+          selected_by?: string | null
+          signal_id: string
+        }
+        Update: {
+          handoff_data?: Json | null
+          handoff_status?: string | null
+          handoff_token?: string | null
+          id?: string
+          option_id?: string
+          selected_at?: string
+          selected_by?: string | null
+          signal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selections_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selections_selected_by_fkey"
+            columns: ["selected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selections_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signals: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          org_id: string
+          status: string
+          type: Database["public"]["Enums"]["signal_type"]
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          org_id: string
+          status?: string
+          type: Database["public"]["Enums"]["signal_type"]
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          org_id?: string
+          status?: string
+          type?: Database["public"]["Enums"]["signal_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signals_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -565,6 +531,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "seller" | "broker" | "buyer" | "auditor"
+      signal_type: "buyer" | "seller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -693,6 +660,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "seller", "broker", "buyer", "auditor"],
+      signal_type: ["buyer", "seller"],
     },
   },
 } as const
