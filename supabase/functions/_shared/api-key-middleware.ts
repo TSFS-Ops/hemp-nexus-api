@@ -7,7 +7,7 @@ export const validateApiKey = (req: Request): Response | null => {
     return new Response(
       JSON.stringify({
         code: 'UNAUTHENTICATED',
-        message: 'API key required'
+        message: 'X-API-Key required'
       }),
       {
         status: 401,
