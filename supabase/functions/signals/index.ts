@@ -56,23 +56,30 @@ Deno.serve(async (req) => {
 
     // POST /signals - Create new signal and trigger search
     if (req.method === 'POST' && pathParts.length === 1) {
-      const { type, content, expires_at } = await req.json();
+      const { product, quantity, unit, location, deliveryWindow, budget, notes } = await req.json();
 
-      if (!type || !['buyer', 'seller'].includes(type)) {
-        throw new ApiException('VALIDATION_ERROR', 'Type must be buyer or seller', 400);
+      if (!product || !quantity) {
+        throw new ApiException('VALIDATION_ERROR', 'Product and quantity are required', 400);
       }
 
-      if (!content || !content.what || !content.how_much) {
-        throw new ApiException('VALIDATION_ERROR', 'Content must include what and how_much', 400);
-      }
+      // Build content object from new schema
+      const content = {
+        product,
+        quantity,
+        unit,
+        location,
+        deliveryWindow,
+        budget,
+        notes,
+      };
 
       const { data: signal, error } = await supabase
         .from('signals')
         .insert({
           org_id: authCtx.orgId,
-          type,
+          type: 'buyer', // Default to buyer
           content,
-          expires_at,
+          expires_at: deliveryWindow?.end || null,
           created_by: authCtx.userId || null,
         })
         .select()
@@ -89,16 +96,13 @@ Deno.serve(async (req) => {
         action: 'signal.created',
         entity_type: 'signal',
         entity_id: signal.id,
-        metadata: { type, content },
+        metadata: { product, quantity, unit },
       });
 
       return new Response(
         JSON.stringify({ 
-          id: signal.id,
-          type: signal.type,
-          status: signal.status,
-          created_at: signal.created_at,
-          message: 'Signal received. Searching data sources...',
+          signalId: signal.id,
+          options: [],
         }),
         { status: 201, headers: { 'Content-Type': 'application/json', ...headers } }
       );
