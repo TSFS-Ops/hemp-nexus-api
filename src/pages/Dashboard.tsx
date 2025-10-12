@@ -74,6 +74,7 @@ export default function Dashboard() {
     const { data, error } = await supabase
       .from("api_keys")
       .select("*")
+      .eq("status", "active")
       .order("created_at", { ascending: false });
 
     if (error) {
