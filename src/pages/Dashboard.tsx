@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2 } from "lucide-react";
 import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -130,6 +130,33 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleDeleteApiKey = async (keyId: string, keyName: string) => {
+    if (!confirm(`Are you sure you want to revoke "${keyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.functions.invoke(`api-keys/${keyId}`, {
+        method: "DELETE",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "API key revoked successfully",
+      });
+      
+      fetchApiKeys();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to revoke API key",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleScope = (scope: string) => {
@@ -278,10 +305,19 @@ export default function Dashboard() {
                         ))}
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {key.last_used_at
-                        ? `Last used: ${new Date(key.last_used_at).toLocaleDateString()}`
-                        : "Never used"}
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm text-muted-foreground">
+                        {key.last_used_at
+                          ? `Last used: ${new Date(key.last_used_at).toLocaleDateString()}`
+                          : "Never used"}
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDeleteApiKey(key.id, key.name)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
