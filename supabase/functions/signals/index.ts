@@ -268,44 +268,84 @@ async function searchDataSources(signalId: string, orgId: string, supabase: any)
 
     if (!signal) return;
 
-    // Get active consents and data sources
-    const { data: consents } = await supabase
-      .from("consents")
-      .select("*, data_source:data_sources(*)")
-      .eq("org_id", orgId)
-      .is("revoked_at", null)
-      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+    // Get active data sources (now querying data_sources directly for enabled sources)
+    const { data: dataSources } = await supabase
+      .from("data_sources")
+      .select("*")
+      .eq("status", "active")
+      .eq("org_id", orgId);
 
-    if (!consents || consents.length === 0) {
-      console.log(`[${signalId}] No active consents found`);
+    if (!dataSources || dataSources.length === 0) {
+      console.log(`[${signalId}] No active data sources found`);
       return;
     }
 
-    console.log(`[${signalId}] Found ${consents.length} active data sources`);
+    console.log(`[${signalId}] Found ${dataSources.length} active data sources`);
 
-    // Query each data source (mock for now)
-    for (const consent of consents) {
-      const dataSource = consent.data_source;
+    const internalKey = Deno.env.get("INTERNAL_SEARCH_KEY");
 
+    // Query each data source
+    for (const dataSource of dataSources) {
       console.log(`[${signalId}] Querying ${dataSource.name} (${dataSource.type})`);
 
-      // Mock results (in production, this would call actual APIs)
-      const mockOptions = generateMockOptions(signal, dataSource);
+      let options: any[] = [];
 
-      // Insert options with scores
-      for (const opt of mockOptions) {
-        const score = scoreOption(opt, signal);
+      try {
+        if (dataSource.type === "http" && dataSource.config?.base_url) {
+          // Call external HTTP endpoint
+          const requestPayload = {
+            signalId,
+            product: signal.content.product,
+            quantity: signal.content.quantity,
+            unit: signal.content.unit,
+            location: signal.content.location,
+            deliveryWindow: signal.content.deliveryWindow,
+            budget: signal.content.budget,
+            notes: signal.content.notes,
+          };
 
-        await supabase.from("options").insert({
-          signal_id: signalId,
-          data_source_id: dataSource.id,
-          ...opt,
-          score,
-        });
+          console.log(`[${signalId}] Calling ${dataSource.config.base_url}`);
+
+          const response = await fetch(dataSource.config.base_url, {
+            method: dataSource.config.method || "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Internal-Key": internalKey || "",
+              ...(dataSource.config.headers || {}),
+            },
+            body: JSON.stringify(requestPayload),
+          });
+
+          if (!response.ok) {
+            console.error(`[${signalId}] HTTP ${response.status} from ${dataSource.name}`);
+            continue;
+          }
+
+          const result = await response.json();
+          options = result.options || [];
+          console.log(`[${signalId}] Received ${options.length} options from ${dataSource.name}`);
+        } else {
+          // Use mock data for non-HTTP sources
+          options = generateMockOptions(signal, dataSource);
+        }
+
+        // Insert options with scores
+        for (const opt of options) {
+          const score = scoreOption(opt, signal);
+
+          await supabase.from("options").insert({
+            signal_id: signalId,
+            data_source_id: dataSource.id,
+            ...opt,
+            score,
+          });
+        }
+
+        // Update last queried time
+        await supabase.from("data_sources").update({ last_queried_at: new Date().toISOString() }).eq("id", dataSource.id);
+      } catch (error) {
+        console.error(`[${signalId}] Error querying ${dataSource.name}:`, error);
       }
-
-      // Update last queried time
-      await supabase.from("data_sources").update({ last_queried_at: new Date().toISOString() }).eq("id", dataSource.id);
     }
 
     console.log(`[${signalId}] Background search complete`);
@@ -332,4 +372,4 @@ function generateMockOptions(signal: any, dataSource: any): any[] {
   return [baseOption];
 }
 
-// redeploy
+// redeploy with external data source support
