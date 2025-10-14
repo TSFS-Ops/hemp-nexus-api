@@ -87,8 +87,10 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      // Trigger background search across data sources (fire and forget)
-      searchDataSources(signal.id, authCtx.orgId, supabase);
+      // Trigger background tasks: SAHPRA verification + data source search (fire and forget)
+      verifySahpraAndSearch(signal.id, authCtx.orgId, supabase).catch((err) => 
+        console.error(`[${signal.id}] Background task error:`, err)
+      );
 
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
@@ -257,6 +259,82 @@ Deno.serve(async (req) => {
     return errorResponse(error as Error, requestId, headers);
   }
 });
+
+// Combined background task: SAHPRA verification + data source search
+async function verifySahpraAndSearch(signalId: string, orgId: string, supabase: any): Promise<void> {
+  try {
+    // First, run SAHPRA verification for the organization
+    await verifySahpraForOrg(orgId, supabase);
+    
+    // Then proceed with data source search
+    await searchDataSources(signalId, orgId, supabase);
+  } catch (error) {
+    console.error(`[${signalId}] Error in background tasks:`, error);
+  }
+}
+
+// SAHPRA verification for organization
+async function verifySahpraForOrg(orgId: string, supabase: any): Promise<void> {
+  try {
+    console.log(`[${orgId}] Running SAHPRA verification`);
+    
+    // Get organization details
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .select('name, sahpra_verified, sahpra_verified_at')
+      .eq('id', orgId)
+      .single();
+    
+    if (orgError || !org) {
+      console.error(`[${orgId}] Failed to fetch organization`);
+      return;
+    }
+    
+    // Skip if already verified recently (within 24 hours)
+    if (org.sahpra_verified && org.sahpra_verified_at) {
+      const verifiedAt = new Date(org.sahpra_verified_at).getTime();
+      const now = Date.now();
+      const hoursSinceVerification = (now - verifiedAt) / (1000 * 60 * 60);
+      
+      if (hoursSinceVerification < 24) {
+        console.log(`[${orgId}] Already verified ${hoursSinceVerification.toFixed(1)}h ago, skipping`);
+        return;
+      }
+    }
+    
+    // Call SAHPRA verification function
+    const verifyUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/sahpra-verification/verify`;
+    const response = await fetch(verifyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({ companyName: org.name }),
+    });
+    
+    if (!response.ok) {
+      console.error(`[${orgId}] SAHPRA verification failed: ${response.status}`);
+      return;
+    }
+    
+    const result = await response.json();
+    console.log(`[${orgId}] SAHPRA verification result:`, result.verified ? 'VERIFIED' : 'NOT VERIFIED');
+    
+    // Update organization with verification result
+    await supabase
+      .from('organizations')
+      .update({
+        sahpra_verified: result.verified,
+        sahpra_verification_data: result.match,
+        sahpra_verified_at: new Date().toISOString(),
+      })
+      .eq('id', orgId);
+    
+  } catch (error) {
+    console.error(`[${orgId}] SAHPRA verification error:`, error);
+  }
+}
 
 // Background function to search data sources
 async function searchDataSources(signalId: string, orgId: string, supabase: any) {
