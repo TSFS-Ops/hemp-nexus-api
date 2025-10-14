@@ -288,6 +288,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          sahpra_licence_no: string | null
           sahpra_verification_data: Json | null
           sahpra_verified: boolean | null
           sahpra_verified_at: string | null
@@ -298,6 +299,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          sahpra_licence_no?: string | null
           sahpra_verification_data?: Json | null
           sahpra_verified?: boolean | null
           sahpra_verified_at?: string | null
@@ -308,6 +310,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          sahpra_licence_no?: string | null
           sahpra_verification_data?: Json | null
           sahpra_verified?: boolean | null
           sahpra_verified_at?: string | null
@@ -357,6 +360,7 @@ export type Database = {
       sahpra_licenses: {
         Row: {
           company_name: string
+          company_name_norm: string | null
           created_at: string | null
           date_issued: string | null
           expiry_date: string
@@ -369,6 +373,7 @@ export type Database = {
         }
         Insert: {
           company_name: string
+          company_name_norm?: string | null
           created_at?: string | null
           date_issued?: string | null
           expiry_date: string
@@ -381,6 +386,7 @@ export type Database = {
         }
         Update: {
           company_name?: string
+          company_name_norm?: string | null
           created_at?: string | null
           date_issued?: string | null
           expiry_date?: string

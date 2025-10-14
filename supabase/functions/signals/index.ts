@@ -62,6 +62,32 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Product and quantity are required", 400);
       }
 
+      // Check if buyer verification is required (enforcement toggle)
+      const requireVerified = Deno.env.get("REQUIRE_BUYER_VERIFIED") === "true";
+      if (requireVerified) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("sahpra_verified, sahpra_verified_at")
+          .eq("id", authCtx.orgId)
+          .single();
+        
+        // Check if verification is stale (> 24 hours)
+        const now = new Date();
+        const lastVerified = org?.sahpra_verified_at ? new Date(org.sahpra_verified_at) : null;
+        const isStale = !lastVerified || (now.getTime() - lastVerified.getTime()) > 24 * 60 * 60 * 1000;
+        
+        if (!org?.sahpra_verified || isStale) {
+          return new Response(
+            JSON.stringify({ 
+              code: "BUYER_NOT_VERIFIED",
+              error: "Organization SAHPRA verification required",
+              message: "Your organization must have a valid SAHPRA license to create signals"
+            }),
+            { status: 403, headers: { "Content-Type": "application/json", ...headers } }
+          );
+        }
+      }
+
       // Build content object from new schema
       const content = {
         product,
@@ -87,9 +113,12 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      // Trigger background tasks: SAHPRA verification + data source search (fire and forget)
-      verifySahpraAndSearch(signal.id, authCtx.orgId, supabase).catch((err) => 
-        console.error(`[${signal.id}] Background task error:`, err)
+      // Run SAHPRA verification synchronously to include in response
+      const sahpraResult = await verifySahpraForOrg(authCtx.orgId, supabase);
+      
+      // Trigger background data source search (fire and forget)
+      searchDataSources(signal.id, authCtx.orgId, supabase).catch((err) => 
+        console.error(`[${signal.id}] Background search error:`, err)
       );
 
       await supabase.from("audit_logs").insert({
@@ -105,6 +134,9 @@ Deno.serve(async (req) => {
         JSON.stringify({
           signalId: signal.id,
           options: [],
+          verification: {
+            sahpra: sahpraResult
+          }
         }),
         { status: 201, headers: { "Content-Type": "application/json", ...headers } },
       );
@@ -260,45 +292,44 @@ Deno.serve(async (req) => {
   }
 });
 
-// Combined background task: SAHPRA verification + data source search
-async function verifySahpraAndSearch(signalId: string, orgId: string, supabase: any): Promise<void> {
-  try {
-    // First, run SAHPRA verification for the organization
-    await verifySahpraForOrg(orgId, supabase);
-    
-    // Then proceed with data source search
-    await searchDataSources(signalId, orgId, supabase);
-  } catch (error) {
-    console.error(`[${signalId}] Error in background tasks:`, error);
-  }
-}
+// No longer needed - verification is now synchronous in POST handler
+// Background tasks are split into separate calls
 
 // SAHPRA verification for organization
-async function verifySahpraForOrg(orgId: string, supabase: any): Promise<void> {
+async function verifySahpraForOrg(orgId: string, supabase: any): Promise<{ verified: boolean; checkedAt: string; licenceNo?: string; reason: string }> {
   try {
     console.log(`[${orgId}] Running SAHPRA verification`);
     
     // Get organization details
     const { data: org, error: orgError } = await supabase
       .from('organizations')
-      .select('name, sahpra_verified, sahpra_verified_at')
+      .select('name, sahpra_verified, sahpra_verified_at, sahpra_licence_no')
       .eq('id', orgId)
       .single();
     
     if (orgError || !org) {
       console.error(`[${orgId}] Failed to fetch organization`);
-      return;
+      return { 
+        verified: false, 
+        checkedAt: new Date().toISOString(), 
+        reason: 'Organization not found' 
+      };
     }
     
-    // Skip if already verified recently (within 24 hours)
+    // Check if already verified recently (within 24 hours) - return cached result
     if (org.sahpra_verified && org.sahpra_verified_at) {
       const verifiedAt = new Date(org.sahpra_verified_at).getTime();
       const now = Date.now();
       const hoursSinceVerification = (now - verifiedAt) / (1000 * 60 * 60);
       
       if (hoursSinceVerification < 24) {
-        console.log(`[${orgId}] Already verified ${hoursSinceVerification.toFixed(1)}h ago, skipping`);
-        return;
+        console.log(`[${orgId}] Using cached verification (${hoursSinceVerification.toFixed(1)}h old)`);
+        return {
+          verified: org.sahpra_verified,
+          checkedAt: org.sahpra_verified_at,
+          licenceNo: org.sahpra_licence_no || undefined,
+          reason: 'Valid SAHPRA licence found (cached)'
+        };
       }
     }
     
@@ -315,7 +346,11 @@ async function verifySahpraForOrg(orgId: string, supabase: any): Promise<void> {
     
     if (!response.ok) {
       console.error(`[${orgId}] SAHPRA verification failed: ${response.status}`);
-      return;
+      return { 
+        verified: false, 
+        checkedAt: new Date().toISOString(), 
+        reason: 'Verification service error' 
+      };
     }
     
     const result = await response.json();
@@ -327,12 +362,25 @@ async function verifySahpraForOrg(orgId: string, supabase: any): Promise<void> {
       .update({
         sahpra_verified: result.verified,
         sahpra_verification_data: result.match,
-        sahpra_verified_at: new Date().toISOString(),
+        sahpra_verified_at: result.checkedAt,
+        sahpra_licence_no: result.match?.licence_no || null,
       })
       .eq('id', orgId);
     
+    return {
+      verified: result.verified,
+      checkedAt: result.checkedAt,
+      licenceNo: result.match?.licence_no,
+      reason: result.reason
+    };
+    
   } catch (error) {
     console.error(`[${orgId}] SAHPRA verification error:`, error);
+    return { 
+      verified: false, 
+      checkedAt: new Date().toISOString(), 
+      reason: 'Verification failed' 
+    };
   }
 }
 

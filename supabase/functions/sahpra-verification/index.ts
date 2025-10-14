@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
+import { validateApiKey } from '../_shared/api-key-middleware.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -45,7 +46,7 @@ function similarity(a: string, b: string): number {
   return (longerLength - levenshteinDistance(longer, shorter)) / longerLength;
 }
 
-function normalizeCompanyName(name: string): string {
+export function normalizeCompanyName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^\w\s]/g, '')
@@ -96,8 +97,10 @@ async function updateSahpraCache(supabase: any): Promise<void> {
     });
     
     // Normalize to expected schema
+    const companyName = row['Company Name'] || row['company_name'] || '';
     const license = {
-      company_name: row['Company Name'] || row['company_name'] || '',
+      company_name: companyName,
+      company_name_norm: normalizeCompanyName(companyName),
       licence_no: row['Licence No'] || row['licence_no'] || '',
       licence_type: row['Licence Type'] || row['licence_type'] || null,
       responsible_pharmacist: row['Responsible Pharmacist'] || row['responsible_pharmacist'] || null,
@@ -129,8 +132,9 @@ async function verifySahpra(
   supabase: any,
   companyName: string,
   licenceNo?: string
-): Promise<{ verified: boolean; match: any | null; reason: string }> {
+): Promise<{ verified: boolean; match: any | null; reason: string; checkedAt: string }> {
   const normalizedInput = normalizeCompanyName(companyName);
+  const checkedAt = new Date().toISOString();
   
   console.log(`[SAHPRA] Verifying: ${companyName}, Licence: ${licenceNo || 'N/A'}`);
   
@@ -143,11 +147,11 @@ async function verifySahpra(
   
   if (error) {
     console.error('[SAHPRA] Error fetching licenses:', error);
-    return { verified: false, match: null, reason: 'Database error' };
+    return { verified: false, match: null, reason: 'Database error', checkedAt };
   }
   
   if (!licenses || licenses.length === 0) {
-    return { verified: false, match: null, reason: 'No valid licenses in database' };
+    return { verified: false, match: null, reason: 'No valid licenses in database', checkedAt };
   }
   
   // Find best match
@@ -155,7 +159,7 @@ async function verifySahpra(
   let bestScore = 0;
   
   for (const license of licenses) {
-    const normalizedLicense = normalizeCompanyName(license.company_name);
+    const normalizedLicense = license.company_name_norm || normalizeCompanyName(license.company_name);
     const score = similarity(normalizedInput, normalizedLicense);
     
     if (score > bestScore) {
@@ -169,7 +173,8 @@ async function verifySahpra(
     return { 
       verified: false, 
       match: null, 
-      reason: `No matching company found (best match: ${(bestScore * 100).toFixed(1)}% similarity)` 
+      reason: `No matching company found (best match: ${(bestScore * 100).toFixed(1)}% similarity)`,
+      checkedAt
     };
   }
   
@@ -178,14 +183,16 @@ async function verifySahpra(
     return {
       verified: false,
       match: bestMatch,
-      reason: `Company matched but licence number mismatch (expected: ${licenceNo}, found: ${bestMatch.licence_no})`
+      reason: `Company matched but licence number mismatch (expected: ${licenceNo}, found: ${bestMatch.licence_no})`,
+      checkedAt
     };
   }
   
   return {
     verified: true,
     match: bestMatch,
-    reason: 'Valid SAHPRA licence found'
+    reason: 'Valid SAHPRA licence found',
+    checkedAt
   };
 }
 
@@ -200,7 +207,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const path = url.pathname.split('/').filter(Boolean);
     
-    // GET /sahpra-verification/refresh - Refresh CSV cache
+    // GET /sahpra-verification/refresh - Refresh CSV cache (internal only)
     if (req.method === 'GET' && path[path.length - 1] === 'refresh') {
       await updateSahpraCache(supabase);
       
@@ -210,13 +217,22 @@ Deno.serve(async (req) => {
       );
     }
     
-    // POST /sahpra-verification/verify - Verify company
-    if (req.method === 'POST' && path[path.length - 1] === 'verify') {
+    // POST /v1/verify/sahpra - Verify company (protected by BST3_API_KEY)
+    if (req.method === 'POST' && path.includes('v1') && path.includes('verify') && path.includes('sahpra')) {
+      // Validate API key
+      const authError = validateApiKey(req);
+      if (authError) {
+        return authError;
+      }
+      
       const { companyName, licenceNo } = await req.json();
       
       if (!companyName) {
         return new Response(
-          JSON.stringify({ error: 'companyName is required' }),
+          JSON.stringify({ 
+            code: 'INVALID_REQUEST',
+            error: 'companyName is required' 
+          }),
           { status: 400, headers: { ...corsHeaders('*'), 'Content-Type': 'application/json' } }
         );
       }
@@ -230,7 +246,10 @@ Deno.serve(async (req) => {
     }
     
     return new Response(
-      JSON.stringify({ error: 'Not found' }),
+      JSON.stringify({ 
+        code: 'NOT_FOUND',
+        error: 'Endpoint not found' 
+      }),
       { status: 404, headers: { ...corsHeaders('*'), 'Content-Type': 'application/json' } }
     );
     
@@ -238,7 +257,10 @@ Deno.serve(async (req) => {
     console.error('[SAHPRA] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ 
+        code: 'INTERNAL_ERROR',
+        error: message 
+      }),
       { status: 500, headers: { ...corsHeaders('*'), 'Content-Type': 'application/json' } }
     );
   }
