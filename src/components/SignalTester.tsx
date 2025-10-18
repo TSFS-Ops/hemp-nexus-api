@@ -58,15 +58,15 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
       }
 
       const data = await response.json();
-      setSignalId(data.id);
+      setSignalId(data.signalId);
       
       toast({
         title: "Signal Created!",
-        description: `Signal ID: ${data.id}. Searching for matches...`,
+        description: `Signal ID: ${data.signalId}. Searching for matches...`,
       });
 
       // Wait 3 seconds for background search
-      setTimeout(() => fetchOptions(data.id), 3000);
+      setTimeout(() => fetchOptions(data.signalId), 3000);
     } catch (error: any) {
       toast({
         title: "Error",
