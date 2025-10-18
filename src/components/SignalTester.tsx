@@ -206,7 +206,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Budget</Label>
+              <Label>Total Budget</Label>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} />
             </div>
 
