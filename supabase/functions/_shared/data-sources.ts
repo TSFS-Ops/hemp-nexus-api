@@ -10,7 +10,11 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
 
     if (!signal) return;
 
-    // Get active data sources
+    // FIRST: Execute real web search using AI
+    console.log(`[${signalId}] Initiating AI-powered web search`);
+    await executeWebSearch(signalId, signal, supabase);
+
+    // SECOND: Get active data sources
     const { data: dataSources } = await supabase
       .from("data_sources")
       .select("*")
@@ -18,7 +22,7 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
       .eq("org_id", orgId);
 
     if (!dataSources || dataSources.length === 0) {
-      console.log(`[${signalId}] No active data sources found`);
+      console.log(`[${signalId}] No active data sources found (web search already completed)`);
       return;
     }
 
@@ -93,5 +97,104 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
     console.log(`[${signalId}] Background search complete`);
   } catch (error) {
     console.error(`[${signalId}] Background search failed:`, error);
+  }
+}
+
+async function executeWebSearch(signalId: string, signal: any, supabase: any) {
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error(`[${signalId}] Missing Supabase credentials for web search`);
+      return;
+    }
+
+    console.log(`[${signalId}] Calling web-search function`);
+    
+    const searchResponse = await fetch(`${SUPABASE_URL}/functions/v1/web-search`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        signal,
+        searchType: "buyers"
+      })
+    });
+
+    if (!searchResponse.ok) {
+      console.error(`[${signalId}] Web search failed: ${searchResponse.status}`);
+      return;
+    }
+
+    const searchData = await searchResponse.json();
+    console.log(`[${signalId}] Web search found ${searchData.resultsCount} results`);
+
+    if (searchData.results && searchData.results.length > 0) {
+      // Create a virtual "web-search" data source entry
+      let webSearchSource = await supabase
+        .from("data_sources")
+        .select("*")
+        .eq("type", "web_search")
+        .eq("name", "AI Web Search")
+        .single();
+
+      if (!webSearchSource.data) {
+        const { data: newSource } = await supabase
+          .from("data_sources")
+          .insert({
+            name: "AI Web Search",
+            type: "web_search",
+            status: "active",
+            org_id: signal.org_id,
+            config: { description: "AI-powered web crawling and discovery" }
+          })
+          .select()
+          .single();
+        
+        webSearchSource = { data: newSource };
+      }
+
+      // Convert web search results to options
+      for (const result of searchData.results) {
+        const option = {
+          what: signal.content.what || signal.content.product,
+          how_much: signal.content.how_much || signal.content.quantity,
+          unit: signal.content.unit,
+          where_location: result.location,
+          when_available: "Contact for availability",
+          price: null,
+          currency: signal.content.currency || "USD",
+          quality_flags: {
+            verified: false,
+            web_discovered: true,
+            source: result.source
+          },
+          confidence_score: result.confidence,
+          source_link: result.sourceLink,
+          freshness: new Date().toISOString(),
+          metadata: {
+            contact: result.contact,
+            relevance: result.relevance,
+            search_queries: searchData.searchQueries
+          }
+        };
+
+        const score = scoreOption(option, signal);
+
+        await supabase.from("options").insert({
+          signal_id: signalId,
+          data_source_id: webSearchSource.data.id,
+          ...option,
+          score,
+        });
+      }
+
+      console.log(`[${signalId}] Inserted ${searchData.results.length} web-discovered options`);
+    }
+  } catch (error) {
+    console.error(`[${signalId}] Web search execution failed:`, error);
   }
 }
