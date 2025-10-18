@@ -42,15 +42,13 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: signalType,
-          content: {
-            what: product,
-            how_much: parseFloat(quantity),
-            unit,
-            where: location,
-            when: "2025-11-01",
-            price_budget: parseFloat(budget),
-          },
+          product,
+          quantity: parseFloat(quantity),
+          unit,
+          location,
+          deliveryWindow: "2025-11-01",
+          budget: parseFloat(budget),
+          notes: `${signalType} signal test`,
         }),
       });
 
