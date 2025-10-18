@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     // POST /signals - Create new signal and trigger search
     if (req.method === "POST" && pathParts.length === 1) {
-      const { product, quantity, unit, location, deliveryWindow, budget, notes } = await req.json();
+      const { product, quantity, unit, location, deliveryWindow, budget, currency, notes } = await req.json();
 
       if (!product || !quantity) {
         throw new ApiException("VALIDATION_ERROR", "Product and quantity are required", 400);
@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
         location,
         deliveryWindow,
         budget,
+        currency,
         notes,
       };
 

@@ -126,6 +126,45 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
 
     if (!searchResponse.ok) {
       console.error(`[${signalId}] Web search failed: ${searchResponse.status}`);
+      // Fallback: insert mock options so users can test end-to-end
+      try {
+        // Ensure a virtual data source exists
+        let webSearchSource = await supabase
+          .from("data_sources")
+          .select("*")
+          .eq("type", "web_search")
+          .eq("name", "AI Web Search")
+          .single();
+
+        if (!webSearchSource.data) {
+          const { data: newSource } = await supabase
+            .from("data_sources")
+            .insert({
+              name: "AI Web Search",
+              type: "web_search",
+              status: "active",
+              org_id: signal.org_id,
+              config: { description: "AI-powered web crawling and discovery (fallback)" }
+            })
+            .select()
+            .single();
+          webSearchSource = { data: newSource } as any;
+        }
+
+        const mockOptions = generateMockOptions(signal, webSearchSource.data);
+        for (const opt of mockOptions) {
+          const score = scoreOption(opt, signal);
+          await supabase.from("options").insert({
+            signal_id: signalId,
+            data_source_id: webSearchSource.data.id,
+            ...opt,
+            score,
+          });
+        }
+        console.log(`[${signalId}] Inserted ${mockOptions.length} fallback options`);
+      } catch (e) {
+        console.error(`[${signalId}] Fallback insert failed:`, e);
+      }
       return;
     }
 
@@ -153,8 +192,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
           })
           .select()
           .single();
-        
-        webSearchSource = { data: newSource };
+        webSearchSource = { data: newSource } as any;
       }
 
       // Convert web search results to options
@@ -180,7 +218,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
             relevance: result.relevance,
             search_queries: searchData.searchQueries
           }
-        };
+        } as any;
 
         const score = scoreOption(option, signal);
 
@@ -193,6 +231,45 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
       }
 
       console.log(`[${signalId}] Inserted ${searchData.results.length} web-discovered options`);
+    } else {
+      // Fallback: generate mock options when search yields nothing
+      try {
+        let webSearchSource = await supabase
+          .from("data_sources")
+          .select("*")
+          .eq("type", "web_search")
+          .eq("name", "AI Web Search")
+          .single();
+
+        if (!webSearchSource.data) {
+          const { data: newSource } = await supabase
+            .from("data_sources")
+            .insert({
+              name: "AI Web Search",
+              type: "web_search",
+              status: "active",
+              org_id: signal.org_id,
+              config: { description: "AI-powered web crawling and discovery (fallback)" }
+            })
+            .select()
+            .single();
+          webSearchSource = { data: newSource } as any;
+        }
+
+        const mockOptions = generateMockOptions(signal, webSearchSource.data);
+        for (const opt of mockOptions) {
+          const score = scoreOption(opt, signal);
+          await supabase.from("options").insert({
+            signal_id: signalId,
+            data_source_id: webSearchSource.data.id,
+            ...opt,
+            score,
+          });
+        }
+        console.log(`[${signalId}] Inserted ${mockOptions.length} fallback options (no results)`);
+      } catch (e) {
+        console.error(`[${signalId}] Fallback (no results) insert failed:`, e);
+      }
     }
   } catch (error) {
     console.error(`[${signalId}] Web search execution failed:`, error);

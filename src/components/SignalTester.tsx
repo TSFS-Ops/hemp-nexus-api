@@ -207,22 +207,20 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
 
             <div className="space-y-2">
               <Label>Total Budget</Label>
-              <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="ZAR">ZAR</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} />
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                    <SelectItem value="ZAR">ZAR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
