@@ -44,12 +44,12 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
         body: JSON.stringify({
           type: signalType,
           content: {
-            product,
-            quantity: parseFloat(quantity),
+            what: product,
+            how_much: parseFloat(quantity),
             unit,
-            location,
-            budget: parseFloat(budget),
-            deliveryWindow: "2025-11-01",
+            where: location,
+            when: "2025-11-01",
+            price_budget: parseFloat(budget),
           },
         }),
       });
