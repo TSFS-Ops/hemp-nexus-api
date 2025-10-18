@@ -26,6 +26,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
   const [unit, setUnit] = useState("kg");
   const [location, setLocation] = useState("Rotterdam");
   const [budget, setBudget] = useState("12000");
+  const [currency, setCurrency] = useState("USD");
 
   const createSignal = async () => {
     if (!apiKey) {
@@ -48,6 +49,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
           location,
           deliveryWindow: "2025-11-01",
           budget: parseFloat(budget),
+          currency,
           notes: `${signalType} signal test`,
         }),
       });
@@ -206,6 +208,21 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
             <div className="space-y-2">
               <Label>Budget</Label>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="ZAR">ZAR</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
