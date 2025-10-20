@@ -17,6 +17,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
   const [signalId, setSignalId] = useState<string | null>(null);
   const [options, setOptions] = useState<any[]>([]);
   const [selectedOption, setSelectedOption] = useState<any | null>(null);
+  const [testResult, setTestResult] = useState<any | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -150,6 +151,55 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
     }
   };
 
+  const testDiscoverEndpoint = async () => {
+    if (!signalId || !apiKey) {
+      toast({
+        title: "Error",
+        description: "Create a signal first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setTestResult(null);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sr-discover`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ signalId }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to call sr-discover");
+      }
+
+      const data = await response.json();
+      setTestResult(data);
+      
+      toast({
+        title: "sr-discover Test Successful!",
+        description: `Found ${data.optionsCreated || 0} options via web search`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "sr-discover Test Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setTestResult({ error: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!apiKey) {
     return (
       <Card>
@@ -241,18 +291,57 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
       </Card>
 
       {signalId && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Matched Options</CardTitle>
-                <CardDescription>Signal ID: {signalId}</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => fetchOptions()} disabled={loading}>
-                <RefreshCw className="h-4 w-4" />
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Test sr-discover Endpoint</CardTitle>
+              <CardDescription>
+                Verify API key authentication and web search integration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button 
+                onClick={testDiscoverEndpoint} 
+                disabled={loading}
+                variant="outline"
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Test sr-discover Function
+                  </>
+                )}
               </Button>
-            </div>
-          </CardHeader>
+
+              {testResult && (
+                <div className="rounded-lg border p-4 space-y-2">
+                  <h4 className="font-semibold">Test Result:</h4>
+                  <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">
+                    {JSON.stringify(testResult, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Matched Options</CardTitle>
+                  <CardDescription>Signal ID: {signalId}</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => fetchOptions()} disabled={loading}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
           <CardContent>
             {options.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
@@ -320,6 +409,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
             )}
           </CardContent>
         </Card>
+        </>
       )}
 
       {selectedOption && (
