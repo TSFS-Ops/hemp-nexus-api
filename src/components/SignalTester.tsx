@@ -65,11 +65,17 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
       
       toast({
         title: "Signal Created!",
-        description: `Signal ID: ${data.signalId}. Searching for matches...`,
+        description: `Signal ID: ${data.signalId}. AI web search in progress (15-20s)...`,
       });
 
-      // Wait 3 seconds for background search
-      setTimeout(() => fetchOptions(data.signalId), 3000);
+      // Wait 20 seconds for AI web search to complete
+      setTimeout(() => {
+        fetchOptions(data.signalId);
+        toast({
+          title: "Search Complete",
+          description: "Fetching matched options...",
+        });
+      }, 20000);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -99,9 +105,13 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
       const data = await response.json();
       setOptions(data.options || []);
       
+      const optionCount = data.options?.length || 0;
       toast({
-        title: "Options Retrieved",
-        description: `Found ${data.options?.length || 0} matching options`,
+        title: optionCount > 0 ? "Options Found!" : "No Options Yet",
+        description: optionCount > 0 
+          ? `Found ${optionCount} matching options` 
+          : "Search may still be running. Try refreshing in a few seconds.",
+        variant: optionCount > 0 ? "default" : "destructive",
       });
     } catch (error: any) {
       toast({
@@ -344,9 +354,23 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
             </CardHeader>
           <CardContent>
             {options.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                No options yet. Wait a moment and refresh...
-              </p>
+              <div className="text-center py-8 space-y-3">
+                <p className="text-muted-foreground">
+                  No options found yet.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  AI web search takes 15-20 seconds. Click refresh above to check again.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => fetchOptions()}
+                  disabled={loading}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Now
+                </Button>
+              </div>
             ) : (
               <div className="space-y-4">
                 {options.map((option) => (
