@@ -167,6 +167,73 @@ export type Database = {
           },
         ]
       }
+      data_source_performance: {
+        Row: {
+          created_at: string
+          data_source_id: string
+          id: string
+          location: string | null
+          options_returned: number
+          options_selected: number
+          org_id: string
+          product_category: string | null
+          response_time_ms: number
+          search_success: boolean
+          signal_id: string
+          signal_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_source_id: string
+          id?: string
+          location?: string | null
+          options_returned?: number
+          options_selected?: number
+          org_id: string
+          product_category?: string | null
+          response_time_ms: number
+          search_success?: boolean
+          signal_id: string
+          signal_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_source_id?: string
+          id?: string
+          location?: string | null
+          options_returned?: number
+          options_selected?: number
+          org_id?: string
+          product_category?: string | null
+          response_time_ms?: number
+          search_success?: boolean
+          signal_id?: string
+          signal_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_source_performance_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_source_performance_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_source_performance_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_sources: {
         Row: {
           config: Json

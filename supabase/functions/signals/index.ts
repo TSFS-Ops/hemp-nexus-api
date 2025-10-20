@@ -5,6 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { validateApiKey } from "../_shared/api-key-middleware.ts";
 import { verifySahpraForOrg } from "../_shared/sahpra.ts";
 import { searchDataSources } from "../_shared/data-sources.ts";
+import { recordSelection } from "../_shared/performance.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -226,6 +227,9 @@ Deno.serve(async (req) => {
         entity_id: selection.id,
         metadata: { signal_id: signalId, option_id },
       });
+
+      // Record selection for performance tracking
+      await recordSelection(supabase, signalId, option_id);
 
       return new Response(
         JSON.stringify({

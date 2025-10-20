@@ -1,5 +1,6 @@
 // Data source search logic
 import { scoreOption, generateMockOptions } from "./scoring.ts";
+import { logPerformance, getSourceRankings } from "./performance.ts";
 
 export async function searchDataSources(signalId: string, orgId: string, supabase: any) {
   console.log(`[${signalId}] Starting background search for signal`);
@@ -28,6 +29,26 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
 
     console.log(`[${signalId}] Found ${dataSources.length} active data sources`);
 
+    // Get performance-based rankings
+    const rankings = await getSourceRankings(supabase, orgId, {
+      productCategory: signal.content.product,
+      location: signal.content.location,
+      signalType: signal.type,
+    });
+
+    // Sort data sources by ranking (if available)
+    if (rankings.length > 0) {
+      dataSources.sort((a: any, b: any) => {
+        const rankA = rankings.find(r => r.dataSourceId === a.id);
+        const rankB = rankings.find(r => r.dataSourceId === b.id);
+        if (!rankA && !rankB) return 0;
+        if (!rankA) return 1;
+        if (!rankB) return -1;
+        return rankB.score - rankA.score;
+      });
+      console.log(`[${signalId}] Prioritized sources based on historical performance`);
+    }
+
     const internalKey = Deno.env.get("INTERNAL_SEARCH_KEY");
 
     // Query each data source
@@ -35,6 +56,7 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
       console.log(`[${signalId}] Querying ${dataSource.name} (${dataSource.type})`);
 
       let options: any[] = [];
+      const startTime = Date.now();
 
       try {
         if (dataSource.type === "http" && dataSource.config?.base_url) {
@@ -89,8 +111,38 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
 
         // Update last queried time
         await supabase.from("data_sources").update({ last_queried_at: new Date().toISOString() }).eq("id", dataSource.id);
+
+        // Log performance
+        const responseTime = Date.now() - startTime;
+        await logPerformance(supabase, {
+          dataSourceId: dataSource.id,
+          signalId,
+          orgId,
+          optionsReturned: options.length,
+          optionsSelected: 0, // Will be updated when option is selected
+          responseTimeMs: responseTime,
+          searchSuccess: options.length > 0,
+          productCategory: signal.content.product,
+          location: signal.content.location,
+          signalType: signal.type,
+        });
       } catch (error) {
         console.error(`[${signalId}] Error querying ${dataSource.name}:`, error);
+        
+        // Log failure
+        const responseTime = Date.now() - startTime;
+        await logPerformance(supabase, {
+          dataSourceId: dataSource.id,
+          signalId,
+          orgId,
+          optionsReturned: 0,
+          optionsSelected: 0,
+          responseTimeMs: responseTime,
+          searchSuccess: false,
+          productCategory: signal.content.product,
+          location: signal.content.location,
+          signalType: signal.type,
+        });
       }
     }
 
