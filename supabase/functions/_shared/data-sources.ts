@@ -204,16 +204,28 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
         }
 
         const mockOptions = generateMockOptions(signal, webSearchSource.data);
+        let insertedCount = 0;
         for (const opt of mockOptions) {
           const score = scoreOption(opt, signal);
-          await supabase.from("options").insert({
+          const { error: insertError } = await supabase.from("options").insert({
             signal_id: signalId,
             data_source_id: webSearchSource.data.id,
-            ...opt,
-            score,
+            what: opt.what,
+            how_much: opt.how_much,
+            unit: opt.unit,
+            where_location: opt.where_location,
+            when_available: opt.when_available,
+            price: opt.price,
+            currency: opt.currency,
+            quality_flags: opt.quality_flags,
+            confidence_score: opt.confidence_score,
+            source_link: opt.source_link,
+            freshness: opt.freshness,
+            score
           });
+          if (!insertError) insertedCount++;
         }
-        console.log(`[${signalId}] Inserted ${mockOptions.length} fallback options`);
+        console.log(`[${signalId}] Inserted ${insertedCount}/${mockOptions.length} fallback options`);
       } catch (e) {
         console.error(`[${signalId}] Fallback insert failed:`, e);
       }
@@ -248,6 +260,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
       }
 
       // Convert web search results to options
+      let insertedCount = 0;
       for (const result of searchData.results) {
         const option = {
           what: signal.content.what || signal.content.product,
@@ -261,29 +274,42 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
             verified: false,
             web_discovered: true,
             source: result.source,
-            sahpra_verified: false // Web results default to not verified
+            sahpra_verified: false, // Web results default to not verified
+            contact: result.contact,
+            relevance: result.relevance
           },
           confidence_score: result.confidence,
           source_link: result.sourceLink,
-          freshness: new Date().toISOString(),
-          metadata: {
-            contact: result.contact,
-            relevance: result.relevance,
-            search_queries: searchData.searchQueries
-          }
-        } as any;
+          freshness: new Date().toISOString()
+        };
 
         const score = scoreOption(option, signal);
 
-        await supabase.from("options").insert({
+        const { error: insertError } = await supabase.from("options").insert({
           signal_id: signalId,
           data_source_id: webSearchSource.data.id,
-          ...option,
-          score,
+          what: option.what,
+          how_much: option.how_much,
+          unit: option.unit,
+          where_location: option.where_location,
+          when_available: option.when_available,
+          price: option.price,
+          currency: option.currency,
+          quality_flags: option.quality_flags,
+          confidence_score: option.confidence_score,
+          source_link: option.source_link,
+          freshness: option.freshness,
+          score
         });
+
+        if (insertError) {
+          console.error(`[${signalId}] Failed to insert option:`, insertError);
+        } else {
+          insertedCount++;
+        }
       }
 
-      console.log(`[${signalId}] Inserted ${searchData.results.length} web-discovered options`);
+      console.log(`[${signalId}] Inserted ${insertedCount}/${searchData.results.length} web-discovered options`);
     } else {
       // Fallback: generate mock options when search yields nothing
       try {
