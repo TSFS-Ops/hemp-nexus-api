@@ -208,7 +208,8 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
           quality_flags: {
             verified: false,
             web_discovered: true,
-            source: result.source
+            source: result.source,
+            sahpra_verified: false // Web results default to not verified
           },
           confidence_score: result.confidence,
           source_link: result.sourceLink,

@@ -273,6 +273,17 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
                             {option.price} {option.currency}
                           </p>
                         )}
+                        <div className="mt-2">
+                          {option.quality_flags?.sahpra_verified ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                              ✓ SAHPRA Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                              ⚠ No SAHPRA License
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium">Score: {option.score?.toFixed(2)}</div>

@@ -40,8 +40,9 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Product and quantity are required", 400);
       }
 
-      // Check if buyer verification is required (enforcement toggle)
+      // Check buyer verification (non-blocking, for info only)
       const requireVerified = Deno.env.get("REQUIRE_BUYER_VERIFIED") === "true";
+      let buyerVerified = false;
       if (requireVerified) {
         const { data: org } = await supabase
           .from("organizations")
@@ -49,21 +50,8 @@ Deno.serve(async (req) => {
           .eq("id", authCtx.orgId)
           .single();
         
-        // Check if verification is stale (> 24 hours)
-        const now = new Date();
-        const lastVerified = org?.sahpra_verified_at ? new Date(org.sahpra_verified_at) : null;
-        const isStale = !lastVerified || (now.getTime() - lastVerified.getTime()) > 24 * 60 * 60 * 1000;
-        
-        if (!org?.sahpra_verified || isStale) {
-          return new Response(
-            JSON.stringify({ 
-              code: "BUYER_NOT_VERIFIED",
-              error: "Organization SAHPRA verification required",
-              message: "Your organization must have a valid SAHPRA license to create signals"
-            }),
-            { status: 403, headers: { "Content-Type": "application/json", ...headers } }
-          );
-        }
+        buyerVerified = org?.sahpra_verified || false;
+        console.log(`[${authCtx.orgId}] Buyer SAHPRA status: ${buyerVerified ? 'verified' : 'not verified'}`);
       }
 
       // Build content object from new schema

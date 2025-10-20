@@ -24,18 +24,26 @@ export function scoreOption(option: any, signal: any): number {
 }
 
 export function generateMockOptions(signal: any, dataSource: any): any[] {
-  const baseOption = {
-    what: signal.content.what || "Product",
-    how_much: signal.content.how_much,
+  const product = signal.content.product || signal.content.what || "Product";
+  const quantity = signal.content.quantity || signal.content.how_much || 1000;
+  const location = signal.content.location || signal.content.where || "South Africa";
+  
+  // Generate 3 mock options with varied SAHPRA status
+  return [0, 1, 2].map((i) => ({
+    what: product,
+    how_much: quantity,
     unit: signal.content.unit || "kg",
-    where_location: signal.content.where || "Unknown",
+    where_location: location,
     when_available: "Available now",
-    price: signal.content.price_budget ? signal.content.price_budget * (0.9 + Math.random() * 0.2) : 100,
-    currency: "USD",
-    quality_flags: { certified: true, tested: true },
-    confidence_score: 0.8,
-    source_link: `https://example.com/${dataSource.id}`,
-  };
-
-  return [baseOption];
+    price: 85000 + (i * 5000),
+    currency: signal.content.currency || "ZAR",
+    quality_flags: { 
+      mock: true,
+      sahpra_verified: i === 0, // First option has SAHPRA, others don't
+      certified: i < 2 // First two are certified
+    },
+    confidence_score: 0.75 - (i * 0.1),
+    source_link: `https://example.com/supplier-${i + 1}`,
+    freshness: new Date().toISOString(),
+  }));
 }
