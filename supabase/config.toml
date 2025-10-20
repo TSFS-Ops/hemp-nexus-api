@@ -1,5 +1,8 @@
 project_id = "ugrfyhwlonlmlcmcpcdm"
 
+[functions.sr-discover]
+verify_jwt = false
+
 [functions.healthz]
 verify_jwt = false
 
