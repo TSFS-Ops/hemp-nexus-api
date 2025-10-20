@@ -17,15 +17,17 @@ Deno.serve(async (req) => {
     if (corsResponse) return corsResponse;
 
     const url = new URL(req.url);
-    const pathParts = url.pathname.split("/").filter(Boolean);
+    const rawParts = url.pathname.split("/").filter(Boolean);
 
-    // Check if this is a /v1/* endpoint and validate API key
-    if (pathParts.length > 0 && pathParts[0] === "v1") {
+    // Normalize path: strip optional prefixes and the function name
+    const parts = [...rawParts];
+    if (parts[0] === "functions") parts.shift();
+    if (parts[0] === "v1") {
       const apiKeyError = validateApiKey(req);
       if (apiKeyError) return apiKeyError;
-      // Remove 'v1' from path for processing
-      pathParts.shift();
+      parts.shift();
     }
+    if (parts[0] === "signals") parts.shift();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -33,8 +35,8 @@ Deno.serve(async (req) => {
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
 
-    // POST /signals - Create new signal and trigger search
-    if (req.method === "POST" && pathParts.length === 1) {
+    // POST / - Create new signal and trigger search
+    if (req.method === "POST" && parts.length === 0) {
       const { product, quantity, unit, location, deliveryWindow, budget, currency, notes } = await req.json();
 
       if (!product || !quantity) {
@@ -110,8 +112,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // GET /signals - List signals
-    if (req.method === "GET" && pathParts.length === 1) {
+    // GET / - List signals
+    if (req.method === "GET" && parts.length === 0) {
       const limit = parseInt(url.searchParams.get("limit") || "50");
       const status = url.searchParams.get("status");
 
@@ -135,9 +137,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET /signals/:id - Get signal with options
-    if (req.method === "GET" && pathParts.length === 2) {
-      const signalId = pathParts[1];
+    // GET /:id - Get signal with options
+    if (req.method === "GET" && parts.length === 1) {
+      const signalId = parts[0];
 
       const { data: signal, error: signalError } = await supabase
         .from("signals")
@@ -162,9 +164,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // POST /signals/:id/select - Select an option and hand off
-    if (req.method === "POST" && pathParts.length === 3 && pathParts[2] === "select") {
-      const signalId = pathParts[1];
+    // POST /:id/select - Select an option and hand off
+    if (req.method === "POST" && parts.length === 2 && parts[1] === "select") {
+      const signalId = parts[0];
       const { option_id } = await req.json();
 
       if (!option_id) {
@@ -242,9 +244,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // DELETE /signals/:id - Cancel signal
-    if (req.method === "DELETE" && pathParts.length === 2) {
-      const signalId = pathParts[1];
+    // DELETE /:id - Cancel signal
+    if (req.method === "DELETE" && parts.length === 1) {
+      const signalId = parts[0];
 
       const { error } = await supabase
         .from("signals")
