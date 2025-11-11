@@ -1,14 +1,16 @@
 # Trade.Izenzo API
 
-**Signal-based matching service for B2B trade**
+**Generic trade match recording and proof service**
 
-Trade.Izenzo transforms buyer/seller signals into scored, comparable options by querying consent-based data sources, returning fast results and handing off to home systems.
+Trade.Izenzo API v1 is a sector-agnostic backend service that records trade "matches" between buyers and sellers, returns a cryptographic proof record, and allows matches to be marked as "settled". The API is decoupled from any specific marketplace or frontend - it simply provides a reliable record-keeping layer for trade transactions.
 
 ---
 
 ## Quick Start (5 minutes)
 
 ### 1. Get an API Key
+
+Sign up at the dashboard to create an API key, or use the API:
 
 ```bash
 curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/api-keys \
@@ -22,81 +24,83 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/api-keys \
 
 Save the returned `key` (starts with `sk_`). You'll only see it once.
 
-### 2. Check Health
+### 2. Record a Match
 
 ```bash
-curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/healthz
-# => {"ok": true}
-```
-
-### 3. Create a Signal
-
-```bash
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals \
+curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \
   -H "X-API-Key: sk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "buyer",
-    "content": {
-      "what": "Hemp fibre",
-      "how_much": 10000,
-      "unit": "kg",
-      "where": "Rotterdam",
-      "when": "2025-10-25",
-      "price_budget": 1200,
-      "quality_requirements": {"grade": "industrial"}
+    "buyer": {
+      "id": "BUYER123",
+      "name": "Example Buyer Ltd"
+    },
+    "seller": {
+      "id": "SELLER456",
+      "name": "Example Seller Ltd"
+    },
+    "commodity": "Industrial Hemp Fibre",
+    "quantity": {
+      "amount": 1000,
+      "unit": "kg"
+    },
+    "price": {
+      "amount": 50000,
+      "currency": "EUR"
+    },
+    "terms": "Delivery within 30 days, payment on delivery",
+    "metadata": {
+      "region": "EU-Africa",
+      "channel": "Trade.Izenzo platform"
     }
   }'
 ```
 
-### 4. Get Matched Options
+Returns a proof record with `id`, `status: "matched"`, `created_at`, and `hash`.
+
+### 3. Retrieve a Match
 
 ```bash
-curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals/{signal_id} \
+curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/{match_id} \
   -H "X-API-Key: sk_your_key_here"
 ```
 
-Returns signal + scored options.
-
-### 5. Select an Option
+### 4. Mark as Settled
 
 ```bash
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals/{signal_id}/select \
-  -H "X-API-Key: sk_your_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{"option_id": "uuid"}'
+curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/{match_id}/settle \
+  -H "X-API-Key: sk_your_key_here"
 ```
 
-Returns `handoff_token` and `handoff_url` to complete the transaction in the home system.
+Updates the match to `status: "settled"` and sets `settled_at` timestamp.
 
 ---
 
 ## Core Concepts
 
-### Signals
-A **signal** is a buyer need or seller offer:
-- **Buyer signal**: "I need X quantity of Y product in Z location by W date"
-- **Seller signal**: "I have X quantity of Y product available now"
+### Matches
+A **match** is a recorded trade agreement between a buyer and a seller. Each match includes:
+- **Buyer & Seller**: IDs and names of both parties
+- **Commodity**: Product or service being traded
+- **Quantity**: Amount and unit (e.g., 1000 kg)
+- **Price**: Amount and currency (e.g., 50000 EUR)
+- **Terms**: Commercial terms in plain language
+- **Metadata**: Optional fields like region, channel, notes
+- **Status**: Either `matched` (initial state) or `settled` (finalized)
+- **Hash**: SHA-256 cryptographic proof of the match data
+- **Timestamps**: `created_at` and optionally `settled_at`
 
-### Data Sources
-Connect to external systems (marketplaces, ERPs, sheets, registries, labs) where data lives.
+### Proof Record
+Every match generates a tamper-evident proof record with:
+- Unique ID (UUID)
+- SHA-256 hash of the canonical match data
+- Status and timestamps
+- Full match details
 
-### Consents
-Grant read-only permission for Trade.Izenzo to query specific data sources.
+This provides an immutable record that can be verified independently.
 
-### Options
-Normalized results with standard fields:
-- `what`: Product/category
-- `how_much` / `unit`: Quantity
-- `where_location`: Location
-- `when_available`: Availability
-- `price` / `currency`: Pricing
-- `quality_flags`: Compliance/quality indicators
-- `confidence_score`: Match confidence (0-1)
-- `score`: Combined ranking score
-
-### Selections & Hand-off
-When you pick an option, Trade.Izenzo generates a short-lived token and URL to hand off to the source system. We don't create the order—the home system does.
+### API Authentication
+All endpoints require an API key passed in the `X-API-Key` header. API keys are managed through the dashboard or the `/api-keys` endpoints.
 
 ---
 
@@ -105,107 +109,184 @@ When you pick an option, Trade.Izenzo generates a short-lived token and URL to h
 **Base URL**: `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1`
 
 ### Authentication
-Include in headers:
+All endpoints require an API key in the `X-API-Key` header:
 ```
 X-API-Key: sk_your_api_key
 ```
 
-Or use JWT:
-```
-Authorization: Bearer YOUR_JWT_TOKEN
-```
+---
 
-### Signals
+### Match Recording
 
-#### `POST /signals`
-Create a new signal and trigger search.
+#### `POST /match`
+Record a new trade match and return a proof record.
 
 **Request**:
 ```json
 {
-  "type": "buyer|seller",
-  "content": {
-    "what": "Product name",
-    "how_much": 1000,
-    "unit": "kg",
-    "where": "Location",
-    "when": "2025-10-25",
-    "price_budget": 5000,
-    "quality_requirements": {}
+  "buyer": {
+    "id": "BUYER123",
+    "name": "Example Buyer Ltd"
   },
-  "expires_at": "2025-11-01T00:00:00Z" // optional
+  "seller": {
+    "id": "SELLER456",
+    "name": "Example Seller Ltd"
+  },
+  "commodity": "Product or service name",
+  "quantity": {
+    "amount": 1000,
+    "unit": "kg"
+  },
+  "price": {
+    "amount": 50000,
+    "currency": "EUR"
+  },
+  "terms": "Key commercial terms in plain language",
+  "metadata": {
+    "region": "EU-Africa",
+    "channel": "Trade.Izenzo platform",
+    "notes": "Any extra notes"
+  }
 }
 ```
+
+**Required fields**:
+- `buyer.id`, `buyer.name`
+- `seller.id`, `seller.name`
+- `commodity`
+- `quantity.amount`, `quantity.unit`
+- `price.amount`, `price.currency`
 
 **Response**: `201 Created`
 ```json
 {
-  "id": "uuid",
-  "type": "buyer",
-  "status": "active",
-  "created_at": "2025-10-11T...",
-  "message": "Signal received. Searching data sources..."
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2025-01-10T12:00:00.000Z",
+  "status": "matched",
+  "hash": "a3b2c1d4e5f6...",
+  "buyer_id": "BUYER123",
+  "buyer_name": "Example Buyer Ltd",
+  "seller_id": "SELLER456",
+  "seller_name": "Example Seller Ltd",
+  "commodity": "Product or service name",
+  "quantity_amount": 1000,
+  "quantity_unit": "kg",
+  "price_amount": 50000,
+  "price_currency": "EUR",
+  "terms": "Key commercial terms in plain language",
+  "metadata": {
+    "region": "EU-Africa",
+    "channel": "Trade.Izenzo platform"
+  },
+  "settled_at": null
 }
 ```
 
-#### `GET /signals`
-List your signals.
-
-**Query params**:
-- `limit`: Max results (default 50)
-- `status`: Filter by status (active, matched, expired)
-
-#### `GET /signals/:id`
-Get signal with matched options.
+#### `GET /match/:id`
+Retrieve a single match and its proof record.
 
 **Response**: `200 OK`
 ```json
 {
-  "signal": { ... },
-  "options": [
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2025-01-10T12:00:00.000Z",
+  "status": "matched",
+  "hash": "a3b2c1d4e5f6...",
+  "buyer_id": "BUYER123",
+  "buyer_name": "Example Buyer Ltd",
+  "seller_id": "SELLER456",
+  "seller_name": "Example Seller Ltd",
+  "commodity": "Product or service name",
+  "quantity_amount": 1000,
+  "quantity_unit": "kg",
+  "price_amount": 50000,
+  "price_currency": "EUR",
+  "terms": "Key commercial terms in plain language",
+  "metadata": {},
+  "settled_at": null
+}
+```
+
+**Error**: `404 Not Found` if match doesn't exist.
+
+#### `POST /match/:id/settle`
+Mark an existing match as "settled" and update the proof record.
+
+**Request**: Empty body (no parameters needed)
+
+**Response**: `200 OK`
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2025-01-10T12:00:00.000Z",
+  "status": "settled",
+  "hash": "a3b2c1d4e5f6...",
+  "buyer_id": "BUYER123",
+  "buyer_name": "Example Buyer Ltd",
+  "seller_id": "SELLER456",
+  "seller_name": "Example Seller Ltd",
+  "commodity": "Product or service name",
+  "quantity_amount": 1000,
+  "quantity_unit": "kg",
+  "price_amount": 50000,
+  "price_currency": "EUR",
+  "terms": "Key commercial terms in plain language",
+  "metadata": {},
+  "settled_at": "2025-01-10T14:30:00.000Z"
+}
+```
+
+**Behavior**:
+- If match is already `settled`, returns existing record (idempotent)
+- If match is `matched`, updates to `settled` and sets `settled_at` timestamp
+- Returns `404 Not Found` if match doesn't exist
+
+#### `GET /matches`
+List matches with pagination and filtering.
+
+**Query Parameters**:
+- `limit`: Max results (default: 50)
+- `offset`: Skip N results (default: 0)
+- `status`: Filter by status (`matched` or `settled`)
+
+**Example**:
+```bash
+GET /matches?limit=20&offset=0&status=matched
+```
+
+**Response**: `200 OK`
+```json
+{
+  "items": [
     {
-      "id": "uuid",
-      "what": "Hemp fibre industrial grade",
-      "how_much": 10000,
-      "unit": "kg",
-      "where_location": "Rotterdam",
-      "price": 1180,
-      "currency": "USD",
-      "quality_flags": {"certified": true},
-      "confidence_score": 0.85,
-      "score": 87.5,
-      "source_link": "https://...",
-      "data_source": {
-        "name": "ABC Marketplace",
-        "type": "marketplace"
-      }
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "created_at": "2025-01-10T12:00:00.000Z",
+      "status": "matched",
+      "buyer_name": "Example Buyer Ltd",
+      "seller_name": "Example Seller Ltd",
+      "commodity": "Product or service name",
+      "quantity_amount": 1000,
+      "quantity_unit": "kg",
+      "price_amount": 50000,
+      "price_currency": "EUR"
     }
-  ]
+  ],
+  "totalCount": 145
 }
 ```
 
-#### `POST /signals/:id/select`
-Select an option and get handoff details.
+---
 
-**Request**:
-```json
-{
-  "option_id": "uuid"
-}
-```
+### Legacy Endpoints
 
-**Response**: `200 OK`
-```json
-{
-  "selection_id": "uuid",
-  "handoff_token": "short-lived-token",
-  "handoff_url": "https://source-system.com/...",
-  "message": "Option selected. Handoff to source system."
-}
-```
+The following endpoints remain available for backward compatibility but are not part of the Trade.Izenzo API v1 core:
 
-#### `DELETE /signals/:id`
-Cancel a signal (sets status to `expired`).
+- `/signals` - Signal-based matching system
+- `/data-sources` - Data source connectors
+- `/consents` - Data access permissions
+- `/api-keys` - API key management
+
+See sections below for details on these endpoints.
 
 ---
 
@@ -306,7 +387,40 @@ All errors follow this format:
 - `UNAUTHORIZED` (401)
 - `FORBIDDEN` (403)
 - `NOT_FOUND` (404)
+- `METHOD_NOT_ALLOWED` (405)
 - `INTERNAL_ERROR` (500)
+
+---
+
+## Testing
+
+### Manual Test Script
+
+A bash script is provided for end-to-end testing:
+
+```bash
+export TRADE_IZENZO_API_KEY=sk_your_key_here
+chmod +x examples/trade-izenzo-example.sh
+./examples/trade-izenzo-example.sh
+```
+
+This script will:
+1. Create a match via POST /match
+2. Retrieve it via GET /match/:id
+3. Settle it via POST /match/:id/settle
+4. Verify idempotency by calling settle again
+5. List matches via GET /matches
+6. Display hash for independent verification
+
+### Expected Behavior
+
+- ✓ Match created with `status: "matched"` and SHA-256 hash
+- ✓ Match retrieved with full details
+- ✓ Match settles successfully with `settled_at` timestamp
+- ✓ Second settle call returns same record (idempotent)
+- ✓ Match appears in list with correct status
+
+See `docs/trade-izenzo-api-v1.md` for complete API documentation.
 
 ---
 
@@ -358,10 +472,42 @@ We never hoard proprietary data—just links and summaries.
 ## Development
 
 Built with:
-- **Lovable Cloud** (Supabase)
+- **Lovable Cloud** (Supabase backend)
 - **Edge Functions** (Deno/TypeScript)
-- **Postgres** with RLS
-- **API-only** (no frontend)
+- **Postgres** with RLS and cryptographic hashing
+- **React** frontend for API key management
+- **Sector-agnostic design** for universal applicability
+
+The API is designed to be simple, reliable, and decoupled from any specific marketplace or frontend.
+
+---
+
+## Architecture
+
+### Match Recording Flow
+
+1. **Match In**: External system (marketplace, ERP) posts a match
+2. **Validate**: Check required fields and API key
+3. **Hash**: Compute SHA-256 proof of canonical match data
+4. **Store**: Insert match record with status `matched`
+5. **Return**: Send complete match record with proof hash
+6. **Later**: System calls `/settle` to update status when complete
+
+### Data Storage
+
+Trade.Izenzo stores:
+- Match records with full details
+- Cryptographic proof hashes
+- Status and timestamps
+- Metadata for filtering and reporting
+
+We don't store:
+- Proprietary business logic
+- Sector-specific assumptions
+- Payment or logistics data
+- Long-term transactional data
+
+The database is designed for fast lookups, proof verification, and clean auditing.
 
 ---
 
@@ -638,21 +784,27 @@ curl -H "X-API-Key: sk_your_key" \
   https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/orders
 ```
 
-## 📚 Resources
+## Resources
 
+- **Complete API Docs**: [docs/trade-izenzo-api-v1.md](docs/trade-izenzo-api-v1.md)
+- **Test Script**: [examples/trade-izenzo-example.sh](examples/trade-izenzo-example.sh)
+- **Client Example** (legacy signals): [examples/client-example.js](examples/client-example.js)
 - [Lovable Cloud Documentation](https://docs.lovable.dev/features/cloud)
 - [Supabase Documentation](https://supabase.com/docs)
 - [Trade.Izenzo Project](https://lovable.dev/projects/95025ceb-b8ab-4906-adee-3188617c0dbc)
 
-## 🤝 Support
+## Support
 
 For API support or questions:
+- Email: support@trade.izenzo.com
 - Check the [Lovable Discord community](https://discord.com/channels/1119885301872070706/1280461670979993613)
 - Review backend logs in Lovable Cloud dashboard
 
-## 📄 License
+## License
 
 Proprietary - Trade.Izenzo API
 
 ---
+
+**Trade.Izenzo API v1**: Generic trade match recording with cryptographic proofs. Simple, fast, decoupled.
 

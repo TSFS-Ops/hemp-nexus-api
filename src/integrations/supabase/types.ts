@@ -278,6 +278,63 @@ export type Database = {
           },
         ]
       }
+      matches: {
+        Row: {
+          buyer_id: string
+          buyer_name: string
+          commodity: string
+          created_at: string
+          hash: string
+          id: string
+          metadata: Json | null
+          price_amount: number
+          price_currency: string
+          quantity_amount: number
+          quantity_unit: string
+          seller_id: string
+          seller_name: string
+          settled_at: string | null
+          status: string
+          terms: string | null
+        }
+        Insert: {
+          buyer_id: string
+          buyer_name: string
+          commodity: string
+          created_at?: string
+          hash: string
+          id?: string
+          metadata?: Json | null
+          price_amount: number
+          price_currency: string
+          quantity_amount: number
+          quantity_unit: string
+          seller_id: string
+          seller_name: string
+          settled_at?: string | null
+          status?: string
+          terms?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          buyer_name?: string
+          commodity?: string
+          created_at?: string
+          hash?: string
+          id?: string
+          metadata?: Json | null
+          price_amount?: number
+          price_currency?: string
+          quantity_amount?: number
+          quantity_unit?: string
+          seller_id?: string
+          seller_name?: string
+          settled_at?: string | null
+          status?: string
+          terms?: string | null
+        }
+        Relationships: []
+      }
       options: {
         Row: {
           confidence_score: number | null
