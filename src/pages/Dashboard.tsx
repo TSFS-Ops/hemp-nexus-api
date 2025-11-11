@@ -10,6 +10,7 @@ import { Copy, Loader2, Key, LogOut, Trash2 } from "lucide-react";
 import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
+import MatchTester from "@/components/MatchTester";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -328,6 +329,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        <MatchTester apiKey={newKey || (apiKeys.length > 0 ? apiKeys[0].key : null)} />
+        
         <SignalTester apiKey={newKey || (apiKeys.length > 0 ? apiKeys[0].key : null)} />
       </div>
     </div>
