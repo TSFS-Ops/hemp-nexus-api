@@ -100,6 +100,8 @@ Deno.serve(async (req) => {
       const limit = parseInt(url.searchParams.get("limit") || "50");
       const offset = parseInt(url.searchParams.get("offset") || "0");
       const status = url.searchParams.get("status");
+      const commodity = url.searchParams.get("commodity");
+      const commodityType = url.searchParams.get("commodity_type");
 
       let query = supabase
         .from("matches")
@@ -109,6 +111,14 @@ Deno.serve(async (req) => {
 
       if (status && (status === "matched" || status === "settled")) {
         query = query.eq("status", status);
+      }
+
+      if (commodity) {
+        query = query.ilike("commodity", `%${commodity}%`);
+      }
+
+      if (commodityType) {
+        query = query.contains("metadata", { commodity_type: commodityType });
       }
 
       const { data: matches, error, count } = await query;

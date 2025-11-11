@@ -79,31 +79,72 @@ https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
 
 **Create a new match** and return proof record.
 
-#### Request Body
+#### Request Body Examples
+
+**Hemp Biomass Trade:**
 ```json
 {
-  "buyer": {
-    "id": "BUYER123",
-    "name": "Example Buyer Ltd"
-  },
-  "seller": {
-    "id": "SELLER456", 
-    "name": "Example Seller Ltd"
-  },
-  "commodity": "Industrial Hemp Fibre",
-  "quantity": {
-    "amount": 1000,
-    "unit": "kg"
-  },
-  "price": {
-    "amount": 50000,
-    "currency": "EUR"
-  },
+  "buyer": { "id": "BUYER123", "name": "GreenTech Industries" },
+  "seller": { "id": "SELLER456", "name": "BioFarm Cooperative" },
+  "commodity": "Hemp Biomass",
+  "quantity": { "amount": 1000, "unit": "kg" },
+  "price": { "amount": 50000, "currency": "EUR" },
   "terms": "Delivery within 30 days, payment on delivery",
   "metadata": {
+    "commodity_type": "hemp_cannabis",
     "region": "EU-Africa",
-    "channel": "Trade.Izenzo platform",
-    "notes": "Priority shipment requested"
+    "channel": "izenzo platform"
+  }
+}
+```
+
+**Steel Coils Trade:**
+```json
+{
+  "buyer": { "id": "CONST789", "name": "BuildCo Construction" },
+  "seller": { "id": "STEEL101", "name": "Arcelor Steel Mills" },
+  "commodity": "Hot-Rolled Steel Coils",
+  "quantity": { "amount": 50, "unit": "tonnes" },
+  "price": { "amount": 125000, "currency": "USD" },
+  "terms": "FOB Shanghai, 60 days credit",
+  "metadata": {
+    "commodity_type": "steel",
+    "grade": "HRC-A36",
+    "region": "Asia-Pacific"
+  }
+}
+```
+
+**Aviation Fuel Trade:**
+```json
+{
+  "buyer": { "id": "AERO202", "name": "SkyHigh Airlines" },
+  "seller": { "id": "FUEL303", "name": "Global Energy Traders" },
+  "commodity": "Jet A-1 Aviation Fuel",
+  "quantity": { "amount": 10000, "unit": "barrels" },
+  "price": { "amount": 950000, "currency": "USD" },
+  "terms": "Delivery to JFK Airport, immediate payment",
+  "metadata": {
+    "commodity_type": "fuel",
+    "grade": "Jet A-1",
+    "region": "North America"
+  }
+}
+```
+
+**SaaS License Trade:**
+```json
+{
+  "buyer": { "id": "CORP404", "name": "Enterprise Solutions Inc" },
+  "seller": { "id": "SAAS505", "name": "CloudTech Software" },
+  "commodity": "Enterprise CRM Platform - Annual License",
+  "quantity": { "amount": 500, "unit": "seats" },
+  "price": { "amount": 75000, "currency": "USD" },
+  "terms": "12-month subscription, quarterly billing",
+  "metadata": {
+    "commodity_type": "saas",
+    "tier": "enterprise",
+    "region": "Global"
   }
 }
 ```
@@ -172,13 +213,16 @@ curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/550e8400-e29b-4
   "buyer_name": "Example Buyer Ltd",
   "seller_id": "SELLER456",
   "seller_name": "Example Seller Ltd",
-  "commodity": "Industrial Hemp Fibre",
-  "quantity_amount": 1000,
-  "quantity_unit": "kg",
-  "price_amount": 50000,
-  "price_currency": "EUR",
-  "terms": "Delivery within 30 days, payment on delivery",
-  "metadata": {},
+  "commodity": "Hot-Rolled Steel Coils",
+  "quantity_amount": 50,
+  "quantity_unit": "tonnes",
+  "price_amount": 125000,
+  "price_currency": "USD",
+  "terms": "FOB Shanghai, 60 days credit",
+  "metadata": {
+    "commodity_type": "steel",
+    "region": "Asia-Pacific"
+  },
   "settled_at": null
 }
 ```
@@ -213,13 +257,16 @@ None required (empty body).
   "buyer_name": "Example Buyer Ltd",
   "seller_id": "SELLER456",
   "seller_name": "Example Seller Ltd",
-  "commodity": "Industrial Hemp Fibre",
-  "quantity_amount": 1000,
-  "quantity_unit": "kg",
-  "price_amount": 50000,
-  "price_currency": "EUR",
-  "terms": "Delivery within 30 days, payment on delivery",
-  "metadata": {},
+  "commodity": "Hot-Rolled Steel Coils",
+  "quantity_amount": 50,
+  "quantity_unit": "tonnes",
+  "price_amount": 125000,
+  "price_currency": "USD",
+  "terms": "FOB Shanghai, 60 days credit",
+  "metadata": {
+    "commodity_type": "steel",
+    "region": "Asia-Pacific"
+  },
   "settled_at": "2025-01-10T14:30:00.000Z"
 }
 ```
@@ -242,10 +289,26 @@ None required (empty body).
 - `limit` (number, default: 50) - Max results to return
 - `offset` (number, default: 0) - Skip N results
 - `status` (string, optional) - Filter by status (`matched` or `settled`)
+- `commodity` (string, optional) - Filter by commodity name (case-insensitive partial match)
+- `commodity_type` (string, optional) - Filter by commodity type from metadata (e.g., `hemp_cannabis`, `steel`, `fuel`, `saas`)
 
-#### Example
+#### Example Requests
+
+**Get all settled matches:**
 ```bash
-curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?limit=20&offset=0&status=matched" \
+curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?limit=10&status=settled" \
+  -H "X-API-Key: sk_your_key_here"
+```
+
+**Search for steel trades:**
+```bash
+curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?commodity=steel&limit=20" \
+  -H "X-API-Key: sk_your_key_here"
+```
+
+**Filter by commodity type:**
+```bash
+curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?commodity_type=saas&status=matched" \
   -H "X-API-Key: sk_your_key_here"
 ```
 
@@ -259,11 +322,11 @@ curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?limit=20&off
       "status": "matched",
       "buyer_name": "Example Buyer Ltd",
       "seller_name": "Example Seller Ltd",
-      "commodity": "Industrial Hemp Fibre",
-      "quantity_amount": 1000,
-      "quantity_unit": "kg",
-      "price_amount": 50000,
-      "price_currency": "EUR",
+      "commodity": "Hot-Rolled Steel Coils",
+      "quantity_amount": 50,
+      "quantity_unit": "tonnes",
+      "price_amount": 125000,
+      "price_currency": "USD",
       "hash": "a3b2c1d4e5f6789..."
     }
   ],
@@ -286,10 +349,11 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \
   -d '{
     "buyer": {"id": "BUYER123", "name": "Example Buyer Ltd"},
     "seller": {"id": "SELLER456", "name": "Example Seller Ltd"},
-    "commodity": "Industrial Hemp Fibre",
-    "quantity": {"amount": 1000, "unit": "kg"},
-    "price": {"amount": 50000, "currency": "EUR"},
-    "terms": "Delivery within 30 days"
+    "commodity": "Hot-Rolled Steel Coils",
+    "quantity": {"amount": 50, "unit": "tonnes"},
+    "price": {"amount": 125000, "currency": "USD"},
+    "terms": "FOB Shanghai, 60 days credit",
+    "metadata": {"commodity_type": "steel", "region": "Asia-Pacific"}
   }'
 ```
 
