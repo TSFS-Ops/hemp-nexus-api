@@ -221,7 +221,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>Create New API Key</CardTitle>
             <CardDescription>
-              Generate a new API key to access the SignalRank API
+              Generate a new API key to access the Trade.Izenzo API
             </CardDescription>
           </CardHeader>
           <CardContent>

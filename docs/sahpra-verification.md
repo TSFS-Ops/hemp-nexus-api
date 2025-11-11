@@ -1,11 +1,11 @@
 # SAHPRA License Verification System
 
 ## Overview
-This system verifies South African Health Products Regulatory Authority (SAHPRA) licenses for organizations in SignalRank. SignalRank backend is the source of truth for all verification logic and data.
+This system verifies South African Health Products Regulatory Authority (SAHPRA) licenses for organizations in Trade.Izenzo. Trade.Izenzo backend is the source of truth for all verification logic and data.
 
 ## Architecture
 
-**SignalRank Backend (Source of Truth)**
+**Trade.Izenzo Backend (Source of Truth)**
 - Owns the connector, verification logic, storage, and API
 - Daily CSV ingestion from Google Sheet cached in `sahpra_licenses` table
 - Provides verification API protected by `BST3_API_KEY`

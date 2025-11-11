@@ -1,4 +1,4 @@
-// CORS configuration for SignalRank API
+// CORS configuration for Trade.Izenzo API
 export const corsHeaders = (allowedOrigins: string) => {
   const origins = allowedOrigins || '*';
   return {

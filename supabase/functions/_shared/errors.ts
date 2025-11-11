@@ -1,4 +1,4 @@
-// Standard error response format for SignalRank API
+// Standard error response format for Trade.Izenzo API
 export interface ApiError {
   code: string;
   message: string;

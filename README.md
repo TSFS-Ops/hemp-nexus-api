@@ -1,8 +1,8 @@
-# SignalRank API
+# Trade.Izenzo API
 
 **Signal-based matching service for B2B trade**
 
-SignalRank transforms buyer/seller signals into scored, comparable options by querying consent-based data sources, returning fast results and handing off to home systems.
+Trade.Izenzo transforms buyer/seller signals into scored, comparable options by querying consent-based data sources, returning fast results and handing off to home systems.
 
 ---
 
@@ -82,7 +82,7 @@ A **signal** is a buyer need or seller offer:
 Connect to external systems (marketplaces, ERPs, sheets, registries, labs) where data lives.
 
 ### Consents
-Grant read-only permission for SignalRank to query specific data sources.
+Grant read-only permission for Trade.Izenzo to query specific data sources.
 
 ### Options
 Normalized results with standard fields:
@@ -96,7 +96,7 @@ Normalized results with standard fields:
 - `score`: Combined ranking score
 
 ### Selections & Hand-off
-When you pick an option, SignalRank generates a short-lived token and URL to hand off to the source system. We don't create the order—the home system does.
+When you pick an option, Trade.Izenzo generates a short-lived token and URL to hand off to the source system. We don't create the order—the home system does.
 
 ---
 
@@ -344,7 +344,7 @@ Set these in your Supabase project:
 
 ### Minimal Storage
 
-SignalRank stores:
+Trade.Izenzo stores:
 - Signals (short-lived)
 - Data source configs
 - Consents
@@ -367,13 +367,11 @@ Built with:
 
 ## Support
 
-For issues or questions, contact: support@signalrank.com
+For issues or questions, contact: support@trade.izenzo.com
 
 ---
 
-**SignalRank**: Signals in → options out → hand off. Fast, consent-based, privacy-first.
-
-**SignalRank**: Signals in → options out → hand off. Fast, consent-based, privacy-first.
+**Trade.Izenzo**: Signals in → options out → hand off. Fast, consent-based, privacy-first.
 
 ### 1. Access the API
 
@@ -454,7 +452,7 @@ Response:
 
 ## 🔐 Authentication
 
-SignalRank supports two authentication methods:
+Trade.Izenzo supports two authentication methods:
 
 ### 1. API Keys (Machine-to-Machine)
 
@@ -512,7 +510,7 @@ Set these in your Lovable Cloud backend settings:
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | Yes | `https://app.signalrank.com,https://staging.signalrank.com` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | Yes | `https://app.trade.izenzo.com,https://staging.trade.izenzo.com` |
 | `JWT_SECRET` | JWT signing secret | Auto | (auto-configured by Lovable Cloud) |
 | `SUPABASE_URL` | Database URL | Auto | (auto-configured by Lovable Cloud) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key | Auto | (auto-configured by Lovable Cloud) |
@@ -548,14 +546,14 @@ Key tables:
 
 ## 🔔 Webhooks
 
-SignalRank sends HMAC-SHA256 signed webhooks for events:
+Trade.Izenzo sends HMAC-SHA256 signed webhooks for events:
 
-**Signature Header**: `X-SignalRank-Signature`
+**Signature Header**: `X-Trade-Izenzo-Signature`
 
 **Verification**:
 ```javascript
 const crypto = require('crypto');
-const signature = req.headers['x-signalrank-signature'];
+const signature = req.headers['x-trade-izenzo-signature'];
 const body = JSON.stringify(req.body);
 const expected = crypto
   .createHmac('sha256', SECRET)
@@ -644,7 +642,7 @@ curl -H "X-API-Key: sk_your_key" \
 
 - [Lovable Cloud Documentation](https://docs.lovable.dev/features/cloud)
 - [Supabase Documentation](https://supabase.com/docs)
-- [SignalRank Project](https://lovable.dev/projects/95025ceb-b8ab-4906-adee-3188617c0dbc)
+- [Trade.Izenzo Project](https://lovable.dev/projects/95025ceb-b8ab-4906-adee-3188617c0dbc)
 
 ## 🤝 Support
 
@@ -654,7 +652,7 @@ For API support or questions:
 
 ## 📄 License
 
-Proprietary - SignalRank API
+Proprietary - Trade.Izenzo API
 
 ---
 
