@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException } from '../_shared/errors.ts';
 import { authenticateRequest } from '../_shared/auth.ts';
+import { consentCreateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -22,11 +23,16 @@ Deno.serve(async (req) => {
 
     // POST /consents - Grant consent
     if (req.method === 'POST' && pathParts.length === 1) {
-      const { data_source_id, scope, expires_at } = await req.json();
-
-      if (!data_source_id) {
-        throw new ApiException('VALIDATION_ERROR', 'data_source_id is required', 400);
+      const rawBody = await req.json();
+      
+      let validatedData;
+      try {
+        validatedData = validateInput(consentCreateSchema, rawBody);
+      } catch (error) {
+        throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
+
+      const { data_source_id, scope, expires_at } = validatedData;
 
       // Verify data source belongs to org
       const { data: dataSource } = await supabase

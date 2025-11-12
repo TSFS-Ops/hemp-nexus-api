@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { matchSchema, validateInput } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -135,24 +136,16 @@ Deno.serve(async (req) => {
     if (req.method === "POST" && !matchId) {
       console.log(`[${requestId}] POST /match`);
 
-      const body = await req.json();
-
-      // Validate required fields
-      const missingFields = [];
-      if (!body.buyer?.id) missingFields.push("buyer.id");
-      if (!body.buyer?.name) missingFields.push("buyer.name");
-      if (!body.seller?.id) missingFields.push("seller.id");
-      if (!body.seller?.name) missingFields.push("seller.name");
-      if (!body.commodity) missingFields.push("commodity");
-      if (body.quantity?.amount === undefined) missingFields.push("quantity.amount");
-      if (!body.quantity?.unit) missingFields.push("quantity.unit");
-      if (body.price?.amount === undefined) missingFields.push("price.amount");
-      if (!body.price?.currency) missingFields.push("price.currency");
-
-      if (missingFields.length > 0) {
+      const rawBody = await req.json();
+      
+      // Validate input with zod schema
+      let body;
+      try {
+        body = validateInput(matchSchema, rawBody);
+      } catch (error) {
         throw new ApiException(
           "VALIDATION_ERROR",
-          `Missing required fields: ${missingFields.join(", ")}`,
+          error instanceof Error ? error.message : "Invalid input",
           400
         );
       }
@@ -180,6 +173,8 @@ Deno.serve(async (req) => {
       const { data: match, error: insertError } = await supabase
         .from("matches")
         .insert({
+          org_id: authCtx.orgId,
+          created_by: authCtx.userId || null,
           buyer_id: body.buyer.id,
           buyer_name: body.buyer.name,
           seller_id: body.seller.id,

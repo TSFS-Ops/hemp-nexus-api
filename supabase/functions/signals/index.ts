@@ -2,10 +2,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
-import { validateApiKey } from "../_shared/api-key-middleware.ts";
 import { verifySahpraForOrg } from "../_shared/sahpra.ts";
 import { searchDataSources } from "../_shared/data-sources.ts";
 import { recordSelection } from "../_shared/performance.ts";
+import { signalSchema, signalSelectSchema, validateInput } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -22,11 +22,7 @@ Deno.serve(async (req) => {
     // Normalize path: strip optional prefixes and the function name
     const parts = [...rawParts];
     if (parts[0] === "functions") parts.shift();
-    if (parts[0] === "v1") {
-      const apiKeyError = validateApiKey(req);
-      if (apiKeyError) return apiKeyError;
-      parts.shift();
-    }
+    if (parts[0] === "v1") parts.shift();
     if (parts[0] === "signals") parts.shift();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -37,11 +33,16 @@ Deno.serve(async (req) => {
 
     // POST / - Create new signal and trigger search
     if (req.method === "POST" && parts.length === 0) {
-      const { product, quantity, unit, location, deliveryWindow, budget, currency, notes } = await req.json();
-
-      if (!product || !quantity) {
-        throw new ApiException("VALIDATION_ERROR", "Product and quantity are required", 400);
+      const rawBody = await req.json();
+      
+      let validatedData;
+      try {
+        validatedData = validateInput(signalSchema, rawBody);
+      } catch (error) {
+        throw new ApiException("VALIDATION_ERROR", error instanceof Error ? error.message : "Invalid input", 400);
       }
+
+      const { product, quantity, unit, location, deliveryWindow, budget, currency, notes } = validatedData;
 
       // Check buyer verification (non-blocking, for info only)
       const requireVerified = Deno.env.get("REQUIRE_BUYER_VERIFIED") === "true";
@@ -167,11 +168,16 @@ Deno.serve(async (req) => {
     // POST /:id/select - Select an option and hand off
     if (req.method === "POST" && parts.length === 2 && parts[1] === "select") {
       const signalId = parts[0];
-      const { option_id } = await req.json();
-
-      if (!option_id) {
-        throw new ApiException("VALIDATION_ERROR", "option_id is required", 400);
+      const rawBody = await req.json();
+      
+      let validatedData;
+      try {
+        validatedData = validateInput(signalSelectSchema, rawBody);
+      } catch (error) {
+        throw new ApiException("VALIDATION_ERROR", error instanceof Error ? error.message : "Invalid input", 400);
       }
+
+      const { option_id } = validatedData;
 
       // Verify signal belongs to org
       const { data: signal } = await supabase

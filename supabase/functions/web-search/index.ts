@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { webSearchSchema, validateInput } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const { signal, searchType = "buyers" } = await req.json();
+    const rawBody = await req.json();
+    
+    let validatedData;
+    try {
+      validatedData = validateInput(webSearchSchema, rawBody);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : "Invalid input"
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { signal, searchType = "buyers" } = validatedData;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {

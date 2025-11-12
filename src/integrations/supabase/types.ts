@@ -284,9 +284,11 @@ export type Database = {
           buyer_name: string
           commodity: string
           created_at: string
+          created_by: string | null
           hash: string
           id: string
           metadata: Json | null
+          org_id: string
           price_amount: number
           price_currency: string
           quantity_amount: number
@@ -302,9 +304,11 @@ export type Database = {
           buyer_name: string
           commodity: string
           created_at?: string
+          created_by?: string | null
           hash: string
           id?: string
           metadata?: Json | null
+          org_id: string
           price_amount: number
           price_currency: string
           quantity_amount: number
@@ -320,9 +324,11 @@ export type Database = {
           buyer_name?: string
           commodity?: string
           created_at?: string
+          created_by?: string | null
           hash?: string
           id?: string
           metadata?: Json | null
+          org_id?: string
           price_amount?: number
           price_currency?: string
           quantity_amount?: number
@@ -333,7 +339,15 @@ export type Database = {
           status?: string
           terms?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "matches_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       options: {
         Row: {

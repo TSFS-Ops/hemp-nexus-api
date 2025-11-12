@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException } from '../_shared/errors.ts';
 import { authenticateRequest, requireRole } from '../_shared/auth.ts';
+import { orgCreateSchema, orgUpdateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -48,11 +49,16 @@ Deno.serve(async (req) => {
 
     // POST /orgs - Create organization
     if (req.method === 'POST' && pathParts.length === 1) {
-      const { name, status } = await req.json();
-
-      if (!name) {
-        throw new ApiException('VALIDATION_ERROR', 'Name is required', 400);
+      const rawBody = await req.json();
+      
+      let validatedData;
+      try {
+        validatedData = validateInput(orgCreateSchema, rawBody);
+      } catch (error) {
+        throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
+
+      const { name, status } = validatedData;
 
       const { data, error } = await supabase
         .from('organizations')
@@ -98,7 +104,14 @@ Deno.serve(async (req) => {
     // PATCH /orgs/:id - Update organization
     if (req.method === 'PATCH' && pathParts.length === 2) {
       const orgId = pathParts[1];
-      const updates = await req.json();
+      const rawUpdates = await req.json();
+      
+      let updates;
+      try {
+        updates = validateInput(orgUpdateSchema, rawUpdates);
+      } catch (error) {
+        throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
+      }
 
       const { data, error } = await supabase
         .from('organizations')

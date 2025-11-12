@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders } from "../_shared/cors.ts";
 import { scoreOption } from "../_shared/scoring.ts";
-import { validateApiKey } from "../_shared/api-key-middleware.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
+import { srDiscoverSchema, validateInput } from "../_shared/validation.ts";
 
 const headers = corsHeaders('*');
 
@@ -11,23 +12,30 @@ serve(async (req) => {
     return new Response(null, { headers });
   }
 
-  // Validate API key
-  const authError = validateApiKey(req);
-  if (authError) return authError;
-
   try {
-    const { signalId } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Authenticate request
+    const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (!signalId) {
+    const rawBody = await req.json();
+    
+    let validatedData;
+    try {
+      validatedData = validateInput(srDiscoverSchema, rawBody);
+    } catch (error) {
       return new Response(
-        JSON.stringify({ ok: false, error: "signalId required" }),
+        JSON.stringify({ 
+          ok: false, 
+          error: error instanceof Error ? error.message : "Invalid input"
+        }),
         { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { signalId } = validatedData;
 
     // 1. Read the signal
     console.log(`[sr-discover] Reading signal ${signalId}`);

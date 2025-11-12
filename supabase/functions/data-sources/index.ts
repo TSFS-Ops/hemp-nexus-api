@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException } from '../_shared/errors.ts';
 import { authenticateRequest } from '../_shared/auth.ts';
+import { dataSourceCreateSchema, dataSourceUpdateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -22,16 +23,16 @@ Deno.serve(async (req) => {
 
     // POST /data-sources - Create data source connector
     if (req.method === 'POST' && pathParts.length === 1) {
-      const { name, type, config } = await req.json();
-
-      if (!name || !type) {
-        throw new ApiException('VALIDATION_ERROR', 'Name and type are required', 400);
+      const rawBody = await req.json();
+      
+      let validatedData;
+      try {
+        validatedData = validateInput(dataSourceCreateSchema, rawBody);
+      } catch (error) {
+        throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
 
-      const validTypes = ['marketplace', 'sheet', 'erp', 'registry', 'lab'];
-      if (!validTypes.includes(type)) {
-        throw new ApiException('VALIDATION_ERROR', `Type must be one of: ${validTypes.join(', ')}`, 400);
-      }
+      const { name, type, config } = validatedData;
 
       const { data, error } = await supabase
         .from('data_sources')
@@ -99,7 +100,14 @@ Deno.serve(async (req) => {
     // PATCH /data-sources/:id - Update data source
     if (req.method === 'PATCH' && pathParts.length === 2) {
       const sourceId = pathParts[1];
-      const updates = await req.json();
+      const rawUpdates = await req.json();
+      
+      let updates;
+      try {
+        updates = validateInput(dataSourceUpdateSchema, rawUpdates);
+      } catch (error) {
+        throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
+      }
 
       const { data, error } = await supabase
         .from('data_sources')

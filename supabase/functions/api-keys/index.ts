@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException } from '../_shared/errors.ts';
 import { authenticateRequest } from '../_shared/auth.ts';
+import { apiKeyCreateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -22,11 +23,16 @@ Deno.serve(async (req) => {
 
     // POST /api-keys - Create new API key
     if (req.method === 'POST' && pathParts.length === 1) {
-      const { name, scopes } = await req.json();
-
-      if (!name) {
-        throw new ApiException('VALIDATION_ERROR', 'Name is required', 400);
+      const rawBody = await req.json();
+      
+      let validatedData;
+      try {
+        validatedData = validateInput(apiKeyCreateSchema, rawBody);
+      } catch (error) {
+        throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
+
+      const { name, scopes } = validatedData;
 
       // Generate a random API key
       const apiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
