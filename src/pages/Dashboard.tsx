@@ -74,6 +74,7 @@ export default function Dashboard() {
   }, [navigate]);
 
   const fetchApiKeys = async () => {
+    // RLS automatically filters to only this user's org keys
     const { data, error } = await supabase
       .from("api_keys")
       .select("*")
@@ -88,6 +89,8 @@ export default function Dashboard() {
       });
     } else {
       setApiKeys(data || []);
+      // Clear testingKey when switching users to force creating new key
+      setTestingKey(null);
     }
   };
 
@@ -335,14 +338,17 @@ export default function Dashboard() {
         {!testingKey && (
           <Card>
             <CardHeader>
-              <CardTitle>Test with Existing API Key</CardTitle>
+              <CardTitle>Set API Key for Testing</CardTitle>
               <CardDescription>
-                Paste a previously created API key to test the endpoints below
+                Paste one of YOUR API keys (created above) to test the endpoints below. 
+                <strong className="block mt-1 text-amber-600 dark:text-amber-400">
+                  ⚠️ Each user must use their own API keys. Data is isolated per organization.
+                </strong>
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="testKey">API Key</Label>
+                <Label htmlFor="testKey">Your API Key</Label>
                 <div className="flex gap-2">
                   <Input
                     id="testKey"
