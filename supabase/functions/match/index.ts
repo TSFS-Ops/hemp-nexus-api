@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
         commodity: body.commodity,
         quantity: body.quantity,
         price: body.price,
-        terms: body.terms || "",
+        terms: body.terms,
         metadata: body.metadata || {}
       };
 
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
           quantity_unit: body.quantity.unit,
           price_amount: body.price.amount,
           price_currency: body.price.currency,
-          terms: body.terms || null,
+          terms: body.terms,
           metadata: body.metadata || {},
           hash,
           status: "matched"
