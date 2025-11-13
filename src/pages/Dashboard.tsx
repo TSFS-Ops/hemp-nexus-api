@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [selectedScopes, setSelectedScopes] = useState<string[]>(["signals:write", "signals:read"]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [testingKey, setTestingKey] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -105,6 +106,7 @@ export default function Dashboard() {
       if (error) throw error;
 
       setNewKey(data.key);
+      setTestingKey(data.key); // Keep for testing
       setKeyName("");
       toast({
         title: "Success!",
@@ -329,9 +331,37 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <MatchTester apiKey={newKey || (apiKeys.length > 0 ? apiKeys[0].key : null)} />
+        {/* API Key Input for Testing */}
+        {!testingKey && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Test with Existing API Key</CardTitle>
+              <CardDescription>
+                Paste a previously created API key to test the endpoints below
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="testKey">API Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="testKey"
+                    type="password"
+                    placeholder="sk_..."
+                    onChange={(e) => setTestingKey(e.target.value || null)}
+                  />
+                  <Button onClick={() => toast({ title: "Key Set", description: "You can now use the testers below" })}>
+                    Set Key
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <MatchTester apiKey={testingKey} />
         
-        <SignalTester apiKey={newKey || (apiKeys.length > 0 ? apiKeys[0].key : null)} />
+        <SignalTester apiKey={testingKey} />
       </div>
     </div>
   );
