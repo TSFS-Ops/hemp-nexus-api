@@ -146,11 +146,24 @@ export default function Dashboard() {
     }
 
     try {
-      const { error } = await supabase.functions.invoke(`api-keys/${keyId}`, {
-        method: "DELETE",
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
 
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys/${keyId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to revoke API key");
+      }
 
       toast({
         title: "Success",
