@@ -1,13 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
-import { errorResponse, ApiException } from '../_shared/errors.ts';
+import { errorResponse, ApiException, handleDatabaseError } from '../_shared/errors.ts';
 import { authenticateRequest } from '../_shared/auth.ts';
 import { apiKeyCreateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS') || '*';
-  const headers = corsHeaders(allowedOrigins);
+  const origin = req.headers.get('origin');
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
     const corsResponse = handleCors(req, allowedOrigins);
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       // Log audit trail
       await supabase.from('audit_logs').insert({
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       return new Response(
         JSON.stringify({ data }),
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
         .eq('id', keyId)
         .eq('org_id', authCtx.orgId);
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,

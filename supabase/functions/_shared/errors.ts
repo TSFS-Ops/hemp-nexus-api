@@ -25,6 +25,18 @@ export class ApiException extends Error {
   }
 }
 
+// Convert database errors to ApiException (prevents info leakage)
+export const handleDatabaseError = (error: any, requestId: string): never => {
+  console.error(`[${requestId}] Database error:`, error);
+  
+  // Don't expose database implementation details
+  throw new ApiException(
+    'DATABASE_ERROR',
+    'A database error occurred',
+    500
+  );
+};
+
 export const errorResponse = (
   error: ApiException | Error,
   requestId: string,

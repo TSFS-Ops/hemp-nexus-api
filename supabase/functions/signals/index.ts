@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { verifySahpraForOrg } from "../_shared/sahpra.ts";
 import { searchDataSources } from "../_shared/data-sources.ts";
@@ -10,7 +10,8 @@ import { signalSchema, signalSelectSchema, validateInput } from "../_shared/vali
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
-  const headers = corsHeaders(allowedOrigins);
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
     const corsResponse = handleCors(req, allowedOrigins);
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       // Run SAHPRA verification synchronously to include in response
       const sahpraResult = await verifySahpraForOrg(authCtx.orgId, supabase);
@@ -130,7 +131,7 @@ Deno.serve(async (req) => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       return new Response(JSON.stringify({ data }), {
         status: 200,
@@ -222,7 +223,7 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       // Update signal status
       await supabase.from("signals").update({ status: "matched" }).eq("id", signalId);
@@ -260,7 +261,7 @@ Deno.serve(async (req) => {
         .eq("id", signalId)
         .eq("org_id", authCtx.orgId);
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       return new Response(null, { status: 204, headers });
     }

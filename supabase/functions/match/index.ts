@@ -1,13 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { matchSchema, validateInput } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
-  const headers = corsHeaders(allowedOrigins);
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
     const corsResponse = handleCors(req, allowedOrigins);
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
         .eq("id", matchId)
         .maybeSingle();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-      if (updateError) throw updateError;
+      if (updateError) handleDatabaseError(updateError, requestId);
 
       console.log(`[${requestId}] Match settled successfully`);
       return new Response(JSON.stringify(updated), {
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
         .eq("id", matchId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
       if (!match) {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
@@ -124,7 +125,7 @@ Deno.serve(async (req) => {
 
       const { data: matches, error, count } = await query;
 
-      if (error) throw error;
+      if (error) handleDatabaseError(error, requestId);
 
       return new Response(
         JSON.stringify({ items: matches || [], totalCount: count || 0 }),
@@ -192,7 +193,7 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) handleDatabaseError(insertError, requestId);
 
       console.log(`[${requestId}] Match created: ${match.id}`);
       return new Response(JSON.stringify(match), {
