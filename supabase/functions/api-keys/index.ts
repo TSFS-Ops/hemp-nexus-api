@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException, handleDatabaseError } from '../_shared/errors.ts';
-import { authenticateRequest } from '../_shared/auth.ts';
+import { authenticateRequest, hashApiKey } from '../_shared/auth.ts';
 import { apiKeyCreateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
       // Generate a random API key
       const apiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
-      const keyHash = await hashKey(apiKey);
+      const keyHash = await hashApiKey(apiKey);
 
       const { data, error } = await supabase
         .from('api_keys')
@@ -120,11 +120,3 @@ Deno.serve(async (req) => {
     return errorResponse(error as Error, requestId, headers);
   }
 });
-
-async function hashKey(key: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(key);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}

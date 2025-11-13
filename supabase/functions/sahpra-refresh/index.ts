@@ -5,6 +5,18 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 Deno.serve(async (req) => {
   try {
+    // Authenticate: only allow requests with service role key
+    const authHeader = req.headers.get('authorization');
+    const providedKey = authHeader?.replace('Bearer ', '');
+    
+    if (providedKey !== SUPABASE_SERVICE_ROLE_KEY) {
+      console.log('[SAHPRA-REFRESH] Unauthorized request rejected');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
     console.log('[SAHPRA-REFRESH] Starting daily SAHPRA cache refresh');
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
