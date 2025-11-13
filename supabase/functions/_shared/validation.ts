@@ -19,8 +19,8 @@ export const matchSchema = z.object({
     amount: z.number().positive(),
     currency: z.string().length(3),
   }),
-  terms: z.string().max(1000).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  terms: z.string().trim().min(1).max(1000), // Key commercial terms - required
+  metadata: z.record(z.unknown()).optional(), // Optional minimal extra data
 });
 
 // Signal endpoint validation
