@@ -1,29 +1,60 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { webSearchSchema, validateInput } from "../_shared/validation.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { errorResponse, ApiException } from "../_shared/errors.ts";
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS') || '*';
+  const origin = req.headers.get('origin');
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
+    // Handle CORS preflight
+    const corsResponse = handleCors(req, allowedOrigins);
+    if (corsResponse) return corsResponse;
+
+    // Authenticate request
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    
+    // Require signals:read scope for API keys
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, 'signals:read');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Simple rate limiting: Check recent AI searches for this org
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count: recentSearches } = await supabase
+      .from('audit_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', authCtx.orgId)
+      .eq('action', 'ai.web_search')
+      .gte('created_at', fiveMinutesAgo);
+
+    if (recentSearches && recentSearches >= 10) {
+      throw new ApiException(
+        'RATE_LIMIT_EXCEEDED',
+        'Too many AI searches. Please wait a few minutes.',
+        429
+      );
+    }
+
     const rawBody = await req.json();
     
     let validatedData;
     try {
       validatedData = validateInput(webSearchSchema, rawBody);
     } catch (error) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: error instanceof Error ? error.message : "Invalid input"
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      throw new ApiException(
+        'VALIDATION_ERROR',
+        error instanceof Error ? error.message : 'Invalid input',
+        400
       );
     }
 
@@ -31,20 +62,35 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+      throw new ApiException('CONFIGURATION_ERROR', 'LOVABLE_API_KEY not configured', 500);
     }
 
-    console.log(`[web-search] Searching for ${searchType} based on signal:`, signal.content);
+    console.log(`[${requestId}] Searching for ${searchType} based on signal:`, signal.content);
+    
+    // Log AI usage to audit trail
+    await supabase.from('audit_logs').insert({
+      org_id: authCtx.orgId,
+      actor_user_id: authCtx.userId || null,
+      action: 'ai.web_search',
+      entity_type: 'signal',
+      entity_id: null,
+      metadata: {
+        searchType,
+        product: signal.content.what || signal.content.product,
+        location: signal.content.where || signal.content.location,
+        requestId
+      }
+    });
 
     // Construct search queries based on signal content
     const queries = generateSearchQueries(signal, searchType);
-    console.log(`[web-search] Generated ${queries.length} search queries:`, queries);
+    console.log(`[${requestId}] Generated ${queries.length} search queries:`, queries);
 
     const allResults: any[] = [];
 
     // Execute searches and use AI to parse results
     for (const query of queries) {
-      console.log(`[web-search] Executing query: "${query}"`);
+      console.log(`[${requestId}] Executing query: "${query}"`);
       
       // Use AI to search and parse web results
       const searchPrompt = `Search the web for: "${query}"
@@ -121,7 +167,13 @@ Format each result as JSON:
       });
 
       if (!aiResponse.ok) {
-        console.error(`[web-search] AI search failed: ${aiResponse.status}`);
+        console.error(`[${requestId}] AI search failed: ${aiResponse.status}`);
+        if (aiResponse.status === 429) {
+          throw new ApiException('AI_RATE_LIMIT', 'AI service rate limit exceeded', 429);
+        }
+        if (aiResponse.status === 402) {
+          throw new ApiException('AI_PAYMENT_REQUIRED', 'AI service credits exhausted', 402);
+        }
         continue;
       }
 
@@ -131,7 +183,7 @@ Format each result as JSON:
       if (toolCall?.function?.arguments) {
         const parsed = JSON.parse(toolCall.function.arguments);
         if (parsed.results && Array.isArray(parsed.results)) {
-          console.log(`[web-search] Found ${parsed.results.length} results for query: "${query}"`);
+          console.log(`[${requestId}] Found ${parsed.results.length} results for query: "${query}"`);
           allResults.push(...parsed.results);
         }
       }
@@ -141,7 +193,7 @@ Format each result as JSON:
     const uniqueResults = deduplicateResults(allResults);
     const rankedResults = rankResults(uniqueResults, signal);
 
-    console.log(`[web-search] Total unique results: ${uniqueResults.length}, Top ranked: ${rankedResults.length}`);
+    console.log(`[${requestId}] Total unique results: ${uniqueResults.length}, Top ranked: ${rankedResults.length}`);
 
     return new Response(
       JSON.stringify({
@@ -149,23 +201,14 @@ Format each result as JSON:
         query: signal.content,
         resultsCount: rankedResults.length,
         results: rankedResults,
-        searchQueries: queries
+        searchQueries: queries,
+        requestId
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...headers, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("[web-search] Error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error"
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      }
-    );
+    return errorResponse(error as Error, requestId, headers);
   }
 });
 
