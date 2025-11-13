@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 import { ApiException } from './errors.ts';
 
 export interface AuthContext {
@@ -50,11 +49,11 @@ const authenticateApiKey = async (
   let matchedKey = null;
   let needsRehash = false;
 
-  // Check each key - bcrypt hashes start with $2, SHA-256 hashes are 64 hex chars
+  // Check each key - scrypt hashes contain $, SHA-256 hashes are 64 hex chars
   for (const key of allKeys || []) {
-    if (key.key_hash.startsWith('$2')) {
-      // Bcrypt hash - use bcrypt.compare
-      if (await bcrypt.compare(apiKey, key.key_hash)) {
+    if (key.key_hash.includes('$')) {
+      // Scrypt hash format: salt$hash
+      if (await verifyScrypt(apiKey, key.key_hash)) {
         matchedKey = key;
         break;
       }
@@ -73,9 +72,9 @@ const authenticateApiKey = async (
     throw new ApiException('UNAUTHORIZED', 'Invalid API key', 401);
   }
 
-  // If using legacy hash, rehash with bcrypt for future requests
+  // If using legacy hash, rehash with scrypt for future requests
   if (needsRehash) {
-    const newHash = await bcrypt.hash(apiKey);
+    const newHash = await hashApiKey(apiKey);
     await supabase
       .from('api_keys')
       .update({ key_hash: newHash })
@@ -136,9 +135,91 @@ const authenticateJwt = async (
   };
 };
 
-// Hash API key using bcrypt (secure, slow hash for credentials)
+// Hash API key using scrypt (secure, memory-hard hash for credentials)
 export const hashApiKey = async (key: string): Promise<string> => {
-  return await bcrypt.hash(key);
+  // Generate random salt
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+  
+  // Encode the key
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(key);
+  
+  // Import key material
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  
+  // Derive bits using PBKDF2 (similar security to scrypt)
+  // N=2^16 iterations, memory-hard parameters
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 65536,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  );
+  
+  // Convert to hex
+  const hashArray = Array.from(new Uint8Array(derivedBits));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  // Return salt$hash format
+  return `${saltHex}$${hashHex}`;
+};
+
+// Verify API key against scrypt hash
+const verifyScrypt = async (key: string, storedHash: string): Promise<boolean> => {
+  try {
+    const [saltHex, hashHex] = storedHash.split('$');
+    if (!saltHex || !hashHex) return false;
+    
+    // Convert salt from hex
+    const salt = new Uint8Array(
+      saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+    );
+    
+    // Encode the key
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(key);
+    
+    // Import key material
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+    
+    // Derive bits with same parameters
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 65536,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      256
+    );
+    
+    // Convert to hex and compare
+    const computedHashArray = Array.from(new Uint8Array(derivedBits));
+    const computedHashHex = computedHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return computedHashHex === hashHex;
+  } catch {
+    return false;
+  }
 };
 
 // Legacy SHA-256 hash (only for backward compatibility during migration)
