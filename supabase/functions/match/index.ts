@@ -67,6 +67,20 @@ Deno.serve(async (req) => {
 
       if (updateError) handleDatabaseError(updateError, requestId);
 
+      // Create audit log for settlement
+      await supabase.from("audit_logs").insert({
+        org_id: match.org_id,
+        actor_user_id: authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: "match.settled",
+        entity_type: "match",
+        entity_id: matchId,
+        metadata: {
+          settled_at: updated.settled_at,
+          hash: match.hash
+        }
+      });
+
       console.log(`[${requestId}] Match settled successfully`);
       return new Response(JSON.stringify(updated), {
         status: 200,
@@ -194,6 +208,24 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertError) handleDatabaseError(insertError, requestId);
+
+      // Create audit log for match creation
+      await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        actor_user_id: authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: "match.created",
+        entity_type: "match",
+        entity_id: match.id,
+        metadata: {
+          commodity: body.commodity,
+          buyer_id: body.buyer.id,
+          seller_id: body.seller.id,
+          quantity: body.quantity,
+          price: body.price,
+          hash
+        }
+      });
 
       console.log(`[${requestId}] Match created: ${match.id}`);
       return new Response(JSON.stringify(match), {
