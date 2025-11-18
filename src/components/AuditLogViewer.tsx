@@ -53,8 +53,8 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     try {
       const params = new URLSearchParams();
       params.append("limit", limit);
-      if (action) params.append("action", action);
-      if (entityType) params.append("entity_type", entityType);
+      if (action && action !== "all") params.append("action", action);
+      if (entityType && entityType !== "all") params.append("entity_type", entityType);
       if (entityId) params.append("entity_id", entityId);
       if (startDate) params.append("start_date", new Date(startDate).toISOString());
 
@@ -114,7 +114,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                 <SelectValue placeholder="All actions" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All actions</SelectItem>
+                <SelectItem value="all">All actions</SelectItem>
                 <SelectItem value="match.created">match.created</SelectItem>
                 <SelectItem value="match.settled">match.settled</SelectItem>
                 <SelectItem value="signal.created">signal.created</SelectItem>
@@ -131,7 +131,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="all">All types</SelectItem>
                 <SelectItem value="match">match</SelectItem>
                 <SelectItem value="signal">signal</SelectItem>
                 <SelectItem value="api_key">api_key</SelectItem>
