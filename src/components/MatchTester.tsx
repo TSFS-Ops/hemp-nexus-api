@@ -31,7 +31,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
   const [terms, setTerms] = useState("Delivery within 30 days, payment on delivery");
   const [metadata, setMetadata] = useState('{"region":"EU-Africa","channel":"Test Dashboard"}');
 
-  const BASE_URL = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
+  const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
