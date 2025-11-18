@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
 import MatchTester from "@/components/MatchTester";
+import AuditLogViewer from "@/components/AuditLogViewer";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -381,6 +382,8 @@ export default function Dashboard() {
         <MatchTester apiKey={testingKey} />
         
         <SignalTester apiKey={testingKey} />
+
+        <AuditLogViewer apiKey={testingKey} />
       </div>
     </div>
   );
