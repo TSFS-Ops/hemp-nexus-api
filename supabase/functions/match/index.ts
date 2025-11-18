@@ -316,6 +316,24 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] Match created: ${match.id}`);
+      
+      // Store idempotency key if provided
+      if (idempotencyKey) {
+        console.log(`[${requestId}] Storing idempotency key mapping`);
+        try {
+          await supabase.from("idempotency_keys").insert({
+            org_id: authCtx.orgId,
+            idempotency_key: idempotencyKey,
+            endpoint: "POST /match",
+            request_hash: hash,
+            response_data: match,
+            response_status_code: 201
+          });
+        } catch (keyError) {
+          console.error(`[${requestId}] Failed to store idempotency key:`, keyError);
+        }
+      }
+
       return new Response(JSON.stringify(match), {
         status: 201,
         headers: { ...headers, "Content-Type": "application/json" },
