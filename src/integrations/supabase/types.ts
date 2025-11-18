@@ -278,6 +278,50 @@ export type Database = {
           },
         ]
       }
+      idempotency_keys: {
+        Row: {
+          created_at: string
+          endpoint: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          org_id: string
+          request_hash: string
+          response_data: Json
+          response_status_code: number
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          expires_at?: string
+          id?: string
+          idempotency_key: string
+          org_id: string
+          request_hash: string
+          response_data: Json
+          response_status_code: number
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string
+          org_id?: string
+          request_hash?: string
+          response_data?: Json
+          response_status_code?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idempotency_keys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           buyer_id: string
@@ -713,6 +757,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

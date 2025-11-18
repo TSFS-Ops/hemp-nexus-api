@@ -155,6 +155,33 @@ Deno.serve(async (req) => {
     if (req.method === "POST" && !matchId) {
       console.log(`[${requestId}] POST /match`);
 
+      // Check for idempotency key
+      const idempotencyKey = req.headers.get("idempotency-key");
+      
+      if (idempotencyKey) {
+        // Check if this idempotency key was already processed
+        const { data: existingKey, error: keyError } = await supabase
+          .from("idempotency_keys")
+          .select("*")
+          .eq("org_id", authCtx.orgId)
+          .eq("idempotency_key", idempotencyKey)
+          .eq("endpoint", "POST /match")
+          .gt("expires_at", new Date().toISOString())
+          .maybeSingle();
+
+        if (keyError) {
+          console.error(`[${requestId}] Error checking idempotency key:`, keyError);
+        }
+
+        if (existingKey) {
+          console.log(`[${requestId}] Returning cached response for idempotency key`);
+          return new Response(JSON.stringify(existingKey.response_data), {
+            status: existingKey.response_status_code,
+            headers: { ...headers, "Content-Type": "application/json", "X-Idempotent-Replay": "true" },
+          });
+        }
+      }
+
       const rawBody = await req.json();
       
       // Validate input with zod schema
@@ -187,6 +214,43 @@ Deno.serve(async (req) => {
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // Check for hash collision (duplicate match detection)
+      const { data: existingMatch, error: hashCheckError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("org_id", authCtx.orgId)
+        .eq("hash", hash)
+        .maybeSingle();
+
+      if (hashCheckError) {
+        console.error(`[${requestId}] Error checking hash collision:`, hashCheckError);
+      }
+
+      if (existingMatch) {
+        console.log(`[${requestId}] Hash collision detected - returning existing match`);
+        
+        // Store idempotency key if provided
+        if (idempotencyKey) {
+          try {
+            await supabase.from("idempotency_keys").insert({
+              org_id: authCtx.orgId,
+              idempotency_key: idempotencyKey,
+              endpoint: "POST /match",
+              request_hash: hash,
+              response_data: existingMatch,
+              response_status_code: 200,
+            });
+          } catch (keyError) {
+            console.error(`[${requestId}] Failed to store idempotency key:`, keyError);
+          }
+        }
+
+        return new Response(JSON.stringify(existingMatch), {
+          status: 200,
+          headers: { ...headers, "Content-Type": "application/json", "X-Match-Duplicate": "true" },
+        });
+      }
 
       // Insert match
       const { data: match, error: insertError } = await supabase
@@ -233,6 +297,22 @@ Deno.serve(async (req) => {
         });
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
+      }
+
+      // Store idempotency key if provided (non-blocking)
+      if (idempotencyKey) {
+        try {
+          await supabase.from("idempotency_keys").insert({
+            org_id: authCtx.orgId,
+            idempotency_key: idempotencyKey,
+            endpoint: "POST /match",
+            request_hash: hash,
+            response_data: match,
+            response_status_code: 201,
+          });
+        } catch (keyError) {
+          console.error(`[${requestId}] Failed to store idempotency key:`, keyError);
+        }
       }
 
       console.log(`[${requestId}] Match created: ${match.id}`);
