@@ -30,6 +30,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
   const [priceCurrency, setPriceCurrency] = useState("EUR");
   const [terms, setTerms] = useState("Delivery within 30 days, payment on delivery");
   const [metadata, setMetadata] = useState('{"region":"EU-Africa","channel":"Test Dashboard"}');
+  const [idempotencyKey, setIdempotencyKey] = useState("");
 
   const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -70,6 +71,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
         headers: {
           "X-API-Key": apiKey,
           "Content-Type": "application/json",
+          ...(idempotencyKey && { "Idempotency-Key": idempotencyKey }),
         },
         body: JSON.stringify({
           buyer: { id: buyerId, name: buyerName },
@@ -90,9 +92,18 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
 
       setResult(data);
       setMatchId(data.id);
+      
+      // Check for idempotency or duplicate headers
+      const isIdempotentReplay = response.headers.get("X-Idempotent-Replay") === "true";
+      const isHashDuplicate = response.headers.get("X-Match-Duplicate") === "true";
+      
       toast({
-        title: "Match Created!",
-        description: `Match ID: ${data.id}`,
+        title: isIdempotentReplay ? "Match Returned (Idempotent)" : isHashDuplicate ? "Match Already Exists" : "Match Created!",
+        description: isIdempotentReplay 
+          ? `Returned cached match: ${data.id}` 
+          : isHashDuplicate 
+            ? `Hash collision detected. Existing match: ${data.id}`
+            : `Match ID: ${data.id}`,
       });
     } catch (error: any) {
       toast({
@@ -379,6 +390,19 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
                 onChange={(e) => setMetadata(e.target.value)}
                 rows={2}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="idempotencyKey">Idempotency Key (Optional)</Label>
+              <Input
+                id="idempotencyKey"
+                value={idempotencyKey}
+                onChange={(e) => setIdempotencyKey(e.target.value)}
+                placeholder="e.g., unique-request-123"
+              />
+              <p className="text-xs text-muted-foreground">
+                Provide the same key to test idempotency. Duplicate requests will return cached results.
+              </p>
             </div>
 
             <Button onClick={handleCreateMatch} disabled={loading} className="w-full">
