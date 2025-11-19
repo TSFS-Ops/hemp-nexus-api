@@ -140,6 +140,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    // GET /:id/status - Get signal status and progress
+    if (req.method === "GET" && parts.length === 2 && parts[1] === "status") {
+      const signalId = parts[0];
+
+      const { data: signal, error: signalError } = await supabase
+        .from("signals")
+        .select("id, status, type, created_at, expires_at, updated_at")
+        .eq("id", signalId)
+        .eq("org_id", authCtx.orgId)
+        .single();
+
+      if (signalError) throw signalError;
+
+      const { count: optionsCount } = await supabase
+        .from("options")
+        .select("*", { count: "exact", head: true })
+        .eq("signal_id", signalId);
+
+      const isSearchComplete = signal.status !== "active";
+
+      return new Response(
+        JSON.stringify({
+          signalId: signal.id,
+          status: signal.status,
+          type: signal.type,
+          createdAt: signal.created_at,
+          expiresAt: signal.expires_at,
+          updatedAt: signal.updated_at,
+          optionsCount: optionsCount || 0,
+          searchComplete: isSearchComplete,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...headers },
+        }
+      );
+    }
+
     // GET /:id - Get signal with options
     if (req.method === "GET" && parts.length === 1) {
       const signalId = parts[0];
