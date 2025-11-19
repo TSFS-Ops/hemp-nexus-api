@@ -49,6 +49,15 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
+      // Verify match belongs to authenticated user's organization
+      if (match.org_id !== authCtx.orgId) {
+        throw new ApiException(
+          "FORBIDDEN", 
+          "You do not have permission to settle this match", 
+          403
+        );
+      }
+
       // If already settled, return as-is (idempotent)
       if (match.status === "settled") {
         console.log(`[${requestId}] Match already settled`);
@@ -108,6 +117,15 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
+      // Verify match belongs to authenticated user's organization
+      if (match.org_id !== authCtx.orgId) {
+        throw new ApiException(
+          "FORBIDDEN", 
+          "You do not have permission to access this match", 
+          403
+        );
+      }
+
       return new Response(JSON.stringify(match), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
@@ -127,6 +145,7 @@ Deno.serve(async (req) => {
       let query = supabase
         .from("matches")
         .select("*", { count: "exact" })
+        .eq("org_id", authCtx.orgId) // Only return matches for user's org
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
