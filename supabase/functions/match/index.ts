@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { matchSchema, validateInput } from "../_shared/validation.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -33,6 +34,9 @@ Deno.serve(async (req) => {
     // Authenticate
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireScope(authCtx, 'match');
+
+    // Rate limiting
+    await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'match', 'match');
 
     // Route: POST /match/:id/settle
     if (req.method === "POST" && matchId && action === "settle") {

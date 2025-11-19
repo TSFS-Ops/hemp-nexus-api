@@ -539,6 +539,57 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          org_id: string
+          request_count: number
+          updated_at: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          org_id: string
+          request_count?: number
+          updated_at?: string
+          window_end: string
+          window_start?: string
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          org_id?: string
+          request_count?: number
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_limits_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rate_limits_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sahpra_licenses: {
         Row: {
           company_name: string
@@ -758,6 +809,7 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
+      cleanup_expired_rate_limits: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

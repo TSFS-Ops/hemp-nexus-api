@@ -51,9 +51,20 @@ export const errorResponse = (
       details: error.details,
       requestId,
     };
+    
+    const responseHeaders: Record<string, string> = { 
+      'Content-Type': 'application/json', 
+      ...headers 
+    };
+    
+    // Add Retry-After header for rate limit errors
+    if (error.statusCode === 429 && error.details?.retryAfter) {
+      responseHeaders['Retry-After'] = error.details.retryAfter.toString();
+    }
+    
     return new Response(JSON.stringify(body), {
       status: error.statusCode,
-      headers: { 'Content-Type': 'application/json', ...headers },
+      headers: responseHeaders,
     });
   }
 
