@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 import { updateSahpraCache, verifySahpra } from '../_shared/sahpra.ts';
-import { authenticateRequest } from '../_shared/auth.ts';
+import { authenticateRequest, requireScope } from '../_shared/auth.ts';
 import { sahpraVerifySchema, validateInput } from '../_shared/validation.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -31,7 +31,8 @@ Deno.serve(async (req) => {
     // POST /v1/verify/sahpra - Verify company
     if (req.method === 'POST' && path.includes('v1') && path.includes('verify') && path.includes('sahpra')) {
       // Authenticate request
-      const authError = await authenticateRequest(req, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const authCtx = await authenticateRequest(req, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      requireScope(authCtx, 'sahpra');
       
       const rawBody = await req.json();
       
