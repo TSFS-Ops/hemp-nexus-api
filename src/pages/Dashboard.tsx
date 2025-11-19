@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut, Trash2 } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
@@ -36,6 +36,7 @@ export default function Dashboard() {
   const [selectedScopes, setSelectedScopes] = useState<string[]>(["signals:write", "signals:read"]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
   const [testingKey, setTestingKey] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -110,6 +111,7 @@ export default function Dashboard() {
       if (error) throw error;
 
       setNewKey(data.key);
+      setShowKey(true); // Show key by default when created
       setTestingKey(data.key); // Keep for testing
       setKeyName("");
       toast({
@@ -221,13 +223,27 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
-                <Input value={newKey} readOnly className="font-mono" />
+                <Input 
+                  value={showKey ? newKey : `${"•".repeat(newKey.length - 4)}${newKey.slice(-4)}`} 
+                  readOnly 
+                  className="font-mono" 
+                />
+                <Button 
+                  onClick={() => setShowKey(!showKey)} 
+                  size="icon"
+                  variant="outline"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
                 <Button onClick={() => copyToClipboard(newKey)} size="icon">
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
               <Button 
-                onClick={() => setNewKey(null)} 
+                onClick={() => {
+                  setNewKey(null);
+                  setShowKey(false);
+                }} 
                 variant="outline" 
                 className="mt-4 w-full"
               >
