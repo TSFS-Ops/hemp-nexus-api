@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException, handleDatabaseError } from '../_shared/errors.ts';
-import { authenticateRequest, hashApiKey } from '../_shared/auth.ts';
+import { authenticateRequest, hashApiKey, requireScope } from '../_shared/auth.ts';
 import { apiKeyCreateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
@@ -19,6 +19,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    requireScope(authCtx, 'api_keys');
+    
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
 

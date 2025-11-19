@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException, handleDatabaseError } from '../_shared/errors.ts';
-import { authenticateRequest, requireRole } from '../_shared/auth.ts';
+import { authenticateRequest, requireRole, requireScope } from '../_shared/auth.ts';
 import { orgCreateSchema, orgUpdateSchema, validateInput } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireRole(authCtx, 'admin'); // Only admins can manage orgs
+    requireScope(authCtx, 'orgs');
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);

@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
-import { authenticateRequest } from "../_shared/auth.ts";
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { verifySahpraForOrg } from "../_shared/sahpra.ts";
 import { searchDataSources } from "../_shared/data-sources.ts";
 import { recordSelection } from "../_shared/performance.ts";
@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    requireScope(authCtx, 'signals');
 
     // POST / - Create new signal and trigger search
     if (req.method === "POST" && parts.length === 0) {
