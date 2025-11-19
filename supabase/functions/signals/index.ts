@@ -6,6 +6,7 @@ import { verifySahpraForOrg } from "../_shared/sahpra.ts";
 import { searchDataSources } from "../_shared/data-sources.ts";
 import { recordSelection } from "../_shared/performance.ts";
 import { signalSchema, signalSelectSchema, validateInput } from "../_shared/validation.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -32,6 +33,9 @@ Deno.serve(async (req) => {
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireScope(authCtx, 'signals');
+
+    // Rate limiting
+    await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'signals', 'signals:write');
 
     // POST / - Create new signal and trigger search
     if (req.method === "POST" && parts.length === 0) {
