@@ -7,6 +7,7 @@ import { searchDataSources } from "../_shared/data-sources.ts";
 import { recordSelection } from "../_shared/performance.ts";
 import { signalSchema, signalSelectSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { triggerWebhooks } from "../_shared/webhooks.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -106,6 +107,15 @@ Deno.serve(async (req) => {
         entity_id: signal.id,
         metadata: { product, quantity, unit },
       });
+
+      // Trigger webhooks in background (fire and forget)
+      triggerWebhooks(supabase, authCtx.orgId, "signal.created", {
+        signalId: signal.id,
+        product,
+        quantity,
+        unit,
+        status: signal.status,
+      }).catch(err => console.error(`Webhook trigger error:`, err));
 
       return new Response(
         JSON.stringify({
@@ -282,6 +292,15 @@ Deno.serve(async (req) => {
 
       // Record selection for performance tracking
       await recordSelection(supabase, signalId, option_id);
+
+      // Trigger webhooks in background
+      triggerWebhooks(supabase, authCtx.orgId, "option.selected", {
+        signalId,
+        optionId: option_id,
+        selectionId: selection.id,
+        dataSourceType: option.data_source.type,
+        sourceLink: option.source_link,
+      }).catch(err => console.error(`Webhook trigger error:`, err));
 
       return new Response(
         JSON.stringify({

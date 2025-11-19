@@ -4,6 +4,7 @@ import { errorResponse, ApiException, handleDatabaseError } from "../_shared/err
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { matchSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { triggerWebhooks } from "../_shared/webhooks.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -100,6 +101,16 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] Match settled successfully`);
+      
+      // Trigger webhooks in background
+      triggerWebhooks(supabase, match.org_id, "match.settled", {
+        matchId,
+        hash: match.hash,
+        settledAt: updated.settled_at,
+        commodity: match.commodity,
+        quantity: match.quantity_amount,
+      }).catch(err => console.error(`Webhook trigger error:`, err));
+
       return new Response(JSON.stringify(updated), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
@@ -341,22 +352,16 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Match created: ${match.id}`);
       
-      // Store idempotency key if provided
-      if (idempotencyKey) {
-        console.log(`[${requestId}] Storing idempotency key mapping`);
-        try {
-          await supabase.from("idempotency_keys").insert({
-            org_id: authCtx.orgId,
-            idempotency_key: idempotencyKey,
-            endpoint: "POST /match",
-            request_hash: hash,
-            response_data: match,
-            response_status_code: 201
-          });
-        } catch (keyError) {
-          console.error(`[${requestId}] Failed to store idempotency key:`, keyError);
-        }
-      }
+      // Trigger webhooks in background
+      triggerWebhooks(supabase, authCtx.orgId, "match.created", {
+        matchId: match.id,
+        commodity: body.commodity,
+        buyer: body.buyer,
+        seller: body.seller,
+        quantity: body.quantity,
+        price: body.price,
+        hash,
+      }).catch(err => console.error(`Webhook trigger error:`, err));
 
       return new Response(JSON.stringify(match), {
         status: 201,

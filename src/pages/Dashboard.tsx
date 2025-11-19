@@ -52,6 +52,8 @@ export default function Dashboard() {
     "data-sources:read",
     "consents:write",
     "consents:read",
+    "webhooks:write",
+    "webhooks:read",
   ];
 
   useEffect(() => {
