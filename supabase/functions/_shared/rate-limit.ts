@@ -92,41 +92,30 @@ async function incrementRateLimit(
   endpoint: string,
   windowEnd: Date
 ): Promise<number> {
-  const { data, error } = await supabase
+  // Fetch current count first
+  const { data: current } = await supabase
     .from("rate_limits")
-    .update({
-      request_count: supabase.rpc("increment_rate_limit_count") as any, // PostgreSQL will handle the increment
-    })
+    .select("request_count")
     .eq("org_id", orgId)
     .eq("endpoint", endpoint)
     .eq("window_end", windowEnd.toISOString())
-    .select("request_count")
     .single();
+
+  const newCount = (current?.request_count || 0) + 1;
+  
+  // Update with incremented count
+  const { error } = await supabase
+    .from("rate_limits")
+    .update({ request_count: newCount })
+    .eq("org_id", orgId)
+    .eq("endpoint", endpoint)
+    .eq("window_end", windowEnd.toISOString());
 
   if (error) {
     console.error("Error incrementing rate limit:", error);
-    // Fallback: just increment manually
-    const { data: current } = await supabase
-      .from("rate_limits")
-      .select("request_count")
-      .eq("org_id", orgId)
-      .eq("endpoint", endpoint)
-      .eq("window_end", windowEnd.toISOString())
-      .single();
-
-    const newCount = (current?.request_count || 0) + 1;
-    
-    await supabase
-      .from("rate_limits")
-      .update({ request_count: newCount })
-      .eq("org_id", orgId)
-      .eq("endpoint", endpoint)
-      .eq("window_end", windowEnd.toISOString());
-
-    return newCount;
   }
 
-  return data?.request_count || 1;
+  return newCount;
 }
 
 export async function checkRateLimit(
