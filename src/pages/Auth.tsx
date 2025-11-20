@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { z } from "zod";
-import { Loader2, Mail, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, AlertCircle, CheckCircle2, ArrowLeft, Shield } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -396,9 +396,13 @@ export default function Auth() {
           )}
 
           <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="admin" className="text-primary">
+                <Shield className="h-3 w-3 mr-1" />
+                Admin
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
@@ -449,12 +453,74 @@ export default function Auth() {
               </form>
             </TabsContent>
             
+            <TabsContent value="admin">
+              <Alert className="mb-4 border-primary">
+                <Shield className="h-4 w-4 text-primary" />
+                <AlertDescription>
+                  <strong>Izenzo Administrator Access</strong><br />
+                  This login is exclusively for Izenzo staff with @izenzo.co.za email addresses.
+                </AlertDescription>
+              </Alert>
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-email">Izenzo Email</Label>
+                  <Input
+                    id="admin-email"
+                    type="email"
+                    placeholder="admin@izenzo.co.za"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Must be an @izenzo.co.za email address
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="admin-password">Password</Label>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-sm"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                  <Input
+                    id="admin-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Sign In
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+            
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <Alert>
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertDescription>
-                    Create an account to access API keys and test endpoints
+                    Create an account to access API keys and test endpoints.
+                    {" "}Accounts with @izenzo.co.za emails are automatically granted admin privileges.
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-2">
