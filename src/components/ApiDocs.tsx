@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Code, Book, Shield, Zap, Webhook, AlertCircle } from "lucide-react";
+import ApiPlayground from "./ApiPlayground";
 
 export default function ApiDocs() {
   const baseUrl = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
@@ -21,14 +22,20 @@ export default function ApiDocs() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="authentication" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+          <Tabs defaultValue="playground" className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="playground">Playground</TabsTrigger>
               <TabsTrigger value="authentication">Auth</TabsTrigger>
               <TabsTrigger value="signals">Signals</TabsTrigger>
               <TabsTrigger value="match">Matches</TabsTrigger>
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
               <TabsTrigger value="errors">Errors</TabsTrigger>
             </TabsList>
+
+            {/* Playground Tab */}
+            <TabsContent value="playground" className="mt-6">
+              <ApiPlayground />
+            </TabsContent>
 
             {/* Authentication Tab */}
             <TabsContent value="authentication" className="space-y-6 mt-6">
