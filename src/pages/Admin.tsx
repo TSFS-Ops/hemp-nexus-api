@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Building2, ArrowLeft } from "lucide-react";
+import { Shield, Users, Building2, ArrowLeft, BarChart3 } from "lucide-react";
 import UsersManagement from "@/components/admin/UsersManagement";
 import OrgsManagement from "@/components/admin/OrgsManagement";
+import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -93,8 +94,12 @@ export default function Admin() {
           </div>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <Tabs defaultValue="analytics" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Users
@@ -104,6 +109,10 @@ export default function Admin() {
               Organizations
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics">
+            <SystemAnalytics />
+          </TabsContent>
 
           <TabsContent value="users">
             <UsersManagement />
