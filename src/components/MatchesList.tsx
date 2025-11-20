@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,10 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Eye } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Search, Eye, Download, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Match = Tables<"matches">;
 
@@ -19,6 +31,9 @@ export function MatchesList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [commoditySearch, setCommoditySearch] = useState("");
   const [sortBy, setSortBy] = useState<"created_at" | "commodity">("created_at");
+  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(new Set());
+  const [isSettling, setIsSettling] = useState(false);
+  const [showSettleDialog, setShowSettleDialog] = useState(false);
 
   const { data: matches, isLoading, refetch } = useQuery({
     queryKey: ["matches", statusFilter, commoditySearch, sortBy],
@@ -42,6 +57,34 @@ export function MatchesList() {
     },
   });
 
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('matches-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches'
+        },
+        (payload) => {
+          console.log('Match change detected:', payload);
+          refetch();
+          if (payload.eventType === 'INSERT') {
+            toast.success('New match created');
+          } else if (payload.eventType === 'UPDATE') {
+            toast.info('Match updated');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
+
   const getStatusBadge = (status: string) => {
     return status === "settled" ? (
       <Badge variant="default">Settled</Badge>
@@ -50,13 +93,156 @@ export function MatchesList() {
     );
   };
 
+  const toggleMatchSelection = (matchId: string) => {
+    setSelectedMatches((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(matchId)) {
+        newSet.delete(matchId);
+      } else {
+        newSet.add(matchId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!matches) return;
+    const unsettledMatches = matches.filter(m => m.status === "matched");
+    if (selectedMatches.size === unsettledMatches.length && unsettledMatches.length > 0) {
+      setSelectedMatches(new Set());
+    } else {
+      setSelectedMatches(new Set(unsettledMatches.map(m => m.id)));
+    }
+  };
+
+  const handleBulkSettle = async () => {
+    setIsSettling(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("You must be logged in");
+        return;
+      }
+
+      const settlePromises = Array.from(selectedMatches).map((matchId) =>
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        })
+      );
+
+      const results = await Promise.allSettled(settlePromises);
+      const succeeded = results.filter(r => r.status === "fulfilled").length;
+      const failed = results.filter(r => r.status === "rejected").length;
+
+      if (succeeded > 0) {
+        toast.success(`Successfully settled ${succeeded} match${succeeded > 1 ? 'es' : ''}`);
+      }
+      if (failed > 0) {
+        toast.error(`Failed to settle ${failed} match${failed > 1 ? 'es' : ''}`);
+      }
+
+      setSelectedMatches(new Set());
+      setShowSettleDialog(false);
+      refetch();
+    } catch (error: any) {
+      console.error("Error settling matches:", error);
+      toast.error("Failed to settle matches");
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    if (!matches || matches.length === 0) {
+      toast.error("No matches to export");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Commodity",
+      "Buyer ID",
+      "Buyer Name",
+      "Seller ID",
+      "Seller Name",
+      "Quantity",
+      "Unit",
+      "Price",
+      "Currency",
+      "Status",
+      "Created At",
+      "Settled At",
+      "Hash",
+    ];
+
+    const rows = matches.map(m => [
+      m.id,
+      m.commodity,
+      m.buyer_id,
+      m.buyer_name,
+      m.seller_id,
+      m.seller_name,
+      m.quantity_amount,
+      m.quantity_unit,
+      m.price_amount,
+      m.price_currency,
+      m.status,
+      m.created_at,
+      m.settled_at || "",
+      m.hash,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `matches-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully");
+  };
+
+  const unsettledMatches = matches?.filter(m => m.status === "matched") || [];
+  const allUnsettledSelected = unsettledMatches.length > 0 && selectedMatches.size === unsettledMatches.length;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Matches</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Matches</CardTitle>
+            <div className="flex gap-2">
+              {selectedMatches.size > 0 && (
+                <Button
+                  onClick={() => setShowSettleDialog(true)}
+                  disabled={isSettling}
+                >
+                  {isSettling ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                  )}
+                  Settle {selectedMatches.size} Match{selectedMatches.size > 1 ? 'es' : ''}
+                </Button>
+              )}
+              <Button variant="outline" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -96,6 +282,13 @@ export function MatchesList() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={allUnsettledSelected}
+                      onCheckedChange={toggleSelectAll}
+                      disabled={unsettledMatches.length === 0}
+                    />
+                  </TableHead>
                   <TableHead>Commodity</TableHead>
                   <TableHead>Buyer</TableHead>
                   <TableHead>Seller</TableHead>
@@ -109,6 +302,13 @@ export function MatchesList() {
               <TableBody>
                 {matches.map((match) => (
                   <TableRow key={match.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedMatches.has(match.id)}
+                        onCheckedChange={() => toggleMatchSelection(match.id)}
+                        disabled={match.status === "settled"}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{match.commodity}</TableCell>
                     <TableCell>{match.buyer_name}</TableCell>
                     <TableCell>{match.seller_name}</TableCell>
@@ -140,7 +340,33 @@ export function MatchesList() {
             No matches found. Try adjusting your filters.
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={showSettleDialog} onOpenChange={setShowSettleDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Settle Multiple Matches</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to settle {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}? 
+              This action will mark them as settled and trigger webhook notifications.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSettling}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkSettle} disabled={isSettling}>
+              {isSettling ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Settling...
+                </>
+              ) : (
+                'Settle Matches'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
