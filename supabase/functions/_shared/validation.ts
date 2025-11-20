@@ -46,7 +46,7 @@ export const signalSelectSchema = z.object({
 export const apiKeyCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
   scopes: z.array(z.string().max(50)).optional(),
-  expires_at: z.string().datetime().optional(),
+  expires_at: z.string().datetime().nullish(), // Accept null, undefined, or valid datetime string
 });
 
 // Consent endpoint validation

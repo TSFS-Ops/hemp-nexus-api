@@ -18,6 +18,7 @@ import ApiAnalytics from "@/components/ApiAnalytics";
 import WebhookDeliveryLogs from "@/components/WebhookDeliveryLogs";
 import HashVerifier from "@/components/HashVerifier";
 import CronSetupInstructions from "@/components/CronSetupInstructions";
+import ComprehensiveApiTests from "@/components/ComprehensiveApiTests";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -520,12 +521,12 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">API Reference</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Comprehensive API Tests</h1>
               <p className="text-muted-foreground">
-                Complete endpoint documentation with live examples
+                Run automated tests across all API endpoints to verify functionality
               </p>
             </div>
-            <ApiDocs />
+            <ComprehensiveApiTests />
           </div>
         );
 
