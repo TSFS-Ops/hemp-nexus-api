@@ -1,0 +1,991 @@
+# Trade.Izenzo Technical Architecture
+
+**Last Updated**: 2025-11-20
+
+---
+
+## Overview
+
+Trade.Izenzo is a modern B2B API platform built on **Supabase** (PostgreSQL + Edge Functions) with a **React** frontend. The architecture prioritizes security, compliance, and audit-ability for regulated trade matching.
+
+---
+
+## Technology Stack
+
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **TanStack Query** - Server state management
+- **React Router** - Client-side routing
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - Component library
+- **Zod** - Schema validation
+
+### Backend
+- **Supabase** - Backend-as-a-Service
+  - PostgreSQL 15 - Relational database
+  - PostgREST - Auto-generated REST API
+  - Edge Functions (Deno) - Serverless compute
+  - Row Level Security - Data isolation
+  - Realtime - WebSocket subscriptions (available, not actively used)
+
+### Infrastructure
+- **Lovable Cloud** - Managed Supabase deployment
+- **pg_cron** - Scheduled jobs
+- **pg_net** - HTTP client for cron jobs
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          Frontend (React)                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   Dashboard  │  │ Admin Panel  │  │  Auth Pages  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTPS + JWT/API Keys
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Supabase Edge Functions                      │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────────┐ ┌─────────┐ │
+│  │ signals │ │ match   │ │ webhooks│ │ api-keys │ │  orgs   │ │
+│  └─────────┘ └─────────┘ └─────────┘ └──────────┘ └─────────┘ │
+│  ┌──────────┐ ┌────────────┐ ┌──────────────┐                  │
+│  │  consents│ │data-sources│ │ audit-logs   │  ... (12 total)  │
+│  └──────────┘ └────────────┘ └──────────────┘                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      PostgreSQL Database                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ organizations│  │   profiles   │  │  user_roles  │          │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
+│  │  api_keys    │  │   signals    │  │   matches    │          │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
+│  │  webhooks    │  │ data_sources │  │ audit_logs   │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                  ... (17 tables total)                           │
+│                                                                   │
+│  RLS Policies: Org-scoped, role-based, security definer funcs   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Background Jobs (pg_cron)                    │
+│  ┌────────────────────┐     ┌────────────────────┐              │
+│  │  webhook-retry     │     │  api-key-expiry    │              │
+│  │  (every 5 min)     │     │  (daily at 9am)    │              │
+│  └────────────────────┘     └────────────────────┘              │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      External Integrations                       │
+│  ┌────────────────────┐     ┌────────────────────┐              │
+│  │  Client Webhooks   │     │  SAHPRA Registry   │              │
+│  │  (HTTP POST)       │     │  (CSV cache)       │              │
+│  └────────────────────┘     └────────────────────┘              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Database Schema
+
+### Core Tables
+
+#### **organizations**
+Organization/company accounts.
+
+```sql
+- id (uuid, PK)
+- name (text)
+- status (text) - active/inactive
+- sahpra_verified (boolean)
+- sahpra_licence_no (text)
+- sahpra_verification_data (jsonb)
+- sahpra_verified_at (timestamp)
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Users can view their own org, admins can view all.
+
+---
+
+#### **profiles**
+User profiles linked to Supabase Auth.
+
+```sql
+- id (uuid, PK, references auth.users)
+- org_id (uuid, FK → organizations)
+- email (text)
+- full_name (text)
+- status (text) - active/inactive
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Users can view/update their own profile, admins can view all.
+
+---
+
+#### **user_roles**
+Role assignments (admin, seller, broker, buyer, auditor).
+
+```sql
+- id (uuid, PK)
+- user_id (uuid, FK → auth.users)
+- role (enum: app_role)
+- created_at (timestamp)
+```
+
+**RLS**: Users can view their own roles, admins can manage all.  
+**Security**: Roles stored separately to prevent privilege escalation.
+
+---
+
+#### **api_keys**
+API authentication keys.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- name (text)
+- key_hash (text) - SHA-256 hash
+- scopes (text[])
+- status (text) - active/revoked/expired
+- last_used_at (timestamp)
+- expires_at (timestamp, nullable)
+- expiry_warning_sent (boolean)
+- created_by (uuid)
+- created_at, revoked_at (timestamp)
+```
+
+**RLS**: Org-scoped access, admins can view all.  
+**Security**: Never store plaintext keys, only SHA-256 hashes.
+
+---
+
+#### **signals**
+Buyer/seller intent signals.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- type (enum: buyer/seller)
+- content (jsonb) - product, quantity, location, etc.
+- status (text) - active/expired
+- expires_at (timestamp)
+- created_by (uuid)
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Org-scoped access.
+
+---
+
+#### **options**
+Matched options returned for signals.
+
+```sql
+- id (uuid, PK)
+- signal_id (uuid, FK → signals)
+- data_source_id (uuid, FK → data_sources)
+- what (text) - product description
+- how_much (numeric) - quantity
+- unit (text)
+- price (numeric, nullable)
+- currency (text)
+- where_location (text)
+- when_available (text)
+- source_link (text)
+- score (numeric) - relevance score
+- confidence_score (numeric)
+- quality_flags (jsonb)
+- freshness (timestamp)
+- created_at (timestamp)
+```
+
+**RLS**: Read-only, accessible via signal ownership.
+
+---
+
+#### **selections**
+User selections from signal options.
+
+```sql
+- id (uuid, PK)
+- signal_id (uuid, FK → signals)
+- option_id (uuid, FK → options)
+- selected_by (uuid)
+- selected_at (timestamp)
+- handoff_token (text) - for external systems
+- handoff_status (text) - pending/completed
+- handoff_data (jsonb)
+```
+
+**RLS**: Org-scoped via signal ownership.
+
+---
+
+#### **matches**
+Recorded trade matches with cryptographic proof.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- buyer_id (text)
+- buyer_name (text)
+- seller_id (text)
+- seller_name (text)
+- commodity (text)
+- quantity_amount (numeric)
+- quantity_unit (text)
+- price_amount (numeric)
+- price_currency (text)
+- terms (text, nullable)
+- hash (text) - SHA-256 of match details
+- status (text) - matched/settled
+- settled_at (timestamp, nullable)
+- metadata (jsonb)
+- created_by (uuid)
+- created_at (timestamp)
+```
+
+**RLS**: Org-scoped access, service role for automation.  
+**Hash**: Immutable proof calculated from buyer, seller, commodity, quantity, price, terms.
+
+---
+
+#### **webhook_endpoints**
+Configured webhook destinations.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- url (text)
+- events (text[]) - subscribed event types
+- secret_hash (text) - SHA-256 of HMAC secret
+- status (text) - active/inactive
+- last_delivery_at (timestamp)
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Org-scoped access.  
+**Security**: Secret never returned after creation, only hash stored.
+
+---
+
+#### **webhook_deliveries**
+Webhook delivery attempts and status.
+
+```sql
+- id (uuid, PK)
+- webhook_endpoint_id (uuid, FK → webhook_endpoints)
+- org_id (uuid, FK → organizations)
+- event_type (text)
+- payload (jsonb)
+- delivery_attempt (integer)
+- response_status_code (integer, nullable)
+- response_body (text, nullable)
+- error_message (text, nullable)
+- next_retry_at (timestamp, nullable)
+- max_retries (integer, default 3)
+- is_dead_letter (boolean)
+- delivered_at, created_at (timestamp)
+```
+
+**RLS**: Read-only for org admins/auditors.
+
+---
+
+#### **audit_logs**
+Immutable audit trail.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- actor_user_id (uuid, nullable)
+- actor_api_key_id (uuid, nullable)
+- action (text) - e.g., "match.created"
+- entity_type (text) - e.g., "match"
+- entity_id (uuid, nullable)
+- metadata (jsonb) - full context
+- created_at (timestamp)
+```
+
+**RLS**: Org-scoped read, admin cross-org read.  
+**Immutability**: No updates or deletes allowed.
+
+---
+
+#### **data_sources**
+External data source connectors.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- name (text)
+- type (text) - marketplace/sheet/erp/registry/lab/web_search
+- config (jsonb) - connection details
+- status (text) - active/inactive
+- last_queried_at (timestamp)
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Org-scoped access.
+
+---
+
+#### **consents**
+Data sharing consent records.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- data_source_id (uuid, FK → data_sources)
+- granted_by (uuid)
+- granted_at (timestamp)
+- revoked_at (timestamp, nullable)
+- expires_at (timestamp, nullable)
+- scope (jsonb) - permissions granted
+```
+
+**RLS**: Org-scoped access.
+
+---
+
+#### **sahpra_licenses**
+Cached SAHPRA registry data.
+
+```sql
+- id (uuid, PK)
+- licence_no (text)
+- company_name (text)
+- company_name_norm (text) - normalized for matching
+- licence_type (text)
+- expiry_date (date)
+- date_issued (date)
+- province (text)
+- responsible_pharmacist (text)
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Read-only for authenticated users.  
+**Cache**: Refreshed periodically via `/sahpra-refresh` endpoint.
+
+---
+
+#### **rate_limits**
+Rate limiting tracking.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- api_key_id (uuid, nullable)
+- endpoint (text)
+- request_count (integer)
+- window_start, window_end (timestamp)
+- created_at, updated_at (timestamp)
+```
+
+**RLS**: Service role only.  
+**Cleanup**: Automatic via `cleanup_expired_rate_limits()` function.
+
+---
+
+#### **idempotency_keys**
+Idempotency tracking for critical operations.
+
+```sql
+- id (uuid, PK)
+- org_id (uuid, FK → organizations)
+- idempotency_key (text)
+- endpoint (text)
+- request_hash (text) - hash of request body
+- response_data (jsonb)
+- response_status_code (integer)
+- expires_at (timestamp) - 24 hours
+- created_at (timestamp)
+```
+
+**RLS**: Service role only.  
+**Cleanup**: Automatic via `cleanup_expired_idempotency_keys()` function.
+
+---
+
+#### **data_source_performance**
+Performance metrics for data sources.
+
+```sql
+- id (uuid, PK)
+- data_source_id (uuid, FK → data_sources)
+- signal_id (uuid, FK → signals)
+- org_id (uuid, FK → organizations)
+- response_time_ms (integer)
+- options_returned (integer)
+- options_selected (integer)
+- search_success (boolean)
+- product_category, location, signal_type (text)
+- created_at (timestamp)
+```
+
+**RLS**: Org-scoped read, service role write.
+
+---
+
+## Edge Functions
+
+### Authentication & Authorization
+
+**File**: `supabase/functions/_shared/auth.ts`
+
+```typescript
+authenticateRequest(req, supabaseUrl, supabaseKey): AuthContext
+requireScope(authCtx, scope): void
+requireRole(authCtx, role): void
+hashApiKey(key): string
+```
+
+**Flow**:
+1. Extract `Authorization: Bearer <token>` header
+2. Check if JWT (user session) or API key (starts with `sk_`)
+3. For API keys: Hash and lookup in `api_keys` table
+4. For JWTs: Verify with Supabase Auth
+5. Return `AuthContext` with `userId`, `orgId`, `role`, `isApiKey`
+6. Verify required scopes/roles or throw `ApiException`
+
+---
+
+### Rate Limiting
+
+**File**: `supabase/functions/_shared/rate-limit.ts`
+
+```typescript
+checkRateLimit(supabase, orgId, apiKeyId, endpoint, scope): Promise<void>
+```
+
+**Implementation**: Sliding window rate limiting
+- Tracks requests per org per endpoint
+- Configurable limits per scope
+- Returns 429 with `Retry-After` header when exceeded
+- Auto-cleanup of expired windows
+
+---
+
+### Validation
+
+**File**: `supabase/functions/_shared/validation.ts`
+
+Uses Zod for request validation:
+- `matchSchema` - Match creation
+- `signalSchema` - Signal creation
+- `signalSelectSchema` - Option selection
+- `apiKeyCreateSchema` - API key creation
+- `webhookCreateSchema` - Webhook creation
+- `dataSourceCreateSchema` - Data source creation
+- `consentCreateSchema` - Consent grant
+- `orgCreateSchema`, `orgUpdateSchema` - Organization management
+- `sahpraVerifySchema` - SAHPRA verification
+
+All schemas enforce:
+- Required fields
+- Type safety
+- Length limits
+- Format validation (emails, URLs, UUIDs)
+
+---
+
+### Webhooks
+
+**File**: `supabase/functions/_shared/webhooks.ts`
+
+```typescript
+triggerWebhooks(supabase, orgId, event, data): Promise<void>
+```
+
+**Flow**:
+1. Find active webhook endpoints for org subscribed to event
+2. Generate HMAC-SHA256 signature with secret
+3. Send POST request with signature in `X-Webhook-Signature` header
+4. Log delivery attempt in `webhook_deliveries`
+5. On failure: Schedule retry with exponential backoff
+6. Fire-and-forget (don't block main request)
+
+---
+
+### SAHPRA Integration
+
+**File**: `supabase/functions/_shared/sahpra.ts`
+
+```typescript
+verifySahpra(supabase, companyName, licenceNo): Promise<VerificationResult>
+verifySahpraForOrg(orgId, supabase): Promise<VerificationResult>
+updateSahpraCache(supabase): Promise<void>
+```
+
+**Features**:
+- Fuzzy company name matching (normalized comparison)
+- License number exact matching
+- Province and pharmacist lookup
+- Expiry date validation
+- Cache refresh from official SAHPRA data source
+
+---
+
+### Data Sources
+
+**File**: `supabase/functions/_shared/data-sources.ts`
+
+```typescript
+searchDataSources(signalId, orgId, supabase): Promise<void>
+```
+
+**Flow**:
+1. Find active data sources for org
+2. Query each source based on type (marketplace, sheet, erp, etc.)
+3. Score and rank results
+4. Insert options into `options` table
+5. Track performance in `data_source_performance`
+6. Return top-scored options
+
+---
+
+### Performance Tracking
+
+**File**: `supabase/functions/_shared/performance.ts`
+
+```typescript
+recordSelection(supabase, selectionData): Promise<void>
+```
+
+Tracks data source effectiveness:
+- Response times
+- Options returned vs selected
+- Search success rates
+- Category and location performance
+
+---
+
+## Security Architecture
+
+### Authentication Layers
+
+1. **Supabase Auth** (JWT)
+   - Email/password with bcrypt hashing
+   - Email verification required
+   - Password reset with one-time tokens
+   - Session management
+
+2. **API Keys**
+   - SHA-256 hashed storage
+   - Scope-based permissions
+   - Optional expiry dates
+   - Last used tracking
+
+3. **Row Level Security (RLS)**
+   - Organization-scoped data isolation
+   - Role-based access control
+   - Security definer functions for role checks
+
+---
+
+### Authorization Model
+
+```
+User → Profile → Organization
+  ↓
+Roles (admin, seller, broker, buyer, auditor)
+  ↓
+API Keys → Scopes (signals:write, match:read, etc.)
+  ↓
+RLS Policies → Database Access
+```
+
+---
+
+### Data Isolation
+
+- **Organization Level**: All resources scoped to org_id
+- **User Level**: Profiles linked to specific org
+- **API Key Level**: Keys inherit org from creator
+- **RLS Enforcement**: PostgreSQL policies enforce boundaries
+
+---
+
+### Secrets Management
+
+**Never Stored in Plaintext**:
+- API keys → SHA-256 hash
+- Webhook secrets → SHA-256 hash
+- Passwords → bcrypt via Supabase Auth
+
+**Environment Variables** (Supabase Secrets):
+- Database connection strings
+- Service role keys
+- External API keys (SAHPRA, search providers)
+
+---
+
+### Audit Trail
+
+**All Actions Logged**:
+- API key creation/usage/revocation
+- Match creation/settlement
+- Signal creation/selection
+- Organization changes
+- Webhook deliveries
+
+**Immutable Logs**:
+- No updates allowed
+- No deletions allowed
+- Full metadata captured
+- Actor tracking (user or API key)
+
+---
+
+## Background Jobs
+
+### webhook-retry
+
+**Function**: `supabase/functions/webhook-retry/index.ts`  
+**Schedule**: Every 5 minutes (via pg_cron)  
+**Purpose**: Retry failed webhook deliveries
+
+**Flow**:
+1. Query `webhook_deliveries` where `next_retry_at <= now()`
+2. For each delivery:
+   - Reconstruct payload
+   - Generate signature
+   - Attempt POST to webhook URL
+   - Update delivery record
+3. Exponential backoff: 5min → 30min → 2hr
+4. After max retries: Mark as `is_dead_letter = true`
+
+---
+
+### api-key-expiry
+
+**Function**: `supabase/functions/api-key-expiry/index.ts`  
+**Schedule**: Daily at 9:00 AM UTC (via pg_cron)  
+**Purpose**: Expire keys and send warnings
+
+**Flow**:
+1. Find keys where `expires_at <= now()` and `status = 'active'`
+2. Update to `status = 'expired'`, set `revoked_at`
+3. Log `apikey.expired` audit event
+4. Find keys expiring in 7 days and `expiry_warning_sent = false`
+5. Send warning emails (placeholder for email service)
+6. Update `expiry_warning_sent = true`
+7. Log `apikey.expiry_warning` audit event
+
+---
+
+## API Request Flow
+
+### Example: Create Match
+
+```
+1. Client → POST /match
+   Headers:
+     Authorization: Bearer sk_abc123
+     Idempotency-Key: match-20251120-001
+   Body: { buyer, seller, commodity, quantity, price }
+
+2. Edge Function → authenticateRequest()
+   - Verify API key exists and active
+   - Check expiry date
+   - Load org_id and scopes
+   - Return AuthContext
+
+3. Edge Function → requireScope()
+   - Check 'match' scope present
+   - Throw 403 if missing
+
+4. Edge Function → checkRateLimit()
+   - Query rate_limits table
+   - Increment counter if within window
+   - Throw 429 if exceeded
+
+5. Edge Function → Check Idempotency
+   - Query idempotency_keys table
+   - If exists: Return cached response
+   - If not: Continue
+
+6. Edge Function → validateInput()
+   - Validate request body with Zod
+   - Throw 400 on validation error
+
+7. Edge Function → Calculate Hash
+   - SHA-256(buyer.id + seller.id + commodity + quantity + price + terms)
+   - Generate immutable proof
+
+8. Edge Function → Insert Match
+   - Insert into matches table
+   - RLS policy enforces org_id check
+
+9. Edge Function → Cache Idempotency
+   - Store response in idempotency_keys
+   - Set expires_at to now() + 24 hours
+
+10. Edge Function → Audit Log
+    - Insert into audit_logs table
+    - Include match hash and full details
+
+11. Edge Function → Trigger Webhooks
+    - Fire-and-forget background task
+    - Find active webhook endpoints for org
+    - Send POST with signature
+
+12. Edge Function → Return Response
+    - 201 Created
+    - Full match object with hash
+```
+
+---
+
+## Deployment
+
+### Frontend
+
+**Build**:
+```bash
+npm run build
+# Outputs to dist/
+```
+
+**Publish**:
+- Click "Publish" in Lovable interface
+- Frontend deploys to CDN
+- Environment variables injected at build time
+
+---
+
+### Backend
+
+**Edge Functions**:
+- Automatic deployment on code push
+- No manual deployment needed
+- Located in `supabase/functions/`
+
+**Database Migrations**:
+- Stored in `supabase/migrations/`
+- Applied automatically via Lovable Cloud
+- Immutable once applied
+
+**Cron Jobs**:
+- Manual setup required (one-time)
+- SQL scripts in Dashboard → Automation tab
+- Uses pg_cron and pg_net extensions
+
+---
+
+## Monitoring
+
+### Available Metrics
+
+1. **API Analytics** (Dashboard → Analytics)
+   - Request volumes over time
+   - Response times (p50, p95, p99)
+   - Error rates by endpoint
+   - Top API keys by usage
+
+2. **Audit Logs** (Dashboard → Audit Logs)
+   - All API actions with timestamps
+   - Actor identification
+   - Filter by action, entity, date range
+   - Full metadata for troubleshooting
+
+3. **Webhook Delivery** (Dashboard → Testing → Webhook Logs)
+   - Delivery attempts and status
+   - Response codes and bodies
+   - Retry schedules
+   - Dead letter queue
+
+4. **Data Source Performance** (`data_source_performance` table)
+   - Response times per source
+   - Options returned vs selected
+   - Search success rates
+   - Category and location breakdowns
+
+---
+
+## Performance Optimizations
+
+### Database
+
+- **Indexes**: Added on frequently queried columns (org_id, created_at, status, expires_at)
+- **RLS Performance**: Security definer functions prevent recursive policy checks
+- **Query Optimization**: Select only needed columns, use LIMIT for large tables
+- **Connection Pooling**: Managed by Supabase
+
+### Edge Functions
+
+- **Rate Limiting**: Prevents abuse and overload
+- **Idempotency**: Prevents duplicate processing
+- **Fire-and-Forget**: Webhooks don't block main request
+- **Timeouts**: 10-second timeout on webhook deliveries
+- **Background Jobs**: Offload retries to scheduled tasks
+
+### Frontend
+
+- **Code Splitting**: React lazy loading for routes
+- **Query Caching**: TanStack Query caches API responses
+- **Pagination**: Limit 50 items per page
+- **Debouncing**: Search inputs debounced 300ms
+
+---
+
+## Error Handling
+
+### Edge Function Errors
+
+All errors standardized via `errorResponse()`:
+
+```typescript
+{
+  code: "ERROR_CODE",
+  message: "Human-readable message",
+  requestId: "uuid",
+  details: { ... }
+}
+```
+
+### Database Errors
+
+Wrapped in `handleDatabaseError()`:
+- Logs full error server-side
+- Returns generic "DATABASE_ERROR" to client
+- Prevents info leakage
+
+### Webhook Errors
+
+Logged in `webhook_deliveries`:
+- Response status code
+- Response body (truncated to 1000 chars)
+- Error message
+- Scheduled for retry
+
+---
+
+## Scaling Considerations
+
+### Current Limits
+
+- **Database**: Supabase free tier (500MB)
+- **Edge Functions**: Unlimited invocations on paid plans
+- **Rate Limits**: Configurable per endpoint
+- **Webhooks**: Max 3 retries per delivery
+
+### Scaling Up
+
+1. **Database**:
+   - Upgrade Supabase plan for more storage
+   - Add read replicas for analytics
+   - Partition large tables (audit_logs)
+
+2. **Edge Functions**:
+   - Already horizontally scalable
+   - Add more aggressive rate limiting if needed
+   - Implement request queuing for spikes
+
+3. **Webhooks**:
+   - Increase max_retries for critical endpoints
+   - Add dedicated retry queue with longer backoff
+   - Implement webhook batching
+
+4. **Monitoring**:
+   - Export audit logs to external analytics
+   - Set up alerts for error rates
+   - Dashboard for system health
+
+---
+
+## Security Best Practices
+
+### Development
+
+- Never commit secrets to git
+- Use environment variables for all keys
+- Test with non-production data
+- Review RLS policies before deploying
+
+### Production
+
+- Set expiry dates on all API keys
+- Rotate keys regularly (every 90 days)
+- Monitor audit logs for suspicious activity
+- Enable webhook signature verification
+- Use HTTPS for all communications
+
+### Compliance
+
+- Immutable audit trail for all actions
+- Organization-scoped data isolation
+- SAHPRA license verification for regulated goods
+- SHA-256 hashing for match proof
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: 401 Unauthorized  
+**Cause**: Invalid/expired API key  
+**Fix**: Generate new key in Dashboard
+
+**Issue**: 403 Forbidden  
+**Cause**: Missing scope on API key  
+**Fix**: Create key with required scopes
+
+**Issue**: 429 Rate Limited  
+**Cause**: Exceeded rate limit  
+**Fix**: Wait for retry-after, implement backoff
+
+**Issue**: Webhook not received  
+**Cause**: Delivery failed, in retry queue  
+**Fix**: Check Webhook Delivery Logs, verify endpoint URL
+
+**Issue**: Signal returns no options  
+**Cause**: No active data sources or no matches  
+**Fix**: Configure data sources, check signal details
+
+---
+
+## Future Enhancements
+
+### Planned Features
+
+- Email notifications for key expiry
+- Slack/Teams webhook integrations
+- GraphQL API endpoint
+- Bulk match import via CSV
+- Advanced analytics dashboard
+- API key rotation workflow
+- Dead letter queue UI
+- Webhook replay functionality
+
+### Under Consideration
+
+- Multi-region deployment
+- Custom rate limit tiers
+- Machine learning for scoring
+- Real-time signal matching
+- Mobile SDK (React Native)
+
+---
+
+## Support
+
+- **Documentation**: See `/docs/` directory
+- **API Reference**: `/docs/api-reference.md`
+- **Product Guide**: `/docs/product-guide.md`
+- **Changelog**: `/CHANGELOG.md`
+- **Dashboard**: Access via login
+
+For technical support, contact your account manager or visit the developer portal.
