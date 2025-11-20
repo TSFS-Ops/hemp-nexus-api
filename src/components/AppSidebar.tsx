@@ -1,4 +1,4 @@
-import { Key, Database, Webhook, FileText, BarChart3, Shield, Clock, TestTube, History, BookOpen } from "lucide-react";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -28,18 +28,17 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
   const { toast } = useToast();
 
   const mainItems = [
-    { id: "keys", title: "API Keys", icon: Key },
-    { id: "test", title: "API Testing", icon: TestTube },
-    { id: "webhooks", title: "Webhooks", icon: Webhook },
-    { id: "data-sources", title: "Data Sources", icon: Database },
-    { id: "analytics", title: "Analytics", icon: BarChart3 },
+    { id: "docs", title: "Overview", icon: BookOpen },
+    { id: "keys", title: "Authentication", icon: Key },
+    { id: "test", title: "API Reference", icon: Code },
+    { id: "webhooks", title: "Webhooks", icon: Zap },
+    { id: "audit-logs", title: "Logs", icon: Activity },
   ];
 
   const toolsItems = [
-    { id: "docs", title: "Documentation", icon: BookOpen },
+    { id: "data-sources", title: "Data Sources", icon: FileCode },
     { id: "hash-verify", title: "Hash Verifier", icon: Shield },
-    { id: "audit-logs", title: "Audit Logs", icon: History },
-    { id: "automation", title: "Automation", icon: Clock },
+    { id: "automation", title: "Changelog", icon: GitBranch },
   ];
 
   const handleSignOut = async () => {
@@ -59,21 +58,21 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
 
   return (
     <Sidebar className="border-r">
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Key className="h-4 w-4 text-primary-foreground" />
+      <SidebarHeader className="border-b px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
+            <Shield className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-semibold text-sm">Compliance API</h2>
-            <p className="text-xs text-muted-foreground">Developer Portal</p>
+            <h2 className="font-semibold text-sm">Compliance Match</h2>
+            <p className="text-xs text-muted-foreground font-mono">API v1.0</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Documentation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
@@ -81,7 +80,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
                     isActive={isActive(item.id)}
-                    className="w-full"
+                    className="w-full px-3 py-2 text-sm font-medium"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -92,8 +91,8 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Tools & Logs</SidebarGroupLabel>
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Resources</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {toolsItems.map((item) => (
@@ -101,7 +100,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
                     isActive={isActive(item.id)}
-                    className="w-full"
+                    className="w-full px-3 py-2 text-sm font-medium"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -113,17 +112,17 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
         </SidebarGroup>
 
         {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Admin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => navigate("/admin")}
-                    className="w-full"
+                    className="w-full px-3 py-2 text-sm font-medium"
                   >
                     <Shield className="h-4 w-4" />
-                    <span>Admin Panel</span>
+                    <span>Management</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -132,13 +131,14 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="border-t px-3 py-4">
         <Button
           variant="ghost"
-          className="w-full justify-start"
+          size="sm"
+          className="w-full justify-start text-sm font-medium"
           onClick={handleSignOut}
         >
-          <span>Sign Out</span>
+          Sign Out
         </Button>
       </SidebarFooter>
     </Sidebar>

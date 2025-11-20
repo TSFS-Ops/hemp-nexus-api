@@ -49,7 +49,7 @@ export default function Dashboard() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
-  const [activeSection, setActiveSection] = useState("keys");
+  const [activeSection, setActiveSection] = useState("docs");
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -258,13 +258,86 @@ export default function Dashboard() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case "docs":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight mb-2">Compliance Matching API</h1>
+              <p className="text-lg text-muted-foreground">
+                Complete REST API for pharmaceutical compliance verification and transaction matching
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick Start</CardTitle>
+                  <CardDescription>
+                    Get started with your first API call in minutes
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-lg">Authentication</CardTitle>
+                  <CardDescription>
+                    Secure your API requests with bearer tokens
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-lg">Rate Limits</CardTitle>
+                  <CardDescription>
+                    1000 requests per hour per API key
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Base URL</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <code className="block p-4 bg-muted rounded-lg text-sm font-mono">
+                  https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
+                </code>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Example</CardTitle>
+                <CardDescription>Create a signal in under 30 seconds</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium mb-2">cURL</p>
+                  <pre className="p-4 bg-muted rounded-lg overflow-x-auto">
+                    <code className="text-sm font-mono">{`curl -X POST https://api.example.com/v1/signals \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "type": "buyer",
+    "what": "Paracetamol 500mg",
+    "how_much": 10000,
+    "unit": "tablets"
+  }'`}</code>
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       case "keys":
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">API Keys</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Authentication</h1>
               <p className="text-muted-foreground">
-                Manage your API keys for accessing the Compliance Matching API
+                Manage API keys to authenticate your requests
               </p>
             </div>
 
@@ -447,26 +520,12 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">API Testing</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">API Reference</h1>
               <p className="text-muted-foreground">
-                Test your API endpoints with live requests
+                Complete endpoint documentation with live examples
               </p>
             </div>
-            {apiKeys.length > 0 ? (
-              <div className="space-y-6">
-                <SignalTester apiKey={apiKeys[0].id} />
-                <MatchTester apiKey={apiKeys[0].id} />
-              </div>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>No API Keys</CardTitle>
-                  <CardDescription>
-                    Create an API key first to test the endpoints
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            )}
+            <ApiDocs />
           </div>
         );
 
@@ -474,71 +533,12 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Webhooks</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Webhooks</h1>
               <p className="text-muted-foreground">
-                Monitor webhook deliveries and debug issues
+                Real-time event notifications for your integration
               </p>
             </div>
             <WebhookDeliveryLogs />
-          </div>
-        );
-
-      case "data-sources":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Data Sources</h1>
-              <p className="text-muted-foreground">
-                Manage your connected data sources
-              </p>
-            </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Coming Soon</CardTitle>
-                <CardDescription>
-                  Data source management interface will be available soon
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        );
-
-      case "analytics":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-              <p className="text-muted-foreground">
-                Monitor API usage and performance metrics
-              </p>
-            </div>
-            <ApiAnalytics />
-          </div>
-        );
-
-      case "docs":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Documentation</h1>
-              <p className="text-muted-foreground">
-                Complete API reference and guides
-              </p>
-            </div>
-            <ApiDocs />
-          </div>
-        );
-
-      case "hash-verify":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Hash Verifier</h1>
-              <p className="text-muted-foreground">
-                Verify cryptographic hashes for audit trails
-              </p>
-            </div>
-            <HashVerifier />
           </div>
         );
 
@@ -546,9 +546,9 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Logs</h1>
               <p className="text-muted-foreground">
-                View all API activity and changes
+                Audit trail of all API operations
               </p>
             </div>
             {apiKeys.length > 0 ? (
@@ -566,13 +566,46 @@ export default function Dashboard() {
           </div>
         );
 
+      case "data-sources":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Data Sources</h1>
+              <p className="text-muted-foreground">
+                Configure external data integrations
+              </p>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Coming Soon</CardTitle>
+                <CardDescription>
+                  Data source management interface will be available soon
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        );
+
+      case "hash-verify":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Hash Verifier</h1>
+              <p className="text-muted-foreground">
+                Cryptographic verification for audit trails
+              </p>
+            </div>
+            <HashVerifier />
+          </div>
+        );
+
       case "automation":
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Automation</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Changelog</h1>
               <p className="text-muted-foreground">
-                Configure automated tasks and cron jobs
+                API updates, improvements, and breaking changes
               </p>
             </div>
             <CronSetupInstructions />
