@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,15 +8,50 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Play, Copy, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Play, Copy, CheckCircle2, AlertCircle, Loader2, History, Star, Trash2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import HistoryItem from "./HistoryItem";
+
+interface RequestHistoryItem {
+  id: string;
+  timestamp: number;
+  endpoint: string;
+  method: string;
+  body?: any;
+  status?: number;
+  responseTime?: number;
+  isFavorite: boolean;
+}
 
 export default function ApiPlayground() {
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
   const [responseTime, setResponseTime] = useState<number | null>(null);
+  const [requestHistory, setRequestHistory] = useState<RequestHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem("api-playground-history");
+    if (savedHistory) {
+      try {
+        setRequestHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to load history:", e);
+      }
+    }
+  }, []);
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    if (requestHistory.length > 0) {
+      localStorage.setItem("api-playground-history", JSON.stringify(requestHistory));
+    }
+  }, [requestHistory]);
 
   // Signals state
   const [signalType, setSignalType] = useState<"buyer" | "seller">("buyer");
@@ -53,6 +88,77 @@ export default function ApiPlayground() {
     }
   };
 
+  const addToHistory = (endpoint: string, method: string, body: any, status?: number, responseTime?: number) => {
+    const newItem: RequestHistoryItem = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: Date.now(),
+      endpoint,
+      method,
+      body,
+      status,
+      responseTime,
+      isFavorite: false,
+    };
+
+    setRequestHistory((prev) => [newItem, ...prev].slice(0, 50)); // Keep last 50 requests
+  };
+
+  const toggleFavorite = (id: string) => {
+    setRequestHistory((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+      )
+    );
+  };
+
+  const deleteHistoryItem = (id: string) => {
+    setRequestHistory((prev) => prev.filter((item) => item.id !== id));
+    toast({ title: "Deleted", description: "Request removed from history" });
+  };
+
+  const clearHistory = () => {
+    setRequestHistory([]);
+    localStorage.removeItem("api-playground-history");
+    toast({ title: "Cleared", description: "Request history cleared" });
+  };
+
+  const replayRequest = (item: RequestHistoryItem) => {
+    // Parse the body to populate form fields
+    if (item.endpoint === "/signals" && item.body) {
+      setSignalType(item.body.type);
+      if (item.body.content) {
+        setSignalWhat(item.body.content.what || "");
+        setSignalHowMuch(item.body.content.how_much?.toString() || "");
+        setSignalUnit(item.body.content.unit || "");
+        setSignalWhere(item.body.content.where || "");
+        setSignalBudget(item.body.content.budget?.toString() || "");
+        setSignalCurrency(item.body.content.currency || "");
+      }
+    } else if (item.endpoint === "/match" && item.body) {
+      setBuyerId(item.body.buyer_id || "");
+      setBuyerName(item.body.buyer_name || "");
+      setSellerId(item.body.seller_id || "");
+      setSellerName(item.body.seller_name || "");
+      setCommodity(item.body.commodity || "");
+      if (item.body.quantity) {
+        setQuantityAmount(item.body.quantity.amount?.toString() || "");
+        setQuantityUnit(item.body.quantity.unit || "");
+      }
+      if (item.body.price) {
+        setPriceAmount(item.body.price.amount?.toString() || "");
+        setPriceCurrency(item.body.price.currency || "");
+      }
+      setTerms(item.body.terms || "");
+    } else if (item.endpoint === "/webhooks" && item.body) {
+      setWebhookUrl(item.body.url || "");
+      setWebhookEvents(item.body.events?.join(", ") || "");
+      setWebhookSecret(item.body.secret || "");
+    }
+
+    setShowHistory(false);
+    toast({ title: "Request Loaded", description: "Form populated with previous request" });
+  };
+
   const executeRequest = async (endpoint: string, method: string, body?: any) => {
     if (!apiKey) {
       toast({
@@ -83,6 +189,7 @@ export default function ApiPlayground() {
       const res = await fetch(`${baseUrl}${endpoint}`, options);
       const data = await res.json();
       const endTime = Date.now();
+      const responseTimeMs = endTime - startTime;
 
       setResponse({
         status: res.status,
@@ -90,7 +197,10 @@ export default function ApiPlayground() {
         headers: Object.fromEntries(res.headers.entries()),
         body: data,
       });
-      setResponseTime(endTime - startTime);
+      setResponseTime(responseTimeMs);
+
+      // Add to history
+      addToHistory(endpoint, method, body, res.status, responseTimeMs);
 
       if (!res.ok) {
         toast({
@@ -105,6 +215,7 @@ export default function ApiPlayground() {
         statusText: "Network Error",
         body: { error: error.message },
       });
+      addToHistory(endpoint, method, body, 0);
       toast({
         title: "Error",
         description: error.message,
@@ -160,19 +271,107 @@ export default function ApiPlayground() {
     executeRequest("/webhooks", "POST", body);
   };
 
+  const favoriteRequests = requestHistory.filter((r) => r.isFavorite);
+  const recentRequests = requestHistory.filter((r) => !r.isFavorite);
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Play className="h-5 w-5" />
-            API Playground
-          </CardTitle>
-          <CardDescription>
-            Test API endpoints with live requests and see responses in real-time
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Play className="h-5 w-5" />
+                API Playground
+              </CardTitle>
+              <CardDescription>
+                Test API endpoints with live requests and see responses in real-time
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
+                className="relative"
+              >
+                <History className="mr-2 h-4 w-4" />
+                History
+                {requestHistory.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                    {requestHistory.length}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* History Panel */}
+          {showHistory && (
+            <Card className="border-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Request History</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearHistory}
+                    disabled={requestHistory.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px] pr-4">
+                  {requestHistory.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No request history yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {favoriteRequests.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                            <h4 className="font-medium text-sm">Favorites</h4>
+                          </div>
+                          {favoriteRequests.map((item) => (
+                            <HistoryItem
+                              key={item.id}
+                              item={item}
+                              onReplay={replayRequest}
+                              onToggleFavorite={toggleFavorite}
+                              onDelete={deleteHistoryItem}
+                            />
+                          ))}
+                          <Separator className="my-4" />
+                        </>
+                      )}
+
+                      {recentRequests.length > 0 && (
+                        <>
+                          <h4 className="font-medium text-sm">Recent</h4>
+                          {recentRequests.map((item) => (
+                            <HistoryItem
+                              key={item.id}
+                              item={item}
+                              onReplay={replayRequest}
+                              onToggleFavorite={toggleFavorite}
+                              onDelete={deleteHistoryItem}
+                            />
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
           {/* API Key Input */}
           <div className="space-y-2">
             <Label htmlFor="playground-api-key">API Key</Label>
