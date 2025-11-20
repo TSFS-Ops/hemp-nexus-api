@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3, AlertCircle } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3, AlertCircle, Shield } from "lucide-react";
 import { z } from "zod";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
 import MatchTester from "@/components/MatchTester";
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [keyName, setKeyName] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<string[]>(["signals:write", "signals:read"]);
+  const [expiryDays, setExpiryDays] = useState<string>("never");
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -114,17 +116,27 @@ export default function Dashboard() {
       apiKeySchema.parse({ name: keyName, scopes: selectedScopes });
       setCreating(true);
 
+      // Calculate expiry date if not "never"
+      let expiresAt = null;
+      if (expiryDays !== "never") {
+        const days = parseInt(expiryDays);
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + days);
+        expiresAt = expiry.toISOString();
+      }
+
       const { data, error } = await supabase.functions.invoke("api-keys", {
-        body: { name: keyName, scopes: selectedScopes },
+        body: { name: keyName, scopes: selectedScopes, expires_at: expiresAt },
         method: "POST",
       });
 
       if (error) throw error;
 
       setNewKey(data.key);
-      setShowKey(true); // Show key by default when created
-      setTestingKey(data.key); // Keep for testing
+      setShowKey(true);
+      setTestingKey(data.key);
       setKeyName("");
+      setExpiryDays("never");
       toast({
         title: "Success!",
         description: "API key created. Save it now - you won't see it again!",
@@ -223,10 +235,16 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold">API Dashboard</h1>
             <p className="text-muted-foreground mt-1">{user?.email}</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/admin")}>
+              <Shield className="mr-2 h-4 w-4" />
+              Admin Panel
+            </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {/* Welcome Card - Show for users with no keys or when manually shown */}
@@ -387,6 +405,25 @@ export default function Dashboard() {
                       onChange={(e) => setKeyName(e.target.value)}
                       required
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="expiryDays">Expiry</Label>
+                    <Select value={expiryDays} onValueChange={setExpiryDays}>
+                      <SelectTrigger id="expiryDays">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Never expires</SelectItem>
+                        <SelectItem value="30">30 days</SelectItem>
+                        <SelectItem value="90">90 days</SelectItem>
+                        <SelectItem value="180">180 days</SelectItem>
+                        <SelectItem value="365">1 year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      You'll receive a warning email 7 days before expiry
+                    </p>
                   </div>
                   
                   <div className="space-y-2">

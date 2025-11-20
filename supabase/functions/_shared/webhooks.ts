@@ -60,7 +60,15 @@ async function deliverWebhook(
     responseStatusCode = response.status;
     responseBody = await response.text();
 
-    // Log successful delivery attempt
+    // Calculate next retry time if failed
+    let nextRetry = null;
+    if (!response.ok) {
+      const retryDate = new Date();
+      retryDate.setMinutes(retryDate.getMinutes() + 5); // First retry in 5 minutes
+      nextRetry = retryDate.toISOString();
+    }
+
+    // Log successful or failed delivery attempt
     await supabase.from("webhook_deliveries").insert({
       webhook_endpoint_id: webhookEndpointId,
       org_id: payload.orgId,
@@ -69,6 +77,7 @@ async function deliverWebhook(
       response_status_code: responseStatusCode,
       response_body: responseBody.substring(0, 1000),
       delivery_attempt: 1,
+      next_retry_at: nextRetry,
     });
 
     return {
@@ -79,6 +88,10 @@ async function deliverWebhook(
     console.error(`Webhook delivery failed to ${url}:`, error);
     errorMessage = error instanceof Error ? error.message : "Unknown error";
 
+    // Schedule retry on network error
+    const retryDate = new Date();
+    retryDate.setMinutes(retryDate.getMinutes() + 5);
+
     // Log failed delivery attempt
     await supabase.from("webhook_deliveries").insert({
       webhook_endpoint_id: webhookEndpointId,
@@ -88,6 +101,7 @@ async function deliverWebhook(
       response_status_code: 0,
       error_message: errorMessage,
       delivery_attempt: 1,
+      next_retry_at: retryDate.toISOString(),
     });
 
     return {
