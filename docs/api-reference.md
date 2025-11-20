@@ -1,4 +1,4 @@
-# Trade.Izenzo API Reference
+# Compliance Matching API Reference
 
 **Current Version**: v1  
 **Base URL**: `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1`  
@@ -146,10 +146,10 @@ Authorization: Bearer sk_your_api_key
 Content-Type: application/json
 
 {
-  "product": "Paracetamol 500mg tablets",
+  "product": "Industrial Equipment Parts",
   "quantity": 10000,
-  "unit": "boxes",
-  "location": "Johannesburg, South Africa",
+  "unit": "units",
+  "location": "Regional Distribution Center",
   "deliveryWindow": {
     "start": "2025-12-01",
     "end": "2025-12-15"
@@ -168,10 +168,10 @@ Content-Type: application/json
     "org_id": "org_123",
     "type": "buyer",
     "content": {
-      "product": "Paracetamol 500mg tablets",
+      "product": "Industrial Equipment Parts",
       "quantity": 10000,
-      "unit": "boxes",
-      "location": "Johannesburg, South Africa",
+      "unit": "units",
+      "location": "Regional Distribution Center",
       "deliveryWindow": {
         "start": "2025-12-01",
         "end": "2025-12-15"
@@ -187,11 +187,11 @@ Content-Type: application/json
   "options": [
     {
       "id": "opt_123",
-      "what": "Paracetamol 500mg tablets",
+      "what": "Industrial Equipment Parts",
       "how_much": 10000,
-      "unit": "boxes",
+      "unit": "units",
       "price": 4.50,
-      "currency": "ZAR",
+      "currency": "USD",
       "where_location": "Johannesburg",
       "when_available": "2025-12-01",
       "source_link": "https://example.com/product",
@@ -274,12 +274,12 @@ Idempotency-Key: unique-key-123
   },
   "seller": {
     "id": "seller_org_456",
-    "name": "Supplier Pharma Inc"
+    "name": "Commercial Supplier Inc"
   },
-  "commodity": "Paracetamol 500mg tablets",
+  "commodity": "Industrial Equipment Parts",
   "quantity": {
     "amount": 10000,
-    "unit": "boxes"
+    "unit": "units"
   },
   "price": {
     "amount": 45000,
@@ -296,14 +296,14 @@ Idempotency-Key: unique-key-123
     "id": "match_789",
     "org_id": "org_123",
     "buyer_id": "buyer_org_123",
-    "buyer_name": "Buyer Pharmacy Ltd",
+    "buyer_name": "Commercial Buyer Ltd",
     "seller_id": "seller_org_456",
-    "seller_name": "Supplier Pharma Inc",
-    "commodity": "Paracetamol 500mg tablets",
+    "seller_name": "Commercial Supplier Inc",
+    "commodity": "Industrial Equipment Parts",
     "quantity_amount": 10000,
-    "quantity_unit": "boxes",
+    "quantity_unit": "units",
     "price_amount": 45000,
-    "price_currency": "ZAR",
+    "price_currency": "USD",
     "terms": "Payment within 30 days, FOB Johannesburg",
     "hash": "a1b2c3d4e5f6...",
     "status": "matched",
@@ -337,7 +337,7 @@ Authorization: Bearer sk_your_api_key
   "settled_at": "2025-11-20T11:00:00Z",
   "buyer_id": "buyer_org_123",
   "seller_id": "seller_org_456",
-  "commodity": "Paracetamol 500mg tablets",
+  "commodity": "Industrial Equipment Parts",
   "quantity_amount": 10000,
   "price_amount": 45000,
   "hash": "a1b2c3d4e5f6..."
@@ -813,7 +813,7 @@ Authorization: Bearer sk_your_api_key
         "hash": "a1b2c3d4e5f6...",
         "buyer_id": "buyer_org_123",
         "seller_id": "seller_org_456",
-        "commodity": "Paracetamol 500mg",
+        "commodity": "Industrial Equipment",
         "price_amount": 45000
       },
       "created_at": "2025-11-20T10:40:00Z"
@@ -847,7 +847,7 @@ When webhook events occur, Trade.Izenzo sends POST requests to your configured e
     "id": "match_789",
     "org_id": "org_123",
     "buyer_id": "buyer_org_123",
-    "commodity": "Paracetamol 500mg",
+    "commodity": "Industrial Equipment",
     "created_at": "2025-11-20T10:40:00Z"
   },
   "timestamp": "2025-11-20T10:40:01Z",

@@ -1,8 +1,8 @@
-# Trade.Izenzo API
+# Compliance Matching API
 
-**Generic trade match recording and proof service**
+**Cross-industry REST API for verified trade intent**
 
-Trade.Izenzo API v1 is a sector-agnostic backend service that records trade "matches" between buyers and sellers, returns a cryptographic proof record, and allows matches to be marked as "settled". The API is decoupled from any specific marketplace or frontend - it simply provides a reliable record-keeping layer for trade transactions.
+Compliance Matching API v1 is a sector-agnostic backend service that logs, matches, and settles verified trade intent between buyers and sellers, with comprehensive audit logs and compliance event tracking. The API is decoupled from any specific marketplace or frontend—it simply provides a reliable record-keeping layer for trade transactions.
 
 ---
 
@@ -39,10 +39,10 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \
       "id": "SELLER456",
       "name": "Example Seller Ltd"
     },
-    "commodity": "Industrial Hemp Fibre",
+    "commodity": "Industrial Equipment Parts",
     "quantity": {
       "amount": 1000,
-      "unit": "kg"
+      "unit": "units"
     },
     "price": {
       "amount": 50000,
@@ -50,8 +50,8 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \
     },
     "terms": "Delivery within 30 days, payment on delivery",
     "metadata": {
-      "region": "EU-Africa",
-      "channel": "Trade.Izenzo platform"
+      "region": "EU",
+      "channel": "B2B platform"
     }
   }'
 ```

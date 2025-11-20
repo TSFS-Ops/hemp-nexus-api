@@ -264,7 +264,7 @@ export default function Dashboard() {
             <div>
               <h1 className="text-4xl font-bold tracking-tight mb-2">Compliance Matching API</h1>
               <p className="text-lg text-muted-foreground">
-                Complete REST API for pharmaceutical compliance verification and transaction matching
+                Cross-industry REST API for logging, matching, and settling verified trade intent between buyers and sellers, with audit logs and compliance event tracking
               </p>
             </div>
 
@@ -320,9 +320,9 @@ export default function Dashboard() {
   -H "Content-Type: application/json" \\
   -d '{
     "type": "buyer",
-    "what": "Paracetamol 500mg",
+    "what": "Industrial Equipment Parts",
     "how_much": 10000,
-    "unit": "tablets"
+    "unit": "units"
   }'`}</code>
                   </pre>
                 </div>

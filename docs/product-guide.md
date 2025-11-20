@@ -1,4 +1,4 @@
-# Trade.Izenzo Product Guide
+# Compliance Matching API Product Guide
 
 **Last Updated**: 2025-11-20
 
@@ -6,10 +6,10 @@
 
 ## Overview
 
-Trade.Izenzo is a **B2B API platform** for compliance-aware trade matching in regulated industries (pharmaceutical, medical devices, etc.). The platform provides:
+Compliance Matching API is a **B2B API platform** for verified trade intent in regulated sectors. The platform provides:
 
 1. **Developer Portal** - Manage API keys, test endpoints, view analytics
-2. **Compliance Matching API** - Create signals, record matches, verify licenses
+2. **Compliance Matching API** - Create signals, record matches, track compliance events
 3. **Admin Dashboard** - Manage users, organizations, and system settings
 
 **Important Note**: This is an API platform with a developer portal, not an end-user marketplace. There are no buyer/seller listing pages, shopping carts, or public product catalogs.
@@ -110,10 +110,10 @@ const response = await fetch(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      product: 'Paracetamol 500mg tablets',
+      product: 'Industrial Equipment Parts',
       quantity: 10000,
-      unit: 'boxes',
-      location: 'Johannesburg'
+      unit: 'units',
+      location: 'Regional Hub'
     })
   }
 );
@@ -460,7 +460,7 @@ If you forget your password:
 
 ### Q: What industries is this for?
 
-**A**: Regulated industries requiring compliance verification, particularly pharmaceuticals and medical devices in South Africa (SAHPRA).
+**A**: Cross-sector B2B trade where compliance verification and audit trails are required. The API is industry-agnostic and suitable for any regulated vertical.
 
 ---
 

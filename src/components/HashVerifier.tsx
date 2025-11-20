@@ -156,7 +156,7 @@ export default function HashVerifier() {
               id="commodity"
               value={commodity}
               onChange={(e) => setCommodity(e.target.value)}
-              placeholder="Paracetamol 500mg"
+              placeholder="Industrial Equipment Parts"
             />
           </div>
 
