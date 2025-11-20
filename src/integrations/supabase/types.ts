@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          expires_at: string | null
+          expiry_warning_sent: boolean | null
           id: string
           key_hash: string
           last_used_at: string | null
@@ -30,6 +32,8 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
+          expiry_warning_sent?: boolean | null
           id?: string
           key_hash: string
           last_used_at?: string | null
@@ -42,6 +46,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
+          expiry_warning_sent?: boolean | null
           id?: string
           key_hash?: string
           last_used_at?: string | null
@@ -767,6 +773,9 @@ export type Database = {
           error_message: string | null
           event_type: string
           id: string
+          is_dead_letter: boolean | null
+          max_retries: number | null
+          next_retry_at: string | null
           org_id: string
           payload: Json
           response_body: string | null
@@ -780,6 +789,9 @@ export type Database = {
           error_message?: string | null
           event_type: string
           id?: string
+          is_dead_letter?: boolean | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           org_id: string
           payload?: Json
           response_body?: string | null
@@ -793,6 +805,9 @@ export type Database = {
           error_message?: string | null
           event_type?: string
           id?: string
+          is_dead_letter?: boolean | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           org_id?: string
           payload?: Json
           response_body?: string | null
@@ -874,6 +889,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "seller" | "broker" | "buyer" | "auditor"

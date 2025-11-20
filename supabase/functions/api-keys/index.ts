@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
         throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
 
-      const { name, scopes } = validatedData;
+      const { name, scopes, expires_at } = validatedData;
 
       // Generate a random API key
       const apiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
           key_hash: keyHash,
           scopes: scopes || [],
           created_by: authCtx.userId || null,
+          expires_at: expires_at || null,
         })
         .select()
         .single();
@@ -69,8 +70,9 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           id: data.id,
           name: data.name,
-          key: apiKey, // Only returned once!
+          key: apiKey,
           scopes: data.scopes,
+          expires_at: data.expires_at,
           created_at: data.created_at,
         }),
         { status: 201, headers: { 'Content-Type': 'application/json', ...headers } }
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET' && pathParts.length === 1) {
       const { data, error } = await supabase
         .from('api_keys')
-        .select('id, name, scopes, last_used_at, created_at, status')
+        .select('id, name, scopes, last_used_at, created_at, status, expires_at')
         .eq('org_id', authCtx.orgId)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
