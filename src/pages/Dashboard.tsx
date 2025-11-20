@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History } from "lucide-react";
 import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
 import MatchTester from "@/components/MatchTester";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import ApiDocs from "@/components/ApiDocs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -333,20 +334,27 @@ export default function Dashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="keys" className="relative">
+              <Key className="mr-2 h-4 w-4" />
               API Keys
               {hasApiKeys && (
                 <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-500" />
               )}
             </TabsTrigger>
             <TabsTrigger value="testing" disabled={!hasApiKeys}>
+              <TestTube className="mr-2 h-4 w-4" />
               Testing
               {hasTestedEndpoint && (
                 <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-500" />
               )}
             </TabsTrigger>
+            <TabsTrigger value="docs">
+              <Book className="mr-2 h-4 w-4" />
+              Documentation
+            </TabsTrigger>
             <TabsTrigger value="audit" disabled={!hasApiKeys}>
+              <History className="mr-2 h-4 w-4" />
               Audit Logs
             </TabsTrigger>
           </TabsList>
@@ -532,6 +540,11 @@ export default function Dashboard() {
 
             <MatchTester apiKey={testingKey} />
             <SignalTester apiKey={testingKey} />
+          </TabsContent>
+
+          {/* Documentation Tab */}
+          <TabsContent value="docs">
+            <ApiDocs />
           </TabsContent>
 
           {/* Audit Logs Tab */}
