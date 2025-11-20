@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3 } from "lucide-react";
 import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
 import MatchTester from "@/components/MatchTester";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import ApiDocs from "@/components/ApiDocs";
+import ApiAnalytics from "@/components/ApiAnalytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -334,7 +335,7 @@ export default function Dashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="keys" className="relative">
               <Key className="mr-2 h-4 w-4" />
               API Keys
@@ -352,6 +353,10 @@ export default function Dashboard() {
             <TabsTrigger value="docs">
               <Book className="mr-2 h-4 w-4" />
               Documentation
+            </TabsTrigger>
+            <TabsTrigger value="analytics" disabled={!hasApiKeys}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="audit" disabled={!hasApiKeys}>
               <History className="mr-2 h-4 w-4" />
@@ -545,6 +550,11 @@ export default function Dashboard() {
           {/* Documentation Tab */}
           <TabsContent value="docs">
             <ApiDocs />
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <ApiAnalytics />
           </TabsContent>
 
           {/* Audit Logs Tab */}
