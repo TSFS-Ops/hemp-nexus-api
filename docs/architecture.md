@@ -1,4 +1,4 @@
-# Trade.Izenzo Technical Architecture
+# Compliance Matching API Technical Architecture
 
 **Last Updated**: 2025-11-20
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Trade.Izenzo is a modern B2B API platform built on **Supabase** (PostgreSQL + Edge Functions) with a **React** frontend. The architecture prioritizes security, compliance, and audit-ability for regulated trade matching.
+Compliance Matching API is a modern B2B API platform built on **Supabase** (PostgreSQL + Edge Functions) with a **React** frontend. The architecture prioritizes security, compliance, and audit-ability for regulated trade matching.
 
 ---
 

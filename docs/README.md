@@ -1,8 +1,8 @@
-# Trade.Izenzo Documentation
+# Compliance Matching API Documentation
 
 **Last Updated**: 2025-11-20
 
-Welcome to the Trade.Izenzo documentation hub. All documentation reflects the **current state** of the system as of November 2025.
+Welcome to the Compliance Matching API documentation hub. All documentation reflects the **current state** of the system as of November 2025.
 
 ---
 

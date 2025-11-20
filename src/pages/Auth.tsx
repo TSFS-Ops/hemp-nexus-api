@@ -371,9 +371,9 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Trade.Izenzo API</CardTitle>
+          <CardTitle>Compliance Match</CardTitle>
           <CardDescription>
-            Compliance Matching API for pharmaceutical supply chains
+            Cross-industry API for verified trade intent
           </CardDescription>
         </CardHeader>
         <CardContent>
