@@ -22,7 +22,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
 
   // Form state
   const [signalType, setSignalType] = useState<"buyer" | "seller">("buyer");
-  const [product, setProduct] = useState("Hemp fibre");
+  const [product, setProduct] = useState("Industrial fiber");
   const [quantity, setQuantity] = useState("10000");
   const [unit, setUnit] = useState("kg");
   const [location, setLocation] = useState("Rotterdam");
@@ -227,7 +227,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
         <CardHeader>
           <CardTitle>Create Test Signal</CardTitle>
           <CardDescription>
-            Test SAHPRA verification & global web search
+            Test compliance verification and discover matching options
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -389,11 +389,11 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
                         <div className="mt-2">
                           {option.quality_flags?.sahpra_verified ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                              ✓ SAHPRA Verified
+                              ✓ Compliance Verified
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
-                              ⚠ No SAHPRA License
+                              ⚠ Not Verified
                             </span>
                           )}
                         </div>
