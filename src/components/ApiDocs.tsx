@@ -1,11 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Book } from "lucide-react";
+import { FileText, Code, Book, Shield, Zap, Webhook, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Code, Book, Shield, Zap, Webhook, AlertCircle } from "lucide-react";
 import ApiPlayground from "./ApiPlayground";
 
 export default function ApiDocs() {
