@@ -23,6 +23,8 @@ import ComprehensiveApiTests from "@/components/ComprehensiveApiTests";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { QuickstartGuide } from "@/components/dashboard/QuickstartGuide";
+import { WebhookManagement } from "@/components/dashboard/WebhookManagement";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -51,7 +53,7 @@ export default function Dashboard() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
-  const [activeSection, setActiveSection] = useState("docs");
+  const [activeSection, setActiveSection] = useState("quickstart");
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -260,6 +262,12 @@ export default function Dashboard() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case "quickstart":
+        return <QuickstartGuide />;
+
+      case "webhooks":
+        return <WebhookManagement />;
+
       case "docs":
         return (
           <div className="space-y-8">

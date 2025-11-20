@@ -1,0 +1,356 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle2, Copy, Play, Rocket } from "lucide-react";
+import { toast } from "sonner";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+interface SDKExample {
+  id: string;
+  language: string;
+  example_type: string;
+  code_snippet: string;
+  description: string;
+}
+
+export function QuickstartGuide() {
+  const [examples, setExamples] = useState<SDKExample[]>([]);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    fetchExamples();
+    checkApiKey();
+  }, []);
+
+  const fetchExamples = async () => {
+    const { data } = await supabase
+      .from("sdk_examples")
+      .select("*")
+      .order("language", { ascending: true });
+
+    if (data) setExamples(data);
+  };
+
+  const checkApiKey = async () => {
+    const { data } = await supabase
+      .from("api_keys")
+      .select("id, name")
+      .eq("status", "active")
+      .eq("environment", "sandbox")
+      .limit(1)
+      .single();
+
+    if (data) {
+      setApiKey(data.id);
+      markStepComplete(1);
+    }
+  };
+
+  const markStepComplete = (step: number) => {
+    setCompletedSteps(prev => new Set([...prev, step]));
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
+  };
+
+  const getExamplesByType = (type: string) => {
+    return examples.filter(ex => ex.example_type === type);
+  };
+
+  const steps = [
+    {
+      number: 1,
+      title: "Create Sandbox API Key",
+      description: "Generate a test API key to start making requests",
+      action: () => window.location.href = "/dashboard?section=keys",
+      actionLabel: "Create Key",
+      completed: apiKey !== null,
+    },
+    {
+      number: 2,
+      title: "Run Your First API Call",
+      description: "Copy and run the example below to create your first signal",
+      completed: completedSteps.has(2),
+    },
+    {
+      number: 3,
+      title: "View Your Data",
+      description: "Check the dashboard to see your signals and matches",
+      action: () => markStepComplete(3),
+      actionLabel: "View Dashboard",
+      completed: completedSteps.has(3),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <Rocket className="h-8 w-8 text-primary" />
+          Quick Start Guide
+        </h2>
+        <p className="text-muted-foreground mt-2">
+          Get from zero to your first match in under 10 minutes
+        </p>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {steps.map((step) => (
+          <Card key={step.number} className={step.completed ? "border-green-500" : ""}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <Badge variant="outline" className="mb-2">
+                    Step {step.number}
+                  </Badge>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {step.title}
+                    {step.completed && (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    )}
+                  </CardTitle>
+                </div>
+              </div>
+              <CardDescription>{step.description}</CardDescription>
+            </CardHeader>
+            {step.action && !step.completed && (
+              <CardContent>
+                <Button onClick={step.action} size="sm" className="w-full">
+                  <Play className="h-4 w-4 mr-2" />
+                  {step.actionLabel}
+                </Button>
+              </CardContent>
+            )}
+          </Card>
+        ))}
+      </div>
+
+      {/* Code Examples */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Try It Out</CardTitle>
+          <CardDescription>
+            Choose your preferred language and run the example code
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="curl" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="curl">cURL</TabsTrigger>
+              <TabsTrigger value="typescript">TypeScript</TabsTrigger>
+              <TabsTrigger value="python">Python</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="curl" className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Create a Signal</h4>
+                  {getExamplesByType("create_signal")
+                    .filter(ex => ex.language === "curl")
+                    .map((example) => (
+                      <div key={example.id} className="relative">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute right-2 top-2 z-10"
+                          onClick={() => copyToClipboard(example.code_snippet)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <SyntaxHighlighter
+                          language="bash"
+                          style={vscDarkPlus}
+                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                        >
+                          {example.code_snippet}
+                        </SyntaxHighlighter>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="typescript" className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Install the SDK</h4>
+                  <div className="relative">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute right-2 top-2 z-10"
+                      onClick={() => copyToClipboard("npm install @compliance-matching/sdk")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <SyntaxHighlighter
+                      language="bash"
+                      style={vscDarkPlus}
+                      customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                    >
+                      npm install @compliance-matching/sdk
+                    </SyntaxHighlighter>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Create a Signal</h4>
+                  {getExamplesByType("create_signal")
+                    .filter(ex => ex.language === "typescript")
+                    .map((example) => (
+                      <div key={example.id} className="relative">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute right-2 top-2 z-10"
+                          onClick={() => copyToClipboard(example.code_snippet)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <SyntaxHighlighter
+                          language="typescript"
+                          style={vscDarkPlus}
+                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                        >
+                          {example.code_snippet}
+                        </SyntaxHighlighter>
+                      </div>
+                    ))}
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Create a Match</h4>
+                  {getExamplesByType("create_match")
+                    .filter(ex => ex.language === "typescript")
+                    .map((example) => (
+                      <div key={example.id} className="relative">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute right-2 top-2 z-10"
+                          onClick={() => copyToClipboard(example.code_snippet)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <SyntaxHighlighter
+                          language="typescript"
+                          style={vscDarkPlus}
+                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                        >
+                          {example.code_snippet}
+                        </SyntaxHighlighter>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="python" className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Install the SDK</h4>
+                  <div className="relative">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute right-2 top-2 z-10"
+                      onClick={() => copyToClipboard("pip install compliance-matching")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <SyntaxHighlighter
+                      language="bash"
+                      style={vscDarkPlus}
+                      customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                    >
+                      pip install compliance-matching
+                    </SyntaxHighlighter>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Create a Signal</h4>
+                  {getExamplesByType("create_signal")
+                    .filter(ex => ex.language === "python")
+                    .map((example) => (
+                      <div key={example.id} className="relative">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute right-2 top-2 z-10"
+                          onClick={() => copyToClipboard(example.code_snippet)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <SyntaxHighlighter
+                          language="python"
+                          style={vscDarkPlus}
+                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                        >
+                          {example.code_snippet}
+                        </SyntaxHighlighter>
+                      </div>
+                    ))}
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Create a Match</h4>
+                  {getExamplesByType("create_match")
+                    .filter(ex => ex.language === "python")
+                    .map((example) => (
+                      <div key={example.id} className="relative">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute right-2 top-2 z-10"
+                          onClick={() => copyToClipboard(example.code_snippet)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <SyntaxHighlighter
+                          language="python"
+                          style={vscDarkPlus}
+                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
+                        >
+                          {example.code_snippet}
+                        </SyntaxHighlighter>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Next Steps */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Next Steps</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Read the full <a href="/dashboard?section=docs" className="text-primary hover:underline">API Documentation</a></span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Set up <a href="/dashboard?section=webhooks" className="text-primary hover:underline">Webhooks</a> to receive real-time notifications</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Explore <a href="/dashboard?section=audit-logs" className="text-primary hover:underline">Audit Logs</a> for compliance tracking</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
