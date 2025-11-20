@@ -436,6 +436,67 @@ export type Database = {
           },
         ]
       }
+      match_events: {
+        Row: {
+          actor_api_key_id: string | null
+          actor_user_id: string | null
+          created_at: string
+          event_data: Json
+          event_type: string
+          id: string
+          match_id: string
+          org_id: string
+          payload_hash: string
+          previous_event_hash: string | null
+        }
+        Insert: {
+          actor_api_key_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          event_data?: Json
+          event_type: string
+          id?: string
+          match_id: string
+          org_id: string
+          payload_hash: string
+          previous_event_hash?: string | null
+        }
+        Update: {
+          actor_api_key_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          event_data?: Json
+          event_type?: string
+          id?: string
+          match_id?: string
+          org_id?: string
+          payload_hash?: string
+          previous_event_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           buyer_id: string
@@ -443,10 +504,12 @@ export type Database = {
           commodity: string
           created_at: string
           created_by: string | null
+          event_chain_hash: string | null
           hash: string
           id: string
           metadata: Json | null
           org_id: string
+          previous_event_hash: string | null
           price_amount: number
           price_currency: string
           quantity_amount: number
@@ -463,10 +526,12 @@ export type Database = {
           commodity: string
           created_at?: string
           created_by?: string | null
+          event_chain_hash?: string | null
           hash: string
           id?: string
           metadata?: Json | null
           org_id: string
+          previous_event_hash?: string | null
           price_amount: number
           price_currency: string
           quantity_amount: number
@@ -483,10 +548,12 @@ export type Database = {
           commodity?: string
           created_at?: string
           created_by?: string | null
+          event_chain_hash?: string | null
           hash?: string
           id?: string
           metadata?: Json | null
           org_id?: string
+          previous_event_hash?: string | null
           price_amount?: number
           price_currency?: string
           quantity_amount?: number
@@ -1075,11 +1142,55 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      match_evidence: {
+        Row: {
+          event_timeline: Json | null
+          match_created_at: string | null
+          match_data: Json | null
+          match_hash: string | null
+          match_id: string | null
+          org_id: string | null
+          settled_at: string | null
+          status: string | null
+        }
+        Insert: {
+          event_timeline?: never
+          match_created_at?: string | null
+          match_data?: never
+          match_hash?: string | null
+          match_id?: string | null
+          org_id?: string | null
+          settled_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          event_timeline?: never
+          match_created_at?: string | null
+          match_data?: never
+          match_hash?: string | null
+          match_id?: string | null
+          org_id?: string | null
+          settled_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
+      generate_event_hash: {
+        Args: { event_data: Json; event_type: string; previous_hash: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
