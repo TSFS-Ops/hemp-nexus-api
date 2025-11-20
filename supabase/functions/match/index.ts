@@ -5,6 +5,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { matchSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
+import { recordMatchEvent } from "../_shared/match-events.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -104,6 +105,23 @@ Deno.serve(async (req) => {
           }
         });
         console.log(`[${requestId}] Audit log created for settlement with hash: ${match.hash}`);
+
+        // Record event in hash-chained timeline
+        await recordMatchEvent(
+          supabase,
+          matchId,
+          match.org_id,
+          "match.settled",
+          {
+            settledAt: updated.settled_at,
+            hash: match.hash,
+            commodity: match.commodity,
+            quantityAmount: match.quantity_amount,
+            priceAmount: match.price_amount,
+          },
+          authCtx.userId,
+          authCtx.isApiKey ? authCtx.userId : null
+        );
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
         // Critical: audit log creation failure should fail the request
@@ -347,6 +365,25 @@ Deno.serve(async (req) => {
           }
         });
         console.log(`[${requestId}] Audit log created for match with hash: ${hash}`);
+
+        // Record event in hash-chained timeline
+        await recordMatchEvent(
+          supabase,
+          match.id,
+          authCtx.orgId,
+          "match.created",
+          {
+            buyer: body.buyer,
+            seller: body.seller,
+            commodity: body.commodity,
+            quantity: body.quantity,
+            price: body.price,
+            terms: body.terms,
+            hash,
+          },
+          authCtx.userId,
+          authCtx.isApiKey ? authCtx.userId : null
+        );
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
         // Critical: audit log creation failure should fail the request
