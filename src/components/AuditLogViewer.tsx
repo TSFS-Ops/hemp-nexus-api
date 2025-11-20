@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Filter } from "lucide-react";
+import { Loader2, RefreshCw, Filter, Shield, Hash } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AuditLogViewerProps {
   apiKey: string | null;
@@ -99,10 +100,20 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Audit Log Viewer</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Audit Log Viewer
+        </CardTitle>
         <CardDescription>
           Query audit logs with filters. All actions are logged for compliance.
         </CardDescription>
+        <Alert className="mt-4">
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Proof-of-Intent Trail:</strong> Match creation and settlement events are immutable audit records 
+            containing SHA-256 hashes of deal terms. These logs serve as verifiable proof of intent and settlement.
+          </AlertDescription>
+        </Alert>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filters */}
@@ -208,29 +219,58 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                     <TableHead>Action</TableHead>
                     <TableHead>Entity Type</TableHead>
                     <TableHead>Entity ID</TableHead>
+                    <TableHead>Hash</TableHead>
                     <TableHead>Actor</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="text-xs">
-                        {new Date(log.created_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getActionBadgeVariant(log.action)}>
-                          {log.action}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{log.entity_type}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.entity_id ? log.entity_id.substring(0, 8) : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {log.actor_api_key_id ? "API Key" : "User"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {logs.map((log) => {
+                    const isProofOfIntent = log.action === "match.created" || log.action === "match.settled";
+                    const hash = log.metadata?.hash;
+                    
+                    return (
+                      <TableRow 
+                        key={log.id}
+                        className={isProofOfIntent ? "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-600" : ""}
+                      >
+                        <TableCell className="text-xs">
+                          {new Date(log.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={getActionBadgeVariant(log.action)}>
+                              {log.action}
+                            </Badge>
+                            {isProofOfIntent && (
+                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Proof
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{log.entity_type}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {log.entity_id ? log.entity_id.substring(0, 8) : "—"}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {hash ? (
+                            <div className="flex items-center gap-2">
+                              <Hash className="h-3 w-3 text-green-600" />
+                              <code className="text-green-700 dark:text-green-400" title={hash}>
+                                {hash.substring(0, 12)}...
+                              </code>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {log.actor_api_key_id ? "API Key" : "User"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
