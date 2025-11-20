@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
       if (updateError) handleDatabaseError(updateError, requestId);
 
-      // Create audit log for settlement (non-blocking)
+      // Create audit log for settlement (immutable proof-of-intent)
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -93,11 +93,21 @@ Deno.serve(async (req) => {
           entity_id: matchId,
           metadata: {
             settled_at: updated.settled_at,
-            hash: match.hash
+            hash: match.hash,
+            buyer_id: match.buyer_id,
+            seller_id: match.seller_id,
+            commodity: match.commodity,
+            quantity_amount: match.quantity_amount,
+            quantity_unit: match.quantity_unit,
+            price_amount: match.price_amount,
+            price_currency: match.price_currency
           }
         });
+        console.log(`[${requestId}] Audit log created for settlement with hash: ${match.hash}`);
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
+        // Critical: audit log creation failure should fail the request
+        throw new ApiException("AUDIT_LOG_ERROR", "Failed to create audit trail", 500);
       }
 
       console.log(`[${requestId}] Match settled successfully`);
@@ -312,7 +322,7 @@ Deno.serve(async (req) => {
 
       if (insertError) handleDatabaseError(insertError, requestId);
 
-      // Create audit log for match creation (non-blocking)
+      // Create audit log for match creation (immutable proof-of-intent)
       try {
         await supabase.from("audit_logs").insert({
           org_id: authCtx.orgId,
@@ -322,16 +332,25 @@ Deno.serve(async (req) => {
           entity_type: "match",
           entity_id: match.id,
           metadata: {
-            commodity: body.commodity,
+            hash,
             buyer_id: body.buyer.id,
+            buyer_name: body.buyer.name,
             seller_id: body.seller.id,
-            quantity: body.quantity,
-            price: body.price,
-            hash
+            seller_name: body.seller.name,
+            commodity: body.commodity,
+            quantity_amount: body.quantity.amount,
+            quantity_unit: body.quantity.unit,
+            price_amount: body.price.amount,
+            price_currency: body.price.currency,
+            terms: body.terms,
+            canonical_string: canonicalString
           }
         });
+        console.log(`[${requestId}] Audit log created for match with hash: ${hash}`);
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
+        // Critical: audit log creation failure should fail the request
+        throw new ApiException("AUDIT_LOG_ERROR", "Failed to create audit trail", 500);
       }
 
       // Store idempotency key if provided (non-blocking)

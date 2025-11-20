@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3 } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
@@ -14,6 +14,7 @@ import MatchTester from "@/components/MatchTester";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import ApiDocs from "@/components/ApiDocs";
 import ApiAnalytics from "@/components/ApiAnalytics";
+import ApiSmokeTests from "@/components/ApiSmokeTests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -543,6 +544,7 @@ export default function Dashboard() {
               </Alert>
             )}
 
+            <ApiSmokeTests apiKey={testingKey} />
             <MatchTester apiKey={testingKey} />
             <SignalTester apiKey={testingKey} />
           </TabsContent>
