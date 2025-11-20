@@ -26,6 +26,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { QuickstartGuide } from "@/components/dashboard/QuickstartGuide";
 import { WebhookManagement } from "@/components/dashboard/WebhookManagement";
 import { MatchesList } from "@/components/MatchesList";
+import { MatchAnalytics } from "@/components/MatchAnalytics";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -276,6 +277,19 @@ export default function Dashboard() {
               </p>
             </div>
             <MatchesList />
+          </div>
+        );
+
+      case "analytics":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Match Analytics</h1>
+              <p className="text-muted-foreground">
+                Insights and statistics about your trading activity
+              </p>
+            </div>
+            <MatchAnalytics />
           </div>
         );
 

@@ -1,4 +1,4 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake } from "lucide-react";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -33,6 +33,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
     { id: "keys", title: "Authentication", icon: Key },
     { id: "test", title: "API Reference", icon: Code },
     { id: "matches", title: "Matches", icon: Handshake },
+    { id: "analytics", title: "Analytics", icon: BarChart3 },
     { id: "webhooks", title: "Webhooks", icon: Zap },
     { id: "audit-logs", title: "Logs", icon: Activity },
   ];
