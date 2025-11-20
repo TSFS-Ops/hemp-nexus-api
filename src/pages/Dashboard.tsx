@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Copy, Loader2, Key, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { User, Session } from "@supabase/supabase-js";
 import SignalTester from "@/components/SignalTester";
 import MatchTester from "@/components/MatchTester";
@@ -521,12 +522,23 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">Comprehensive API Tests</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">API Reference & Testing</h1>
               <p className="text-muted-foreground">
-                Run automated tests across all API endpoints to verify functionality
+                Complete documentation with interactive playground and automated test suite
               </p>
             </div>
-            <ComprehensiveApiTests />
+            <Tabs defaultValue="documentation" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="documentation">Documentation</TabsTrigger>
+                <TabsTrigger value="tests">Automated Tests</TabsTrigger>
+              </TabsList>
+              <TabsContent value="documentation" className="mt-6">
+                <ApiDocs />
+              </TabsContent>
+              <TabsContent value="tests" className="mt-6">
+                <ComprehensiveApiTests />
+              </TabsContent>
+            </Tabs>
           </div>
         );
 
