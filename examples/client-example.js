@@ -1,14 +1,215 @@
 /**
- * SignalRank API Client Example
+ * Trade.Izenzo API - Node.js/JavaScript Client Example
  * 
- * This example demonstrates the complete flow:
- * 1. Create an API key
- * 2. Register data sources
- * 3. Grant consents
- * 4. Create a signal
- * 5. Get matched options
- * 6. Select an option
+ * This is a lightweight SDK wrapper for the Trade.Izenzo Compliance Matching API.
+ * No installation required - just copy this code into your project.
+ * 
+ * Usage:
+ *   const client = new TradeIzenzoClient('your-api-key-here');
+ *   const signal = await client.createSignal({ product: 'Paracetamol', quantity: 1000, unit: 'kg' });
  */
+
+class TradeIzenzoClient {
+  constructor(apiKey, options = {}) {
+    this.apiKey = apiKey;
+    this.baseUrl = options.baseUrl || 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1';
+    this.timeout = options.timeout || 30000;
+  }
+
+  async request(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers = {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || `API Error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      throw error;
+    }
+  }
+
+  // Signal Management
+  async createSignal(data) {
+    return this.request('/signals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSignal(signalId) {
+    return this.request(`/signals/${signalId}`, {
+      method: 'GET',
+    });
+  }
+
+  async listSignals(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/signals${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  }
+
+  async selectOption(signalId, optionId) {
+    return this.request(`/signals/${signalId}/select`, {
+      method: 'POST',
+      body: JSON.stringify({ optionId }),
+    });
+  }
+
+  // Match Management
+  async createMatch(data) {
+    return this.request('/match', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMatch(matchId) {
+    return this.request(`/match/${matchId}`, {
+      method: 'GET',
+    });
+  }
+
+  async settleMatch(matchId) {
+    return this.request(`/match/${matchId}/settle`, {
+      method: 'POST',
+    });
+  }
+
+  async verifyMatchHash(matchId, expectedHash) {
+    const match = await this.getMatch(matchId);
+    return match.hash === expectedHash;
+  }
+
+  // Audit Logs
+  async getAuditLogs(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/audit-logs${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  }
+
+  // Webhooks
+  async createWebhook(data) {
+    return this.request('/webhooks', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listWebhooks() {
+    return this.request('/webhooks', {
+      method: 'GET',
+    });
+  }
+
+  async deleteWebhook(webhookId) {
+    return this.request(`/webhooks/${webhookId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Verification
+  async verifySAHPRA(licenceNumber) {
+    return this.request('/sahpra-verification', {
+      method: 'POST',
+      body: JSON.stringify({ licenceNumber }),
+    });
+  }
+}
+
+// Example usage
+async function example() {
+  const client = new TradeIzenzoClient('tiz_sandbox_your_key_here');
+
+  try {
+    // Create a signal
+    const signal = await client.createSignal({
+      product: 'Paracetamol 500mg tablets',
+      quantity: 10000,
+      unit: 'units',
+      location: 'Johannesburg',
+      deliveryWindow: {
+        start: '2025-01-01',
+        end: '2025-01-31',
+      },
+      budget: 5000,
+      currency: 'ZAR',
+    });
+
+    console.log('Signal created:', signal.id);
+
+    // Create a match
+    const match = await client.createMatch({
+      buyerId: 'buyer-123',
+      buyerName: 'Pharmacy Chain SA',
+      sellerId: 'seller-456',
+      sellerName: 'MedSupply Ltd',
+      commodity: 'Paracetamol 500mg',
+      quantityAmount: 10000,
+      quantityUnit: 'units',
+      priceAmount: 4500,
+      priceCurrency: 'ZAR',
+      terms: 'Net 30 days, FOB Johannesburg',
+    });
+
+    console.log('Match created:', match.id);
+    console.log('Match hash:', match.hash);
+
+    // Settle the match
+    const settled = await client.settleMatch(match.id);
+    console.log('Match settled at:', settled.settled_at);
+
+    // Verify hash hasn't changed
+    const isValid = await client.verifyMatchHash(match.id, match.hash);
+    console.log('Hash valid:', isValid);
+
+    // Get audit logs
+    const logs = await client.getAuditLogs({
+      entity_type: 'match',
+      entity_id: match.id,
+    });
+    console.log('Audit logs:', logs.length);
+
+  } catch (error) {
+    console.error('Error:', error.message);
+  }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { TradeIzenzoClient };
+}
+
+// Run example if executed directly
+if (require.main === module) {
+  example();
+}
+
 
 const BASE_URL = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1';
 
