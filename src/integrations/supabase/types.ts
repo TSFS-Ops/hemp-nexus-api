@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          environment: string | null
           expires_at: string | null
           expiry_warning_sent: boolean | null
           id: string
@@ -66,6 +67,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          environment?: string | null
           expires_at?: string | null
           expiry_warning_sent?: boolean | null
           id?: string
@@ -81,6 +83,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          environment?: string | null
           expires_at?: string | null
           expiry_warning_sent?: boolean | null
           id?: string
@@ -585,6 +588,7 @@ export type Database = {
           sahpra_verification_data: Json | null
           sahpra_verified: boolean | null
           sahpra_verified_at: string | null
+          sandbox_enabled: boolean | null
           status: string
           updated_at: string
         }
@@ -596,6 +600,7 @@ export type Database = {
           sahpra_verification_data?: Json | null
           sahpra_verified?: boolean | null
           sahpra_verified_at?: string | null
+          sandbox_enabled?: boolean | null
           status?: string
           updated_at?: string
         }
@@ -607,6 +612,7 @@ export type Database = {
           sahpra_verification_data?: Json | null
           sahpra_verified?: boolean | null
           sahpra_verified_at?: string | null
+          sandbox_enabled?: boolean | null
           status?: string
           updated_at?: string
         }
@@ -740,6 +746,36 @@ export type Database = {
           province?: string | null
           responsible_pharmacist?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sdk_examples: {
+        Row: {
+          code_snippet: string
+          created_at: string
+          description: string | null
+          example_type: string
+          id: string
+          language: string
+          updated_at: string
+        }
+        Insert: {
+          code_snippet: string
+          created_at?: string
+          description?: string | null
+          example_type: string
+          id?: string
+          language: string
+          updated_at?: string
+        }
+        Update: {
+          code_snippet?: string
+          created_at?: string
+          description?: string | null
+          example_type?: string
+          id?: string
+          language?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -976,6 +1012,63 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          delivered: boolean | null
+          delivered_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          org_id: string
+          payload: Json
+          retry_count: number | null
+          signature: string
+          webhook_endpoint_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered?: boolean | null
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          org_id: string
+          payload: Json
+          retry_count?: number | null
+          signature: string
+          webhook_endpoint_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered?: boolean | null
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          retry_count?: number | null
+          signature?: string
+          webhook_endpoint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_events_webhook_endpoint_id_fkey"
+            columns: ["webhook_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
             referencedColumns: ["id"]
           },
         ]

@@ -28,6 +28,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
   const { toast } = useToast();
 
   const mainItems = [
+    { id: "quickstart", title: "Quick Start", icon: BookOpen },
     { id: "docs", title: "Overview", icon: BookOpen },
     { id: "keys", title: "Authentication", icon: Key },
     { id: "test", title: "API Reference", icon: Code },
