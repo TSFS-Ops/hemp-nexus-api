@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Download, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 interface MatchEvent {
   id: string;
   event_type: string;
-  event_data: Record<string, any>;
+  event_data: Json;
   payload_hash: string;
   previous_event_hash: string | null;
   created_at: string;
