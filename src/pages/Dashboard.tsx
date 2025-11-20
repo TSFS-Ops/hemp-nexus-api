@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { QuickstartGuide } from "@/components/dashboard/QuickstartGuide";
 import { WebhookManagement } from "@/components/dashboard/WebhookManagement";
+import { MatchesList } from "@/components/MatchesList";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -265,8 +266,18 @@ export default function Dashboard() {
       case "quickstart":
         return <QuickstartGuide />;
 
-      case "webhooks":
-        return <WebhookManagement />;
+      case "matches":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Matches</h1>
+              <p className="text-muted-foreground">
+                View and manage trade matches with full audit trails
+              </p>
+            </div>
+            <MatchesList />
+          </div>
+        );
 
       case "docs":
         return (
@@ -559,6 +570,7 @@ export default function Dashboard() {
                 Real-time event notifications for your integration
               </p>
             </div>
+            <WebhookManagement />
             <WebhookDeliveryLogs />
           </div>
         );
