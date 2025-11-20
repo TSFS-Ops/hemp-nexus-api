@@ -97,8 +97,8 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Trade.Izenzo API</CardTitle>
-          <CardDescription>Sign in to manage your API keys</CardDescription>
+          <CardTitle>API Developer Portal</CardTitle>
+          <CardDescription>Sign in to manage your API keys and test endpoints</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin">

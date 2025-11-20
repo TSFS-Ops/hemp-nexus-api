@@ -215,7 +215,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Trade.Izenzo Dashboard</h1>
+            <h1 className="text-3xl font-bold">API Dashboard</h1>
             <p className="text-muted-foreground mt-1">{user?.email}</p>
           </div>
           <Button variant="outline" onClick={handleSignOut}>
@@ -228,9 +228,9 @@ export default function Dashboard() {
         {(!hasApiKeys || showWelcome) && (
           <Alert className="border-primary">
             <Rocket className="h-5 w-5" />
-            <AlertTitle className="text-lg font-semibold">Welcome to Trade.Izenzo!</AlertTitle>
+            <AlertTitle className="text-lg font-semibold">Welcome to the API Portal!</AlertTitle>
             <AlertDescription className="mt-2 space-y-3">
-              <p>Get started with the Trade.Izenzo API in 3 simple steps:</p>
+              <p>Get started with the Compliance Matching API in 3 simple steps:</p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {hasApiKeys ? (
@@ -357,7 +357,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Create New API Key</CardTitle>
                 <CardDescription>
-                  Generate a new API key to access the Trade.Izenzo API
+                  Generate a new API key to access the API endpoints
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -423,7 +423,7 @@ export default function Dashboard() {
                       No API keys yet
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Create your first API key above to get started with Trade.Izenzo
+                      Create your first API key above to get started
                     </p>
                   </div>
                 ) : (
