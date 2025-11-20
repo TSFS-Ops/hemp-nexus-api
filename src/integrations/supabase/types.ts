@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -22,6 +55,7 @@ export type Database = {
           expiry_warning_sent: boolean | null
           id: string
           key_hash: string
+          key_history: Json | null
           last_used_at: string | null
           name: string
           org_id: string
@@ -36,6 +70,7 @@ export type Database = {
           expiry_warning_sent?: boolean | null
           id?: string
           key_hash: string
+          key_history?: Json | null
           last_used_at?: string | null
           name: string
           org_id: string
@@ -50,6 +85,7 @@ export type Database = {
           expiry_warning_sent?: boolean | null
           id?: string
           key_hash?: string
+          key_history?: Json | null
           last_used_at?: string | null
           name?: string
           org_id?: string
@@ -60,6 +96,75 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "api_keys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_request_logs: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          endpoint: string
+          error_message: string | null
+          id: string
+          idempotency_key: string | null
+          ip_address: string | null
+          method: string
+          org_id: string
+          request_body: Json | null
+          request_id: string | null
+          response_body: Json | null
+          response_time_ms: number
+          status_code: number
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ip_address?: string | null
+          method: string
+          org_id: string
+          request_body?: Json | null
+          request_id?: string | null
+          response_body?: Json | null
+          response_time_ms: number
+          status_code: number
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          ip_address?: string | null
+          method?: string
+          org_id?: string
+          request_body?: Json | null
+          request_id?: string | null
+          response_body?: Json | null
+          response_time_ms?: number
+          status_code?: number
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_request_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_logs_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

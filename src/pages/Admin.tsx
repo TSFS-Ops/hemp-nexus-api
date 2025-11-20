@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Building2, ArrowLeft, BarChart3 } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Shield } from "lucide-react";
 import UsersManagement from "@/components/admin/UsersManagement";
 import OrgsManagement from "@/components/admin/OrgsManagement";
-import SystemAnalytics from "@/components/admin/SystemAnalytics";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminOverview } from "@/components/admin/AdminOverview";
+import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
+import { AdminApiKeys } from "@/components/admin/AdminApiKeys";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -76,53 +77,54 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Shield className="h-8 w-8 text-primary" />
-                Admin Panel
-              </h1>
-              <p className="text-muted-foreground mt-1">Manage users, organizations, and system settings</p>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col">
+          <header className="h-14 border-b flex items-center px-4 bg-background">
+            <SidebarTrigger />
+            <div className="ml-4">
+              <h1 className="text-lg font-semibold">API Platform Admin</h1>
             </div>
-          </div>
+          </header>
+          <main className="flex-1 overflow-auto">
+            <Routes>
+              <Route path="/" element={<AdminOverview />} />
+              <Route path="/logs" element={<GlobalApiLogs />} />
+              <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route
+                path="/users-orgs"
+                element={
+                  <div className="p-6 space-y-6">
+                    <div>
+                      <h2 className="text-3xl font-bold tracking-tight">Users & Organizations</h2>
+                      <p className="text-muted-foreground mt-2">
+                        Manage user accounts and organizations
+                      </p>
+                    </div>
+                    <UsersManagement />
+                    <OrgsManagement />
+                  </div>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <div className="p-6">
+                    <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+                    <p className="text-muted-foreground mt-2">
+                      Platform configuration and preferences
+                    </p>
+                    <div className="mt-6">
+                      <p className="text-muted-foreground">Settings coming in Phase 2</p>
+                    </div>
+                  </div>
+                }
+              />
+            </Routes>
+          </main>
         </div>
-
-        <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="orgs" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Organizations
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="analytics">
-            <SystemAnalytics />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UsersManagement />
-          </TabsContent>
-
-          <TabsContent value="orgs">
-            <OrgsManagement />
-          </TabsContent>
-        </Tabs>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
