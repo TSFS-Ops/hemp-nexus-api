@@ -15,6 +15,8 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 import ApiDocs from "@/components/ApiDocs";
 import ApiAnalytics from "@/components/ApiAnalytics";
 import ApiSmokeTests from "@/components/ApiSmokeTests";
+import WebhookDeliveryLogs from "@/components/WebhookDeliveryLogs";
+import HashVerifier from "@/components/HashVerifier";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -545,6 +547,7 @@ export default function Dashboard() {
             )}
 
             <ApiSmokeTests apiKey={testingKey} />
+            <HashVerifier />
             <MatchTester apiKey={testingKey} />
             <SignalTester apiKey={testingKey} />
           </TabsContent>
@@ -562,6 +565,7 @@ export default function Dashboard() {
           {/* Audit Logs Tab */}
           <TabsContent value="audit" className="space-y-4">
             <AuditLogViewer apiKey={testingKey} />
+            <WebhookDeliveryLogs />
           </TabsContent>
         </Tabs>
       </div>

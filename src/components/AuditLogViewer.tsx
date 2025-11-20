@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Filter, Shield, Hash } from "lucide-react";
+import { Loader2, RefreshCw, Filter, Shield, Hash, Download } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -95,6 +95,71 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     if (action.includes("settled") || action.includes("updated")) return "secondary";
     if (action.includes("deleted") || action.includes("revoked")) return "destructive";
     return "outline";
+  };
+
+  const exportToCSV = () => {
+    if (logs.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No audit logs to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // CSV headers
+    const headers = [
+      "Timestamp",
+      "Action",
+      "Entity Type",
+      "Entity ID",
+      "Actor Type",
+      "SHA-256 Hash",
+      "Metadata"
+    ];
+
+    // CSV rows
+    const rows = logs.map((log) => {
+      const hash = (log.metadata as any)?.hash || "";
+      const actorType = log.actor_api_key_id ? "API Key" : "User";
+      const metadataStr = JSON.stringify(log.metadata || {});
+      
+      return [
+        new Date(log.created_at).toISOString(),
+        log.action,
+        log.entity_type,
+        log.entity_id || "",
+        actorType,
+        hash,
+        metadataStr
+      ];
+    });
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => 
+        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      )
+    ].join("\n");
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export Successful",
+      description: `Exported ${logs.length} audit logs to CSV`,
+    });
   };
 
   return (
@@ -206,9 +271,15 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
               <p className="text-sm text-muted-foreground">
                 Showing {logs.length} of {totalCount} logs
               </p>
-              <Button variant="ghost" size="sm" onClick={fetchAuditLogs} disabled={loading}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button variant="ghost" size="sm" onClick={fetchAuditLogs} disabled={loading}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="border rounded-lg overflow-hidden">

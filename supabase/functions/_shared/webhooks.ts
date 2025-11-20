@@ -34,10 +34,16 @@ async function generateSignature(payload: string, secret: string): Promise<strin
 async function deliverWebhook(
   url: string,
   payload: WebhookPayload,
-  secret: string
+  secret: string,
+  webhookEndpointId: string,
+  supabase: SupabaseClient
 ): Promise<{ success: boolean; statusCode?: number; error?: string }> {
   const body = JSON.stringify(payload);
   const signature = await generateSignature(body, secret);
+
+  let responseStatusCode = 0;
+  let responseBody = "";
+  let errorMessage = "";
 
   try {
     const response = await fetch(url, {
@@ -51,15 +57,42 @@ async function deliverWebhook(
       body,
     });
 
+    responseStatusCode = response.status;
+    responseBody = await response.text();
+
+    // Log successful delivery attempt
+    await supabase.from("webhook_deliveries").insert({
+      webhook_endpoint_id: webhookEndpointId,
+      org_id: payload.orgId,
+      event_type: payload.event,
+      payload: payload.data,
+      response_status_code: responseStatusCode,
+      response_body: responseBody.substring(0, 1000),
+      delivery_attempt: 1,
+    });
+
     return {
       success: response.ok,
       statusCode: response.status,
     };
   } catch (error) {
     console.error(`Webhook delivery failed to ${url}:`, error);
+    errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+    // Log failed delivery attempt
+    await supabase.from("webhook_deliveries").insert({
+      webhook_endpoint_id: webhookEndpointId,
+      org_id: payload.orgId,
+      event_type: payload.event,
+      payload: payload.data,
+      response_status_code: 0,
+      error_message: errorMessage,
+      delivery_attempt: 1,
+    });
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: errorMessage,
     };
   }
 }
@@ -104,7 +137,13 @@ export async function triggerWebhooks(
 
     // Deliver to all endpoints (in parallel)
     const deliveryPromises = endpoints.map(async (endpoint) => {
-      const result = await deliverWebhook(endpoint.url, payload, endpoint.secret_hash);
+      const result = await deliverWebhook(
+        endpoint.url, 
+        payload, 
+        endpoint.secret_hash,
+        endpoint.id,
+        supabase
+      );
 
       // Update last_delivery_at
       await supabase
