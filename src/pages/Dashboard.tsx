@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3, AlertCircle, Shield } from "lucide-react";
+import { Copy, Loader2, Key, LogOut, Trash2, Eye, EyeOff, CheckCircle2, Circle, ArrowRight, Rocket, Book, TestTube, History, BarChart3, AlertCircle, Shield, Clock } from "lucide-react";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { User, Session } from "@supabase/supabase-js";
@@ -18,6 +18,7 @@ import ApiAnalytics from "@/components/ApiAnalytics";
 import ApiSmokeTests from "@/components/ApiSmokeTests";
 import WebhookDeliveryLogs from "@/components/WebhookDeliveryLogs";
 import HashVerifier from "@/components/HashVerifier";
+import CronSetupInstructions from "@/components/CronSetupInstructions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -33,6 +34,8 @@ interface ApiKey {
   scopes: string[];
   created_at: string;
   last_used_at: string | null;
+  expires_at: string | null;
+  status: string;
 }
 
 export default function Dashboard() {
@@ -356,7 +359,7 @@ export default function Dashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="keys" className="relative">
               <Key className="mr-2 h-4 w-4" />
               API Keys
@@ -374,6 +377,10 @@ export default function Dashboard() {
             <TabsTrigger value="docs">
               <Book className="mr-2 h-4 w-4" />
               Documentation
+            </TabsTrigger>
+            <TabsTrigger value="automation">
+              <Clock className="mr-2 h-4 w-4" />
+              Automation
             </TabsTrigger>
             <TabsTrigger value="analytics" disabled={!hasApiKeys}>
               <BarChart3 className="mr-2 h-4 w-4" />
@@ -482,28 +489,41 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-4">
                     {apiKeys.map((key) => (
-                      <div
+                       <div
                         key={key.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-semibold">{key.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Created: {new Date(key.created_at).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {key.scopes.map((scope) => (
-                              <span
-                                key={scope}
-                                className="text-xs px-2 py-1 bg-secondary rounded"
-                              >
-                                {scope}
-                              </span>
-                            ))}
+                          <div className="space-y-1 mt-1">
+                            <p className="text-sm text-muted-foreground">
+                              Created: {new Date(key.created_at).toLocaleDateString()}
+                            </p>
+                            {key.expires_at && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                Expires: {new Date(key.expires_at).toLocaleDateString()}
+                                {new Date(key.expires_at) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
+                                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Expiring soon
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                            <div className="flex gap-1 flex-wrap">
+                              {key.scopes.map((scope) => (
+                                <span
+                                  key={scope}
+                                  className="text-xs px-2 py-1 bg-secondary rounded"
+                                >
+                                  {scope}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-sm text-muted-foreground text-right">
                             {key.last_used_at
                               ? `Last used: ${new Date(key.last_used_at).toLocaleDateString()}`
                               : "Never used"}
@@ -592,6 +612,21 @@ export default function Dashboard() {
           {/* Documentation Tab */}
           <TabsContent value="docs">
             <ApiDocs />
+          </TabsContent>
+
+          {/* Automation Tab */}
+          <TabsContent value="automation">
+            <Card>
+              <CardHeader>
+                <CardTitle>Automated Jobs Setup</CardTitle>
+                <CardDescription>
+                  Configure cron jobs for webhook retries and API key expiry automation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CronSetupInstructions />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Analytics Tab */}
