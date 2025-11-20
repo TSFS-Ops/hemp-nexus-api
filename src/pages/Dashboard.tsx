@@ -150,10 +150,10 @@ export default function Dashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create API key");
+        throw new Error(errorData.message || errorData.error || "Failed to create API key");
       }
 
-      const { data } = await response.json();
+      const data = await response.json();
       setNewKey(data.key);
       setShowKey(true);
       setKeyName("");
