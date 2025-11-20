@@ -759,6 +759,63 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_deliveries: {
+        Row: {
+          created_at: string
+          delivered_at: string
+          delivery_attempt: number
+          error_message: string | null
+          event_type: string
+          id: string
+          org_id: string
+          payload: Json
+          response_body: string | null
+          response_status_code: number | null
+          webhook_endpoint_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string
+          delivery_attempt?: number
+          error_message?: string | null
+          event_type: string
+          id?: string
+          org_id: string
+          payload?: Json
+          response_body?: string | null
+          response_status_code?: number | null
+          webhook_endpoint_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string
+          delivery_attempt?: number
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status_code?: number | null
+          webhook_endpoint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_deliveries_webhook_endpoint_id_fkey"
+            columns: ["webhook_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_endpoints: {
         Row: {
           created_at: string
