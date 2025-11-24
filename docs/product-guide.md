@@ -401,17 +401,17 @@ If you forget your password:
 1. Organization signs up
    Email verification required
 
-2. Admin updates SAHPRA license
+2. Configure sandbox settings
    Admin Panel → Organizations → Edit
+   Enable/disable sandbox mode
 
-3. System verifies against registry
-   Automatic lookup in sahpra_licenses table
+3. API key created
+   Dashboard → API Keys → Create
+   Select appropriate scopes
 
-4. Verification status updated
-   Organizations table updated with verification data
-
-5. Signal creation includes verification
-   API response includes SAHPRA status
+4. Integration testing
+   Use sandbox environment for development
+   Test all endpoints thoroughly
 ```
 
 ---

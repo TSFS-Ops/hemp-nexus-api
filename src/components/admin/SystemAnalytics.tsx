@@ -26,7 +26,7 @@ interface SystemStats {
   totalSignals: number;
   totalMatches: number;
   totalWebhooks: number;
-  verifiedOrgs: number;
+  sandboxOrgs: number;
 }
 
 interface RecentActivity {
@@ -63,7 +63,7 @@ export default function SystemAnalytics() {
         signalsCount,
         matchesCount,
         webhooksCount,
-        verifiedOrgsCount,
+        sandboxOrgsCount,
         activityLogs,
       ] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
@@ -75,7 +75,7 @@ export default function SystemAnalytics() {
         supabase.from("signals").select("id", { count: "exact", head: true }),
         supabase.from("matches").select("id", { count: "exact", head: true }),
         supabase.from("webhook_endpoints").select("id", { count: "exact", head: true }),
-        supabase.from("organizations").select("id", { count: "exact", head: true }).eq("sahpra_verified", true),
+        supabase.from("organizations").select("id", { count: "exact", head: true }).eq("sandbox_enabled", true),
         supabase
           .from("audit_logs")
           .select(`
@@ -96,7 +96,7 @@ export default function SystemAnalytics() {
         totalSignals: signalsCount.count || 0,
         totalMatches: matchesCount.count || 0,
         totalWebhooks: webhooksCount.count || 0,
-        verifiedOrgs: verifiedOrgsCount.count || 0,
+        sandboxOrgs: sandboxOrgsCount.count || 0,
       });
 
       setRecentActivity(
@@ -162,9 +162,9 @@ export default function SystemAnalytics() {
       color: "text-green-500",
     },
     {
-      title: "SAHPRA Verified",
-      value: stats.verifiedOrgs,
-      subtitle: `${Math.round((stats.verifiedOrgs / stats.totalOrganizations) * 100)}% of orgs`,
+      title: "Sandbox Enabled",
+      value: stats.sandboxOrgs,
+      subtitle: `${Math.round((stats.sandboxOrgs / stats.totalOrganizations) * 100)}% of orgs`,
       icon: Shield,
       color: "text-amber-500",
     },

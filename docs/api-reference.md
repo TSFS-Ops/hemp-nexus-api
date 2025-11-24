@@ -19,7 +19,6 @@
    - [Data Sources](#data-sources)
    - [Consents](#consents)
    - [Organizations](#organizations)
-   - [SAHPRA Verification](#sahpra-verification)
    - [Audit Logs](#audit-logs)
 5. [Webhooks](#webhook-events)
 6. [Best Practices](#best-practices)
@@ -694,8 +693,7 @@ Authorization: Bearer sk_admin_api_key
       "id": "org_123",
       "name": "Pharmacy Ltd",
       "status": "active",
-      "sahpra_verified": true,
-      "sahpra_licence_no": "PHA-12345",
+      "sandbox_enabled": true,
       "created_at": "2025-10-01T10:00:00Z"
     }
   ]
@@ -715,7 +713,7 @@ Authorization: Bearer sk_admin_api_key
 Content-Type: application/json
 
 {
-  "sahpra_licence_no": "PHA-12345",
+  "sandbox_enabled": true,
   "status": "active"
 }
 ```
@@ -726,49 +724,8 @@ Content-Type: application/json
   "id": "org_123",
   "name": "Pharmacy Ltd",
   "status": "active",
-  "sahpra_licence_no": "PHA-12345",
+  "sandbox_enabled": true,
   "updated_at": "2025-11-20T10:00:00Z"
-}
-```
-
----
-
-### SAHPRA Verification
-
-Verify South African pharmacy licenses.
-
-#### POST /v1/verify/sahpra
-
-Verify a company against SAHPRA registry.
-
-**Request**:
-```http
-POST /functions/v1/sahpra-verification/v1/verify/sahpra
-Authorization: Bearer sk_your_api_key
-Content-Type: application/json
-
-{
-  "companyName": "Pharmacy Ltd",
-  "licenceNo": "PHA-12345"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "verified": true,
-  "matches": [
-    {
-      "company_name": "Pharmacy Ltd",
-      "licence_no": "PHA-12345",
-      "licence_type": "Retail Pharmacy",
-      "expiry_date": "2026-06-30",
-      "province": "Gauteng",
-      "responsible_pharmacist": "John Doe",
-      "match_score": 100
-    }
-  ],
-  "searched_name": "Pharmacy Ltd"
 }
 ```
 

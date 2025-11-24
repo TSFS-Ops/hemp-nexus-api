@@ -2,7 +2,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
-import { verifySahpraForOrg } from "../_shared/sahpra.ts";
 import { searchDataSources } from "../_shared/data-sources.ts";
 import { recordSelection } from "../_shared/performance.ts";
 import { signalSchema, signalSelectSchema, validateInput } from "../_shared/validation.ts";
@@ -51,20 +50,6 @@ Deno.serve(async (req) => {
 
       const { product, quantity, unit, location, deliveryWindow, budget, currency, notes } = validatedData;
 
-      // Check buyer verification (non-blocking, for info only)
-      const requireVerified = Deno.env.get("REQUIRE_BUYER_VERIFIED") === "true";
-      let buyerVerified = false;
-      if (requireVerified) {
-        const { data: org } = await supabase
-          .from("organizations")
-          .select("sahpra_verified, sahpra_verified_at")
-          .eq("id", authCtx.orgId)
-          .single();
-        
-        buyerVerified = org?.sahpra_verified || false;
-        console.log(`[${authCtx.orgId}] Buyer SAHPRA status: ${buyerVerified ? 'verified' : 'not verified'}`);
-      }
-
       // Build content object from new schema
       const content = {
         product,
@@ -90,9 +75,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) handleDatabaseError(error, requestId);
-
-      // Run SAHPRA verification synchronously to include in response
-      const sahpraResult = await verifySahpraForOrg(authCtx.orgId, supabase);
       
       // Trigger background data source search (fire and forget)
       searchDataSources(signal.id, authCtx.orgId, supabase).catch((err) => 
@@ -120,10 +102,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           signalId: signal.id,
-          options: [],
-          verification: {
-            sahpra: sahpraResult
-          }
+          options: []
         }),
         { status: 201, headers: { "Content-Type": "application/json", ...headers } },
       );
