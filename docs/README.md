@@ -12,9 +12,8 @@ Welcome to the Compliance Matching API documentation hub. This guide will help y
 Think of this as a **secure digital handshake system** for businesses in regulated industries. When two companies agree to trade something (like medical supplies, industrial equipment, or any regulated products), our platform:
 
 1. **Records the agreement** - Like a digital contract that can't be altered
-2. **Verifies compliance** - Checks that both parties are properly licensed
-3. **Provides proof** - Creates tamper-proof evidence of the agreement
-4. **Sends notifications** - Alerts your systems when important events happen
+2. **Provides proof** - Creates tamper-proof evidence of the agreement
+3. **Sends notifications** - Alerts your systems when important events happen
 
 ### Why This Exists
 **The Problem**: In regulated industries, companies need to prove they only trade with verified, licensed partners. Manual verification is slow, error-prone, and doesn't scale.

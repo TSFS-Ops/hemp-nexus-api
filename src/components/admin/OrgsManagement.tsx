@@ -19,10 +19,8 @@ interface Organization {
   id: string;
   name: string;
   status: string;
-  sahpra_verified: boolean | null;
-  sahpra_verified_at: string | null;
-  sahpra_licence_no: string | null;
   created_at: string;
+  sandbox_enabled: boolean;
   _count?: {
     profiles: number;
     api_keys: number;
@@ -112,8 +110,7 @@ export default function OrgsManagement() {
   };
 
   const filteredOrgs = orgs.filter((org) =>
-    org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    org.sahpra_licence_no?.toLowerCase().includes(searchQuery.toLowerCase())
+    org.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -129,7 +126,7 @@ export default function OrgsManagement() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or SAHPRA license..."
+              placeholder="Search organizations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -150,10 +147,9 @@ export default function OrgsManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>SAHPRA License</TableHead>
-                  <TableHead>Verification</TableHead>
                   <TableHead>Users</TableHead>
                   <TableHead>API Keys</TableHead>
+                  <TableHead>Sandbox</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
@@ -165,27 +161,24 @@ export default function OrgsManagement() {
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       {org.name}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {org.sahpra_licence_no || "—"}
-                    </TableCell>
-                    <TableCell>
-                      {org.sahpra_verified ? (
-                        <Badge variant="default" className="flex items-center gap-1 w-fit bg-green-600">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Verified
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Unverified
-                        </Badge>
-                      )}
-                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{org._count?.profiles || 0}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{org._count?.api_keys || 0}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {org.sandbox_enabled ? (
+                        <Badge variant="default" className="flex items-center gap-1 w-fit">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Enabled
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                          <XCircle className="h-3 w-3" />
+                          Disabled
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select

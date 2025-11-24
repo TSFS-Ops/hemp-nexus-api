@@ -651,10 +651,6 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          sahpra_licence_no: string | null
-          sahpra_verification_data: Json | null
-          sahpra_verified: boolean | null
-          sahpra_verified_at: string | null
           sandbox_enabled: boolean | null
           status: string
           updated_at: string
@@ -663,10 +659,6 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          sahpra_licence_no?: string | null
-          sahpra_verification_data?: Json | null
-          sahpra_verified?: boolean | null
-          sahpra_verified_at?: string | null
           sandbox_enabled?: boolean | null
           status?: string
           updated_at?: string
@@ -675,10 +667,6 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          sahpra_licence_no?: string | null
-          sahpra_verification_data?: Json | null
-          sahpra_verified?: boolean | null
-          sahpra_verified_at?: string | null
           sandbox_enabled?: boolean | null
           status?: string
           updated_at?: string
@@ -773,48 +761,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      sahpra_licenses: {
-        Row: {
-          company_name: string
-          company_name_norm: string | null
-          created_at: string | null
-          date_issued: string | null
-          expiry_date: string
-          id: string
-          licence_no: string
-          licence_type: string | null
-          province: string | null
-          responsible_pharmacist: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          company_name: string
-          company_name_norm?: string | null
-          created_at?: string | null
-          date_issued?: string | null
-          expiry_date: string
-          id?: string
-          licence_no: string
-          licence_type?: string | null
-          province?: string | null
-          responsible_pharmacist?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          company_name?: string
-          company_name_norm?: string | null
-          created_at?: string | null
-          date_issued?: string | null
-          expiry_date?: string
-          id?: string
-          licence_no?: string
-          licence_type?: string | null
-          province?: string | null
-          responsible_pharmacist?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       sdk_examples: {
         Row: {

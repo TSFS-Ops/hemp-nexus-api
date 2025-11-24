@@ -21,12 +21,6 @@ verify_jwt = false
 [functions.orgs]
 verify_jwt = false
 
-[functions.sahpra-verification]
-verify_jwt = false
-
-[functions.sahpra-refresh]
-verify_jwt = false
-
 [functions.web-search]
 verify_jwt = false
 
