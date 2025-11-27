@@ -139,18 +139,18 @@ export function MatchesList() {
       const failed = results.filter(r => r.status === "rejected").length;
 
       if (succeeded > 0) {
-        toast.success(`Successfully settled ${succeeded} match${succeeded > 1 ? 'es' : ''}`);
+        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? 'es' : ''}`);
       }
       if (failed > 0) {
-        toast.error(`Failed to settle ${failed} match${failed > 1 ? 'es' : ''}`);
+        toast.error(`Failed to confirm intent for ${failed} match${failed > 1 ? 'es' : ''}`);
       }
 
       setSelectedMatches(new Set());
       setShowSettleDialog(false);
       refetch();
     } catch (error: any) {
-      console.error("Error settling matches:", error);
-      toast.error("Failed to settle matches");
+      console.error("Error confirming intent:", error);
+      toast.error("Failed to confirm intent");
     } finally {
       setIsSettling(false);
     }
@@ -231,7 +231,7 @@ export function MatchesList() {
                   ) : (
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                   )}
-                  Settle {selectedMatches.size} Match{selectedMatches.size > 1 ? 'es' : ''}
+                  Confirm intent for {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}
                 </Button>
               )}
               <Button variant="outline" onClick={exportToCSV}>
@@ -346,22 +346,24 @@ export function MatchesList() {
       <AlertDialog open={showSettleDialog} onOpenChange={setShowSettleDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Settle Multiple Matches</AlertDialogTitle>
+            <AlertDialogTitle>Confirm intent for multiple matches</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to settle {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}? 
-              This action will mark them as settled and trigger webhook notifications.
+              Confirm intent for {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}?
+              <span className="block mt-3 text-foreground font-medium">
+                This does not create a contract, payment, or legal obligation. It only records interest so the seller can prepare final terms.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSettling}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSettling}>Maybe later</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkSettle} disabled={isSettling}>
               {isSettling ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Settling...
+                  Confirming...
                 </>
               ) : (
-                'Settle Matches'
+                'Confirm intent'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

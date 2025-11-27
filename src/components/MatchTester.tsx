@@ -200,13 +200,13 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to settle match");
+        throw new Error(data.message || "Failed to confirm intent");
       }
 
       setResult(data);
       toast({
-        title: "Match Settled!",
-        description: `Settled at: ${new Date(data.settled_at).toLocaleString()}`,
+        title: "Intent Confirmed!",
+        description: `Confirmed at: ${new Date(data.settled_at).toLocaleString()}`,
       });
     } catch (error: any) {
       toast({
@@ -449,14 +449,17 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
                 onChange={(e) => setMatchId(e.target.value)}
               />
             </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              This does not create a contract, payment, or legal obligation. It only records interest so the seller can prepare final terms.
+            </p>
             <Button onClick={handleSettleMatch} disabled={loading} className="w-full">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Settling...
+                  Confirming...
                 </>
               ) : (
-                "Settle Match"
+                "Confirm intent (settle)"
               )}
             </Button>
           </TabsContent>
