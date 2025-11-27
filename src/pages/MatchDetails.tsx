@@ -55,7 +55,7 @@ export default function MatchDetails() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("You must be logged in to settle a match");
+        toast.error("You must be logged in to confirm intent");
         return;
       }
 
@@ -72,14 +72,14 @@ export default function MatchDetails() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to settle match");
+        throw new Error(error.error || "Failed to confirm intent");
       }
 
-      toast.success("Match settled successfully");
+      toast.success("Intent confirmed successfully");
       fetchMatch();
     } catch (error: any) {
-      console.error("Error settling match:", error);
-      toast.error(error.message || "Failed to settle match");
+      console.error("Error confirming intent:", error);
+      toast.error(error.message || "Failed to confirm intent");
     }
   };
 
@@ -119,7 +119,12 @@ export default function MatchDetails() {
               </div>
             </div>
             {match.status === "matched" && (
-              <Button onClick={handleSettle}>Settle Match</Button>
+              <div className="flex flex-col items-end gap-2">
+                <Button onClick={handleSettle}>Confirm intent</Button>
+                <p className="text-xs text-muted-foreground text-right max-w-xs">
+                  This does not create a contract, payment, or legal obligation. It only records interest so the seller can prepare final terms.
+                </p>
+              </div>
             )}
           </div>
         </CardHeader>
