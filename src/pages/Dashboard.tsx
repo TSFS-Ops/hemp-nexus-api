@@ -31,6 +31,9 @@ import Troubleshooting from "@/components/Troubleshooting";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { SandboxIndicator } from "@/components/SandboxIndicator";
 import WebhookDebugger from "@/components/WebhookDebugger";
+import SystemHealthMonitor from "@/components/SystemHealthMonitor";
+import AutomatedTestSuite from "@/components/AutomatedTestSuite";
+import ErrorMonitoringDashboard from "@/components/ErrorMonitoringDashboard";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -690,6 +693,27 @@ export default function Dashboard() {
               </p>
             </div>
             <CronSetupInstructions />
+          </div>
+        );
+
+      case "system-health":
+        return (
+          <div className="space-y-6">
+            <SystemHealthMonitor />
+          </div>
+        );
+
+      case "automated-tests":
+        return (
+          <div className="space-y-6">
+            <AutomatedTestSuite />
+          </div>
+        );
+
+      case "error-monitoring":
+        return (
+          <div className="space-y-6">
+            <ErrorMonitoringDashboard />
           </div>
         );
 
