@@ -145,16 +145,16 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: "buyer",
-          content: {
-            what: "Test Product (Onboarding)",
-            how_much: 100,
-            unit: "units",
-            where: "Test Location",
-            when: "2024-Q1",
-            budget: 1000,
-            currency: "USD"
-          }
+          product: "Test Product (Onboarding)",
+          quantity: 100,
+          unit: "units",
+          location: "Test Location",
+          deliveryWindow: {
+            start: "2024-01-01",
+            end: "2024-03-31"
+          },
+          budget: 1000,
+          currency: "USD"
         })
       });
 
@@ -400,7 +400,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                       <div><span className="text-green-600">POST</span> /signals</div>
                       <div className="text-muted-foreground">Authorization: Bearer {apiKey?.substring(0, 20)}...</div>
                       <div className="mt-2 text-muted-foreground">
-                        {`{ type: "buyer", content: { what: "Test Product"... } }`}
+                        {`{ product: "Test Product", quantity: 100, unit: "units"... }`}
                       </div>
                     </div>
                   </Card>
