@@ -141,7 +141,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       const response = await fetch(`${baseUrl}/signals`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
+          "x-api-key": apiKey,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
