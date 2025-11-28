@@ -30,6 +30,7 @@ import { MatchAnalytics } from "@/components/MatchAnalytics";
 import Troubleshooting from "@/components/Troubleshooting";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { SandboxIndicator } from "@/components/SandboxIndicator";
+import WebhookDebugger from "@/components/WebhookDebugger";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -612,6 +613,13 @@ export default function Dashboard() {
             </div>
             <WebhookManagement />
             <WebhookDeliveryLogs />
+          </div>
+        );
+
+      case "webhook-debugger":
+        return (
+          <div className="space-y-6">
+            <WebhookDebugger />
           </div>
         );
 
