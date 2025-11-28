@@ -42,6 +42,20 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [creating, setCreating] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{
+    status?: number;
+    statusText?: string;
+    message?: string;
+    response?: any;
+  } | null>(null);
+  const [requestDetails, setRequestDetails] = useState<{
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+    body: any;
+  } | null>(null);
+  const [responseDetails, setResponseDetails] = useState<any>(null);
+  const [showDebugger, setShowDebugger] = useState(false);
 
   const steps: OnboardingStep[] = [
     {
@@ -134,29 +148,50 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
     setTesting(true);
     setTestResult(null);
+    setErrorDetails(null);
+    setRequestDetails(null);
+    setResponseDetails(null);
 
     try {
       const baseUrl = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
-      
-      const response = await fetch(`${baseUrl}/signals`, {
+      const url = `${baseUrl}/signals`;
+      const requestBody = {
+        product: "Test Product (Onboarding)",
+        quantity: 100,
+        unit: "units",
+        location: "Test Location",
+        deliveryWindow: {
+          start: "2024-01-01",
+          end: "2024-03-31"
+        },
+        budget: 1000,
+        currency: "USD"
+      };
+
+      const headers = {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json",
+      };
+
+      // Store request details
+      setRequestDetails({
+        url,
         method: "POST",
         headers: {
-          "x-api-key": apiKey,
+          "x-api-key": `${apiKey.substring(0, 20)}...`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          product: "Test Product (Onboarding)",
-          quantity: 100,
-          unit: "units",
-          location: "Test Location",
-          deliveryWindow: {
-            start: "2024-01-01",
-            end: "2024-03-31"
-          },
-          budget: 1000,
-          currency: "USD"
-        })
+        body: requestBody
       });
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+
+      const responseData = await response.json().catch(() => null);
+      setResponseDetails(responseData);
 
       if (response.ok) {
         setTestResult("success");
@@ -168,11 +203,21 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         }, 1500);
       } else {
         setTestResult("error");
-        toast.error("API test failed. Please try again.");
+        setErrorDetails({
+          status: response.status,
+          statusText: response.statusText,
+          message: responseData?.message || responseData?.error || "API request failed",
+          response: responseData
+        });
+        toast.error(`API test failed: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.error("Test error:", error);
       setTestResult("error");
+      setErrorDetails({
+        message: error instanceof Error ? error.message : "Network error during test",
+        response: null
+      });
       toast.error("Network error during test");
     } finally {
       setTesting(false);
@@ -398,7 +443,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <Card className="p-4 bg-muted">
                     <div className="text-xs font-mono space-y-1">
                       <div><span className="text-green-600">POST</span> /signals</div>
-                      <div className="text-muted-foreground">Authorization: Bearer {apiKey?.substring(0, 20)}...</div>
+                      <div className="text-muted-foreground">x-api-key: {apiKey?.substring(0, 20)}...</div>
                       <div className="mt-2 text-muted-foreground">
                         {`{ product: "Test Product", quantity: 100, unit: "units"... }`}
                       </div>
@@ -422,6 +467,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                         Run API Test
                       </>
                     )}
+                  </Button>
+
+                  <Button 
+                    onClick={() => setCurrentStep(4)} 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full"
+                  >
+                    Skip Test (Not Recommended)
                   </Button>
                 </div>
               ) : testResult === "success" ? (
@@ -448,6 +502,60 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     </div>
                   </Card>
 
+                  {/* Debug Toggle Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowDebugger(!showDebugger)}
+                    className="w-full"
+                  >
+                    {showDebugger ? "Hide" : "Show"} Request/Response Details
+                  </Button>
+
+                  {/* Debug Panel for Success */}
+                  {showDebugger && (
+                    <Card className="p-4 bg-muted">
+                      <div className="space-y-4">
+                        {/* Request Details */}
+                        {requestDetails && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">Request</h4>
+                            <div className="text-xs font-mono space-y-1 bg-background p-3 rounded border">
+                              <div className="text-green-600 font-bold">
+                                {requestDetails.method} {requestDetails.url}
+                              </div>
+                              <div className="text-muted-foreground mt-2">Headers:</div>
+                              {Object.entries(requestDetails.headers).map(([key, value]) => (
+                                <div key={key} className="ml-2">
+                                  <span className="text-blue-600">{key}:</span> {value}
+                                </div>
+                              ))}
+                              <div className="text-muted-foreground mt-2">Body:</div>
+                              <pre className="ml-2 text-xs overflow-x-auto">
+                                {JSON.stringify(requestDetails.body, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Response Details */}
+                        {responseDetails && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">Response</h4>
+                            <div className="text-xs font-mono bg-background p-3 rounded border">
+                              <div className="text-green-600 font-bold mb-2">
+                                Status: 200 OK
+                              </div>
+                              <pre className="text-xs overflow-x-auto">
+                                {JSON.stringify(responseDetails, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  )}
+
                   <Button onClick={() => setCurrentStep(4)} size="lg" className="w-full">
                     Continue
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -458,18 +566,114 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <Alert variant="destructive">
                     <AlertDescription>
                       <strong>Test failed</strong>
+                      {errorDetails?.status && (
+                        <p className="text-sm mt-1 font-mono">
+                          Status: {errorDetails.status} {errorDetails.statusText}
+                        </p>
+                      )}
                       <p className="text-sm mt-1">
-                        Don't worry! This can happen. Try running the test again, or check the Troubleshooting page for help.
+                        {errorDetails?.message || "The API test did not complete successfully."}
                       </p>
                     </AlertDescription>
                   </Alert>
 
-                  <Button onClick={handleTestApi} variant="outline" className="w-full">
-                    Try Again
+                  {/* Error Details Card */}
+                  {errorDetails && (
+                    <Card className="p-4 border-destructive">
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold">Error Details</h4>
+                        <div className="text-xs space-y-1">
+                          {errorDetails.status && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">HTTP Status:</span>
+                              <span className="font-mono">{errorDetails.status}</span>
+                            </div>
+                          )}
+                          {errorDetails.message && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-muted-foreground">Error Message:</span>
+                              <code className="text-xs bg-muted p-2 rounded block break-all">
+                                {errorDetails.message}
+                              </code>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Debug Toggle Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowDebugger(!showDebugger)}
+                    className="w-full"
+                  >
+                    {showDebugger ? "Hide" : "Show"} Request/Response Details
                   </Button>
-                  <Button onClick={() => setCurrentStep(4)} variant="ghost" className="w-full">
-                    Continue Anyway
-                  </Button>
+
+                  {/* Debug Panel */}
+                  {showDebugger && (
+                    <Card className="p-4 bg-muted">
+                      <div className="space-y-4">
+                        {/* Request Details */}
+                        {requestDetails && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">Request</h4>
+                            <div className="text-xs font-mono space-y-1 bg-background p-3 rounded border">
+                              <div className="text-green-600 font-bold">
+                                {requestDetails.method} {requestDetails.url}
+                              </div>
+                              <div className="text-muted-foreground mt-2">Headers:</div>
+                              {Object.entries(requestDetails.headers).map(([key, value]) => (
+                                <div key={key} className="ml-2">
+                                  <span className="text-blue-600">{key}:</span> {value}
+                                </div>
+                              ))}
+                              <div className="text-muted-foreground mt-2">Body:</div>
+                              <pre className="ml-2 text-xs overflow-x-auto">
+                                {JSON.stringify(requestDetails.body, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Response Details */}
+                        {responseDetails && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">Response</h4>
+                            <div className="text-xs font-mono bg-background p-3 rounded border">
+                              {errorDetails?.status && (
+                                <div className="text-red-600 font-bold mb-2">
+                                  Status: {errorDetails.status} {errorDetails.statusText}
+                                </div>
+                              )}
+                              <pre className="text-xs overflow-x-auto">
+                                {JSON.stringify(responseDetails, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button onClick={handleTestApi} variant="outline" className="flex-1">
+                      Try Again
+                    </Button>
+                    <Button onClick={() => setCurrentStep(4)} variant="secondary" className="flex-1">
+                      Skip Test
+                    </Button>
+                  </div>
+
+                  <Alert>
+                    <AlertDescription className="text-xs">
+                      <strong>Need help?</strong> If the test continues to fail, you can skip it and access 
+                      the Troubleshooting page from the dashboard to diagnose the issue.
+                    </AlertDescription>
+                  </Alert>
                 </div>
               )}
             </div>
