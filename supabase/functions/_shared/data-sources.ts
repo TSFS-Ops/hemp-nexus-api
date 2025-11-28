@@ -1,5 +1,5 @@
 // Data source search logic
-import { scoreOption, generateMockOptions } from "./scoring.ts";
+import { scoreOptionSync, generateMockOptions } from "./scoring.ts";
 import { logPerformance, getSourceRankings } from "./performance.ts";
 
 export async function searchDataSources(signalId: string, orgId: string, supabase: any) {
@@ -99,7 +99,7 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
 
         // Insert options with scores
         for (const opt of options) {
-          const score = scoreOption(opt, signal);
+          const score = scoreOptionSync(opt, signal);
 
           await supabase.from("options").insert({
             signal_id: signalId,
@@ -206,7 +206,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
         const mockOptions = generateMockOptions(signal, webSearchSource.data);
         let insertedCount = 0;
         for (const opt of mockOptions) {
-          const score = scoreOption(opt, signal);
+          const score = scoreOptionSync(opt, signal);
           const { error: insertError } = await supabase.from("options").insert({
             signal_id: signalId,
             data_source_id: webSearchSource.data.id,
@@ -283,7 +283,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
           freshness: new Date().toISOString()
         };
 
-        const score = scoreOption(option, signal);
+        const score = scoreOptionSync(option, signal);
 
         const { error: insertError } = await supabase.from("options").insert({
           signal_id: signalId,
@@ -337,7 +337,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
 
         const mockOptions = generateMockOptions(signal, webSearchSource.data);
         for (const opt of mockOptions) {
-          const score = scoreOption(opt, signal);
+          const score = scoreOptionSync(opt, signal);
           await supabase.from("options").insert({
             signal_id: signalId,
             data_source_id: webSearchSource.data.id,

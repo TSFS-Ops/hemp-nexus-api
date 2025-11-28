@@ -4,6 +4,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { scoreOption } from "../_shared/scoring.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { srDiscoverSchema, validateInput } from "../_shared/validation.ts";
+import { multiProviderSearch, generateEnhancedQueries } from "../_shared/multi-search.ts";
+import { generateEmbedding, signalToText, cosineSimilarity } from "../_shared/embeddings.ts";
 
 const headers = corsHeaders('*');
 
@@ -82,57 +84,46 @@ serve(async (req) => {
       );
     }
 
-    // 2. Use Brave to search
-    const searchApiKey = Deno.env.get("SEARCH_API_KEY");
-    const searchProvider = Deno.env.get("SEARCH_PROVIDER") || "brave";
+    // 2. Generate signal embedding for semantic matching
+    const signalText = signalToText(signal);
+    const signalEmbedding = await generateEmbedding(signalText);
+    console.log(`[sr-discover] Signal embedding generated: ${signalEmbedding ? 'success' : 'failed'}`);
 
-    if (!searchApiKey) {
-      console.error(`[sr-discover] SEARCH_API_KEY not configured`);
-      return new Response(
-        JSON.stringify({ ok: false, error: "Search API not configured" }),
-        { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
-      );
-    }
+    // 3. Generate enhanced search queries with semantic variations
+    const searchQueries = generateEnhancedQueries(signal);
+    console.log(`[sr-discover] Generated ${searchQueries.length} enhanced search queries`);
 
-    const searchQueries = generateSearchQueries(signal);
-    console.log(`[sr-discover] Generated ${searchQueries.length} search queries`);
+    // 4. Perform multi-provider search in parallel
+    console.log(`[sr-discover] Starting multi-provider search across Brave, DuckDuckGo, Google, Bing...`);
+    const allResults = await multiProviderSearch(searchQueries);
+    console.log(`[sr-discover] Multi-provider search returned ${allResults.length} results`);
 
-    const allResults: any[] = [];
-
-    for (const query of searchQueries) {
-      console.log(`[sr-discover] Searching: ${query}`);
-      
-      if (searchProvider === "brave") {
-        const braveResults = await searchWithBrave(query, searchApiKey);
-        allResults.push(...braveResults);
-      }
-    }
-
-    console.log(`[sr-discover] Found ${allResults.length} total results`);
-
-    // 3. Optionally crawl top results with Firecrawl
+    // 5. Parallel crawling of top results with Firecrawl (if enabled)
     const crawlProvider = Deno.env.get("CRAWL_PROVIDER");
     const crawlApiKey = Deno.env.get("CRAWL_API_KEY");
 
     if (crawlProvider === "firecrawl" && crawlApiKey && allResults.length > 0) {
-      console.log(`[sr-discover] Enriching top ${Math.min(5, allResults.length)} results with Firecrawl`);
-      const topResults = allResults.slice(0, 5);
+      const topResults = allResults.slice(0, 10);
+      console.log(`[sr-discover] Parallel crawling ${topResults.length} results with Firecrawl`);
       
-      for (const result of topResults) {
-        if (result.url) {
-          const enrichedData = await crawlWithFirecrawl(result.url, crawlApiKey);
-          if (enrichedData) {
-            result.enriched = enrichedData;
-          }
+      // Crawl in parallel with Promise.all
+      const crawlPromises = topResults.map(result => 
+        result.url ? crawlWithFirecrawl(result.url, crawlApiKey) : Promise.resolve(null)
+      );
+      
+      const enrichedDataArray = await Promise.all(crawlPromises);
+      topResults.forEach((result, index) => {
+        if (enrichedDataArray[index]) {
+          result.enriched = enrichedDataArray[index];
         }
-      }
+      });
     }
 
-    // 4. Normalize into options and attach to signal
-    const options = normalizeResults(allResults, signal);
-    console.log(`[sr-discover] Normalized to ${options.length} options`);
+    // 6. Normalize into options with embeddings for semantic scoring
+    const options = await normalizeResultsWithEmbeddings(allResults, signal, signalEmbedding);
+    console.log(`[sr-discover] Normalized to ${options.length} options with semantic scoring`);
 
-    // Get or create web search data source
+    // Get or create multi-provider web search data source
     let { data: webSource } = await supabase
       .from("data_sources")
       .select("*")
@@ -144,20 +135,39 @@ serve(async (req) => {
       const { data: newSource } = await supabase
         .from("data_sources")
         .insert({
-          name: "Brave Search Discovery",
+          name: "Multi-Provider Web Discovery",
           type: "web_search",
           status: "active",
           org_id: signal.org_id,
-          config: { provider: searchProvider }
+          config: { 
+            providers: ["brave", "duckduckgo", "google", "bing"],
+            semantic_matching: true,
+            ml_scoring: true
+          }
         })
         .select()
         .single();
       webSource = newSource;
     }
 
-    // Insert options
+    // Fetch historical performance data for ML scoring
+    const { data: historicalData } = await supabase
+      .from("data_source_performance")
+      .select("data_source_id, options_returned, options_selected")
+      .eq("org_id", signal.org_id);
+    
+    const historicalMap: Record<string, any> = {};
+    historicalData?.forEach(row => {
+      if (!historicalMap[row.data_source_id]) {
+        historicalMap[row.data_source_id] = { options_returned: 0, options_selected: 0 };
+      }
+      historicalMap[row.data_source_id].options_returned += row.options_returned;
+      historicalMap[row.data_source_id].options_selected += row.options_selected;
+    });
+
+    // Insert options with ML-enhanced scoring
     for (const option of options) {
-      const score = scoreOption(option, signal);
+      const score = await scoreOption(option, signal, signalEmbedding, historicalMap);
       await supabase.from("options").insert({
         signal_id: signalId,
         data_source_id: webSource!.id,
@@ -166,7 +176,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[sr-discover] Successfully stored ${options.length} options`);
+    console.log(`[sr-discover] Successfully stored ${options.length} options with ML scoring`);
 
     // Log audit: sr-discover completed successfully
     await supabase.from("audit_logs").insert({
@@ -179,9 +189,11 @@ serve(async (req) => {
       metadata: {
         results_found: allResults.length,
         options_created: options.length,
-        search_queries: searchQueries,
+        search_queries: searchQueries.slice(0, 5),
         data_source_id: webSource!.id,
-        search_provider: searchProvider,
+        providers_used: ["brave", "duckduckgo", "google", "bing"],
+        semantic_matching: !!signalEmbedding,
+        ml_scoring: true,
         crawl_enabled: crawlProvider === "firecrawl" && !!crawlApiKey,
         timestamp: new Date().toISOString(),
       },
@@ -233,24 +245,63 @@ serve(async (req) => {
   }
 });
 
-function generateSearchQueries(signal: any): string[] {
+// Enhanced normalization with embeddings and semantic scoring
+async function normalizeResultsWithEmbeddings(
+  results: any[],
+  signal: any,
+  signalEmbedding: number[] | null
+): Promise<any[]> {
   const content = signal.content;
-  const product = content.product || content.what || "";
-  const location = content.location || content.where_location || "";
+  const normalized = [];
   
-  const queries = [
-    `${product} suppliers ${location}`,
-    `buy ${product} ${location}`,
-    `${product} wholesalers ${location}`,
-  ];
-
-  return queries.filter(q => q.trim().length > 0).slice(0, 3);
+  // Process top 30 results
+  for (const result of results.slice(0, 30)) {
+    const optionText = `${result.title} ${result.description}`;
+    const optionEmbedding = await generateEmbedding(optionText);
+    
+    // Calculate semantic similarity if we have both embeddings
+    let confidence = 0.6;
+    if (signalEmbedding && optionEmbedding) {
+      const similarity = cosineSimilarity(signalEmbedding, optionEmbedding);
+      confidence = 0.4 + (similarity * 0.6); // Scale to 0.4-1.0
+    }
+    
+    normalized.push({
+      what: content.product || content.what || "Product",
+      how_much: content.quantity || content.how_much || 1,
+      unit: content.unit || "units",
+      where_location: extractLocation(result) || content.location || "Global",
+      when_available: "Contact for availability",
+      price: null,
+      currency: content.currency || "USD",
+      quality_flags: {
+        verified: false,
+        web_discovered: true,
+        source: result.source || "web",
+        multi_provider: true,
+        sahpra_verified: false,
+      },
+      confidence_score: confidence,
+      source_link: result.url,
+      freshness: new Date().toISOString(),
+      embedding: optionEmbedding,
+      metadata: {
+        title: result.title,
+        description: result.description,
+        search_provider: result.source,
+        enriched: result.enriched || null,
+      },
+    });
+  }
+  
+  return normalized;
 }
 
+// Legacy Brave search function (kept for backward compatibility)
 async function searchWithBrave(query: string, apiKey: string): Promise<any[]> {
   try {
     const response = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=20`,
       {
         headers: {
           "Accept": "application/json",
@@ -304,10 +355,11 @@ async function crawlWithFirecrawl(url: string, apiKey: string): Promise<any | nu
   }
 }
 
+// Legacy normalization (kept for backward compatibility)
 function normalizeResults(results: any[], signal: any): any[] {
   const content = signal.content;
   
-  return results.map(result => ({
+  return results.slice(0, 20).map(result => ({
     what: content.product || content.what || "Product",
     how_much: content.quantity || content.how_much || 1,
     unit: content.unit || "units",
