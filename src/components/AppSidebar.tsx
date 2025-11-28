@@ -35,6 +35,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
     { id: "matches", title: "Matches", icon: Handshake },
     { id: "analytics", title: "Analytics", icon: BarChart3 },
     { id: "webhooks", title: "Webhooks", icon: Zap },
+    { id: "webhook-debugger", title: "Webhook Debugger", icon: Zap },
     { id: "audit-logs", title: "Logs", icon: Activity },
   ];
 
