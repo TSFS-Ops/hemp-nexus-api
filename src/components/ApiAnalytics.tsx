@@ -5,35 +5,67 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Activity, TrendingUp, AlertCircle, Clock, BarChart3, Calendar } from "lucide-react";
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { Activity, TrendingUp, AlertCircle, Clock, BarChart3, Calendar, Radio } from "lucide-react";
 
 interface AnalyticsData {
   totalRequests: number;
   successRate: number;
   avgResponseTime: number;
-  topEndpoints: Array<{ endpoint: string; count: number }>;
-  requestsByHour: Array<{ hour: string; count: number }>;
+  errorRate: number;
+  topEndpoints: Array<{ endpoint: string; count: number; avgResponseTime: number }>;
+  requestsByHour: Array<{ hour: string; count: number; errors: number; avgResponseTime: number }>;
   errorsByEndpoint: Array<{ endpoint: string; errors: number; total: number }>;
   requestsByApiKey: Array<{ apiKeyName: string; count: number }>;
+  recentRequests: Array<{ time: string; endpoint: string; status: number; responseTime: number }>;
 }
 
 export default function ApiAnalytics() {
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("24h");
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     totalRequests: 0,
     successRate: 0,
     avgResponseTime: 0,
+    errorRate: 0,
     topEndpoints: [],
     requestsByHour: [],
     errorsByEndpoint: [],
     requestsByApiKey: [],
+    recentRequests: [],
   });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchAnalytics();
+    
+    // Set up real-time subscription for api_request_logs
+    const channel = supabase
+      .channel('api-analytics')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'api_request_logs'
+        },
+        () => {
+          // Refresh analytics when new logs come in
+          fetchAnalytics();
+        }
+      )
+      .subscribe();
+
+    // Refresh every 10 seconds for live updates
+    const interval = setInterval(() => {
+      fetchAnalytics();
+    }, 10000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [timeRange]);
 
   const getTimeRangeDate = () => {
@@ -51,86 +83,88 @@ export default function ApiAnalytics() {
   };
 
   const fetchAnalytics = async () => {
-    setLoading(true);
     try {
       const startDate = getTimeRangeDate();
 
-      // Fetch audit logs for the time range
+      // Fetch API request logs (better metrics than audit_logs)
       const { data: logs, error: logsError } = await supabase
-        .from("audit_logs")
-        .select("*, api_keys!inner(name)")
+        .from("api_request_logs")
+        .select("*, api_keys(name)")
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false });
 
       if (logsError) throw logsError;
 
-      // Fetch rate limits for additional metrics
-      const { data: rateLimits, error: rateLimitsError } = await supabase
-        .from("rate_limits")
-        .select("*")
-        .gte("window_start", startDate.toISOString());
-
-      if (rateLimitsError) throw rateLimitsError;
-
       // Process the data
       const totalRequests = logs?.length || 0;
       
-      // Calculate success rate from metadata (assuming metadata contains status codes)
-      const successfulRequests = logs?.filter((log) => {
-        const metadata = log.metadata as any;
-        const status = metadata?.status_code;
-        return status && status >= 200 && status < 400;
-      }).length || 0;
+      // Calculate success rate
+      const successfulRequests = logs?.filter((log) => 
+        log.status_code >= 200 && log.status_code < 400
+      ).length || 0;
       const successRate = totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0;
+      const errorRate = 100 - successRate;
 
-      // Calculate average response time from metadata
-      const responseTimes = logs
-        ?.map((log) => {
-          const metadata = log.metadata as any;
-          return metadata?.response_time_ms;
-        })
-        .filter((time): time is number => typeof time === "number") || [];
+      // Calculate average response time
+      const responseTimes = logs?.map(log => log.response_time_ms).filter((time): time is number => typeof time === "number") || [];
       const avgResponseTime = responseTimes.length > 0
         ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
         : 0;
 
-      // Top endpoints by request count
-      const endpointCounts: Record<string, number> = {};
+      // Top endpoints by request count with avg response time
+      const endpointData: Record<string, { count: number; totalResponseTime: number }> = {};
       logs?.forEach((log) => {
-        const metadata = log.metadata as any;
-        const endpoint = metadata?.endpoint || log.entity_type;
-        endpointCounts[endpoint] = (endpointCounts[endpoint] || 0) + 1;
+        const endpoint = log.endpoint;
+        if (!endpointData[endpoint]) {
+          endpointData[endpoint] = { count: 0, totalResponseTime: 0 };
+        }
+        endpointData[endpoint].count += 1;
+        endpointData[endpoint].totalResponseTime += log.response_time_ms;
       });
-      const topEndpoints = Object.entries(endpointCounts)
-        .map(([endpoint, count]) => ({ endpoint, count }))
+      const topEndpoints = Object.entries(endpointData)
+        .map(([endpoint, data]) => ({ 
+          endpoint, 
+          count: data.count,
+          avgResponseTime: data.totalResponseTime / data.count
+        }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      // Requests by hour
-      const hourCounts: Record<string, number> = {};
+      // Requests by hour with errors and response times
+      const hourData: Record<string, { count: number; errors: number; totalResponseTime: number }> = {};
       logs?.forEach((log) => {
         const hour = new Date(log.created_at).toLocaleString("en-US", {
           month: "short",
           day: "numeric",
           hour: "2-digit",
         });
-        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        if (!hourData[hour]) {
+          hourData[hour] = { count: 0, errors: 0, totalResponseTime: 0 };
+        }
+        hourData[hour].count += 1;
+        hourData[hour].totalResponseTime += log.response_time_ms;
+        if (log.status_code >= 400) {
+          hourData[hour].errors += 1;
+        }
       });
-      const requestsByHour = Object.entries(hourCounts)
-        .map(([hour, count]) => ({ hour, count }))
+      const requestsByHour = Object.entries(hourData)
+        .map(([hour, data]) => ({ 
+          hour, 
+          count: data.count,
+          errors: data.errors,
+          avgResponseTime: data.totalResponseTime / data.count
+        }))
         .slice(-24);
 
       // Errors by endpoint
       const endpointErrors: Record<string, { errors: number; total: number }> = {};
       logs?.forEach((log) => {
-        const metadata = log.metadata as any;
-        const endpoint = metadata?.endpoint || log.entity_type;
-        const status = metadata?.status_code;
+        const endpoint = log.endpoint;
         if (!endpointErrors[endpoint]) {
           endpointErrors[endpoint] = { errors: 0, total: 0 };
         }
         endpointErrors[endpoint].total += 1;
-        if (status && status >= 400) {
+        if (log.status_code >= 400) {
           endpointErrors[endpoint].errors += 1;
         }
       });
@@ -149,23 +183,29 @@ export default function ApiAnalytics() {
         .map(([apiKeyName, count]) => ({ apiKeyName, count }))
         .sort((a, b) => b.count - a.count);
 
+      // Recent requests (last 10)
+      const recentRequests = logs?.slice(0, 10).map((log) => ({
+        time: new Date(log.created_at).toLocaleTimeString(),
+        endpoint: log.endpoint,
+        status: log.status_code,
+        responseTime: log.response_time_ms,
+      })) || [];
+
       setAnalytics({
         totalRequests,
         successRate,
+        errorRate,
         avgResponseTime,
         topEndpoints,
         requestsByHour,
         errorsByEndpoint,
         requestsByApiKey,
+        recentRequests,
       });
+      setLastUpdated(new Date());
+      setLoading(false);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load analytics data",
-        variant: "destructive",
-      });
       console.error("Analytics error:", error);
-    } finally {
       setLoading(false);
     }
   };
@@ -178,11 +218,20 @@ export default function ApiAnalytics() {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="h-6 w-6" />
-            API Usage Analytics
+            Real-Time API Monitoring
           </h2>
-          <p className="text-muted-foreground mt-1">
-            Monitor API performance and usage patterns
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-muted-foreground">
+              Live API performance and usage metrics
+            </p>
+            <Badge variant="outline" className="flex items-center gap-1.5">
+              <Radio className="h-3 w-3 text-green-500 animate-pulse" />
+              Live
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          </div>
         </div>
         <Select value={timeRange} onValueChange={(v: "24h" | "7d" | "30d") => setTimeRange(v)}>
           <SelectTrigger className="w-[180px]">
@@ -245,16 +294,17 @@ export default function ApiAnalytics() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">
-              {(100 - analytics.successRate).toFixed(1)}%
+            <div className={`text-3xl font-bold ${analytics.errorRate > 10 ? 'text-red-600' : analytics.errorRate > 5 ? 'text-yellow-600' : 'text-green-600'}`}>
+              {analytics.errorRate.toFixed(1)}%
             </div>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="volume" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="volume">Request Volume</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="endpoints">Top Endpoints</TabsTrigger>
           <TabsTrigger value="errors">Error Analysis</TabsTrigger>
           <TabsTrigger value="keys">API Keys</TabsTrigger>
@@ -262,38 +312,151 @@ export default function ApiAnalytics() {
 
         {/* Request Volume Over Time */}
         <TabsContent value="volume">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Request Volume & Errors Over Time</CardTitle>
+                <CardDescription>Real-time API request traffic with error tracking</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analytics.requestsByHour.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <AreaChart data={analytics.requestsByHour}>
+                      <defs>
+                        <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorErrors" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis
+                        dataKey="hour"
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis className="text-muted-foreground" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="hsl(var(--primary))"
+                        fillOpacity={1}
+                        fill="url(#colorRequests)"
+                        strokeWidth={2}
+                        name="Total Requests"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="errors"
+                        stroke="#ef4444"
+                        fillOpacity={1}
+                        fill="url(#colorErrors)"
+                        strokeWidth={2}
+                        name="Errors"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No request data available
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Requests</CardTitle>
+                <CardDescription>Live feed of the latest API requests</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analytics.recentRequests.length > 0 ? (
+                  <div className="space-y-2">
+                    {analytics.recentRequests.map((req, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <Badge variant={req.status < 400 ? "default" : "destructive"}>
+                            {req.status}
+                          </Badge>
+                          <code className="text-sm">{req.endpoint}</code>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span>{req.responseTime}ms</span>
+                          <span>{req.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No recent requests
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Performance Metrics */}
+        <TabsContent value="performance">
           <Card>
             <CardHeader>
-              <CardTitle>Request Volume Over Time</CardTitle>
-              <CardDescription>API requests grouped by time period</CardDescription>
+              <CardTitle>Response Time Analysis</CardTitle>
+              <CardDescription>Average response times across time periods</CardDescription>
             </CardHeader>
             <CardContent>
               {analytics.requestsByHour.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                   <LineChart data={analytics.requestsByHour}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis
                       dataKey="hour"
                       angle={-45}
                       textAnchor="end"
                       height={80}
                       tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
                     />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis 
+                      label={{ value: 'Response Time (ms)', angle: -90, position: 'insideLeft' }}
+                      className="text-muted-foreground"
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
                     <Legend />
                     <Line
                       type="monotone"
-                      dataKey="count"
-                      stroke="#3b82f6"
+                      dataKey="avgResponseTime"
+                      stroke="#10b981"
                       strokeWidth={2}
-                      name="Requests"
+                      name="Avg Response Time (ms)"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
-                  No request data available
+                  No performance data available
                 </div>
               )}
             </CardContent>
@@ -304,26 +467,48 @@ export default function ApiAnalytics() {
         <TabsContent value="endpoints">
           <Card>
             <CardHeader>
-              <CardTitle>Top Endpoints by Request Count</CardTitle>
-              <CardDescription>Most frequently called API endpoints</CardDescription>
+              <CardTitle>Top Endpoints Performance</CardTitle>
+              <CardDescription>Most frequently called endpoints with performance metrics</CardDescription>
             </CardHeader>
             <CardContent>
               {analytics.topEndpoints.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={analytics.topEndpoints} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis
-                      dataKey="endpoint"
-                      type="category"
-                      width={150}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="#3b82f6" name="Requests" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="space-y-6">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics.topEndpoints} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis type="number" className="text-muted-foreground" />
+                      <YAxis
+                        dataKey="endpoint"
+                        type="category"
+                        width={150}
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="count" fill="hsl(var(--primary))" name="Requests" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Endpoint Details</h4>
+                    {analytics.topEndpoints.map((endpoint, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-lg border">
+                        <code className="text-sm font-mono">{endpoint.endpoint}</code>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline">{endpoint.count} requests</Badge>
+                          <Badge variant="secondary">{endpoint.avgResponseTime.toFixed(0)}ms avg</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   No endpoint data available
