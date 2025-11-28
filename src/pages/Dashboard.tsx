@@ -279,7 +279,7 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case "quickstart":
-        return <QuickstartGuide onStartWizard={() => setShowOnboarding(true)} />;
+        return <QuickstartGuide onStartWizard={() => setShowOnboarding(true)} onSectionChange={setActiveSection} />;
 
       case "matches":
         return (

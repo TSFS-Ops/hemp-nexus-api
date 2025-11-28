@@ -8,6 +8,7 @@ import { CheckCircle2, Copy, Play, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useNavigate } from "react-router-dom";
 
 interface SDKExample {
   id: string;
@@ -19,12 +20,14 @@ interface SDKExample {
 
 interface QuickstartGuideProps {
   onStartWizard?: () => void;
+  onSectionChange?: (section: string) => void;
 }
 
-export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
+export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGuideProps = {}) {
   const [examples, setExamples] = useState<SDKExample[]>([]);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchExamples();
@@ -45,9 +48,8 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
       .from("api_keys")
       .select("id, name")
       .eq("status", "active")
-      .eq("environment", "sandbox")
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setApiKey(data.id);
@@ -71,9 +73,13 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
   const steps = [
     {
       number: 1,
-      title: "Create Sandbox API Key",
-      description: "Generate a test API key to start making requests",
-      action: () => window.location.href = "/dashboard?section=keys",
+      title: "Create API Key",
+      description: "Generate your first API key to start making requests",
+      action: () => {
+        if (onSectionChange) {
+          onSectionChange("keys");
+        }
+      },
       actionLabel: "Create Key",
       completed: apiKey !== null,
     },
@@ -89,7 +95,9 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
       description: "Check the dashboard to see your signals and matches",
       action: () => {
         markStepComplete(3);
-        window.location.href = "/dashboard?section=matches";
+        if (onSectionChange) {
+          onSectionChange("matches");
+        }
       },
       actionLabel: "View Dashboard",
       completed: completedSteps.has(3),
@@ -189,6 +197,14 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
                         </SyntaxHighlighter>
                       </div>
                     ))}
+                  <Button 
+                    onClick={() => markStepComplete(2)}
+                    variant="outline"
+                    className="w-full mt-4"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Complete
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -264,6 +280,14 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
                         </SyntaxHighlighter>
                       </div>
                     ))}
+                  <Button 
+                    onClick={() => markStepComplete(2)}
+                    variant="outline"
+                    className="w-full mt-4"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Complete
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -339,6 +363,14 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
                         </SyntaxHighlighter>
                       </div>
                     ))}
+                  <Button 
+                    onClick={() => markStepComplete(2)}
+                    variant="outline"
+                    className="w-full mt-4"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Complete
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -354,15 +386,30 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
         <CardContent className="space-y-2">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Read the full <a href="/dashboard?section=docs" className="text-primary hover:underline">API Documentation</a></span>
+            <button 
+              onClick={() => onSectionChange?.("docs")}
+              className="text-primary hover:underline cursor-pointer"
+            >
+              Read the full API Documentation
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Set up <a href="/dashboard?section=webhooks" className="text-primary hover:underline">Webhooks</a> to receive real-time notifications</span>
+            <button 
+              onClick={() => onSectionChange?.("webhooks")}
+              className="text-primary hover:underline cursor-pointer"
+            >
+              Set up Webhooks to receive real-time notifications
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Explore <a href="/dashboard?section=audit-logs" className="text-primary hover:underline">Audit Logs</a> for compliance tracking</span>
+            <button 
+              onClick={() => onSectionChange?.("audit-logs")}
+              className="text-primary hover:underline cursor-pointer"
+            >
+              Explore Audit Logs for compliance tracking
+            </button>
           </div>
         </CardContent>
       </Card>
