@@ -27,6 +27,9 @@ import { QuickstartGuide } from "@/components/dashboard/QuickstartGuide";
 import { WebhookManagement } from "@/components/dashboard/WebhookManagement";
 import { MatchesList } from "@/components/MatchesList";
 import { MatchAnalytics } from "@/components/MatchAnalytics";
+import Troubleshooting from "@/components/Troubleshooting";
+import OnboardingWizard from "@/components/OnboardingWizard";
+import { SandboxIndicator } from "@/components/SandboxIndicator";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -57,6 +60,7 @@ export default function Dashboard() {
   const [showKey, setShowKey] = useState(false);
   const [activeSection, setActiveSection] = useState("quickstart");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -91,6 +95,12 @@ export default function Dashboard() {
       } else {
         fetchApiKeys();
         checkAdminRole(session.user.id);
+        
+        // Check if this is the first time the user is visiting
+        const hasCompletedOnboarding = localStorage.getItem("onboarding_completed");
+        if (!hasCompletedOnboarding) {
+          setShowOnboarding(true);
+        }
       }
     });
 
@@ -269,7 +279,7 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case "quickstart":
-        return <QuickstartGuide />;
+        return <QuickstartGuide onStartWizard={() => setShowOnboarding(true)} />;
 
       case "matches":
         return (
@@ -675,18 +685,28 @@ export default function Dashboard() {
           </div>
         );
 
+      case "troubleshooting":
+        return <Troubleshooting />;
+
       default:
         return null;
     }
   };
 
   return (
-    <DashboardLayout 
-      activeSection={activeSection} 
-      onSectionChange={setActiveSection}
-      isAdmin={isAdmin}
-    >
-      {renderContent()}
-    </DashboardLayout>
+    <>
+      <OnboardingWizard 
+        open={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+      />
+      <DashboardLayout 
+        activeSection={activeSection} 
+        onSectionChange={setActiveSection}
+        isAdmin={isAdmin}
+      >
+        <SandboxIndicator isSandbox={true} />
+        {renderContent()}
+      </DashboardLayout>
+    </>
   );
 }

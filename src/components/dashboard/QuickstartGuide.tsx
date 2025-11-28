@@ -17,7 +17,11 @@ interface SDKExample {
   description: string;
 }
 
-export function QuickstartGuide() {
+interface QuickstartGuideProps {
+  onStartWizard?: () => void;
+}
+
+export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
   const [examples, setExamples] = useState<SDKExample[]>([]);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -91,14 +95,22 @@ export function QuickstartGuide() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Rocket className="h-8 w-8 text-primary" />
-          Quick Start Guide
-        </h2>
-        <p className="text-muted-foreground mt-2">
-          Get from zero to your first match in under 10 minutes
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Rocket className="h-8 w-8 text-primary" />
+            Quick Start Guide
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Get from zero to your first match in under 10 minutes
+          </p>
+        </div>
+        {onStartWizard && (
+          <Button onClick={onStartWizard} variant="outline" className="gap-2">
+            <Play className="h-4 w-4" />
+            Start Wizard
+          </Button>
+        )}
       </div>
 
       {/* Progress Steps */}

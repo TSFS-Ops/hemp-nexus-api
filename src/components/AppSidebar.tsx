@@ -1,4 +1,4 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3 } from "lucide-react";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -41,6 +41,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
   const toolsItems = [
     { id: "data-sources", title: "Data Sources", icon: FileCode },
     { id: "hash-verify", title: "Hash Verifier", icon: Shield },
+    { id: "troubleshooting", title: "Troubleshooting", icon: HelpCircle },
     { id: "automation", title: "Changelog", icon: GitBranch },
   ];
 
