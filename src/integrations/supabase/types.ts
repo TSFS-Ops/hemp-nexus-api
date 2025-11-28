@@ -348,6 +348,106 @@ export type Database = {
           },
         ]
       }
+      data_source_registrations: {
+        Row: {
+          api_documentation: string | null
+          certifications: Json | null
+          company_description: string | null
+          company_name: string
+          company_website: string | null
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          data_source_name: string
+          data_source_type: string
+          endpoint_url: string | null
+          id: string
+          org_id: string | null
+          regulatory_licenses: Json | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_by: string | null
+          supported_products: Json | null
+          supported_regions: Json | null
+          updated_at: string
+          verification_documents: Json | null
+        }
+        Insert: {
+          api_documentation?: string | null
+          certifications?: Json | null
+          company_description?: string | null
+          company_name: string
+          company_website?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          data_source_name: string
+          data_source_type: string
+          endpoint_url?: string | null
+          id?: string
+          org_id?: string | null
+          regulatory_licenses?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_by?: string | null
+          supported_products?: Json | null
+          supported_regions?: Json | null
+          updated_at?: string
+          verification_documents?: Json | null
+        }
+        Update: {
+          api_documentation?: string | null
+          certifications?: Json | null
+          company_description?: string | null
+          company_name?: string
+          company_website?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          data_source_name?: string
+          data_source_type?: string
+          endpoint_url?: string | null
+          id?: string
+          org_id?: string | null
+          regulatory_licenses?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_by?: string | null
+          supported_products?: Json | null
+          supported_regions?: Json | null
+          updated_at?: string
+          verification_documents?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_source_registrations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_source_registrations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_source_registrations_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_sources: {
         Row: {
           config: Json
@@ -432,6 +532,83 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_analytics: {
+        Row: {
+          avg_match_time_hours: number | null
+          avg_options_per_signal: number | null
+          created_at: string
+          data_source_id: string | null
+          id: string
+          is_cross_border: boolean | null
+          match_rate: number | null
+          period_end: string
+          period_start: string
+          period_type: string
+          product_category: string | null
+          provider_success_rate: number | null
+          signal_type: string | null
+          source_country: string | null
+          source_region: string | null
+          target_country: string | null
+          target_region: string | null
+          total_matches: number | null
+          total_options: number | null
+          total_signals: number | null
+        }
+        Insert: {
+          avg_match_time_hours?: number | null
+          avg_options_per_signal?: number | null
+          created_at?: string
+          data_source_id?: string | null
+          id?: string
+          is_cross_border?: boolean | null
+          match_rate?: number | null
+          period_end: string
+          period_start: string
+          period_type: string
+          product_category?: string | null
+          provider_success_rate?: number | null
+          signal_type?: string | null
+          source_country?: string | null
+          source_region?: string | null
+          target_country?: string | null
+          target_region?: string | null
+          total_matches?: number | null
+          total_options?: number | null
+          total_signals?: number | null
+        }
+        Update: {
+          avg_match_time_hours?: number | null
+          avg_options_per_signal?: number | null
+          created_at?: string
+          data_source_id?: string | null
+          id?: string
+          is_cross_border?: boolean | null
+          match_rate?: number | null
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          product_category?: string | null
+          provider_success_rate?: number | null
+          signal_type?: string | null
+          source_country?: string | null
+          source_region?: string | null
+          target_country?: string | null
+          target_region?: string | null
+          total_matches?: number | null
+          total_options?: number | null
+          total_signals?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_analytics_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -757,6 +934,74 @@ export type Database = {
             foreignKeyName: "rate_limits_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reputation_scores: {
+        Row: {
+          avg_response_time_seconds: number | null
+          completion_score: number | null
+          created_at: string
+          first_match_at: string | null
+          id: string
+          last_match_at: string | null
+          median_response_time_seconds: number | null
+          org_id: string
+          overall_score: number | null
+          reliability_score: number | null
+          reputation_level: string | null
+          responsiveness_score: number | null
+          total_matches_completed: number
+          total_matches_failed: number
+          total_options_selected: number
+          total_signals_created: number
+          updated_at: string
+        }
+        Insert: {
+          avg_response_time_seconds?: number | null
+          completion_score?: number | null
+          created_at?: string
+          first_match_at?: string | null
+          id?: string
+          last_match_at?: string | null
+          median_response_time_seconds?: number | null
+          org_id: string
+          overall_score?: number | null
+          reliability_score?: number | null
+          reputation_level?: string | null
+          responsiveness_score?: number | null
+          total_matches_completed?: number
+          total_matches_failed?: number
+          total_options_selected?: number
+          total_signals_created?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_response_time_seconds?: number | null
+          completion_score?: number | null
+          created_at?: string
+          first_match_at?: string | null
+          id?: string
+          last_match_at?: string | null
+          median_response_time_seconds?: number | null
+          org_id?: string
+          overall_score?: number | null
+          reliability_score?: number | null
+          reputation_level?: string | null
+          responsiveness_score?: number | null
+          total_matches_completed?: number
+          total_matches_failed?: number
+          total_options_selected?: number
+          total_signals_created?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reputation_scores_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },

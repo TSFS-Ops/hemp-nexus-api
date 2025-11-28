@@ -1,4 +1,4 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon } from "lucide-react";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -37,6 +37,11 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
     { id: "webhooks", title: "Webhooks", icon: Zap },
     { id: "webhook-debugger", title: "Webhook Debugger", icon: Zap },
     { id: "audit-logs", title: "Logs", icon: Activity },
+  ];
+
+  const marketplaceItems = [
+    { id: "marketplace", title: "Marketplace", icon: Store, route: "/marketplace" },
+    { id: "global-analytics", title: "Global Analytics", icon: TrendingUp, route: "/analytics" },
   ];
 
   const toolsItems = [
@@ -108,6 +113,26 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
                     isActive={isActive(item.id)}
+                    className="w-full px-3 py-2 text-sm font-medium"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Global Network</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {marketplaceItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    onClick={() => item.route ? navigate(item.route) : onSectionChange(item.id)}
+                    isActive={item.route ? location.pathname === item.route : isActive(item.id)}
                     className="w-full px-3 py-2 text-sm font-medium"
                   >
                     <item.icon className="h-4 w-4" />

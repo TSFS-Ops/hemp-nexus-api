@@ -7,6 +7,8 @@ import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Admin from "@/pages/Admin";
 import MatchDetails from "@/pages/MatchDetails";
+import Marketplace from "@/pages/Marketplace";
+import Analytics from "@/pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -17,10 +19,12 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
-        <Route path="/admin/*" element={<Admin />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/admin/*" element={<Admin />} />
           </Routes>
           <Toaster />
           <Sonner />
