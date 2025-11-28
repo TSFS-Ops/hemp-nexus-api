@@ -37,6 +37,19 @@ serve(async (req) => {
 
     const { signalId } = validatedData;
 
+    // Log audit: sr-discover initiated
+    await supabase.from("audit_logs").insert({
+      org_id: authCtx.orgId,
+      actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+      actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+      action: "sr_discover_initiated",
+      entity_type: "signal",
+      entity_id: signalId,
+      metadata: {
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     // 1. Read the signal (with org validation to prevent cross-org access)
     console.log(`[sr-discover] Reading signal ${signalId} for org ${authCtx.orgId}`);
     const { data: signal, error: signalError } = await supabase
@@ -48,6 +61,21 @@ serve(async (req) => {
 
     if (signalError || !signal) {
       console.error(`[sr-discover] Signal not found:`, signalError);
+      
+      // Log audit: sr-discover failed
+      await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: "sr_discover_failed",
+        entity_type: "signal",
+        entity_id: signalId,
+        metadata: {
+          error: "Signal not found",
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
       return new Response(
         JSON.stringify({ ok: false, error: "Signal not found" }),
         { status: 404, headers: { ...headers, "Content-Type": "application/json" } }
@@ -140,6 +168,25 @@ serve(async (req) => {
 
     console.log(`[sr-discover] Successfully stored ${options.length} options`);
 
+    // Log audit: sr-discover completed successfully
+    await supabase.from("audit_logs").insert({
+      org_id: authCtx.orgId,
+      actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+      actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+      action: "sr_discover_completed",
+      entity_type: "signal",
+      entity_id: signalId,
+      metadata: {
+        results_found: allResults.length,
+        options_created: options.length,
+        search_queries: searchQueries,
+        data_source_id: webSource!.id,
+        search_provider: searchProvider,
+        crawl_enabled: crawlProvider === "firecrawl" && !!crawlApiKey,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     // 5. Return success
     return new Response(
       JSON.stringify({ 
@@ -153,6 +200,32 @@ serve(async (req) => {
   } catch (error) {
     console.error("[sr-discover] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    // Log audit: sr-discover error (best effort)
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const rawBody = await req.clone().json();
+      const signalId = rawBody?.signalId;
+      
+      if (signalId) {
+        await supabase.from("audit_logs").insert({
+          org_id: "unknown", // Will be overwritten if we have authCtx
+          action: "sr_discover_error",
+          entity_type: "signal",
+          entity_id: signalId,
+          metadata: {
+            error: errorMessage,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    } catch (auditError) {
+      console.error("[sr-discover] Failed to log audit error:", auditError);
+    }
+    
     return new Response(
       JSON.stringify({ ok: false, error: errorMessage }),
       { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
