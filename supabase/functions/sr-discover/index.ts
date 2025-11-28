@@ -37,12 +37,13 @@ serve(async (req) => {
 
     const { signalId } = validatedData;
 
-    // 1. Read the signal
-    console.log(`[sr-discover] Reading signal ${signalId}`);
+    // 1. Read the signal (with org validation to prevent cross-org access)
+    console.log(`[sr-discover] Reading signal ${signalId} for org ${authCtx.orgId}`);
     const { data: signal, error: signalError } = await supabase
       .from("signals")
       .select("*")
       .eq("id", signalId)
+      .eq("org_id", authCtx.orgId)
       .single();
 
     if (signalError || !signal) {
