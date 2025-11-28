@@ -87,7 +87,10 @@ export function QuickstartGuide({ onStartWizard }: QuickstartGuideProps = {}) {
       number: 3,
       title: "View Your Data",
       description: "Check the dashboard to see your signals and matches",
-      action: () => markStepComplete(3),
+      action: () => {
+        markStepComplete(3);
+        window.location.href = "/dashboard?section=matches";
+      },
       actionLabel: "View Dashboard",
       completed: completedSteps.has(3),
     },
