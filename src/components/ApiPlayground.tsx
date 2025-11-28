@@ -379,7 +379,7 @@ export default function ApiPlayground() {
               <Input
                 id="playground-api-key"
                 type="password"
-                placeholder="Enter your API key"
+                placeholder="Paste your API key here (Ctrl+V / Cmd+V)"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="font-mono"
@@ -389,7 +389,7 @@ export default function ApiPlayground() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Your API key is only used locally and never stored
+              Copy your API key from the Authentication tab and paste it here. Your key is only used locally and never stored.
             </p>
           </div>
 

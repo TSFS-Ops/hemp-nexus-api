@@ -166,11 +166,15 @@ export default function Dashboard() {
       setSelectedScopes(["signals:write", "signals:read"]);
       setExpiryDays("never");
       
+      // Auto-copy to clipboard
+      await navigator.clipboard.writeText(data.key);
+      
       await fetchApiKeys();
 
       toast({
-        title: "API Key created",
-        description: "Your new API key has been generated. Make sure to copy it now!",
+        title: "API Key created & copied!",
+        description: "Your new API key has been copied to your clipboard. This is the only time you'll see it - save it securely now!",
+        duration: 8000,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -377,28 +381,40 @@ export default function Dashboard() {
             </div>
 
             {newKey && (
-              <Alert>
+              <Alert className="border-primary bg-primary/5">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Save your API key</AlertTitle>
-                <AlertDescription>
-                  <p className="mb-2">
-                    Make sure to copy your API key now. You won't be able to see it again!
+                <AlertTitle className="flex items-center gap-2">
+                  ⚠️ Save your API key now
+                  <Badge variant="outline" className="ml-auto">Copied to clipboard</Badge>
+                </AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p className="font-medium">
+                    This is the only time you'll see this key. It's been automatically copied to your clipboard.
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <code className="flex-1 px-3 py-2 bg-muted rounded text-sm font-mono">
+                    <code className="flex-1 px-3 py-2 bg-muted rounded text-sm font-mono break-all">
                       {showKey ? newKey : "••••••••••••••••••••••••••••••••"}
                     </code>
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => setShowKey(!showKey)}
+                      title={showKey ? "Hide key" : "Show key"}
                     >
                       {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
-                    <Button variant="outline" size="icon" onClick={handleCopyKey}>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={handleCopyKey}
+                      title="Copy again"
+                    >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    💡 <strong>Next steps:</strong> Store this key securely (in a password manager or environment variable), then test it in the API Playground or Testing tab.
+                  </p>
                 </AlertDescription>
               </Alert>
             )}

@@ -1066,7 +1066,7 @@ export default function ComprehensiveApiTests() {
             </Button>
           </CardTitle>
           <CardDescription>
-            Automated testing suite covering all API endpoints and functionality
+            Automated tests validate all API endpoints. Tests include creating signals, managing matches, webhooks, and data sources. Verify your complete API setup.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

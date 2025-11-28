@@ -198,20 +198,19 @@ APIs let different software systems talk to each other automatically. Instead of
    **Available Scopes**:
    - ☑️ `signals:read` - View signals
    - ☑️ `signals:write` - Create/modify signals
-   - ☑️ `match:read` - View matches
-   - ☑️ `match:write` - Create/settle matches
+   - ☑️ `data-sources:read` - View data sources
+   - ☑️ `data-sources:write` - Manage data sources
+   - ☑️ `consents:read` - View consents
+   - ☑️ `consents:write` - Manage consents
    - ☑️ `webhooks:read` - View webhooks
    - ☑️ `webhooks:write` - Manage webhooks
-   - ☑️ `audit_logs:read` - View activity logs
 
    **For getting started, select**:
    - ✅ `signals:write`
    - ✅ `signals:read`
-   - ✅ `match:write`
-   - ✅ `match:read`
 
    **Why these scopes?** 
-   - These let you test the core functionality: creating signals and recording matches
+   - These let you test the core functionality: creating and viewing signals
    - You can always create more keys with different permissions later
 
 4. **Click "Create API Key"**
@@ -267,15 +266,17 @@ APIs let different software systems talk to each other automatically. Instead of
 
 2. **Paste your API key** in the provided field
 
-3. **Click "Run Smoke Tests"**
-   - These are automated tests that check basic functionality
+3. **Click "Run Tests"**
+   - These are automated smoke tests that verify your API setup is working correctly
+   - **What are smoke tests?** Quick validation tests that check if core features work without errors
 
 4. **You should see**:
    ```
-   ✅ Health Check: PASSED
-   ✅ Authentication: PASSED
-   ✅ Signal Creation: PASSED
-   ✅ Match Creation: PASSED
+   ✅ Create Match: PASSED
+   ✅ Verify Match Hash: PASSED
+   ✅ Verify Match Audit Log: PASSED
+   ✅ Settle Match: PASSED (this only confirms intent, not a binding contract)
+   ✅ Verify Settlement Audit Log: PASSED
    ```
 
 5. **If any test fails**:
