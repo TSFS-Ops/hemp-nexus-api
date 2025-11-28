@@ -217,10 +217,10 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Play className="h-5 w-5" />
-              API Smoke Tests
+              API Tests
             </CardTitle>
             <CardDescription>
-              Automated tests for /match and /settle endpoints with audit trail verification
+              Automated smoke tests verify your API is set up correctly. These quick tests check match creation, hashing, and settlement without affecting your data.
             </CardDescription>
           </div>
           <Button onClick={runSmokeTests} disabled={running || !apiKey}>
@@ -243,7 +243,7 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              API key required to run smoke tests. Create or select an API key from the API Keys tab.
+              <strong>API key required.</strong> Create an API key from the API Keys tab, then paste it here to run tests.
             </AlertDescription>
           </Alert>
         )}
@@ -305,7 +305,7 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
           <Alert className="border-green-600 bg-green-50 dark:bg-green-950">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800 dark:text-green-200">
-              All smoke tests passed! API endpoints are functioning correctly with proper audit trail generation.
+              <strong>All tests passed!</strong> Your API is working correctly. Match creation, cryptographic hashing, and intent confirmation are all functioning as expected.
             </AlertDescription>
           </Alert>
         )}
@@ -314,7 +314,12 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
           <Alert variant="destructive">
             <XCircle className="h-4 w-4" />
             <AlertDescription>
-              One or more tests failed. Please review the error messages above and check your API configuration.
+              <strong>Some tests failed.</strong> Common issues:
+              <ul className="list-disc ml-4 mt-2 space-y-1">
+                <li><strong>Unauthorized:</strong> Check your API key is correct and active</li>
+                <li><strong>Forbidden:</strong> Ensure your API key has the required scopes (signals:write, signals:read)</li>
+                <li><strong>Network error:</strong> Check your internet connection</li>
+              </ul>
             </AlertDescription>
           </Alert>
         )}
