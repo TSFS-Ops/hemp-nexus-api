@@ -187,7 +187,7 @@ Follow this checklist:
 1. **Hospital creates a signal**: "Need 10,000 surgical masks"
 2. **System finds verified suppliers**: Returns only SAHPRA-licensed suppliers
 3. **Hospital selects supplier**: Creates a match record
-4. **After delivery**: Mark match as settled
+4. **Confirm intent**: Signal interest (no legal obligation) so seller can prepare final terms
 5. **For audits**: Provide match records with cryptographic proof
 
 **Benefits**: Automated compliance verification, audit trail, faster matching.
@@ -200,7 +200,7 @@ Follow this checklist:
 2. **Sellers respond**: System returns matching equipment offers
 3. **Agreement reached**: Record match with all details
 4. **Webhook notification**: Both parties' systems get notified
-5. **Settlement**: Mark as complete when payment/delivery done
+5. **Confirm intent**: Signal interest so seller can prepare final terms (no legal obligation)
 
 **Benefits**: Permanent record, instant notifications, easy integration with ERP.
 

@@ -302,8 +302,8 @@ If you forget your password:
 - Store match terms and pricing
 - Idempotent (safe to retry)
 
-**Match Settlement**:
-- Confirm deal completion
+**Confirm Intent**:
+- Signal interest to proceed (no legal obligation)
 - Immutable audit trail
 - Webhook notifications
 - Timestamps for analytics
@@ -320,7 +320,7 @@ If you forget your password:
 
 **What's Logged**:
 - All API key operations (create, use, revoke)
-- Match creation and settlement
+- Match creation and intent confirmation
 - Signal creation and selection
 - Webhook management
 - Organization changes
@@ -366,7 +366,7 @@ If you forget your password:
 
 ## Common Workflows
 
-### Workflow 1: Create Signal → Match → Settle
+### Workflow 1: Create Signal → Match → Confirm Intent
 
 ```
 1. Developer creates buyer signal via API
@@ -385,12 +385,12 @@ If you forget your password:
    POST /match { buyer, seller, commodity, price }
    System generates immutable hash
 
-6. Deal completes
+6. Confirm intent (no legal obligation)
    POST /match/:id/settle
-   System marks as settled
+   Signals interest so seller can prepare final terms
 
 7. Webhook notifications sent
-   match.created, match.settled events
+   match.created, match.intent_confirmed events
 ```
 
 ---

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Eye, Download, CheckCircle2 } from "lucide-react";
+import { Loader2, Search, Eye, Download, CheckCircle2, Info } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -23,6 +23,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Match = Tables<"matches">;
 
@@ -222,17 +228,29 @@ export function MatchesList() {
             <CardTitle>Matches</CardTitle>
             <div className="flex gap-2">
               {selectedMatches.size > 0 && (
-                <Button
-                  onClick={() => setShowSettleDialog(true)}
-                  disabled={isSettling}
-                >
-                  {isSettling ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                  )}
-                  Confirm intent for {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setShowSettleDialog(true)}
+                    disabled={isSettling}
+                  >
+                    {isSettling ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                    )}
+                    Confirm intent for {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Signals your interest so the seller can prepare final terms. This does not create any contract, payment, or legal obligation.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               )}
               <Button variant="outline" onClick={exportToCSV}>
                 <Download className="h-4 w-4 mr-2" />

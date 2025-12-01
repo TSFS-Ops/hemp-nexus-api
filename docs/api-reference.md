@@ -51,7 +51,7 @@ API keys support scope-based access control:
 - `signals:read` - Read signals
 - `signals:write` - Create and manage signals
 - `match:read` - Read matches
-- `match:write` - Create and settle matches
+- `match:write` - Create matches and confirm intent
 - `webhooks:read` - View webhook endpoints
 - `webhooks:write` - Manage webhook endpoints
 - `data_sources:read` - View data sources
@@ -253,7 +253,7 @@ Content-Type: application/json
 
 ### Matches
 
-Create and settle trade matches with compliance tracking.
+Create trade matches and confirm intent with compliance tracking.
 
 #### POST /match
 
@@ -320,7 +320,7 @@ The SHA-256 hash includes: buyer.id, seller.id, commodity, quantity, price, and 
 
 #### POST /match/:id/settle
 
-Mark a match as settled (deal completed).
+Confirm intent for a match. **This does not create any legal obligation** — it only signals interest so the seller can prepare final terms.
 
 **Request**:
 ```http
@@ -343,10 +343,12 @@ Authorization: Bearer sk_your_api_key
 }
 ```
 
+**Important**: This action records interest only. It does not create a contract, payment obligation, or any legal commitment.
+
 **Notes**:
 - Idempotent: Calling multiple times returns the same result
 - Creates immutable audit log entry
-- Triggers `match.settled` webhook event
+- Triggers `match.intent_confirmed` webhook event
 
 ---
 
@@ -832,7 +834,7 @@ function verifyWebhook(payload, signature, secret) {
 | Event | Description |
 |-------|-------------|
 | `match.created` | New match recorded |
-| `match.settled` | Match marked as settled |
+| `match.intent_confirmed` | Intent confirmed for match (does not create legal obligation) |
 | `signal.created` | New signal created |
 | `signal.selected` | Option selected from signal |
 | `api_key.created` | New API key generated |
