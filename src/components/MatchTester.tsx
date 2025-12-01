@@ -276,14 +276,14 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
     <Card>
       <CardHeader>
         <CardTitle>Match API Tester</CardTitle>
-        <CardDescription>Test the match recording and settlement endpoints</CardDescription>
+        <CardDescription>Test the match recording and intent confirmation endpoints</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="create" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="create">Create</TabsTrigger>
             <TabsTrigger value="get">Get</TabsTrigger>
-            <TabsTrigger value="settle">Settle</TabsTrigger>
+            <TabsTrigger value="confirm-intent">Confirm Intent</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
           </TabsList>
 
@@ -439,19 +439,16 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
             </Button>
           </TabsContent>
 
-          <TabsContent value="settle" className="space-y-4">
+          <TabsContent value="confirm-intent" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="matchIdSettle">Match ID</Label>
+              <Label htmlFor="matchIdConfirm">Match ID</Label>
               <Input
-                id="matchIdSettle"
+                id="matchIdConfirm"
                 placeholder="Enter match ID"
                 value={matchId}
                 onChange={(e) => setMatchId(e.target.value)}
               />
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              This does not create a contract, payment, or legal obligation. It only records interest so the seller can prepare final terms.
-            </p>
             <Button onClick={handleSettleMatch} disabled={loading} className="w-full">
               {loading ? (
                 <>
@@ -459,9 +456,12 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
                   Confirming...
                 </>
               ) : (
-                "Confirm intent (settle)"
+                "Confirm Intent"
               )}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              This does not create any legal obligation. It only signals interest so the seller can prepare final terms.
+            </p>
           </TabsContent>
 
           <TabsContent value="list" className="space-y-4">
