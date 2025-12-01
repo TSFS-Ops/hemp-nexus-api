@@ -5,9 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { MatchTimeline } from "@/components/MatchTimeline";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Match = Tables<"matches">;
@@ -120,9 +126,21 @@ export default function MatchDetails() {
             </div>
             {match.status === "matched" && (
               <div className="flex flex-col items-end gap-2">
-                <Button onClick={handleSettle}>Confirm intent</Button>
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleSettle}>Confirm intent</Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Signals your interest so the seller can prepare final terms. This does not create any contract, payment, or legal obligation.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <p className="text-xs text-muted-foreground text-right max-w-xs">
-                  This does not create a contract, payment, or legal obligation. It only records interest so the seller can prepare final terms.
+                  This does not create any legal obligation. It only signals interest so the seller can prepare final terms.
                 </p>
               </div>
             )}

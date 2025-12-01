@@ -275,8 +275,8 @@ APIs let different software systems talk to each other automatically. Instead of
    ✅ Create Match: PASSED
    ✅ Verify Match Hash: PASSED
    ✅ Verify Match Audit Log: PASSED
-   ✅ Settle Match: PASSED (this only confirms intent, not a binding contract)
-   ✅ Verify Settlement Audit Log: PASSED
+   ✅ Confirm Intent: PASSED (signals interest only, no legal obligation)
+   ✅ Verify Intent Audit Log: PASSED
    ```
 
 5. **If any test fails**:

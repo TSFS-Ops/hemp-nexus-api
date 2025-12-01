@@ -93,12 +93,12 @@ Created new endpoint: `GET /signals/:id/status`
 
 ---
 
-## 4. ✅ Add Match Settlement Auth Check
+## 4. ✅ Add Match Intent Confirmation Auth Check
 
 ### Implementation
 Added organization verification to match operations:
 
-1. **Settlement Endpoint** (`POST /match/:id/settle`)
+1. **Confirm Intent Endpoint** (`POST /match/:id/settle`)
    - Verifies match belongs to authenticated user's org
    - Returns 403 if org_id doesn't match
 
@@ -111,7 +111,7 @@ Added organization verification to match operations:
    - Applied at query level for efficiency
 
 ### Security Benefits
-- Prevents unauthorized match settlement
+- Prevents unauthorized intent confirmation
 - Enforces org-level data isolation
 - Consistent authorization across all match operations
 
@@ -241,7 +241,7 @@ Full webhook infrastructure:
    - `signal.created` - New signal created
    - `option.selected` - Option selected for signal
    - `match.created` - New match created
-   - `match.settled` - Match settled
+   - `match.intent_confirmed` - Intent confirmed for match
 
 4. **Security**
    - HMAC signature verification
@@ -251,7 +251,7 @@ Full webhook infrastructure:
 
 5. **Integration Points**
    - Signals endpoint: Triggers on creation and selection
-   - Match endpoint: Triggers on creation and settlement
+   - Match endpoint: Triggers on creation and intent confirmation
    - Background execution: Doesn't block API responses
 
 ### Webhook Payload Format
@@ -318,8 +318,8 @@ X-Webhook-Timestamp: ISO8601
 - [x] Copy functionality works
 - [x] Key only shown once
 
-### ✅ Match Settlement Auth
-- [x] Org verification on settlement
+### ✅ Match Intent Confirmation Auth
+- [x] Org verification on intent confirmation
 - [x] Org verification on get
 - [x] List filtered by org
 - [x] 403 on unauthorized access
