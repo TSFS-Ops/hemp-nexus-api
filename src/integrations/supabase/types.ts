@@ -1445,6 +1445,19 @@ export type Database = {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
       }
+      get_match_evidence: {
+        Args: { p_match_id: string; p_org_id: string }
+        Returns: {
+          event_timeline: Json
+          match_created_at: string
+          match_data: Json
+          match_hash: string
+          match_id: string
+          org_id: string
+          settled_at: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
