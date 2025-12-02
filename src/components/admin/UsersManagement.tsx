@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, UserX, RefreshCw, Shield } from "lucide-react";
+import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -24,20 +24,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface User {
   id: string;
   email: string;
   full_name: string | null;
-  org_id: string;
+  org_id: string | null;
+  organization_name: string;
   status: string;
   created_at: string;
-  organizations: {
-    name: string;
-  };
-  user_roles: Array<{
-    role: string;
-  }>;
+  last_sign_in_at: string | null;
+  email_confirmed_at: string | null;
+  roles: string[];
 }
 
 export default function UsersManagement() {
@@ -56,34 +60,22 @@ export default function UsersManagement() {
     try {
       setLoading(true);
       
-      // Fetch profiles with organizations
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select(`
-          *,
-          organizations(name)
-        `)
-        .order("created_at", { ascending: false });
+      // Get session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
 
-      if (profilesError) throw profilesError;
+      // Fetch enriched user data from edge function
+      const response = await supabase.functions.invoke("admin-users", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-      // Fetch user roles separately
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (rolesError) throw rolesError;
-
-      // Map roles to users
-      const usersWithRoles = (profilesData || []).map(profile => ({
-        ...profile,
-        user_roles: (rolesData || [])
-          .filter(role => role.user_id === profile.id)
-          .map(role => ({ role: role.role }))
-      }));
-
-      setUsers(usersWithRoles);
+      if (response.error) throw response.error;
+      
+      setUsers(response.data.users || []);
     } catch (error) {
+      console.error("Error fetching users:", error);
       toast({
         title: "Error",
         description: "Failed to fetch users",
@@ -162,14 +154,24 @@ export default function UsersManagement() {
   };
 
   const filteredUsers = users.filter((user) =>
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.organizations.name.toLowerCase().includes(searchQuery.toLowerCase())
+    user.organization_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getUserRoles = (user: User) => {
-    if (!user.user_roles || user.user_roles.length === 0) return "—";
-    return user.user_roles.map(r => r.role).join(", ");
+    if (!user.roles || user.roles.length === 0) return "—";
+    return user.roles.join(", ");
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleDateString();
+  };
+
+  const formatDateTime = (dateStr: string | null) => {
+    if (!dateStr) return "Never";
+    return new Date(dateStr).toLocaleString();
   };
 
   return (
@@ -208,65 +210,109 @@ export default function UsersManagement() {
                   <TableHead>Email</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Organization</TableHead>
+                  <TableHead>Registered</TableHead>
+                  <TableHead>Last Sign In</TableHead>
+                  <TableHead>Email Verified</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-mono text-xs">{user.email}</TableCell>
-                    <TableCell>{user.full_name || "—"}</TableCell>
-                    <TableCell>{user.organizations.name}</TableCell>
-                    <TableCell>
-                      {getUserRoles(user) !== "—" ? (
-                        <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                          <Shield className="h-3 w-3" />
-                          {getUserRoles(user)}
-                        </Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={user.status}
-                        onValueChange={(value) => handleUpdateStatus(user.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="suspended">Suspended</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowResetDialog(true);
-                          }}
+                <TooltipProvider>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-mono text-xs">{user.email}</TableCell>
+                      <TableCell>{user.full_name || "—"}</TableCell>
+                      <TableCell>{user.organization_name}</TableCell>
+                      <TableCell className="text-xs">
+                        <Tooltip>
+                          <TooltipTrigger>{formatDate(user.created_at)}</TooltipTrigger>
+                          <TooltipContent>{formatDateTime(user.created_at)}</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <Tooltip>
+                          <TooltipTrigger>{formatDate(user.last_sign_in_at)}</TooltipTrigger>
+                          <TooltipContent>{formatDateTime(user.last_sign_in_at)}</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        {user.email_confirmed_at ? (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </TooltipTrigger>
+                            <TooltipContent>Verified on {formatDateTime(user.email_confirmed_at)}</TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <XCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>Not verified</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {getUserRoles(user) !== "—" ? (
+                          <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                            <Shield className="h-3 w-3" />
+                            {getUserRoles(user)}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={user.status}
+                          onValueChange={(value) => handleUpdateStatus(user.id, value)}
                         >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleResendVerification(user.email)}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="suspended">Suspended</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setShowResetDialog(true);
+                                }}
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send password reset</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleResendVerification(user.email)}
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Resend verification email</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TooltipProvider>
               </TableBody>
             </Table>
           </div>
