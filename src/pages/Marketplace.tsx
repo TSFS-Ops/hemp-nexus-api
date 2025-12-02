@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -8,17 +9,87 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Store, CheckCircle2, XCircle, Clock, Building2 } from "lucide-react";
+import { Store, CheckCircle2, XCircle, Clock, Building2, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { z } from "zod";
+
+// Input validation schema
+const registrationSchema = z.object({
+  company_name: z.string()
+    .min(2, "Company name must be at least 2 characters")
+    .max(200, "Company name must be less than 200 characters")
+    .trim(),
+  company_description: z.string()
+    .max(2000, "Description must be less than 2000 characters")
+    .optional()
+    .transform(val => val?.trim() || ""),
+  company_website: z.string()
+    .url("Please enter a valid URL")
+    .max(500, "URL must be less than 500 characters")
+    .optional()
+    .or(z.literal("")),
+  contact_email: z.string()
+    .email("Please enter a valid email address")
+    .max(255, "Email must be less than 255 characters")
+    .trim(),
+  contact_phone: z.string()
+    .max(50, "Phone number must be less than 50 characters")
+    .optional()
+    .transform(val => val?.trim() || ""),
+  data_source_name: z.string()
+    .min(2, "Data source name must be at least 2 characters")
+    .max(200, "Data source name must be less than 200 characters")
+    .trim(),
+  data_source_type: z.enum(["api", "webhook", "scraper", "manual"]),
+  endpoint_url: z.string()
+    .url("Please enter a valid URL")
+    .max(500, "URL must be less than 500 characters")
+    .optional()
+    .or(z.literal("")),
+  api_documentation: z.string()
+    .url("Please enter a valid URL")
+    .max(500, "URL must be less than 500 characters")
+    .optional()
+    .or(z.literal("")),
+});
+
+type RegistrationFormData = z.infer<typeof registrationSchema>;
 
 export default function Marketplace() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Auth check
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setIsAuthenticated(true);
+        setAuthLoading(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setIsAuthenticated(true);
+        setAuthLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegistrationFormData>({
     company_name: "",
     company_description: "",
     company_website: "",
@@ -28,8 +99,6 @@ export default function Marketplace() {
     data_source_type: "api",
     endpoint_url: "",
     api_documentation: "",
-    supported_products: [] as string[],
-    supported_regions: [] as string[],
   });
 
   // Fetch registrations
@@ -44,11 +113,12 @@ export default function Marketplace() {
       if (error) throw error;
       return data;
     },
+    enabled: isAuthenticated,
   });
 
   // Submit registration
   const submitRegistration = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (validatedData: RegistrationFormData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -59,7 +129,15 @@ export default function Marketplace() {
         .single();
 
       const { error } = await supabase.from("data_source_registrations").insert({
-        ...formData,
+        company_name: validatedData.company_name,
+        company_description: validatedData.company_description || null,
+        company_website: validatedData.company_website || null,
+        contact_email: validatedData.contact_email,
+        contact_phone: validatedData.contact_phone || null,
+        data_source_name: validatedData.data_source_name,
+        data_source_type: validatedData.data_source_type,
+        endpoint_url: validatedData.endpoint_url || null,
+        api_documentation: validatedData.api_documentation || null,
         org_id: profile?.org_id,
         submitted_by: user.id,
       });
@@ -79,9 +157,8 @@ export default function Marketplace() {
         data_source_type: "api",
         endpoint_url: "",
         api_documentation: "",
-        supported_products: [],
-        supported_regions: [],
       });
+      setValidationErrors({});
     },
     onError: (error: Error) => {
       toast({ 
@@ -94,9 +171,45 @@ export default function Marketplace() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
+    
+    // Validate form data
+    const result = registrationSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
-    await submitRegistration.mutateAsync();
-    setIsSubmitting(false);
+    try {
+      await submitRegistration.mutateAsync(result.data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const updateField = (field: keyof RegistrationFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -124,6 +237,18 @@ export default function Marketplace() {
         return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -158,9 +283,13 @@ export default function Marketplace() {
                     <Input
                       id="company_name"
                       value={formData.company_name}
-                      onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                      onChange={(e) => updateField("company_name", e.target.value)}
+                      className={validationErrors.company_name ? "border-destructive" : ""}
                       required
                     />
+                    {validationErrors.company_name && (
+                      <p className="text-sm text-destructive">{validationErrors.company_name}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -168,9 +297,14 @@ export default function Marketplace() {
                     <Input
                       id="company_website"
                       type="url"
+                      placeholder="https://example.com"
                       value={formData.company_website}
-                      onChange={(e) => setFormData({ ...formData, company_website: e.target.value })}
+                      onChange={(e) => updateField("company_website", e.target.value)}
+                      className={validationErrors.company_website ? "border-destructive" : ""}
                     />
+                    {validationErrors.company_website && (
+                      <p className="text-sm text-destructive">{validationErrors.company_website}</p>
+                    )}
                   </div>
                 </div>
 
@@ -179,9 +313,14 @@ export default function Marketplace() {
                   <Textarea
                     id="company_description"
                     value={formData.company_description}
-                    onChange={(e) => setFormData({ ...formData, company_description: e.target.value })}
+                    onChange={(e) => updateField("company_description", e.target.value)}
+                    className={validationErrors.company_description ? "border-destructive" : ""}
                     rows={3}
+                    maxLength={2000}
                   />
+                  {validationErrors.company_description && (
+                    <p className="text-sm text-destructive">{validationErrors.company_description}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,9 +330,13 @@ export default function Marketplace() {
                       id="contact_email"
                       type="email"
                       value={formData.contact_email}
-                      onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                      onChange={(e) => updateField("contact_email", e.target.value)}
+                      className={validationErrors.contact_email ? "border-destructive" : ""}
                       required
                     />
+                    {validationErrors.contact_email && (
+                      <p className="text-sm text-destructive">{validationErrors.contact_email}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -202,8 +345,12 @@ export default function Marketplace() {
                       id="contact_phone"
                       type="tel"
                       value={formData.contact_phone}
-                      onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                      onChange={(e) => updateField("contact_phone", e.target.value)}
+                      className={validationErrors.contact_phone ? "border-destructive" : ""}
                     />
+                    {validationErrors.contact_phone && (
+                      <p className="text-sm text-destructive">{validationErrors.contact_phone}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -217,18 +364,22 @@ export default function Marketplace() {
                     <Input
                       id="data_source_name"
                       value={formData.data_source_name}
-                      onChange={(e) => setFormData({ ...formData, data_source_name: e.target.value })}
+                      onChange={(e) => updateField("data_source_name", e.target.value)}
+                      className={validationErrors.data_source_name ? "border-destructive" : ""}
                       required
                     />
+                    {validationErrors.data_source_name && (
+                      <p className="text-sm text-destructive">{validationErrors.data_source_name}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="data_source_type">Type *</Label>
                     <Select
                       value={formData.data_source_type}
-                      onValueChange={(value) => setFormData({ ...formData, data_source_type: value })}
+                      onValueChange={(value) => updateField("data_source_type", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={validationErrors.data_source_type ? "border-destructive" : ""}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -238,6 +389,9 @@ export default function Marketplace() {
                         <SelectItem value="manual">Manual</SelectItem>
                       </SelectContent>
                     </Select>
+                    {validationErrors.data_source_type && (
+                      <p className="text-sm text-destructive">{validationErrors.data_source_type}</p>
+                    )}
                   </div>
                 </div>
 
@@ -247,9 +401,13 @@ export default function Marketplace() {
                     id="endpoint_url"
                     type="url"
                     value={formData.endpoint_url}
-                    onChange={(e) => setFormData({ ...formData, endpoint_url: e.target.value })}
+                    onChange={(e) => updateField("endpoint_url", e.target.value)}
                     placeholder="https://api.yourcompany.com/v1/search"
+                    className={validationErrors.endpoint_url ? "border-destructive" : ""}
                   />
+                  {validationErrors.endpoint_url && (
+                    <p className="text-sm text-destructive">{validationErrors.endpoint_url}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -258,13 +416,25 @@ export default function Marketplace() {
                     id="api_documentation"
                     type="url"
                     value={formData.api_documentation}
-                    onChange={(e) => setFormData({ ...formData, api_documentation: e.target.value })}
+                    onChange={(e) => updateField("api_documentation", e.target.value)}
+                    placeholder="https://docs.yourcompany.com"
+                    className={validationErrors.api_documentation ? "border-destructive" : ""}
                   />
+                  {validationErrors.api_documentation && (
+                    <p className="text-sm text-destructive">{validationErrors.api_documentation}</p>
+                  )}
                 </div>
               </div>
 
               <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "Submitting..." : "Submit Registration"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Registration"
+                )}
               </Button>
             </form>
           </Card>
@@ -272,8 +442,9 @@ export default function Marketplace() {
 
         <TabsContent value="registrations" className="space-y-4">
           {isLoading ? (
-            <Card className="p-6 text-center text-muted-foreground">
-              Loading registrations...
+            <Card className="p-6 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading registrations...</span>
             </Card>
           ) : registrations && registrations.length > 0 ? (
             <div className="grid gap-4">
@@ -291,7 +462,9 @@ export default function Marketplace() {
                         </Badge>
                       </div>
                       
-                      <p className="text-sm text-muted-foreground">{reg.company_description}</p>
+                      {reg.company_description && (
+                        <p className="text-sm text-muted-foreground">{reg.company_description}</p>
+                      )}
                       
                       <div className="flex flex-wrap gap-4 text-sm">
                         <span><strong>Data Source:</strong> {reg.data_source_name}</span>
@@ -308,7 +481,7 @@ export default function Marketplace() {
                       </p>
                       
                       {reg.rejection_reason && (
-                        <p className="text-sm text-red-500 mt-2">
+                        <p className="text-sm text-destructive mt-2">
                           <strong>Rejection reason:</strong> {reg.rejection_reason}
                         </p>
                       )}

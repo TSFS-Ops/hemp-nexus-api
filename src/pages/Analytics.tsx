@@ -1,11 +1,39 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Globe, Users, Target, Award } from "lucide-react";
+import { TrendingUp, Globe, Users, Target, Award, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Analytics() {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setIsAuthenticated(true);
+        setLoading(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setIsAuthenticated(true);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   // Fetch match analytics
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ["match-analytics"],
@@ -19,6 +47,7 @@ export default function Analytics() {
       if (error) throw error;
       return data;
     },
+    enabled: isAuthenticated,
   });
 
   // Fetch data source performance
@@ -37,6 +66,7 @@ export default function Analytics() {
       if (error) throw error;
       return data;
     },
+    enabled: isAuthenticated,
   });
 
   // Calculate cross-border stats
@@ -76,6 +106,18 @@ export default function Analytics() {
     if (record.search_success) acc[sourceName].successCount++;
     return acc;
   }, {} as Record<string, any>);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -147,7 +189,9 @@ export default function Analytics() {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Geographic Heatmap</h3>
             {analyticsLoading ? (
-              <p className="text-center text-muted-foreground py-8">Loading data...</p>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
             ) : analytics && analytics.length > 0 ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
@@ -214,7 +258,9 @@ export default function Analytics() {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Provider Performance Metrics</h3>
             {perfLoading ? (
-              <p className="text-center text-muted-foreground py-8">Loading data...</p>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
             ) : providerStats && Object.keys(providerStats).length > 0 ? (
               <div className="space-y-4">
                 {Object.entries(providerStats).map(([name, stats]: [string, any]) => {
