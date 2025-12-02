@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate, Routes, Route, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, ArrowLeft } from "lucide-react";
 import UsersManagement from "@/components/admin/UsersManagement";
 import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -83,11 +84,19 @@ export default function Admin() {
       <div className="min-h-screen flex w-full">
         <AdminSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center px-4 bg-background">
-            <SidebarTrigger />
-            <div className="ml-4">
-              <h1 className="text-lg font-semibold">API Platform Admin</h1>
+          <header className="h-14 border-b flex items-center px-4 bg-background justify-between">
+            <div className="flex items-center">
+              <SidebarTrigger />
+              <div className="ml-4">
+                <h1 className="text-lg font-semibold">API Platform Admin</h1>
+              </div>
             </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/dashboard">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Link>
+            </Button>
           </header>
           <main className="flex-1 overflow-auto">
             <Routes>
