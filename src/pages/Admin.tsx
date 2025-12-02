@@ -10,6 +10,8 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { AdminApiKeys } from "@/components/admin/AdminApiKeys";
+import { AdminSettings } from "@/components/admin/AdminSettings";
+import { AdminRiskPanel } from "@/components/admin/AdminRiskPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -109,15 +111,13 @@ export default function Admin() {
               />
               <Route
                 path="/settings"
+                element={<AdminSettings />}
+              />
+              <Route
+                path="/risk"
                 element={
                   <div className="p-6">
-                    <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-                    <p className="text-muted-foreground mt-2">
-                      Platform configuration and preferences
-                    </p>
-                    <div className="mt-6">
-                      <p className="text-muted-foreground">Settings coming in Phase 2</p>
-                    </div>
+                    <AdminRiskPanel />
                   </div>
                 }
               />
