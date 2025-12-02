@@ -1,201 +1,232 @@
 # Changelog
 
-All notable changes to this project are documented here with timestamps.
+All notable changes to the Compliance Matching API are documented here.
 
-## Format
-- **YYYY-MM-DD** – [Area] – Description of change
+## Versioning
 
----
-
-## November 2025
-
-### 2025-11-20 – [Admin] – Admin panel implementation
-- Created admin panel with Users and Organizations management
-- Added ability to view all users across organizations
-- Added ability to update organization status and SAHPRA license numbers
-- Implemented role-based access control (admin only)
-- Added navigation from Dashboard to Admin panel
-
-### 2025-11-20 – [Automation] – Webhook retry logic
-- Implemented automated webhook retry system with exponential backoff
-- Created `/webhook-retry` edge function for background processing
-- Retry schedule: 5 min, 30 min, 2 hours (configurable)
-- Added dead letter queue for exhausted retries
-- Database fields: `next_retry_at`, `max_retries`, `is_dead_letter`
-
-### 2025-11-20 – [Automation] – API key expiry automation
-- Created `/api-key-expiry` edge function for automated expiry management
-- Implemented 7-day warning system before expiry
-- Automatic key disabling on expiration date
-- Added `expires_at` and `expiry_warning_sent` fields to api_keys table
-- All expiry events logged in audit_logs
-
-### 2025-11-20 – [Docs] – Cron job setup documentation
-- Created comprehensive cron setup guide (`docs/cron-setup.md`)
-- Added interactive `CronSetupInstructions` component in UI
-- New "Automation" tab in Dashboard with copy-paste SQL scripts
-- Documented pg_cron and pg_net extension setup
-- Included cron expression reference and examples
-
-### 2025-11-20 – [UI] – API key expiry UI enhancements
-- Added expiry date display on API key cards
-- Implemented warning indicator for keys expiring within 7 days
-- Added expiry selection dropdown (Never, 30, 90, 180, 365 days) during key creation
-- Enhanced key metadata display with better layout
-
-### 2025-11-20 – [Security] – RLS policy improvements
-- Tightened profiles RLS policies (org-scoped access only)
-- Enhanced webhook_deliveries policies (admin/auditor only)
-- Improved matches table policies with service role access
-- Added security comments to sensitive fields (secret_hash, key_hash)
-- All policies now properly enforce org-level isolation
-
-### 2025-11-20 – [Auth] – Password reset implementation
-- Implemented secure password reset flow with one-time tokens
-- Added 24-hour token expiration
-- Minimum 8-character password requirement
-- Generic error messages to prevent email enumeration
-- Proper redirect handling after reset
-
-### 2025-11-20 – [Auth] – Email verification enforcement
-- Required email verification for all new signups
-- Disabled auto-confirm in Supabase Auth settings
-- Added email verification status checks
-- Implemented resend verification email functionality
-
-### 2025-11-19 – [API] – Validation schema updates
-- Added `expires_at` field to API key creation schema
-- Enhanced input validation for all endpoints
-- Improved error messages for validation failures
-- Added proper zod schemas for all request bodies
-
-### 2025-11-18 – [API] – Webhook delivery tracking
-- Implemented webhook delivery logging in `webhook_deliveries` table
-- Added HMAC-SHA256 signature generation for webhook security
-- Tracked delivery attempts, response codes, and error messages
-- Integrated with webhook retry system
-
-### 2025-11-17 – [Database] – Schema enhancements
-- Added api_keys table with scopes and expiry support
-- Added webhook_endpoints and webhook_deliveries tables
-- Added data_source_performance tracking table
-- Created is_admin() security definer function
-- Added necessary indexes for performance
-
-### 2025-11-16 – [API] – Match settlement endpoint
-- Added `POST /match/:id/settle` endpoint for settlement confirmation
-- Idempotent settlement (safe to call multiple times)
-- Creates immutable audit log entry with match hash
-- Returns settled match with timestamp
-- Proper org ownership verification
-
-### 2025-11-16 – [API] – Match creation with hashing
-- Implemented `POST /match` endpoint with SHA-256 hash generation
-- Hash includes: buyer, seller, commodity, quantity, price, terms
-- Immutable proof-of-intent stored in audit logs
-- Prevents double-counting and aids dispute resolution
-- Webhook notifications on match.created events
-
-### 2025-11-15 – [API] – Audit logs endpoint
-- Created `GET /audit-logs` endpoint with filtering
-- Supports filtering by action, entity_type, entity_id, date range
-- Pagination with limit/offset
-- Returns total count for UI pagination
-- Read-only access (no modifications allowed)
-
-### 2025-11-15 – [API] – SAHPRA verification
-- Integrated SAHPRA license verification
-- Created `/sahpra-verification` endpoint
-- Background cache refresh from official SAHPRA data
-- Fuzzy company name matching
-- Results stored in organizations table
-
-### 2025-11-14 – [API] – Signals endpoint
-- Created `POST /signals` for buyer intent signals
-- Added `POST /signals/:id/select` for option selection
-- Integrated with data source search
-- Returns matched options from configured data sources
-- Signal status tracking (active, expired)
-
-### 2025-11-13 – [API] – Rate limiting implementation
-- Implemented sliding window rate limiting
-- Per-organization and per-endpoint limits
-- 429 status with Retry-After header
-- Automatic cleanup of expired rate limit records
-- Configurable limits per scope
-
-### 2025-11-13 – [API] – API key management
-- Created `/api-keys` endpoint (POST, GET, DELETE)
-- Secure key generation with crypto.randomUUID()
-- SHA-256 hashing for key storage
-- Scope-based access control
-- Last used tracking
-
-### 2025-11-12 – [Security] – Idempotency key support
-- Implemented idempotency key handling for critical endpoints
-- 24-hour idempotency window
-- Prevents duplicate match creation
-- Returns cached response for duplicate requests
-- Automatic cleanup via database function
-
-### 2025-11-12 – [Database] – Row Level Security policies
-- Enabled RLS on all user-facing tables
-- Org-scoped access for most resources
-- Admin-only access for sensitive operations
-- Security definer functions for role checks
-- Proper foreign key relationships
-
-### 2025-11-11 – [Auth] – User authentication flow
-- Implemented email/password authentication
-- Auto-creates organization and profile on signup
-- Assigns default admin role to first user
-- Session management with Supabase Auth
-- Protected routes with auth checks
-
-### 2025-11-10 – [UI] – Developer dashboard
-- Created comprehensive API dashboard
-- API key management interface
-- Live API testing playground
-- Analytics and metrics visualization
-- Audit log viewer with filters
-
-### 2025-11-10 – [Docs] – API documentation component
-- Created interactive API docs in dashboard
-- Request/response examples for all endpoints
-- Authentication guide
-- Error code reference
-- Rate limiting information
+This project follows semantic versioning: `MAJOR.MINOR.PATCH`
+- **MAJOR**: Breaking changes
+- **MINOR**: New features (backwards compatible)
+- **PATCH**: Bug fixes (backwards compatible)
 
 ---
 
-## October 2025
+## [1.2.0] - 2025-12-02
 
-### 2025-10-20 – [Project] – Initial project setup
-- Created React + TypeScript + Vite project
-- Integrated Supabase for backend
-- Set up Tailwind CSS with shadcn/ui components
-- Configured routing with react-router-dom
-- Initial database schema design
+### Security Enhancements
+- **[Security]** Added RLS protection to `match_evidence` view via security definer function
+- **[Security]** Fixed function search paths to prevent SQL injection vectors
+- **[Security]** Enhanced input validation with Zod schemas on Marketplace page
+- **[Security]** Added authentication guards to Analytics and Marketplace pages
+
+### New Features
+- **[API]** Evidence Pack endpoint (`GET /evidence-pack/:matchId`) for compliance proof generation
+- **[API]** Enhanced health check with 7 system component checks
+- **[API]** Signal status endpoint (`GET /signals/:id/status`) for search progress tracking
+- **[UI]** Bulk actions for user management (activate, suspend, export)
+- **[UI]** Loading states added to protected pages
+
+### Improvements
+- **[API]** Improved error messages with request IDs for debugging
+- **[Docs]** Complete API reference rewrite with all endpoints documented
+- **[Docs]** Added "How to Test" guide with comprehensive examples
+- **[UI]** Form validation with real-time error feedback
+
+### Bug Fixes
+- **[Auth]** Fixed redirect handling after authentication
+- **[UI]** Fixed loading state flickering on page transitions
 
 ---
 
-## Maintenance Notes
+## [1.1.0] - 2025-11-20
 
-### How to Update This Changelog
-When making significant changes:
-1. Add entry with current date (YYYY-MM-DD format)
-2. Tag with area: [API], [UI], [Database], [Security], [Auth], [Admin], [Automation], [Docs], [Project]
-3. Use clear, concise descriptions
-4. Group related changes together
-5. Keep entries in reverse chronological order (newest first)
+### Admin Panel
+- **[Admin]** Created admin panel with Users and Organizations management
+- **[Admin]** Added ability to view all users across organizations
+- **[Admin]** Added ability to update organization status and SAHPRA license numbers
+- **[Admin]** Implemented role-based access control (admin only)
+- **[Admin]** Added navigation from Dashboard to Admin panel
 
-### Areas Defined
-- **API**: Backend endpoints, edge functions, business logic
-- **UI**: Frontend components, pages, styling
-- **Database**: Schema changes, migrations, functions
-- **Security**: RLS policies, authentication, authorization
-- **Auth**: Login, signup, password management
-- **Admin**: Admin panel, user management
-- **Automation**: Background jobs, cron tasks
-- **Docs**: Documentation updates, guides
-- **Project**: Infrastructure, configuration, tooling
+### Automation Features
+- **[Automation]** Implemented automated webhook retry system with exponential backoff
+- **[Automation]** Created `/webhook-retry` edge function for background processing
+- **[Automation]** Retry schedule: 5 min, 30 min, 2 hours (configurable)
+- **[Automation]** Added dead letter queue for exhausted retries
+- **[Automation]** Database fields: `next_retry_at`, `max_retries`, `is_dead_letter`
+
+### API Key Expiry
+- **[Automation]** Created `/api-key-expiry` edge function for automated expiry management
+- **[Automation]** Implemented 7-day warning system before expiry
+- **[Automation]** Automatic key disabling on expiration date
+- **[Database]** Added `expires_at` and `expiry_warning_sent` fields to api_keys table
+- **[Audit]** All expiry events logged in audit_logs
+
+### Documentation
+- **[Docs]** Created comprehensive cron setup guide (`docs/cron-setup.md`)
+- **[UI]** Added interactive `CronSetupInstructions` component
+- **[UI]** New "Automation" tab in Dashboard with copy-paste SQL scripts
+- **[Docs]** Documented pg_cron and pg_net extension setup
+
+### UI Enhancements
+- **[UI]** Added expiry date display on API key cards
+- **[UI]** Implemented warning indicator for keys expiring within 7 days
+- **[UI]** Added expiry selection dropdown during key creation
+- **[UI]** Enhanced key metadata display with better layout
+
+### Security
+- **[Security]** Tightened profiles RLS policies (org-scoped access only)
+- **[Security]** Enhanced webhook_deliveries policies (admin/auditor only)
+- **[Security]** Improved matches table policies with service role access
+- **[Security]** Added security comments to sensitive fields
+- **[Security]** All policies now properly enforce org-level isolation
+
+### Authentication
+- **[Auth]** Implemented secure password reset flow with one-time tokens
+- **[Auth]** Added 24-hour token expiration
+- **[Auth]** Minimum 8-character password requirement
+- **[Auth]** Generic error messages to prevent email enumeration
+- **[Auth]** Required email verification for all new signups
+- **[Auth]** Implemented resend verification email functionality
+
+---
+
+## [1.0.0] - 2025-11-10
+
+### Initial Release
+
+#### Core API Endpoints
+- **[API]** `POST /signals` - Create buyer/seller intent signals
+- **[API]** `GET /signals` - List signals with filtering
+- **[API]** `GET /signals/:id` - Get signal with matched options
+- **[API]** `POST /signals/:id/select` - Select an option
+- **[API]** `DELETE /signals/:id` - Cancel a signal
+
+#### Match Management
+- **[API]** `POST /match` - Create match with SHA-256 hash
+- **[API]** `GET /match` - List matches with filtering
+- **[API]** `GET /match/:id` - Get specific match
+- **[API]** `POST /match/:id/settle` - Confirm intent (idempotent)
+
+#### API Key Management
+- **[API]** `POST /api-keys` - Create new API key
+- **[API]** `GET /api-keys` - List API keys
+- **[API]** `DELETE /api-keys/:id` - Revoke API key
+
+#### Webhook System
+- **[API]** `POST /webhooks` - Create webhook endpoint
+- **[API]** `GET /webhooks` - List webhook endpoints
+- **[API]** `PATCH /webhooks/:id` - Update webhook
+- **[API]** `DELETE /webhooks/:id` - Delete webhook
+- **[Webhooks]** HMAC-SHA256 signature verification
+- **[Webhooks]** Delivery tracking with response logging
+
+#### Data Sources
+- **[API]** `POST /data-sources` - Register data source
+- **[API]** `GET /data-sources` - List data sources
+
+#### Consents
+- **[API]** `POST /consents` - Grant consent
+- **[API]** `DELETE /consents/:id` - Revoke consent
+
+#### Organizations (Admin)
+- **[API]** `GET /orgs` - List organizations
+- **[API]** `PATCH /orgs/:id` - Update organization
+
+#### Audit Logs
+- **[API]** `GET /audit-logs` - Query audit logs with filtering
+
+#### Security Features
+- **[Security]** API key authentication with scope-based access
+- **[Security]** Rate limiting per organization and endpoint
+- **[Security]** Row Level Security on all tables
+- **[Security]** Idempotency key support for POST endpoints
+- **[Security]** SHA-256 hashing for match proof-of-intent
+
+#### Database Schema
+- **[Database]** organizations table
+- **[Database]** profiles table with org association
+- **[Database]** user_roles table with enum types
+- **[Database]** api_keys table with hashed storage
+- **[Database]** signals and options tables
+- **[Database]** matches table with hash field
+- **[Database]** match_events for hash-chained timeline
+- **[Database]** webhook_endpoints and webhook_deliveries
+- **[Database]** audit_logs for compliance trail
+- **[Database]** data_sources and consents
+- **[Database]** rate_limits and idempotency_keys
+
+#### User Interface
+- **[UI]** Developer dashboard with sidebar navigation
+- **[UI]** API key management interface
+- **[UI]** Live API testing playground
+- **[UI]** Analytics and metrics visualization
+- **[UI]** Audit log viewer with filters
+- **[UI]** Interactive API documentation
+
+#### Authentication
+- **[Auth]** Email/password authentication
+- **[Auth]** Auto-creates organization on signup
+- **[Auth]** Role assignment based on email domain
+- **[Auth]** Session management with Supabase Auth
+
+---
+
+## Migration Notes
+
+### Upgrading to 1.2.0
+
+No breaking changes. New features are additive.
+
+**Recommended Actions**:
+1. Update API documentation links
+2. Consider using Evidence Pack endpoint for compliance reporting
+3. Review and enable new security features
+
+### Upgrading to 1.1.0
+
+No breaking changes.
+
+**Required Actions**:
+1. If using API keys, note new `expires_at` field
+2. If using webhooks, implement retry handling
+3. Run cron job setup SQL if using automation features
+
+### Initial Setup (1.0.0)
+
+See `docs/getting-started.md` for complete setup instructions.
+
+---
+
+## Deprecation Notices
+
+None currently.
+
+---
+
+## Known Issues
+
+1. **Evidence Pack large files** - Very large matches (100+ events) may timeout
+   - Workaround: Use pagination in audit logs instead
+
+2. **Webhook retry timing** - Retries may be delayed during high load
+   - Workaround: Monitor dead letter queue
+
+---
+
+## Support
+
+- **Documentation**: See `/docs` folder
+- **API Status**: `GET /healthz`
+- **Support Email**: support@izenzo.co.za
+
+---
+
+## Contributors
+
+- Izenzo Development Team
+
+---
+
+## License
+
+Proprietary - All rights reserved
