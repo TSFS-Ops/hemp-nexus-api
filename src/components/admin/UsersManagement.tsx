@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle, Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -174,6 +174,38 @@ export default function UsersManagement() {
     return new Date(dateStr).toLocaleString();
   };
 
+  const exportToCSV = () => {
+    const headers = ["Email", "Name", "Organization", "Registered", "Last Sign In", "Email Verified", "Roles", "Status"];
+    const rows = filteredUsers.map((user) => [
+      user.email,
+      user.full_name || "",
+      user.organization_name,
+      user.created_at ? new Date(user.created_at).toISOString() : "",
+      user.last_sign_in_at ? new Date(user.last_sign_in_at).toISOString() : "",
+      user.email_confirmed_at ? "Yes" : "No",
+      getUserRoles(user),
+      user.status,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `users_export_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Complete",
+      description: `Exported ${filteredUsers.length} users to CSV`,
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -193,6 +225,10 @@ export default function UsersManagement() {
               className="pl-9"
             />
           </div>
+          <Button variant="outline" size="sm" onClick={exportToCSV} disabled={loading || filteredUsers.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
