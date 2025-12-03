@@ -34,6 +34,7 @@ import WebhookDebugger from "@/components/WebhookDebugger";
 import SystemHealthMonitor from "@/components/SystemHealthMonitor";
 import AutomatedTestSuite from "@/components/AutomatedTestSuite";
 import ErrorMonitoringDashboard from "@/components/ErrorMonitoringDashboard";
+import { SdkDocumentation } from "@/components/SdkDocumentation";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -602,6 +603,13 @@ export default function Dashboard() {
                 <ComprehensiveApiTests />
               </TabsContent>
             </Tabs>
+          </div>
+        );
+
+      case "sdk":
+        return (
+          <div className="space-y-6">
+            <SdkDocumentation />
           </div>
         );
 

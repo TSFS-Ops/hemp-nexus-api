@@ -11,6 +11,34 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.3.2] - 2025-12-03
+
+### SDK & Developer Experience Improvements
+
+**Focus: Make integration easier for developers.**
+
+#### New Features
+- **[SDK]** Added TypeScript SDK client (`src/lib/izenzo-sdk.ts`)
+  - Full type definitions for all API responses
+  - Resource-based API (`client.matches.create()`, `client.signals.list()`, etc.)
+  - Built-in error handling with `IzenzoApiError` class
+  - Timeout and retry support
+- **[OpenAPI]** Added OpenAPI 3.1 specification (`public/openapi.yaml`)
+  - Machine-readable API spec for code generation
+  - Compatible with Swagger UI, Redoc, and other tools
+  - Includes all endpoints, schemas, and examples
+- **[Docs]** Added SDK Documentation page in dashboard
+  - Code examples in TypeScript, Python, and cURL
+  - Webhook integration guide with signature verification
+  - Error handling patterns
+
+#### Developer Experience
+- **[Navigation]** Added "SDK & Integration" section to dashboard sidebar
+- **[Download]** OpenAPI spec available at `/openapi.yaml`
+- **[Examples]** Added webhook payload examples and verification code
+
+---
+
 ## [1.3.1] - 2025-12-03
 
 ### Security Audit & Fixes

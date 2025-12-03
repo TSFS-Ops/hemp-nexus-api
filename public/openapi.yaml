@@ -1,0 +1,777 @@
+openapi: 3.1.0
+info:
+  title: Trade.Izenzo Compliance Matching API
+  version: 1.3.1
+  description: |
+    A sector-agnostic API for recording trade matches with cryptographic proof.
+    
+    **Key Features:**
+    - Record trade agreements (matches) between parties
+    - Generate SHA-256 cryptographic proofs
+    - Confirm intent (non-binding) for compliance tracking
+    - Full audit trail and evidence chain
+    
+    **Important:** This API records intentions only. It does NOT:
+    - Execute payments
+    - Create binding contracts
+    - Handle logistics
+  contact:
+    email: support@trade.izenzo.com
+  license:
+    name: Proprietary
+    url: https://trade.izenzo.com/terms
+
+servers:
+  - url: https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Matches
+    description: Trade match operations
+  - name: Signals
+    description: Buyer/seller signal operations
+  - name: API Keys
+    description: API key management
+  - name: Webhooks
+    description: Webhook configuration
+  - name: Health
+    description: System health checks
+
+paths:
+  /match:
+    post:
+      tags: [Matches]
+      summary: Create a new match
+      description: Record a trade agreement and generate cryptographic proof
+      operationId: createMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchCreate'
+            examples:
+              hemp:
+                summary: Hemp Biomass Trade
+                value:
+                  buyer: { id: "BUYER123", name: "GreenTech Industries" }
+                  seller: { id: "SELLER456", name: "BioFarm Cooperative" }
+                  commodity: "Hemp Biomass"
+                  quantity: { amount: 1000, unit: "kg" }
+                  price: { amount: 50000, currency: "EUR" }
+                  terms: "Delivery within 30 days"
+              steel:
+                summary: Steel Trade
+                value:
+                  buyer: { id: "CONST789", name: "BuildCo Construction" }
+                  seller: { id: "STEEL101", name: "Arcelor Steel Mills" }
+                  commodity: "Hot-Rolled Steel Coils"
+                  quantity: { amount: 50, unit: "tonnes" }
+                  price: { amount: 125000, currency: "USD" }
+                  terms: "FOB Shanghai, 60 days credit"
+      responses:
+        '201':
+          description: Match created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /match/{id}:
+    get:
+      tags: [Matches]
+      summary: Get a match by ID
+      operationId: getMatch
+      parameters:
+        - $ref: '#/components/parameters/MatchId'
+      responses:
+        '200':
+          description: Match found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /match/{id}/settle:
+    post:
+      tags: [Matches]
+      summary: Confirm intent for a match
+      description: |
+        Records intention to proceed with this match. This is NON-BINDING.
+        
+        **Important:** This action:
+        - ✅ Creates an audit log entry
+        - ✅ Adds to the evidence chain
+        - ✅ Updates match status
+        - ❌ Does NOT create a contract
+        - ❌ Does NOT process payment
+      operationId: confirmIntent
+      parameters:
+        - $ref: '#/components/parameters/MatchId'
+      responses:
+        '200':
+          description: Intent confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /matches:
+    get:
+      tags: [Matches]
+      summary: List matches
+      operationId: listMatches
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [matched, settled]
+        - name: commodity
+          in: query
+          schema:
+            type: string
+          description: Filter by commodity (partial match)
+      responses:
+        '200':
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /signals:
+    post:
+      tags: [Signals]
+      summary: Create a signal
+      operationId: createSignal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignalCreate'
+      responses:
+        '201':
+          description: Signal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signal'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Signals]
+      summary: List signals
+      operationId: listSignals
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [searching, matched, expired]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Signal'
+
+  /signals/{id}:
+    get:
+      tags: [Signals]
+      summary: Get signal with options
+      operationId: getSignal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signal with matching options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalWithOptions'
+
+  /signals/{id}/select:
+    post:
+      tags: [Signals]
+      summary: Select an option
+      operationId: selectOption
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [option_id]
+              properties:
+                option_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Option selected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Selection'
+
+  /api-keys:
+    post:
+      tags: [API Keys]
+      summary: Create an API key
+      operationId: createApiKey
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreate'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyCreated'
+    get:
+      tags: [API Keys]
+      summary: List API keys
+      operationId: listApiKeys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKey'
+
+  /api-keys/{id}:
+    delete:
+      tags: [API Keys]
+      summary: Revoke an API key
+      operationId: revokeApiKey
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: API key revoked
+
+  /webhooks:
+    post:
+      tags: [Webhooks]
+      summary: Create webhook endpoint
+      operationId: createWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookCreate'
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+    get:
+      tags: [Webhooks]
+      summary: List webhooks
+      operationId: listWebhooks
+      responses:
+        '200':
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: System healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for dashboard operations
+
+  parameters:
+    MatchId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Match UUID
+
+  schemas:
+    MatchCreate:
+      type: object
+      required: [buyer, seller, commodity, quantity, price]
+      properties:
+        buyer:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+              maxLength: 100
+            name:
+              type: string
+              maxLength: 200
+        seller:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+              maxLength: 100
+            name:
+              type: string
+              maxLength: 200
+        commodity:
+          type: string
+          maxLength: 200
+        quantity:
+          type: object
+          required: [amount, unit]
+          properties:
+            amount:
+              type: number
+              minimum: 0
+              exclusiveMinimum: true
+            unit:
+              type: string
+              maxLength: 50
+        price:
+          type: object
+          required: [amount, currency]
+          properties:
+            amount:
+              type: number
+              minimum: 0
+              exclusiveMinimum: true
+            currency:
+              type: string
+              minLength: 3
+              maxLength: 3
+        terms:
+          type: string
+          maxLength: 1000
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Match:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [matched, settled]
+        hash:
+          type: string
+          description: SHA-256 hash of canonical match data
+        buyer_id:
+          type: string
+        buyer_name:
+          type: string
+        seller_id:
+          type: string
+        seller_name:
+          type: string
+        commodity:
+          type: string
+        quantity_amount:
+          type: number
+        quantity_unit:
+          type: string
+        price_amount:
+          type: number
+        price_currency:
+          type: string
+        terms:
+          type: string
+        metadata:
+          type: object
+        settled_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    MatchList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Match'
+        totalCount:
+          type: integer
+
+    SignalCreate:
+      type: object
+      required: [product]
+      properties:
+        product:
+          type: string
+          maxLength: 200
+        quantity:
+          type: number
+        unit:
+          type: string
+          maxLength: 50
+        location:
+          type: string
+          maxLength: 200
+        deliveryWindow:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+        budget:
+          type: number
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        notes:
+          type: string
+          maxLength: 2000
+
+    Signal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [buyer, seller]
+        status:
+          type: string
+          enum: [searching, matched, expired]
+        content:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    SignalWithOptions:
+      allOf:
+        - $ref: '#/components/schemas/Signal'
+        - type: object
+          properties:
+            options:
+              type: array
+              items:
+                $ref: '#/components/schemas/Option'
+
+    Option:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        what:
+          type: string
+        how_much:
+          type: number
+        unit:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        where_location:
+          type: string
+        score:
+          type: number
+        freshness:
+          type: string
+
+    Selection:
+      type: object
+      properties:
+        selection_id:
+          type: string
+          format: uuid
+        signal_id:
+          type: string
+          format: uuid
+        option_id:
+          type: string
+          format: uuid
+        handoff_url:
+          type: string
+          format: uri
+
+    ApiKeyCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        scopes:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ApiKeyCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+          description: The API key (shown only once)
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    WebhookCreate:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum:
+              - match.created
+              - match.settled
+              - signal.created
+              - signal.matched
+              - option.selected
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+              message:
+                type: string
+
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        requestId:
+          type: string
+          format: uuid
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: VALIDATION_ERROR
+            message: "Validation failed: buyer.id is required"
+            requestId: "550e8400-e29b-41d4-a716-446655440000"
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: UNAUTHORIZED
+            message: "Invalid or missing API key"
+            requestId: "550e8400-e29b-41d4-a716-446655440000"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: NOT_FOUND
+            message: "Match not found"
+            requestId: "550e8400-e29b-41d4-a716-446655440000"
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: RATE_LIMIT_EXCEEDED
+            message: "Too many requests"
+            requestId: "550e8400-e29b-41d4-a716-446655440000"
