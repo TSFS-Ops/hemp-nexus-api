@@ -289,6 +289,48 @@ export type Database = {
           },
         ]
       }
+      behavioral_signals: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          match_id: string | null
+          metadata: Json | null
+          session_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_signals_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "behavioral_signals_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           data_source_id: string

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings } from "lucide-react";
+import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 interface OverviewStats {
@@ -10,6 +10,9 @@ interface OverviewStats {
   activeApiKeys: number;
   recentErrors: number;
   requestsToday: number;
+  totalMatches: number;
+  confirmedMatches: number;
+  activeSignals: number;
 }
 
 export function AdminOverview() {
@@ -19,6 +22,9 @@ export function AdminOverview() {
     activeApiKeys: 0,
     recentErrors: 0,
     requestsToday: 0,
+    totalMatches: 0,
+    confirmedMatches: 0,
+    activeSignals: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -63,12 +69,31 @@ export function AdminOverview() {
         .select("*", { count: "exact", head: true })
         .gte("created_at", today.toISOString());
 
+      // Fetch matches stats
+      const { count: matchesCount } = await supabase
+        .from("matches")
+        .select("*", { count: "exact", head: true });
+
+      const { count: confirmedCount } = await supabase
+        .from("matches")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "settled");
+
+      // Fetch active signals
+      const { count: signalsCount } = await supabase
+        .from("signals")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "active");
+
       setStats({
         totalUsers: usersCount || 0,
         totalOrgs: orgsCount || 0,
         activeApiKeys: keysCount || 0,
         recentErrors: errorsCount || 0,
         requestsToday: requestsCount || 0,
+        totalMatches: matchesCount || 0,
+        confirmedMatches: confirmedCount || 0,
+        activeSignals: signalsCount || 0,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -79,6 +104,18 @@ export function AdminOverview() {
   };
 
   const statCards = [
+    {
+      title: "Total Matches",
+      value: stats.totalMatches,
+      icon: GitCompare,
+      description: `${stats.confirmedMatches} confirmed`,
+    },
+    {
+      title: "Active Signals",
+      value: stats.activeSignals,
+      icon: Radio,
+      description: "Buyer/seller signals",
+    },
     {
       title: "Total Users",
       value: stats.totalUsers,
@@ -129,7 +166,7 @@ export function AdminOverview() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {statCards.map((stat) => (
           <Card key={stat.title} className={stat.alert ? "border-destructive" : ""}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -149,20 +186,27 @@ export function AdminOverview() {
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>Common administrative tasks</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <a
+            href="/admin/matches"
+            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <GitCompare className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">View Matches</span>
+          </a>
+          <a
+            href="/admin/signals"
+            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <Radio className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">View Signals</span>
+          </a>
           <a
             href="/admin/logs"
             className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <FileText className="h-6 w-6 mb-2" />
             <span className="text-sm font-medium">View API Logs</span>
-          </a>
-          <a
-            href="/admin/users-orgs"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Users className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Manage Users</span>
           </a>
           <a
             href="/admin/api-keys"
@@ -178,6 +222,33 @@ export function AdminOverview() {
             <Settings className="h-6 w-6 mb-2" />
             <span className="text-sm font-medium">Settings</span>
           </a>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Intent Actions Summary</CardTitle>
+          <CardDescription>
+            Only "Confirm Intent" creates audit/evidence records. All other actions are non-binding.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+              <h4 className="font-semibold text-green-800 dark:text-green-200">Binding Actions</h4>
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                <strong>Confirm Intent</strong> - Creates audit record, evidence chain entry.
+                Signals serious interest (no legal obligation).
+              </p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-semibold">Non-Binding Actions</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Skip, Maybe Later, Not Now, Browse, View - No records created.
+                Purely behavioral signals for UX improvement.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
