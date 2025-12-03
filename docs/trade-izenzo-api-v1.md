@@ -235,7 +235,12 @@ curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/550e8400-e29b-4
 
 ### POST /match/:id/settle
 
-**Mark a match as settled**. This is idempotent - calling it multiple times on an already-settled match will simply return the existing record.
+**Confirm intent for a match** (non-binding). This is idempotent - calling it multiple times on an already-confirmed match will simply return the existing record.
+
+**Important:** This endpoint records intention only. It does NOT:
+- Create a binding contract
+- Process any payment
+- Execute fulfillment
 
 #### Example
 ```bash
@@ -274,6 +279,8 @@ None required (empty body).
 #### Behavior
 - If `status` is `matched`: updates to `settled` and sets `settled_at` timestamp
 - If `status` is already `settled`: returns existing record unchanged (idempotent)
+- Creates an audit log entry
+- Adds event to the evidence chain
 
 #### Errors
 - `404 NOT_FOUND` - Match does not exist
@@ -490,6 +497,18 @@ For support or questions about the Trade.Izenzo API:
 ---
 
 ## Changelog
+
+### v1.3.1 (2025-12-03)
+- Added TypeScript SDK (`src/lib/izenzo-sdk.ts`)
+- Added OpenAPI 3.1 specification (`/openapi.yaml`)
+- Added SDK documentation page
+- Clarified "Confirm Intent" is non-binding (no payment, no contract)
+- Enhanced security with stricter RLS policies
+
+### v1.3.0 (2025-12-03)
+- Renamed "Settle" to "Confirm Intent" throughout
+- Added behavioral analytics (non-binding signals)
+- Updated documentation for compliance clarity
 
 ### v1.0 (2025-01-10)
 - Initial release

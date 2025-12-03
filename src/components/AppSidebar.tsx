@@ -1,4 +1,4 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp } from "lucide-react";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -32,6 +32,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
     { id: "docs", title: "Overview", icon: BookOpen },
     { id: "keys", title: "Authentication", icon: Key },
     { id: "test", title: "API Reference", icon: Code },
+    { id: "sdk", title: "SDK & Integration", icon: Package },
     { id: "matches", title: "Matches", icon: Handshake },
     { id: "analytics", title: "Analytics", icon: BarChart3 },
     { id: "webhooks", title: "Webhooks", icon: Zap },
