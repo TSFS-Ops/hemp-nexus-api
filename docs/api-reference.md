@@ -1,8 +1,24 @@
 # Compliance Matching API Reference
 
-**Current Version**: v1.2  
+**Current Version**: v1.3  
 **Base URL**: `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1`  
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-03
+
+---
+
+## Changelog
+
+### v1.3 (2025-12-03)
+- **BREAKING**: Renamed "Settle" to "Confirm Intent" throughout
+- Added `intent.confirmed` webhook event (replaces `match.settled`, backward compatible)
+- Added Behavioral Analytics for non-binding actions (skip, maybe_later, view)
+- Improved security: restricted api_request_logs to admins/auditors only
+- Added Coherence Engine documentation
+
+### v1.2 (2025-12-02)
+- Added health check endpoint
+- Added rate limiting
+- Added idempotency support
 
 ---
 

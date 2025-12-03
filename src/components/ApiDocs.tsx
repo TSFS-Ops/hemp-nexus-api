@@ -282,7 +282,7 @@ const signal = await response.json();`}
               <div>
                 <h3 className="text-lg font-semibold mb-2">Match Recording API</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Record and settle trade matches between buyers and sellers.
+                  Record trade matches and confirm intent between buyers and sellers.
                 </p>
 
                 <Separator className="my-4" />
@@ -376,15 +376,25 @@ print(f"Match created: {match['match_id']}")`}
 
                 <Separator className="my-4" />
 
-                {/* POST /match/:id/settle */}
+                {/* POST /match/:id/settle - Confirm Intent */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="bg-green-600">POST</Badge>
                     <code className="text-sm">/match/:id/settle</code>
+                    <Badge variant="outline" className="text-xs">Confirm Intent</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Mark a match as settled.
+                    Confirm intent for a match. This signals serious interest to the counterparty.
                   </p>
+                  
+                  <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800 dark:text-amber-200">
+                      <strong>No payment, no contract, no legal obligation.</strong> This action creates an 
+                      audit record and evidence chain entry to signal serious interest, allowing the seller 
+                      to prepare final terms.
+                    </AlertDescription>
+                  </Alert>
 
                   <div>
                     <h4 className="font-medium mb-2">Example</h4>
@@ -398,7 +408,7 @@ print(f"Match created: {match['match_id']}")`}
 });
 
 const result = await response.json();
-console.log('Match settled:', result.status);`}
+console.log('Intent confirmed at:', result.settled_at);`}
                     </pre>
                   </div>
                 </div>
@@ -432,8 +442,12 @@ console.log('Match settled:', result.status);`}
                     <Badge variant="outline">signal.created</Badge>
                     <Badge variant="outline">option.selected</Badge>
                     <Badge variant="outline">match.created</Badge>
-                    <Badge variant="outline">match.settled</Badge>
+                    <Badge variant="outline">intent.confirmed</Badge>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Note: <code>intent.confirmed</code> (also sent as <code>match.settled</code> for backward compatibility) 
+                    is triggered when a user confirms intent. This is the only event that creates audit/evidence records.
+                  </p>
                 </div>
 
                 <Separator className="my-4" />
