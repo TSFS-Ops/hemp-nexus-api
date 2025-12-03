@@ -15,6 +15,9 @@ import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminRiskPanel } from "@/components/admin/AdminRiskPanel";
 import { AdminMatchesPanel } from "@/components/admin/AdminMatchesPanel";
 import { AdminSignalsPanel } from "@/components/admin/AdminSignalsPanel";
+import { AdminCoherencePanel } from "@/components/admin/AdminCoherencePanel";
+import { AdminBehavioralAnalytics } from "@/components/admin/AdminBehavioralAnalytics";
+import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -107,6 +110,9 @@ export default function Admin() {
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/matches" element={<AdminMatchesPanel />} />
               <Route path="/signals" element={<AdminSignalsPanel />} />
+              <Route path="/coherence" element={<AdminCoherencePanel />} />
+              <Route path="/behavioral" element={<AdminBehavioralAnalytics />} />
+              <Route path="/audit" element={<AdminAuditLogs />} />
               <Route
                 path="/users-orgs"
                 element={
