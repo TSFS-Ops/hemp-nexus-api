@@ -42,7 +42,7 @@ interface WebhookEndpoint {
 const AVAILABLE_EVENTS = [
   { id: "signal.created", label: "Signal Created", description: "Triggered when a new signal is created" },
   { id: "match.created", label: "Match Created", description: "Triggered when a match is made" },
-  { id: "match.settled", label: "Match Settled", description: "Triggered when a match is settled" },
+  { id: "match.settled", label: "Intent Confirmed", description: "Triggered when intent is confirmed (no legal obligation)" },
   { id: "match.updated", label: "Match Updated", description: "Triggered when match data changes" },
 ];
 

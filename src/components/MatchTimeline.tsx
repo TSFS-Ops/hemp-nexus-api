@@ -99,11 +99,22 @@ export function MatchTimeline({ matchId }: MatchTimelineProps) {
 
   const getEventIcon = (eventType: string) => {
     if (eventType.includes("created")) return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-    if (eventType.includes("settled")) return <CheckCircle2 className="h-5 w-5 text-blue-500" />;
+    if (eventType.includes("settled") || eventType.includes("confirmed")) return <CheckCircle2 className="h-5 w-5 text-blue-500" />;
     return <Clock className="h-5 w-5 text-muted-foreground" />;
   };
 
   const getEventLabel = (eventType: string) => {
+    // Map internal event types to user-friendly labels
+    const labelMap: Record<string, string> = {
+      "match.created": "Match Created",
+      "match.settled": "Intent Confirmed",
+      "intent.confirmed": "Intent Confirmed",
+    };
+    
+    if (labelMap[eventType]) {
+      return labelMap[eventType];
+    }
+    
     return eventType
       .split(".")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

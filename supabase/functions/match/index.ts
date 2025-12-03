@@ -40,9 +40,9 @@ Deno.serve(async (req) => {
     // Rate limiting
     await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'match', 'match');
 
-    // Route: POST /match/:id/settle
+    // Route: POST /match/:id/settle (Confirm Intent - creates audit record)
     if (req.method === "POST" && matchId && action === "settle") {
-      console.log(`[${requestId}] POST /match/${matchId}/settle`);
+      console.log(`[${requestId}] POST /match/${matchId}/settle (Confirm Intent)`);
 
       const { data: match, error: fetchError } = await supabase
         .from("matches")
@@ -59,21 +59,21 @@ Deno.serve(async (req) => {
       if (match.org_id !== authCtx.orgId) {
         throw new ApiException(
           "FORBIDDEN", 
-          "You do not have permission to settle this match", 
+          "You do not have permission to confirm intent for this match", 
           403
         );
       }
 
-      // If already settled, return as-is (idempotent)
+      // If already confirmed, return as-is (idempotent)
       if (match.status === "settled") {
-        console.log(`[${requestId}] Match already settled`);
+        console.log(`[${requestId}] Intent already confirmed`);
         return new Response(JSON.stringify(match), {
           status: 200,
           headers: { ...headers, "Content-Type": "application/json" },
         });
       }
 
-      // Update to settled
+      // Update to confirmed (status remains "settled" in DB for compatibility)
       const { data: updated, error: updateError } = await supabase
         .from("matches")
         .update({ status: "settled", settled_at: new Date().toISOString() })
@@ -83,17 +83,17 @@ Deno.serve(async (req) => {
 
       if (updateError) handleDatabaseError(updateError, requestId);
 
-      // Create audit log for settlement (immutable proof-of-intent)
+      // Create audit log for intent confirmation (immutable proof-of-intent)
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
           actor_user_id: authCtx.userId,
           actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
-          action: "match.settled",
+          action: "intent.confirmed",
           entity_type: "match",
           entity_id: matchId,
           metadata: {
-            settled_at: updated.settled_at,
+            confirmed_at: updated.settled_at,
             hash: match.hash,
             buyer_id: match.buyer_id,
             seller_id: match.seller_id,
@@ -101,23 +101,25 @@ Deno.serve(async (req) => {
             quantity_amount: match.quantity_amount,
             quantity_unit: match.quantity_unit,
             price_amount: match.price_amount,
-            price_currency: match.price_currency
+            price_currency: match.price_currency,
+            note: "Intent confirmation signals interest only - no payment or legal obligation created"
           }
         });
-        console.log(`[${requestId}] Audit log created for settlement with hash: ${match.hash}`);
+        console.log(`[${requestId}] Audit log created for intent confirmation with hash: ${match.hash}`);
 
         // Record event in hash-chained timeline
         await recordMatchEvent(
           supabase,
           matchId,
           match.org_id,
-          "match.settled",
+          "intent.confirmed",
           {
-            settledAt: updated.settled_at,
+            confirmedAt: updated.settled_at,
             hash: match.hash,
             commodity: match.commodity,
             quantityAmount: match.quantity_amount,
             priceAmount: match.price_amount,
+            note: "Signals serious interest - no legal obligation"
           },
           authCtx.userId,
           authCtx.isApiKey ? authCtx.userId : null
@@ -128,9 +130,19 @@ Deno.serve(async (req) => {
         throw new ApiException("AUDIT_LOG_ERROR", "Failed to create audit trail", 500);
       }
 
-      console.log(`[${requestId}] Match settled successfully`);
+      console.log(`[${requestId}] Intent confirmed successfully`);
       
-      // Trigger webhooks in background
+      // Trigger webhooks in background (using both event names for compatibility)
+      triggerWebhooks(supabase, match.org_id, "intent.confirmed", {
+        matchId,
+        hash: match.hash,
+        confirmedAt: updated.settled_at,
+        commodity: match.commodity,
+        quantity: match.quantity_amount,
+        note: "Intent confirmation signals interest only - no payment or legal obligation"
+      }).catch(err => console.error(`Webhook trigger error:`, err));
+
+      // Also trigger legacy event name for backward compatibility
       triggerWebhooks(supabase, match.org_id, "match.settled", {
         matchId,
         hash: match.hash,

@@ -276,7 +276,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
     <Card>
       <CardHeader>
         <CardTitle>Match API Tester</CardTitle>
-        <CardDescription>Test the match recording and intent confirmation endpoints</CardDescription>
+        <CardDescription>Test the match recording and intent confirmation endpoints. Only "Confirm Intent" creates audit/evidence records.</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="create" className="w-full">
@@ -440,6 +440,14 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
           </TabsContent>
 
           <TabsContent value="confirm-intent" className="space-y-4">
+            <div className="rounded-md border border-muted bg-muted/30 p-4 mb-4">
+              <h4 className="font-semibold text-sm mb-2">What "Confirm Intent" means:</h4>
+              <p className="text-sm text-muted-foreground">
+                Confirming intent signals your serious interest to the seller so they can prepare final terms. 
+                <strong className="text-foreground"> This does not create any contract, payment, or legal obligation.</strong> 
+                Only this action creates an audit/evidence record.
+              </p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="matchIdConfirm">Match ID</Label>
               <Input
@@ -460,7 +468,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
               )}
             </Button>
             <p className="text-xs text-muted-foreground">
-              This does not create any legal obligation. It only signals interest so the seller can prepare final terms.
+              This is the only action that creates an immutable audit/evidence record proving intent.
             </p>
           </TabsContent>
 
@@ -503,7 +511,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
                   <div className="h-4 w-4 rounded-full border-2 border-yellow-600" />
                 )}
                 <span className="font-medium">Status:</span>
-                <span className="capitalize">{result.status}</span>
+                <span className="capitalize">{result.status === "settled" ? "Confirmed" : result.status}</span>
               </div>
             )}
 

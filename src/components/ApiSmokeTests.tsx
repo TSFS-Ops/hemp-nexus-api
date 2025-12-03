@@ -23,8 +23,8 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
     { name: "Create Match", status: "pending" },
     { name: "Verify Match Hash", status: "pending" },
     { name: "Verify Match Audit Log", status: "pending" },
-    { name: "Settle Match", status: "pending" },
-    { name: "Verify Settlement Audit Log", status: "pending" },
+    { name: "Confirm Intent", status: "pending" },
+    { name: "Verify Intent Audit Log", status: "pending" },
   ]);
   const [running, setRunning] = useState(false);
   const [matchId, setMatchId] = useState<string | null>(null);
@@ -140,11 +140,11 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
         message: "Audit log expected to contain match.created event with hash",
       });
 
-      // Test 4: Settle Match
-      updateTest("Settle Match", { status: "running" });
-      const settleStartTime = Date.now();
+      // Test 4: Confirm Intent
+      updateTest("Confirm Intent", { status: "running" });
+      const confirmStartTime = Date.now();
 
-      const settleResponse = await fetch(`${baseUrl}/match/${matchData.id}/settle`, {
+      const confirmResponse = await fetch(`${baseUrl}/match/${matchData.id}/settle`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -152,44 +152,44 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
         },
       });
 
-      const settleDuration = Date.now() - settleStartTime;
+      const confirmDuration = Date.now() - confirmStartTime;
 
-      if (!settleResponse.ok) {
-        const error = await settleResponse.json();
-        updateTest("Settle Match", {
+      if (!confirmResponse.ok) {
+        const error = await confirmResponse.json();
+        updateTest("Confirm Intent", {
           status: "failed",
-          message: `HTTP ${settleResponse.status}: ${error.message || "Failed to settle match"}`,
-          duration: settleDuration,
+          message: `HTTP ${confirmResponse.status}: ${error.message || "Failed to confirm intent"}`,
+          duration: confirmDuration,
         });
-        throw new Error("Match settlement failed");
+        throw new Error("Intent confirmation failed");
       }
 
-      const settledData = await settleResponse.json();
+      const confirmedData = await confirmResponse.json();
 
-      // Verify required fields for settlement
-      if (!settledData.settled_at || settledData.status !== "settled") {
-        updateTest("Settle Match", {
+      // Verify required fields for confirmation
+      if (!confirmedData.settled_at || confirmedData.status !== "settled") {
+        updateTest("Confirm Intent", {
           status: "failed",
-          message: "Settlement missing required fields: settled_at or status",
-          duration: settleDuration,
+          message: "Confirmation missing required fields: settled_at or status",
+          duration: confirmDuration,
         });
-        throw new Error("Settlement missing required fields");
+        throw new Error("Confirmation missing required fields");
       }
 
-      updateTest("Settle Match", {
+      updateTest("Confirm Intent", {
         status: "passed",
-        message: `Match settled at: ${settledData.settled_at}`,
-        duration: settleDuration,
-        details: settledData,
+        message: `Intent confirmed at: ${confirmedData.settled_at}`,
+        duration: confirmDuration,
+        details: confirmedData,
       });
 
-      // Test 5: Verify Settlement Audit Log
-      updateTest("Verify Settlement Audit Log", { status: "running" });
+      // Test 5: Verify Intent Audit Log
+      updateTest("Verify Intent Audit Log", { status: "running" });
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      updateTest("Verify Settlement Audit Log", {
+      updateTest("Verify Intent Audit Log", {
         status: "passed",
-        message: "Audit log expected to contain match.settled event with hash",
+        message: "Audit log expected to contain intent.confirmed event with hash",
       });
 
       toast({
@@ -220,7 +220,7 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
               API Tests
             </CardTitle>
             <CardDescription>
-              Automated smoke tests verify your API is set up correctly. These quick tests check match creation, hashing, and settlement without affecting your data.
+              Automated smoke tests verify your API is set up correctly. These quick tests check match creation, hashing, and intent confirmation without affecting your data.
             </CardDescription>
           </div>
           <Button onClick={runSmokeTests} disabled={running || !apiKey}>
@@ -306,6 +306,7 @@ export default function ApiSmokeTests({ apiKey }: SmokeTestsProps) {
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800 dark:text-green-200">
               <strong>All tests passed!</strong> Your API is working correctly. Match creation, cryptographic hashing, and intent confirmation are all functioning as expected.
+              <p className="mt-2 text-sm">Note: Only "Confirm Intent" creates audit/evidence records. All other actions are non-binding exploration.</p>
             </AlertDescription>
           </Alert>
         )}

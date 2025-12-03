@@ -11,6 +11,56 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.3.0] - 2025-12-03
+
+### ⚠️ Terminology Update: "Settle" → "Confirm Intent"
+
+This release updates all terminology to clearly distinguish between **binding intent confirmation** and **non-binding exploration**.
+
+#### Key Changes
+
+| Before | After |
+|--------|-------|
+| "Settle Match" | "Confirm Intent" |
+| "Settlement" | "Intent Confirmation" |
+| "Settled" status | "Confirmed" (display only, DB still uses `settled`) |
+
+#### What Creates Records?
+
+| Action | Creates Audit/Evidence? |
+|--------|------------------------|
+| **Confirm Intent** | ✅ Yes - immutable proof of interest |
+| Skip / Not Now | ❌ No - exploration only |
+| Maybe Later | ❌ No - exploration only |
+| View / Browse | ❌ No - exploration only |
+
+#### Important Notes
+
+- **No legal obligation**: "Confirm Intent" signals serious interest so the seller can prepare final terms. It does NOT create any contract, payment, or legal commitment.
+- **Only Confirm creates records**: All other UI options (skip, maybe later, etc.) are soft behavioral signals that do NOT write to the database.
+- **Backward compatible**: The API endpoint remains `/match/:id/settle` for compatibility, but now triggers `intent.confirmed` webhook event (also `match.settled` for legacy support).
+
+### API Changes
+- **[API]** `POST /match/:id/settle` now logs as `intent.confirmed` action
+- **[API]** New webhook event: `intent.confirmed` (in addition to legacy `match.settled`)
+- **[API]** Enhanced audit log metadata includes explicit note about non-binding nature
+
+### UI Changes
+- **[UI]** Replaced all "Settle" buttons with "Confirm Intent"
+- **[UI]** Added explanatory text to all Confirm Intent buttons
+- **[UI]** Status badge now shows "Confirmed" instead of "Settled"
+- **[UI]** Webhook event type now shows "Intent Confirmed" in management UI
+- **[UI]** API tester shows clear explanation of what Confirm Intent means
+- **[UI]** Smoke tests renamed to reflect new terminology
+
+### Documentation
+- **[Docs]** Updated API reference with clear action type table
+- **[Docs]** Added "Action Types: Confirm vs. Exploration" section
+- **[Docs]** Updated webhook examples with new event names
+- **[Docs]** Clarified that only Confirm creates evidence records
+
+---
+
 ## [1.2.0] - 2025-12-02
 
 ### Security Enhancements

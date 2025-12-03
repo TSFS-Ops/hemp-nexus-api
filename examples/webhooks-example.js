@@ -77,7 +77,7 @@ async function updateWebhook(apiKey, webhookId) {
       "X-API-Key": apiKey,
     },
     body: JSON.stringify({
-      events: ["match.created", "match.settled"],
+      events: ["match.created", "intent.confirmed"],
       status: "active"
     }),
   });
@@ -197,9 +197,11 @@ async function processWebhook(event, data) {
       break;
       
     case 'match.settled':
-      // Handle settled match
-      console.log(`Match settled: ${data.data.matchId}`);
-      console.log(`Settled at: ${data.data.settledAt}`);
+    case 'intent.confirmed':
+      // Handle intent confirmation (no legal obligation - signals serious interest)
+      console.log(`Intent confirmed for match: ${data.data.matchId}`);
+      console.log(`Confirmed at: ${data.data.settledAt}`);
+      console.log(`Note: This signals interest only - no payment or legal obligation created`);
       // Your business logic here
       break;
       

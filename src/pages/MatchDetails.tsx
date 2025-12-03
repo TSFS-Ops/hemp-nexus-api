@@ -116,8 +116,8 @@ export default function MatchDetails() {
             <div>
               <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
               <div className="flex items-center gap-2">
-                <Badge variant={match.status === "settled" ? "default" : "secondary"}>
-                  {match.status.toUpperCase()}
+              <Badge variant={match.status === "settled" ? "default" : "secondary"}>
+                  {match.status === "settled" ? "CONFIRMED" : "MATCHED"}
                 </Badge>
                 <span className="text-sm text-muted-foreground font-mono">
                   {match.hash.substring(0, 8)}...
