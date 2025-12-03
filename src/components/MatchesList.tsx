@@ -93,7 +93,7 @@ export function MatchesList() {
 
   const getStatusBadge = (status: string) => {
     return status === "settled" ? (
-      <Badge variant="default">Settled</Badge>
+      <Badge variant="default">Confirmed</Badge>
     ) : (
       <Badge variant="secondary">Matched</Badge>
     );
@@ -277,7 +277,7 @@ export function MatchesList() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="matched">Matched</SelectItem>
-              <SelectItem value="settled">Settled</SelectItem>
+              <SelectItem value="settled">Confirmed</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>

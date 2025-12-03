@@ -453,6 +453,8 @@ Authorization: Bearer sk_your_api_key
 
 Create trade matches and confirm intent with cryptographic proof.
 
+> **Key Concept**: Only the **Confirm Intent** action (`POST /match/:id/settle`) creates audit/evidence records. All other interactions (viewing, browsing, skipping) are non-binding exploration actions that do NOT create any records.
+
 #### POST /match
 
 Record a match between buyer and seller with cryptographic proof.
@@ -615,7 +617,9 @@ Authorization: Bearer sk_your_api_key
 
 #### POST /match/:id/settle
 
-Confirm intent for a match. **This signals interest only — no legal obligation.**
+**Confirm Intent** for a match. 
+
+> ⚠️ **Important**: This action signals serious interest to the seller so they can prepare final terms. **It does NOT create any contract, payment, or legal obligation.** This is the only action that creates an immutable audit/evidence record.
 
 **Required Scope**: `match:write`
 
@@ -640,9 +644,21 @@ Authorization: Bearer sk_your_api_key
 
 **Notes**:
 - **Idempotent**: Calling multiple times returns the same result
-- **Not a contract**: This action only records interest
-- Creates immutable audit log entry
-- Triggers `match.settled` webhook event
+- **Not a contract**: This action only records interest — no payment or legal obligation
+- Creates immutable audit log entry with cryptographic proof
+- Triggers `intent.confirmed` webhook event (also `match.settled` for backward compatibility)
+- **Only "Confirm Intent" creates evidence records** — all other actions (skip, maybe later, etc.) are non-binding behavioral signals
+
+---
+
+### Action Types: Confirm vs. Exploration
+
+| Action | Creates Records? | Creates Evidence? | Legal Meaning |
+|--------|-----------------|-------------------|---------------|
+| **Confirm Intent** | ✅ Yes | ✅ Yes | Signals serious interest (no contract/payment) |
+| Skip / Not Now | ❌ No | ❌ No | No meaning — exploration only |
+| Maybe Later | ❌ No | ❌ No | No meaning — exploration only |
+| Browse / View | ❌ No | ❌ No | No meaning — exploration only |
 
 ---
 
@@ -701,7 +717,7 @@ Authorization: Bearer sk_your_api_key
       },
       {
         "id": "evt_2",
-        "event_type": "match.settled",
+        "event_type": "intent.confirmed",
         "created_at": "2025-12-02T11:00:00Z",
         "payload_hash": "hash2...",
         "previous_event_hash": "hash1..."
@@ -872,7 +888,7 @@ Content-Type: application/json
 
 {
   "url": "https://your-domain.com/webhook",
-  "events": ["match.created", "match.settled", "signal.created"],
+  "events": ["match.created", "intent.confirmed", "signal.created"],
   "secret": "your-secret-key-min-16-chars"
 }
 ```
@@ -882,7 +898,7 @@ Content-Type: application/json
 {
   "id": "wh_123",
   "url": "https://your-domain.com/webhook",
-  "events": ["match.created", "match.settled", "signal.created"],
+  "events": ["match.created", "intent.confirmed", "signal.created"],
   "status": "active",
   "created_at": "2025-12-02T10:00:00Z"
 }
