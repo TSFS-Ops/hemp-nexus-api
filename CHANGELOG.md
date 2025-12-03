@@ -11,6 +11,37 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.3.1] - 2025-12-03
+
+### Security Audit & Fixes
+
+**Full end-to-end audit completed.** This patch addresses security, documentation, and SOW alignment.
+
+#### Security Improvements
+- **[Security]** Restricted `api_request_logs` to admin/auditor roles only (previously org-wide access)
+- **[Security]** Restricted `reputation_scores` to own-org access only (previously all authenticated users)
+- **[Security]** Removed general user access to `audit_logs` (admin-only for security)
+- **[Database]** Added documentation comment to `behavioral_signals` table clarifying non-binding nature
+
+#### Admin Panel SOW Alignment
+- **[Admin]** Added Coherence Engine panel (`/admin/coherence`) - displays vector matching metrics
+- **[Admin]** Added Behavioral Analytics panel (`/admin/behavioral`) - tracks non-binding actions
+- **[Admin]** Added Audit Logs panel (`/admin/audit`) - binding actions + admin operations
+- **[Admin]** Updated sidebar navigation with new panels
+- **[Admin]** Updated overview quick actions grid
+
+#### Documentation Updates
+- **[Docs]** Updated API version to 1.3 with changelog
+- **[Docs]** Fixed "settle" language → "Confirm Intent" in ApiDocs.tsx
+- **[Docs]** Added `intent.confirmed` event documentation
+- **[Docs]** Created SOW alignment document (`docs/sow-alignment.md`)
+
+#### UI/UX Polish
+- **[UI]** Added explanatory Alert to Confirm Intent endpoint in API docs
+- **[UI]** Updated webhook event list to show `intent.confirmed`
+
+---
+
 ## [1.3.0] - 2025-12-03
 
 ### ⚠️ Terminology Update: "Settle" → "Confirm Intent"

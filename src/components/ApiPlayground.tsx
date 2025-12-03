@@ -573,7 +573,7 @@ export default function ApiPlayground() {
                   <Label>Events (comma-separated)</Label>
                   <Input value={webhookEvents} onChange={(e) => setWebhookEvents(e.target.value)} placeholder="signal.created, match.created" />
                   <p className="text-xs text-muted-foreground">
-                    Available: signal.created, option.selected, match.created, match.settled
+                    Available: signal.created, option.selected, match.created, intent.confirmed (also match.settled for backward compatibility)
                   </p>
                 </div>
 
