@@ -74,7 +74,7 @@ const EmbeddableWidget = () => {
   };
 
   // Starter Templates
-  const reactTemplate = `// === Trade.Izenzo React Integration ===
+  const reactTemplate = `// === Compliance Matching API - React Integration ===
 // Install: npm install
 
 import React, { useState, useCallback } from 'react';
@@ -104,7 +104,7 @@ interface DealData {
   metadata?: Record<string, any>;
 }
 
-// Hook for Trade.Izenzo integration
+// Hook for Compliance Matching API integration
 export function useComplianceMatch(apiEndpoint: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -275,21 +275,21 @@ export default function ExamplePage() {
   );
 }`;
 
-  const nextjsTemplate = `// === Trade.Izenzo Next.js Integration ===
+  const nextjsTemplate = `// === Compliance Matching API - Next.js Integration ===
 
 // --- 1. API Route: app/api/record-match/route.ts ---
 import { NextRequest, NextResponse } from 'next/server';
 
-const TRADE_IZENZO_API = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match';
+const COMPLIANCE_MATCH_API = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(TRADE_IZENZO_API, {
+    const response = await fetch(COMPLIANCE_MATCH_API, {
       method: 'POST',
       headers: {
-        'X-API-Key': process.env.TRADE_IZENZO_API_KEY!,
+        'X-API-Key': process.env.COMPLIANCE_MATCH_API_KEY!,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
-    console.error('Trade.Izenzo API error:', error);
+    console.error('Compliance Match API error:', error);
     return NextResponse.json(
       { error: 'Failed to record match' },
       { status: 500 }
@@ -320,9 +320,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(\`\${TRADE_IZENZO_API}/\${matchId}\`, {
+    const response = await fetch(\`\${COMPLIANCE_MATCH_API}/\${matchId}\`, {
       headers: {
-        'X-API-Key': process.env.TRADE_IZENZO_API_KEY!,
+        'X-API-Key': process.env.COMPLIANCE_MATCH_API_KEY!,
       },
     });
 
@@ -436,7 +436,7 @@ export function ComplianceWidget({ deal, onSuccess }: {
 }
 
 // --- 4. Environment: .env.local ---
-// TRADE_IZENZO_API_KEY=sk_your_api_key_here
+// COMPLIANCE_MATCH_API_KEY=sk_your_api_key_here
 
 // --- 5. Usage: app/deal/[id]/page.tsx ---
 import { ComplianceWidget } from '@/components/ComplianceWidget';
@@ -458,14 +458,14 @@ export default function DealPage() {
   );
 }`;
 
-  const vanillaTemplate = `<!-- === Trade.Izenzo Vanilla JavaScript Integration === -->
+  const vanillaTemplate = `<!-- === Compliance Matching API - Vanilla JavaScript Integration === -->
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trade.Izenzo Integration</title>
+  <title>Compliance Match Integration</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; padding: 24px; background: #f5f5f5; }
@@ -633,14 +633,14 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-const TRADE_IZENZO_API = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match';
+const COMPLIANCE_MATCH_API = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match';
 
 app.post('/api/record-match', async (req, res) => {
   try {
-    const response = await fetch(TRADE_IZENZO_API, {
+    const response = await fetch(COMPLIANCE_MATCH_API, {
       method: 'POST',
       headers: {
-        'X-API-Key': process.env.TRADE_IZENZO_API_KEY,
+        'X-API-Key': process.env.COMPLIANCE_MATCH_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(req.body),

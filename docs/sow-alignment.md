@@ -142,7 +142,7 @@ Per the SOW exclusions:
 
 ## Compliance Notes
 
-- All data stored in API's own database (not marketplace DB)
+- All data stored in API's own database
 - RLS policies enforce admin-only access
-- No marketplace-related items (hemp, cannabis, estates) in admin panel
-- Clear separation between API product and trade.izenzo marketplace
+- No sector-specific items (hemp, cannabis, estates) in admin panel
+- Compliance Matching API is a standalone product, legally separate from any trading platforms

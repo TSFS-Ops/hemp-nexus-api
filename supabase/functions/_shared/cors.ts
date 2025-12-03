@@ -1,4 +1,4 @@
-// CORS configuration for Trade.Izenzo API
+// CORS configuration for Compliance Matching API
 export const corsHeaders = (allowedOrigins: string, origin: string | null = null) => {
   const allowedList = allowedOrigins.split(',').map(o => o.trim()).filter(Boolean);
   
