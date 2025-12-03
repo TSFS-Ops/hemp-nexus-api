@@ -35,6 +35,7 @@ import SystemHealthMonitor from "@/components/SystemHealthMonitor";
 import AutomatedTestSuite from "@/components/AutomatedTestSuite";
 import ErrorMonitoringDashboard from "@/components/ErrorMonitoringDashboard";
 import { SdkDocumentation } from "@/components/SdkDocumentation";
+import EmbeddableWidget from "@/components/EmbeddableWidget";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -610,6 +611,13 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <SdkDocumentation />
+          </div>
+        );
+
+      case "embed":
+        return (
+          <div className="space-y-6">
+            <EmbeddableWidget />
           </div>
         );
 
