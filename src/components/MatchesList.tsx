@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -300,22 +301,23 @@ export function MatchesList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={allUnsettledSelected}
-                      onCheckedChange={toggleSelectAll}
-                      disabled={unsettledMatches.length === 0}
-                    />
-                  </TableHead>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Seller</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
+                   <TableHead className="w-12">
+                     <Checkbox
+                       checked={allUnsettledSelected}
+                       onCheckedChange={toggleSelectAll}
+                       disabled={unsettledMatches.length === 0}
+                     />
+                   </TableHead>
+                   <TableHead>Commodity</TableHead>
+                   <TableHead>Buyer</TableHead>
+                   <TableHead>Seller</TableHead>
+                   <TableHead>Quantity</TableHead>
+                   <TableHead>Price</TableHead>
+                   <TableHead>Status</TableHead>
+                   <TableHead>Evidence</TableHead>
+                   <TableHead>Created</TableHead>
+                   <TableHead className="text-right">Actions</TableHead>
+                 </TableRow>
               </TableHeader>
               <TableBody>
                 {matches.map((match) => (
@@ -337,6 +339,9 @@ export function MatchesList() {
                       {match.price_currency} {match.price_amount.toLocaleString()}
                     </TableCell>
                     <TableCell>{getStatusBadge(match.status)}</TableCell>
+                    <TableCell>
+                      <EvidenceChainIndicator matchId={match.id} compact />
+                    </TableCell>
                     <TableCell>{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
                     <TableCell className="text-right">
                       <Button

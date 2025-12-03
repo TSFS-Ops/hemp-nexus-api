@@ -13,6 +13,8 @@ import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { AdminApiKeys } from "@/components/admin/AdminApiKeys";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminRiskPanel } from "@/components/admin/AdminRiskPanel";
+import { AdminMatchesPanel } from "@/components/admin/AdminMatchesPanel";
+import { AdminSignalsPanel } from "@/components/admin/AdminSignalsPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -103,6 +105,8 @@ export default function Admin() {
               <Route path="/" element={<AdminOverview />} />
               <Route path="/logs" element={<GlobalApiLogs />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route path="/matches" element={<AdminMatchesPanel />} />
+              <Route path="/signals" element={<AdminSignalsPanel />} />
               <Route
                 path="/users-orgs"
                 element={
