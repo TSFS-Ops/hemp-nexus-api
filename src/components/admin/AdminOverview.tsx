@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio } from "lucide-react";
+import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio, Brain, MousePointer } from "lucide-react";
 import { toast } from "sonner";
 
 interface OverviewStats {
@@ -186,34 +186,55 @@ export function AdminOverview() {
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>Common administrative tasks</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <a
             href="/admin/matches"
             className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <GitCompare className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">View Matches</span>
+            <span className="text-sm font-medium">Matches</span>
           </a>
           <a
             href="/admin/signals"
             className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <Radio className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">View Signals</span>
+            <span className="text-sm font-medium">Signals</span>
           </a>
           <a
-            href="/admin/logs"
+            href="/admin/coherence"
+            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <TrendingUp className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Coherence Engine</span>
+          </a>
+          <a
+            href="/admin/behavioral"
+            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <Activity className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Behavioral Analytics</span>
+          </a>
+          <a
+            href="/admin/audit"
             className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <FileText className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">View API Logs</span>
+            <span className="text-sm font-medium">Audit Logs</span>
           </a>
           <a
             href="/admin/api-keys"
             className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <Key className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">API Key Management</span>
+            <span className="text-sm font-medium">API Keys</span>
+          </a>
+          <a
+            href="/admin/users-orgs"
+            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <Users className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Users & Orgs</span>
           </a>
           <a
             href="/admin/settings"

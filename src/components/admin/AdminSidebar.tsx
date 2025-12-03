@@ -1,4 +1,4 @@
-import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio } from "lucide-react";
+import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio, Brain, MousePointer, ScrollText } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -16,6 +16,9 @@ const adminItems = [
   { title: "Overview", url: "/admin", icon: Activity, exact: true },
   { title: "Matches", url: "/admin/matches", icon: GitCompare },
   { title: "Signals", url: "/admin/signals", icon: Radio },
+  { title: "Coherence Engine", url: "/admin/coherence", icon: Brain },
+  { title: "Behavioral Analytics", url: "/admin/behavioral", icon: MousePointer },
+  { title: "Audit Logs", url: "/admin/audit", icon: ScrollText },
   { title: "API Logs", url: "/admin/logs", icon: FileText },
   { title: "Users & Organizations", url: "/admin/users-orgs", icon: Users },
   { title: "API Keys", url: "/admin/api-keys", icon: Key },
