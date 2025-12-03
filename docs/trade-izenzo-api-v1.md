@@ -1,8 +1,8 @@
-# Trade.Izenzo API v1 Documentation
+# Compliance Matching API v1 Documentation
 
 ## Overview
 
-**Trade.Izenzo API** is a generic, sector-agnostic backend service that records trade "matches" between buyers and sellers and returns cryptographic proof records. It is completely decoupled from any specific marketplace or frontend.
+**Compliance Matching API** is a generic, sector-agnostic backend service that records trade "matches" between buyers and sellers and returns cryptographic proof records. It is completely decoupled from any specific marketplace or frontend.
 
 ### What it does
 - Records trade agreements (matches) with full details
@@ -179,7 +179,7 @@ https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
   "terms": "Delivery within 30 days, payment on delivery",
   "metadata": {
     "region": "EU-Africa",
-    "channel": "Trade.Izenzo platform"
+    "channel": "Your platform"
   },
   "settled_at": null
 }
@@ -489,8 +489,8 @@ Use the dashboard or call `DELETE /api-keys/:id` with JWT authentication.
 
 ## Support & Questions
 
-For support or questions about the Trade.Izenzo API:
-- Email: support@trade.izenzo.com
+For support or questions about the Compliance Matching API:
+- Email: api-support@izenzo.co.za
 - Check logs in your Lovable Cloud dashboard
 - Review the [Lovable Discord community](https://discord.com/channels/1119885301872070706/1280461670979993613)
 

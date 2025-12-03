@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Trade.Izenzo Compliance Matching API
+  title: Compliance Matching API
   version: 1.3.1
   description: |
     A sector-agnostic API for recording trade matches with cryptographic proof.
@@ -16,10 +16,10 @@ info:
     - Create binding contracts
     - Handle logistics
   contact:
-    email: support@trade.izenzo.com
+    email: api-support@izenzo.co.za
   license:
     name: Proprietary
-    url: https://trade.izenzo.com/terms
+    url: https://api.izenzo.co.za/terms
 
 servers:
   - url: https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1

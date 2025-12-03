@@ -144,7 +144,7 @@ Record a new trade match and return a proof record.
   "terms": "Key commercial terms in plain language",
   "metadata": {
     "region": "EU-Africa",
-    "channel": "Trade.Izenzo platform",
+    "channel": "Your platform",
     "notes": "Any extra notes"
   }
 }
@@ -176,7 +176,7 @@ Record a new trade match and return a proof record.
   "terms": "Key commercial terms in plain language",
   "metadata": {
     "region": "EU-Africa",
-    "channel": "Trade.Izenzo platform"
+    "channel": "Your platform"
   },
   "settled_at": null
 }
@@ -279,7 +279,7 @@ GET /matches?limit=20&offset=0&status=matched
 
 ### Legacy Endpoints
 
-The following endpoints remain available for backward compatibility but are not part of the Trade.Izenzo API v1 core:
+The following endpoints remain available for backward compatibility but are not part of the Compliance Matching API v1 core:
 
 - `/signals` - Signal-based matching system
 - `/data-sources` - Data source connectors
@@ -399,7 +399,7 @@ All errors follow this format:
 A bash script is provided for end-to-end testing:
 
 ```bash
-export TRADE_IZENZO_API_KEY=sk_your_key_here
+export COMPLIANCE_MATCH_API_KEY=sk_your_key_here
 chmod +x examples/trade-izenzo-example.sh
 ./examples/trade-izenzo-example.sh
 ```
@@ -458,7 +458,7 @@ Set these in your Supabase project:
 
 ### Minimal Storage
 
-Trade.Izenzo stores:
+The Compliance Matching API stores:
 - Signals (short-lived)
 - Data source configs
 - Consents
@@ -495,7 +495,7 @@ The API is designed to be simple, reliable, and decoupled from any specific mark
 
 ### Data Storage
 
-Trade.Izenzo stores:
+The Compliance Matching API stores:
 - Match records with full details
 - Cryptographic proof hashes
 - Status and timestamps
@@ -513,11 +513,11 @@ The database is designed for fast lookups, proof verification, and clean auditin
 
 ## Support
 
-For issues or questions, contact: support@trade.izenzo.com
+For issues or questions, contact: api-support@izenzo.co.za
 
 ---
 
-**Trade.Izenzo**: Signals in → options out → hand off. Fast, consent-based, privacy-first.
+**Compliance Matching API**: Signals in → options out → hand off. Fast, consent-based, privacy-first.
 
 ### 1. Access the API
 
@@ -598,7 +598,7 @@ Response:
 
 ## 🔐 Authentication
 
-Trade.Izenzo supports two authentication methods:
+The Compliance Matching API supports two authentication methods:
 
 ### 1. API Keys (Machine-to-Machine)
 
@@ -656,7 +656,7 @@ Set these in your Lovable Cloud backend settings:
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | Yes | `https://app.trade.izenzo.com,https://staging.trade.izenzo.com` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | Yes | `https://yourapp.com,https://staging.yourapp.com` |
 | `JWT_SECRET` | JWT signing secret | Auto | (auto-configured by Lovable Cloud) |
 | `SUPABASE_URL` | Database URL | Auto | (auto-configured by Lovable Cloud) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key | Auto | (auto-configured by Lovable Cloud) |
@@ -692,14 +692,14 @@ Key tables:
 
 ## 🔔 Webhooks
 
-Trade.Izenzo sends HMAC-SHA256 signed webhooks for events:
+The API sends HMAC-SHA256 signed webhooks for events:
 
-**Signature Header**: `X-Trade-Izenzo-Signature`
+**Signature Header**: `X-Compliance-Match-Signature`
 
 **Verification**:
 ```javascript
 const crypto = require('crypto');
-const signature = req.headers['x-trade-izenzo-signature'];
+const signature = req.headers['x-compliance-match-signature'];
 const body = JSON.stringify(req.body);
 const expected = crypto
   .createHmac('sha256', SECRET)
@@ -791,20 +791,19 @@ curl -H "X-API-Key: sk_your_key" \
 - **Client Example** (legacy signals): [examples/client-example.js](examples/client-example.js)
 - [Lovable Cloud Documentation](https://docs.lovable.dev/features/cloud)
 - [Supabase Documentation](https://supabase.com/docs)
-- [Trade.Izenzo Project](https://lovable.dev/projects/95025ceb-b8ab-4906-adee-3188617c0dbc)
 
 ## Support
 
 For API support or questions:
-- Email: support@trade.izenzo.com
+- Email: api-support@izenzo.co.za
 - Check the [Lovable Discord community](https://discord.com/channels/1119885301872070706/1280461670979993613)
 - Review backend logs in Lovable Cloud dashboard
 
 ## License
 
-Proprietary - Trade.Izenzo API
+Proprietary - Compliance Matching API (Izenzo)
 
 ---
 
-**Trade.Izenzo API v1**: Generic trade match recording with cryptographic proofs. Simple, fast, decoupled.
+**Compliance Matching API v1**: Generic trade match recording with cryptographic proofs. Simple, fast, decoupled.
 

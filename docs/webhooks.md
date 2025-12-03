@@ -1,10 +1,10 @@
 # Webhooks Documentation
 
-Webhooks allow you to receive real-time notifications when events occur in your Trade.Izenzo organization.
+Webhooks allow you to receive real-time notifications when events occur in your organization.
 
 ## Overview
 
-When you register a webhook endpoint, Trade.Izenzo will send HTTP POST requests to your URL whenever subscribed events occur. Each webhook delivery includes:
+When you register a webhook endpoint, the Compliance Matching API will send HTTP POST requests to your URL whenever subscribed events occur. Each webhook delivery includes:
 
 - Event type
 - Event data
@@ -117,7 +117,7 @@ Each webhook request includes these headers:
 
 ## Verifying Webhook Signatures
 
-To verify that a webhook came from Trade.Izenzo, validate the signature:
+To verify that a webhook came from the Compliance Matching API, validate the signature:
 
 ### Node.js Example
 

@@ -442,13 +442,13 @@ If you forget your password:
 
 ### Q: Is this a marketplace?
 
-**A**: No. Trade.Izenzo is a **B2B API platform**. It provides APIs for compliance matching, not an end-user marketplace with listings or shopping carts.
+**A**: No. The Compliance Matching API is a **B2B API platform**. It provides APIs for compliance matching, not an end-user marketplace with listings or shopping carts.
 
 ---
 
 ### Q: Can I create buyer/seller listings?
 
-**A**: No. The platform focuses on API-driven matching. You integrate Trade.Izenzo into your own application, which handles the UI/UX for your users.
+**A**: No. The platform focuses on API-driven matching. You integrate the Compliance Matching API into your own application, which handles the UI/UX for your users.
 
 ---
 
@@ -494,7 +494,7 @@ If you forget your password:
 
 ### Q: How do webhooks work?
 
-**A**: Configure a webhook URL in the dashboard. Trade.Izenzo sends POST requests when events occur. Verify the HMAC signature to ensure authenticity.
+**A**: Configure a webhook URL in the dashboard. The API sends POST requests when events occur. Verify the HMAC signature to ensure authenticity.
 
 ---
 

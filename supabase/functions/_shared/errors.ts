@@ -1,4 +1,4 @@
-// Standard error response format for Trade.Izenzo API
+// Standard error response format for Compliance Matching API
 export interface ApiError {
   code: string;
   message: string;

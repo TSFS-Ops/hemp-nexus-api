@@ -1,5 +1,5 @@
 /**
- * Trade.Izenzo SDK
+ * Compliance Matching API SDK
  * TypeScript client for the Compliance Matching API
  * 
  * @example
@@ -198,7 +198,7 @@ const DEFAULT_BASE_URL = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1'
 const DEFAULT_TIMEOUT = 30000;
 
 /**
- * Trade.Izenzo API Client
+ * Compliance Matching API Client
  */
 export class IzenzoClient {
   private apiKey: string;
