@@ -64,7 +64,9 @@ export default function Dashboard() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
-  const [activeSection, setActiveSection] = useState("quickstart");
+  const [activeSection, setActiveSection] = useState(() => {
+    return localStorage.getItem("dashboard_active_section") || "quickstart";
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
@@ -112,6 +114,11 @@ export default function Dashboard() {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Persist active section to localStorage
+  useEffect(() => {
+    localStorage.setItem("dashboard_active_section", activeSection);
+  }, [activeSection]);
 
   const checkAdminRole = async (userId: string) => {
     const { data } = await supabase

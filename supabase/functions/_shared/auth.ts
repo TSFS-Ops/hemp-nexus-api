@@ -238,7 +238,11 @@ export const requireRole = (ctx: AuthContext, role: string) => {
 };
 
 export const requireScope = (ctx: AuthContext, scope: string) => {
-  if (ctx.isApiKey && !ctx.roles.includes(scope)) {
-    throw new ApiException('FORBIDDEN', `Missing required scope: ${scope}`, 403);
+  if (ctx.isApiKey) {
+    // Check for exact match or prefix match (e.g., 'signals' matches 'signals:read')
+    const hasScope = ctx.roles.some(r => r === scope || r.startsWith(`${scope}:`));
+    if (!hasScope) {
+      throw new ApiException('FORBIDDEN', `Missing required scope: ${scope}`, 403);
+    }
   }
 };
