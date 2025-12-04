@@ -1,5 +1,5 @@
 import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio, Brain, MousePointer, ScrollText } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -47,8 +47,8 @@ export function AdminSidebar() {
               {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a
-                      href={item.url}
+                    <Link
+                      to={item.url}
                       className={`flex items-center gap-2 ${
                         isActive(item.url, item.exact)
                           ? "bg-primary text-primary-foreground"
@@ -57,7 +57,7 @@ export function AdminSidebar() {
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
