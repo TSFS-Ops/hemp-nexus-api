@@ -22,15 +22,13 @@ export function DashboardLayout({ children, activeSection, onSectionChange, isAd
           isDemoMode={isDemoMode}
         />
         <main className="flex-1 overflow-auto">
-          <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="flex h-14 items-center justify-between px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
-              </div>
+          <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
+            <div className="flex h-12 items-center justify-between px-4">
+              <SidebarTrigger />
               <ThemeToggle />
             </div>
           </header>
-          <div className="container max-w-7xl py-8 px-8">
+          <div className="max-w-6xl py-6 px-6">
             {children}
           </div>
         </main>

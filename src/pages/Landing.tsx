@@ -1,326 +1,247 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Shield, Search, CheckCircle, FileText, Zap, 
-  ArrowRight, Code, Play, Users, Lock, TrendingUp 
-} from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Terminal, Database, FileCheck, ChevronRight } from "lucide-react";
 
 export default function Landing() {
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl">Compliance Matching API</span>
+            <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
+              <span className="text-background font-bold text-xs">CM</span>
+            </div>
+            <span className="font-semibold text-sm tracking-tight">Compliance Match</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link to="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Documentation
+          <div className="flex items-center gap-6">
+            <Link 
+              to="/docs" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Docs
             </Link>
-            <Link to="/demo">
-              <Button variant="outline" size="sm">
-                <Play className="h-4 w-4 mr-2" />
-                Try Demo
-              </Button>
+            <Link 
+              to="/demo" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Demo
             </Link>
-            <Link to="/auth">
-              <Button size="sm">Sign Up</Button>
+            <Link 
+              to="/auth"
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+            >
+              Sign in
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-24 text-center">
-        <Badge variant="secondary" className="mb-4">
-          Proof-of-Intent API for Regulated B2B
-        </Badge>
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-4xl mx-auto">
-          Tamper-Evident Intent Matching for{" "}
-          <span className="text-primary">Regulated Commodities</span>
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-          Find, match, and prove buyer-seller intent with cryptographic audit trails. 
-          No payments, no contracts — just verified, timestamped expressions of interest.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link to="/demo">
-            <Button size="lg" variant="outline">
-              <Play className="h-5 w-5 mr-2" />
-              Try Demo (No Login)
-            </Button>
-          </Link>
-          <Link to="/auth">
-            <Button size="lg">
-              Get Started
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* What It Does */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">What the API Does</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            A compliance-first API for regulated B2B matching with full audit trails
+      {/* Hero */}
+      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16">
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium text-muted-foreground mb-4 tracking-wide uppercase">
+            Developer API
           </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <Card>
-            <CardHeader>
-              <Search className="h-10 w-10 text-primary mb-2" />
-              <CardTitle>Search Counterparties</CardTitle>
-              <CardDescription>
-                Natural language search for buyers or sellers across multiple data sources
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CheckCircle className="h-10 w-10 text-primary mb-2" />
-              <CardTitle>Confirm Intent</CardTitle>
-              <CardDescription>
-                Record interest with a single click — no payment, no contract, just proof
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Shield className="h-10 w-10 text-primary mb-2" />
-              <CardTitle>Evidence Packs</CardTitle>
-              <CardDescription>
-                Tamper-evident, hash-chained audit logs for regulatory compliance
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
+            Proof-of-intent matching for regulated B2B commerce
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl">
+            Search counterparties, confirm trade intent, and generate tamper-evident audit trails. 
+            Built for compliance teams in commodities, manufacturing, and cross-border trade.
+          </p>
+          <div className="flex items-center gap-3">
+            <Link 
+              to="/demo"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
+            >
+              Try demo
+            </Link>
+            <Link 
+              to="/auth"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+            >
+              Get API key
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Screenshot / UI Preview */}
-      <section className="container mx-auto px-4 py-16">
-        <Card className="overflow-hidden border-2 max-w-4xl mx-auto">
-          <CardHeader className="bg-muted/50 border-b">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-destructive" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="ml-4 text-sm text-muted-foreground">Dashboard Preview</span>
+      {/* Features */}
+      <section className="border-t border-border/60 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="space-y-3">
+              <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
+                <Terminal className="h-4 w-4 text-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground">Search API</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Natural language search across multiple data sources. Returns ranked counterparties with confidence scores.
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="p-6 bg-gradient-to-br from-muted/30 to-muted/50">
-            <div className="space-y-4">
-              {/* Search Bar Preview */}
-              <div className="bg-background rounded-lg border p-4">
-                <div className="flex gap-3">
-                  <div className="flex-1 h-10 bg-muted rounded border flex items-center px-3">
-                    <span className="text-muted-foreground text-sm">
-                      "buyers for cashew in India"
-                    </span>
-                  </div>
-                  <div className="h-10 px-4 bg-primary text-primary-foreground rounded flex items-center gap-2 text-sm">
-                    <Search className="h-4 w-4" />
-                    Search
-                  </div>
+
+            <div className="space-y-3">
+              <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
+                <Database className="h-4 w-4 text-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground">Intent Confirmation</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Record buyer-seller interest with a single API call. Creates timestamped, hash-verified proof of intent.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
+                <FileCheck className="h-4 w-4 text-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground">Evidence Packs</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Export tamper-evident audit trails for compliance reviews, dispute resolution, and regulatory reporting.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Interface Preview */}
+      <section className="border-t border-border/60">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-foreground mb-2">Interface Preview</h2>
+            <p className="text-muted-foreground">Search results with discovery engine enrichment</p>
+          </div>
+
+          <div className="border border-border rounded-lg overflow-hidden bg-card">
+            {/* Window chrome */}
+            <div className="border-b border-border px-4 py-2.5 bg-muted/50 flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-border" />
+                <div className="h-2.5 w-2.5 rounded-full bg-border" />
+                <div className="h-2.5 w-2.5 rounded-full bg-border" />
+              </div>
+              <span className="text-xs text-muted-foreground ml-2 font-mono">dashboard</span>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Search input mockup */}
+              <div className="flex gap-3">
+                <div className="flex-1 h-10 bg-muted rounded-md border border-border flex items-center px-3">
+                  <span className="text-sm text-muted-foreground">buyers for cashew in India</span>
+                </div>
+                <div className="h-10 px-4 bg-foreground text-background rounded-md flex items-center text-sm font-medium">
+                  Search
                 </div>
               </div>
 
-              {/* Results Preview */}
-              <div className="grid gap-3">
+              {/* Results */}
+              <div className="space-y-2">
                 {[
-                  { title: "GlobalAgri Trading Co.", score: 94, enriched: true },
-                  { title: "IndiaExport Partners Ltd.", score: 89, enriched: false },
-                  { title: "SouthAsia Commodities", score: 85, enriched: true },
+                  { name: "GlobalAgri Trading Co.", score: 94, enriched: true },
+                  { name: "IndiaExport Partners Ltd.", score: 89, enriched: false },
+                  { name: "SouthAsia Commodities GmbH", score: 85, enriched: true },
                 ].map((result, i) => (
-                  <div key={i} className="bg-background rounded-lg border p-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-md border border-border bg-background">
+                    <div className="h-7 w-7 rounded bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
                       {i + 1}
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-sm">{result.title}</div>
-                      <div className="text-xs text-muted-foreground">Score: {result.score}%</div>
+                      <div className="text-sm font-medium text-foreground">{result.name}</div>
+                      <div className="text-xs text-muted-foreground">Match score: {result.score}%</div>
                     </div>
                     {result.enriched && (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
-                        <Zap className="h-3 w-3 mr-1" />
-                        12%
-                      </Badge>
+                      <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+                        +12%
+                      </span>
                     )}
-                    <Button size="sm" variant="outline" className="text-xs">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Confirm Intent
-                    </Button>
+                    <button className="px-3 py-1.5 text-xs font-medium rounded border border-border bg-background hover:bg-accent transition-colors">
+                      Confirm
+                    </button>
                   </div>
                 ))}
               </div>
 
-              {/* Metrics Preview */}
-              <div className="bg-primary/10 rounded-lg border border-primary/20 p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-lg font-bold">15</div>
-                    <div className="text-xs text-muted-foreground">Baseline</div>
+              {/* Metrics bar */}
+              <div className="flex items-center justify-between p-3 rounded-md bg-muted/50 border border-border">
+                <div className="flex items-center gap-6 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Baseline: </span>
+                    <span className="font-medium text-foreground">15</span>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-primary">21</div>
-                    <div className="text-xs text-muted-foreground">Total</div>
+                  <div>
+                    <span className="text-muted-foreground">Total: </span>
+                    <span className="font-medium text-foreground">21</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600 font-bold">+40%</span>
-                  <span className="text-xs text-muted-foreground">12% Engine Uplift</span>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Discovery uplift: </span>
+                  <span className="font-medium text-foreground">+40%</span>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* How It Works */}
-      <section className="container mx-auto px-4 py-16 bg-muted/30">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-        </div>
-
-        <div className="max-w-3xl mx-auto">
-          <div className="space-y-8">
-            {[
-              {
-                step: "1",
-                title: "Search",
-                description: "Enter a natural language query like 'buyers for copper cathode' to find matching counterparties",
-                icon: Search,
-              },
-              {
-                step: "2",
-                title: "Review",
-                description: "See ranked results with 12% Engine enrichment that finds matches AI alone misses",
-                icon: Users,
-              },
-              {
-                step: "3",
-                title: "Confirm Intent",
-                description: "Click to record your interest — this creates a timestamped, hash-verified proof of intent",
-                icon: CheckCircle,
-              },
-              {
-                step: "4",
-                title: "Audit Trail",
-                description: "Access tamper-evident evidence packs for compliance and dispute resolution",
-                icon: FileText,
-              },
-            ].map((item, i) => (
-              <div key={i} className="flex gap-4 items-start">
-                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
-                  {item.step}
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1 flex items-center gap-2">
-                    <item.icon className="h-4 w-4 text-primary" />
-                    {item.title}
-                  </h3>
-                  <p className="text-muted-foreground">{item.description}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
-      {/* Developer Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Built for Developers</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            RESTful API with clear endpoints, comprehensive docs, and examples in curl, Python, and Node.js
-          </p>
-        </div>
+      {/* API Example */}
+      <section className="border-t border-border/60 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-foreground mb-2">Quick Start</h2>
+            <p className="text-muted-foreground">Confirm trade intent with a single API call</p>
+          </div>
 
-        <Card className="max-w-3xl mx-auto">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Code className="h-5 w-5" />
-              Quick Example
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-              <code>{`curl -X POST /v1/match/:id/settle \\
+          <div className="border border-border rounded-lg overflow-hidden bg-card">
+            <div className="border-b border-border px-4 py-2.5 bg-muted/50 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-mono">POST /v1/match/:id/settle</span>
+              <Link to="/docs" className="text-xs text-primary hover:underline flex items-center gap-1">
+                Full docs
+                <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <pre className="p-4 text-sm text-foreground overflow-x-auto">
+              <code>{`curl -X POST https://api.compliancematch.dev/v1/match/m_abc123/settle \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json"
 
-# Response:
+# Response
 {
-  "id": "match_abc123",
+  "id": "m_abc123",
   "status": "settled",
   "settled_at": "2025-01-15T10:30:00Z",
-  "hash": "sha256:abc123...",
-  "note": "Intent confirmed - no legal obligation"
+  "hash": "sha256:f4b2a1...",
+  "note": "Intent confirmed - no legal obligation created"
 }`}</code>
             </pre>
-            <div className="mt-4">
-              <Link to="/docs">
-                <Button variant="outline">
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Full Documentation
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-24">
-        <Card className="bg-primary text-primary-foreground max-w-3xl mx-auto text-center">
-          <CardContent className="py-12">
-            <Lock className="h-12 w-12 mx-auto mb-4 opacity-90" />
-            <h2 className="text-2xl font-bold mb-4">Ready to Start Matching?</h2>
-            <p className="mb-6 opacity-90 max-w-md mx-auto">
-              Create a free account to access full search capabilities and create verified proofs of intent.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <Link to="/demo">
-                <Button variant="secondary" size="lg">
-                  <Play className="h-5 w-5 mr-2" />
-                  Try Demo First
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button variant="outline" size="lg" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                  Sign Up Free
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="mt-6 flex items-center gap-3">
+            <Link 
+              to="/docs"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
+            >
+              Read documentation
+            </Link>
+            <Link 
+              to="/auth"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+            >
+              Create account
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span>Compliance Matching API</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/docs" className="hover:text-foreground transition-colors">Docs</Link>
+      <footer className="border-t border-border/60">
+        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-sm text-muted-foreground">
+          <span>Compliance Match API</span>
+          <div className="flex items-center gap-6">
+            <Link to="/docs" className="hover:text-foreground transition-colors">Documentation</Link>
             <Link to="/demo" className="hover:text-foreground transition-colors">Demo</Link>
-            <Link to="/auth" className="hover:text-foreground transition-colors">Sign In</Link>
+            <Link to="/auth" className="hover:text-foreground transition-colors">Sign in</Link>
           </div>
         </div>
       </footer>

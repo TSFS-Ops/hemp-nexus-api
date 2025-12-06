@@ -1,4 +1,4 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn } from "lucide-react";
+import { Key, Code, FileText, Activity, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn, Database } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -13,7 +13,6 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,34 +28,31 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Sections that require authentication
-  const authRequiredSections = ["keys", "matches", "analytics", "webhooks", "webhook-debugger", "audit-logs"];
-
   const mainItems = [
-    { id: "search", title: "Find Counterparties", icon: Search },
-    { id: "docs", title: "API Overview", icon: BookOpen },
-    { id: "keys", title: "Authentication", icon: Key, requiresAuth: true },
-    { id: "test", title: "API Reference", icon: Code },
-    { id: "sdk", title: "SDK & Integration", icon: Package },
-    { id: "embed", title: "Embed Widget", icon: LayoutGrid },
+    { id: "search", title: "Search", icon: Search },
+    { id: "docs", title: "Overview", icon: BookOpen },
+    { id: "keys", title: "API Keys", icon: Key, requiresAuth: true },
+    { id: "test", title: "Reference", icon: Code },
+    { id: "sdk", title: "SDKs", icon: Package },
+    { id: "embed", title: "Embed", icon: LayoutGrid },
     { id: "matches", title: "Matches", icon: Handshake, requiresAuth: true },
     { id: "analytics", title: "Analytics", icon: BarChart3, requiresAuth: true },
-    { id: "webhooks", title: "Webhooks", icon: Zap, requiresAuth: true },
-    { id: "webhook-debugger", title: "Webhook Debugger", icon: Zap, requiresAuth: true },
+    { id: "webhooks", title: "Webhooks", icon: Database, requiresAuth: true },
+    { id: "webhook-debugger", title: "Debugger", icon: Code, requiresAuth: true },
     { id: "audit-logs", title: "Logs", icon: Activity, requiresAuth: true },
   ];
 
   const marketplaceItems = [
     { id: "marketplace", title: "Marketplace", icon: Store, route: "/marketplace" },
-    { id: "global-analytics", title: "Global Analytics", icon: TrendingUp, route: "/analytics" },
+    { id: "global-analytics", title: "Network", icon: TrendingUp, route: "/analytics" },
   ];
 
   const toolsItems = [
-    { id: "data-sources", title: "Data Sources", icon: FileCode },
-    { id: "hash-verify", title: "Hash Verifier", icon: Shield },
+    { id: "data-sources", title: "Data Sources", icon: FileText },
+    { id: "hash-verify", title: "Hash Verifier", icon: Key },
     { id: "system-health", title: "System Health", icon: HeartPulse },
-    { id: "automated-tests", title: "Automated Tests", icon: TestTube2 },
-    { id: "error-monitoring", title: "Error Monitoring", icon: AlertOctagon },
+    { id: "automated-tests", title: "Tests", icon: TestTube2 },
+    { id: "error-monitoring", title: "Errors", icon: AlertOctagon },
     { id: "troubleshooting", title: "Troubleshooting", icon: HelpCircle },
     { id: "automation", title: "Changelog", icon: GitBranch },
   ];
@@ -77,22 +73,24 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
   const isActive = (id: string) => activeSection === id;
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader className="border-b px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
-            <Shield className="h-4 w-4 text-primary-foreground" />
+    <Sidebar className="border-r border-border">
+      <SidebarHeader className="border-b border-border px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
+            <span className="text-background font-bold text-[10px]">CM</span>
           </div>
           <div>
-            <h2 className="font-semibold text-sm">Compliance Match</h2>
-            <p className="text-xs text-muted-foreground font-mono">API v1.0</p>
+            <h2 className="font-semibold text-sm text-foreground">Compliance Match</h2>
+            <p className="text-xs text-muted-foreground font-mono">v1.0</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-3 py-4">
+      <SidebarContent className="px-2 py-3">
         <SidebarGroup>
-          <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Documentation</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            API
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
@@ -100,7 +98,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
                     isActive={isActive(item.id)}
-                    className="w-full px-3 py-2 text-sm font-medium"
+                    className="w-full px-2 py-1.5 text-sm"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -115,7 +113,9 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
         </SidebarGroup>
 
         <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Resources</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            Tools
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {toolsItems.map((item) => (
@@ -123,7 +123,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
                     isActive={isActive(item.id)}
-                    className="w-full px-3 py-2 text-sm font-medium"
+                    className="w-full px-2 py-1.5 text-sm"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -135,7 +135,9 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
         </SidebarGroup>
 
         <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Global Network</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            Network
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {marketplaceItems.map((item) => (
@@ -143,7 +145,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
                   <SidebarMenuButton
                     onClick={() => item.route ? navigate(item.route) : onSectionChange(item.id)}
                     isActive={item.route ? location.pathname === item.route : isActive(item.id)}
-                    className="w-full px-3 py-2 text-sm font-medium"
+                    className="w-full px-2 py-1.5 text-sm"
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -156,15 +158,17 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
 
         {isAdmin && (
           <SidebarGroup className="mt-4">
-            <SidebarGroupLabel className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Admin</SidebarGroupLabel>
+            <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+              Admin
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => navigate("/admin")}
-                    className="w-full px-3 py-2 text-sm font-medium"
+                    className="w-full px-2 py-1.5 text-sm"
                   >
-                    <Shield className="h-4 w-4" />
+                    <Key className="h-4 w-4" />
                     <span>Management</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -174,26 +178,25 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t px-3 py-4">
+      <SidebarFooter className="border-t border-border px-2 py-3">
         {isDemoMode ? (
           <Link to="/auth" className="w-full">
             <Button
-              variant="default"
               size="sm"
-              className="w-full justify-start text-sm font-medium"
+              className="w-full justify-start text-sm bg-foreground text-background hover:bg-foreground/90"
             >
               <LogIn className="h-4 w-4 mr-2" />
-              Sign In / Sign Up
+              Sign in
             </Button>
           </Link>
         ) : (
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-sm font-medium"
+            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
             onClick={handleSignOut}
           >
-            Sign Out
+            Sign out
           </Button>
         )}
       </SidebarFooter>
