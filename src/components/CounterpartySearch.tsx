@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { DemoConfirmDialog } from "@/components/DemoConfirmDialog";
 
 interface SearchResult {
   id: string;
@@ -44,13 +46,99 @@ interface ParsedQuery {
   role: "buyer" | "seller";
 }
 
-export default function CounterpartySearch() {
+// Demo data for anonymous users
+const DEMO_RESULTS: SearchResult[] = [
+  {
+    id: "demo-1",
+    title: "GlobalAgri Trading Co.",
+    description: "Leading commodity importer in Southeast Asia with certified supply chains and quality assurance programs.",
+    url: "#",
+    source: "TradeDirectory",
+    score: 0.94,
+    isEnriched: false,
+    enrichmentReason: null,
+    whySurfaced: "Direct keyword match with high trade volume signals",
+    coherence: { score: 0.92, passed: true, factors: ["Verified business", "Active trading history"] },
+  },
+  {
+    id: "demo-2",
+    title: "IndiaExport Partners Ltd.",
+    description: "Established commodity trading house specializing in agricultural exports from India.",
+    url: "#",
+    source: "B2B Platform",
+    score: 0.89,
+    isEnriched: true,
+    enrichmentReason: "supply_chain_adjacency",
+    whySurfaced: "12% Engine: Found via supply chain adjacency analysis",
+    coherence: { score: 0.88, passed: true, factors: ["Related commodity trades", "Regional expertise"] },
+  },
+  {
+    id: "demo-3",
+    title: "SouthAsia Commodities GmbH",
+    description: "German import company with established trade routes and food safety certifications.",
+    url: "#",
+    source: "TradeDirectory",
+    score: 0.85,
+    isEnriched: true,
+    enrichmentReason: "regional_heuristic",
+    whySurfaced: "12% Engine: Regional trade pattern matching - active in commodity corridor",
+    coherence: { score: 0.85, passed: true, factors: ["Certified importer", "Established routes"] },
+  },
+  {
+    id: "demo-4",
+    title: "Pacific Rim Foods Inc.",
+    description: "US-based food distributor expanding into raw ingredient sourcing.",
+    url: "#",
+    source: "Industry Database",
+    score: 0.78,
+    isEnriched: false,
+    enrichmentReason: null,
+    whySurfaced: "Baseline AI match - company profile mentions procurement interest",
+    coherence: { score: 0.75, passed: true, factors: ["Growing buyer", "Verified business"] },
+  },
+  {
+    id: "demo-5",
+    title: "EuroNuts Trading BV",
+    description: "Netherlands-based trader with focus on sustainable and fair-trade certified commodities.",
+    url: "#",
+    source: "B2B Platform",
+    score: 0.72,
+    isEnriched: true,
+    enrichmentReason: "semantic_expansion",
+    whySurfaced: "12% Engine: Semantic expansion found related category",
+    coherence: { score: 0.70, passed: true, factors: ["Sustainability focus", "Fair-trade certified"] },
+  },
+];
+
+interface CounterpartySearchProps {
+  isDemoMode?: boolean;
+}
+
+export default function CounterpartySearch({ isDemoMode: propDemoMode }: CounterpartySearchProps) {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [metrics, setMetrics] = useState<SearchMetrics | null>(null);
   const [parsedQuery, setParsedQuery] = useState<ParsedQuery | null>(null);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [showDemoConfirm, setShowDemoConfirm] = useState(false);
+
+  // Check authentication status
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Demo mode is active if explicitly set via props OR if user is not authenticated
+  const isDemoMode = propDemoMode ?? !isAuthenticated;
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -63,6 +151,36 @@ export default function CounterpartySearch() {
     setMetrics(null);
     setSelectedResults(new Set());
 
+    // If in demo mode, return simulated data
+    if (isDemoMode) {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Parse query for demo
+      const lowerQuery = query.toLowerCase();
+      const inferredRole = lowerQuery.includes("seller") || lowerQuery.includes("supplier") ? "seller" : "buyer";
+      
+      setParsedQuery({
+        product: query.split(" ").slice(0, 3).join(" "),
+        location: lowerQuery.includes("india") ? "India" : lowerQuery.includes("africa") ? "Africa" : "",
+        role: inferredRole,
+      });
+
+      setResults(DEMO_RESULTS);
+      
+      const baselineCount = DEMO_RESULTS.filter(r => !r.isEnriched).length;
+      setMetrics({
+        baselineCount,
+        enrichedCount: DEMO_RESULTS.length,
+        upliftPct: Math.round(((DEMO_RESULTS.length - baselineCount) / baselineCount) * 100),
+        enrichmentReasons: { "supply_chain_adjacency": 1, "regional_heuristic": 1, "semantic_expansion": 1 },
+      });
+
+      setIsSearching(false);
+      toast.success(`Demo: Found ${DEMO_RESULTS.length} example counterparties`);
+      return;
+    }
+
+    // Real search for authenticated users
     try {
       const { data, error } = await supabase.functions.invoke("search", {
         body: { query: query.trim(), limit: 20 }
@@ -108,20 +226,41 @@ export default function CounterpartySearch() {
       toast.error("Please select at least one counterparty");
       return;
     }
+
+    // If in demo mode, show the demo confirmation dialog
+    if (isDemoMode) {
+      setShowDemoConfirm(true);
+      return;
+    }
     
+    // Real confirmation for authenticated users
     toast.success(`Selected ${selectedResults.size} counterparties for intent confirmation`);
     // TODO: Navigate to match creation flow
   };
 
+  // Show loading while checking auth status
+  if (isAuthenticated === null) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        {/* Demo Mode Banner */}
+        {isDemoMode && <DemoModeBanner />}
+
         {/* Search Header */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
               Find Counterparties
+              {isDemoMode && <Badge variant="outline" className="ml-auto">Demo</Badge>}
             </CardTitle>
             <CardDescription>
               Enter a natural language query to discover potential trading partners
@@ -189,6 +328,7 @@ export default function CounterpartySearch() {
             <Badge variant={parsedQuery.role === "buyer" ? "default" : "secondary"}>
               {parsedQuery.role === "buyer" ? "Buyer" : "Seller"}
             </Badge>
+            {isDemoMode && <Badge variant="secondary" className="ml-2">Demo Data</Badge>}
           </div>
         )}
 
@@ -265,7 +405,7 @@ export default function CounterpartySearch() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">
-                {results.length} Potential Counterparties
+                {results.length} {isDemoMode ? "Example" : "Potential"} Counterparties
               </h3>
               {selectedResults.size > 0 && (
                 <Button onClick={handleConfirmIntent} size="sm">
@@ -345,7 +485,7 @@ export default function CounterpartySearch() {
                           </TooltipTrigger>
                           <TooltipContent className="max-w-sm">
                             <p>{result.whySurfaced}</p>
-                            {result.coherence.factors.length > 0 && (
+                            {result.coherence?.factors && result.coherence.factors.length > 0 && (
                               <div className="mt-2">
                                 <p className="font-medium text-xs">Coherence factors:</p>
                                 <ul className="text-xs mt-1 space-y-0.5">
@@ -358,7 +498,7 @@ export default function CounterpartySearch() {
                           </TooltipContent>
                         </Tooltip>
                         
-                        {result.url && (
+                        {result.url && result.url !== "#" && (
                           <a
                             href={result.url}
                             target="_blank"
@@ -400,9 +540,26 @@ export default function CounterpartySearch() {
                 Use natural language to search for buyers or sellers. Our 12% Discovery Engine 
                 finds additional matches that standard AI search misses.
               </p>
+              {isDemoMode && (
+                <p className="text-xs text-amber-600 mt-4">
+                  You're in demo mode - searches will return simulated results
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
+
+        {/* Demo Confirm Dialog */}
+        <DemoConfirmDialog
+          open={showDemoConfirm}
+          onOpenChange={setShowDemoConfirm}
+          selectedCount={selectedResults.size}
+          queryContext={parsedQuery ? {
+            product: parsedQuery.product,
+            location: parsedQuery.location,
+            role: parsedQuery.role,
+          } : undefined}
+        />
       </div>
     </TooltipProvider>
   );

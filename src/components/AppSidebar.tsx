@@ -1,5 +1,5 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn } from "lucide-react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,26 +21,29 @@ interface AppSidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
   isAdmin?: boolean;
+  isDemoMode?: boolean;
 }
 
-export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSidebarProps) {
+export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Sections that require authentication
+  const authRequiredSections = ["keys", "matches", "analytics", "webhooks", "webhook-debugger", "audit-logs"];
+
   const mainItems = [
-    { id: "quickstart", title: "Quick Start", icon: BookOpen },
     { id: "search", title: "Find Counterparties", icon: Search },
-    { id: "docs", title: "Overview", icon: BookOpen },
-    { id: "keys", title: "Authentication", icon: Key },
+    { id: "docs", title: "API Overview", icon: BookOpen },
+    { id: "keys", title: "Authentication", icon: Key, requiresAuth: true },
     { id: "test", title: "API Reference", icon: Code },
     { id: "sdk", title: "SDK & Integration", icon: Package },
     { id: "embed", title: "Embed Widget", icon: LayoutGrid },
-    { id: "matches", title: "Matches", icon: Handshake },
-    { id: "analytics", title: "Analytics", icon: BarChart3 },
-    { id: "webhooks", title: "Webhooks", icon: Zap },
-    { id: "webhook-debugger", title: "Webhook Debugger", icon: Zap },
-    { id: "audit-logs", title: "Logs", icon: Activity },
+    { id: "matches", title: "Matches", icon: Handshake, requiresAuth: true },
+    { id: "analytics", title: "Analytics", icon: BarChart3, requiresAuth: true },
+    { id: "webhooks", title: "Webhooks", icon: Zap, requiresAuth: true },
+    { id: "webhook-debugger", title: "Webhook Debugger", icon: Zap, requiresAuth: true },
+    { id: "audit-logs", title: "Logs", icon: Activity, requiresAuth: true },
   ];
 
   const marketplaceItems = [
@@ -100,6 +104,9 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
+                    {isDemoMode && item.requiresAuth && (
+                      <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -168,14 +175,27 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
       </SidebarContent>
 
       <SidebarFooter className="border-t px-3 py-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-sm font-medium"
-          onClick={handleSignOut}
-        >
-          Sign Out
-        </Button>
+        {isDemoMode ? (
+          <Link to="/auth" className="w-full">
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full justify-start text-sm font-medium"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign In / Sign Up
+            </Button>
+          </Link>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-sm font-medium"
+            onClick={handleSignOut}
+          >
+            Sign Out
+          </Button>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
