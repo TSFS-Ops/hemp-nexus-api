@@ -4,7 +4,7 @@ import { errorResponse, ApiException, handleDatabaseError } from "../_shared/err
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { matchSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
-import { triggerWebhooks } from "../_shared/webhooks.ts";
+import { triggerWebhooks, notifyCounterpartyIntent } from "../_shared/webhooks.ts";
 import { recordMatchEvent } from "../_shared/match-events.ts";
 
 Deno.serve(async (req) => {
@@ -150,6 +150,23 @@ Deno.serve(async (req) => {
         commodity: match.commodity,
         quantity: match.quantity_amount,
       }).catch(err => console.error(`Webhook trigger error:`, err));
+
+      // Notify the counterparty about the intent confirmation
+      // Determine who is confirming (buyer or seller) and who is counterparty
+      notifyCounterpartyIntent(supabase, {
+        matchId,
+        hash: match.hash,
+        confirmedAt: updated.settled_at,
+        confirmingPartyId: match.buyer_id, // Assuming confirmer is buyer; could be dynamic
+        confirmingPartyName: match.buyer_name,
+        counterpartyId: match.seller_id,
+        counterpartyName: match.seller_name,
+        commodity: match.commodity,
+        quantity: match.quantity_amount,
+        quantityUnit: match.quantity_unit,
+        priceAmount: match.price_amount,
+        priceCurrency: match.price_currency,
+      }).catch(err => console.error(`Counterparty notification error:`, err));
 
       return new Response(JSON.stringify(updated), {
         status: 200,

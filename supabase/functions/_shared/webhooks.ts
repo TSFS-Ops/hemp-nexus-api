@@ -183,6 +183,116 @@ export async function triggerWebhooks(
 }
 
 /**
+ * Notify counterparty about intent confirmation
+ * This creates an in-app notification and triggers their webhooks
+ */
+export async function notifyCounterpartyIntent(
+  supabase: SupabaseClient,
+  matchData: {
+    matchId: string;
+    hash: string;
+    confirmedAt: string;
+    confirmingPartyId: string;
+    confirmingPartyName: string;
+    counterpartyId: string;
+    counterpartyName: string;
+    commodity: string;
+    quantity: number;
+    quantityUnit: string;
+    priceAmount: number;
+    priceCurrency: string;
+  }
+): Promise<void> {
+  try {
+    console.log(`Notifying counterparty ${matchData.counterpartyName} about intent confirmation`);
+
+    // Find the counterparty's organization by looking up matches where they are buyer/seller
+    // This searches for any org that has been involved with this counterparty ID
+    const { data: relatedMatches, error: matchError } = await supabase
+      .from("matches")
+      .select("org_id, buyer_id, seller_id")
+      .or(`buyer_id.eq.${matchData.counterpartyId},seller_id.eq.${matchData.counterpartyId}`)
+      .limit(1);
+
+    if (matchError) {
+      console.error("Error finding counterparty org:", matchError);
+    }
+
+    // If we found a related org, trigger their webhooks
+    if (relatedMatches && relatedMatches.length > 0) {
+      const counterpartyOrgId = relatedMatches[0].org_id;
+      
+      // Trigger intent.received event for the counterparty
+      await triggerWebhooks(supabase, counterpartyOrgId, "intent.received", {
+        matchId: matchData.matchId,
+        hash: matchData.hash,
+        confirmedAt: matchData.confirmedAt,
+        interestedParty: {
+          id: matchData.confirmingPartyId,
+          name: matchData.confirmingPartyName,
+        },
+        yourRole: matchData.counterpartyId === relatedMatches[0].buyer_id ? "buyer" : "seller",
+        commodity: matchData.commodity,
+        quantity: {
+          amount: matchData.quantity,
+          unit: matchData.quantityUnit,
+        },
+        price: {
+          amount: matchData.priceAmount,
+          currency: matchData.priceCurrency,
+        },
+        note: "A counterparty has confirmed interest in this match. No obligation has been created.",
+        actionUrl: `/dashboard/matches/${matchData.matchId}`,
+      });
+
+      console.log(`Counterparty webhook triggered for org: ${counterpartyOrgId}`);
+    }
+
+    // Also create a match_events entry for the counterparty notification
+    const notificationPayload = JSON.stringify({
+      type: "counterparty_notified",
+      counterpartyId: matchData.counterpartyId,
+      counterpartyName: matchData.counterpartyName,
+      notifiedAt: new Date().toISOString(),
+    });
+
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(notificationPayload));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const payloadHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+    // Get the previous event hash for chaining
+    const { data: lastEvent } = await supabase
+      .from("match_events")
+      .select("payload_hash")
+      .eq("match_id", matchData.matchId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Insert notification event into the chain
+    await supabase.from("match_events").insert({
+      match_id: matchData.matchId,
+      org_id: (await supabase.from("matches").select("org_id").eq("id", matchData.matchId).single()).data?.org_id,
+      event_type: "counterparty.notified",
+      event_data: {
+        counterpartyId: matchData.counterpartyId,
+        counterpartyName: matchData.counterpartyName,
+        notificationMethod: "webhook",
+        message: `${matchData.confirmingPartyName} has confirmed interest in your ${matchData.commodity} opportunity`,
+      },
+      payload_hash: payloadHash,
+      previous_event_hash: lastEvent?.payload_hash || null,
+    });
+
+    console.log(`Counterparty notification event recorded for match: ${matchData.matchId}`);
+  } catch (error) {
+    console.error("Error notifying counterparty:", error);
+    // Don't throw - this is a non-critical background operation
+  }
+}
+
+/**
  * Verify webhook signature (for incoming webhooks if needed)
  */
 export async function verifyWebhookSignature(

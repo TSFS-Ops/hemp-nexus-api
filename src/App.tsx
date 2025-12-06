@@ -9,6 +9,7 @@ import Admin from "@/pages/Admin";
 import MatchDetails from "@/pages/MatchDetails";
 import Marketplace from "@/pages/Marketplace";
 import Analytics from "@/pages/Analytics";
+import Docs from "@/pages/Docs";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ function App() {
             <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/docs" element={<Docs />} />
             <Route path="/admin/*" element={<Admin />} />
           </Routes>
           <Toaster />
