@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { z } from "zod";
-import { Loader2, Mail, AlertCircle, CheckCircle2, ArrowLeft, Shield } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -32,19 +30,16 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check for email verification token
     const type = searchParams.get("type");
     const code = searchParams.get("code");
     
     if (type === "recovery") {
-      // User clicked password reset link
       setShowForgotPassword(true);
       toast({
         title: "Reset Your Password",
         description: "Enter your new password below",
       });
     } else if (code) {
-      // Handle email verification
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) {
           toast({
@@ -54,7 +49,7 @@ export default function Auth() {
           });
         } else {
           toast({
-            title: "Email Verified!",
+            title: "Email Verified",
             description: "Your email has been verified. You can now sign in.",
           });
         }
@@ -95,8 +90,8 @@ export default function Auth() {
 
       setVerificationPending(true);
       toast({
-        title: "Account Created!",
-        description: "Please check your email to verify your account before signing in.",
+        title: "Account Created",
+        description: "Check your email to verify your account.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -106,10 +101,9 @@ export default function Auth() {
           variant: "destructive",
         });
       } else if (error instanceof Error) {
-        // Generic error message for security - don't reveal if email exists
         toast({
           title: "Sign Up Failed",
-          description: "Unable to create account. Please try again or contact support.",
+          description: "Unable to create account. Please try again.",
           variant: "destructive",
         });
       }
@@ -131,10 +125,9 @@ export default function Auth() {
       });
 
       if (error) {
-        // Check if email verification is pending
         if (error.message.includes("Email not confirmed")) {
           setVerificationPending(true);
-          throw new Error("Please verify your email before signing in. Check your inbox.");
+          throw new Error("Please verify your email before signing in.");
         }
         throw error;
       }
@@ -148,7 +141,7 @@ export default function Auth() {
       } else if (error instanceof Error) {
         toast({
           title: "Sign In Failed",
-          description: error.message || "Invalid credentials. Please try again.",
+          description: error.message || "Invalid credentials.",
           variant: "destructive",
         });
       }
@@ -183,7 +176,6 @@ export default function Auth() {
           variant: "destructive",
         });
       } else {
-        // Generic message for security - don't reveal if email exists
         toast({
           title: "Request Processed",
           description: "If an account exists, you'll receive a reset email.",
@@ -208,8 +200,8 @@ export default function Auth() {
       if (error) throw error;
 
       toast({
-        title: "Password Reset!",
-        description: "Your password has been updated. You can now sign in.",
+        title: "Password Reset",
+        description: "Your password has been updated.",
       });
       
       setShowForgotPassword(false);
@@ -258,246 +250,246 @@ export default function Auth() {
     }
   };
 
+  // Password Reset (from email link)
   if (showForgotPassword && searchParams.get("type") === "recovery") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowForgotPassword(false)}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <CardTitle>Reset Password</CardTitle>
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <button
+              onClick={() => setShowForgotPassword(false)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+            <h1 className="text-2xl font-semibold text-foreground mb-2">Reset password</h1>
+            <p className="text-sm text-muted-foreground">Enter your new password</p>
+          </div>
+
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password" className="text-sm font-medium">New password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Minimum 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-10"
+              />
             </div>
-            <CardDescription>Enter your new password</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleResetPassword} className="space-y-4">
+            <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update password"
+              )}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Forgot Password Form
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <button
+              onClick={() => {
+                setShowForgotPassword(false);
+                setResetEmailSent(false);
+              }}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to sign in
+            </button>
+            <h1 className="text-2xl font-semibold text-foreground mb-2">Reset password</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your email and we'll send you a reset link
+            </p>
+          </div>
+
+          {resetEmailSent ? (
+            <div className="p-4 bg-muted/40 border border-border rounded-md">
+              <p className="text-sm text-muted-foreground">
+                If an account exists with that email, you'll receive a password reset link. Check your spam folder if you don't see it.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
+                <Label htmlFor="reset-email" className="text-sm font-medium">Email</Label>
                 <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="reset-email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="h-10"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Resetting...
+                    Sending...
                   </>
                 ) : (
-                  "Reset Password"
+                  "Send reset link"
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (showForgotPassword) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowForgotPassword(false);
-                  setResetEmailSent(false);
-                }}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <CardTitle>Forgot Password</CardTitle>
-            </div>
-            <CardDescription>
-              Enter your email and we'll send you a reset link
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {resetEmailSent ? (
-              <Alert>
-                <Mail className="h-4 w-4" />
-                <AlertDescription>
-                  If an account exists with that email, you'll receive a password reset link.
-                  Check your spam folder if you don't see it.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    "Send Reset Link"
-                  )}
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Compliance Match</CardTitle>
-          <CardDescription>
-            Cross-industry API for verified trade intent
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {verificationPending && (
-            <Alert className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Please verify your email before signing in. Check your inbox.
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={resendVerification}
-                  disabled={loading}
-                  className="ml-2"
-                >
-                  Resend
-                </Button>
-              </AlertDescription>
-            </Alert>
           )}
+        </div>
+      </div>
+    );
+  }
 
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Log In</TabsTrigger>
-              <TabsTrigger value="signup">Register</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+  // Main Auth Form
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+      <div className="w-full max-w-sm">
+        <div className="mb-8">
+          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded bg-foreground flex items-center justify-center">
+              <span className="text-background font-bold text-xs">CM</span>
+            </div>
+            <span className="font-semibold text-foreground">Compliance Match</span>
+          </div>
+          <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome</h1>
+          <p className="text-sm text-muted-foreground">
+            Sign in to access API keys and manage your account
+          </p>
+        </div>
+
+        {verificationPending && (
+          <div className="mb-6 p-4 bg-muted/40 border border-border rounded-md">
+            <p className="text-sm text-muted-foreground">
+              Please verify your email before signing in. Check your inbox.
+              <button
+                onClick={resendVerification}
+                disabled={loading}
+                className="text-primary hover:underline ml-1"
+              >
+                Resend
+              </button>
+            </p>
+          </div>
+        )}
+
+        <Tabs defaultValue="signin" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6 h-10 bg-muted/50 p-1">
+            <TabsTrigger value="signin" className="text-sm font-medium data-[state=active]:bg-background">Sign in</TabsTrigger>
+            <TabsTrigger value="signup" className="text-sm font-medium data-[state=active]:bg-background">Create account</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="signin">
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Forgot password?
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-sm"
-                      onClick={() => setShowForgotPassword(true)}
-                    >
-                      Forgot password?
-                    </Button>
-                  </div>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Log In"
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <AlertDescription>
-                    Create an account to access API keys and test endpoints.
-                    {" "}Accounts with @izenzo.co.za emails are automatically granted admin privileges.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="At least 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Must be at least 8 characters long
-                  </p>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-10"
+                />
+              </div>
+              <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="signup">
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="p-3 bg-muted/40 border border-border rounded-md mb-4">
+                <p className="text-xs text-muted-foreground">
+                  Create an account to access API keys and test endpoints.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  placeholder="Minimum 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-10"
+                />
+              </div>
+              <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create account"
+                )}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

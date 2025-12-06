@@ -3,17 +3,11 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Search, Sparkles, TrendingUp, ExternalLink, ArrowRight, 
-  Zap, Users, CheckCircle, Info, Globe, Lightbulb, 
-  Shield, AlertTriangle, Play, Lock, ArrowLeft
-} from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Info, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface DemoResult {
@@ -28,7 +22,6 @@ interface DemoResult {
   whySurfaced: string;
 }
 
-// Simulated demo data - no real API calls
 const DEMO_RESULTS: Record<string, DemoResult[]> = {
   "cashew": [
     {
@@ -51,7 +44,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.89,
       isEnriched: true,
       enrichmentReason: "supply_chain_adjacency",
-      whySurfaced: "12% Engine: Found via supply chain adjacency analysis - trades related nut commodities",
+      whySurfaced: "Discovery engine: Found via supply chain adjacency - trades related commodities",
     },
     {
       id: "demo-3",
@@ -62,7 +55,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.85,
       isEnriched: true,
       enrichmentReason: "regional_heuristic",
-      whySurfaced: "12% Engine: Regional trade pattern matching - active in India commodity corridor",
+      whySurfaced: "Discovery engine: Regional trade pattern matching - India commodity corridor",
     },
     {
       id: "demo-4",
@@ -73,7 +66,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.78,
       isEnriched: false,
       enrichmentReason: null,
-      whySurfaced: "Baseline AI match - company profile mentions cashew procurement interest",
+      whySurfaced: "Baseline match - company profile mentions cashew procurement interest",
     },
     {
       id: "demo-5",
@@ -84,7 +77,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.72,
       isEnriched: true,
       enrichmentReason: "semantic_expansion",
-      whySurfaced: "12% Engine: Semantic expansion found 'fair-trade nuts' as adjacent category",
+      whySurfaced: "Discovery engine: Semantic expansion found 'fair-trade nuts' as adjacent category",
     },
   ],
   "copper": [
@@ -119,7 +112,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.87,
       isEnriched: true,
       enrichmentReason: "regional_heuristic",
-      whySurfaced: "12% Engine: Regional mining hub analysis - Zambia copper belt producer",
+      whySurfaced: "Discovery engine: Regional mining hub analysis - Zambia copper belt producer",
     },
   ],
   "default": [
@@ -143,7 +136,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.75,
       isEnriched: true,
       enrichmentReason: "semantic_expansion",
-      whySurfaced: "12% Engine: Semantic expansion found related trading activity",
+      whySurfaced: "Discovery engine: Semantic expansion found related trading activity",
     },
   ],
 };
@@ -158,7 +151,7 @@ export default function Demo() {
 
   const handleSearch = async () => {
     if (!query.trim()) {
-      toast.error("Please enter a search query");
+      toast.error("Enter a search query");
       return;
     }
 
@@ -167,10 +160,8 @@ export default function Demo() {
     setSelectedResults(new Set());
     setHasSearched(true);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
-    // Return demo data based on query keywords
     const lowerQuery = query.toLowerCase();
     let demoData: DemoResult[];
     
@@ -184,7 +175,7 @@ export default function Demo() {
 
     setResults(demoData);
     setIsSearching(false);
-    toast.success(`Demo: Found ${demoData.length} example counterparties`);
+    toast.success(`Found ${demoData.length} counterparties (simulated)`);
   };
 
   const toggleSelect = (id: string) => {
@@ -201,7 +192,7 @@ export default function Demo() {
 
   const handleDemoConfirmIntent = () => {
     if (selectedResults.size === 0) {
-      toast.error("Please select at least one counterparty");
+      toast.error("Select at least one counterparty");
       return;
     }
     setShowIntentDialog(true);
@@ -213,145 +204,107 @@ export default function Demo() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+          <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-4 w-4" />
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl">Compliance Matching API</span>
+              <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center">
+                <span className="text-background font-bold text-[10px]">CM</span>
+              </div>
+              <span className="font-medium text-sm text-foreground">Compliance Match</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                <Play className="h-3 w-3 mr-1" />
-                Demo Mode
-              </Badge>
+              <span className="px-2.5 py-1 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+                Sandbox
+              </span>
               <Link to="/auth">
-                <Button size="sm">
-                  Sign Up for Full Access
-                </Button>
+                <button className="px-3 py-1.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
+                  Sign up
+                </button>
               </Link>
             </div>
           </div>
         </nav>
 
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
-          {/* Demo Notice */}
-          <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 dark:text-amber-200">Demo Mode</AlertTitle>
-            <AlertDescription className="text-amber-700 dark:text-amber-300">
-              This is a preview using simulated data. No real matches or proofs will be created. 
-              <Link to="/auth" className="underline ml-1 font-medium">Sign up</Link> for full access to live search and verified intent records.
-            </AlertDescription>
-          </Alert>
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          {/* Sandbox Notice */}
+          <div className="mb-6 p-4 bg-muted/40 border border-border rounded-md">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Sandbox mode</span> — Results are simulated. No real matches or evidence records will be created.
+              <Link to="/auth" className="text-primary hover:underline ml-1">Create an account</Link> for production access.
+            </p>
+          </div>
 
           <div className="space-y-6">
-            {/* Search Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5" />
-                  Find Counterparties
-                  <Badge variant="outline" className="ml-auto">Demo</Badge>
-                </CardTitle>
-                <CardDescription>
-                  Enter a natural language query to see how counterparty discovery works
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-3">
-                  <div className="flex-1 relative">
-                    <Input
-                      placeholder="e.g., 'buyers for cashew in India' or 'copper cathode suppliers'"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="pr-10"
-                    />
-                    <Globe className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <Button onClick={handleSearch} disabled={isSearching}>
-                    {isSearching ? (
-                      <>
-                        <Zap className="h-4 w-4 mr-2 animate-pulse" />
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4 mr-2" />
-                        Search
-                      </>
-                    )}
-                  </Button>
-                </div>
+            {/* Search */}
+            <div className="border border-border rounded-lg bg-card p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-1">Counterparty Search</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Enter a natural language query to find potential counterparties
+              </p>
+              
+              <div className="flex gap-3">
+                <Input
+                  placeholder="e.g., buyers for cashew in India"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSearch} disabled={isSearching} className="bg-foreground text-background hover:bg-foreground/90">
+                  {isSearching ? "Searching..." : "Search"}
+                </Button>
+              </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground">Try:</span>
-                  {[
-                    "buyers for cashew in India",
-                    "copper cathode suppliers",
-                    "hemp fiber wholesalers",
-                  ].map((example) => (
-                    <button
-                      key={example}
-                      onClick={() => setQuery(example)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      "{example}"
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="text-xs text-muted-foreground">Examples:</span>
+                {["buyers for cashew in India", "copper cathode suppliers", "hemp fiber wholesalers"].map((example) => (
+                  <button
+                    key={example}
+                    onClick={() => setQuery(example)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            {/* Metrics Card */}
+            {/* Metrics */}
             {results.length > 0 && (
-              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold">{baselineCount}</div>
-                        <div className="text-xs text-muted-foreground">Baseline</div>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">{enrichedCount}</div>
-                        <div className="text-xs text-muted-foreground">Total Found</div>
-                      </div>
-                      <Separator orientation="vertical" className="h-10" />
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-green-500" />
-                        <div>
-                          <div className="text-lg font-bold text-green-600">+{upliftPct}%</div>
-                          <div className="text-xs text-muted-foreground">12% Engine Uplift</div>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="secondary">Demo Data</Badge>
+              <div className="flex items-center justify-between p-4 bg-muted/40 border border-border rounded-md">
+                <div className="flex items-center gap-8 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Baseline results: </span>
+                    <span className="font-semibold text-foreground">{baselineCount}</span>
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <span className="text-muted-foreground">With discovery engine: </span>
+                    <span className="font-semibold text-foreground">{enrichedCount}</span>
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Uplift: </span>
+                  <span className="font-semibold text-foreground">+{upliftPct}%</span>
+                </div>
+              </div>
             )}
 
-            {/* Loading State */}
+            {/* Loading */}
             {isSearching && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <Card key={i}>
-                    <CardContent className="py-4">
-                      <div className="flex gap-4">
-                        <Skeleton className="h-12 w-12 rounded" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-3 w-full" />
-                          <Skeleton className="h-3 w-1/2" />
-                        </div>
+                  <div key={i} className="p-4 border border-border rounded-md">
+                    <div className="flex gap-4">
+                      <Skeleton className="h-10 w-10 rounded" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-full" />
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -360,166 +313,150 @@ export default function Demo() {
             {!isSearching && results.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">
-                    {results.length} Example Counterparties
+                  <h3 className="text-sm font-medium text-foreground">
+                    {results.length} results
                   </h3>
                   {selectedResults.size > 0 && (
-                    <Button onClick={handleDemoConfirmIntent} size="sm">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirm Intent ({selectedResults.size})
+                    <Button 
+                      onClick={handleDemoConfirmIntent} 
+                      size="sm"
+                      className="bg-foreground text-background hover:bg-foreground/90"
+                    >
+                      Confirm intent ({selectedResults.size})
                     </Button>
                   )}
                 </div>
 
-                {results.map((result, idx) => (
-                  <Card 
-                    key={result.id}
-                    className={`transition-all cursor-pointer hover:border-primary/50 ${
-                      selectedResults.has(result.id) ? "border-primary bg-primary/5" : ""
-                    }`}
-                    onClick={() => toggleSelect(result.id)}
-                  >
-                    <CardContent className="py-4">
+                <div className="space-y-2">
+                  {results.map((result, idx) => (
+                    <div 
+                      key={result.id}
+                      onClick={() => toggleSelect(result.id)}
+                      className={`p-4 rounded-md border cursor-pointer transition-colors ${
+                        selectedResults.has(result.id) 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-border/80 hover:bg-muted/30"
+                      }`}
+                    >
                       <div className="flex gap-4">
                         <div className="flex flex-col items-center gap-1">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          <div className={`h-8 w-8 rounded flex items-center justify-center text-sm font-medium ${
                             selectedResults.has(result.id) 
                               ? "bg-primary text-primary-foreground" 
-                              : "bg-muted"
+                              : "bg-muted text-muted-foreground"
                           }`}>
                             {selectedResults.has(result.id) ? (
-                              <CheckCircle className="h-4 w-4" />
+                              <Check className="h-4 w-4" />
                             ) : (
                               idx + 1
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {Math.round(result.score * 100)}%
-                          </div>
+                          </span>
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-medium truncate">{result.title}</h4>
-                            <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className="font-medium text-foreground">{result.title}</h4>
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               {result.isEnriched && (
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                                      <Sparkles className="h-3 w-3 mr-1" />
-                                      12%
-                                    </Badge>
+                                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+                                      +12%
+                                    </span>
                                   </TooltipTrigger>
                                   <TooltipContent className="max-w-xs">
-                                    <div className="space-y-1">
-                                      <p className="font-medium">12% Discovery Engine</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {result.enrichmentReason || "Found through advanced discovery heuristics"}
-                                      </p>
-                                    </div>
+                                    <p className="text-sm">{result.whySurfaced}</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
-                              <Badge variant="outline" className="text-xs">
-                                {result.source}
-                              </Badge>
+                              <span className="text-xs text-muted-foreground">{result.source}</span>
                             </div>
                           </div>
-
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {result.description}
-                          </p>
-
-                          <div className="mt-2 flex items-center gap-2 text-xs">
-                            <Tooltip>
-                              <TooltipTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                                <Lightbulb className="h-3 w-3" />
-                                <span>Why surfaced</span>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-sm">
-                                <p>{result.whySurfaced}</p>
-                              </TooltipContent>
-                            </Tooltip>
+                          <p className="text-sm text-muted-foreground">{result.description}</p>
+                          
+                          <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                            <Info className="h-3 w-3" />
+                            <span>{result.whySurfaced}</span>
                           </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Initial State */}
-            {!isSearching && !hasSearched && (
-              <Card className="border-dashed">
-                <CardContent className="py-12 text-center">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold mb-2">Try the Counterparty Search</h3>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                    Enter a natural language query above to see how the 12% Discovery Engine 
-                    finds additional matches that standard AI search misses.
-                  </p>
-                  <Badge variant="secondary">Demo Mode - No account required</Badge>
-                </CardContent>
-              </Card>
+            {/* Empty state */}
+            {!isSearching && hasSearched && results.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No results found. Try a different query.</p>
+              </div>
             )}
-
-            {/* Sign Up CTA */}
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="py-6 text-center">
-                <Lock className="h-8 w-8 mx-auto text-primary mb-3" />
-                <h3 className="font-semibold mb-2">Ready for Real Matching?</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Sign up to run live searches, create verified proofs of intent, and access your audit trail.
-                </p>
-                <Link to="/auth">
-                  <Button>
-                    Create Free Account
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
           </div>
         </div>
 
         {/* Demo Intent Dialog */}
         <Dialog open={showIntentDialog} onOpenChange={setShowIntentDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                This is a Preview Only
-              </DialogTitle>
-              <DialogDescription className="space-y-4 pt-4">
-                <p>
-                  In demo mode, no real proofs or matches are created. This preview shows 
-                  how the "Confirm Intent" flow works.
-                </p>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>What would happen with a real account:</strong>
-                    <ul className="list-disc ml-4 mt-2 space-y-1">
-                      <li>A timestamped intent record would be created</li>
-                      <li>The counterparty would receive a notification</li>
-                      <li>A hash-verified audit log entry would be stored</li>
-                      <li>An evidence pack would be available for compliance</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" onClick={() => setShowIntentDialog(false)} className="flex-1">
-                    Back to Demo
-                  </Button>
-                  <Link to="/auth" className="flex-1">
-                    <Button className="w-full">
-                      Sign Up for Real Access
-                    </Button>
-                  </Link>
-                </div>
+              <DialogTitle>Sandbox: Intent Confirmation</DialogTitle>
+              <DialogDescription>
+                This is a preview of the confirmation flow
               </DialogDescription>
             </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-muted/40 border border-border rounded-md">
+                <p className="text-sm text-muted-foreground mb-2">
+                  In production, clicking Confirm Intent would:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Create a timestamped proof-of-intent record</li>
+                  <li>• Generate a cryptographic hash for the event chain</li>
+                  <li>• Add entries to your audit log</li>
+                  <li>• Trigger configured webhook notifications</li>
+                </ul>
+              </div>
+
+              <div className="border border-border rounded-md overflow-hidden">
+                <div className="px-4 py-2 bg-muted/50 border-b border-border">
+                  <span className="text-xs font-mono text-muted-foreground">Sample response</span>
+                </div>
+                <pre className="p-4 text-xs text-foreground overflow-x-auto">
+                  <code>{JSON.stringify({
+                    id: "match_demo_abc123",
+                    status: "confirmed",
+                    confirmed_at: new Date().toISOString(),
+                    hash: "sha256:f4b2a1c3d5e6...",
+                    counterparties: selectedResults.size,
+                    sandbox: true
+                  }, null, 2)}</code>
+                </pre>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                No real records are created in sandbox mode.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowIntentDialog(false)}
+              >
+                Close
+              </Button>
+              <Link to="/auth" className="flex-1">
+                <Button className="w-full bg-foreground text-background hover:bg-foreground/90">
+                  Create account
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

@@ -1,7 +1,4 @@
 import { Link } from "react-router-dom";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, Play } from "lucide-react";
 
 interface DemoModeBannerProps {
   variant?: "compact" | "full";
@@ -10,26 +7,28 @@ interface DemoModeBannerProps {
 export function DemoModeBanner({ variant = "full" }: DemoModeBannerProps) {
   if (variant === "compact") {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
-        <Play className="h-4 w-4 text-amber-600" />
-        <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">Demo Mode</span>
+      <div className="flex items-center gap-3 px-3 py-2 bg-muted/50 border border-border rounded-md">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sandbox</span>
+        <span className="text-xs text-muted-foreground">Results are simulated</span>
         <Link to="/auth" className="ml-auto">
-          <Button size="sm" variant="outline" className="h-7 text-xs">
-            Sign up for full access
-          </Button>
+          <button className="px-2.5 py-1 text-xs font-medium rounded border border-border bg-background hover:bg-accent transition-colors">
+            Sign up
+          </button>
         </Link>
       </div>
     );
   }
 
   return (
-    <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-      <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertTitle className="text-amber-800 dark:text-amber-200">Demo Mode</AlertTitle>
-      <AlertDescription className="text-amber-700 dark:text-amber-300">
-        You're exploring the API in demo mode. Searches return simulated data and no real proofs will be created.
-        <Link to="/auth" className="underline ml-1 font-medium">Sign up</Link> or <Link to="/auth" className="underline font-medium">log in</Link> for full access to live search and verified intent records.
-      </AlertDescription>
-    </Alert>
+    <div className="flex items-start gap-3 p-4 bg-muted/40 border border-border rounded-md">
+      <div className="flex-1">
+        <p className="text-sm font-medium text-foreground mb-1">Sandbox Mode</p>
+        <p className="text-sm text-muted-foreground">
+          You are exploring with simulated data. No real matches or evidence records will be created.
+          <Link to="/auth" className="text-primary hover:underline ml-1">Sign up</Link> or 
+          <Link to="/auth" className="text-primary hover:underline ml-1">log in</Link> for production access.
+        </p>
+      </div>
+    </div>
   );
 }
