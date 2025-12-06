@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.match]
 verify_jwt = false
+
+[functions.search]
+verify_jwt = false

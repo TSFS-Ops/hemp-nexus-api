@@ -36,6 +36,7 @@ import AutomatedTestSuite from "@/components/AutomatedTestSuite";
 import ErrorMonitoringDashboard from "@/components/ErrorMonitoringDashboard";
 import { SdkDocumentation } from "@/components/SdkDocumentation";
 import EmbeddableWidget from "@/components/EmbeddableWidget";
+import CounterpartySearch from "@/components/CounterpartySearch";
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -293,6 +294,19 @@ export default function Dashboard() {
     switch (activeSection) {
       case "quickstart":
         return <QuickstartGuide onStartWizard={() => setShowOnboarding(true)} onSectionChange={setActiveSection} />;
+
+      case "search":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Find Counterparties</h1>
+              <p className="text-muted-foreground">
+                Search for buyers or sellers using natural language queries
+              </p>
+            </div>
+            <CounterpartySearch />
+          </div>
+        );
 
       case "matches":
         return (
