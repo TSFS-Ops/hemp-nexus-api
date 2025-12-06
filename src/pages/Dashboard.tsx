@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Loader2, Key, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Copy, Loader2, Key, Trash2, Eye, EyeOff, AlertCircle, Lock, Shield } from "lucide-react";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,35 @@ import ErrorMonitoringDashboard from "@/components/ErrorMonitoringDashboard";
 import { SdkDocumentation } from "@/components/SdkDocumentation";
 import EmbeddableWidget from "@/components/EmbeddableWidget";
 import CounterpartySearch from "@/components/CounterpartySearch";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
+
+// Component to show login required message for protected sections
+function LoginRequiredCard({ section }: { section: string }) {
+  return (
+    <Card className="border-dashed">
+      <CardContent className="py-12 text-center">
+        <Lock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <h3 className="font-semibold mb-2">Login Required</h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+          {section === "keys" && "API key management requires authentication to protect your credentials."}
+          {section === "matches" && "View your real matches and evidence trails after signing in."}
+          {section === "analytics" && "Analytics for your trading activity require authentication."}
+          {section === "audit-logs" && "Your activity logs are private and require authentication."}
+          {section === "webhooks" && "Webhook configuration requires authentication."}
+          {section === "webhook-debugger" && "Webhook debugging requires authentication."}
+          {!["keys", "matches", "analytics", "audit-logs", "webhooks", "webhook-debugger"].includes(section) && 
+            "This feature requires authentication to access your data."}
+        </p>
+        <Link to="/auth">
+          <Button>
+            <Shield className="h-4 w-4 mr-2" />
+            Sign In to Access
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
 
 const apiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -66,12 +95,15 @@ export default function Dashboard() {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [activeSection, setActiveSection] = useState(() => {
-    return localStorage.getItem("dashboard_active_section") || "quickstart";
+    return localStorage.getItem("dashboard_active_section") || "search";
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Demo mode is active when user is not authenticated
+  const isDemoMode = !session;
 
   const availableScopes = [
     "signals:write",
@@ -88,10 +120,7 @@ export default function Dashboard() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      if (!session) {
-        navigate("/auth");
-      }
+      // No redirect - allow anonymous access in demo mode
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -99,9 +128,8 @@ export default function Dashboard() {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (!session) {
-        navigate("/auth");
-      } else {
+      // Only fetch data for authenticated users
+      if (session) {
         fetchApiKeys();
         checkAdminRole(session.user.id);
         
@@ -309,6 +337,19 @@ export default function Dashboard() {
         );
 
       case "matches":
+        if (isDemoMode) {
+          return (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2">Matches</h1>
+                <p className="text-muted-foreground">
+                  View and manage trade matches with full audit trails
+                </p>
+              </div>
+              <LoginRequiredCard section="matches" />
+            </div>
+          );
+        }
         return (
           <div className="space-y-6">
             <div>
@@ -764,16 +805,20 @@ export default function Dashboard() {
 
   return (
     <>
-      <OnboardingWizard 
-        open={showOnboarding} 
-        onClose={() => setShowOnboarding(false)} 
-      />
+      {!isDemoMode && (
+        <OnboardingWizard 
+          open={showOnboarding} 
+          onClose={() => setShowOnboarding(false)} 
+        />
+      )}
       <DashboardLayout 
         activeSection={activeSection} 
         onSectionChange={setActiveSection}
         isAdmin={isAdmin}
+        isDemoMode={isDemoMode}
       >
-        <SandboxIndicator isSandbox={true} />
+        {isDemoMode && <DemoModeBanner variant="compact" />}
+        {!isDemoMode && <SandboxIndicator isSandbox={true} />}
         {renderContent()}
       </DashboardLayout>
     </>
