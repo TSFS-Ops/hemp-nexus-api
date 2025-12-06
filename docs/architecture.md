@@ -1,6 +1,6 @@
 # Compliance Matching API Technical Architecture
 
-**Last Updated**: 2025-11-20
+**Last Updated**: 2025-12-06
 
 ---
 

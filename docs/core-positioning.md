@@ -1,6 +1,6 @@
 # Compliance Matching API - Core Positioning
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-12-06
 
 This document clarifies the core positioning, capabilities, and value proposition of the Compliance Matching API. It addresses common questions and corrects any misunderstandings about what the platform does and doesn't do.
 

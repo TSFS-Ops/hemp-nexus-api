@@ -2,7 +2,7 @@
 
 **Current Version**: v1.3  
 **Base URL**: `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1`  
-**Last Updated**: 2025-12-03
+**Last Updated**: 2025-12-06
 
 ---
 

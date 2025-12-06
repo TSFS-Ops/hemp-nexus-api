@@ -1,6 +1,6 @@
 # How to Test the Compliance Matching API
 
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-06
 
 This guide covers all testing methods available for the Compliance Matching API, from quick smoke tests to comprehensive integration testing.
 
