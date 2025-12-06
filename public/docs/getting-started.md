@@ -1,6 +1,6 @@
 # Getting Started with Compliance Matching API
 
-**Last Updated**: 2025-11-20
+**Last Updated**: 2025-12-06
 
 This guide will walk you through your first steps with the Compliance Matching API, from creating an account to making your first API call. No prior API experience required!
 

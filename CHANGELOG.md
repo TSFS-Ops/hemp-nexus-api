@@ -11,6 +11,38 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.4.0] - 2025-12-06
+
+### Demo Mode & Public Access
+
+**Focus: Enable frictionless developer evaluation while protecting production actions.**
+
+#### New Features
+- **[Demo]** Public demo mode allows exploration without login
+- **[Demo]** Sandbox search with simulated counterparty results
+- **[Demo]** Demo intent confirmation with sample evidence preview
+- **[Demo]** Clear "Sandbox" indicators throughout UI
+- **[Auth]** Login-protected sections: API Keys, Matches, Analytics, Webhooks
+
+#### UI Redesign
+- **[UI]** Enterprise-grade styling with Manrope font
+- **[UI]** Neutral color palette replacing template components
+- **[UI]** Custom Tailwind-based components throughout
+- **[UI]** Redesigned landing page with developer-focused copy
+- **[UI]** Improved Demo page with clean result cards
+
+#### Documentation Updates
+- **[Docs]** Updated all documentation timestamps to 2025-12-06
+- **[Docs]** Improved getting-started guide clarity
+- **[Docs]** Updated product guide with demo mode information
+
+#### Security
+- **[Security]** Demo mode data never writes to production tables
+- **[Security]** Authentication enforced for all write operations
+- **[Security]** Admin panel remains login + admin-only
+
+---
+
 ## [1.3.2] - 2025-12-03
 
 ### SDK & Developer Experience Improvements
