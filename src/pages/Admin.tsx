@@ -18,6 +18,7 @@ import { AdminSignalsPanel } from "@/components/admin/AdminSignalsPanel";
 import { AdminCoherencePanel } from "@/components/admin/AdminCoherencePanel";
 import { AdminBehavioralAnalytics } from "@/components/admin/AdminBehavioralAnalytics";
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+import { AdminDiscoveryMetrics } from "@/components/admin/AdminDiscoveryMetrics";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -111,6 +112,7 @@ export default function Admin() {
               <Route path="/matches" element={<AdminMatchesPanel />} />
               <Route path="/signals" element={<AdminSignalsPanel />} />
               <Route path="/coherence" element={<AdminCoherencePanel />} />
+              <Route path="/discovery" element={<AdminDiscoveryMetrics />} />
               <Route path="/behavioral" element={<AdminBehavioralAnalytics />} />
               <Route path="/audit" element={<AdminAuditLogs />} />
               <Route

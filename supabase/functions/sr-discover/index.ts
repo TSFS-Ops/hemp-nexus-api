@@ -6,6 +6,14 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { srDiscoverSchema, validateInput } from "../_shared/validation.ts";
 import { multiProviderSearch, generateEnhancedQueries } from "../_shared/multi-search.ts";
 import { generateEmbedding, signalToText, cosineSimilarity } from "../_shared/embeddings.ts";
+import { 
+  generateEnrichedQueries, 
+  mergeResults, 
+  calculateMetrics, 
+  scoreCoherence,
+  type DiscoveryResult,
+  type DiscoveryMetrics
+} from "../_shared/discovery-engine.ts";
 
 const headers = corsHeaders('*');
 
@@ -84,29 +92,71 @@ serve(async (req) => {
       );
     }
 
+    const content = signal.content as Record<string, any>;
+    const product = content.product || content.what || "";
+    const location = content.location || "";
+    const signalType = signal.type as "buyer" | "seller";
+
     // 2. Generate signal embedding for semantic matching
     const signalText = signalToText(signal);
     const signalEmbedding = await generateEmbedding(signalText);
     console.log(`[sr-discover] Signal embedding generated: ${signalEmbedding ? 'success' : 'failed'}`);
 
-    // 3. Generate enhanced search queries with semantic variations
-    const searchQueries = generateEnhancedQueries(signal);
-    console.log(`[sr-discover] Generated ${searchQueries.length} enhanced search queries`);
+    // 3. Generate BASELINE search queries
+    const baselineQueries = generateEnhancedQueries(signal);
+    console.log(`[sr-discover] Generated ${baselineQueries.length} baseline queries`);
 
-    // 4. Perform multi-provider search in parallel
-    console.log(`[sr-discover] Starting multi-provider search across Brave, DuckDuckGo, Google, Bing...`);
-    const allResults = await multiProviderSearch(searchQueries);
-    console.log(`[sr-discover] Multi-provider search returned ${allResults.length} results`);
+    // 4. Perform BASELINE multi-provider search
+    console.log(`[sr-discover] Starting baseline search across Brave, DuckDuckGo, Google, Bing...`);
+    const baselineResults = await multiProviderSearch(baselineQueries);
+    const baselineCount = baselineResults.length;
+    console.log(`[sr-discover] Baseline search returned ${baselineCount} results`);
 
-    // 5. Parallel crawling of top results with Firecrawl (if enabled)
+    // 5. Generate ENRICHED queries using 12% discovery engine
+    const enrichedQueryData = generateEnrichedQueries(product, location, signalType, baselineQueries);
+    console.log(`[sr-discover] 12% Engine generated ${enrichedQueryData.length} enriched queries`);
+
+    // 6. Perform ENRICHED search
+    let enrichedResults: DiscoveryResult[] = [];
+    if (enrichedQueryData.length > 0) {
+      const enrichedQueries = enrichedQueryData.map(eq => eq.query);
+      const rawEnrichedResults = await multiProviderSearch(enrichedQueries);
+      
+      // Mark enriched results with their reasons
+      enrichedResults = rawEnrichedResults.map((r, idx) => {
+        const queryIdx = Math.floor(idx / (rawEnrichedResults.length / enrichedQueryData.length));
+        const reason = enrichedQueryData[Math.min(queryIdx, enrichedQueryData.length - 1)]?.reason || "12% engine discovery";
+        return {
+          id: crypto.randomUUID(),
+          title: r.title,
+          url: r.url,
+          description: r.description,
+          source: r.source,
+          is_enriched: true,
+          enrichment_reason: reason,
+          confidence_score: 0.55, // Slightly lower initial confidence for enriched
+          metadata: { search_query: enrichedQueries[Math.min(queryIdx, enrichedQueries.length - 1)] }
+        };
+      });
+      console.log(`[sr-discover] 12% Engine found ${enrichedResults.length} additional results`);
+    }
+
+    // 7. Merge baseline + enriched results
+    const mergedResults = mergeResults(baselineResults, enrichedResults);
+    console.log(`[sr-discover] Merged to ${mergedResults.length} total results`);
+
+    // 8. Calculate discovery metrics (uplift)
+    const metrics = calculateMetrics(baselineCount, mergedResults);
+    console.log(`[sr-discover] Uplift: ${metrics.uplift_pct.toFixed(1)}% (${baselineCount} -> ${metrics.enriched_count})`);
+
+    // 9. Parallel crawling of top results with Firecrawl (if enabled)
     const crawlProvider = Deno.env.get("CRAWL_PROVIDER");
     const crawlApiKey = Deno.env.get("CRAWL_API_KEY");
 
-    if (crawlProvider === "firecrawl" && crawlApiKey && allResults.length > 0) {
-      const topResults = allResults.slice(0, 10);
+    if (crawlProvider === "firecrawl" && crawlApiKey && mergedResults.length > 0) {
+      const topResults = mergedResults.slice(0, 10);
       console.log(`[sr-discover] Parallel crawling ${topResults.length} results with Firecrawl`);
       
-      // Crawl in parallel with Promise.all
       const crawlPromises = topResults.map(result => 
         result.url ? crawlWithFirecrawl(result.url, crawlApiKey) : Promise.resolve(null)
       );
@@ -114,13 +164,13 @@ serve(async (req) => {
       const enrichedDataArray = await Promise.all(crawlPromises);
       topResults.forEach((result, index) => {
         if (enrichedDataArray[index]) {
-          result.enriched = enrichedDataArray[index];
+          result.metadata = { ...result.metadata, enriched: enrichedDataArray[index] };
         }
       });
     }
 
-    // 6. Normalize into options with embeddings for semantic scoring
-    const options = await normalizeResultsWithEmbeddings(allResults, signal, signalEmbedding);
+    // 10. Normalize into options with embeddings and coherence scoring
+    const options = await normalizeResultsWithEmbeddings(mergedResults, signal, signalEmbedding);
     console.log(`[sr-discover] Normalized to ${options.length} options with semantic scoring`);
 
     // Get or create multi-provider web search data source
@@ -142,7 +192,8 @@ serve(async (req) => {
           config: { 
             providers: ["brave", "duckduckgo", "google", "bing"],
             semantic_matching: true,
-            ml_scoring: true
+            ml_scoring: true,
+            discovery_engine_enabled: true
           }
         })
         .select()
@@ -165,20 +216,28 @@ serve(async (req) => {
       historicalMap[row.data_source_id].options_selected += row.options_selected;
     });
 
-    // Insert options with ML-enhanced scoring
+    // 11. Insert options with ML-enhanced scoring and coherence
     for (const option of options) {
       const score = await scoreOption(option, signal, signalEmbedding, historicalMap);
+      const coherence = scoreCoherence(signal, option);
+      
       await supabase.from("options").insert({
         signal_id: signalId,
         data_source_id: webSource!.id,
         ...option,
         score,
+        quality_flags: {
+          ...option.quality_flags,
+          coherence_score: coherence.score,
+          coherence_passed: coherence.passed,
+          coherence_factors: coherence.factors,
+        }
       });
     }
 
-    console.log(`[sr-discover] Successfully stored ${options.length} options with ML scoring`);
+    console.log(`[sr-discover] Successfully stored ${options.length} options with ML + coherence scoring`);
 
-    // Log audit: sr-discover completed successfully
+    // 12. Log audit: sr-discover completed with 12% metrics
     await supabase.from("audit_logs").insert({
       org_id: authCtx.orgId,
       actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
@@ -187,24 +246,32 @@ serve(async (req) => {
       entity_type: "signal",
       entity_id: signalId,
       metadata: {
-        results_found: allResults.length,
+        baseline_results: baselineCount,
+        enriched_results: metrics.enriched_count,
+        uplift_pct: metrics.uplift_pct,
+        enrichment_reasons: metrics.enrichment_reasons,
         options_created: options.length,
-        search_queries: searchQueries.slice(0, 5),
+        search_queries: baselineQueries.slice(0, 5),
+        enriched_queries: enrichedQueryData.slice(0, 5).map(eq => eq.query),
         data_source_id: webSource!.id,
         providers_used: ["brave", "duckduckgo", "google", "bing"],
         semantic_matching: !!signalEmbedding,
         ml_scoring: true,
+        discovery_engine_enabled: true,
         crawl_enabled: crawlProvider === "firecrawl" && !!crawlApiKey,
         timestamp: new Date().toISOString(),
       },
     });
 
-    // 5. Return success
+    // Return success with discovery metrics
     return new Response(
       JSON.stringify({ 
         ok: true, 
-        resultsFound: allResults.length,
-        optionsCreated: options.length 
+        baselineResults: baselineCount,
+        enrichedResults: metrics.enriched_count,
+        upliftPct: Math.round(metrics.uplift_pct * 10) / 10,
+        optionsCreated: options.length,
+        enrichmentReasons: metrics.enrichment_reasons
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
@@ -224,7 +291,7 @@ serve(async (req) => {
       
       if (signalId) {
         await supabase.from("audit_logs").insert({
-          org_id: "unknown", // Will be overwritten if we have authCtx
+          org_id: "unknown",
           action: "sr_discover_error",
           entity_type: "signal",
           entity_id: signalId,
@@ -245,7 +312,7 @@ serve(async (req) => {
   }
 });
 
-// Enhanced normalization with embeddings and semantic scoring
+// Enhanced normalization with embeddings, semantic scoring, and 12% engine markers
 async function normalizeResultsWithEmbeddings(
   results: any[],
   signal: any,
@@ -260,7 +327,7 @@ async function normalizeResultsWithEmbeddings(
     const optionEmbedding = await generateEmbedding(optionText);
     
     // Calculate semantic similarity if we have both embeddings
-    let confidence = 0.6;
+    let confidence = result.confidence_score || 0.6;
     if (signalEmbedding && optionEmbedding) {
       const similarity = cosineSimilarity(signalEmbedding, optionEmbedding);
       confidence = 0.4 + (similarity * 0.6); // Scale to 0.4-1.0
@@ -280,6 +347,9 @@ async function normalizeResultsWithEmbeddings(
         source: result.source || "web",
         multi_provider: true,
         sahpra_verified: false,
+        // 12% engine markers
+        is_enriched: result.is_enriched || false,
+        enrichment_reason: result.enrichment_reason || null,
       },
       confidence_score: confidence,
       source_link: result.url,
@@ -289,7 +359,9 @@ async function normalizeResultsWithEmbeddings(
         title: result.title,
         description: result.description,
         search_provider: result.source,
-        enriched: result.enriched || null,
+        enriched: result.metadata?.enriched || null,
+        is_from_discovery_engine: result.is_enriched || false,
+        why_surfaced: result.enrichment_reason || null,
       },
     });
   }
