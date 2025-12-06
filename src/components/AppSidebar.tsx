@@ -1,4 +1,4 @@
-import { Key, Code, FileText, Activity, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn, Database } from "lucide-react";
+import { Key, Code, FileText, Activity, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn, Database, User } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -45,6 +45,10 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
   const marketplaceItems = [
     { id: "marketplace", title: "Marketplace", icon: Store, route: "/marketplace" },
     { id: "global-analytics", title: "Network", icon: TrendingUp, route: "/analytics" },
+  ];
+
+  const accountItems = [
+    { id: "my-activity", title: "My Activity", icon: User, route: "/activity", requiresAuth: true },
   ];
 
   const toolsItems = [
@@ -155,6 +159,30 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {!isDemoMode && (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+              Account
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {accountItems.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => item.route ? navigate(item.route) : onSectionChange(item.id)}
+                      isActive={item.route ? location.pathname === item.route : isActive(item.id)}
+                      className="w-full px-2 py-1.5 text-sm"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {isAdmin && (
           <SidebarGroup className="mt-4">
