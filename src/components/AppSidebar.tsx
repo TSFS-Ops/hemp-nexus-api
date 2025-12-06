@@ -1,4 +1,4 @@
-import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid } from "lucide-react";
+import { Key, Code, Zap, FileCode, Activity, Shield, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -29,6 +29,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin }: AppSideb
 
   const mainItems = [
     { id: "quickstart", title: "Quick Start", icon: BookOpen },
+    { id: "search", title: "Find Counterparties", icon: Search },
     { id: "docs", title: "Overview", icon: BookOpen },
     { id: "keys", title: "Authentication", icon: Key },
     { id: "test", title: "API Reference", icon: Code },
