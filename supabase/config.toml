@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.search]
 verify_jwt = false
+
+[functions.send-verification-email]
+verify_jwt = false
