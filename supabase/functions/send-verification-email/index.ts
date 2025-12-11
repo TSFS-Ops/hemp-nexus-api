@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,10 +12,47 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface VerificationEmailRequest {
-  email: string;
-  verificationUrl: string;
-  userName?: string;
+// Input validation schema
+const verificationEmailSchema = z.object({
+  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  verificationUrl: z.string().url("Invalid URL").max(2048, "URL too long").refine(
+    (url) => {
+      try {
+        const parsed = new URL(url);
+        // Only allow HTTPS URLs and specific trusted domains
+        return parsed.protocol === "https:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "URL must be HTTPS" }
+  ),
+  userName: z.string().max(100, "Name too long").optional(),
+});
+
+type VerificationEmailRequest = z.infer<typeof verificationEmailSchema>;
+
+// Simple in-memory rate limiting (per email)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 3; // Max 3 emails per email address
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+
+function checkEmailRateLimit(email: string): boolean {
+  const now = Date.now();
+  const normalizedEmail = email.toLowerCase();
+  const entry = rateLimitMap.get(normalizedEmail);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,9 +61,83 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, verificationUrl, userName }: VerificationEmailRequest = await req.json();
+    // Verify authentication - require valid JWT
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Missing or invalid authorization header");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
-    const displayName = userName || email.split('@')[0];
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Verify the JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error("Invalid JWT token:", authError?.message);
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Parse and validate input
+    const rawBody = await req.json();
+    const parseResult = verificationEmailSchema.safeParse(rawBody);
+    
+    if (!parseResult.success) {
+      console.error("Validation error:", parseResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Invalid input",
+          details: parseResult.error.errors.map(e => e.message)
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { email, verificationUrl, userName }: VerificationEmailRequest = parseResult.data;
+
+    // Check rate limit for this email
+    if (!checkEmailRateLimit(email)) {
+      console.warn(`Rate limit exceeded for email: ${email}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Too many requests. Please try again later." }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": "3600",
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+
+    // Sanitize display name to prevent XSS in email
+    const displayName = (userName || email.split('@')[0])
+      .replace(/[<>&"']/g, '')
+      .substring(0, 50);
+
+    // Escape URL for HTML
+    const escapedUrl = verificationUrl
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -56,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #2563eb; text-decoration: none; border-radius: 8px;">
+                    <a href="${escapedUrl}" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #2563eb; text-decoration: none; border-radius: 8px;">
                       Verify Email Address
                     </a>
                   </td>
@@ -67,7 +182,7 @@ const handler = async (req: Request): Promise<Response> => {
                 If the button doesn't work, copy and paste this link into your browser:
               </p>
               <p style="margin: 8px 0 0; font-size: 12px; line-height: 18px; color: #a1a1aa; word-break: break-all;">
-                ${verificationUrl}
+                ${escapedUrl}
               </p>
               
               <hr style="margin: 32px 0; border: none; border-top: 1px solid #e4e4e7;">
@@ -114,19 +229,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!res.ok) {
       console.error("Resend API error:", data);
-      throw new Error(data.message || "Failed to send email");
+      return new Response(
+        JSON.stringify({ success: false, error: "Failed to send email" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
-    console.log("Verification email sent successfully:", data);
+    console.log("Verification email sent successfully to:", email);
 
-    return new Response(JSON.stringify({ success: true, data }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error sending verification email:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: "An error occurred" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
