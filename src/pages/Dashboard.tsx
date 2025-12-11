@@ -143,17 +143,17 @@ export default function Dashboard() {
 
       case "data-sources":
         return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">Data Sources</h1>
-              <p className="text-muted-foreground">
+          <div className="space-y-5 sm:space-y-6">
+            <header className="space-y-1">
+              <h1 className="font-bold tracking-tight">Data Sources</h1>
+              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
                 Configure external data integrations
               </p>
-            </div>
+            </header>
             <Card>
               <CardHeader>
-                <CardTitle>Coming Soon</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-base sm:text-lg">Coming Soon</CardTitle>
+                <CardDescription className="text-sm leading-relaxed">
                   Data source management interface will be available soon
                 </CardDescription>
               </CardHeader>
@@ -163,26 +163,26 @@ export default function Dashboard() {
 
       case "hash-verify":
         return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">Hash Verifier</h1>
-              <p className="text-muted-foreground">
+          <div className="space-y-5 sm:space-y-6">
+            <header className="space-y-1">
+              <h1 className="font-bold tracking-tight">Hash Verifier</h1>
+              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
                 Cryptographic verification for audit trails
               </p>
-            </div>
+            </header>
             <HashVerifier />
           </div>
         );
 
       case "automation":
         return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">Changelog</h1>
-              <p className="text-muted-foreground">
+          <div className="space-y-5 sm:space-y-6">
+            <header className="space-y-1">
+              <h1 className="font-bold tracking-tight">Changelog</h1>
+              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
                 API updates, improvements, and breaking changes
               </p>
-            </div>
+            </header>
             <CronSetupInstructions />
           </div>
         );
