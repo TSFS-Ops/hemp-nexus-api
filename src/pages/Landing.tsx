@@ -1,19 +1,25 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Terminal, Database, FileCheck, ChevronRight } from "lucide-react";
+import { ArrowRight, Terminal, Database, FileCheck, ChevronRight, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Landing() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
               <span className="text-background font-bold text-xs">CM</span>
             </div>
             <span className="font-semibold text-sm tracking-tight">Compliance Match</span>
           </div>
-          <div className="flex items-center gap-6">
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
             <Link 
               to="/docs" 
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -33,32 +39,69 @@ export default function Landing() {
               Sign in
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background px-4 py-4 space-y-3">
+            <Link 
+              to="/docs" 
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Docs
+            </Link>
+            <Link 
+              to="/demo" 
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Demo
+            </Link>
+            <Link 
+              to="/auth"
+              className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sign in
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-12 sm:pb-16">
         <div className="max-w-3xl">
-          <p className="text-sm font-medium text-muted-foreground mb-4 tracking-wide uppercase">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-3 sm:mb-4 tracking-wide uppercase">
             Developer API
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] mb-4 sm:mb-6">
             Proof-of-intent matching for regulated B2B commerce
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl">
+          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-2xl">
             Search counterparties, confirm trade intent, and generate tamper-evident audit trails. 
             Built for compliance teams in commodities, manufacturing, and cross-border trade.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link 
               to="/demo"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
             >
               Try demo
             </Link>
             <Link 
               to="/auth"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
             >
               Get API key
               <ArrowRight className="h-4 w-4" />
@@ -69,8 +112,8 @@ export default function Landing() {
 
       {/* Features */}
       <section className="border-t border-border/60 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="grid md:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             <div className="space-y-3">
               <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
                 <Terminal className="h-4 w-4 text-foreground" />
@@ -106,10 +149,10 @@ export default function Landing() {
 
       {/* Interface Preview */}
       <section className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-foreground mb-2">Interface Preview</h2>
-            <p className="text-muted-foreground">Search results with discovery engine enrichment</p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Interface Preview</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">Search results with discovery engine enrichment</p>
           </div>
 
           <div className="border border-border rounded-lg overflow-hidden bg-card">
@@ -124,13 +167,13 @@ export default function Landing() {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               {/* Search input mockup */}
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div className="flex-1 h-10 bg-muted rounded-md border border-border flex items-center px-3">
-                  <span className="text-sm text-muted-foreground">buyers for cashew in India</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate">buyers for cashew in India</span>
                 </div>
-                <div className="h-10 px-4 bg-foreground text-background rounded-md flex items-center text-sm font-medium">
+                <div className="h-10 px-4 bg-foreground text-background rounded-md flex items-center justify-center text-sm font-medium">
                   Search
                 </div>
               </div>
@@ -142,29 +185,33 @@ export default function Landing() {
                   { name: "IndiaExport Partners Ltd.", score: 89, enriched: false },
                   { name: "SouthAsia Commodities GmbH", score: 85, enriched: true },
                 ].map((result, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-md border border-border bg-background">
-                    <div className="h-7 w-7 rounded bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                      {i + 1}
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 rounded-md border border-border bg-background">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="h-7 w-7 rounded bg-muted flex-shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">{result.name}</div>
+                        <div className="text-xs text-muted-foreground">Match score: {result.score}%</div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-foreground">{result.name}</div>
-                      <div className="text-xs text-muted-foreground">Match score: {result.score}%</div>
+                    <div className="flex items-center gap-2 pl-10 sm:pl-0">
+                      {result.enriched && (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+                          +12%
+                        </span>
+                      )}
+                      <button className="px-3 py-1.5 text-xs font-medium rounded border border-border bg-background hover:bg-accent transition-colors">
+                        Confirm
+                      </button>
                     </div>
-                    {result.enriched && (
-                      <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
-                        +12%
-                      </span>
-                    )}
-                    <button className="px-3 py-1.5 text-xs font-medium rounded border border-border bg-background hover:bg-accent transition-colors">
-                      Confirm
-                    </button>
                   </div>
                 ))}
               </div>
 
               {/* Metrics bar */}
-              <div className="flex items-center justify-between p-3 rounded-md bg-muted/50 border border-border">
-                <div className="flex items-center gap-6 text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-md bg-muted/50 border border-border">
+                <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
                   <div>
                     <span className="text-muted-foreground">Baseline: </span>
                     <span className="font-medium text-foreground">15</span>
@@ -174,7 +221,7 @@ export default function Landing() {
                     <span className="font-medium text-foreground">21</span>
                   </div>
                 </div>
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm">
                   <span className="text-muted-foreground">Discovery uplift: </span>
                   <span className="font-medium text-foreground">+40%</span>
                 </div>
@@ -186,21 +233,21 @@ export default function Landing() {
 
       {/* API Example */}
       <section className="border-t border-border/60 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-foreground mb-2">Quick Start</h2>
-            <p className="text-muted-foreground">Confirm trade intent with a single API call</p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Quick Start</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">Confirm trade intent with a single API call</p>
           </div>
 
           <div className="border border-border rounded-lg overflow-hidden bg-card">
-            <div className="border-b border-border px-4 py-2.5 bg-muted/50 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground font-mono">POST /v1/match/:id/settle</span>
-              <Link to="/docs" className="text-xs text-primary hover:underline flex items-center gap-1">
+            <div className="border-b border-border px-3 sm:px-4 py-2.5 bg-muted/50 flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">POST /v1/match/:id/settle</span>
+              <Link to="/docs" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0">
                 Full docs
                 <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
-            <pre className="p-4 text-sm text-foreground overflow-x-auto">
+            <pre className="p-3 sm:p-4 text-xs sm:text-sm text-foreground overflow-x-auto">
               <code>{`curl -X POST https://api.compliancematch.dev/v1/match/m_abc123/settle \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json"
@@ -216,16 +263,16 @@ export default function Landing() {
             </pre>
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link 
               to="/docs"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
             >
               Read documentation
             </Link>
             <Link 
               to="/auth"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
             >
               Create account
               <ArrowRight className="h-4 w-4" />
@@ -236,9 +283,9 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <span>Compliance Match API</span>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <Link to="/docs" className="hover:text-foreground transition-colors">Documentation</Link>
             <Link to="/demo" className="hover:text-foreground transition-colors">Demo</Link>
             <Link to="/auth" className="hover:text-foreground transition-colors">Sign in</Link>
