@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +44,7 @@ export function MatchesList() {
   const [isSettling, setIsSettling] = useState(false);
   const [showSettleDialog, setShowSettleDialog] = useState(false);
 
-  const { data: matches, isLoading, refetch } = useQuery({
+  const { data: matches, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["matches", statusFilter, commoditySearch, sortBy],
     queryFn: async () => {
       let query = supabase
@@ -293,7 +294,14 @@ export function MatchesList() {
           </Select>
         </div>
 
-        {isLoading ? (
+        {isError ? (
+          <ErrorState 
+            type="server" 
+            message={error?.message || "Failed to load matches"} 
+            onRetry={() => refetch()} 
+            variant="inline"
+          />
+        ) : isLoading ? (
           <TableSkeleton rows={5} columns={6} />
         ) : matches && matches.length > 0 ? (
           <div className="rounded-md border">
