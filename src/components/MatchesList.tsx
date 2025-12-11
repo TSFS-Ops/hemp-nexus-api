@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -293,9 +294,7 @@ export function MatchesList() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <TableSkeleton rows={5} columns={6} />
         ) : matches && matches.length > 0 ? (
           <div className="rounded-md border">
             <Table>

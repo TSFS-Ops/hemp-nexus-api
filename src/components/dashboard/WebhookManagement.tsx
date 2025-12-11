@@ -26,9 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Webhook, Plus, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Webhook, Plus, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
 
 interface WebhookEndpoint {
   id: string;
@@ -248,7 +249,7 @@ export function WebhookManagement() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">Loading webhooks...</div>
+            <TableSkeleton rows={3} columns={5} />
           ) : webhooks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No webhook endpoints configured. Create one to get started.
