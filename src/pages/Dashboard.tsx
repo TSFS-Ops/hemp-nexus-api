@@ -15,6 +15,7 @@ import Troubleshooting from "@/components/Troubleshooting";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { SandboxIndicator } from "@/components/SandboxIndicator";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -239,7 +240,9 @@ export default function Dashboard() {
       >
         {isDemoMode && <DemoModeBanner variant="compact" />}
         {!isDemoMode && <SandboxIndicator isSandbox={true} />}
-        {content}
+        <ErrorBoundary>
+          {content}
+        </ErrorBoundary>
       </DashboardLayout>
     </>
   );
