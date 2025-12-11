@@ -39,7 +39,7 @@ export function MobileBottomNav({ activeSection, onSectionChange, isDemoMode }: 
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm md:hidden">
-      <div className="flex items-center justify-around h-14 px-2">
+      <div className="flex items-center justify-around h-14 px-1 max-w-lg mx-auto">
         {primaryItems.map((item) => {
           const isActive = activeSection === item.id;
           const isDisabled = isDemoMode && item.requiresAuth;
@@ -49,14 +49,14 @@ export function MobileBottomNav({ activeSection, onSectionChange, isDemoMode }: 
               key={item.id}
               onClick={() => !isDisabled && onSectionChange(item.id)}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-0 touch-target transition-colors",
                 isActive && "text-primary",
                 !isActive && "text-muted-foreground",
                 isDisabled && "opacity-50"
               )}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <span className="text-[10px] font-medium truncate max-w-full px-0.5">{item.label}</span>
             </button>
           );
         })}
@@ -65,26 +65,26 @@ export function MobileBottomNav({ activeSection, onSectionChange, isDemoMode }: 
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-0 touch-target transition-colors",
                 isMoreActive && "text-primary",
                 !isMoreActive && "text-muted-foreground"
               )}
             >
-              <MoreHorizontal className="h-5 w-5" />
+              <MoreHorizontal className="h-5 w-5 flex-shrink-0" />
               <span className="text-[10px] font-medium">More</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="end" 
             side="top" 
-            className="w-48 mb-2 bg-popover border border-border"
+            className="w-48 mb-2 bg-popover border border-border max-h-[60vh] overflow-y-auto"
           >
             {moreItems.map((item) => (
               <DropdownMenuItem
                 key={item.id}
                 onClick={() => onSectionChange(item.id)}
                 className={cn(
-                  "cursor-pointer",
+                  "cursor-pointer min-h-[44px] flex items-center",
                   activeSection === item.id && "bg-accent text-accent-foreground"
                 )}
               >

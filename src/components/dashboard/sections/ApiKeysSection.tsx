@@ -205,13 +205,13 @@ export function ApiKeysSection() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Authentication</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
+    <div className="space-y-5 sm:space-y-6">
+      <header className="space-y-1">
+        <h1 className="font-bold tracking-tight">Authentication</h1>
+        <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
           Manage API keys to authenticate your requests
         </p>
-      </div>
+      </header>
 
       {newKey && (
         <Alert className="border-primary bg-primary/5">

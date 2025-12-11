@@ -131,24 +131,24 @@ export function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background overflow-hidden">
+      <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar 
           activeSection={activeSection} 
           onSectionChange={onSectionChange}
           isAdmin={isAdmin}
           isDemoMode={isDemoMode}
         />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
-          <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-            <div className="flex h-12 items-center justify-between px-3 sm:px-4">
-              <SidebarTrigger />
-              <div className="flex items-center gap-2">
+        <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+          <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm flex-shrink-0">
+            <div className="flex h-12 items-center justify-between px-4">
+              <SidebarTrigger className="touch-target flex items-center justify-center" />
+              <div className="flex items-center gap-3">
                 {/* Mobile swipe indicator */}
                 {isMobile && MAIN_SECTIONS.includes(activeSection) && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    {canSwipeRight && <span>←</span>}
-                    <span className="px-1">{currentIndex + 1}/{MAIN_SECTIONS.length}</span>
-                    {canSwipeLeft && <span>→</span>}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                    {canSwipeRight && <span className="opacity-60">←</span>}
+                    <span className="tabular-nums">{currentIndex + 1}/{MAIN_SECTIONS.length}</span>
+                    {canSwipeLeft && <span className="opacity-60">→</span>}
                   </div>
                 )}
                 <ThemeToggle />
@@ -159,7 +159,7 @@ export function DashboardLayout({
           {/* Pull to refresh indicator */}
           {isMobile && (pullDistance > 0 || isRefreshing) && (
             <div 
-              className="flex items-center justify-center overflow-hidden transition-all bg-muted/50"
+              className="flex items-center justify-center overflow-hidden transition-all bg-muted/50 flex-shrink-0"
               style={{ height: pullDistance }}
             >
               <div className={cn(
@@ -174,7 +174,10 @@ export function DashboardLayout({
           
           <div 
             className={cn(
-              "max-w-6xl py-4 sm:py-6 px-3 sm:px-6 transition-all duration-200 ease-out w-full overflow-hidden",
+              "flex-1 w-full overflow-x-hidden",
+              "py-4 sm:py-6",
+              "px-4 sm:px-6 lg:px-8",
+              "transition-all duration-200 ease-out",
               isTransitioning && transitionDirection === "left" && "animate-slide-in-left",
               isTransitioning && transitionDirection === "right" && "animate-slide-in-right",
               // Add bottom padding on mobile for bottom nav
@@ -182,7 +185,10 @@ export function DashboardLayout({
             )}
             {...combinedTouchHandlers}
           >
-            {children}
+            {/* Content wrapper with max-width for readability */}
+            <div className="mx-auto w-full max-w-5xl">
+              {children}
+            </div>
           </div>
         </main>
         
