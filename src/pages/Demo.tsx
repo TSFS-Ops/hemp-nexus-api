@@ -207,16 +207,16 @@ export default function Demo() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-4 w-4" />
               <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center">
                 <span className="text-background font-bold text-[10px]">CM</span>
               </div>
-              <span className="font-medium text-sm text-foreground">Compliance Match</span>
+              <span className="font-medium text-sm text-foreground hidden sm:inline">Compliance Match</span>
             </Link>
-            <div className="flex items-center gap-4">
-              <span className="px-2.5 py-1 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="px-2 py-1 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
                 Sandbox
               </span>
               <Link to="/auth">
@@ -228,24 +228,24 @@ export default function Demo() {
           </div>
         </nav>
 
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Sandbox Notice */}
-          <div className="mb-6 p-4 bg-muted/40 border border-border rounded-md">
+          <div className="mb-6 p-3 sm:p-4 bg-muted/40 border border-border rounded-md">
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Sandbox mode</span> — Results are simulated. No real matches or evidence records will be created.
+              <span className="font-medium text-foreground">Sandbox mode</span> — Results are simulated.
               <Link to="/auth" className="text-primary hover:underline ml-1">Create an account</Link> for production access.
             </p>
           </div>
 
           <div className="space-y-6">
             {/* Search */}
-            <div className="border border-border rounded-lg bg-card p-6">
+            <div className="border border-border rounded-lg bg-card p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-foreground mb-1">Counterparty Search</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 Enter a natural language query to find potential counterparties
               </p>
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   placeholder="e.g., buyers for cashew in India"
                   value={query}
@@ -253,7 +253,7 @@ export default function Demo() {
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="flex-1"
                 />
-                <Button onClick={handleSearch} disabled={isSearching} className="bg-foreground text-background hover:bg-foreground/90">
+                <Button onClick={handleSearch} disabled={isSearching} className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto">
                   {isSearching ? "Searching..." : "Search"}
                 </Button>
               </div>
@@ -274,14 +274,14 @@ export default function Demo() {
 
             {/* Metrics */}
             {results.length > 0 && (
-              <div className="flex items-center justify-between p-4 bg-muted/40 border border-border rounded-md">
-                <div className="flex items-center gap-8 text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 bg-muted/40 border border-border rounded-md">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-8 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Baseline results: </span>
+                    <span className="text-muted-foreground">Baseline: </span>
                     <span className="font-semibold text-foreground">{baselineCount}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">With discovery engine: </span>
+                    <span className="text-muted-foreground">With discovery: </span>
                     <span className="font-semibold text-foreground">{enrichedCount}</span>
                   </div>
                 </div>

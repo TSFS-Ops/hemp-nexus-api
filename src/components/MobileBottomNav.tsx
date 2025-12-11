@@ -96,7 +96,7 @@ export function MobileBottomNav({ activeSection, onSectionChange, isDemoMode }: 
       </div>
       
       {/* Safe area padding for devices with home indicator */}
-      <div className="h-safe-area-inset-bottom bg-background" />
+      <div className="h-[env(safe-area-inset-bottom,0px)] bg-background" />
     </nav>
   );
 }
