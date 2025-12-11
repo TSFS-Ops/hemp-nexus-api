@@ -1,10 +1,13 @@
-import { ReactNode, useMemo, useState, useEffect } from "react";
+import { ReactNode, useMemo, useState, useEffect, useCallback } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { useSwipe } from "@/hooks/use-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -12,6 +15,7 @@ export interface DashboardLayoutProps {
   onSectionChange: (section: string) => void;
   isAdmin?: boolean;
   isDemoMode?: boolean;
+  onRefresh?: () => Promise<void>;
 }
 
 // Main navigation sections in order
@@ -29,11 +33,35 @@ const MAIN_SECTIONS = [
   "audit-logs",
 ];
 
-export function DashboardLayout({ children, activeSection, onSectionChange, isAdmin, isDemoMode }: DashboardLayoutProps) {
+export function DashboardLayout({ 
+  children, 
+  activeSection, 
+  onSectionChange, 
+  isAdmin, 
+  isDemoMode,
+  onRefresh 
+}: DashboardLayoutProps) {
   const isMobile = useIsMobile();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<"left" | "right" | null>(null);
   const [prevSection, setPrevSection] = useState(activeSection);
+
+  // Default refresh handler - just wait a bit to simulate refresh
+  const handleRefresh = useCallback(async () => {
+    if (onRefresh) {
+      await onRefresh();
+    } else {
+      // Default: wait 500ms to simulate refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // Trigger a re-render by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('dashboard-refresh'));
+    }
+  }, [onRefresh]);
+
+  const { pullDistance, isRefreshing, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 60,
+  });
 
   // Track section changes for animations
   useEffect(() => {
@@ -84,6 +112,22 @@ export function DashboardLayout({ children, activeSection, onSectionChange, isAd
     enableHaptics: true,
   });
 
+  // Combine touch handlers
+  const combinedTouchHandlers = isMobile ? {
+    onTouchStart: (e: React.TouchEvent) => {
+      swipeHandlers.onTouchStart(e);
+      pullHandlers.onTouchStart(e);
+    },
+    onTouchMove: (e: React.TouchEvent) => {
+      swipeHandlers.onTouchMove(e);
+      pullHandlers.onTouchMove(e);
+    },
+    onTouchEnd: () => {
+      swipeHandlers.onTouchEnd();
+      pullHandlers.onTouchEnd();
+    },
+  } : {};
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -110,17 +154,45 @@ export function DashboardLayout({ children, activeSection, onSectionChange, isAd
               </div>
             </div>
           </header>
+          
+          {/* Pull to refresh indicator */}
+          {isMobile && (pullDistance > 0 || isRefreshing) && (
+            <div 
+              className="flex items-center justify-center overflow-hidden transition-all bg-muted/50"
+              style={{ height: pullDistance }}
+            >
+              <div className={cn(
+                "flex items-center gap-2 text-sm text-muted-foreground",
+                isRefreshing && "animate-pulse"
+              )}>
+                <Loader2 className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                <span>{isRefreshing ? "Refreshing..." : "Pull to refresh"}</span>
+              </div>
+            </div>
+          )}
+          
           <div 
             className={cn(
               "max-w-6xl py-4 sm:py-6 px-3 sm:px-6 transition-all duration-200 ease-out",
               isTransitioning && transitionDirection === "left" && "animate-slide-in-left",
-              isTransitioning && transitionDirection === "right" && "animate-slide-in-right"
+              isTransitioning && transitionDirection === "right" && "animate-slide-in-right",
+              // Add bottom padding on mobile for bottom nav
+              isMobile && "pb-20"
             )}
-            {...(isMobile ? swipeHandlers : {})}
+            {...combinedTouchHandlers}
           >
             {children}
           </div>
         </main>
+        
+        {/* Mobile bottom navigation */}
+        {isMobile && (
+          <MobileBottomNav 
+            activeSection={activeSection}
+            onSectionChange={onSectionChange}
+            isDemoMode={isDemoMode}
+          />
+        )}
       </div>
     </SidebarProvider>
   );
