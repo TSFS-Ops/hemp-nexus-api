@@ -2,6 +2,7 @@ import { ReactNode, useMemo, useState, useEffect, useCallback } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
+import { ScrollToTop } from "./ScrollToTop";
 import { useSwipe } from "@/hooks/use-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -193,6 +194,9 @@ export function DashboardLayout({
             isDemoMode={isDemoMode}
           />
         )}
+        
+        {/* Scroll to top button */}
+        <ScrollToTop />
       </div>
     </SidebarProvider>
   );

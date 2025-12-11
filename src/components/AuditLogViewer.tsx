@@ -9,6 +9,7 @@ import { Loader2, RefreshCw, Filter, Shield, Hash, Download } from "lucide-react
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
 
 interface AuditLogViewerProps {
   apiKey: string | null;
@@ -346,6 +347,10 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
               </Table>
             </div>
           </div>
+        )}
+
+        {loading && logs.length === 0 && (
+          <TableSkeleton rows={5} columns={6} />
         )}
 
         {logs.length === 0 && !loading && (

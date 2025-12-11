@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { Activity, TrendingUp, AlertCircle, Clock, BarChart3, Calendar, Radio } from "lucide-react";
+import { StatsGridSkeleton, CardSkeleton } from "@/components/ui/loading-skeletons";
 
 interface AnalyticsData {
   totalRequests: number;
@@ -247,59 +248,63 @@ export default function ApiAnalytics() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Total Requests
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{analytics.totalRequests.toLocaleString()}</div>
-          </CardContent>
-        </Card>
+      {loading ? (
+        <StatsGridSkeleton count={4} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Total Requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{analytics.totalRequests.toLocaleString()}</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Success Rate
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {analytics.successRate.toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Success Rate
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">
+                {analytics.successRate.toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Avg Response Time
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{analytics.avgResponseTime.toFixed(0)}ms</div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Avg Response Time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{analytics.avgResponseTime.toFixed(0)}ms</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Error Rate
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${analytics.errorRate > 10 ? 'text-red-600' : analytics.errorRate > 5 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {analytics.errorRate.toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Error Rate
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${analytics.errorRate > 10 ? 'text-red-600' : analytics.errorRate > 5 ? 'text-yellow-600' : 'text-green-600'}`}>
+                {analytics.errorRate.toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Tabs defaultValue="volume" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
