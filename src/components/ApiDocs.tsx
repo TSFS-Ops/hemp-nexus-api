@@ -25,14 +25,14 @@ export default function ApiDocs() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="getting-started" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="getting-started">Tutorial</TabsTrigger>
-              <TabsTrigger value="playground">Playground</TabsTrigger>
-              <TabsTrigger value="authentication">Auth</TabsTrigger>
-              <TabsTrigger value="signals">Signals</TabsTrigger>
-              <TabsTrigger value="match">Matches</TabsTrigger>
-              <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-              <TabsTrigger value="errors">Errors</TabsTrigger>
+            <TabsList className="flex flex-wrap h-auto gap-1 p-1 w-full">
+              <TabsTrigger value="getting-started" className="flex-1 min-w-[70px] text-xs sm:text-sm">Tutorial</TabsTrigger>
+              <TabsTrigger value="playground" className="flex-1 min-w-[70px] text-xs sm:text-sm">Playground</TabsTrigger>
+              <TabsTrigger value="authentication" className="flex-1 min-w-[60px] text-xs sm:text-sm">Auth</TabsTrigger>
+              <TabsTrigger value="signals" className="flex-1 min-w-[60px] text-xs sm:text-sm">Signals</TabsTrigger>
+              <TabsTrigger value="match" className="flex-1 min-w-[60px] text-xs sm:text-sm">Matches</TabsTrigger>
+              <TabsTrigger value="webhooks" className="flex-1 min-w-[70px] text-xs sm:text-sm">Webhooks</TabsTrigger>
+              <TabsTrigger value="errors" className="flex-1 min-w-[60px] text-xs sm:text-sm">Errors</TabsTrigger>
             </TabsList>
 
             {/* Getting Started Tab */}

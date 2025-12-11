@@ -111,13 +111,22 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
   }
 
   code, pre {
     @apply font-mono;
+    word-break: break-all;
+    overflow-wrap: break-word;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans tracking-tight;
+  }
+
+  /* Ensure long URLs and text don't overflow containers */
+  .break-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 }

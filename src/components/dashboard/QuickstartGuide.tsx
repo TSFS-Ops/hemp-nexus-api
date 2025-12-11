@@ -166,10 +166,10 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="curl" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="curl">cURL</TabsTrigger>
-              <TabsTrigger value="typescript">TypeScript</TabsTrigger>
-              <TabsTrigger value="python">Python</TabsTrigger>
+            <TabsList className="flex w-full h-auto gap-1 p-1">
+              <TabsTrigger value="curl" className="flex-1">cURL</TabsTrigger>
+              <TabsTrigger value="typescript" className="flex-1">TypeScript</TabsTrigger>
+              <TabsTrigger value="python" className="flex-1">Python</TabsTrigger>
             </TabsList>
 
             <TabsContent value="curl" className="space-y-4">

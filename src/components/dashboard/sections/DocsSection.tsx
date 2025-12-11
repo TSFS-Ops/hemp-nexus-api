@@ -2,10 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export function DocsSection() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 overflow-hidden">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Compliance Matching API</h1>
-        <p className="text-lg text-muted-foreground">
+        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight mb-2">Compliance Matching API</h1>
+        <p className="text-base sm:text-lg text-muted-foreground">
           Cross-industry REST API for logging, matching, and settling verified trade intent between buyers and sellers, with audit logs and compliance event tracking
         </p>
       </div>
@@ -42,7 +42,7 @@ export function DocsSection() {
           <CardTitle>Base URL</CardTitle>
         </CardHeader>
         <CardContent>
-          <code className="block p-4 bg-muted rounded-lg text-sm font-mono">
+          <code className="block p-4 bg-muted rounded-lg text-sm font-mono break-all overflow-x-auto">
             https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
           </code>
         </CardContent>
