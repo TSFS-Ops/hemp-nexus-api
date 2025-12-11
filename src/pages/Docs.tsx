@@ -65,20 +65,20 @@ export default function Docs() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-5xl">
         {/* Hero Section */}
-        <div className="mb-12 text-center">
+        <div className="mb-8 sm:mb-12 text-center">
           <Badge variant="outline" className="mb-4">Proof-of-Intent API</Badge>
-          <h1 className="text-4xl font-bold mb-4">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-4">
             B2B Trade Matching with Tamper-Evident Records
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
+          <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             An information-only API for regulated B2B matching. Search for counterparties, 
             express interest, and create cryptographically-signed evidence records.
           </p>
           <Alert className="max-w-xl mx-auto border-amber-200 bg-amber-50 dark:bg-amber-950/50">
-            <CheckCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
+            <CheckCircle className="h-4 w-4 text-amber-600 shrink-0" />
+            <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm text-left">
               <strong>No payments. No contracts. No legal obligation.</strong> This API only records 
               proof-of-intent at a specific date/time.
             </AlertDescription>
@@ -167,12 +167,12 @@ export default function Docs() {
 
         {/* Main Documentation */}
         <Tabs defaultValue="auth" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="auth">Authentication</TabsTrigger>
-            <TabsTrigger value="match">Match API</TabsTrigger>
-            <TabsTrigger value="confirm">Confirm Intent</TabsTrigger>
-            <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-            <TabsTrigger value="evidence">Evidence</TabsTrigger>
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1 w-full">
+            <TabsTrigger value="auth" className="flex-1 min-w-[60px] text-xs sm:text-sm">Auth</TabsTrigger>
+            <TabsTrigger value="match" className="flex-1 min-w-[60px] text-xs sm:text-sm">Match</TabsTrigger>
+            <TabsTrigger value="confirm" className="flex-1 min-w-[60px] text-xs sm:text-sm">Confirm</TabsTrigger>
+            <TabsTrigger value="webhooks" className="flex-1 min-w-[70px] text-xs sm:text-sm">Webhooks</TabsTrigger>
+            <TabsTrigger value="evidence" className="flex-1 min-w-[70px] text-xs sm:text-sm">Evidence</TabsTrigger>
           </TabsList>
 
           {/* Authentication Tab */}

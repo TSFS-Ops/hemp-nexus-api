@@ -255,10 +255,10 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
                 <Input
-                  placeholder="e.g., 'buyers for cashew in India' or '100 tons copper cathode suppliers'"
+                  placeholder="e.g., 'buyers for cashew in India'"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -266,7 +266,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                 />
                 <Globe className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
-              <Button onClick={handleSearch} disabled={isSearching}>
+              <Button onClick={handleSearch} disabled={isSearching} className="w-full sm:w-auto">
                 {isSearching ? (
                   <>
                     <Zap className="h-4 w-4 mr-2 animate-pulse" />
@@ -324,30 +324,30 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         {metrics && (
           <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-6">
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{metrics.baselineCount}</div>
+                    <div className="text-xl sm:text-2xl font-bold">{metrics.baselineCount}</div>
                     <div className="text-xs text-muted-foreground">Baseline</div>
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{metrics.enrichedCount}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">{metrics.enrichedCount}</div>
                     <div className="text-xs text-muted-foreground">Total Found</div>
                   </div>
-                  <Separator orientation="vertical" className="h-10" />
+                  <Separator orientation="vertical" className="h-10 hidden sm:block" />
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-green-500" />
                     <div>
-                      <div className="text-lg font-bold text-green-600">+{metrics.upliftPct}%</div>
-                      <div className="text-xs text-muted-foreground">12% Engine Uplift</div>
+                      <div className="text-base sm:text-lg font-bold text-green-600">+{metrics.upliftPct}%</div>
+                      <div className="text-xs text-muted-foreground">Uplift</div>
                     </div>
                   </div>
                 </div>
                 
-                {/* Enrichment reasons breakdown */}
+                {/* Enrichment reasons breakdown - hidden on mobile */}
                 {Object.keys(metrics.enrichmentReasons || {}).length > 0 && (
-                  <div className="flex gap-2">
+                  <div className="hidden sm:flex gap-2">
                     {Object.entries(metrics.enrichmentReasons).slice(0, 3).map(([reason, count]) => (
                       <Tooltip key={reason}>
                         <TooltipTrigger>

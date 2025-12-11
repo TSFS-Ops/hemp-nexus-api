@@ -13,8 +13,8 @@ export function MatchesSection({ isDemoMode }: MatchesSectionProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Matches</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Matches</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             View and manage trade matches with full audit trails
           </p>
         </div>
@@ -40,8 +40,8 @@ export function MatchesSection({ isDemoMode }: MatchesSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Matches</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Matches</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           View and manage trade matches with full audit trails
         </p>
       </div>

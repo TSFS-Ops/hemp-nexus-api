@@ -207,8 +207,8 @@ export function ApiKeysSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Authentication</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Authentication</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Manage API keys to authenticate your requests
         </p>
       </div>
@@ -252,7 +252,7 @@ export function ApiKeysSection() {
         </Alert>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Create New API Key</CardTitle>
@@ -294,7 +294,7 @@ export function ApiKeysSection() {
               
               <div className="space-y-2">
                 <Label>Scopes</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {availableScopes.map((scope) => (
                     <label
                       key={scope}
