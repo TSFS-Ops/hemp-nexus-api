@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { DemoConfirmDialog } from "@/components/DemoConfirmDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SearchResult {
   id: string;
@@ -115,27 +116,14 @@ interface CounterpartySearchProps {
 }
 
 export default function CounterpartySearch({ isDemoMode: propDemoMode }: CounterpartySearchProps) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [metrics, setMetrics] = useState<SearchMetrics | null>(null);
   const [parsedQuery, setParsedQuery] = useState<ParsedQuery | null>(null);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [showDemoConfirm, setShowDemoConfirm] = useState(false);
-
-  // Check authentication status
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   // Demo mode is active if explicitly set via props OR if user is not authenticated
   const isDemoMode = propDemoMode ?? !isAuthenticated;
@@ -239,7 +227,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   };
 
   // Show loading while checking auth status
-  if (isAuthenticated === null) {
+  if (authLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
@@ -471,94 +459,93 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                           </Badge>
                         </div>
                       </div>
-
+                      
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {result.description}
                       </p>
 
                       {/* Why Surfaced */}
-                      <div className="mt-2 flex items-center gap-2 text-xs">
+                      <div className="mt-2 flex items-start gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-muted-foreground italic">
+                          {result.whySurfaced}
+                        </p>
+                      </div>
+
+                      {/* Coherence Score */}
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <div className={`w-2 h-2 rounded-full ${
+                            result.coherence.passed ? "bg-green-500" : "bg-yellow-500"
+                          }`} />
+                          <span className="text-xs text-muted-foreground">
+                            Coherence: {Math.round(result.coherence.score * 100)}%
+                          </span>
+                        </div>
+                        {result.coherence.factors.length > 0 && (
+                          <div className="flex gap-1">
+                            {result.coherence.factors.slice(0, 2).map((factor, i) => (
+                              <Badge key={i} variant="outline" className="text-xs py-0 h-5">
+                                {factor}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-3 flex items-center gap-2">
+                        {result.url !== "#" && (
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+                            <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              View Profile
+                            </a>
+                          </Button>
+                        )}
                         <Tooltip>
-                          <TooltipTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                            <Lightbulb className="h-3 w-3" />
-                            <span>Why surfaced</span>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={(e) => e.stopPropagation()}>
+                              <Users className="h-3 w-3 mr-1" />
+                              Similar
+                            </Button>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-sm">
-                            <p>{result.whySurfaced}</p>
-                            {result.coherence?.factors && result.coherence.factors.length > 0 && (
-                              <div className="mt-2">
-                                <p className="font-medium text-xs">Coherence factors:</p>
-                                <ul className="text-xs mt-1 space-y-0.5">
-                                  {result.coherence.factors.map((f, i) => (
-                                    <li key={i}>• {f}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                          <TooltipContent>
+                            <p>Find similar counterparties</p>
                           </TooltipContent>
                         </Tooltip>
-                        
-                        {result.url && result.url !== "#" && (
-                          <a
-                            href={result.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex items-center gap-1 text-primary hover:underline"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Visit
-                          </a>
-                        )}
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+
+            {/* Load More / Info */}
+            {results.length >= 5 && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  {isDemoMode ? (
+                    <>
+                      <strong>Demo Mode:</strong> Sign in to see real search results and access all features.
+                    </>
+                  ) : (
+                    <>
+                      Showing top {results.length} results. Refine your query for more specific matches.
+                    </>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         )}
 
-        {/* Empty State */}
-        {!isSearching && results.length === 0 && query && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Enter a natural language query above to find potential trading partners. 
-              The 12% Discovery Engine will find additional matches beyond standard AI search.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Initial State */}
-        {!isSearching && results.length === 0 && !query && (
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-semibold mb-2">Find Your Trading Partners</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Use natural language to search for buyers or sellers. Our 12% Discovery Engine 
-                finds additional matches that standard AI search misses.
-              </p>
-              {isDemoMode && (
-                <p className="text-xs text-amber-600 mt-4">
-                  You're in demo mode - searches will return simulated results
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Demo Confirm Dialog */}
-        <DemoConfirmDialog
-          open={showDemoConfirm}
+        <DemoConfirmDialog 
+          open={showDemoConfirm} 
           onOpenChange={setShowDemoConfirm}
           selectedCount={selectedResults.size}
-          queryContext={parsedQuery ? {
-            product: parsedQuery.product,
-            location: parsedQuery.location,
-            role: parsedQuery.role,
-          } : undefined}
         />
       </div>
     </TooltipProvider>
