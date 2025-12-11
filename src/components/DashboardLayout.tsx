@@ -1,9 +1,10 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { useSwipe } from "@/hooks/use-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -30,6 +31,30 @@ const MAIN_SECTIONS = [
 
 export function DashboardLayout({ children, activeSection, onSectionChange, isAdmin, isDemoMode }: DashboardLayoutProps) {
   const isMobile = useIsMobile();
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState<"left" | "right" | null>(null);
+  const [prevSection, setPrevSection] = useState(activeSection);
+
+  // Track section changes for animations
+  useEffect(() => {
+    if (prevSection !== activeSection) {
+      const prevIndex = MAIN_SECTIONS.indexOf(prevSection);
+      const newIndex = MAIN_SECTIONS.indexOf(activeSection);
+      
+      if (prevIndex >= 0 && newIndex >= 0) {
+        setTransitionDirection(newIndex > prevIndex ? "left" : "right");
+        setIsTransitioning(true);
+        
+        const timer = setTimeout(() => {
+          setIsTransitioning(false);
+          setTransitionDirection(null);
+        }, 200);
+        
+        return () => clearTimeout(timer);
+      }
+      setPrevSection(activeSection);
+    }
+  }, [activeSection, prevSection]);
 
   const { currentIndex, canSwipeLeft, canSwipeRight } = useMemo(() => {
     const idx = MAIN_SECTIONS.indexOf(activeSection);
@@ -56,6 +81,7 @@ export function DashboardLayout({ children, activeSection, onSectionChange, isAd
     onSwipeLeft: handleSwipeLeft,
     onSwipeRight: handleSwipeRight,
     minSwipeDistance: 75,
+    enableHaptics: true,
   });
 
   return (
@@ -85,7 +111,11 @@ export function DashboardLayout({ children, activeSection, onSectionChange, isAd
             </div>
           </header>
           <div 
-            className="max-w-6xl py-4 sm:py-6 px-3 sm:px-6"
+            className={cn(
+              "max-w-6xl py-4 sm:py-6 px-3 sm:px-6 transition-all duration-200 ease-out",
+              isTransitioning && transitionDirection === "left" && "animate-slide-in-left",
+              isTransitioning && transitionDirection === "right" && "animate-slide-in-right"
+            )}
             {...(isMobile ? swipeHandlers : {})}
           >
             {children}
