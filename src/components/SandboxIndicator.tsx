@@ -147,10 +147,10 @@ export function SandboxIndicator({ isSandbox = true }: SandboxIndicatorProps) {
   return (
     <div className="mb-6">
       <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950">
-        <FlaskConical className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-amber-300">
+        <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
+        <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+            <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-amber-300 shrink-0 w-fit">
               <FlaskConical className="h-3 w-3 mr-1" />
               Sandbox Environment
             </Badge>
@@ -160,7 +160,7 @@ export function SandboxIndicator({ isSandbox = true }: SandboxIndicatorProps) {
           </div>
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-4">
+              <Button variant="outline" size="sm" className="shrink-0 w-fit">
                 <Sparkles className="h-4 w-4 mr-2" />
                 Generate Sample Data
               </Button>

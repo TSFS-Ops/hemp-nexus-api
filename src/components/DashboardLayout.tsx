@@ -130,14 +130,14 @@ export function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background overflow-hidden">
         <AppSidebar 
           activeSection={activeSection} 
           onSectionChange={onSectionChange}
           isAdmin={isAdmin}
           isDemoMode={isDemoMode}
         />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
           <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
             <div className="flex h-12 items-center justify-between px-3 sm:px-4">
               <SidebarTrigger />
@@ -173,7 +173,7 @@ export function DashboardLayout({
           
           <div 
             className={cn(
-              "max-w-6xl py-4 sm:py-6 px-3 sm:px-6 transition-all duration-200 ease-out",
+              "max-w-6xl py-4 sm:py-6 px-3 sm:px-6 transition-all duration-200 ease-out w-full overflow-hidden",
               isTransitioning && transitionDirection === "left" && "animate-slide-in-left",
               isTransitioning && transitionDirection === "right" && "animate-slide-in-right",
               // Add bottom padding on mobile for bottom nav
