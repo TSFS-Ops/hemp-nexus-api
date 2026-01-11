@@ -1,4 +1,4 @@
-import { Search, BookOpen, Key, Handshake, BarChart3, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, Key, FileText, ScrollText, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -14,24 +14,19 @@ interface MobileBottomNavProps {
 }
 
 const primaryItems = [
-  { id: "search", label: "Search", icon: Search },
-  { id: "docs", label: "Docs", icon: BookOpen },
-  { id: "keys", label: "Keys", icon: Key, requiresAuth: true },
-  { id: "matches", label: "Matches", icon: Handshake, requiresAuth: true },
-  { id: "analytics", label: "Stats", icon: BarChart3, requiresAuth: true },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "keys", label: "API Keys", icon: Key, requiresAuth: true },
+  { id: "matches", label: "Evidence", icon: FileText, requiresAuth: true },
+  { id: "audit-logs", label: "Logs", icon: ScrollText, requiresAuth: true },
 ];
 
 const moreItems = [
-  { id: "test", label: "Reference" },
-  { id: "sdk", label: "SDKs" },
-  { id: "embed", label: "Embed" },
+  { id: "docs", label: "API Reference" },
+  { id: "search", label: "Search" },
   { id: "webhooks", label: "Webhooks" },
-  { id: "webhook-debugger", label: "Debugger" },
-  { id: "audit-logs", label: "Logs" },
-  { id: "data-sources", label: "Data Sources" },
+  { id: "analytics", label: "Analytics" },
   { id: "hash-verify", label: "Hash Verifier" },
-  { id: "system-health", label: "System Health" },
-  { id: "troubleshooting", label: "Troubleshooting" },
+  { id: "troubleshooting", label: "Support" },
 ];
 
 export function MobileBottomNav({ activeSection, onSectionChange, isDemoMode }: MobileBottomNavProps) {
