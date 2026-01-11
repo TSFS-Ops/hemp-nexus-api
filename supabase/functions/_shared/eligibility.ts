@@ -7,24 +7,26 @@ import { ApiException } from "./errors.ts";
  * the system blocks Confirm Intent and returns a clear denial.
  */
 
-// Required fields for Confirm Intent
+// Required fields for Confirm Intent - only user-provided data fields
+// Note: org_id and hash are server-generated and should NOT be validated here
 const REQUIRED_MATCH_FIELDS = [
-  { field: "org_id", label: "Organization ID" },
-  { field: "buyer_id", label: "Buyer Identifier" },
-  { field: "buyer_name", label: "Buyer Name" },
-  { field: "seller_id", label: "Seller Identifier" },
-  { field: "seller_name", label: "Seller Name" },
-  { field: "commodity", label: "Commodity" },
-  { field: "quantity_amount", label: "Quantity Amount" },
-  { field: "quantity_unit", label: "Quantity Unit" },
-  { field: "price_amount", label: "Price Amount" },
-  { field: "price_currency", label: "Price Currency" },
-  { field: "hash", label: "Match Hash" },
+  { field: "buyer_id", label: "Buyer Identifier", type: "string" },
+  { field: "buyer_name", label: "Buyer Name", type: "string" },
+  { field: "seller_id", label: "Seller Identifier", type: "string" },
+  { field: "seller_name", label: "Seller Name", type: "string" },
+  { field: "commodity", label: "Commodity", type: "string" },
+  { field: "quantity_amount", label: "Quantity Amount", type: "positive_number" },
+  { field: "quantity_unit", label: "Quantity Unit", type: "string" },
+  { field: "price_amount", label: "Price Amount", type: "positive_number" },
+  { field: "price_currency", label: "Price Currency", type: "currency" },
 ];
 
 export interface EligibilityResult {
   eligible: boolean;
   reasons: EligibilityReason[];
+  checkedFields: string[];
+  passedFields: string[];
+  failedFields: string[];
 }
 
 export interface EligibilityReason {
@@ -39,50 +41,89 @@ export interface EligibilityReason {
  */
 export function evaluateEligibility(match: Record<string, unknown>): EligibilityResult {
   const reasons: EligibilityReason[] = [];
+  const checkedFields: string[] = [];
+  const passedFields: string[] = [];
+  const failedFields: string[] = [];
 
   // Check all required fields
-  for (const { field, label } of REQUIRED_MATCH_FIELDS) {
+  for (const { field, label, type } of REQUIRED_MATCH_FIELDS) {
+    checkedFields.push(field);
     const value = match[field];
+    let fieldPassed = true;
 
     // Check for missing fields
     if (value === undefined || value === null) {
       reasons.push({
         code: "MISSING_FIELD",
         field,
-        message: `${label} is required but missing`,
+        message: `Missing required field: ${label}`,
         severity: "error",
       });
+      fieldPassed = false;
+      failedFields.push(field);
       continue;
     }
 
-    // Check for empty strings
-    if (typeof value === "string" && value.trim() === "") {
-      reasons.push({
-        code: "EMPTY_FIELD",
-        field,
-        message: `${label} cannot be empty`,
-        severity: "error",
-      });
-      continue;
+    // Type-specific validation
+    switch (type) {
+      case "string":
+        if (typeof value !== "string" || value.trim() === "") {
+          reasons.push({
+            code: "EMPTY_FIELD",
+            field,
+            message: `${label} cannot be empty`,
+            severity: "error",
+          });
+          fieldPassed = false;
+        }
+        break;
+
+      case "positive_number":
+        if (typeof value !== "number" || isNaN(value) || !isFinite(value)) {
+          reasons.push({
+            code: "INVALID_NUMBER",
+            field,
+            message: `${label} must be a valid number`,
+            severity: "error",
+          });
+          fieldPassed = false;
+        } else if (value <= 0) {
+          reasons.push({
+            code: "INVALID_VALUE",
+            field,
+            message: `${label} must be greater than zero`,
+            severity: "error",
+          });
+          fieldPassed = false;
+        }
+        break;
+
+      case "currency":
+        if (typeof value !== "string") {
+          reasons.push({
+            code: "INVALID_CURRENCY",
+            field,
+            message: `${label} must be a string`,
+            severity: "error",
+          });
+          fieldPassed = false;
+        } else if (!/^[A-Za-z]{3}$/.test(value)) {
+          // Accept both uppercase and lowercase, but must be 3 letters
+          reasons.push({
+            code: "INVALID_CURRENCY",
+            field,
+            message: `${label} must be a valid 3-letter ISO currency code (e.g., USD, EUR, ZAR)`,
+            severity: "error",
+          });
+          fieldPassed = false;
+        }
+        break;
     }
 
-    // Check for invalid numeric values
-    if (field.includes("amount") && typeof value === "number") {
-      if (isNaN(value) || !isFinite(value)) {
-        reasons.push({
-          code: "INVALID_NUMBER",
-          field,
-          message: `${label} must be a valid number`,
-          severity: "error",
-        });
-      } else if (value <= 0) {
-        reasons.push({
-          code: "INVALID_VALUE",
-          field,
-          message: `${label} must be greater than zero`,
-          severity: "error",
-        });
-      }
+    if (fieldPassed) {
+      passedFields.push(field);
+    } else if (!failedFields.includes(field)) {
+      failedFields.push(field);
     }
   }
 
@@ -94,45 +135,11 @@ export function evaluateEligibility(match: Record<string, unknown>): Eligibility
       message: "Buyer and seller cannot be the same entity",
       severity: "error",
     });
+    if (!failedFields.includes("buyer_id")) failedFields.push("buyer_id");
+    if (!failedFields.includes("seller_id")) failedFields.push("seller_id");
   }
 
-  // Validate hash format
-  if (match.hash && typeof match.hash === "string") {
-    if (!/^[a-f0-9]{64}$/i.test(match.hash)) {
-      reasons.push({
-        code: "INVALID_HASH",
-        field: "hash",
-        message: "Match hash must be a valid SHA-256 hash (64 hex characters)",
-        severity: "error",
-      });
-    }
-  }
-
-  // Validate org_id format (UUID)
-  if (match.org_id && typeof match.org_id === "string") {
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(match.org_id)) {
-      reasons.push({
-        code: "INVALID_ORG_ID",
-        field: "org_id",
-        message: "Organization ID must be a valid UUID",
-        severity: "error",
-      });
-    }
-  }
-
-  // Validate currency code format (3 uppercase letters)
-  if (match.price_currency && typeof match.price_currency === "string") {
-    if (!/^[A-Z]{3}$/.test(match.price_currency)) {
-      reasons.push({
-        code: "INVALID_CURRENCY",
-        field: "price_currency",
-        message: "Currency must be a valid 3-letter ISO currency code (e.g., USD, EUR, ZAR)",
-        severity: "error",
-      });
-    }
-  }
-
-  // Check if already settled (cannot confirm again)
+  // Check if already settled (warning only - doesn't block)
   if (match.status === "settled") {
     reasons.push({
       code: "ALREADY_CONFIRMED",
@@ -148,6 +155,9 @@ export function evaluateEligibility(match: Record<string, unknown>): Eligibility
   return {
     eligible: !hasErrors,
     reasons,
+    checkedFields,
+    passedFields,
+    failedFields,
   };
 }
 
@@ -159,17 +169,18 @@ export function enforceEligibility(match: Record<string, unknown>): void {
 
   if (!result.eligible) {
     const errorReasons = result.reasons.filter((r) => r.severity === "error");
-    const reasonCodes = errorReasons.map((r) => r.code).join(", ");
-    const reasonMessages = errorReasons.map((r) => `• ${r.message}`).join("\n");
+    const denialReasons = errorReasons.map((r) => r.message);
 
     throw new ApiException(
-      "ELIGIBILITY_DENIED",
-      `Confirm Intent denied due to ambiguity. Missing or invalid data prevents creating a valid proof record.\n\n${reasonMessages}`,
+      "ELIGIBILITY_FAILED",
+      "Match does not meet eligibility requirements for Confirm Intent",
       422,
       {
         eligible: false,
-        reasons: errorReasons,
-        reasonCodes,
+        denialReasons,
+        checkedFields: result.checkedFields,
+        passedFields: result.passedFields,
+        failedFields: result.failedFields,
         guidance: "Ensure all required fields are present and valid before confirming intent.",
       }
     );
@@ -181,11 +192,17 @@ export function enforceEligibility(match: Record<string, unknown>): void {
  */
 export function formatEligibilityResponse(result: EligibilityResult): {
   eligible: boolean;
+  checkedFields: string[];
+  passedFields: string[];
+  failedFields: string[];
   errors: Array<{ field: string; message: string; code: string }>;
   warnings: Array<{ field: string; message: string; code: string }>;
 } {
   return {
     eligible: result.eligible,
+    checkedFields: result.checkedFields,
+    passedFields: result.passedFields,
+    failedFields: result.failedFields,
     errors: result.reasons
       .filter((r) => r.severity === "error")
       .map((r) => ({ field: r.field, message: r.message, code: r.code })),
