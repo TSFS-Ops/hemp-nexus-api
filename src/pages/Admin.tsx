@@ -19,6 +19,7 @@ import { AdminCoherencePanel } from "@/components/admin/AdminCoherencePanel";
 import { AdminBehavioralAnalytics } from "@/components/admin/AdminBehavioralAnalytics";
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminDiscoveryMetrics } from "@/components/admin/AdminDiscoveryMetrics";
+import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -115,6 +116,7 @@ export default function Admin() {
               <Route path="/discovery" element={<AdminDiscoveryMetrics />} />
               <Route path="/behavioral" element={<AdminBehavioralAnalytics />} />
               <Route path="/audit" element={<AdminAuditLogs />} />
+              <Route path="/tokens" element={<AdminTokenManagement />} />
               <Route
                 path="/users-orgs"
                 element={

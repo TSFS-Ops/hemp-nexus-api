@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { MatchTimeline } from "@/components/MatchTimeline";
+import { MatchDocuments } from "@/components/match/MatchDocuments";
 import {
   Tooltip,
   TooltipContent,
@@ -225,6 +226,8 @@ export default function MatchDetails() {
           )}
         </CardContent>
       </Card>
+
+      <MatchDocuments matchId={match.id} orgId={match.org_id} />
 
       <MatchTimeline matchId={match.id} />
     </div>
