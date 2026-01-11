@@ -260,7 +260,7 @@ export default function Demo() {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="text-xs text-muted-foreground">Examples:</span>
-                {["buyers for cashew in India", "copper cathode suppliers", "hemp fiber wholesalers"].map((example) => (
+                {["buyers for cashew in India", "copper cathode suppliers", "hemp fibre wholesalers"].map((example) => (
                   <button
                     key={example}
                     onClick={() => setQuery(example)}

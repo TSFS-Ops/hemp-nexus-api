@@ -55,7 +55,7 @@ export default function ApiPlayground() {
 
   // Signals state
   const [signalType, setSignalType] = useState<"buyer" | "seller">("buyer");
-  const [signalWhat, setSignalWhat] = useState("Industrial fiber");
+  const [signalWhat, setSignalWhat] = useState("Industrial fibre");
   const [signalHowMuch, setSignalHowMuch] = useState("10000");
   const [signalUnit, setSignalUnit] = useState("kg");
   const [signalWhere, setSignalWhere] = useState("Rotterdam");
@@ -67,7 +67,7 @@ export default function ApiPlayground() {
   const [buyerName, setBuyerName] = useState("Acme Corp");
   const [sellerId, setSellerId] = useState("SELLER_001");
   const [sellerName, setSellerName] = useState("Supply Co");
-  const [commodity, setCommodity] = useState("Industrial fiber");
+  const [commodity, setCommodity] = useState("Industrial fibre");
   const [quantityAmount, setQuantityAmount] = useState("1000");
   const [quantityUnit, setQuantityUnit] = useState("kg");
   const [priceAmount, setPriceAmount] = useState("50000");
@@ -177,7 +177,7 @@ export default function ApiPlayground() {
       const options: RequestInit = {
         method,
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
+          "X-API-Key": apiKey,
           "Content-Type": "application/json",
         },
       };

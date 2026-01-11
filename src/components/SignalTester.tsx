@@ -22,7 +22,7 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
 
   // Form state
   const [signalType, setSignalType] = useState<"buyer" | "seller">("buyer");
-  const [product, setProduct] = useState("Industrial fiber");
+  const [product, setProduct] = useState("Industrial fibre");
   const [quantity, setQuantity] = useState("10000");
   const [unit, setUnit] = useState("kg");
   const [location, setLocation] = useState("Rotterdam");

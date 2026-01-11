@@ -15,7 +15,7 @@ interface SearchHeaderProps {
 const EXAMPLE_QUERIES = [
   "buyers for cashew in India",
   "copper cathode suppliers",
-  "hemp fiber wholesalers South Africa",
+  "hemp fibre wholesalers South Africa",
 ];
 
 export function SearchHeader({ 

@@ -293,7 +293,7 @@ APIs let different software systems talk to each other automatically. Instead of
 2. **Test authentication**:
    ```bash
    curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/healthz \
-     -H "Authorization: Bearer YOUR_API_KEY_HERE"
+     -H "X-API-Key: YOUR_API_KEY_HERE"
    ```
 
    **Replace** `YOUR_API_KEY_HERE` with your actual key
@@ -334,7 +334,7 @@ A signal expresses your intent to trade. Think of it as posting a want ad:
 
 ```bash
 curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals \
-  -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+  -H "X-API-Key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
     "product": "Medical Surgical Masks",
@@ -359,10 +359,9 @@ https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals
 
 **The Headers**:
 ```bash
--H "Authorization: Bearer YOUR_API_KEY_HERE"
+-H "X-API-Key: YOUR_API_KEY_HERE"
 ```
-- **What it does**: Proves you're authorized
-- **Bearer**: A standard way to send API keys
+- **What it does**: Proves you're authorised
 - **YOUR_API_KEY_HERE**: Replace with your actual key
 
 ```bash
@@ -409,7 +408,7 @@ async function createSignal() {
     {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'X-API-Key': apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -451,7 +450,7 @@ api_key = os.environ.get('API_KEY')  # Store in environment variable
 url = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals'
 
 headers = {
-    'Authorization': f'Bearer {api_key}',
+    'X-API-Key': api_key,
     'Content-Type': 'application/json'
 }
 

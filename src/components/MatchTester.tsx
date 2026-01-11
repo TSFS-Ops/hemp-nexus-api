@@ -23,7 +23,7 @@ export default function MatchTester({ apiKey }: MatchTesterProps) {
   const [buyerName, setBuyerName] = useState("Test Buyer Ltd");
   const [sellerId, setSellerId] = useState("SELLER_TEST_001");
   const [sellerName, setSellerName] = useState("Test Seller Ltd");
-  const [commodity, setCommodity] = useState("Industrial Fiber Material");
+  const [commodity, setCommodity] = useState("Industrial Fibre Material");
   const [quantityAmount, setQuantityAmount] = useState("1000");
   const [quantityUnit, setQuantityUnit] = useState("kg");
   const [priceAmount, setPriceAmount] = useState("50000");

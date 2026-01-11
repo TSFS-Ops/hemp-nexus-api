@@ -67,7 +67,7 @@ export default function ApiDocs() {
                   <div>
                     <h4 className="font-medium mb-2">Header Format</h4>
                     <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-{`Authorization: Bearer YOUR_API_KEY`}
+{`X-API-Key: YOUR_API_KEY`}
                     </pre>
                   </div>
 
@@ -75,7 +75,7 @@ export default function ApiDocs() {
                     <h4 className="font-medium mb-2">cURL Example</h4>
                     <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
 {`curl -X GET "${baseUrl}/signals" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`}
                     </pre>
                   </div>
@@ -86,7 +86,7 @@ export default function ApiDocs() {
 {`const response = await fetch('${baseUrl}/signals', {
   method: 'GET',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'X-API-Key': 'YOUR_API_KEY',
     'Content-Type': 'application/json'
   }
 });
@@ -101,7 +101,7 @@ const data = await response.json();`}
 {`import requests
 
 headers = {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'X-API-Key': 'YOUR_API_KEY',
     'Content-Type': 'application/json'
 }
 
@@ -142,7 +142,7 @@ data = response.json()`}
 {`{
   "type": "buyer",  // or "seller"
   "content": {
-    "what": "Industrial fiber",
+    "what": "Industrial fibre",
     "how_much": 10000,
     "unit": "kg",
     "where": "Rotterdam, Netherlands",
@@ -163,7 +163,7 @@ data = response.json()`}
   "options": [
     {
       "id": "uuid",
-      "what": "Industrial fiber",
+      "what": "Industrial fibre",
       "how_much": 10000,
       "unit": "kg",
       "where_location": "Rotterdam",
@@ -186,13 +186,13 @@ data = response.json()`}
 {`const response = await fetch('${baseUrl}/signals', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'X-API-Key': 'YOUR_API_KEY',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
     type: 'buyer',
     content: {
-      what: 'Industrial fiber',
+      what: 'Industrial fibre',
       how_much: 10000,
       unit: 'kg',
       where: 'Rotterdam, Netherlands',
@@ -228,7 +228,7 @@ console.log('Options found:', data.options.length);`}
 {`const response = await fetch('${baseUrl}/signals/SIGNAL_ID', {
   method: 'GET',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY'
+    'X-API-Key': 'YOUR_API_KEY'
   }
 });
 
@@ -264,7 +264,7 @@ const signal = await response.json();`}
 {`const response = await fetch('${baseUrl}/signals/SIGNAL_ID/select', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'X-API-Key': 'YOUR_API_KEY',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
@@ -340,7 +340,7 @@ match_data = {
     "buyer_name": "Acme Corp",
     "seller_id": "SELLER_001",
     "seller_name": "Supply Co",
-    "commodity": "Industrial fiber",
+    "commodity": "Industrial fibre",
     "quantity": {"amount": 1000, "unit": "kg"},
     "price": {"amount": 50000, "currency": "USD"},
     "terms": "Delivery within 30 days"
@@ -349,7 +349,7 @@ match_data = {
 response = requests.post(
     '${baseUrl}/match',
     headers={
-        'Authorization': 'Bearer YOUR_API_KEY',
+        'X-API-Key': 'YOUR_API_KEY',
         'Content-Type': 'application/json'
     },
     json=match_data
@@ -421,7 +421,7 @@ print(f"Match created: {match['match_id']}")`}
 {`const response = await fetch('${baseUrl}/match/MATCH_ID/settle', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'X-API-Key': 'YOUR_API_KEY',
     'Content-Type': 'application/json'
   }
 });

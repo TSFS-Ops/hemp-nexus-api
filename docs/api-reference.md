@@ -60,10 +60,10 @@ All API requests (except `/healthz`) require authentication using **API keys**.
 
 ### API Key Authentication
 
-Include your API key in the `Authorization` header:
+Include your API key in the `X-API-Key` header:
 
 ```http
-Authorization: Bearer sk_your_api_key_here
+X-API-Key: sk_your_api_key_here
 ```
 
 ### Getting an API Key
@@ -319,7 +319,7 @@ Create a new signal to express buying or selling intent.
 **Request**:
 ```http
 POST /functions/v1/signals
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 Content-Type: application/json
 
 {
@@ -371,7 +371,7 @@ List your signals.
 **Request**:
 ```http
 GET /functions/v1/signals?limit=50&status=active
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Query Parameters**:
@@ -413,7 +413,7 @@ Get a signal with its matched options.
 **Request**:
 ```http
 GET /functions/v1/signals/550e8400-e29b-41d4-a716-446655440000
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Response** (200 OK):
@@ -464,7 +464,7 @@ Get signal status and search progress.
 **Request**:
 ```http
 GET /functions/v1/signals/550e8400-e29b-41d4-a716-446655440000/status
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Response** (200 OK):
@@ -492,7 +492,7 @@ Select an option from signal results.
 **Request**:
 ```http
 POST /functions/v1/signals/550e8400-e29b-41d4-a716-446655440000/select
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 Content-Type: application/json
 
 {
@@ -521,7 +521,7 @@ Cancel a signal.
 **Request**:
 ```http
 DELETE /functions/v1/signals/550e8400-e29b-41d4-a716-446655440000
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Response** (204 No Content)
@@ -543,7 +543,7 @@ Record a match between buyer and seller with cryptographic proof.
 **Request**:
 ```http
 POST /functions/v1/match
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 Content-Type: application/json
 Idempotency-Key: unique-key-123
 
@@ -628,7 +628,7 @@ List your matches.
 **Request**:
 ```http
 GET /functions/v1/match?limit=50&status=matched&commodity=equipment
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Query Parameters**:
@@ -668,7 +668,7 @@ Get a specific match.
 **Request**:
 ```http
 GET /functions/v1/match/match_789
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Response** (200 OK):
@@ -705,7 +705,7 @@ Authorization: Bearer sk_your_api_key
 **Request**:
 ```http
 POST /functions/v1/match/match_789/settle
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Response** (200 OK):
@@ -789,7 +789,7 @@ Generate a complete evidence pack for a match.
 **Request**:
 ```http
 GET /functions/v1/evidence-pack/match_789
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 ```
 
 **Response** (200 OK):
@@ -927,7 +927,7 @@ Create a new API key.
 **Request**:
 ```http
 POST /functions/v1/api-keys
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 Content-Type: application/json
 
 {
@@ -997,7 +997,7 @@ Create a webhook endpoint.
 **Request**:
 ```http
 POST /functions/v1/webhooks
-Authorization: Bearer sk_your_api_key
+X-API-Key: sk_your_api_key
 Content-Type: application/json
 
 {
