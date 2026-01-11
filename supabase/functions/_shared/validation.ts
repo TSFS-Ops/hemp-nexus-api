@@ -1,4 +1,5 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { ApiException } from "./errors.ts";
 
 // Match endpoint validation
 export const matchSchema = z.object({
@@ -69,7 +70,7 @@ export const dataSourceUpdateSchema = z.object({
   config: z.record(z.unknown()).optional(),
 });
 
-// Organization endpoint validation
+// Organisation endpoint validation
 export const orgCreateSchema = z.object({
   name: z.string().trim().min(1).max(200),
   status: z.enum(["active", "inactive"]).optional(),
@@ -107,14 +108,28 @@ export const srDiscoverSchema = z.object({
   signalId: z.string().uuid(),
 });
 
-// Helper function to validate and return parsed data or throw API error
+/**
+ * Validate input against a Zod schema and throw ApiException on failure.
+ * Returns parsed data with proper types.
+ */
 export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
   try {
     return schema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const messages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
-      throw new Error(`Validation failed: ${messages}`);
+      throw new ApiException(
+        "VALIDATION_ERROR",
+        `Validation failed: ${messages}`,
+        400,
+        {
+          errors: error.errors.map(e => ({
+            path: e.path.join('.'),
+            message: e.message,
+            code: e.code,
+          })),
+        }
+      );
     }
     throw error;
   }
