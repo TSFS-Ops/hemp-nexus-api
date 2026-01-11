@@ -20,6 +20,7 @@ import { AdminBehavioralAnalytics } from "@/components/admin/AdminBehavioralAnal
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminDiscoveryMetrics } from "@/components/admin/AdminDiscoveryMetrics";
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
+import { AdminDocumentVerification } from "@/components/admin/AdminDocumentVerification";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -117,6 +118,7 @@ export default function Admin() {
               <Route path="/behavioral" element={<AdminBehavioralAnalytics />} />
               <Route path="/audit" element={<AdminAuditLogs />} />
               <Route path="/tokens" element={<AdminTokenManagement />} />
+              <Route path="/documents" element={<AdminDocumentVerification />} />
               <Route
                 path="/users-orgs"
                 element={
