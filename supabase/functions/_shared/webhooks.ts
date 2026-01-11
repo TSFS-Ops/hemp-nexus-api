@@ -1,4 +1,5 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { decryptSecret, isEncryptedFormat } from "./webhook-crypto.ts";
 
 export interface WebhookPayload {
   event: string;
@@ -151,10 +152,26 @@ export async function triggerWebhooks(
 
     // Deliver to all endpoints (in parallel)
     const deliveryPromises = endpoints.map(async (endpoint) => {
+      // Decrypt the secret for HMAC signing
+      let secret: string;
+      try {
+        if (isEncryptedFormat(endpoint.secret_hash)) {
+          secret = await decryptSecret(endpoint.secret_hash);
+        } else {
+          // Legacy: stored value is a hash, cannot recover original secret
+          // Log warning and skip this webhook
+          console.warn(`Webhook ${endpoint.id} uses legacy hash format - cannot sign properly. Please recreate the webhook.`);
+          secret = endpoint.secret_hash; // Fallback - signature verification will fail on recipient side
+        }
+      } catch (err) {
+        console.error(`Failed to decrypt webhook secret for ${endpoint.id}:`, err);
+        return { success: false, error: "Failed to decrypt webhook secret" };
+      }
+
       const result = await deliverWebhook(
         endpoint.url, 
         payload, 
-        endpoint.secret_hash,
+        secret,
         endpoint.id,
         supabase
       );

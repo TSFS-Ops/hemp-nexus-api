@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { encryptSecret } from "../_shared/webhook-crypto.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const webhookCreateSchema = z.object({
@@ -52,12 +53,8 @@ Deno.serve(async (req) => {
       // Generate secret if not provided
       const secret = body.secret || crypto.randomUUID();
       
-      // Hash the secret for storage
-      const encoder = new TextEncoder();
-      const data = encoder.encode(secret);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const secretHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+      // Encrypt the secret for secure storage (NOT hash - we need to decrypt for HMAC)
+      const encryptedSecret = await encryptSecret(secret);
 
       const { data: webhook, error } = await supabase
         .from("webhook_endpoints")
@@ -65,7 +62,7 @@ Deno.serve(async (req) => {
           org_id: authCtx.orgId,
           url: body.url,
           events: body.events,
-          secret_hash: secretHash,
+          secret_hash: encryptedSecret, // Column still named secret_hash for backwards compat
           status: "active",
         })
         .select()
