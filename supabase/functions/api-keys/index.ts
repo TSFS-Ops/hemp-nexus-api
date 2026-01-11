@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
           name,
           key_hash: keyHash,
           scopes: scopes || [],
-          created_by: authCtx.userId || null,
+          created_by: authCtx.isApiKey ? null : authCtx.userId,
           expires_at: expires_at || null,
         })
         .select()
@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
       // Log audit trail
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: 'api_key.created',
         entity_type: 'api_key',
         entity_id: data.id,
@@ -110,7 +111,8 @@ Deno.serve(async (req) => {
 
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: 'api_key.revoked',
         entity_type: 'api_key',
         entity_id: keyId,

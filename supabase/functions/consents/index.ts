@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
         .insert({
           org_id: authCtx.orgId,
           data_source_id,
-          granted_by: authCtx.userId || null,
+          granted_by: authCtx.isApiKey ? null : authCtx.userId,
           scope: scope || {},
           expires_at,
         })
@@ -65,7 +65,8 @@ Deno.serve(async (req) => {
 
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: 'consent.granted',
         entity_type: 'consent',
         entity_id: data.id,
@@ -108,7 +109,8 @@ Deno.serve(async (req) => {
 
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: 'consent.revoked',
         entity_type: 'consent',
         entity_id: consentId,

@@ -70,7 +70,8 @@ serve(async (req) => {
     // Log AI usage to audit trail
     await supabase.from('audit_logs').insert({
       org_id: authCtx.orgId,
-      actor_user_id: authCtx.userId || null,
+      actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+      actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
       action: 'ai.web_search',
       entity_type: 'signal',
       entity_id: null,
