@@ -1,4 +1,4 @@
-import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio, Brain, MousePointer, ScrollText, TrendingUp, Zap } from "lucide-react";
+import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio, Brain, MousePointer, ScrollText, TrendingUp, Zap, Coins } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -21,6 +21,7 @@ const adminItems = [
   { title: "Behavioral Analytics", url: "/admin/behavioral", icon: MousePointer },
   { title: "Audit Logs", url: "/admin/audit", icon: ScrollText },
   { title: "API Logs", url: "/admin/logs", icon: FileText },
+  { title: "Token Management", url: "/admin/tokens", icon: Coins },
   { title: "Users & Organizations", url: "/admin/users-orgs", icon: Users },
   { title: "API Keys", url: "/admin/api-keys", icon: Key },
   { title: "Risk Management", url: "/admin/risk", icon: Shield },

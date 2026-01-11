@@ -92,6 +92,15 @@ Deno.serve(async (req) => {
 
       if (auditError) handleDatabaseError(auditError, requestId);
 
+      // Fetch match documents
+      const { data: documents, error: docsError } = await supabase
+        .from("match_documents")
+        .select("id, doc_type, filename, sha256_hash, file_size, mime_type, status, created_at, expiry_date")
+        .eq("match_id", matchId)
+        .order("created_at", { ascending: true });
+
+      if (docsError) handleDatabaseError(docsError, requestId);
+
       // Verify hash chain integrity
       let chainValid = true;
       const chainVerification = [];
@@ -157,6 +166,20 @@ Deno.serve(async (req) => {
           valid: chainValid,
           details: chainVerification,
         },
+        documents: {
+          files: (documents || []).map((doc) => ({
+            id: doc.id,
+            type: doc.doc_type,
+            filename: doc.filename,
+            sha256Hash: doc.sha256_hash,
+            fileSize: doc.file_size,
+            mimeType: doc.mime_type,
+            status: doc.status,
+            uploadedAt: doc.created_at,
+            expiresAt: doc.expiry_date,
+          })),
+          totalDocuments: documents?.length || 0,
+        },
         auditTrail: {
           logs: auditLogs || [],
           totalLogs: auditLogs?.length || 0,
@@ -164,8 +187,9 @@ Deno.serve(async (req) => {
         verification: {
           matchHashAlgorithm: "SHA-256",
           eventHashAlgorithm: "SHA-256",
+          documentHashAlgorithm: "SHA-256",
           chainIntegrity: chainValid ? "VERIFIED" : "COMPROMISED",
-          immutabilityGuarantee: "All events are cryptographically linked",
+          immutabilityGuarantee: "All events and document hashes are cryptographically verified",
         },
       };
 
@@ -181,6 +205,7 @@ Deno.serve(async (req) => {
           packId: evidencePack.metadata.packId,
           chainValid,
           eventCount: events?.length || 0,
+          documentCount: documents?.length || 0,
         },
       });
 

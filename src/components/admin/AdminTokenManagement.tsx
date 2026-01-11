@@ -1,0 +1,358 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Coins, Plus, RefreshCw, Search, AlertCircle } from "lucide-react";
+import { format } from "date-fns";
+
+interface Organization {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+}
+
+interface TokenBalance {
+  id: string;
+  org_id: string;
+  balance: number;
+  minimum_required: number;
+  updated_at: string;
+  organization?: Organization;
+}
+
+export function AdminTokenManagement() {
+  const [balances, setBalances] = useState<TokenBalance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedOrg, setSelectedOrg] = useState<TokenBalance | null>(null);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchBalances();
+  }, []);
+
+  const fetchBalances = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch organizations
+      const { data: orgs, error: orgsError } = await supabase
+        .from("organizations")
+        .select("id, name, status, created_at");
+      
+      if (orgsError) throw orgsError;
+
+      // Fetch token balances
+      const { data: tokensData, error: tokensError } = await supabase
+        .from("token_balances")
+        .select("*");
+      
+      if (tokensError) throw tokensError;
+
+      // Merge data
+      const mergedData = (tokensData || []).map((balance) => ({
+        ...balance,
+        organization: orgs?.find((org) => org.id === balance.org_id),
+      }));
+
+      setBalances(mergedData);
+    } catch (error) {
+      console.error("Error fetching balances:", error);
+      toast.error("Failed to load token balances");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTopUp = async () => {
+    if (!selectedOrg || !topUpAmount) return;
+
+    const amount = parseInt(topUpAmount, 10);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid positive amount");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const newBalance = selectedOrg.balance + amount;
+
+      // Update the token balance
+      const { error: updateError } = await supabase
+        .from("token_balances")
+        .update({ 
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq("org_id", selectedOrg.org_id);
+
+      if (updateError) throw updateError;
+
+      // Create a ledger entry for the top-up
+      const { error: ledgerError } = await supabase
+        .from("token_ledger")
+        .insert({
+          org_id: selectedOrg.org_id,
+          endpoint: "admin-top-up",
+          tokens_burned: -amount, // Negative to indicate credit
+          remaining_balance: newBalance,
+          outcome: "credit",
+          metadata: {
+            type: "admin_top_up",
+            amount,
+            previous_balance: selectedOrg.balance,
+            new_balance: newBalance,
+          },
+        });
+
+      if (ledgerError) throw ledgerError;
+
+      // Create admin audit log
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.from("admin_audit_logs").insert({
+          admin_user_id: session.user.id,
+          action: "token_top_up",
+          target_type: "organization",
+          target_id: selectedOrg.org_id,
+          details: {
+            amount,
+            previous_balance: selectedOrg.balance,
+            new_balance: newBalance,
+          },
+        });
+      }
+
+      toast.success(`Added ${amount.toLocaleString()} tokens to ${selectedOrg.organization?.name || 'organization'}`);
+      setIsDialogOpen(false);
+      setTopUpAmount("");
+      setSelectedOrg(null);
+      fetchBalances();
+    } catch (error) {
+      console.error("Error topping up tokens:", error);
+      toast.error("Failed to add tokens");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredBalances = balances.filter((balance) => {
+    const orgName = balance.organization?.name?.toLowerCase() || "";
+    const query = searchQuery.toLowerCase();
+    return orgName.includes(query) || balance.org_id.includes(query);
+  });
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Token Management</h2>
+        <p className="text-muted-foreground mt-2">
+          Manage organization token balances and top-ups
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Coins className="h-5 w-5" />
+                Organization Balances
+              </CardTitle>
+              <CardDescription>
+                View and manage token balances for all organizations
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchBalances} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search organizations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading balances...
+            </div>
+          ) : filteredBalances.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No organizations found
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Organization</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-right">Minimum Required</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBalances.map((balance) => {
+                    const isBelowMinimum = balance.balance < balance.minimum_required;
+                    return (
+                      <TableRow key={balance.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {balance.organization?.name || "Unknown"}
+                            </div>
+                            <div className="text-xs text-muted-foreground font-mono">
+                              {balance.org_id.slice(0, 8)}...
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {isBelowMinimum && (
+                              <AlertCircle className="h-4 w-4 text-destructive" />
+                            )}
+                            <span className={isBelowMinimum ? "text-destructive font-medium" : ""}>
+                              {balance.balance.toLocaleString()}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {balance.minimum_required.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={isBelowMinimum ? "destructive" : "default"}
+                          >
+                            {isBelowMinimum ? "Below Minimum" : "Active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {format(new Date(balance.updated_at), "MMM dd, yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Dialog open={isDialogOpen && selectedOrg?.id === balance.id} onOpenChange={(open) => {
+                            setIsDialogOpen(open);
+                            if (!open) {
+                              setSelectedOrg(null);
+                              setTopUpAmount("");
+                            }
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedOrg(balance);
+                                  setIsDialogOpen(true);
+                                }}
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Top Up
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Add Tokens</DialogTitle>
+                                <DialogDescription>
+                                  Add tokens to {balance.organization?.name || "this organization"}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label>Current Balance</Label>
+                                  <div className="text-2xl font-bold">
+                                    {balance.balance.toLocaleString()} tokens
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="amount">Tokens to Add</Label>
+                                  <Input
+                                    id="amount"
+                                    type="number"
+                                    placeholder="Enter amount..."
+                                    value={topUpAmount}
+                                    onChange={(e) => setTopUpAmount(e.target.value)}
+                                    min="1"
+                                  />
+                                </div>
+                                {topUpAmount && parseInt(topUpAmount) > 0 && (
+                                  <div className="p-3 bg-muted rounded-lg">
+                                    <div className="text-sm text-muted-foreground">
+                                      New balance will be:
+                                    </div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {(balance.balance + parseInt(topUpAmount || "0")).toLocaleString()} tokens
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsDialogOpen(false)}
+                                  disabled={submitting}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={handleTopUp}
+                                  disabled={submitting || !topUpAmount || parseInt(topUpAmount) <= 0}
+                                >
+                                  {submitting ? "Adding..." : "Add Tokens"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
