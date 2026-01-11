@@ -718,6 +718,86 @@ export type Database = {
           },
         ]
       }
+      match_documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          expiry_date: string | null
+          file_size: number | null
+          filename: string
+          id: string
+          match_id: string
+          mime_type: string | null
+          org_id: string
+          sha256_hash: string
+          status: string
+          storage_path: string
+          updated_at: string
+          uploader_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          expiry_date?: string | null
+          file_size?: number | null
+          filename: string
+          id?: string
+          match_id: string
+          mime_type?: string | null
+          org_id: string
+          sha256_hash: string
+          status?: string
+          storage_path: string
+          updated_at?: string
+          uploader_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          expiry_date?: string | null
+          file_size?: number | null
+          filename?: string
+          id?: string
+          match_id?: string
+          mime_type?: string | null
+          org_id?: string
+          sha256_hash?: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          uploader_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_documents_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_documents_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_documents_uploader_user_id_fkey"
+            columns: ["uploader_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_events: {
         Row: {
           actor_api_key_id: string | null
@@ -1241,6 +1321,95 @@ export type Database = {
           },
           {
             foreignKeyName: "signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          minimum_required: number
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          minimum_required?: number
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          minimum_required?: number
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_balances_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_ledger: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          metadata: Json | null
+          org_id: string
+          outcome: string
+          remaining_balance: number
+          request_id: string | null
+          tokens_burned: number
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          metadata?: Json | null
+          org_id: string
+          outcome: string
+          remaining_balance: number
+          request_id?: string | null
+          tokens_burned?: number
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          metadata?: Json | null
+          org_id?: string
+          outcome?: string
+          remaining_balance?: number
+          request_id?: string | null
+          tokens_burned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_ledger_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_ledger_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

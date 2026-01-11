@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
+import { enforceTokenMetering } from "../_shared/token-metering.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -24,6 +25,15 @@ Deno.serve(async (req) => {
     // Authenticate
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireScope(authCtx, 'audit_logs');
+    
+    // Enforce token metering - burns 1 token per request
+    await enforceTokenMetering(
+      supabase,
+      authCtx.orgId,
+      authCtx.isApiKey ? authCtx.userId : null,
+      "/audit-logs",
+      requestId
+    );
 
     const url = new URL(req.url);
     console.log(`[${requestId}] GET /audit-logs`);

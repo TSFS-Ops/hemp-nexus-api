@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { enforceTokenMetering } from "../_shared/token-metering.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -35,6 +36,15 @@ Deno.serve(async (req) => {
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'evidence-pack', 'evidence-pack');
+    
+    // Enforce token metering - burns 1 token per request
+    await enforceTokenMetering(
+      supabase,
+      authCtx.orgId,
+      authCtx.isApiKey ? authCtx.userId : null,
+      "/evidence-pack",
+      requestId
+    );
 
     // GET /:matchId - Generate evidence pack
     if (req.method === "GET") {

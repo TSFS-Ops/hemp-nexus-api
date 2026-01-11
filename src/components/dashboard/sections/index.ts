@@ -6,3 +6,4 @@ export { ApiKeysSection } from "./ApiKeysSection";
 export { TestSection } from "./TestSection";
 export { WebhooksSection } from "./WebhooksSection";
 export { AuditLogsSection } from "./AuditLogsSection";
+export { UsageBillingSection } from "./UsageBillingSection";
