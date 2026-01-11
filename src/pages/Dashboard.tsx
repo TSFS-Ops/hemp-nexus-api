@@ -29,9 +29,10 @@ import {
   ApiKeysSection,
   TestSection,
   WebhooksSection,
-  AuditLogsSection,
   UsageBillingSection,
+  LogsSection,
 } from "@/components/dashboard/sections";
+import { ConsoleOverview } from "@/components/dashboard/ConsoleOverview";
 
 interface ApiKey {
   id: string;
@@ -48,7 +49,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [activeSection, setActiveSection] = useState(() => {
-    return localStorage.getItem("dashboard_active_section") || "search";
+    return localStorage.getItem("dashboard_active_section") || "overview";
   });
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -94,6 +95,9 @@ export default function Dashboard() {
   // Memoized content renderer for better performance
   const content = useMemo(() => {
     switch (activeSection) {
+      case "overview":
+        return <ConsoleOverview />;
+
       case "quickstart":
         return <QuickstartGuide onStartWizard={() => setShowOnboarding(true)} onSectionChange={setActiveSection} />;
 
@@ -140,7 +144,7 @@ export default function Dashboard() {
         );
 
       case "audit-logs":
-        return <AuditLogsSection apiKeyId={apiKeys[0]?.id} />;
+        return <LogsSection />;
 
       case "usage":
         return <UsageBillingSection />;
