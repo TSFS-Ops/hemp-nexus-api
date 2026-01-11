@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Terminal, Database, FileCheck, ChevronRight, Menu, X } from "lucide-react";
+import { ArrowRight, Search, CheckCircle, FileText, Shield, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Landing() {
@@ -9,13 +9,13 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+      <nav className="border-b border-border bg-background sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
               <span className="text-background font-bold text-xs">CM</span>
             </div>
-            <span className="font-semibold text-sm tracking-tight">Compliance Match</span>
+            <span className="font-semibold text-sm tracking-tight">Compliance Matching API</span>
           </div>
           
           {/* Desktop Navigation */}
@@ -24,19 +24,20 @@ export default function Landing() {
               to="/docs" 
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Docs
+              Documentation
             </Link>
             <Link 
               to="/demo" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm font-medium text-foreground"
             >
-              Demo
+              Try Demo
             </Link>
             <Link 
               to="/auth"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
             >
               Sign in
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
@@ -59,18 +60,18 @@ export default function Landing() {
               className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Docs
+              Documentation
             </Link>
             <Link 
               to="/demo" 
-              className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              className="block text-sm font-medium text-foreground py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Demo
+              Try Demo
             </Link>
             <Link 
               to="/auth"
-              className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2"
+              className="block text-sm font-medium text-foreground py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               Sign in
@@ -80,190 +81,152 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-12 sm:pb-16">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-16 sm:pb-20">
         <div className="max-w-3xl">
-          <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-3 sm:mb-4 tracking-wide uppercase">
-            Developer API
-          </p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] mb-4 sm:mb-6">
-            Proof-of-intent matching for regulated B2B commerce
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] mb-5">
+            Compliance Matching API
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-2xl">
-            Search counterparties, confirm trade intent, and generate tamper-evident audit trails. 
-            Built for compliance teams in commodities, manufacturing, and cross-border trade.
+          <p className="text-lg sm:text-xl text-foreground/80 leading-relaxed mb-3">
+            Find counterparties and create tamper-evident proof-of-intent logs — no payment, no contract.
+          </p>
+          <p className="text-base text-muted-foreground leading-relaxed mb-8">
+            For developers building regulated B2B marketplaces, brokerage platforms, and procurement systems.
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link 
               to="/demo"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
             >
-              Try demo
+              Try Demo
+              <span className="text-background/60 text-xs font-normal">(No Login)</span>
             </Link>
             <Link 
               to="/auth"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
             >
-              Get API key
-              <ArrowRight className="h-4 w-4" />
+              Sign in / Create API Key
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="border-t border-border/60 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="space-y-3">
-              <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
-                <Terminal className="h-4 w-4 text-foreground" />
-              </div>
-              <h3 className="font-semibold text-foreground">Search API</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Natural language search across multiple data sources. Returns ranked counterparties with confidence scores.
-              </p>
-            </div>
+      {/* How It Works - 4 Step Flow */}
+      <section className="border-t border-border bg-muted/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <div className="mb-10">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">How it works</h2>
+            <p className="text-muted-foreground">Four steps from search to verifiable proof</p>
+          </div>
 
-            <div className="space-y-3">
-              <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
-                <Database className="h-4 w-4 text-foreground" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                step: "1",
+                icon: Search,
+                title: "Search",
+                description: "Query for counterparties using natural language. Get ranked results with confidence scores."
+              },
+              {
+                step: "2",
+                icon: CheckCircle,
+                title: "Review",
+                description: "Evaluate results enriched by the Discovery Engine. See why each counterparty was surfaced."
+              },
+              {
+                step: "3",
+                icon: Shield,
+                title: "Confirm Intent",
+                description: "Record buyer-seller interest with a single API call. Creates timestamped, hash-verified proof."
+              },
+              {
+                step: "4",
+                icon: FileText,
+                title: "Evidence Pack",
+                description: "Export tamper-evident audit trails for compliance reviews and regulatory reporting."
+              }
+            ].map((item) => (
+              <div key={item.step} className="relative">
+                <div className="flex flex-col h-full p-5 rounded-lg border border-border bg-background">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                      <item.icon className="h-4 w-4 text-foreground" />
+                    </div>
+                    <span className="text-xs font-mono text-muted-foreground">Step {item.step}</span>
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                </div>
               </div>
-              <h3 className="font-semibold text-foreground">Intent Confirmation</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Record buyer-seller interest with a single API call. Creates timestamped, hash-verified proof of intent.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="h-9 w-9 rounded-md bg-background border border-border flex items-center justify-center">
-                <FileCheck className="h-4 w-4 text-foreground" />
-              </div>
-              <h3 className="font-semibold text-foreground">Evidence Packs</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Export tamper-evident audit trails for compliance reviews, dispute resolution, and regulatory reporting.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Interface Preview */}
-      <section className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Interface Preview</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">Search results with discovery engine enrichment</p>
-          </div>
-
-          <div className="border border-border rounded-lg overflow-hidden bg-card">
-            {/* Window chrome */}
-            <div className="border-b border-border px-4 py-2.5 bg-muted/50 flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-border" />
-                <div className="h-2.5 w-2.5 rounded-full bg-border" />
-                <div className="h-2.5 w-2.5 rounded-full bg-border" />
-              </div>
-              <span className="text-xs text-muted-foreground ml-2 font-mono">dashboard</span>
+      {/* Key Differentiators */}
+      <section className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Information only</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Confirm Intent records interest between parties. No payment processing, no contract execution, no legal obligations created.
+              </p>
             </div>
-
-            {/* Content */}
-            <div className="p-4 sm:p-6 space-y-4">
-              {/* Search input mockup */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <div className="flex-1 h-10 bg-muted rounded-md border border-border flex items-center px-3">
-                  <span className="text-xs sm:text-sm text-muted-foreground truncate">buyers for cashew in India</span>
-                </div>
-                <div className="h-10 px-4 bg-foreground text-background rounded-md flex items-center justify-center text-sm font-medium">
-                  Search
-                </div>
-              </div>
-
-              {/* Results */}
-              <div className="space-y-2">
-                {[
-                  { name: "GlobalAgri Trading Co.", score: 94, enriched: true },
-                  { name: "IndiaExport Partners Ltd.", score: 89, enriched: false },
-                  { name: "SouthAsia Commodities GmbH", score: 85, enriched: true },
-                ].map((result, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 rounded-md border border-border bg-background">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="h-7 w-7 rounded bg-muted flex-shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground">
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-foreground truncate">{result.name}</div>
-                        <div className="text-xs text-muted-foreground">Match score: {result.score}%</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 pl-10 sm:pl-0">
-                      {result.enriched && (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
-                          +12%
-                        </span>
-                      )}
-                      <button className="px-3 py-1.5 text-xs font-medium rounded border border-border bg-background hover:bg-accent transition-colors">
-                        Confirm
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Metrics bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-md bg-muted/50 border border-border">
-                <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Baseline: </span>
-                    <span className="font-medium text-foreground">15</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Total: </span>
-                    <span className="font-medium text-foreground">21</span>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Discovery uplift: </span>
-                  <span className="font-medium text-foreground">+40%</span>
-                </div>
-              </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Tamper-evident audit trail</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Every event is SHA-256 hashed and chain-linked. Evidence packs are cryptographically verifiable for compliance and dispute resolution.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Discovery Engine</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Baseline search enhanced by supply chain adjacency, regional heuristics, and semantic expansion. Typically adds 12%+ relevant results.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* API Example */}
-      <section className="border-t border-border/60 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Quick Start</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">Confirm trade intent with a single API call</p>
+      <section className="border-t border-border bg-muted/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <div className="mb-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Quick start</h2>
+            <p className="text-muted-foreground">Confirm trade intent with a single API call</p>
           </div>
 
           <div className="border border-border rounded-lg overflow-hidden bg-card">
-            <div className="border-b border-border px-3 sm:px-4 py-2.5 bg-muted/50 flex items-center justify-between gap-2">
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">POST /v1/match/:id/settle</span>
-              <Link to="/docs" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0">
-                Full docs
-                <ChevronRight className="h-3 w-3" />
+            <div className="border-b border-border px-4 py-2.5 bg-muted/50 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-mono">POST /v1/match</span>
+              <Link to="/docs" className="text-xs text-primary hover:underline">
+                Full documentation →
               </Link>
             </div>
-            <pre className="p-3 sm:p-4 text-xs sm:text-sm text-foreground overflow-x-auto">
-              <code>{`curl -X POST https://api.compliancematch.dev/v1/match/m_abc123/settle \\
+            <pre className="p-4 text-sm text-foreground overflow-x-auto font-mono">
+              <code>{`curl -X POST https://api.compliancematch.dev/v1/match \\
   -H "X-API-Key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json"
+  -H "Content-Type: application/json" \\
+  -d '{
+    "buyer_id": "org_abc",
+    "seller_id": "org_xyz",
+    "commodity": "cashew",
+    "quantity": { "amount": 1000, "unit": "MT" },
+    "price": { "amount": 1250, "currency": "USD" }
+  }'
 
 # Response
 {
-  "id": "m_abc123",
-  "status": "settled",
-  "settled_at": "2025-01-15T10:30:00Z",
-  "hash": "sha256:f4b2a1...",
-  "note": "Intent confirmed - no legal obligation created"
+  "id": "match_8f3k2j",
+  "status": "confirmed",
+  "created_at": "2025-01-11T10:30:00Z",
+  "hash": "sha256:f4b2a1c9...",
+  "note": "Intent recorded. No legal obligation created."
 }`}</code>
             </pre>
           </div>
 
-          <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link 
               to="/docs"
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
@@ -274,7 +237,7 @@ export default function Landing() {
               to="/auth"
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
             >
-              Create account
+              Create API key
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -282,10 +245,10 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/60">
+      <footer className="border-t border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <span>Compliance Match API</span>
-          <div className="flex items-center gap-4 sm:gap-6">
+          <span>Compliance Matching API</span>
+          <div className="flex items-center gap-6">
             <Link to="/docs" className="hover:text-foreground transition-colors">Documentation</Link>
             <Link to="/demo" className="hover:text-foreground transition-colors">Demo</Link>
             <Link to="/auth" className="hover:text-foreground transition-colors">Sign in</Link>

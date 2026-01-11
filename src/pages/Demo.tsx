@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, ArrowLeft, Check, Info, ExternalLink } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Info, Sparkles, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 interface DemoResult {
@@ -27,7 +25,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
     {
       id: "demo-1",
       title: "GlobalAgri Trading Co.",
-      description: "Leading cashew importer in Southeast Asia with certified supply chains and quality assurance programs.",
+      description: "Leading cashew importer in Southeast Asia with certified supply chains and quality assurance programmes.",
       url: "#",
       source: "TradeDirectory",
       score: 0.94,
@@ -38,13 +36,13 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
     {
       id: "demo-2",
       title: "IndiaExport Partners Ltd.",
-      description: "Established commodity trading house specializing in nuts and dried fruits exports from India.",
+      description: "Established commodity trading house specialising in nuts and dried fruits exports from India.",
       url: "#",
       source: "B2B Platform",
       score: 0.89,
       isEnriched: true,
       enrichmentReason: "supply_chain_adjacency",
-      whySurfaced: "Discovery engine: Found via supply chain adjacency - trades related commodities",
+      whySurfaced: "Supply chain adjacency: trades related commodities in same corridor",
     },
     {
       id: "demo-3",
@@ -55,7 +53,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.85,
       isEnriched: true,
       enrichmentReason: "regional_heuristic",
-      whySurfaced: "Discovery engine: Regional trade pattern matching - India commodity corridor",
+      whySurfaced: "Regional pattern: active in India commodity import corridor",
     },
     {
       id: "demo-4",
@@ -66,7 +64,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.78,
       isEnriched: false,
       enrichmentReason: null,
-      whySurfaced: "Baseline match - company profile mentions cashew procurement interest",
+      whySurfaced: "Company profile mentions cashew procurement interest",
     },
     {
       id: "demo-5",
@@ -77,7 +75,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.72,
       isEnriched: true,
       enrichmentReason: "semantic_expansion",
-      whySurfaced: "Discovery engine: Semantic expansion found 'fair-trade nuts' as adjacent category",
+      whySurfaced: "Semantic expansion: 'fair-trade nuts' as adjacent category",
     },
   ],
   "copper": [
@@ -90,7 +88,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.96,
       isEnriched: false,
       enrichmentReason: null,
-      whySurfaced: "Direct match - registered copper cathode supplier with verified operations",
+      whySurfaced: "Registered copper cathode supplier with verified operations",
     },
     {
       id: "demo-7",
@@ -101,7 +99,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.91,
       isEnriched: false,
       enrichmentReason: null,
-      whySurfaced: "Baseline match - copper trading division with LME-grade inventory",
+      whySurfaced: "Copper trading division with LME-grade inventory",
     },
     {
       id: "demo-8",
@@ -112,7 +110,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.87,
       isEnriched: true,
       enrichmentReason: "regional_heuristic",
-      whySurfaced: "Discovery engine: Regional mining hub analysis - Zambia copper belt producer",
+      whySurfaced: "Regional mining hub: Zambia copper belt producer",
     },
   ],
   "default": [
@@ -136,7 +134,7 @@ const DEMO_RESULTS: Record<string, DemoResult[]> = {
       score: 0.75,
       isEnriched: true,
       enrichmentReason: "semantic_expansion",
-      whySurfaced: "Discovery engine: Semantic expansion found related trading activity",
+      whySurfaced: "Semantic expansion: found related trading activity",
     },
   ],
 };
@@ -160,7 +158,7 @@ export default function Demo() {
     setSelectedResults(new Set());
     setHasSearched(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     const lowerQuery = query.toLowerCase();
     let demoData: DemoResult[];
@@ -175,7 +173,7 @@ export default function Demo() {
 
     setResults(demoData);
     setIsSearching(false);
-    toast.success(`Found ${demoData.length} counterparties (simulated)`);
+    toast.success(`Found ${demoData.length} counterparties`);
   };
 
   const toggleSelect = (id: string) => {
@@ -198,264 +196,315 @@ export default function Demo() {
     setShowIntentDialog(true);
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied");
+  };
+
   const baselineCount = results.filter(r => !r.isEnriched).length;
-  const enrichedCount = results.length;
-  const upliftPct = baselineCount > 0 ? Math.round(((enrichedCount - baselineCount) / baselineCount) * 100) : 0;
+  const enrichedCount = results.filter(r => r.isEnriched).length;
+  const totalCount = results.length;
+  const upliftPct = baselineCount > 0 ? Math.round((enrichedCount / baselineCount) * 100) : 0;
+
+  const sampleMatchId = `match_${Math.random().toString(36).substring(2, 8)}`;
+  const sampleHash = `sha256:${Array.from({length: 16}, () => Math.floor(Math.random() * 16).toString(16)).join('')}...`;
+  const sampleTimestamp = new Date().toISOString();
 
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 text-muted-foreground hover:text-foreground transition-colors">
+        <nav className="border-b border-border bg-background sticky top-0 z-50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-4 w-4" />
               <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center">
                 <span className="text-background font-bold text-[10px]">CM</span>
               </div>
-              <span className="font-medium text-sm text-foreground hidden sm:inline">Compliance Match</span>
+              <span className="font-medium text-sm text-foreground hidden sm:inline">Compliance Matching API</span>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <span className="px-2 py-1 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+            <div className="flex items-center gap-3">
+              <span className="px-2 py-1 text-xs font-medium text-muted-foreground border border-border rounded">
                 Sandbox
               </span>
               <Link to="/auth">
-                <button className="px-3 py-1.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
-                  Sign up
-                </button>
+                <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">
+                  Get API Key
+                </Button>
               </Link>
             </div>
           </div>
         </nav>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          {/* Sandbox Notice */}
-          <div className="mb-6 p-3 sm:p-4 bg-muted/40 border border-border rounded-md">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          {/* Demo Notice */}
+          <div className="mb-8 p-4 border border-border rounded-lg bg-muted/30">
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Sandbox mode</span> — Results are simulated.
-              <Link to="/auth" className="text-primary hover:underline ml-1">Create an account</Link> for production access.
+              <span className="font-medium text-foreground">Demo mode</span> — Results are simulated. No real evidence records are created.{" "}
+              <Link to="/auth" className="text-primary hover:underline">Sign up</Link> to generate real proofs.
             </p>
           </div>
 
-          <div className="space-y-6">
-            {/* Search */}
-            <div className="border border-border rounded-lg bg-card p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-1">Counterparty Search</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Enter a natural language query to find potential counterparties
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  placeholder="e.g., buyers for cashew in India"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="flex-1"
-                />
-                <Button onClick={handleSearch} disabled={isSearching} className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto">
-                  {isSearching ? "Searching..." : "Search"}
-                </Button>
+          {/* Search */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-foreground mb-2">Counterparty Search</h1>
+            <p className="text-muted-foreground mb-6">
+              Enter a natural language query to find potential counterparties
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                placeholder="e.g., buyers for cashew in India"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="flex-1 h-11"
+              />
+              <Button 
+                onClick={handleSearch} 
+                disabled={isSearching} 
+                className="h-11 px-6 bg-foreground text-background hover:bg-foreground/90"
+              >
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+              <span className="text-xs text-muted-foreground">Try:</span>
+              {["buyers for cashew in India", "copper cathode suppliers", "agricultural exporters"].map((example) => (
+                <button
+                  key={example}
+                  onClick={() => setQuery(example)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Metrics */}
+          {results.length > 0 && (
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-border rounded-lg bg-background">
+              <div className="flex flex-wrap items-center gap-6 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Baseline: </span>
+                  <span className="font-medium text-foreground">{baselineCount}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Discovery Engine: </span>
+                  <span className="font-medium text-foreground">+{enrichedCount}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total: </span>
+                  <span className="font-medium text-foreground">{totalCount}</span>
+                </div>
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Uplift: </span>
+                <span className="font-medium text-foreground">+{upliftPct}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Loading */}
+          {isSearching && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-4 border border-border rounded-lg">
+                  <div className="flex gap-4">
+                    <Skeleton className="h-10 w-10 rounded" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Results */}
+          {!isSearching && results.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-foreground">
+                  {results.length} results
+                </h2>
+                {selectedResults.size > 0 && (
+                  <Button 
+                    onClick={handleDemoConfirmIntent} 
+                    size="sm"
+                    className="bg-foreground text-background hover:bg-foreground/90"
+                  >
+                    Confirm Intent ({selectedResults.size})
+                  </Button>
+                )}
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="text-xs text-muted-foreground">Examples:</span>
-                {["buyers for cashew in India", "copper cathode suppliers", "hemp fibre wholesalers"].map((example) => (
-                  <button
-                    key={example}
-                    onClick={() => setQuery(example)}
-                    className="text-xs text-primary hover:underline"
+              <div className="space-y-2">
+                {results.map((result, idx) => (
+                  <div 
+                    key={result.id}
+                    onClick={() => toggleSelect(result.id)}
+                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                      selectedResults.has(result.id) 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:bg-muted/30"
+                    }`}
                   >
-                    {example}
-                  </button>
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className={`h-9 w-9 rounded flex items-center justify-center text-sm font-medium ${
+                          selectedResults.has(result.id) 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {selectedResults.has(result.id) ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            idx + 1
+                          )}
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {Math.round(result.score * 100)}%
+                        </span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-medium text-foreground">{result.title}</h3>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {result.isEnriched && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
+                                    <Sparkles className="h-3 w-3" />
+                                    Discovery
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs">
+                                  <p className="text-sm font-medium mb-1">Why surfaced</p>
+                                  <p className="text-sm text-muted-foreground">{result.whySurfaced}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <span className="text-xs text-muted-foreground">{result.source}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{result.description}</p>
+                        
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Info className="h-3 w-3" />
+                          <span>{result.whySurfaced}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Metrics */}
-            {results.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 bg-muted/40 border border-border rounded-md">
-                <div className="flex flex-wrap items-center gap-4 sm:gap-8 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Baseline: </span>
-                    <span className="font-semibold text-foreground">{baselineCount}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">With discovery: </span>
-                    <span className="font-semibold text-foreground">{enrichedCount}</span>
-                  </div>
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Uplift: </span>
-                  <span className="font-semibold text-foreground">+{upliftPct}%</span>
-                </div>
-              </div>
-            )}
+          {/* Empty state */}
+          {!isSearching && hasSearched && results.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <p>No results found. Try a different query.</p>
+            </div>
+          )}
 
-            {/* Loading */}
-            {isSearching && (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-4 border border-border rounded-md">
-                    <div className="flex gap-4">
-                      <Skeleton className="h-10 w-10 rounded" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-full" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Results */}
-            {!isSearching && results.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-foreground">
-                    {results.length} results
-                  </h3>
-                  {selectedResults.size > 0 && (
-                    <Button 
-                      onClick={handleDemoConfirmIntent} 
-                      size="sm"
-                      className="bg-foreground text-background hover:bg-foreground/90"
-                    >
-                      Confirm intent ({selectedResults.size})
-                    </Button>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  {results.map((result, idx) => (
-                    <div 
-                      key={result.id}
-                      onClick={() => toggleSelect(result.id)}
-                      className={`p-4 rounded-md border cursor-pointer transition-colors ${
-                        selectedResults.has(result.id) 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border hover:border-border/80 hover:bg-muted/30"
-                      }`}
-                    >
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center gap-1">
-                          <div className={`h-8 w-8 rounded flex items-center justify-center text-sm font-medium ${
-                            selectedResults.has(result.id) 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted text-muted-foreground"
-                          }`}>
-                            {selectedResults.has(result.id) ? (
-                              <Check className="h-4 w-4" />
-                            ) : (
-                              idx + 1
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {Math.round(result.score * 100)}%
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <h4 className="font-medium text-foreground">{result.title}</h4>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {result.isEnriched && (
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground border border-border">
-                                      +12%
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs">
-                                    <p className="text-sm">{result.whySurfaced}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                              <span className="text-xs text-muted-foreground">{result.source}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{result.description}</p>
-                          
-                          <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                            <Info className="h-3 w-3" />
-                            <span>{result.whySurfaced}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Empty state */}
-            {!isSearching && hasSearched && results.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <p>No results found. Try a different query.</p>
-              </div>
-            )}
-          </div>
+          {/* Initial state */}
+          {!hasSearched && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground mb-4">Enter a search query to find counterparties</p>
+              <p className="text-sm text-muted-foreground">
+                Try queries like "buyers for cashew in India" or "copper cathode suppliers"
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Demo Intent Dialog */}
         <Dialog open={showIntentDialog} onOpenChange={setShowIntentDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Sandbox: Intent Confirmation</DialogTitle>
+              <DialogTitle>Demo: Intent Confirmation Preview</DialogTitle>
               <DialogDescription>
-                This is a preview of the confirmation flow
+                This shows what a real confirmation would produce
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              <div className="p-4 bg-muted/40 border border-border rounded-md">
-                <p className="text-sm text-muted-foreground mb-2">
-                  In production, clicking Confirm Intent would:
+              <div className="p-4 border border-border rounded-lg bg-muted/30">
+                <p className="text-sm font-medium text-foreground mb-3">
+                  In production, Confirm Intent would:
                 </p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Create a timestamped proof-of-intent record</li>
-                  <li>• Generate a cryptographic hash for the event chain</li>
-                  <li>• Add entries to your audit log</li>
-                  <li>• Trigger configured webhook notifications</li>
+                <ul className="text-sm text-muted-foreground space-y-2">
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <span>Record interest between parties (no payment, no contract)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <span>Create a tamper-evident evidence record with SHA-256 hash</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <span>Add entries to the chain-linked audit log</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <span>Trigger configured webhook notifications</span>
+                  </li>
                 </ul>
               </div>
 
-              <div className="border border-border rounded-md overflow-hidden">
-                <div className="px-4 py-2 bg-muted/50 border-b border-border">
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center justify-between">
                   <span className="text-xs font-mono text-muted-foreground">Sample response</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2"
+                    onClick={() => copyToClipboard(JSON.stringify({
+                      id: sampleMatchId,
+                      status: "confirmed",
+                      created_at: sampleTimestamp,
+                      hash: sampleHash,
+                      counterparties: selectedResults.size,
+                      note: "Intent recorded. No legal obligation created."
+                    }, null, 2))}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <pre className="p-4 text-xs text-foreground overflow-x-auto">
-                  <code>{JSON.stringify({
-                    id: "match_demo_abc123",
-                    status: "confirmed",
-                    confirmed_at: new Date().toISOString(),
-                    hash: "sha256:f4b2a1c3d5e6...",
-                    counterparties: selectedResults.size,
-                    sandbox: true
-                  }, null, 2)}</code>
+                <pre className="p-4 text-xs text-foreground overflow-x-auto font-mono">
+{`{
+  "id": "${sampleMatchId}",
+  "status": "confirmed",
+  "created_at": "${sampleTimestamp}",
+  "hash": "${sampleHash}",
+  "counterparties": ${selectedResults.size},
+  "note": "Intent recorded. No legal obligation created."
+}`}
                 </pre>
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                No real records are created in sandbox mode.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setShowIntentDialog(false)}
-              >
-                Close
-              </Button>
-              <Link to="/auth" className="flex-1">
-                <Button className="w-full bg-foreground text-background hover:bg-foreground/90">
-                  Create account
-                  <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowIntentDialog(false)}
+                >
+                  Continue exploring
                 </Button>
-              </Link>
+                <Link to="/auth" className="flex-1">
+                  <Button className="w-full bg-foreground text-background hover:bg-foreground/90">
+                    Sign up for real proofs
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
