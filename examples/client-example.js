@@ -19,7 +19,7 @@ class TradeIzenzoClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
+      'X-API-Key': this.apiKey,
       'Content-Type': 'application/json',
       ...options.headers,
     };

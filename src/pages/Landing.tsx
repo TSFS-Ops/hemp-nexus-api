@@ -249,7 +249,7 @@ export default function Landing() {
             </div>
             <pre className="p-3 sm:p-4 text-xs sm:text-sm text-foreground overflow-x-auto">
               <code>{`curl -X POST https://api.compliancematch.dev/v1/match/m_abc123/settle \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"
 
 # Response

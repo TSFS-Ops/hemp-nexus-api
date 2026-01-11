@@ -104,6 +104,7 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/{match_
 curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?limit=10&status=matched" \\
   -H "X-API-Key: sk_your_api_key"`;
 
+
 const errorHandlingExample = `import { IzenzoClient, IzenzoApiError } from '@/lib/izenzo-sdk';
 
 const client = new IzenzoClient('sk_your_api_key');

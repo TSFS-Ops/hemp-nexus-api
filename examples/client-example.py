@@ -24,7 +24,7 @@ class TradeIzenzoClient:
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({
-            'Authorization': f'Bearer {api_key}',
+            'X-API-Key': api_key,
             'Content-Type': 'application/json',
         })
     
