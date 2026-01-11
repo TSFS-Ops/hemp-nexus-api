@@ -8,6 +8,7 @@ import { triggerWebhooks, notifyCounterpartyIntent } from "../_shared/webhooks.t
 import { recordMatchEvent } from "../_shared/match-events.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
+import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -42,13 +43,14 @@ Deno.serve(async (req) => {
     // Rate limiting
     await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'match', 'match');
     
+    // Derive actor IDs once for use throughout the request
+    const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
+    
     // Enforce token metering - burns 1 token per request
-    // For API key auth, userId contains the API key ID; for JWT auth it's null for api_key_id
-    const apiKeyId = authCtx.isApiKey ? authCtx.userId : null;
     await enforceTokenMetering(
       supabase,
       authCtx.orgId,
-      apiKeyId || null,
+      actorApiKeyId,
       "/match",
       requestId
     );
@@ -83,10 +85,6 @@ Deno.serve(async (req) => {
         enforceEligibility(match);
       } catch (eligibilityError) {
         // Record the denied attempt in audit log (non-proof entry)
-        // Use null for empty/undefined IDs to avoid UUID validation errors
-        const actorUserId = (!authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
-        const actorApiKeyId = (authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
-        
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
           actor_user_id: actorUserId,
@@ -125,10 +123,6 @@ Deno.serve(async (req) => {
       if (updateError) handleDatabaseError(updateError, requestId);
 
       // Create audit log for intent confirmation (immutable proof-of-intent)
-      // Derive actor IDs properly to avoid empty string UUID errors
-      const actorUserId = (!authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
-      const actorApiKeyId = (authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
-      
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -394,7 +388,7 @@ Deno.serve(async (req) => {
         .from("matches")
         .insert({
           org_id: authCtx.orgId,
-          created_by: authCtx.isApiKey ? null : authCtx.userId,
+          created_by: getCreatedBy(authCtx),
           buyer_id: body.buyer.id,
           buyer_name: body.buyer.name,
           seller_id: body.seller.id,
@@ -415,15 +409,11 @@ Deno.serve(async (req) => {
       if (insertError) handleDatabaseError(insertError, requestId);
 
       // Create audit log for match creation (immutable proof-of-intent)
-      // Derive actor IDs properly to avoid empty string UUID errors
-      const creationActorUserId = (!authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
-      const creationActorApiKeyId = (authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
-      
       try {
         await supabase.from("audit_logs").insert({
           org_id: authCtx.orgId,
-          actor_user_id: creationActorUserId,
-          actor_api_key_id: creationActorApiKeyId,
+          actor_user_id: actorUserId,
+          actor_api_key_id: actorApiKeyId,
           action: "match.created",
           entity_type: "match",
           entity_id: match.id,
@@ -459,8 +449,8 @@ Deno.serve(async (req) => {
             terms: body.terms,
             hash,
           },
-          creationActorUserId,
-          creationActorApiKeyId
+          actorUserId,
+          actorApiKeyId
         );
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);

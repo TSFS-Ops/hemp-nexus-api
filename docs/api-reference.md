@@ -1,8 +1,8 @@
 # Compliance Matching API Reference
 
-**Current Version**: v1.3  
+**Current Version**: v1.5  
 **Base URL**: `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1`  
-**Last Updated**: 2025-12-06
+**Last Updated**: 11 January 2026
 
 ---
 

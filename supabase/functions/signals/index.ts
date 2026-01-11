@@ -8,6 +8,7 @@ import { signalSchema, signalSelectSchema, validateInput } from "../_shared/vali
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
+import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -35,8 +36,8 @@ Deno.serve(async (req) => {
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireScope(authCtx, 'signals');
 
-    const actorUserId = authCtx.isApiKey ? null : authCtx.userId;
-    const actorApiKeyId = authCtx.isApiKey ? authCtx.userId : null;
+    // Derive actor IDs once for use throughout the request
+    const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
 
     // Rate limiting
     await checkRateLimit(supabase, authCtx.orgId, actorApiKeyId, 'signals', 'signals:write');
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
           type: "buyer", // Default to buyer
           content,
           expires_at: deliveryWindow?.end || null,
-          created_by: actorUserId,
+          created_by: getCreatedBy(authCtx),
         })
         .select()
         .single();

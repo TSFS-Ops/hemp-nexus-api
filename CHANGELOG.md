@@ -2,6 +2,8 @@
 
 All notable changes to the Compliance Matching API are documented here.
 
+**Last updated:** 11 January 2026
+
 ## Versioning
 
 This project follows semantic versioning: `MAJOR.MINOR.PATCH`
@@ -11,11 +13,42 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.5.0] - 2026-01-11
+
+### New Year Hardening & Refactor Pass
+
+**Focus: Engineering quality, code consistency, and production readiness.**
+
+#### Architecture Improvements
+- **[Refactor]** Created centralised `actor-context.ts` utility for deriving actor IDs
+- **[Refactor]** Fixed `validateInput` to throw `ApiException` instead of generic `Error`
+- **[Refactor]** Standardised actor ID handling across all edge functions
+- **[Refactor]** Consolidated UUID validation to prevent empty string errors
+
+#### Documentation
+- **[Docs]** Updated all documentation to British English spelling
+- **[Docs]** Updated changelog with comprehensive history
+- **[Docs]** Fixed API header documentation (`X-API-Key` vs `Authorization`)
+- **[Docs]** Added last updated dates to all documentation
+
+#### Bug Fixes
+- **[Fix]** Resolved UUID validation errors in audit log inserts
+- **[Fix]** Fixed onboarding wizard API base URL configuration
+- **[Fix]** Corrected token metering `api_key_id` null handling
+- **[Fix]** Fixed match events actor ID derivation
+
+#### Security
+- **[Security]** All endpoints properly validate input with Zod schemas
+- **[Security]** RLS policies reviewed and confirmed secure
+- **[Security]** API key authentication uses proper header (`X-API-Key`)
+
+---
+
 ## [1.4.0] - 2025-12-06
 
 ### Demo Mode & Public Access
 
-**Focus: Enable frictionless developer evaluation while protecting production actions.**
+**Focus: Enable frictionless developer evaluation whilst protecting production actions.**
 
 #### New Features
 - **[Demo]** Public demo mode allows exploration without login
@@ -26,13 +59,13 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 #### UI Redesign
 - **[UI]** Enterprise-grade styling with Manrope font
-- **[UI]** Neutral color palette replacing template components
+- **[UI]** Neutral colour palette replacing template components
 - **[UI]** Custom Tailwind-based components throughout
 - **[UI]** Redesigned landing page with developer-focused copy
 - **[UI]** Improved Demo page with clean result cards
 
 #### Documentation Updates
-- **[Docs]** Updated all documentation timestamps to 2025-12-06
+- **[Docs]** Updated all documentation timestamps
 - **[Docs]** Improved getting-started guide clarity
 - **[Docs]** Updated product guide with demo mode information
 
