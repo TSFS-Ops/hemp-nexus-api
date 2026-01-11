@@ -72,9 +72,10 @@ Deno.serve(async (req) => {
 
       await supabase.from('audit_logs').insert({
         org_id: data.id,
-        actor_user_id: authCtx.userId || null,
-        action: 'organization.created',
-        entity_type: 'organization',
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: 'organisation.created',
+        entity_type: 'organisation',
         entity_id: data.id,
         metadata: { name },
       });
@@ -126,9 +127,10 @@ Deno.serve(async (req) => {
 
       await supabase.from('audit_logs').insert({
         org_id: orgId,
-        actor_user_id: authCtx.userId || null,
-        action: 'organization.updated',
-        entity_type: 'organization',
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: 'organisation.updated',
+        entity_type: 'organisation',
         entity_id: orgId,
         metadata: updates,
       });

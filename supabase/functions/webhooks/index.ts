@@ -75,7 +75,8 @@ Deno.serve(async (req) => {
 
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: "webhook.created",
         entity_type: "webhook",
         entity_id: webhook.id,
@@ -162,7 +163,8 @@ Deno.serve(async (req) => {
 
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: "webhook.updated",
         entity_type: "webhook",
         entity_id: webhookId,
@@ -189,7 +191,8 @@ Deno.serve(async (req) => {
 
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: "webhook.deleted",
         entity_type: "webhook",
         entity_id: webhookId,

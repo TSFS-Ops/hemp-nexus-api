@@ -153,7 +153,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     setResponseDetails(null);
 
     try {
-      const baseUrl = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
       const url = `${baseUrl}/signals`;
       const requestBody = {
         product: "Test Product (Onboarding)",

@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
         .from("matches")
         .insert({
           org_id: authCtx.orgId,
-          created_by: authCtx.userId || null,
+          created_by: authCtx.isApiKey ? null : authCtx.userId,
           buyer_id: body.buyer.id,
           buyer_name: body.buyer.name,
           seller_id: body.seller.id,

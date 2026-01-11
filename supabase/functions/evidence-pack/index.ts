@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
       // Create audit log for evidence pack generation
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
         actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
         action: "evidence-pack.generated",
         entity_type: "match",

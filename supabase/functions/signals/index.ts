@@ -35,14 +35,17 @@ Deno.serve(async (req) => {
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireScope(authCtx, 'signals');
 
+    const actorUserId = authCtx.isApiKey ? null : authCtx.userId;
+    const actorApiKeyId = authCtx.isApiKey ? authCtx.userId : null;
+
     // Rate limiting
-    await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'signals', 'signals:write');
-    
+    await checkRateLimit(supabase, authCtx.orgId, actorApiKeyId, 'signals', 'signals:write');
+
     // Enforce token metering - burns 1 token per request
     await enforceTokenMetering(
       supabase,
       authCtx.orgId,
-      authCtx.isApiKey ? authCtx.userId : null,
+      actorApiKeyId,
       "/signals",
       requestId
     );
@@ -79,7 +82,7 @@ Deno.serve(async (req) => {
           type: "buyer", // Default to buyer
           content,
           expires_at: deliveryWindow?.end || null,
-          created_by: authCtx.userId || null,
+          created_by: actorUserId,
         })
         .select()
         .single();
@@ -93,7 +96,8 @@ Deno.serve(async (req) => {
 
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
         action: "signal.created",
         entity_type: "signal",
         entity_id: signal.id,
@@ -254,7 +258,7 @@ Deno.serve(async (req) => {
         .insert({
           signal_id: signalId,
           option_id,
-          selected_by: authCtx.userId || null,
+          selected_by: actorUserId,
           handoff_token: handoffToken,
           handoff_data: {
             data_source_id: option.data_source.id,
@@ -272,7 +276,8 @@ Deno.serve(async (req) => {
 
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId || null,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
         action: "signal.option_selected",
         entity_type: "selection",
         entity_id: selection.id,
