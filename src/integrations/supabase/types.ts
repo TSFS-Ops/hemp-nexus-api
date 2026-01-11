@@ -734,6 +734,9 @@ export type Database = {
           storage_path: string
           updated_at: string
           uploader_user_id: string | null
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           created_at?: string
@@ -750,6 +753,9 @@ export type Database = {
           storage_path: string
           updated_at?: string
           uploader_user_id?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           created_at?: string
@@ -766,6 +772,9 @@ export type Database = {
           storage_path?: string
           updated_at?: string
           uploader_user_id?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {

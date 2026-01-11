@@ -7,6 +7,7 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks, notifyCounterpartyIntent } from "../_shared/webhooks.ts";
 import { recordMatchEvent } from "../_shared/match-events.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
+import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -72,6 +73,30 @@ Deno.serve(async (req) => {
           "You do not have permission to confirm intent for this match", 
           403
         );
+      }
+
+      // ELIGIBILITY CHECK - "Ambiguity = Automatic Denial"
+      // Block Confirm Intent if any required field is missing or invalid
+      try {
+        enforceEligibility(match);
+      } catch (eligibilityError) {
+        // Record the denied attempt in audit log (non-proof entry)
+        await supabase.from("audit_logs").insert({
+          org_id: match.org_id,
+          actor_user_id: authCtx.userId,
+          actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+          action: "intent.denied",
+          entity_type: "match",
+          entity_id: matchId,
+          metadata: {
+            reason: "eligibility_check_failed",
+            error: eligibilityError instanceof ApiException ? eligibilityError.message : "Unknown error",
+            eligibility: formatEligibilityResponse(evaluateEligibility(match)),
+          }
+        });
+        
+        console.log(`[${requestId}] Intent denied due to eligibility check failure`);
+        throw eligibilityError;
       }
 
       // If already confirmed, return as-is (idempotent)
