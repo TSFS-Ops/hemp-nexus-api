@@ -203,11 +203,14 @@ export async function burnTokens(
   }
   
   // Record in ledger (append-only)
+  // Ensure null for empty/invalid apiKeyId to avoid UUID validation errors
+  const validApiKeyId = apiKeyId && apiKeyId.length > 0 ? apiKeyId : null;
+  
   const { data: ledgerEntry, error: ledgerError } = await supabase
     .from("token_ledger")
     .insert({
       org_id: orgId,
-      api_key_id: apiKeyId,
+      api_key_id: validApiKeyId,
       endpoint,
       tokens_burned: tokensToBurn,
       outcome,

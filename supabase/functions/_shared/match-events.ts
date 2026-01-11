@@ -39,13 +39,17 @@ export async function recordMatchEvent(
     const payloadHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
     // Insert event with hash chain
+    // Ensure null for empty/invalid actor IDs to avoid UUID validation errors
+    const validActorUserId = actorUserId && actorUserId.length > 0 ? actorUserId : null;
+    const validActorApiKeyId = actorApiKeyId && actorApiKeyId.length > 0 ? actorApiKeyId : null;
+    
     const { error } = await supabase.from("match_events").insert({
       match_id: matchId,
       org_id: orgId,
       event_type: eventType,
       event_data: eventData,
-      actor_user_id: actorUserId,
-      actor_api_key_id: actorApiKeyId,
+      actor_user_id: validActorUserId,
+      actor_api_key_id: validActorApiKeyId,
       payload_hash: payloadHash,
       previous_event_hash: previousHash,
     });
