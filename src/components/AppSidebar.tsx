@@ -1,4 +1,4 @@
-import { Key, Code, FileText, Activity, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn, Database, User, Coins } from "lucide-react";
+import { Key, Code, FileText, Activity, BookOpen, Handshake, BarChart3, Package, Search, Lock, LogIn, Database, User, Coins, Settings, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -28,38 +28,31 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const mainItems = [
-    { id: "search", title: "Search", icon: Search },
+  // Core developer console sections - Stripe-like organization
+  const overviewItems = [
     { id: "docs", title: "Overview", icon: BookOpen },
+  ];
+
+  const apiItems = [
     { id: "keys", title: "API Keys", icon: Key, requiresAuth: true },
-    { id: "test", title: "Reference", icon: Code },
+    { id: "test", title: "API Reference", icon: Code },
     { id: "sdk", title: "SDKs", icon: Package },
-    { id: "embed", title: "Embed", icon: LayoutGrid },
-    { id: "matches", title: "Matches", icon: Handshake, requiresAuth: true },
-    { id: "analytics", title: "Analytics", icon: BarChart3, requiresAuth: true },
-    { id: "usage", title: "Usage & Billing", icon: Coins, requiresAuth: true },
-    { id: "webhooks", title: "Webhooks", icon: Database, requiresAuth: true },
-    { id: "webhook-debugger", title: "Debugger", icon: Code, requiresAuth: true },
+  ];
+
+  const dataItems = [
+    { id: "search", title: "Search", icon: Search },
+    { id: "matches", title: "Evidence Packs", icon: Handshake, requiresAuth: true },
     { id: "audit-logs", title: "Logs", icon: Activity, requiresAuth: true },
   ];
 
-  const marketplaceItems = [
-    { id: "marketplace", title: "Marketplace", icon: Store, route: "/marketplace" },
-    { id: "global-analytics", title: "Network", icon: TrendingUp, route: "/analytics" },
+  const configItems = [
+    { id: "webhooks", title: "Webhooks", icon: Database, requiresAuth: true },
+    { id: "analytics", title: "Analytics", icon: BarChart3, requiresAuth: true },
+    { id: "usage", title: "Usage & Billing", icon: Coins, requiresAuth: true },
   ];
 
-  const accountItems = [
-    { id: "my-activity", title: "My Activity", icon: User, route: "/activity", requiresAuth: true },
-  ];
-
-  const toolsItems = [
-    { id: "data-sources", title: "Data Sources", icon: FileText },
-    { id: "hash-verify", title: "Hash Verifier", icon: Key },
-    { id: "system-health", title: "System Health", icon: HeartPulse },
-    { id: "automated-tests", title: "Tests", icon: TestTube2 },
-    { id: "error-monitoring", title: "Errors", icon: AlertOctagon },
-    { id: "troubleshooting", title: "Troubleshooting", icon: HelpCircle },
-    { id: "automation", title: "Changelog", icon: GitBranch },
+  const supportItems = [
+    { id: "troubleshooting", title: "Help", icon: HelpCircle },
   ];
 
   const handleSignOut = async () => {
@@ -77,113 +70,79 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
 
   const isActive = (id: string) => activeSection === id;
 
+  const renderMenuItems = (items: typeof overviewItems) => (
+    <SidebarMenu>
+      {items.map((item) => (
+        <SidebarMenuItem key={item.id}>
+          <SidebarMenuButton
+            onClick={() => onSectionChange(item.id)}
+            isActive={isActive(item.id)}
+            className="w-full px-2 py-1.5 text-sm"
+          >
+            <item.icon className="h-4 w-4" />
+            <span>{item.title}</span>
+            {isDemoMode && 'requiresAuth' in item && item.requiresAuth && (
+              <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
+            )}
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+
   return (
     <Sidebar className="border-r border-border">
       <SidebarHeader className="border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
             <span className="text-background font-bold text-[10px]">CM</span>
           </div>
           <div>
-            <h2 className="font-semibold text-sm text-foreground">Compliance Match</h2>
-            <p className="text-xs text-muted-foreground font-mono">v1.0</p>
+            <h2 className="font-semibold text-sm text-foreground">Compliance Matching</h2>
+            <p className="text-xs text-muted-foreground font-mono">API Console</p>
           </div>
-        </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3">
         <SidebarGroup>
+          <SidebarGroupContent>
+            {renderMenuItems(overviewItems)}
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
             API
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSectionChange(item.id)}
-                    isActive={isActive(item.id)}
-                    className="w-full px-2 py-1.5 text-sm"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                    {isDemoMode && item.requiresAuth && (
-                      <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {renderMenuItems(apiItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-            Tools
+            Data
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {toolsItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSectionChange(item.id)}
-                    isActive={isActive(item.id)}
-                    className="w-full px-2 py-1.5 text-sm"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {renderMenuItems(dataItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-            Network
+            Configure
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {marketplaceItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => item.route ? navigate(item.route) : onSectionChange(item.id)}
-                    isActive={item.route ? location.pathname === item.route : isActive(item.id)}
-                    className="w-full px-2 py-1.5 text-sm"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {renderMenuItems(configItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {!isDemoMode && (
-          <SidebarGroup className="mt-4">
-            <SidebarGroupLabel className="px-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-              Account
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {accountItems.map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      onClick={() => item.route ? navigate(item.route) : onSectionChange(item.id)}
-                      isActive={item.route ? location.pathname === item.route : isActive(item.id)}
-                      className="w-full px-2 py-1.5 text-sm"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <SidebarGroup className="mt-4">
+          <SidebarGroupContent>
+            {renderMenuItems(supportItems)}
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {isAdmin && (
           <SidebarGroup className="mt-4">
@@ -197,7 +156,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
                     onClick={() => navigate("/admin")}
                     className="w-full px-2 py-1.5 text-sm"
                   >
-                    <Key className="h-4 w-4" />
+                    <Settings className="h-4 w-4" />
                     <span>Management</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
