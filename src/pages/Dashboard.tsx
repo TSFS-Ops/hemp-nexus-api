@@ -30,6 +30,7 @@ import {
   TestSection,
   WebhooksSection,
   AuditLogsSection,
+  UsageBillingSection,
 } from "@/components/dashboard/sections";
 
 interface ApiKey {
@@ -140,6 +141,9 @@ export default function Dashboard() {
 
       case "audit-logs":
         return <AuditLogsSection apiKeyId={apiKeys[0]?.id} />;
+
+      case "usage":
+        return <UsageBillingSection />;
 
       case "data-sources":
         return (

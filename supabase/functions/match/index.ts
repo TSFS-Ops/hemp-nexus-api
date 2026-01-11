@@ -6,6 +6,7 @@ import { matchSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks, notifyCounterpartyIntent } from "../_shared/webhooks.ts";
 import { recordMatchEvent } from "../_shared/match-events.ts";
+import { enforceTokenMetering } from "../_shared/token-metering.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -39,6 +40,15 @@ Deno.serve(async (req) => {
 
     // Rate limiting
     await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'match', 'match');
+    
+    // Enforce token metering - burns 1 token per request
+    await enforceTokenMetering(
+      supabase,
+      authCtx.orgId,
+      authCtx.isApiKey ? authCtx.userId : null,
+      "/match",
+      requestId
+    );
 
     // Route: POST /match/:id/settle (Confirm Intent - creates audit record)
     if (req.method === "POST" && matchId && action === "settle") {

@@ -11,6 +11,8 @@ import {
   scoreCoherence,
   type DiscoveryResult,
 } from "../_shared/discovery-engine.ts";
+import { enforceTokenMetering } from "../_shared/token-metering.ts";
+import { errorResponse } from "../_shared/errors.ts";
 
 const headers = corsHeaders('*');
 
@@ -19,6 +21,8 @@ serve(async (req) => {
     return new Response(null, { headers });
   }
 
+  const requestId = crypto.randomUUID();
+  
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -26,6 +30,15 @@ serve(async (req) => {
     // Authenticate request
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Enforce token metering - burns 1 token per request
+    await enforceTokenMetering(
+      supabase,
+      authCtx.orgId,
+      authCtx.isApiKey ? authCtx.userId : null,
+      "/search",
+      requestId
+    );
 
     const rawBody = await req.json();
     const { query, role, limit = 20 } = rawBody;
@@ -168,10 +181,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("[search] Error:", error);
-    return new Response(
-      JSON.stringify({ ok: false, error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
-    );
+    return errorResponse(error instanceof Error ? error : new Error("Unknown error"), requestId, headers);
   }
 });
 

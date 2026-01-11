@@ -1,4 +1,4 @@
-import { Key, Code, FileText, Activity, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn, Database, User } from "lucide-react";
+import { Key, Code, FileText, Activity, GitBranch, BookOpen, Handshake, BarChart3, HelpCircle, TestTube2, HeartPulse, AlertOctagon, Store, TrendingUp, Package, LayoutGrid, Search, Lock, LogIn, Database, User, Coins } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -37,6 +37,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
     { id: "embed", title: "Embed", icon: LayoutGrid },
     { id: "matches", title: "Matches", icon: Handshake, requiresAuth: true },
     { id: "analytics", title: "Analytics", icon: BarChart3, requiresAuth: true },
+    { id: "usage", title: "Usage & Billing", icon: Coins, requiresAuth: true },
     { id: "webhooks", title: "Webhooks", icon: Database, requiresAuth: true },
     { id: "webhook-debugger", title: "Debugger", icon: Code, requiresAuth: true },
     { id: "audit-logs", title: "Logs", icon: Activity, requiresAuth: true },
