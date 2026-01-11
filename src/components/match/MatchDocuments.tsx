@@ -83,6 +83,25 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docType, setDocType] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sessionOrgId, setSessionOrgId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the user's org_id from their profile to ensure RLS compatibility
+    const getSessionOrgId = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("org_id")
+          .eq("id", session.user.id)
+          .single();
+        if (profile) {
+          setSessionOrgId(profile.org_id);
+        }
+      }
+    };
+    getSessionOrgId();
+  }, []);
 
   useEffect(() => {
     fetchDocuments();
@@ -165,9 +184,16 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         return;
       }
 
+      // Use session-derived org_id for RLS compatibility, fallback to prop
+      const effectiveOrgId = sessionOrgId || orgId;
+      if (!effectiveOrgId) {
+        toast.error("Could not determine organization");
+        return;
+      }
+
       // Create storage path: orgId/matchId/timestamp_filename
       const timestamp = Date.now();
-      const storagePath = `${orgId}/${matchId}/${timestamp}_${selectedFile.name}`;
+      const storagePath = `${effectiveOrgId}/${matchId}/${timestamp}_${selectedFile.name}`;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -179,12 +205,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
       if (uploadError) throw uploadError;
 
-      // Insert document record
+      // Insert document record using session-derived org_id
       const { error: insertError } = await supabase
         .from("match_documents")
         .insert({
           match_id: matchId,
-          org_id: orgId,
+          org_id: effectiveOrgId,
           uploader_user_id: session.user.id,
           doc_type: docType,
           filename: selectedFile.name,
@@ -197,9 +223,9 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
       if (insertError) throw insertError;
 
-      // Create audit log
+      // Create audit log using session-derived org_id
       await supabase.from("audit_logs").insert({
-        org_id: orgId,
+        org_id: effectiveOrgId,
         actor_user_id: session.user.id,
         action: "document.uploaded",
         entity_type: "match_document",

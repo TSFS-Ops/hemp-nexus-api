@@ -43,10 +43,12 @@ Deno.serve(async (req) => {
     await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'match', 'match');
     
     // Enforce token metering - burns 1 token per request
+    // For API key auth, userId contains the API key ID; for JWT auth it's null for api_key_id
+    const apiKeyId = authCtx.isApiKey ? authCtx.userId : null;
     await enforceTokenMetering(
       supabase,
       authCtx.orgId,
-      authCtx.isApiKey ? authCtx.userId : null,
+      apiKeyId || null,
       "/match",
       requestId
     );
@@ -81,10 +83,14 @@ Deno.serve(async (req) => {
         enforceEligibility(match);
       } catch (eligibilityError) {
         // Record the denied attempt in audit log (non-proof entry)
+        // Use null for empty/undefined IDs to avoid UUID validation errors
+        const actorUserId = (!authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
+        const actorApiKeyId = (authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
+        
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
-          actor_user_id: authCtx.userId,
-          actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+          actor_user_id: actorUserId,
+          actor_api_key_id: actorApiKeyId,
           action: "intent.denied",
           entity_type: "match",
           entity_id: matchId,
@@ -119,11 +125,15 @@ Deno.serve(async (req) => {
       if (updateError) handleDatabaseError(updateError, requestId);
 
       // Create audit log for intent confirmation (immutable proof-of-intent)
+      // Derive actor IDs properly to avoid empty string UUID errors
+      const actorUserId = (!authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
+      const actorApiKeyId = (authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
+      
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
-          actor_user_id: authCtx.userId,
-          actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+          actor_user_id: actorUserId,
+          actor_api_key_id: actorApiKeyId,
           action: "intent.confirmed",
           entity_type: "match",
           entity_id: matchId,
@@ -156,8 +166,8 @@ Deno.serve(async (req) => {
             priceAmount: match.price_amount,
             note: "Signals serious interest - no legal obligation"
           },
-          authCtx.userId,
-          authCtx.isApiKey ? authCtx.userId : null
+          actorUserId,
+          actorApiKeyId
         );
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
@@ -405,11 +415,15 @@ Deno.serve(async (req) => {
       if (insertError) handleDatabaseError(insertError, requestId);
 
       // Create audit log for match creation (immutable proof-of-intent)
+      // Derive actor IDs properly to avoid empty string UUID errors
+      const creationActorUserId = (!authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
+      const creationActorApiKeyId = (authCtx.isApiKey && authCtx.userId) ? authCtx.userId : null;
+      
       try {
         await supabase.from("audit_logs").insert({
           org_id: authCtx.orgId,
-          actor_user_id: authCtx.userId,
-          actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+          actor_user_id: creationActorUserId,
+          actor_api_key_id: creationActorApiKeyId,
           action: "match.created",
           entity_type: "match",
           entity_id: match.id,
@@ -445,8 +459,8 @@ Deno.serve(async (req) => {
             terms: body.terms,
             hash,
           },
-          authCtx.userId,
-          authCtx.isApiKey ? authCtx.userId : null
+          creationActorUserId,
+          creationActorApiKeyId
         );
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);

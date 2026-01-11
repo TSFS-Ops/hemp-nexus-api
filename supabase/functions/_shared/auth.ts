@@ -88,7 +88,7 @@ const authenticateApiKey = async (
     .eq('id', matchedKey.id);
 
   return {
-    userId: '', // API keys don't have user context
+    userId: matchedKey.id, // Use API key ID as userId for API key auth
     orgId: matchedKey.org_id,
     roles: matchedKey.scopes || [],
     isApiKey: true,
