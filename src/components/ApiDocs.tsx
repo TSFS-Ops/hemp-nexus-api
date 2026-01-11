@@ -396,6 +396,25 @@ print(f"Match created: {match['match_id']}")`}
                     </AlertDescription>
                   </Alert>
 
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Eligibility Requirements</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Before Confirm Intent can proceed, the match must pass eligibility validation:
+                    </p>
+                    <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
+                      <li>buyer_id, buyer_name - must be non-empty strings</li>
+                      <li>seller_id, seller_name - must be non-empty strings</li>
+                      <li>commodity - must be a non-empty string</li>
+                      <li>quantity_amount - must be a positive number</li>
+                      <li>quantity_unit - must be a non-empty string</li>
+                      <li>price_amount - must be a positive number</li>
+                      <li>price_currency - must be a valid 3-letter currency code</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      If eligibility fails, you'll receive a 422 response with detailed denial reasons.
+                    </p>
+                  </div>
+
                   <div>
                     <h4 className="font-medium mb-2">Example</h4>
                     <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
@@ -443,11 +462,19 @@ console.log('Intent confirmed at:', result.settled_at);`}
                     <Badge variant="outline">option.selected</Badge>
                     <Badge variant="outline">match.created</Badge>
                     <Badge variant="outline">intent.confirmed</Badge>
+                    <Badge variant="outline">intent.received</Badge>
+                    <Badge variant="outline">token.low_balance</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Note: <code>intent.confirmed</code> (also sent as <code>match.settled</code> for backward compatibility) 
-                    is triggered when a user confirms intent. This is the only event that creates audit/evidence records.
-                  </p>
+                  <div className="text-xs text-muted-foreground space-y-2">
+                    <p>
+                      <code>intent.confirmed</code> (also sent as <code>match.settled</code> for backward compatibility) 
+                      is triggered when a user confirms intent. This is the only event that creates audit/evidence records.
+                    </p>
+                    <p>
+                      <code>token.low_balance</code> is triggered when your organization's token balance crosses 
+                      warning thresholds (6,000, 5,500, or 5,001 tokens). Use this to set up automated top-up alerts.
+                    </p>
+                  </div>
                 </div>
 
                 <Separator className="my-4" />

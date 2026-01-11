@@ -20,6 +20,9 @@ When you register a webhook endpoint, the Compliance Matching API will send HTTP
 | `option.selected` | Triggered when an option is selected for a signal | `signalId`, `optionId`, `selectionId`, `dataSourceType`, `sourceLink` |
 | `match.created` | Triggered when a new match is created | `matchId`, `commodity`, `buyer`, `seller`, `quantity`, `price`, `hash` |
 | `match.settled` | Triggered when a match is settled | `matchId`, `hash`, `settledAt`, `commodity`, `quantity` |
+| `intent.confirmed` | Triggered when intent is confirmed (alias for match.settled) | `matchId`, `hash`, `settledAt`, `commodity`, `quantity` |
+| `intent.received` | Triggered when counterparty receives intent notification | `matchId`, `counterpartyOrgId`, `notifiedAt` |
+| `token.low_balance` | Triggered when token balance crosses warning threshold | `currentBalance`, `threshold`, `minimumRequired`, `urgency`, `message` |
 
 ## Managing Webhooks
 
@@ -103,6 +106,31 @@ All webhook deliveries follow this format:
   "orgId": "org-uuid"
 }
 ```
+
+### Token Low Balance Payload
+
+The `token.low_balance` event is triggered when your organization's token balance crosses warning thresholds:
+
+```json
+{
+  "event": "token.low_balance",
+  "data": {
+    "currentBalance": 5500,
+    "threshold": 5500,
+    "minimumRequired": 5000,
+    "urgency": "urgent",
+    "message": "Your token balance is running low. Top up soon to avoid service interruption.",
+    "topUpUrl": "https://dashboard.example.com/billing"
+  },
+  "timestamp": "2026-01-11T10:30:00.000Z",
+  "orgId": "org-uuid"
+}
+```
+
+**Threshold Levels**:
+- **6,000 tokens** (Warning): Early warning to plan top-up
+- **5,500 tokens** (Urgent): Top up soon to avoid interruption
+- **5,001 tokens** (Critical): Immediate action required
 
 ## Webhook Headers
 

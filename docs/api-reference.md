@@ -8,6 +8,14 @@
 
 ## Changelog
 
+### v1.4 (2026-01-11)
+- Added token metering with 1 token per billable API call
+- Minimum token balance requirement of 5,000 tokens
+- Low balance webhook notifications at 6,000, 5,500, and 5,001 tokens
+- Added `token.low_balance` webhook event
+- Confirm Intent now requires eligibility validation with clear denial reasons
+- Added document verification workflow for matches
+
 ### v1.3 (2025-12-03)
 - **BREAKING**: Renamed "Settle" to "Confirm Intent" throughout
 - Added `intent.confirmed` webhook event (replaces `match.settled`, backward compatible)
@@ -86,6 +94,59 @@ API keys support scope-based access control:
 
 ---
 
+## Token Metering
+
+All billable API endpoints consume **1 token per call**. Your organization must maintain a **minimum balance of 5,000 tokens** to make API calls.
+
+### Billable Endpoints
+
+| Endpoint | Tokens |
+|----------|--------|
+| `/signals` | 1 token |
+| `/search` | 1 token |
+| `/match` | 1 token |
+| `/sr-discover` | 1 token |
+
+### Non-Billable Endpoints
+
+The following endpoints do not consume tokens:
+- `/healthz` - Health check
+- `/api-keys` - API key management
+- `/webhooks` - Webhook management
+- `/audit-logs` - Audit log queries
+- `/evidence-pack` - Evidence pack generation
+- `/consents` - Consent management
+- `/data-sources` - Data source management
+
+### Insufficient Balance Response (HTTP 402)
+
+```json
+{
+  "code": "INSUFFICIENT_TOKENS",
+  "message": "Insufficient token balance. Current: 4500, Required minimum: 5000",
+  "requestId": "123e4567-e89b-12d3-a456-426614174000",
+  "details": {
+    "currentBalance": 4500,
+    "minimumRequired": 5000,
+    "endpoint": "signals"
+  }
+}
+```
+
+### Low Balance Webhooks
+
+When your token balance crosses warning thresholds, a `token.low_balance` webhook is triggered:
+
+| Threshold | Urgency |
+|-----------|---------|
+| 6,000 tokens | Warning |
+| 5,500 tokens | Urgent |
+| 5,001 tokens | Critical |
+
+See [Webhook Events](#webhook-events) for payload format.
+
+---
+
 ## Rate Limiting
 
 Rate limits are enforced per organization and per endpoint.
@@ -147,6 +208,8 @@ All errors follow a consistent format:
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource already exists |
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
+| `INSUFFICIENT_TOKENS` | 402 | Token balance below minimum |
+| `ELIGIBILITY_FAILED` | 422 | Confirm Intent eligibility check failed |
 | `AUDIT_LOG_ERROR` | 500 | Failed to create audit trail |
 | `INTERNAL_ERROR` | 500 | Server error |
 | `DATABASE_ERROR` | 500 | Database operation failed |
@@ -665,6 +728,41 @@ Authorization: Bearer sk_your_api_key
 - Triggers `intent.confirmed` webhook event (also `match.settled` for backward compatibility)
 - **Only "Confirm Intent" creates evidence records** — all other actions (skip, maybe later, etc.) are non-binding behavioral signals
 
+### Eligibility Requirements
+
+Before Confirm Intent can proceed, the match must pass eligibility validation. All required fields must be present and unambiguous:
+
+| Field | Requirement |
+|-------|-------------|
+| `buyer_id` | Must be a non-empty string |
+| `buyer_name` | Must be a non-empty string |
+| `seller_id` | Must be a non-empty string |
+| `seller_name` | Must be a non-empty string |
+| `commodity` | Must be a non-empty string |
+| `quantity_amount` | Must be a positive number |
+| `quantity_unit` | Must be a non-empty string |
+| `price_amount` | Must be a positive number |
+| `price_currency` | Must be a valid 3-letter currency code |
+
+**Eligibility Failure Response (HTTP 422)**:
+```json
+{
+  "code": "ELIGIBILITY_FAILED",
+  "message": "Match does not meet eligibility requirements for Confirm Intent",
+  "requestId": "123e4567-e89b-12d3-a456-426614174000",
+  "details": {
+    "eligible": false,
+    "denialReasons": [
+      "Missing required field: quantity_amount",
+      "Invalid field: price_currency must be a valid 3-letter currency code"
+    ],
+    "checkedFields": ["buyer_id", "buyer_name", "seller_id", "seller_name", "commodity", "quantity_amount", "quantity_unit", "price_amount", "price_currency"],
+    "passedFields": ["buyer_id", "buyer_name", "seller_id", "seller_name", "commodity"],
+    "failedFields": ["quantity_amount", "price_currency"]
+  }
+}
+```
+
 ---
 
 ### Action Types: Confirm vs. Exploration
@@ -1141,6 +1239,34 @@ Authorization: Bearer sk_your_api_key
 | `option.selected` | Option selected from signal |
 | `match.created` | New match recorded |
 | `match.settled` | Match intent confirmed |
+| `intent.confirmed` | Match intent confirmed (alias for match.settled) |
+| `intent.received` | Counterparty received intent notification |
+| `token.low_balance` | Organization token balance crossed warning threshold |
+
+### Token Low Balance Event
+
+Triggered when your organization's token balance crosses a warning threshold (6,000, 5,500, or 5,001 tokens):
+
+```json
+{
+  "event": "token.low_balance",
+  "timestamp": "2026-01-11T10:30:00Z",
+  "orgId": "org_123",
+  "data": {
+    "currentBalance": 5500,
+    "threshold": 5500,
+    "minimumRequired": 5000,
+    "urgency": "urgent",
+    "message": "Your token balance is running low. Top up soon to avoid service interruption.",
+    "topUpUrl": "https://dashboard.example.com/billing"
+  }
+}
+```
+
+**Urgency Levels**:
+- `warning` (6,000 tokens): "Your token balance is getting low. Consider topping up."
+- `urgent` (5,500 tokens): "Your token balance is running low. Top up soon to avoid service interruption."
+- `critical` (5,001 tokens): "CRITICAL: Your token balance is nearly depleted. Top up immediately to maintain service."
 
 ### Signature Verification
 
