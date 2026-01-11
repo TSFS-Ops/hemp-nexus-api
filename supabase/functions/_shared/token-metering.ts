@@ -18,6 +18,9 @@ const MINIMUM_TOKEN_BALANCE = 5000;
 // Tokens consumed per API call
 const TOKENS_PER_CALL = 1;
 
+// Low balance warning thresholds
+const LOW_BALANCE_THRESHOLDS = [6000, 5500, 5001];
+
 export interface TokenCheckResult {
   allowed: boolean;
   currentBalance: number;
@@ -156,6 +159,7 @@ export async function burnTokens(
   // Start a transaction-like operation
   // First, get and update the balance
   let newBalance = 0;
+  let previousBalance = 0;
   
   if (tokensToBurn > 0) {
     // Fetch current balance
@@ -166,6 +170,7 @@ export async function burnTokens(
       .single();
     
     if (currentBalance) {
+      previousBalance = currentBalance.balance;
       newBalance = Math.max(0, currentBalance.balance - tokensToBurn);
       
       // Update balance
@@ -182,6 +187,9 @@ export async function burnTokens(
           500
         );
       }
+      
+      // Check if we crossed any low balance thresholds
+      await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
     }
   } else {
     // Just get the current balance for the ledger entry
@@ -220,6 +228,144 @@ export async function burnTokens(
     newBalance,
     ledgerEntryId: ledgerEntry?.id || "",
   };
+}
+
+/**
+ * Check if balance crossed low thresholds and trigger webhooks
+ */
+async function checkAndTriggerLowBalanceWebhooks(
+  supabase: SupabaseClient,
+  orgId: string,
+  previousBalance: number,
+  newBalance: number
+): Promise<void> {
+  for (const threshold of LOW_BALANCE_THRESHOLDS) {
+    // Check if we just crossed this threshold
+    if (previousBalance > threshold && newBalance <= threshold) {
+      console.log(`[Token Metering] Balance crossed ${threshold} threshold for org ${orgId}`);
+      
+      // Trigger low balance webhook
+      try {
+        // Fetch active webhook endpoints subscribed to token.low_balance event
+        const { data: endpoints, error } = await supabase
+          .from("webhook_endpoints")
+          .select("*")
+          .eq("org_id", orgId)
+          .eq("status", "active")
+          .contains("events", ["token.low_balance"]);
+        
+        if (error) {
+          console.error("Error fetching webhook endpoints for low balance:", error);
+          return;
+        }
+        
+        if (!endpoints || endpoints.length === 0) {
+          console.log(`No webhooks registered for token.low_balance event`);
+          return;
+        }
+        
+        const payload = {
+          event: "token.low_balance",
+          data: {
+            orgId,
+            currentBalance: newBalance,
+            threshold,
+            minimumRequired: MINIMUM_TOKEN_BALANCE,
+            warning: getWarningMessage(threshold, newBalance),
+            urgency: getUrgencyLevel(newBalance),
+          },
+          timestamp: new Date().toISOString(),
+          orgId,
+        };
+        
+        // Deliver webhooks in background
+        for (const endpoint of endpoints) {
+          deliverLowBalanceWebhook(supabase, endpoint, payload).catch(err =>
+            console.error(`Low balance webhook delivery error:`, err)
+          );
+        }
+      } catch (err) {
+        console.error("Error triggering low balance webhooks:", err);
+      }
+      
+      // Only trigger once per crossing (don't trigger for multiple thresholds in same call)
+      break;
+    }
+  }
+}
+
+function getWarningMessage(threshold: number, balance: number): string {
+  if (balance <= 5001) {
+    return "CRITICAL: Token balance is at minimum. API calls will be blocked if balance drops below 5000.";
+  }
+  if (balance <= 5500) {
+    return "WARNING: Token balance is very low. Please top up soon to avoid service interruption.";
+  }
+  return "NOTICE: Token balance is approaching minimum threshold. Consider topping up.";
+}
+
+function getUrgencyLevel(balance: number): "critical" | "warning" | "notice" {
+  if (balance <= 5001) return "critical";
+  if (balance <= 5500) return "warning";
+  return "notice";
+}
+
+async function deliverLowBalanceWebhook(
+  supabase: SupabaseClient,
+  endpoint: { id: string; url: string; secret_hash: string },
+  payload: { event: string; data: Record<string, unknown>; timestamp: string; orgId: string }
+): Promise<void> {
+  const body = JSON.stringify(payload);
+  
+  // Generate signature
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(endpoint.secret_hash);
+  const messageData = encoder.encode(body);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+  const signatureHex = Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+  
+  try {
+    const response = await fetch(endpoint.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Signature": signatureHex,
+        "X-Webhook-Event": payload.event,
+        "X-Webhook-Timestamp": payload.timestamp,
+      },
+      body,
+    });
+    
+    // Log delivery
+    await supabase.from("webhook_deliveries").insert({
+      webhook_endpoint_id: endpoint.id,
+      org_id: payload.orgId,
+      event_type: payload.event,
+      payload: payload.data,
+      response_status_code: response.status,
+      response_body: (await response.text()).substring(0, 1000),
+      delivery_attempt: 1,
+    });
+    
+    console.log(`Low balance webhook delivered to ${endpoint.url}: ${response.status}`);
+  } catch (err) {
+    console.error(`Failed to deliver low balance webhook to ${endpoint.url}:`, err);
+    
+    // Log failed delivery
+    await supabase.from("webhook_deliveries").insert({
+      webhook_endpoint_id: endpoint.id,
+      org_id: payload.orgId,
+      event_type: payload.event,
+      payload: payload.data,
+      response_status_code: 0,
+      error_message: err instanceof Error ? err.message : "Unknown error",
+      delivery_attempt: 1,
+    });
+  }
 }
 
 /**
