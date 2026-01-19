@@ -2,9 +2,20 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search, CheckCircle, FileText, Shield, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { getAuthUrl, isPreview } = useCrossDomainUrls();
+  
+  // Helper to handle auth navigation (cross-domain or internal)
+  const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    const authUrl = getAuthUrl();
+    if (isPreview) {
+      return <Link to="/auth" className={className}>{children}</Link>;
+    }
+    return <a href={authUrl} className={className}>{children}</a>;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,13 +43,10 @@ export default function Landing() {
             >
               Try Demo
             </Link>
-            <Link 
-              to="/auth"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
-            >
+            <AuthLink className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
               Sign in
               <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            </AuthLink>
           </div>
 
           {/* Mobile Menu Button */}
@@ -69,13 +77,9 @@ export default function Landing() {
             >
               Try Demo
             </Link>
-            <Link 
-              to="/auth"
-              className="block text-sm font-medium text-foreground py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
+            <AuthLink className="block text-sm font-medium text-foreground py-2">
               Sign in
-            </Link>
+            </AuthLink>
           </div>
         )}
       </nav>
@@ -100,12 +104,9 @@ export default function Landing() {
               Try Demo
               <span className="text-background/60 text-xs font-normal">(No Login)</span>
             </Link>
-            <Link 
-              to="/auth"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
-            >
+            <AuthLink className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors">
               Sign in / Create API Key
-            </Link>
+            </AuthLink>
           </div>
         </div>
       </section>
@@ -233,13 +234,10 @@ export default function Landing() {
             >
               Read documentation
             </Link>
-            <Link 
-              to="/auth"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
-            >
+            <AuthLink className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
               Create API key
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </AuthLink>
           </div>
         </div>
       </section>
@@ -251,7 +249,7 @@ export default function Landing() {
           <div className="flex items-center gap-6">
             <Link to="/docs" className="hover:text-foreground transition-colors">Documentation</Link>
             <Link to="/demo" className="hover:text-foreground transition-colors">Demo</Link>
-            <Link to="/auth" className="hover:text-foreground transition-colors">Sign in</Link>
+            <AuthLink className="hover:text-foreground transition-colors">Sign in</AuthLink>
           </div>
         </div>
       </footer>
