@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { getPublicUrl, getHostType } from "@/lib/hostname";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -356,14 +357,32 @@ export default function Auth() {
   }
 
   // Main Auth Form
+  const hostType = getHostType();
+  const backUrl = hostType === 'preview' ? '/' : getPublicUrl('/');
+  
+  // Helper for back link
+  const BackLink = () => {
+    if (hostType === 'preview') {
+      return (
+        <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back to home
+        </Link>
+      );
+    }
+    return (
+      <a href={backUrl} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+        <ArrowLeft className="h-4 w-4" />
+        Back to home
+      </a>
+    );
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
-            <ArrowLeft className="h-4 w-4" />
-            Back to home
-          </Link>
+          <BackLink />
           <div className="flex items-center gap-2 mb-4">
             <div className="h-8 w-8 rounded bg-foreground flex items-center justify-center">
               <span className="text-background font-bold text-xs">CM</span>

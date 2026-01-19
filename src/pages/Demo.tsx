@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowRight, ArrowLeft, Check, Info, Sparkles, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
 interface DemoResult {
   id: string;
@@ -146,6 +147,16 @@ export default function Demo() {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [showIntentDialog, setShowIntentDialog] = useState(false);
+  const { getAuthUrl, isPreview } = useCrossDomainUrls();
+  
+  // Helper for cross-domain auth links
+  const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    const authUrl = getAuthUrl();
+    if (isPreview) {
+      return <Link to="/auth" className={className}>{children}</Link>;
+    }
+    return <a href={authUrl} className={className}>{children}</a>;
+  };
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -227,11 +238,11 @@ export default function Demo() {
               <span className="px-2 py-1 text-xs font-medium text-muted-foreground border border-border rounded">
                 Sandbox
               </span>
-              <Link to="/auth">
+              <AuthLink className="inline-flex items-center justify-center">
                 <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">
                   Get API Key
                 </Button>
-              </Link>
+              </AuthLink>
             </div>
           </div>
         </nav>
@@ -241,7 +252,7 @@ export default function Demo() {
           <div className="mb-8 p-4 border border-border rounded-lg bg-muted/30">
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Demo mode</span> — Results are simulated. No real evidence records are created.{" "}
-              <Link to="/auth" className="text-primary hover:underline">Sign up</Link> to generate real proofs.
+              <AuthLink className="text-primary hover:underline">Sign up</AuthLink> to generate real proofs.
             </p>
           </div>
 
@@ -498,12 +509,12 @@ export default function Demo() {
                 >
                   Continue exploring
                 </Button>
-                <Link to="/auth" className="flex-1">
+                <AuthLink className="flex-1">
                   <Button className="w-full bg-foreground text-background hover:bg-foreground/90">
                     Sign up for real proofs
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
-                </Link>
+                </AuthLink>
               </div>
             </div>
           </DialogContent>

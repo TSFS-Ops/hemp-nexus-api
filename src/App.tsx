@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { HostnameRouter } from "@/components/HostnameRouter";
 import Landing from "@/pages/Landing";
 import Demo from "@/pages/Demo";
 import Auth from "@/pages/Auth";
@@ -22,20 +23,22 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <Router>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/demo" element={<Demo />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
-              <Route path="/activity" element={<MyActivity />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/docs" element={<Docs />} />
-              <Route path="/admin/*" element={<Admin />} />
-            </Routes>
-            <Toaster />
-            <Sonner />
+            <HostnameRouter>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/demo" element={<Demo />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
+                <Route path="/activity" element={<MyActivity />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/docs" element={<Docs />} />
+                <Route path="/admin/*" element={<Admin />} />
+              </Routes>
+              <Toaster />
+              <Sonner />
+            </HostnameRouter>
           </Router>
         </TooltipProvider>
       </AuthProvider>

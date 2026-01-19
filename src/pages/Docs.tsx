@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -7,10 +8,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { 
   Book, Code, Shield, Zap, Webhook, AlertCircle, Copy, Check, 
-  ArrowRight, ExternalLink, FileText, CheckCircle
+  ArrowRight, ExternalLink, FileText, CheckCircle, ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
 const API_BASE_URL = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
 
@@ -42,25 +44,39 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
 }
 
 export default function Docs() {
+  const { getAuthUrl, isPreview } = useCrossDomainUrls();
+  
+  // Helper for cross-domain auth links
+  const AuthLink = ({ children, className, asChild }: { children: React.ReactNode; className?: string; asChild?: boolean }) => {
+    const authUrl = getAuthUrl();
+    if (isPreview) {
+      return <Link to="/auth" className={className}>{children}</Link>;
+    }
+    return <a href={authUrl} className={className}>{children}</a>;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
               <FileText className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-lg font-semibold">Compliance Matching API</h1>
-              <p className="text-xs text-muted-foreground">v1.0 Documentation</p>
+              <p className="text-xs text-muted-foreground">v1.0 Documentation — Last updated: January 2025</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="outline" size="sm" asChild>
-              <a href="/auth">Get API Key</a>
-            </Button>
+            <AuthLink className="inline-flex items-center justify-center">
+              <Button variant="outline" size="sm">Get API Key</Button>
+            </AuthLink>
           </div>
         </div>
       </header>
