@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
-import { authenticateRequest } from "../_shared/auth.ts";
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 
@@ -30,11 +30,23 @@ Deno.serve(async (req) => {
       throw new ApiException("BAD_REQUEST", "Match ID is required", 400);
     }
 
+    // SECURITY: Validate matchId is a valid UUID format to prevent injection
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(matchId)) {
+      throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    
+    // SECURITY: Require 'evidence' scope for API key access
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, 'evidence');
+    }
+    
     await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'evidence-pack', 'evidence-pack');
     
     // Enforce token metering - burns 1 token per request

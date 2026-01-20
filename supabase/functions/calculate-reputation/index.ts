@@ -1,26 +1,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "../_shared/cors.ts";
-
-const headers = corsHeaders('*');
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { authenticateRequest, requireRole } from "../_shared/auth.ts";
+import { ApiException, errorResponse } from "../_shared/errors.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers });
-  }
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
+
+  const corsResponse = handleCors(req, allowedOrigins);
+  if (corsResponse) return corsResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // SECURITY: Authenticate request - only admins can trigger reputation recalculation
+    const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    requireRole(authCtx, 'admin');
+
     const { orgId } = await req.json();
 
-    if (!orgId) {
-      return new Response(
-        JSON.stringify({ error: "orgId required" }),
-        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
-      );
+    // SECURITY: orgId must be provided and valid UUID format
+    if (!orgId || typeof orgId !== 'string') {
+      throw new ApiException("VALIDATION_ERROR", "orgId is required", 400);
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(orgId)) {
+      throw new ApiException("VALIDATION_ERROR", "Invalid orgId format", 400);
     }
 
     // Fetch match data for this org
@@ -146,10 +158,7 @@ serve(async (req) => {
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error calculating reputation:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
-    );
+    console.error(`[${requestId}] Error calculating reputation:`, error);
+    return errorResponse(error as Error, requestId, headers);
   }
 });

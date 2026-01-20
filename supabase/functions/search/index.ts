@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "../_shared/cors.ts";
-import { authenticateRequest } from "../_shared/auth.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { multiProviderSearch, generateEnhancedQueries } from "../_shared/multi-search.ts";
 import { generateEmbedding, cosineSimilarity } from "../_shared/embeddings.ts";
 import { 
@@ -14,14 +14,14 @@ import {
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { errorResponse } from "../_shared/errors.ts";
 
-const headers = corsHeaders('*');
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers });
-  }
-
   const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
+
+  const corsResponse = handleCors(req, allowedOrigins);
+  if (corsResponse) return corsResponse;
   
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -29,6 +29,12 @@ serve(async (req) => {
     
     // Authenticate request
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    
+    // SECURITY: Require 'search' scope for API key access
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, 'search');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Enforce token metering - burns 1 token per request
