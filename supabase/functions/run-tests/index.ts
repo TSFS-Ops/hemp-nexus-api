@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { hashApiKey } from "../_shared/auth.ts";
+import { hashApiKey, authenticateRequest, requireRole } from "../_shared/auth.ts";
+import { ApiException, errorResponse } from "../_shared/errors.ts";
 
 interface TestResult {
   name: string;
@@ -11,7 +12,17 @@ interface TestResult {
   details?: any;
 }
 
+/**
+ * Automated Test Suite Runner
+ * 
+ * SECURITY: This endpoint requires admin authentication to prevent:
+ * - Unauthorized test data creation
+ * - Exposure of internal API structure
+ * - Resource exhaustion attacks
+ */
+
 Deno.serve(async (req) => {
+  const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
@@ -22,6 +33,11 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
+
+  try {
+    // SECURITY: Require admin authentication to run tests
+    const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    requireRole(authCtx, 'admin');
 
   const results: TestResult[] = [];
   let testApiKey: string | null = null;
@@ -347,4 +363,8 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", ...headers }
     }
   );
+  } catch (error) {
+    console.error(`[${requestId}] Run-tests error:`, error);
+    return errorResponse(error as Error, requestId, headers);
+  }
 });

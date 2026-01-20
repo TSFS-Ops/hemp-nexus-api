@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { ApiException, errorResponse } from "../_shared/errors.ts";
 
 /**
  * API Key Expiry Automation
@@ -8,13 +9,28 @@ import { corsHeaders } from "../_shared/cors.ts";
  * 1. Sends warning emails 7 days before expiry
  * 2. Disables keys that have expired
  * 
- * Should be called via cron daily.
+ * SECURITY: This endpoint requires internal authentication via INTERNAL_CRON_KEY
+ * to prevent unauthorized triggering.
  */
 
 Deno.serve(async (req) => {
-  const headers = corsHeaders("*", req.headers.get("origin"));
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
+
+  const corsResponse = handleCors(req, allowedOrigins);
+  if (corsResponse) return corsResponse;
 
   try {
+    // SECURITY: Verify internal cron authentication
+    const internalKey = req.headers.get("x-internal-key") || req.headers.get("authorization")?.replace("Bearer ", "");
+    const expectedKey = Deno.env.get("INTERNAL_CRON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!internalKey || internalKey !== expectedKey) {
+      throw new ApiException("UNAUTHORIZED", "Internal authentication required", 401);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -134,12 +150,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { "Content-Type": "application/json", ...headers } }
     );
   } catch (error) {
-    console.error("API key expiry job error:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json", ...headers } }
-    );
+    console.error(`[${requestId}] API key expiry job error:`, error);
+    return errorResponse(error as Error, requestId, headers);
   }
 });

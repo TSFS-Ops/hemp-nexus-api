@@ -1,11 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { ApiException, errorResponse } from "../_shared/errors.ts";
 
 /**
  * Webhook Retry Background Job
  * 
  * This edge function processes failed webhook deliveries with exponential backoff.
  * It should be called periodically via cron (e.g., every 5 minutes).
+ * 
+ * SECURITY: This endpoint requires internal authentication via INTERNAL_CRON_KEY
+ * to prevent unauthorized triggering.
  * 
  * Retry Strategy:
  * - Attempt 1: Immediate (handled in original delivery)
@@ -15,9 +19,23 @@ import { corsHeaders } from "../_shared/cors.ts";
  */
 
 Deno.serve(async (req) => {
-  const headers = corsHeaders("*", req.headers.get("origin"));
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
+
+  const corsResponse = handleCors(req, allowedOrigins);
+  if (corsResponse) return corsResponse;
 
   try {
+    // SECURITY: Verify internal cron authentication
+    const internalKey = req.headers.get("x-internal-key") || req.headers.get("authorization")?.replace("Bearer ", "");
+    const expectedKey = Deno.env.get("INTERNAL_CRON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!internalKey || internalKey !== expectedKey) {
+      throw new ApiException("UNAUTHORIZED", "Internal authentication required", 401);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -168,13 +186,8 @@ Deno.serve(async (req) => {
       { status: 200, headers: { "Content-Type": "application/json", ...headers } }
     );
   } catch (error) {
-    console.error("Webhook retry job error:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json", ...headers } }
-    );
+    console.error(`[${requestId}] Webhook retry job error:`, error);
+    return errorResponse(error as Error, requestId, headers);
   }
 });
 
