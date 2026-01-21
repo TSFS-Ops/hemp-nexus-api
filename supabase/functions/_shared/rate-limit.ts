@@ -89,36 +89,29 @@ async function getOrCreateRateLimit(
   };
 }
 
-async function incrementRateLimit(
+/**
+ * Atomically increment rate limit counter using database RPC function.
+ * This prevents race conditions where concurrent requests bypass limits.
+ */
+async function incrementRateLimitAtomic(
   supabase: SupabaseClient,
   orgId: string,
   endpoint: string,
   windowEnd: Date
 ): Promise<number> {
-  // Fetch current count first
-  const { data: current } = await supabase
-    .from("rate_limits")
-    .select("request_count")
-    .eq("org_id", orgId)
-    .eq("endpoint", endpoint)
-    .eq("window_end", windowEnd.toISOString())
-    .single();
-
-  const newCount = (current?.request_count || 0) + 1;
-  
-  // Update with incremented count
-  const { error } = await supabase
-    .from("rate_limits")
-    .update({ request_count: newCount })
-    .eq("org_id", orgId)
-    .eq("endpoint", endpoint)
-    .eq("window_end", windowEnd.toISOString());
+  const { data, error } = await supabase.rpc('increment_rate_limit', {
+    p_org_id: orgId,
+    p_endpoint: endpoint,
+    p_window_end: windowEnd.toISOString()
+  });
 
   if (error) {
-    console.error("Error incrementing rate limit:", error);
+    console.error("Error incrementing rate limit atomically:", error);
+    // Fallback: return 0 but log the failure for monitoring
+    return 0;
   }
 
-  return newCount;
+  return data || 0;
 }
 
 export async function checkRateLimit(
@@ -148,7 +141,8 @@ export async function checkRateLimit(
         }
       );
     }
-    await incrementRateLimit(supabase, orgId, `${endpoint}:minute`, minuteWindow.windowEnd);
+    // Use atomic increment to prevent race conditions
+    await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:minute`, minuteWindow.windowEnd);
   }
 
   // Check per-hour limit
@@ -168,7 +162,7 @@ export async function checkRateLimit(
         }
       );
     }
-    await incrementRateLimit(supabase, orgId, `${endpoint}:hour`, hourWindow.windowEnd);
+    await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:hour`, hourWindow.windowEnd);
   }
 
   // Check per-day limit
@@ -188,7 +182,7 @@ export async function checkRateLimit(
         }
       );
     }
-    await incrementRateLimit(supabase, orgId, `${endpoint}:day`, dayWindow.windowEnd);
+    await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:day`, dayWindow.windowEnd);
   }
 }
 
