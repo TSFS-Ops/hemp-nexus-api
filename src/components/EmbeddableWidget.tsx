@@ -274,7 +274,7 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-const COMPLIANCE_API = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1';
+const COMPLIANCE_API = process.env.COMPLIANCE_MATCH_API_URL || 'https://YOUR_BACKEND_URL/functions/v1';
 const API_KEY = process.env.COMPLIANCE_MATCH_API_KEY;
 
 // Proxy: Create Signal
