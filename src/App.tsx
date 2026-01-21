@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { HostnameRouter } from "@/components/HostnameRouter";
 import { getHostType } from "@/lib/hostname";
+import PublicSearch from "@/pages/PublicSearch";
 import Landing from "@/pages/Landing";
 import Demo from "@/pages/Demo";
 import Auth from "@/pages/Auth";
@@ -20,9 +21,9 @@ import MyActivity from "@/pages/MyActivity";
 
 /**
  * Root element that renders based on host type:
- * - Public domain: Landing page (search + proof-of-intent)
+ * - Public domain: Minimalist search page
  * - Console domain: Redirect to Dashboard
- * - Preview: Landing page (for testing)
+ * - Preview: Minimalist search page (for testing)
  */
 function RootElement() {
   const hostType = getHostType();
@@ -32,8 +33,8 @@ function RootElement() {
     return <Navigate to="/dashboard" replace />;
   }
   
-  // Public domain or preview: show demo/search directly
-  return <Demo />;
+  // Public domain or preview: show minimalist search
+  return <PublicSearch />;
 }
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
             <HostnameRouter>
               <Routes>
                 <Route path="/" element={<RootElement />} />
+                <Route path="/landing" element={<Landing />} />
                 <Route path="/demo" element={<Demo />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
