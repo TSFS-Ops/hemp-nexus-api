@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { ApiException } from './errors.ts';
 
 export interface AuthContext {
@@ -8,6 +8,120 @@ export interface AuthContext {
   isApiKey: boolean;
 }
 
+// Auth rate limiting configuration
+const AUTH_RATE_LIMIT_CONFIG = {
+  maxAttempts: 5,           // Lock after 5 failed attempts
+  baseLockoutSeconds: 60,   // Start with 60 second lockout
+  // Exponential backoff: 60s -> 120s -> 240s -> 480s -> max 3600s (1 hour)
+};
+
+/**
+ * Get client IP address from request headers
+ */
+const getClientIP = (req: Request): string => {
+  // Check common headers for proxied requests
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  
+  const realIP = req.headers.get('x-real-ip');
+  if (realIP) {
+    return realIP;
+  }
+  
+  // Fallback to a generic identifier if IP not available
+  return 'unknown';
+};
+
+/**
+ * Get a safe prefix from API key for rate limiting (first 8 chars)
+ */
+const getApiKeyPrefix = (apiKey: string): string => {
+  return apiKey.slice(0, 8);
+};
+
+/**
+ * Check if identifier is currently locked out
+ */
+const checkAuthLockout = async (
+  supabase: SupabaseClient,
+  identifier: string,
+  identifierType: 'ip' | 'api_key_prefix'
+): Promise<void> => {
+  try {
+    const { data, error } = await supabase.rpc('check_auth_lockout', {
+      p_identifier: identifier,
+      p_identifier_type: identifierType,
+    });
+
+    if (error) {
+      console.error('Error checking auth lockout:', error);
+      return; // Don't block on DB errors
+    }
+
+    if (data?.is_locked) {
+      const remainingSeconds = data.lockout_remaining_seconds || 60;
+      throw new ApiException(
+        'RATE_LIMITED',
+        `Too many failed authentication attempts. Try again in ${remainingSeconds} seconds.`,
+        429,
+        { retryAfter: remainingSeconds, failedAttempts: data.failed_attempts }
+      );
+    }
+  } catch (e) {
+    if (e instanceof ApiException) throw e;
+    console.error('Unexpected error in checkAuthLockout:', e);
+  }
+};
+
+/**
+ * Record a failed authentication attempt with exponential backoff
+ */
+const recordAuthFailure = async (
+  supabase: SupabaseClient,
+  identifier: string,
+  identifierType: 'ip' | 'api_key_prefix'
+): Promise<void> => {
+  try {
+    const { data, error } = await supabase.rpc('check_and_increment_auth_failure', {
+      p_identifier: identifier,
+      p_identifier_type: identifierType,
+      p_max_attempts: AUTH_RATE_LIMIT_CONFIG.maxAttempts,
+      p_base_lockout_seconds: AUTH_RATE_LIMIT_CONFIG.baseLockoutSeconds,
+    });
+
+    if (error) {
+      console.error('Error recording auth failure:', error);
+      return;
+    }
+
+    if (data?.is_locked) {
+      console.log(`Auth lockout applied for ${identifierType}: ${identifier.slice(0, 8)}*** (${data.failed_attempts} attempts)`);
+    }
+  } catch (e) {
+    console.error('Unexpected error in recordAuthFailure:', e);
+  }
+};
+
+/**
+ * Clear auth rate limit on successful authentication
+ */
+const clearAuthRateLimit = async (
+  supabase: SupabaseClient,
+  identifier: string,
+  identifierType: 'ip' | 'api_key_prefix'
+): Promise<void> => {
+  try {
+    await supabase.rpc('reset_auth_rate_limit', {
+      p_identifier: identifier,
+      p_identifier_type: identifierType,
+    });
+  } catch (e) {
+    console.error('Error clearing auth rate limit:', e);
+  }
+};
+
 export const authenticateRequest = async (
   req: Request,
   supabaseUrl: string,
@@ -15,17 +129,54 @@ export const authenticateRequest = async (
 ): Promise<AuthContext> => {
   const authHeader = req.headers.get('authorization');
   const apiKeyHeader = req.headers.get('x-api-key');
+  const clientIP = getClientIP(req);
+
+  // Create supabase client for rate limiting checks
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   // Check for API Key auth
   if (apiKeyHeader) {
-    return await authenticateApiKey(apiKeyHeader, supabaseUrl, supabaseKey);
+    const apiKeyPrefix = getApiKeyPrefix(apiKeyHeader);
+    
+    // Check lockout before attempting authentication
+    await checkAuthLockout(supabase, apiKeyPrefix, 'api_key_prefix');
+    await checkAuthLockout(supabase, clientIP, 'ip');
+    
+    try {
+      const result = await authenticateApiKey(apiKeyHeader, supabaseUrl, supabaseKey);
+      // Success - clear any rate limits
+      await clearAuthRateLimit(supabase, apiKeyPrefix, 'api_key_prefix');
+      await clearAuthRateLimit(supabase, clientIP, 'ip');
+      return result;
+    } catch (e) {
+      if (e instanceof ApiException && e.statusCode === 401) {
+        // Record failed attempt
+        await recordAuthFailure(supabase, apiKeyPrefix, 'api_key_prefix');
+        await recordAuthFailure(supabase, clientIP, 'ip');
+      }
+      throw e;
+    }
   }
 
   // Check for JWT auth
   if (authHeader?.startsWith('Bearer ')) {
-    return await authenticateJwt(authHeader, supabaseUrl, supabaseKey);
+    // JWT auth - only rate limit by IP
+    await checkAuthLockout(supabase, clientIP, 'ip');
+    
+    try {
+      const result = await authenticateJwt(authHeader, supabaseUrl, supabaseKey);
+      await clearAuthRateLimit(supabase, clientIP, 'ip');
+      return result;
+    } catch (e) {
+      if (e instanceof ApiException && e.statusCode === 401) {
+        await recordAuthFailure(supabase, clientIP, 'ip');
+      }
+      throw e;
+    }
   }
 
+  // No auth provided - record failure
+  await recordAuthFailure(supabase, clientIP, 'ip');
   throw new ApiException('UNAUTHORIZED', 'Missing authentication', 401);
 };
 
