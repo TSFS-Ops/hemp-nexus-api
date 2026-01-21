@@ -137,17 +137,25 @@ export default function PublicSearch() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F5F5F5] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30 flex flex-col">
       {/* Main content - centered */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:py-16">
-        {/* Wordmark */}
-        <div className="mb-8 sm:mb-12">
-          <span className="text-lg sm:text-xl font-medium tracking-tight text-foreground/80">
-            izenzo
-          </span>
+        {/* Brand header */}
+        <div className="mb-8 sm:mb-10 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">CM</span>
+            </div>
+            <span className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+              Compliance Matching API
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Discover verified counterparties in regulated commodity markets
+          </p>
         </div>
 
-        {/* Glass search card */}
+        {/* Search card */}
         <div className="w-full max-w-2xl">
           <div className="glass-card rounded-2xl p-6 sm:p-8">
             {/* Search input */}
@@ -157,23 +165,23 @@ export default function PublicSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search for verified buyers or sellers in regulated markets"
+                placeholder="e.g., 'buyers for cashew in India' or 'copper cathode suppliers'"
                 aria-label="Search for verified buyers or sellers"
-                className="w-full h-14 px-5 text-base bg-white/60 border border-black/[0.06] rounded-xl 
+                className="w-full h-14 px-5 text-base bg-white/80 border border-border rounded-xl 
                          placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 
-                         focus:ring-primary/20 focus:border-primary/30 transition-all"
+                         focus:ring-primary/30 focus:border-primary/40 transition-all"
               />
             </div>
 
-            {/* Search button - subtle */}
+            {/* Search button - primary brand colour */}
             <button
               onClick={handleSearch}
               disabled={isSearching || !query.trim()}
-              className="mt-4 w-full h-11 bg-foreground/90 hover:bg-foreground text-white 
-                       rounded-lg font-medium text-sm transition-colors disabled:opacity-50 
-                       disabled:cursor-not-allowed"
+              className="mt-4 w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground 
+                       rounded-xl font-medium text-sm transition-colors disabled:opacity-50 
+                       disabled:cursor-not-allowed shadow-sm"
             >
-              {isSearching ? "Searching..." : "Search"}
+              {isSearching ? "Searching..." : "Search Counterparties"}
             </button>
 
             {/* Results */}
@@ -246,22 +254,29 @@ export default function PublicSearch() {
           </div>
 
           {/* Reassurance text */}
-          <p className="mt-6 text-center text-xs text-muted-foreground/70">
+          <p className="mt-5 text-center text-xs text-muted-foreground">
             No obligation. No payment. Signals intent only.
           </p>
         </div>
       </main>
 
-      {/* Minimal footer */}
-      <footer className="py-6 px-4">
-        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground/60">
-          <Link to="/docs" className="hover:text-foreground transition-colors">
-            Docs
-          </Link>
-          <span>·</span>
-          <a href={authUrl} className="hover:text-foreground transition-colors">
-            Developer Console
-          </a>
+      {/* Footer with brand identity */}
+      <footer className="py-6 px-4 border-t border-border/50">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/70">Compliance Matching API</span>
+          <div className="flex items-center gap-4">
+            <Link to="/docs" className="hover:text-primary transition-colors">
+              API Docs
+            </Link>
+            <span className="text-border">·</span>
+            <a href={authUrl} className="hover:text-primary transition-colors">
+              Developer Console
+            </a>
+            <span className="text-border">·</span>
+            <Link to="/landing" className="hover:text-primary transition-colors">
+              About
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
