@@ -2,91 +2,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
-
-interface SearchResult {
-  id: string;
-  title: string;
-  description: string;
-  url?: string;
-  source: string;
-  score: number;
-  isEnriched?: boolean;
-  enrichmentReason?: string;
-}
-
-// Demo results for unauthenticated users
-const DEMO_RESULTS: Record<string, SearchResult[]> = {
-  cashew: [
-    {
-      id: "demo-1",
-      title: "Olam Agri International",
-      description: "Major cashew processor and exporter based in Singapore with operations across West Africa and India.",
-      source: "Verified Trade Registry",
-      score: 94,
-      isEnriched: true,
-      enrichmentReason: "Cross-referenced with export licenses",
-    },
-    {
-      id: "demo-2", 
-      title: "Achal Industries",
-      description: "Large-scale cashew processing facility in Gujarat, India. ISO certified with annual capacity of 15,000 MT.",
-      source: "Industry Database",
-      score: 89,
-      isEnriched: true,
-      enrichmentReason: "Matched compliance records",
-    },
-    {
-      id: "demo-3",
-      title: "Kenkko Foods Ltd",
-      description: "Established cashew buyer with distribution network across Southeast Asia and Middle East markets.",
-      source: "Trade Directory",
-      score: 82,
-    },
-  ],
-  copper: [
-    {
-      id: "demo-4",
-      title: "Glencore International AG",
-      description: "Global commodity trading and mining company. Major copper cathode trader with worldwide logistics.",
-      source: "Verified Trade Registry",
-      score: 96,
-      isEnriched: true,
-      enrichmentReason: "Verified financial standing",
-    },
-    {
-      id: "demo-5",
-      title: "Jiangxi Copper Company",
-      description: "One of China's largest copper producers. Imports copper concentrate and cathode for smelting operations.",
-      source: "Industry Database", 
-      score: 91,
-      isEnriched: true,
-      enrichmentReason: "Cross-referenced with import records",
-    },
-  ],
-  default: [
-    {
-      id: "demo-6",
-      title: "TradeLink Partners",
-      description: "Multi-commodity trading house with focus on agricultural products and base metals.",
-      source: "Trade Directory",
-      score: 85,
-    },
-    {
-      id: "demo-7",
-      title: "Global Commodities Ltd",
-      description: "Established commodity broker with verified track record in cross-border trade facilitation.",
-      source: "Verified Trade Registry",
-      score: 78,
-      isEnriched: true,
-      enrichmentReason: "Verified trade history",
-    },
-  ],
-};
+import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
 
 export default function PublicSearch() {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<DemoSearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [hasSearched, setHasSearched] = useState(false);
   const { getAuthUrl } = useCrossDomainUrls();
@@ -101,16 +22,7 @@ export default function PublicSearch() {
     // Simulate search delay for demo
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    const lowerQuery = query.toLowerCase();
-    let matchedResults: SearchResult[] = [];
-    
-    if (lowerQuery.includes("cashew")) {
-      matchedResults = DEMO_RESULTS.cashew;
-    } else if (lowerQuery.includes("copper")) {
-      matchedResults = DEMO_RESULTS.copper;
-    } else {
-      matchedResults = DEMO_RESULTS.default;
-    }
+    const matchedResults = getDemoResultsForQuery(query);
     
     setResults(matchedResults);
     setIsSearching(false);
@@ -177,9 +89,10 @@ export default function PublicSearch() {
             <button
               onClick={handleSearch}
               disabled={isSearching || !query.trim()}
-              className="mt-4 w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground 
+              className="mt-4 w-full h-12 min-h-[44px] bg-primary hover:bg-primary/90 text-primary-foreground 
                        rounded-xl font-medium text-sm transition-colors disabled:opacity-50 
-                       disabled:cursor-not-allowed shadow-sm"
+                       disabled:cursor-not-allowed shadow-sm
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {isSearching ? "Searching..." : "Search Counterparties"}
             </button>
@@ -203,7 +116,9 @@ export default function PublicSearch() {
                       <button
                         key={result.id}
                         onClick={() => toggleSelect(result.id)}
-                        className={`w-full text-left p-4 rounded-lg border transition-all ${
+                        aria-pressed={selectedResults.has(result.id)}
+                        className={`w-full text-left p-4 rounded-lg border transition-all min-h-[44px]
+                                  focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                           selectedResults.has(result.id)
                             ? "bg-primary/5 border-primary/20"
                             : "bg-white/40 border-black/[0.04] hover:bg-white/60"
@@ -218,11 +133,14 @@ export default function PublicSearch() {
                               {result.description}
                             </p>
                           </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors ${
-                            selectedResults.has(result.id)
-                              ? "bg-primary border-primary"
-                              : "border-black/20"
-                          }`}>
+                          <div 
+                            className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors ${
+                              selectedResults.has(result.id)
+                                ? "bg-primary border-primary"
+                                : "border-black/20"
+                            }`}
+                            aria-hidden="true"
+                          >
                             {selectedResults.has(result.id) && (
                               <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -237,8 +155,9 @@ export default function PublicSearch() {
                     {selectedResults.size > 0 && (
                       <button
                         onClick={handleConfirmIntent}
-                        className="mt-4 w-full h-11 bg-neutral-700 hover:bg-neutral-800 text-white 
-                                 rounded-lg font-medium text-sm transition-colors"
+                        className="mt-4 w-full h-11 min-h-[44px] bg-foreground hover:bg-foreground/90 text-background 
+                                 rounded-lg font-medium text-sm transition-colors
+                                 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                       >
                         Confirm Intent ({selectedResults.size})
                       </button>

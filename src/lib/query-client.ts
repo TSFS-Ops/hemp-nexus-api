@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, keepPreviousData } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -12,8 +12,8 @@ export const queryClient = new QueryClient({
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       // Don't refetch on window focus by default (reduce unnecessary requests)
       refetchOnWindowFocus: false,
-      // Keep previous data while fetching new data
-      placeholderData: (previousData: unknown) => previousData,
+      // Keep previous data while fetching new data (proper typed sentinel)
+      placeholderData: keepPreviousData,
     },
     mutations: {
       // Retry mutations once on failure
