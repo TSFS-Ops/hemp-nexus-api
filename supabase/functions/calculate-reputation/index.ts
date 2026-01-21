@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -21,6 +22,16 @@ serve(async (req) => {
     // SECURITY: Authenticate request - only admins can trigger reputation recalculation
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireRole(authCtx, 'admin');
+
+    // SECURITY: Rate limit admin endpoint to prevent abuse
+    // Uses the admin user's org_id for rate limiting
+    await checkRateLimit(
+      supabase,
+      authCtx.orgId,
+      null, // No API key for admin auth
+      "calculate-reputation",
+      "admin:reputation"
+    );
 
     const { orgId } = await req.json();
 

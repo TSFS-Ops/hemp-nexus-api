@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { hashApiKey, authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 interface TestResult {
   name: string;
@@ -19,6 +20,8 @@ interface TestResult {
  * - Unauthorized test data creation
  * - Exposure of internal API structure
  * - Resource exhaustion attacks
+ * 
+ * Rate limited to 2 requests/minute, 10/hour, 50/day per admin
  */
 
 Deno.serve(async (req) => {
@@ -38,6 +41,16 @@ Deno.serve(async (req) => {
     // SECURITY: Require admin authentication to run tests
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireRole(authCtx, 'admin');
+
+    // SECURITY: Strict rate limit - tests are expensive operations
+    // 2 per minute, 10 per hour, 50 per day
+    await checkRateLimit(
+      supabase,
+      authCtx.orgId,
+      null, // No API key for admin auth
+      "run-tests",
+      "admin:tests"
+    );
 
   const results: TestResult[] = [];
   let testApiKey: string | null = null;
