@@ -19,6 +19,9 @@ const SCOPE_LIMITS: Record<string, RateLimitConfig> = {
   "signals:write": { requestsPerMinute: 30, requestsPerHour: 500, requestsPerDay: 5000 },
   "match": { requestsPerMinute: 20, requestsPerHour: 300, requestsPerDay: 3000 },
   "data-sources:write": { requestsPerMinute: 10, requestsPerHour: 100, requestsPerDay: 1000 },
+  // Admin endpoints - very restrictive to prevent abuse
+  "admin:reputation": { requestsPerMinute: 5, requestsPerHour: 30, requestsPerDay: 100 },
+  "admin:tests": { requestsPerMinute: 2, requestsPerHour: 10, requestsPerDay: 50 },
 };
 
 interface RateLimitWindow {
