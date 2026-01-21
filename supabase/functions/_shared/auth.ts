@@ -49,22 +49,26 @@ const authenticateApiKey = async (
   let matchedKey = null;
   let needsRehash = false;
 
-  // Check each key - scrypt hashes contain $, SHA-256 hashes are 64 hex chars
+  // Check ALL keys to prevent timing attacks (constant-time behavior)
+  // Track match but continue checking to avoid early exit timing leaks
   for (const key of allKeys || []) {
+    let isMatch = false;
+    let requiresRehash = false;
+    
     if (key.key_hash.includes('$')) {
       // Scrypt hash format: salt$hash
-      if (await verifyScrypt(apiKey, key.key_hash)) {
-        matchedKey = key;
-        break;
-      }
+      isMatch = await verifyScrypt(apiKey, key.key_hash);
     } else if (key.key_hash.length === 64 && /^[0-9a-f]+$/.test(key.key_hash)) {
       // Legacy SHA-256 hash - compare and mark for rehashing
       const sha256Hash = await hashApiKeySHA256(apiKey);
-      if (sha256Hash === key.key_hash) {
-        matchedKey = key;
-        needsRehash = true;
-        break;
-      }
+      isMatch = sha256Hash === key.key_hash;
+      requiresRehash = isMatch;
+    }
+    
+    // Only update matchedKey if we haven't found one yet (first match wins)
+    if (isMatch && !matchedKey) {
+      matchedKey = key;
+      needsRehash = requiresRehash;
     }
   }
 

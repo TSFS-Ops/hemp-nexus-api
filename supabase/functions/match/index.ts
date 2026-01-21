@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
@@ -9,6 +10,10 @@ import { recordMatchEvent } from "../_shared/match-events.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
+
+// Constants for request validation
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
+const uuidSchema = z.string().uuid();
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -57,6 +62,12 @@ Deno.serve(async (req) => {
 
     // Route: POST /match/:id/settle (Confirm Intent - creates audit record)
     if (req.method === "POST" && matchId && action === "settle") {
+      // Validate matchId is a valid UUID to prevent injection attacks
+      const uuidResult = uuidSchema.safeParse(matchId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
       console.log(`[${requestId}] POST /match/${matchId}/settle (Confirm Intent)`);
 
       const { data: match, error: fetchError } = await supabase
@@ -215,6 +226,12 @@ Deno.serve(async (req) => {
 
     // Route: GET /match/:id
     if (req.method === "GET" && matchId && !action) {
+      // Validate matchId is a valid UUID
+      const uuidResult = uuidSchema.safeParse(matchId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
       console.log(`[${requestId}] GET /match/${matchId}`);
 
       const { data: match, error } = await supabase
@@ -285,6 +302,12 @@ Deno.serve(async (req) => {
     // Route: POST /match (create new match)
     if (req.method === "POST" && !matchId) {
       console.log(`[${requestId}] POST /match`);
+
+      // Check body size to prevent DoS attacks
+      const contentLength = req.headers.get("content-length");
+      if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+        throw new ApiException("PAYLOAD_TOO_LARGE", "Request body exceeds maximum size of 1MB", 413);
+      }
 
       // Check for idempotency key
       const idempotencyKey = req.headers.get("idempotency-key");

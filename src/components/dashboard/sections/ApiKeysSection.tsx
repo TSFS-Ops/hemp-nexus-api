@@ -31,6 +31,10 @@ interface ApiKey {
 const availableScopes = [
   "signals:write",
   "signals:read",
+  "signals",
+  "match:write",
+  "match:read",
+  "match",
   "data-sources:write",
   "data-sources:read",
   "consents:write",

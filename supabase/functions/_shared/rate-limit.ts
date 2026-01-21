@@ -38,54 +38,57 @@ async function getOrCreateRateLimit(
   windowMinutes: number
 ): Promise<RateLimitWindow> {
   const now = new Date();
-  const windowStart = new Date(Math.floor(now.getTime() / (windowMinutes * 60 * 1000)) * (windowMinutes * 60 * 1000));
+  const windowStart = new Date(now.getTime() - (now.getTime() % (windowMinutes * 60 * 1000)));
   const windowEnd = new Date(windowStart.getTime() + windowMinutes * 60 * 1000);
 
-  // Try to find existing rate limit record for this window
-  const { data: existing } = await supabase
-    .from("rate_limits")
-    .select("*")
-    .eq("org_id", orgId)
-    .eq("endpoint", endpoint)
-    .gte("window_end", now.toISOString())
-    .maybeSingle();
-
-  if (existing) {
-    return {
-      windowStart: new Date(existing.window_start),
-      windowEnd: new Date(existing.window_end),
-      requestCount: existing.request_count,
-    };
-  }
-
-  // Create new rate limit record
-  const { data: newRecord, error } = await supabase
-    .from("rate_limits")
-    .insert({
-      org_id: orgId,
-      api_key_id: apiKeyId,
-      endpoint,
-      request_count: 0,
-      window_start: windowStart.toISOString(),
-      window_end: windowEnd.toISOString(),
-    })
-    .select()
+  // Use UPSERT (ON CONFLICT DO UPDATE) to atomically create/get rate limit record
+  // This fixes the race condition where concurrent requests could both create new records
+  const { data: existing, error: upsertError } = await supabase
+    .from('rate_limits')
+    .upsert(
+      {
+        org_id: orgId,
+        api_key_id: apiKeyId,
+        endpoint,
+        window_start: windowStart.toISOString(),
+        window_end: windowEnd.toISOString(),
+        request_count: 0, // Will be ignored on conflict
+      },
+      {
+        onConflict: 'org_id,endpoint,window_end',
+        ignoreDuplicates: false,
+      }
+    )
+    .select('request_count, window_start, window_end')
     .single();
 
-  if (error) {
-    console.error("Error creating rate limit record:", error);
-    // If there's an error creating, return a default window
+  if (upsertError) {
+    // If upsert fails due to unique constraint (concurrent request), try to fetch existing
+    const { data: fallback, error: fetchError } = await supabase
+      .from('rate_limits')
+      .select('request_count, window_start, window_end')
+      .eq('org_id', orgId)
+      .eq('endpoint', endpoint)
+      .eq('window_end', windowEnd.toISOString())
+      .maybeSingle();
+
+    if (fetchError || !fallback) {
+      console.error('Rate limit getOrCreate failed:', upsertError, fetchError);
+      // Return safe defaults on error - don't block requests due to rate limit DB issues
+      return { windowStart, windowEnd, requestCount: 0 };
+    }
+
     return {
-      windowStart,
-      windowEnd,
-      requestCount: 0,
+      windowStart: new Date(fallback.window_start),
+      windowEnd: new Date(fallback.window_end),
+      requestCount: fallback.request_count,
     };
   }
 
   return {
-    windowStart: new Date(newRecord.window_start),
-    windowEnd: new Date(newRecord.window_end),
-    requestCount: newRecord.request_count,
+    windowStart: existing ? new Date(existing.window_start) : windowStart,
+    windowEnd: existing ? new Date(existing.window_end) : windowEnd,
+    requestCount: existing?.request_count ?? 0,
   };
 }
 

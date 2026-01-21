@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
@@ -9,6 +10,10 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
+
+// Constants for request validation
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
+const uuidSchema = z.string().uuid();
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -53,6 +58,12 @@ Deno.serve(async (req) => {
 
     // POST / - Create new signal and trigger search
     if (req.method === "POST" && parts.length === 0) {
+      // Check body size to prevent DoS attacks
+      const contentLength = req.headers.get("content-length");
+      if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+        throw new ApiException("PAYLOAD_TOO_LARGE", "Request body exceeds maximum size of 1MB", 413);
+      }
+
       const rawBody = await req.json();
       
       let validatedData;
@@ -151,6 +162,12 @@ Deno.serve(async (req) => {
     // GET /:id/status - Get signal status and progress
     if (req.method === "GET" && parts.length === 2 && parts[1] === "status") {
       const signalId = parts[0];
+      
+      // Validate signalId is a valid UUID
+      const uuidResult = uuidSchema.safeParse(signalId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid signal ID format", 400);
+      }
 
       const { data: signal, error: signalError } = await supabase
         .from("signals")
@@ -189,6 +206,12 @@ Deno.serve(async (req) => {
     // GET /:id - Get signal with options
     if (req.method === "GET" && parts.length === 1) {
       const signalId = parts[0];
+      
+      // Validate signalId is a valid UUID
+      const uuidResult = uuidSchema.safeParse(signalId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid signal ID format", 400);
+      }
 
       const { data: signal, error: signalError } = await supabase
         .from("signals")
@@ -216,6 +239,19 @@ Deno.serve(async (req) => {
     // POST /:id/select - Select an option and hand off
     if (req.method === "POST" && parts.length === 2 && parts[1] === "select") {
       const signalId = parts[0];
+      
+      // Validate signalId is a valid UUID
+      const uuidResult = uuidSchema.safeParse(signalId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid signal ID format", 400);
+      }
+
+      // Check body size
+      const contentLength = req.headers.get("content-length");
+      if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+        throw new ApiException("PAYLOAD_TOO_LARGE", "Request body exceeds maximum size of 1MB", 413);
+      }
+
       const rawBody = await req.json();
       
       let validatedData;
@@ -311,6 +347,12 @@ Deno.serve(async (req) => {
     // DELETE /:id - Cancel signal
     if (req.method === "DELETE" && parts.length === 1) {
       const signalId = parts[0];
+      
+      // Validate signalId is a valid UUID
+      const uuidResult = uuidSchema.safeParse(signalId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid signal ID format", 400);
+      }
 
       const { error } = await supabase
         .from("signals")
