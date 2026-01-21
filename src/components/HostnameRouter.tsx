@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getHostType, getRedirectForDisallowedRoute, getConsoleUrl } from "@/lib/hostname";
+import { getHostType, getConsoleUrl } from "@/lib/hostname";
 
 interface HostnameRouterProps {
   children: React.ReactNode;
@@ -20,19 +20,10 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
   useEffect(() => {
     const pathname = location.pathname;
     
-    // Check if route is disallowed on this host
-    const redirectUrl = getRedirectForDisallowedRoute(pathname);
-    
-    if (redirectUrl) {
-      // External redirect to console domain
-      window.location.href = redirectUrl;
-      return;
-    }
-    
-    // Console domain: redirect "/" to "/dashboard" 
+    // Console domain only: redirect "/" to "/dashboard" 
+    // NO automatic redirects on public domains - users stay on their current domain
     if (hostType === 'console' && pathname === '/') {
       navigate('/dashboard', { replace: true });
-      return;
     }
   }, [location.pathname, hostType, navigate]);
 
