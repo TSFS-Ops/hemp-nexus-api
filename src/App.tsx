@@ -32,8 +32,8 @@ function RootElement() {
     return <Navigate to="/dashboard" replace />;
   }
   
-  // Public domain or preview: show landing page
-  return <Landing />;
+  // Public domain or preview: show demo/search directly
+  return <Demo />;
 }
 
 function App() {
