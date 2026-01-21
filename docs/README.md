@@ -287,6 +287,28 @@ Every feature is built with security in mind:
 - **Rate Limiting**: Protection against abuse
 - **Audit Logs**: Complete activity tracking
 - **HTTPS Only**: All communications encrypted
+- **No SECURITY DEFINER Views**: All database views use `security_invoker = true` to respect RLS policies
+
+### ⚠️ Database View Security Policy
+
+**Rule**: No `SECURITY DEFINER` views are allowed in this project.
+
+All views MUST be created with `security_invoker = true` to ensure they respect the caller's Row Level Security (RLS) permissions:
+
+```sql
+-- ✅ CORRECT: Uses security_invoker
+CREATE VIEW public.my_view 
+WITH (security_invoker = true) AS
+SELECT * FROM my_table;
+
+-- ❌ WRONG: Default is SECURITY DEFINER (bypasses RLS)
+CREATE VIEW public.my_view AS
+SELECT * FROM my_table;
+```
+
+**For admin-only data**: Use a `SECURITY DEFINER` function with explicit `is_admin()` checks instead of a view.
+
+**Safety check**: Run `SELECT * FROM check_security_definer_views();` to detect any non-compliant views.
 
 Read more: [Technical Architecture](./architecture.md) → Security section
 
