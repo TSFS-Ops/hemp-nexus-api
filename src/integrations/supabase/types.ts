@@ -289,6 +289,39 @@ export type Database = {
           },
         ]
       }
+      auth_rate_limits: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          id: string
+          identifier: string
+          identifier_type: string
+          last_failed_at: string | null
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          identifier: string
+          identifier_type: string
+          last_failed_at?: string | null
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          identifier?: string
+          identifier_type?: string
+          last_failed_at?: string | null
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       behavioral_signals: {
         Row: {
           action_type: string
@@ -1659,8 +1692,22 @@ export type Database = {
       }
     }
     Functions: {
+      check_and_increment_auth_failure: {
+        Args: {
+          p_base_lockout_seconds?: number
+          p_identifier: string
+          p_identifier_type: string
+          p_max_attempts?: number
+        }
+        Returns: Json
+      }
+      check_auth_lockout: {
+        Args: { p_identifier: string; p_identifier_type: string }
+        Returns: Json
+      }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
+      cleanup_old_auth_rate_limits: { Args: never; Returns: number }
       generate_event_hash: {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
@@ -1690,6 +1737,10 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      reset_auth_rate_limit: {
+        Args: { p_identifier: string; p_identifier_type: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "seller" | "broker" | "buyer" | "auditor"
