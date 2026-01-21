@@ -78,8 +78,15 @@ export default function MatchDetails() {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to confirm intent");
+        let errorMessage = "Failed to confirm intent";
+        try {
+          const error = await response.json();
+          errorMessage = error.error || error.message || errorMessage;
+        } catch {
+          // Response wasn't JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       toast.success("Intent confirmed successfully");

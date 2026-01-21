@@ -48,7 +48,8 @@ export default function SignalTester({ apiKey }: SignalTesterProps) {
           quantity: parseFloat(quantity),
           unit,
           location,
-          deliveryWindow: "2025-11-01",
+          // Dynamic delivery window: 30 days from now
+          deliveryWindow: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           budget: parseFloat(budget),
           currency,
           notes: `${signalType} signal test`,

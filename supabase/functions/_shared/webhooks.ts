@@ -158,14 +158,14 @@ export async function triggerWebhooks(
         if (isEncryptedFormat(endpoint.secret_hash)) {
           secret = await decryptSecret(endpoint.secret_hash);
         } else {
-          // Legacy: stored value is a hash, cannot recover original secret
-          // Log warning and skip this webhook
-          console.warn(`Webhook ${endpoint.id} uses legacy hash format - cannot sign properly. Please recreate the webhook.`);
-          secret = endpoint.secret_hash; // Fallback - signature verification will fail on recipient side
+          // Legacy format detected - skip detailed error messages to avoid info disclosure
+          // Log warning without sensitive details
+          console.warn(`Webhook endpoint requires migration to new format`);
+          secret = endpoint.secret_hash; // Fallback
         }
       } catch (err) {
-        console.error(`Failed to decrypt webhook secret for ${endpoint.id}:`, err);
-        return { success: false, error: "Failed to decrypt webhook secret" };
+        console.error(`Webhook secret processing failed for endpoint`);
+        return { success: false, error: "Webhook configuration error" };
       }
 
       const result = await deliverWebhook(

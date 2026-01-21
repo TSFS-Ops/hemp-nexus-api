@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +66,12 @@ export function MatchesList() {
     },
   });
 
+  // Use ref to avoid stale closure in real-time subscription
+  const refetchRef = useRef(refetch);
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+
   // Real-time subscription
   useEffect(() => {
     const channel = supabase
@@ -79,7 +85,7 @@ export function MatchesList() {
         },
         (payload) => {
           console.log('Match change detected:', payload);
-          refetch();
+          refetchRef.current();
           if (payload.eventType === 'INSERT') {
             toast.success('New match created');
           } else if (payload.eventType === 'UPDATE') {
@@ -92,7 +98,7 @@ export function MatchesList() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch]);
+  }, []);
 
   const getStatusBadge = (status: string) => {
     return status === "settled" ? (
