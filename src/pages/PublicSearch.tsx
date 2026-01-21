@@ -182,7 +182,11 @@ export default function PublicSearch() {
                 {isSearching ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-20 bg-black/[0.03] rounded-lg animate-pulse" />
+                      <div 
+                        key={i} 
+                        className="h-20 rounded-lg shimmer"
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                      />
                     ))}
                   </div>
                 ) : results.length > 0 ? (
