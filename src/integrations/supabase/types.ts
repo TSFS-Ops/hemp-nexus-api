@@ -230,6 +230,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "api_request_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "api_request_logs_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -278,6 +285,13 @@ export type Database = {
             columns: ["actor_api_key_id"]
             isOneToOne: false
             referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_actor_api_key_id_fkey"
+            columns: ["actor_api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1158,6 +1172,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rate_limits_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rate_limits_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -1451,6 +1472,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "token_ledger_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "token_ledger_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -1649,6 +1677,59 @@ export type Database = {
       }
     }
     Views: {
+      api_keys_safe: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          environment: string | null
+          expires_at: string | null
+          expiry_warning_sent: boolean | null
+          id: string | null
+          last_used_at: string | null
+          name: string | null
+          org_id: string | null
+          revoked_at: string | null
+          scopes: string[] | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          environment?: string | null
+          expires_at?: string | null
+          expiry_warning_sent?: boolean | null
+          id?: string | null
+          last_used_at?: string | null
+          name?: string | null
+          org_id?: string | null
+          revoked_at?: string | null
+          scopes?: string[] | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          environment?: string | null
+          expires_at?: string | null
+          expiry_warning_sent?: boolean | null
+          id?: string | null
+          last_used_at?: string | null
+          name?: string | null
+          org_id?: string | null
+          revoked_at?: string | null
+          scopes?: string[] | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_evidence: {
         Row: {
           event_timeline: Json | null

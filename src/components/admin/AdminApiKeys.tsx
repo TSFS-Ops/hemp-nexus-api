@@ -48,7 +48,8 @@ export function AdminApiKeys() {
     try {
       setLoading(true);
 
-      // SECURITY: Explicitly select columns to avoid exposing key_hash
+      // SECURITY: Explicitly select only safe columns to avoid exposing key_hash
+      // Never request key_hash or key_history from the api_keys table
       const { data, error } = await supabase
         .from("api_keys")
         .select(`
@@ -62,29 +63,53 @@ export function AdminApiKeys() {
           org_id,
           created_by,
           revoked_at,
-          environment,
-          organizations (name)
+          environment
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch creator emails separately
-      const keysWithCreators = await Promise.all(
+      // Fetch organizations and creator emails separately for each key
+      const keysWithDetails = await Promise.all(
         (data || []).map(async (key) => {
+          let orgName = null;
+          let creatorEmail = null;
+
+          // Fetch organization name
+          if (key.org_id) {
+            const { data: org } = await supabase
+              .from("organizations")
+              .select("name")
+              .eq("id", key.org_id)
+              .single();
+            orgName = org?.name || null;
+          }
+
+          // Fetch creator email
           if (key.created_by) {
             const { data: profile } = await supabase
               .from("profiles")
               .select("email")
               .eq("id", key.created_by)
               .single();
-            return { ...key, profiles: profile };
+            creatorEmail = profile?.email || null;
           }
-          return { ...key, profiles: null };
+
+          return {
+            id: key.id,
+            name: key.name,
+            scopes: key.scopes,
+            status: key.status,
+            created_at: key.created_at,
+            last_used_at: key.last_used_at,
+            expires_at: key.expires_at,
+            organizations: orgName ? { name: orgName } : null,
+            profiles: creatorEmail ? { email: creatorEmail } : null,
+          };
         })
       );
 
-      setApiKeys(keysWithCreators as ApiKeyData[]);
+      setApiKeys(keysWithDetails);
     } catch (error) {
       console.error("Error fetching API keys:", error);
       toast.error("Failed to load API keys");
