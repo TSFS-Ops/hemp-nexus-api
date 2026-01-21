@@ -1786,6 +1786,14 @@ export type Database = {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: Json
       }
+      check_security_definer_views: {
+        Args: never
+        Returns: {
+          schema_name: string
+          view_name: string
+          violation: string
+        }[]
+      }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
       cleanup_old_auth_rate_limits: { Args: never; Returns: number }
