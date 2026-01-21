@@ -1685,6 +1685,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_rate_limit: {
+        Args: { p_endpoint: string; p_org_id: string; p_window_end: string }
+        Returns: number
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {

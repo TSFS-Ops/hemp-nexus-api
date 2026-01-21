@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
 
 interface HealthCheckResult {
   name: string;
@@ -21,10 +22,24 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  // Check if request is authenticated
+  const authHeader = req.headers.get("authorization") || req.headers.get("x-api-key");
+  let isAuthenticated = false;
+
+  if (authHeader) {
+    try {
+      await authenticateRequest(req, supabaseUrl, supabaseKey);
+      isAuthenticated = true;
+    } catch {
+      // Authentication failed - return minimal response
+      isAuthenticated = false;
+    }
+  }
+
   const checks: HealthCheckResult[] = [];
   let overallStatus: "healthy" | "degraded" | "unhealthy" = "healthy";
 
-  // 1. Database connectivity check
+  // 1. Database connectivity check (always performed)
   const dbStart = Date.now();
   try {
     const { error } = await supabase.from("organizations").select("count").limit(1);
@@ -34,7 +49,7 @@ Deno.serve(async (req) => {
       checks.push({
         name: "database",
         status: "unhealthy",
-        message: error.message,
+        message: isAuthenticated ? error.message : "Database connection failed",
         responseTime
       });
       overallStatus = "unhealthy";
@@ -51,11 +66,28 @@ Deno.serve(async (req) => {
     checks.push({
       name: "database",
       status: "unhealthy",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: isAuthenticated && error instanceof Error ? error.message : "Database check failed",
       responseTime: Date.now() - dbStart
     });
     overallStatus = "unhealthy";
   }
+
+  // If not authenticated, return minimal response with only overall status
+  if (!isAuthenticated) {
+    return new Response(
+      JSON.stringify({
+        status: overallStatus,
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        status: overallStatus === "healthy" ? 200 : overallStatus === "degraded" ? 207 : 503,
+        headers: { "Content-Type": "application/json", ...headers }
+      }
+    );
+  }
+
+  // === AUTHENTICATED CHECKS BELOW ===
+  // These expose internal metrics and are only available to authenticated users
 
   // 2. Auth system check
   const authStart = Date.now();

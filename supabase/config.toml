@@ -32,3 +32,27 @@ verify_jwt = false
 
 [functions.send-verification-email]
 verify_jwt = false
+
+[functions.calculate-reputation]
+verify_jwt = false
+
+[functions.run-tests]
+verify_jwt = false
+
+[functions.evidence-pack]
+verify_jwt = false
+
+[functions.audit-logs]
+verify_jwt = false
+
+[functions.webhooks]
+verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.webhook-retry]
+verify_jwt = false
+
+[functions.api-key-expiry]
+verify_jwt = false

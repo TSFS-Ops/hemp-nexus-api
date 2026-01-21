@@ -87,34 +87,16 @@ export async function checkTokenBalance(
     );
   }
   
-  // If no balance record exists, create one with default values
+  // SECURITY: Do not auto-create token balances.
+  // Token balances should only be created via the handle_new_user trigger
+  // or admin actions. Auto-creation could allow free token exploits.
   if (!balance) {
-    const { data: newBalance, error: insertError } = await supabase
-      .from("token_balances")
-      .insert({
-        org_id: orgId,
-        balance: 10000,
-        minimum_required: MINIMUM_TOKEN_BALANCE,
-      })
-      .select("balance, minimum_required")
-      .single();
-    
-    if (insertError) {
-      console.error("Error creating token balance:", insertError);
-      throw new ApiException(
-        "TOKEN_INIT_FAILED",
-        "Failed to initialize token balance",
-        500
-      );
-    }
-    
-    return {
-      allowed: true,
-      currentBalance: newBalance.balance,
-      minimumRequired: newBalance.minimum_required,
-      tokensToCharge: TOKENS_PER_CALL,
-      isBillable: true,
-    };
+    console.error("No token balance found for org:", orgId);
+    throw new ApiException(
+      "TOKEN_NOT_FOUND",
+      "Token balance not initialized. Contact support.",
+      500
+    );
   }
   
   const currentBalance = balance.balance;
