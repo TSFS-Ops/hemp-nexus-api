@@ -281,8 +281,19 @@ Deno.serve(async (req) => {
         query = query.eq("status", status);
       }
 
+      // SECURITY: Validate and sanitize commodity search parameter
+      // Only allow alphanumeric, spaces, hyphens, periods, and commas
       if (commodity) {
-        query = query.ilike("commodity", `%${commodity}%`);
+        const sanitizedCommodity = commodity.slice(0, 200);
+        const commodityPattern = /^[a-zA-Z0-9\s\-\.,]+$/;
+        if (!commodityPattern.test(sanitizedCommodity)) {
+          throw new ApiException(
+            "VALIDATION_ERROR", 
+            "Commodity search contains invalid characters", 
+            400
+          );
+        }
+        query = query.ilike("commodity", `%${sanitizedCommodity}%`);
       }
 
       if (commodityType) {

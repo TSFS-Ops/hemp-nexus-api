@@ -48,10 +48,21 @@ export function AdminApiKeys() {
     try {
       setLoading(true);
 
+      // SECURITY: Explicitly select columns to avoid exposing key_hash
       const { data, error } = await supabase
         .from("api_keys")
         .select(`
-          *,
+          id,
+          name,
+          scopes,
+          status,
+          created_at,
+          last_used_at,
+          expires_at,
+          org_id,
+          created_by,
+          revoked_at,
+          environment,
           organizations (name)
         `)
         .order("created_at", { ascending: false });
