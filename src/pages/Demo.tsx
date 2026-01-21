@@ -8,142 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ArrowRight, ArrowLeft, Check, Info, Sparkles, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
-
-interface DemoResult {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  source: string;
-  score: number;
-  isEnriched: boolean;
-  enrichmentReason: string | null;
-  whySurfaced: string;
-}
-
-const DEMO_RESULTS: Record<string, DemoResult[]> = {
-  "cashew": [
-    {
-      id: "demo-1",
-      title: "GlobalAgri Trading Co.",
-      description: "Leading cashew importer in Southeast Asia with certified supply chains and quality assurance programmes.",
-      url: "#",
-      source: "TradeDirectory",
-      score: 0.94,
-      isEnriched: false,
-      enrichmentReason: null,
-      whySurfaced: "Direct keyword match for 'cashew buyers' with high trade volume signals",
-    },
-    {
-      id: "demo-2",
-      title: "IndiaExport Partners Ltd.",
-      description: "Established commodity trading house specialising in nuts and dried fruits exports from India.",
-      url: "#",
-      source: "B2B Platform",
-      score: 0.89,
-      isEnriched: true,
-      enrichmentReason: "supply_chain_adjacency",
-      whySurfaced: "Supply chain adjacency: trades related commodities in same corridor",
-    },
-    {
-      id: "demo-3",
-      title: "SouthAsia Commodities GmbH",
-      description: "German import company with established India trade routes and food safety certifications.",
-      url: "#",
-      source: "TradeDirectory",
-      score: 0.85,
-      isEnriched: true,
-      enrichmentReason: "regional_heuristic",
-      whySurfaced: "Regional pattern: active in India commodity import corridor",
-    },
-    {
-      id: "demo-4",
-      title: "Pacific Rim Foods Inc.",
-      description: "US-based food distributor expanding into raw nut ingredient sourcing.",
-      url: "#",
-      source: "Industry Database",
-      score: 0.78,
-      isEnriched: false,
-      enrichmentReason: null,
-      whySurfaced: "Company profile mentions cashew procurement interest",
-    },
-    {
-      id: "demo-5",
-      title: "EuroNuts Trading BV",
-      description: "Netherlands-based trader with focus on sustainable and fair-trade certified nuts.",
-      url: "#",
-      source: "B2B Platform",
-      score: 0.72,
-      isEnriched: true,
-      enrichmentReason: "semantic_expansion",
-      whySurfaced: "Semantic expansion: 'fair-trade nuts' as adjacent category",
-    },
-  ],
-  "copper": [
-    {
-      id: "demo-6",
-      title: "MetalWorks International",
-      description: "Major copper cathode supplier with mining operations in Chile and Peru.",
-      url: "#",
-      source: "Mining Directory",
-      score: 0.96,
-      isEnriched: false,
-      enrichmentReason: null,
-      whySurfaced: "Registered copper cathode supplier with verified operations",
-    },
-    {
-      id: "demo-7",
-      title: "Pacific Metals Corp",
-      description: "Japanese trading company with established copper supply contracts in Asia.",
-      url: "#",
-      source: "Industry Database",
-      score: 0.91,
-      isEnriched: false,
-      enrichmentReason: null,
-      whySurfaced: "Copper trading division with LME-grade inventory",
-    },
-    {
-      id: "demo-8",
-      title: "AfricaMineral Resources",
-      description: "Zambian copper mining consortium with direct mine-to-market capabilities.",
-      url: "#",
-      source: "TradeDirectory",
-      score: 0.87,
-      isEnriched: true,
-      enrichmentReason: "regional_heuristic",
-      whySurfaced: "Regional mining hub: Zambia copper belt producer",
-    },
-  ],
-  "default": [
-    {
-      id: "demo-9",
-      title: "GlobalTrade Partners",
-      description: "Multi-commodity trading house with operations across emerging markets.",
-      url: "#",
-      source: "B2B Platform",
-      score: 0.82,
-      isEnriched: false,
-      enrichmentReason: null,
-      whySurfaced: "Baseline match based on query terms and company profile",
-    },
-    {
-      id: "demo-10",
-      title: "TradeLink International",
-      description: "B2B marketplace facilitating commodity transactions with compliance support.",
-      url: "#",
-      source: "Industry Database",
-      score: 0.75,
-      isEnriched: true,
-      enrichmentReason: "semantic_expansion",
-      whySurfaced: "Semantic expansion: found related trading activity",
-    },
-  ],
-};
+import { type DemoSearchResult, getDemoResultsForQuery, calculateSearchMetrics } from "@/lib/demo-data";
 
 export default function Demo() {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<DemoResult[]>([]);
+  const [results, setResults] = useState<DemoSearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [showIntentDialog, setShowIntentDialog] = useState(false);
@@ -171,16 +41,7 @@ export default function Demo() {
 
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const lowerQuery = query.toLowerCase();
-    let demoData: DemoResult[];
-    
-    if (lowerQuery.includes("cashew") || lowerQuery.includes("nut")) {
-      demoData = DEMO_RESULTS.cashew;
-    } else if (lowerQuery.includes("copper") || lowerQuery.includes("metal") || lowerQuery.includes("cathode")) {
-      demoData = DEMO_RESULTS.copper;
-    } else {
-      demoData = DEMO_RESULTS.default;
-    }
+    const demoData = getDemoResultsForQuery(query);
 
     setResults(demoData);
     setIsSearching(false);
@@ -212,10 +73,7 @@ export default function Demo() {
     toast.success("Copied");
   };
 
-  const baselineCount = results.filter(r => !r.isEnriched).length;
-  const enrichedCount = results.filter(r => r.isEnriched).length;
-  const totalCount = results.length;
-  const upliftPct = baselineCount > 0 ? Math.round((enrichedCount / baselineCount) * 100) : 0;
+  const { baselineCount, enrichedCount, totalCount, upliftPct } = calculateSearchMetrics(results);
 
   const sampleMatchId = `match_${Math.random().toString(36).substring(2, 8)}`;
   const sampleHash = `sha256:${Array.from({length: 16}, () => Math.floor(Math.random() * 16).toString(16)).join('')}...`;
@@ -378,7 +236,7 @@ export default function Demo() {
                           )}
                         </div>
                         <span className="text-xs font-mono text-muted-foreground">
-                          {Math.round(result.score * 100)}%
+                          {result.score > 1 ? result.score : Math.round(result.score * 100)}%
                         </span>
                       </div>
 
