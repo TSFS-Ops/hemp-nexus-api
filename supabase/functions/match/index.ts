@@ -17,9 +17,42 @@ const uuidSchema = z.string().uuid();
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
+  const requestStart = Date.now();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
+
+  const logApiRequest = async (params: {
+    // Edge Functions run with untyped Supabase client generics; keep this helper permissive.
+    supabase: any;
+    orgId: string;
+    apiKeyId: string | null;
+    endpoint: string;
+    method: string;
+    statusCode: number;
+    errorMessage?: string | null;
+  }) => {
+    try {
+      const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null;
+      const userAgent = req.headers.get("user-agent") || null;
+
+      await params.supabase.from("api_request_logs").insert({
+        org_id: params.orgId,
+        api_key_id: params.apiKeyId,
+        endpoint: params.endpoint,
+        method: params.method,
+        status_code: params.statusCode,
+        response_time_ms: Math.max(0, Date.now() - requestStart),
+        request_id: requestId,
+        error_message: params.errorMessage || null,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+      } as any);
+    } catch (e) {
+      // Never fail the API call because logging failed.
+      console.warn(`[${requestId}] Failed to write api_request_logs`, e);
+    }
+  };
 
   try {
     const corsResponse = handleCors(req, allowedOrigins);
@@ -62,13 +95,26 @@ Deno.serve(async (req) => {
 
     // Route: POST /match/:id/settle (Confirm Intent - creates audit record)
     if (req.method === "POST" && matchId && action === "settle") {
+      const endpointLabel = "/match/:id/settle";
+
       // Validate matchId is a valid UUID to prevent injection attacks
       const uuidResult = uuidSchema.safeParse(matchId);
       if (!uuidResult.success) {
+        await logApiRequest({
+          supabase,
+          orgId: authCtx.orgId,
+          apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel,
+          method: "POST",
+          statusCode: 400,
+          errorMessage: "Invalid match ID format",
+        });
         throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
       }
 
       console.log(`[${requestId}] POST /match/${matchId}/settle (Confirm Intent)`);
+
+      try {
 
       const { data: match, error: fetchError } = await supabase
         .from("matches")
@@ -117,6 +163,16 @@ Deno.serve(async (req) => {
       // If already confirmed, return as-is (idempotent)
       if (match.status === "settled") {
         console.log(`[${requestId}] Intent already confirmed`);
+
+        await logApiRequest({
+          supabase,
+          orgId: authCtx.orgId,
+          apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel,
+          method: "POST",
+          statusCode: 200,
+        });
+
         return new Response(JSON.stringify(match), {
           status: 200,
           headers: { ...headers, "Content-Type": "application/json" },
@@ -218,10 +274,35 @@ Deno.serve(async (req) => {
         priceCurrency: match.price_currency,
       }).catch(err => console.error(`Counterparty notification error:`, err));
 
+      await logApiRequest({
+        supabase,
+        orgId: authCtx.orgId,
+        apiKeyId: actorApiKeyId,
+        endpoint: endpointLabel,
+        method: "POST",
+        statusCode: 200,
+      });
+
       return new Response(JSON.stringify(updated), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
       });
+      } catch (e) {
+        const statusCode = e instanceof ApiException ? e.statusCode : 500;
+        const errorMessage = e instanceof ApiException ? e.message : (e instanceof Error ? e.message : "Unknown error");
+
+        await logApiRequest({
+          supabase,
+          orgId: authCtx.orgId,
+          apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel,
+          method: "POST",
+          statusCode,
+          errorMessage,
+        });
+
+        throw e;
+      }
     }
 
     // Route: GET /match/:id

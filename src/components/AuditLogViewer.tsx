@@ -93,7 +93,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
 
   const getActionBadgeVariant = (action: string) => {
     if (action.includes("created")) return "default";
-    if (action.includes("settled") || action.includes("updated")) return "secondary";
+    if (action.includes("settled") || action.includes("updated") || action.includes("confirmed")) return "secondary";
     if (action.includes("deleted") || action.includes("revoked")) return "destructive";
     return "outline";
   };
@@ -194,6 +194,8 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                 <SelectItem value="all">All actions</SelectItem>
                 <SelectItem value="match.created">match.created</SelectItem>
                 <SelectItem value="match.settled">match.settled</SelectItem>
+                <SelectItem value="intent.confirmed">intent.confirmed</SelectItem>
+                <SelectItem value="intent.denied">intent.denied</SelectItem>
                 <SelectItem value="signal.created">signal.created</SelectItem>
                 <SelectItem value="apikey.created">apikey.created</SelectItem>
                 <SelectItem value="apikey.revoked">apikey.revoked</SelectItem>
@@ -297,7 +299,10 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                 </TableHeader>
                 <TableBody>
                   {logs.map((log) => {
-                    const isProofOfIntent = log.action === "match.created" || log.action === "match.settled";
+                    const isProofOfIntent =
+                      log.action === "match.created" ||
+                      log.action === "match.settled" ||
+                      log.action === "intent.confirmed";
                     const hash = log.metadata?.hash;
                     
                     return (
