@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     const action = url.searchParams.get("action");
     const entityType = url.searchParams.get("entity_type");
     const entityId = url.searchParams.get("entity_id");
+    const requestIdFilter = url.searchParams.get("request_id");
     const startDate = url.searchParams.get("start_date");
     const endDate = url.searchParams.get("end_date");
 
@@ -70,6 +71,12 @@ Deno.serve(async (req) => {
 
     if (entityId) {
       query = query.eq("entity_id", entityId);
+    }
+
+    if (requestIdFilter) {
+      // Correlate by request_id stored in audit_logs.metadata.
+      // Uses JSON field filter (metadata->>request_id) for exact matches.
+      query = query.filter("metadata->>request_id", "eq", requestIdFilter);
     }
 
     if (startDate) {
@@ -129,6 +136,7 @@ Deno.serve(async (req) => {
           action: action || null,
           entity_type: entityType || null,
           entity_id: entityId || null,
+          request_id: requestIdFilter || null,
           start_date: startDate || null,
           end_date: endDate || null,
         },
