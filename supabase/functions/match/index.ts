@@ -150,6 +150,7 @@ Deno.serve(async (req) => {
           entity_type: "match",
           entity_id: matchId,
           metadata: {
+            request_id: requestId,
             reason: "eligibility_check_failed",
             error: eligibilityError instanceof ApiException ? eligibilityError.message : "Unknown error",
             eligibility: formatEligibilityResponse(evaluateEligibility(match)),
@@ -199,6 +200,7 @@ Deno.serve(async (req) => {
           entity_type: "match",
           entity_id: matchId,
           metadata: {
+            request_id: requestId,
             confirmed_at: updated.settled_at,
             hash: match.hash,
             buyer_id: match.buyer_id,

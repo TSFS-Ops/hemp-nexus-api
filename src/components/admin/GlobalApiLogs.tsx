@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Download, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { RequestCorrelationDialog } from "@/components/admin/RequestCorrelationDialog";
 
 interface ApiLog {
   id: string;
@@ -30,6 +31,8 @@ export function GlobalApiLogs() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [endpointFilter, setEndpointFilter] = useState<string>("all");
   const [selectedLog, setSelectedLog] = useState<ApiLog | null>(null);
+  const [correlationOpen, setCorrelationOpen] = useState(false);
+  const [correlationRequestId, setCorrelationRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLogs();
@@ -105,6 +108,11 @@ export function GlobalApiLogs() {
 
   return (
     <div className="p-6 space-y-6">
+      <RequestCorrelationDialog
+        open={correlationOpen}
+        onOpenChange={setCorrelationOpen}
+        requestId={correlationRequestId}
+      />
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">API Request Logs</h2>
@@ -215,10 +223,19 @@ export function GlobalApiLogs() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">
                         {log.request_id ? (
-                          <span className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCorrelationRequestId(log.request_id!);
+                              setCorrelationOpen(true);
+                            }}
+                            title="View correlated audit logs"
+                          >
                             {log.request_id.slice(0, 8)}...
                             <ExternalLink className="h-3 w-3" />
-                          </span>
+                          </button>
                         ) : (
                           "-"
                         )}
