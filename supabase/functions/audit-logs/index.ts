@@ -24,7 +24,11 @@ Deno.serve(async (req) => {
 
     // Authenticate
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    requireScope(authCtx, 'audit_logs');
+    // Allow console users (Bearer/JWT) to view their org's audit logs.
+    // Restrict API-key callers unless they explicitly have the audit_logs scope.
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, 'audit_logs');
+    }
     
     // Enforce token metering - burns 1 token per request
     await enforceTokenMetering(

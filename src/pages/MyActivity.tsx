@@ -14,7 +14,15 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Match = Tables<"matches">;
 type Signal = Tables<"signals">;
-type AuditLog = Tables<"audit_logs">;
+
+type AuditLogItem = {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  created_at: string;
+  metadata: any;
+};
 
 export default function MyActivity() {
   const [user, setUser] = useState<User | null>(null);
@@ -77,13 +85,25 @@ export default function MyActivity() {
   const { data: auditLogs, isLoading: auditLoading } = useQuery({
     queryKey: ["my-audit-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data as AuditLog[];
+      if (!session?.access_token) return [] as AuditLogItem[];
+
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+      const params = new URLSearchParams({ limit: "50" });
+
+      const response = await fetch(`${baseUrl}/audit-logs?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to load audit logs");
+      }
+
+      const json = await response.json();
+      return (json.items || []) as AuditLogItem[];
     },
     enabled: !!session,
   });
