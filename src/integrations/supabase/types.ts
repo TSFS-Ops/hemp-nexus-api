@@ -1782,6 +1782,15 @@ export type Database = {
         }
         Returns: Json
       }
+      check_anon_grants: {
+        Args: { p_allowlist?: string[] }
+        Returns: {
+          object_name: string
+          object_type: string
+          privileges: string
+          schema_name: string
+        }[]
+      }
       check_auth_lockout: {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: Json
