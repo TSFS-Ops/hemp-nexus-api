@@ -1771,6 +1771,19 @@ export type Database = {
           },
         ]
       }
+      match_evidence_public: {
+        Row: {
+          event_timeline: Json | null
+          match_created_at: string | null
+          match_data: Json | null
+          match_hash: string | null
+          match_id: string | null
+          org_id: string | null
+          settled_at: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_and_increment_auth_failure: {
@@ -1795,7 +1808,31 @@ export type Database = {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: Json
       }
+      check_backend_only_views: {
+        Args: { p_view_names: string[] }
+        Returns: {
+          view_name: string
+          violation: string
+        }[]
+      }
+      check_public_exposure: {
+        Args: { p_allowlist?: string[] }
+        Returns: {
+          object_name: string
+          object_type: string
+          privileges: string
+          schema_name: string
+        }[]
+      }
       check_security_definer_views: {
+        Args: never
+        Returns: {
+          schema_name: string
+          view_name: string
+          violation: string
+        }[]
+      }
+      check_view_security_invoker: {
         Args: never
         Returns: {
           schema_name: string
