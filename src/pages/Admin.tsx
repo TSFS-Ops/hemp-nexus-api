@@ -21,6 +21,7 @@ import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminDiscoveryMetrics } from "@/components/admin/AdminDiscoveryMetrics";
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminDocumentVerification } from "@/components/admin/AdminDocumentVerification";
+import { AdminWadPanel } from "@/components/admin/AdminWadPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -119,7 +120,7 @@ export default function Admin() {
               <Route path="/audit" element={<AdminAuditLogs />} />
               <Route path="/tokens" element={<AdminTokenManagement />} />
               <Route path="/documents" element={<AdminDocumentVerification />} />
-              <Route
+              <Route path="/wad" element={<AdminWadPanel />} />
                 path="/users-orgs"
                 element={
                   <div className="p-6 space-y-6">

@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Loader2, Info } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Loader2, Info, FileText, Shield, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
+import { WadModule } from "@/components/wad/WadModule";
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +26,7 @@ export default function MatchDetails() {
   const navigate = useNavigate();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
     if (matchId) {
@@ -83,7 +86,6 @@ export default function MatchDetails() {
           const error = await response.json();
           errorMessage = error.error || error.message || errorMessage;
         } catch {
-          // Response wasn't JSON, use status text
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
@@ -234,9 +236,35 @@ export default function MatchDetails() {
         </CardContent>
       </Card>
 
-      <MatchDocuments matchId={match.id} orgId={match.org_id} />
+      {/* Tabbed sections for Documents, WaD, and Timeline */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="details" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Documents
+          </TabsTrigger>
+          <TabsTrigger value="wad" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            WaD
+          </TabsTrigger>
+          <TabsTrigger value="timeline" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Timeline
+          </TabsTrigger>
+        </TabsList>
 
-      <MatchTimeline matchId={match.id} />
+        <TabsContent value="details" className="mt-4">
+          <MatchDocuments matchId={match.id} orgId={match.org_id} />
+        </TabsContent>
+
+        <TabsContent value="wad" className="mt-4">
+          <WadModule match={match} onWadCreated={fetchMatch} />
+        </TabsContent>
+
+        <TabsContent value="timeline" className="mt-4">
+          <MatchTimeline matchId={match.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
