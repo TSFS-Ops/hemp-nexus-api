@@ -104,14 +104,25 @@ Deno.serve(async (req) => {
 
       if (auditError) handleDatabaseError(auditError, requestId);
 
-      // Fetch match documents
+      // Fetch match documents with visibility info
       const { data: documents, error: docsError } = await supabase
         .from("match_documents")
-        .select("id, doc_type, filename, sha256_hash, file_size, mime_type, status, created_at, expiry_date")
+        .select("id, doc_type, filename, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, visibility, valid_from, valid_to")
         .eq("match_id", matchId)
         .order("created_at", { ascending: true });
 
       if (docsError) handleDatabaseError(docsError, requestId);
+
+      // Fetch document access logs for audit trail
+      const { data: accessLogs, error: accessLogsError } = await supabase
+        .from("document_access_logs")
+        .select("id, document_id, action, accessor_user_id, is_admin_access, access_reason, created_at")
+        .eq("match_id", matchId)
+        .order("created_at", { ascending: true });
+
+      if (accessLogsError) {
+        console.warn(`[${requestId}] Failed to fetch access logs:`, accessLogsError);
+      }
 
       // Verify hash chain integrity
       let chainValid = true;
@@ -182,15 +193,28 @@ Deno.serve(async (req) => {
           files: (documents || []).map((doc) => ({
             id: doc.id,
             type: doc.doc_type,
+            title: doc.title,
             filename: doc.filename,
             sha256Hash: doc.sha256_hash,
             fileSize: doc.file_size,
             mimeType: doc.mime_type,
             status: doc.status,
+            visibility: doc.visibility,
             uploadedAt: doc.created_at,
             expiresAt: doc.expiry_date,
+            validFrom: doc.valid_from,
+            validTo: doc.valid_to,
           })),
           totalDocuments: documents?.length || 0,
+          accessLogs: (accessLogs || []).map((log) => ({
+            id: log.id,
+            documentId: log.document_id,
+            action: log.action,
+            accessorUserId: log.accessor_user_id,
+            isAdminAccess: log.is_admin_access,
+            accessReason: log.access_reason,
+            timestamp: log.created_at,
+          })),
         },
         auditTrail: {
           logs: auditLogs || [],

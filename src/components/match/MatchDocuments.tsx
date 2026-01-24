@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { 
   FileText, 
@@ -35,9 +42,17 @@ import {
   Shield, 
   AlertCircle,
   FileCheck,
-  Clock
+  Clock,
+  MoreHorizontal,
+  Share2,
+  History,
+  Lock,
+  Users,
+  EyeOff
 } from "lucide-react";
 import { format } from "date-fns";
+import { DocumentSharingDialog } from "./DocumentSharingDialog";
+import { DocumentAccessLogs } from "./DocumentAccessLogs";
 
 interface MatchDocument {
   id: string;
@@ -51,6 +66,11 @@ interface MatchDocument {
   status: string;
   created_at: string;
   expiry_date: string | null;
+  title: string | null;
+  notes: string | null;
+  visibility: string;
+  valid_from: string | null;
+  valid_to: string | null;
 }
 
 interface MatchDocumentsProps {
@@ -64,16 +84,26 @@ const DOC_TYPES = [
   { value: "contract", label: "Contract" },
   { value: "shipping", label: "Shipping Document" },
   { value: "compliance", label: "Compliance Document" },
+  { value: "license", label: "License / Permit" },
+  { value: "quality_report", label: "Quality Report" },
   { value: "other", label: "Other" },
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const VISIBILITY_OPTIONS = [
+  { value: "private", label: "Private", icon: Lock, description: "Only your organization" },
+  { value: "share_with_counterparty", label: "Share with Counterparty", icon: Users, description: "Both buyer and seller" },
+];
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (aligned with bucket limit)
 const ALLOWED_TYPES = [
   "application/pdf",
   "image/jpeg",
   "image/png",
+  "image/gif",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
@@ -82,11 +112,17 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docType, setDocType] = useState("");
+  const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
+  const [visibility, setVisibility] = useState("private");
   const [error, setError] = useState<string | null>(null);
   const [sessionOrgId, setSessionOrgId] = useState<string | null>(null);
+  
+  // Dialog states
+  const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
+  const [accessLogsDoc, setAccessLogsDoc] = useState<MatchDocument | null>(null);
 
   useEffect(() => {
-    // Get the user's org_id from their profile to ensure RLS compatibility
     const getSessionOrgId = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
@@ -112,7 +148,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       setLoading(true);
       const { data, error } = await supabase
         .from("match_documents")
-        .select("*")
+        .select("id, match_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, notes, visibility, valid_from, valid_to")
         .eq("match_id", matchId)
         .order("created_at", { ascending: false });
 
@@ -143,13 +179,13 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("File size exceeds 10MB limit");
+      setError("File size exceeds 50MB limit");
       setSelectedFile(null);
       return;
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("File type not allowed. Please use PDF, JPEG, PNG, or Word documents.");
+      setError("File type not allowed. Please use PDF, images, or Office documents.");
       setSelectedFile(null);
       return;
     }
@@ -167,7 +203,6 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       setUploading(true);
       setError(null);
 
-      // Compute file hash
       const sha256Hash = await computeFileHash(selectedFile);
 
       // Check for duplicate hash
@@ -184,18 +219,16 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         return;
       }
 
-      // Use session-derived org_id for RLS compatibility, fallback to prop
       const effectiveOrgId = sessionOrgId || orgId;
       if (!effectiveOrgId) {
         toast.error("Could not determine organization");
         return;
       }
 
-      // Create storage path: orgId/matchId/timestamp_filename
-      const timestamp = Date.now();
-      const storagePath = `${effectiveOrgId}/${matchId}/${timestamp}_${selectedFile.name}`;
+      // Storage path format: poi/<match_id>/<doc_id>/<filename>
+      const docId = crypto.randomUUID();
+      const storagePath = `poi/${matchId}/${docId}/${selectedFile.name}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
         .upload(storagePath, selectedFile, {
@@ -205,13 +238,14 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
       if (uploadError) throw uploadError;
 
-      // Insert document record using session-derived org_id
       const { error: insertError } = await supabase
         .from("match_documents")
         .insert({
+          id: docId,
           match_id: matchId,
           org_id: effectiveOrgId,
           uploader_user_id: session.user.id,
+          uploader_org_id: effectiveOrgId,
           doc_type: docType,
           filename: selectedFile.name,
           storage_path: storagePath,
@@ -219,11 +253,14 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           file_size: selectedFile.size,
           mime_type: selectedFile.type,
           status: "uploaded",
+          title: title || null,
+          notes: notes || null,
+          visibility: visibility,
         });
 
       if (insertError) throw insertError;
 
-      // Create audit log using session-derived org_id
+      // Audit log
       await supabase.from("audit_logs").insert({
         org_id: effectiveOrgId,
         actor_user_id: session.user.id,
@@ -231,40 +268,68 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         entity_type: "match_document",
         entity_id: matchId,
         metadata: {
+          document_id: docId,
           filename: selectedFile.name,
           doc_type: docType,
           sha256_hash: sha256Hash,
           file_size: selectedFile.size,
+          visibility: visibility,
+          title: title || null,
         },
       });
 
       toast.success("Document uploaded successfully");
-      setSelectedFile(null);
-      setDocType("");
+      resetForm();
       fetchDocuments();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error uploading document:", err);
-      setError(err.message || "Failed to upload document");
+      const message = err instanceof Error ? err.message : "Failed to upload document";
+      setError(message);
       toast.error("Failed to upload document");
     } finally {
       setUploading(false);
     }
   };
 
+  const resetForm = () => {
+    setSelectedFile(null);
+    setDocType("");
+    setTitle("");
+    setNotes("");
+    setVisibility("private");
+  };
+
   const handleDownload = async (doc: MatchDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("match-documents")
-        .download(doc.storage_path);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("You must be logged in to download documents");
+        return;
+      }
 
-      if (error) throw error;
+      // Use edge function for proper access logging
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-download/${doc.id}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
 
-      const url = URL.createObjectURL(data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to get download URL");
+      }
+
+      const { data } = await response.json();
+      
+      // Open signed URL
       const a = document.createElement("a");
-      a.href = url;
+      a.href = data.download_url;
       a.download = doc.filename;
       a.click();
-      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error downloading document:", err);
       toast.error("Failed to download document");
@@ -281,8 +346,40 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         return <Badge variant="secondary">Uploaded</Badge>;
       case "verified":
         return <Badge variant="default">Verified</Badge>;
+      case "revoked":
+        return <Badge variant="destructive">Revoked</Badge>;
+      case "archived":
+        return <Badge variant="outline">Archived</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getVisibilityBadge = (visibility: string) => {
+    switch (visibility) {
+      case "private":
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Lock className="h-3 w-3" />
+            Private
+          </Badge>
+        );
+      case "share_with_counterparty":
+        return (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            Shared
+          </Badge>
+        );
+      case "share_with_roles":
+        return (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Share2 className="h-3 w-3" />
+            Role-based
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{visibility}</Badge>;
     }
   };
 
@@ -294,170 +391,267 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Documents
-            </CardTitle>
-            <CardDescription>
-              Upload and manage documents related to this match
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Upload Section */}
-        <div className="border rounded-lg p-4 space-y-4">
-          <h4 className="font-medium flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            Upload Document
-          </h4>
-          
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="file">Select File</Label>
-              <Input
-                id="file"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={handleFileSelect}
-                disabled={uploading}
-              />
-              <p className="text-xs text-muted-foreground">
-                Max 10MB. PDF, JPEG, PNG, or Word documents.
-              </p>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </CardTitle>
+              <CardDescription>
+                Upload and manage documents related to this POI. Documents are stored securely with explicit sharing controls.
+              </CardDescription>
             </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Upload Section */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h4 className="font-medium flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Upload Document
+            </h4>
             
-            <div className="space-y-2">
-              <Label htmlFor="docType">Document Type</Label>
-              <Select value={docType} onValueChange={setDocType} disabled={uploading}>
-                <SelectTrigger id="docType">
-                  <SelectValue placeholder="Select type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {DOC_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="file">Select File</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                  onChange={handleFileSelect}
+                  disabled={uploading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Max 50MB. PDF, images, or Office documents.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="docType">Document Type *</Label>
+                <Select value={docType} onValueChange={setDocType} disabled={uploading}>
+                  <SelectTrigger id="docType">
+                    <SelectValue placeholder="Select type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOC_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
+              <div className="space-y-2">
+                <Label htmlFor="title">Title (optional)</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Invoice #12345"
+                  disabled={uploading}
+                />
+              </div>
 
-          {selectedFile && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileCheck className="h-4 w-4" />
-              Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
-            </div>
-          )}
+              <div className="space-y-2">
+                <Label htmlFor="visibility">Visibility</Label>
+                <Select value={visibility} onValueChange={setVisibility} disabled={uploading}>
+                  <SelectTrigger id="visibility">
+                    <SelectValue placeholder="Select visibility..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VISIBILITY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <opt.icon className="h-4 w-4" />
+                          <span>{opt.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {visibility === "private" 
+                    ? "Only your organization can view this document"
+                    : "Both buyer and seller can view this document"}
+                </p>
+              </div>
 
-          <Button
-            onClick={handleUpload}
-            disabled={uploading || !selectedFile || !docType}
-            className="w-full sm:w-auto"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Document
-              </>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add any relevant notes..."
+                  disabled={uploading}
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
             )}
-          </Button>
-        </div>
 
-        {/* Documents List */}
-        {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-            Loading documents...
+            {selectedFile && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileCheck className="h-4 w-4" />
+                Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+              </div>
+            )}
+
+            <Button
+              onClick={handleUpload}
+              disabled={uploading || !selectedFile || !docType}
+              className="w-full sm:w-auto"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Document
+                </>
+              )}
+            </Button>
           </div>
-        ) : documents.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            No documents uploaded yet
-          </div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Hash</TableHead>
-                  <TableHead>Uploaded</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium truncate max-w-[200px]">
-                          {doc.filename}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {DOC_TYPES.find((t) => t.value === doc.doc_type)?.label || doc.doc_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatFileSize(doc.file_size)}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(doc.status, doc.expiry_date)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Shield className="h-3 w-3 text-green-500" />
-                        <code className="text-xs font-mono">
-                          {doc.sha256_hash.slice(0, 8)}...
-                        </code>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {format(new Date(doc.created_at), "MMM dd, yyyy")}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(doc)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+
+          {/* Documents List */}
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              Loading documents...
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              No documents uploaded yet
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Document</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Visibility</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Hash</TableHead>
+                    <TableHead>Uploaded</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {documents.map((doc) => (
+                    <TableRow key={doc.id} className={doc.status === "revoked" ? "opacity-60" : ""}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <span className="font-medium truncate max-w-[200px] block">
+                              {doc.title || doc.filename}
+                            </span>
+                            {doc.title && (
+                              <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
+                                {doc.filename}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {DOC_TYPES.find((t) => t.value === doc.doc_type)?.label || doc.doc_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {getVisibilityBadge(doc.visibility)}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(doc.status, doc.expiry_date)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Shield className="h-3 w-3 text-green-500" />
+                          <code className="text-xs font-mono">
+                            {doc.sha256_hash.slice(0, 8)}...
+                          </code>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(doc.created_at), "MMM dd, yyyy")}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleDownload(doc)}
+                              disabled={doc.status === "revoked"}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSharingDoc(doc)}>
+                              <Share2 className="h-4 w-4 mr-2" />
+                              Sharing Settings
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setAccessLogsDoc(doc)}>
+                              <History className="h-4 w-4 mr-2" />
+                              Access History
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Info text */}
+          <p className="text-xs text-muted-foreground text-center">
+            Documents are stored per POI. Sharing is explicit and all access is logged for compliance.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Dialogs */}
+      {sharingDoc && (
+        <DocumentSharingDialog
+          open={!!sharingDoc}
+          onOpenChange={(open) => !open && setSharingDoc(null)}
+          document={sharingDoc}
+          onVisibilityChanged={fetchDocuments}
+        />
+      )}
+
+      {accessLogsDoc && (
+        <DocumentAccessLogs
+          open={!!accessLogsDoc}
+          onOpenChange={(open) => !open && setAccessLogsDoc(null)}
+          documentId={accessLogsDoc.id}
+          documentName={accessLogsDoc.title || accessLogsDoc.filename}
+        />
+      )}
+    </>
   );
 }

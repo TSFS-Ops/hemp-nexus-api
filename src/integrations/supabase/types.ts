@@ -644,6 +644,131 @@ export type Database = {
           },
         ]
       }
+      document_access: {
+        Row: {
+          access_type: string
+          created_at: string
+          document_id: string
+          granted_by_user_id: string
+          granted_to_org_id: string | null
+          granted_to_user_id: string | null
+          id: string
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+        }
+        Insert: {
+          access_type?: string
+          created_at?: string
+          document_id: string
+          granted_by_user_id: string
+          granted_to_org_id?: string | null
+          granted_to_user_id?: string | null
+          id?: string
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          document_id?: string
+          granted_by_user_id?: string
+          granted_to_org_id?: string | null
+          granted_to_user_id?: string | null
+          id?: string
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "match_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_granted_to_org_id_fkey"
+            columns: ["granted_to_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_access_logs: {
+        Row: {
+          access_reason: string | null
+          accessor_org_id: string | null
+          accessor_user_id: string
+          action: string
+          created_at: string
+          document_id: string
+          id: string
+          ip_address: string | null
+          is_admin_access: boolean
+          match_id: string
+          metadata: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_reason?: string | null
+          accessor_org_id?: string | null
+          accessor_user_id: string
+          action: string
+          created_at?: string
+          document_id: string
+          id?: string
+          ip_address?: string | null
+          is_admin_access?: boolean
+          match_id: string
+          metadata?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_reason?: string | null
+          accessor_org_id?: string | null
+          accessor_user_id?: string
+          action?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          ip_address?: string | null
+          is_admin_access?: boolean
+          match_id?: string
+          metadata?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_logs_accessor_org_id_fkey"
+            columns: ["accessor_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "match_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_logs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "document_access_logs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           created_at: string
@@ -775,15 +900,23 @@ export type Database = {
           id: string
           match_id: string
           mime_type: string | null
+          notes: string | null
           org_id: string
           sha256_hash: string
           status: string
           storage_path: string
+          supersedes_document_id: string | null
+          title: string | null
           updated_at: string
+          uploader_org_id: string | null
           uploader_user_id: string | null
+          valid_from: string | null
+          valid_to: string | null
           verification_notes: string | null
           verified_at: string | null
           verified_by: string | null
+          version: number
+          visibility: string
         }
         Insert: {
           created_at?: string
@@ -794,15 +927,23 @@ export type Database = {
           id?: string
           match_id: string
           mime_type?: string | null
+          notes?: string | null
           org_id: string
           sha256_hash: string
           status?: string
           storage_path: string
+          supersedes_document_id?: string | null
+          title?: string | null
           updated_at?: string
+          uploader_org_id?: string | null
           uploader_user_id?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
           verification_notes?: string | null
           verified_at?: string | null
           verified_by?: string | null
+          version?: number
+          visibility?: string
         }
         Update: {
           created_at?: string
@@ -813,15 +954,23 @@ export type Database = {
           id?: string
           match_id?: string
           mime_type?: string | null
+          notes?: string | null
           org_id?: string
           sha256_hash?: string
           status?: string
           storage_path?: string
+          supersedes_document_id?: string | null
+          title?: string | null
           updated_at?: string
+          uploader_org_id?: string | null
           uploader_user_id?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
           verification_notes?: string | null
           verified_at?: string | null
           verified_by?: string | null
+          version?: number
+          visibility?: string
         }
         Relationships: [
           {
@@ -841,6 +990,20 @@ export type Database = {
           {
             foreignKeyName: "match_documents_org_id_fkey"
             columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_documents_supersedes_document_id_fkey"
+            columns: ["supersedes_document_id"]
+            isOneToOne: false
+            referencedRelation: "match_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_documents_uploader_org_id_fkey"
+            columns: ["uploader_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
@@ -919,6 +1082,7 @@ export type Database = {
         Row: {
           buyer_id: string
           buyer_name: string
+          buyer_org_id: string | null
           commodity: string
           created_at: string
           created_by: string | null
@@ -934,6 +1098,7 @@ export type Database = {
           quantity_unit: string
           seller_id: string
           seller_name: string
+          seller_org_id: string | null
           settled_at: string | null
           status: string
           terms: string | null
@@ -941,6 +1106,7 @@ export type Database = {
         Insert: {
           buyer_id: string
           buyer_name: string
+          buyer_org_id?: string | null
           commodity: string
           created_at?: string
           created_by?: string | null
@@ -956,6 +1122,7 @@ export type Database = {
           quantity_unit: string
           seller_id: string
           seller_name: string
+          seller_org_id?: string | null
           settled_at?: string | null
           status?: string
           terms?: string | null
@@ -963,6 +1130,7 @@ export type Database = {
         Update: {
           buyer_id?: string
           buyer_name?: string
+          buyer_org_id?: string | null
           commodity?: string
           created_at?: string
           created_by?: string | null
@@ -978,14 +1146,29 @@ export type Database = {
           quantity_unit?: string
           seller_id?: string
           seller_name?: string
+          seller_org_id?: string | null
           settled_at?: string | null
           status?: string
           terms?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "matches_buyer_org_id_fkey"
+            columns: ["buyer_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "matches_org_id_fkey"
             columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_seller_org_id_fkey"
+            columns: ["seller_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
