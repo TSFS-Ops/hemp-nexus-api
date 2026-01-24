@@ -1691,6 +1691,226 @@ export type Database = {
         }
         Relationships: []
       }
+      wad_attestations: {
+        Row: {
+          attestation_text: string
+          attested_at: string
+          attested_name: string
+          id: string
+          ip_address: string | null
+          org_id: string
+          role: string
+          user_agent: string | null
+          user_id: string
+          wad_id: string
+        }
+        Insert: {
+          attestation_text?: string
+          attested_at?: string
+          attested_name: string
+          id?: string
+          ip_address?: string | null
+          org_id: string
+          role: string
+          user_agent?: string | null
+          user_id: string
+          wad_id: string
+        }
+        Update: {
+          attestation_text?: string
+          attested_at?: string
+          attested_name?: string
+          id?: string
+          ip_address?: string | null
+          org_id?: string
+          role?: string
+          user_agent?: string | null
+          user_id?: string
+          wad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wad_attestations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wad_attestations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wad_attestations_wad_id_fkey"
+            columns: ["wad_id"]
+            isOneToOne: false
+            referencedRelation: "wads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wads: {
+        Row: {
+          buyer_org_id: string | null
+          buyer_signatory_user_id: string | null
+          canonical_payload_json: Json
+          certificate_generated_at: string | null
+          certificate_path: string | null
+          created_at: string
+          created_by: string | null
+          evidence_bundle: Json
+          id: string
+          ledger_entry_hash: string | null
+          org_id: string
+          poi_id: string
+          prev_ledger_entry_hash: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          seal_hash: string | null
+          sealed_at: string | null
+          seller_org_id: string | null
+          seller_signatory_user_id: string | null
+          status: string
+          superseded_by_wad_id: string | null
+          supersedes_wad_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_org_id?: string | null
+          buyer_signatory_user_id?: string | null
+          canonical_payload_json?: Json
+          certificate_generated_at?: string | null
+          certificate_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          evidence_bundle?: Json
+          id?: string
+          ledger_entry_hash?: string | null
+          org_id: string
+          poi_id: string
+          prev_ledger_entry_hash?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          seal_hash?: string | null
+          sealed_at?: string | null
+          seller_org_id?: string | null
+          seller_signatory_user_id?: string | null
+          status?: string
+          superseded_by_wad_id?: string | null
+          supersedes_wad_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_org_id?: string | null
+          buyer_signatory_user_id?: string | null
+          canonical_payload_json?: Json
+          certificate_generated_at?: string | null
+          certificate_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          evidence_bundle?: Json
+          id?: string
+          ledger_entry_hash?: string | null
+          org_id?: string
+          poi_id?: string
+          prev_ledger_entry_hash?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          seal_hash?: string | null
+          sealed_at?: string | null
+          seller_org_id?: string | null
+          seller_signatory_user_id?: string | null
+          status?: string
+          superseded_by_wad_id?: string | null
+          supersedes_wad_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wads_buyer_org_id_fkey"
+            columns: ["buyer_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_buyer_signatory_user_id_fkey"
+            columns: ["buyer_signatory_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_poi_id_fkey"
+            columns: ["poi_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "wads_poi_id_fkey"
+            columns: ["poi_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_seller_org_id_fkey"
+            columns: ["seller_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_seller_signatory_user_id_fkey"
+            columns: ["seller_signatory_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_superseded_by_wad_id_fkey"
+            columns: ["superseded_by_wad_id"]
+            isOneToOne: false
+            referencedRelation: "wads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_supersedes_wad_id_fkey"
+            columns: ["supersedes_wad_id"]
+            isOneToOne: false
+            referencedRelation: "wads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_deliveries: {
         Row: {
           created_at: string
