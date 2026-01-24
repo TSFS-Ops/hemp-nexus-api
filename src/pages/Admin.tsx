@@ -22,6 +22,7 @@ import { AdminDiscoveryMetrics } from "@/components/admin/AdminDiscoveryMetrics"
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminDocumentVerification } from "@/components/admin/AdminDocumentVerification";
 import { AdminWadPanel } from "@/components/admin/AdminWadPanel";
+import { Phase2Verification } from "@/components/admin/Phase2Verification";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -110,6 +111,7 @@ export default function Admin() {
           <main className="flex-1 overflow-auto">
             <Routes>
               <Route path="/" element={<AdminOverview />} />
+              <Route path="/verification" element={<Phase2Verification />} />
               <Route path="/logs" element={<GlobalApiLogs />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/matches" element={<AdminMatchesPanel />} />
@@ -121,6 +123,7 @@ export default function Admin() {
               <Route path="/tokens" element={<AdminTokenManagement />} />
               <Route path="/documents" element={<AdminDocumentVerification />} />
               <Route path="/wad" element={<AdminWadPanel />} />
+              <Route
                 path="/users-orgs"
                 element={
                   <div className="p-6 space-y-6">

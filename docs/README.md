@@ -1,6 +1,6 @@
 # Compliance Matching API Documentation
 
-**Last Updated**: 2025-12-06
+**Last Updated**: 2026-01-24
 
 Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively—whether you're a developer, business user, or administrator.
 

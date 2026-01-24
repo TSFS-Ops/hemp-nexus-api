@@ -1,4 +1,4 @@
-import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio, Brain, MousePointer, ScrollText, TrendingUp, Zap, Coins, FileCheck, Lock } from "lucide-react";
+import { Activity, Key, Users, FileText, Settings, Shield, GitCompare, Radio, Brain, MousePointer, ScrollText, TrendingUp, Zap, Coins, FileCheck, Lock, ClipboardCheck } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -14,6 +14,7 @@ import {
 
 const adminItems = [
   { title: "Overview", url: "/admin", icon: Activity, exact: true },
+  { title: "Phase 2 Verification", url: "/admin/verification", icon: ClipboardCheck },
   { title: "Matches", url: "/admin/matches", icon: GitCompare },
   { title: "Signals", url: "/admin/signals", icon: Radio },
   { title: "Document Verification", url: "/admin/documents", icon: FileCheck },

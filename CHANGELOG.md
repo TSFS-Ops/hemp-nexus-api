@@ -2,7 +2,7 @@
 
 All notable changes to the Compliance Matching API are documented here.
 
-**Last updated:** 11 January 2026
+**Last updated:** 24 January 2026
 
 ## Versioning
 
@@ -10,6 +10,57 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backwards compatible)
 - **PATCH**: Bug fixes (backwards compatible)
+
+---
+
+## [1.6.0] - 2026-01-24
+
+### Phase 2: Documents & WaD Module
+
+**Focus: Evidence-grade document management and sealed proof bundles.**
+
+#### New Features - Documents Module
+- **[Documents]** Document upload with type, title, visibility, and notes
+- **[Documents]** Private storage bucket with signed URL access only
+- **[Documents]** Document access logging in `document_access_logs` table
+- **[Documents]** Document sharing controls (private, counterparty, role-based)
+- **[Documents]** Document versioning and superseding support
+- **[Documents]** Evidence pack includes document metadata and access history
+
+#### New Features - WaD (Without-a-Doubt) Module
+- **[WaD]** Sealed evidence bundle creation from settled POI
+- **[WaD]** Multi-step attestation: Summary → Evidence → Signatories → Review → Certificate
+- **[WaD]** Party attestation with explicit disclaimer checkbox and typed name
+- **[WaD]** SHA-256 seal hash and ledger entry hash for tamper evidence
+- **[WaD]** JSON certificate download with full evidence bundle
+- **[WaD]** Admin WaD panel with revocation (requires reason)
+- **[WaD]** Admin access logging with mandatory reason for sensitive downloads
+- **[WaD]** Status lifecycle: draft → awaiting_attestations → sealed → revoked
+
+#### Logging Improvements
+- **[Logging]** `intent.confirmed` logged in audit_logs with hash
+- **[Logging]** WaD events: wad.created, wad.attested, wad.sealed, wad.downloaded, wad.revoked
+- **[Logging]** Admin access events: admin.wad.accessed, admin.wad.certificate.downloaded
+- **[Logging]** Document events: document.uploaded, document.downloaded, document.shared
+
+#### Security
+- **[Security]** All views use `security_invoker = true` (no SECURITY DEFINER bypasses)
+- **[Security]** Storage bucket `match-documents` is private
+- **[Security]** Admin certificate downloads require access reason
+- **[Security]** Hostname routing blocks console-only routes on public domain
+- **[Security]** RLS policies enforce party-only access to WaDs and documents
+
+#### Admin Panel
+- **[Admin]** Phase 2 Verification checklist page
+- **[Admin]** WaD Management panel with filter, revoke, and download
+- **[Admin]** Document verification panel
+
+#### Documentation
+- **[Docs]** Updated README with Documents and WaD sections
+- **[Docs]** Changelog updated with Phase 2 changes
+
+#### Bug Fixes
+- **[Fix]** Admin.tsx build error (missing Route tag)
 
 ---
 
