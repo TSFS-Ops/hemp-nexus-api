@@ -56,3 +56,12 @@ verify_jwt = false
 
 [functions.api-key-expiry]
 verify_jwt = false
+
+[functions.document-download]
+verify_jwt = false
+
+[functions.document-share]
+verify_jwt = false
+
+[functions.document-revoke]
+verify_jwt = false
