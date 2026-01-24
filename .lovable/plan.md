@@ -1,409 +1,442 @@
 
-# Upload Docs Feature Implementation Plan
+# Implementation Plan: Fix Search → Confirm Intent Pipeline End-to-End
 
 ## Executive Summary
-
-This plan implements a comprehensive document management system for POI (Proof-of-Intent) records, aligned with the "Upload Docs Spec.pdf" and David's clarifications from 24 Jan 2026. The implementation adds visibility controls (private/counterparty/role-based), soft-delete/revoke semantics, admin access logging with required reasons, and integrates with the existing audit trail.
-
----
-
-## Current State Analysis
-
-### Existing Infrastructure
-- **`match_documents` table**: Already exists with basic fields (id, match_id, org_id, uploader_user_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at)
-- **`match-documents` storage bucket**: Private bucket with org-scoped RLS policies
-- **`MatchDocuments` component**: Basic upload/download UI on match detail page
-- **`AdminDocumentVerification` component**: Admin panel for document verification
-- **Audit logging**: `audit_logs` and `admin_audit_logs` tables exist
-
-### Key Gaps vs. Spec
-1. **Missing visibility controls**: No `visibility` field or `document_access` table for counterparty sharing
-2. **No buyer/seller org tracking on matches**: Current `matches` table only has single `org_id`, not `buyer_org_id`/`seller_org_id`
-3. **Missing metadata fields**: `title`, `notes`, `valid_from`, `valid_to`, versioning
-4. **No soft-delete semantics**: Current status enum lacks `revoked`/`archived`
-5. **Admin access logging**: No required "access reason" for admin downloads
-6. **RLS doesn't support counterparty visibility**: Current policies are org-only
+This plan addresses 4 major issues in the Compliance Matching API:
+1. **Search → Confirm Intent pipeline is broken** - CounterpartySearch has a TODO and doesn't create matches
+2. **Console Logs shows wrong data** - LogsSection reads from `api_request_logs` (technical) instead of `audit_logs` (business events)
+3. **Admin visibility is incomplete** - Admin can only see technical request logs, not business audit events
+4. **Invite flow is missing** - No counterparty accept/decline gate before Confirm Intent
 
 ---
 
-## Architecture Design
+## Part 1: Fix Search → Confirm Intent Pipeline
 
-### Visibility Model
+### Current State
+- `src/components/CounterpartySearch.tsx:222-224` has a TODO comment: "Navigate to match creation flow"
+- When user clicks "Confirm Intent", it only shows a toast message but doesn't:
+  - Create a match record
+  - Confirm intent on that match
+  - Generate evidence pack
+  - Navigate to proof page
 
-```text
-+------------------+     +----------------------+     +------------------+
-|  match_documents |---->|  document_access     |---->|  profiles        |
-+------------------+     +----------------------+     +------------------+
-| id               |     | id                   |     | id               |
-| match_id         |     | document_id          |     | org_id           |
-| uploader_org_id  |     | granted_to_org_id    |     +------------------+
-| visibility       |     | granted_to_user_id   |
-| status           |     | granted_by_user_id   |
-| ...              |     | access_type          |
-+------------------+     | created_at           |
-                         | revoked_at           |
-                         +----------------------+
-```
+### Implementation
 
-### Visibility Modes
-1. **`private`**: Only uploader's org can view
-2. **`share_with_counterparty`**: Both buyer and seller orgs can view
-3. **`share_with_roles`**: Explicit access grants via `document_access` table
+#### 1.1 Update CounterpartySearch.tsx to create match + confirm intent
 
----
+**File: `src/components/CounterpartySearch.tsx`**
 
-## Implementation Details
+Changes:
+- Import `useNavigate` from react-router-dom
+- Add `isConfirming` state for loading indicator
+- Update `handleConfirmIntent` to:
+  1. Get authenticated session
+  2. For each selected counterparty, call `/match` endpoint to create match
+  3. Then call `/match/:id/settle` endpoint to confirm intent
+  4. Navigate to match details page with success toast
+- Demo mode continues to show demo dialog only (no DB writes)
 
-### Phase 1: Database Schema Changes
-
-#### 1.1 Extend `matches` Table
-Add buyer/seller org tracking to enable counterparty visibility:
-
-```sql
-ALTER TABLE public.matches 
-ADD COLUMN buyer_org_id UUID REFERENCES organizations(id),
-ADD COLUMN seller_org_id UUID REFERENCES organizations(id);
-```
-
-#### 1.2 Extend `match_documents` Table
-Add visibility, metadata, and soft-delete fields:
-
-```sql
-ALTER TABLE public.match_documents
-ADD COLUMN title TEXT,
-ADD COLUMN notes TEXT,
-ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private' 
-  CHECK (visibility IN ('private', 'share_with_counterparty', 'share_with_roles')),
-ADD COLUMN valid_from TIMESTAMP WITH TIME ZONE,
-ADD COLUMN valid_to TIMESTAMP WITH TIME ZONE,
-ADD COLUMN version INTEGER NOT NULL DEFAULT 1,
-ADD COLUMN supersedes_document_id UUID REFERENCES match_documents(id),
-ADD COLUMN uploader_org_id UUID REFERENCES organizations(id);
-
--- Extend status enum for soft-delete
-ALTER TABLE public.match_documents 
-DROP CONSTRAINT IF EXISTS match_documents_status_check;
-ALTER TABLE public.match_documents
-ADD CONSTRAINT match_documents_status_check 
-  CHECK (status IN ('uploaded', 'pending_review', 'accepted', 'rejected', 'verified', 'revoked', 'archived', 'expired'));
-```
-
-#### 1.3 Create `document_access` Table
-For explicit access grants (role-based sharing):
-
-```sql
-CREATE TABLE public.document_access (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES match_documents(id) ON DELETE CASCADE,
-  granted_to_org_id UUID REFERENCES organizations(id),
-  granted_to_user_id UUID REFERENCES profiles(id),
-  granted_by_user_id UUID NOT NULL REFERENCES profiles(id),
-  access_type TEXT NOT NULL DEFAULT 'view' CHECK (access_type IN ('view', 'download')),
-  revoked_at TIMESTAMP WITH TIME ZONE,
-  revoked_by_user_id UUID REFERENCES profiles(id),
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+Key logic:
+```typescript
+const handleConfirmIntent = async () => {
+  if (selectedResults.size === 0) { toast.error(...); return; }
+  if (isDemoMode) { setShowDemoConfirm(true); return; }
   
-  -- At least one grantee required
-  CHECK (granted_to_org_id IS NOT NULL OR granted_to_user_id IS NOT NULL)
-);
-
-CREATE INDEX idx_document_access_document ON document_access(document_id);
-CREATE INDEX idx_document_access_org ON document_access(granted_to_org_id);
-CREATE INDEX idx_document_access_user ON document_access(granted_to_user_id);
-
-ALTER TABLE document_access ENABLE ROW LEVEL SECURITY;
+  setIsConfirming(true);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Please sign in");
+    
+    // Get user's org profile for buyer info
+    const { data: profile } = await supabase.from("profiles")
+      .select("org_id").single();
+    
+    // Create match for first selected result (or batch)
+    const selectedResult = results.find(r => selectedResults.has(r.id));
+    
+    // Create match via edge function
+    const matchResponse = await supabase.functions.invoke("match", {
+      body: {
+        buyer: { id: profile.org_id, name: "Your Organization" },
+        seller: { id: selectedResult.id, name: selectedResult.title },
+        commodity: parsedQuery?.product || query,
+        quantity: { amount: 1, unit: "lot" },
+        price: { amount: 0, currency: "USD" },
+        terms: "Intent confirmation only - not a binding agreement",
+        metadata: { searchQuery: query, parsedQuery }
+      }
+    });
+    
+    // Confirm intent on the match
+    const settleResponse = await fetch(
+      `${SUPABASE_URL}/functions/v1/match/${matchResponse.data.id}/settle`,
+      { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` }}
+    );
+    
+    toast.success("Intent confirmed. Proof generated.");
+    navigate(`/dashboard/matches/${matchResponse.data.id}`);
+  } catch (error) {
+    toast.error(error.message);
+  } finally {
+    setIsConfirming(false);
+  }
+};
 ```
 
-#### 1.4 Create `document_access_logs` Table
-For admin access with required reasons:
+#### 1.2 Add success confirmation with "Open Proof" button
 
+After successful confirmation, the user is navigated to `/dashboard/matches/:matchId` which already shows:
+- Match details with status CONFIRMED
+- Timeline tab with hash-chained events
+- Documents tab
+- WaD tab for evidence bundle
+
+The existing `MatchDetails.tsx` page already has the evidence pack download in `MatchTimeline.tsx`.
+
+---
+
+## Part 2: Fix Console "Logs" Tab to Show Business Events
+
+### Current State
+- `src/components/dashboard/sections/LogsSection.tsx` reads from `api_request_logs` table
+- This shows technical HTTP request logs (endpoints, status codes, latency)
+- Users cannot see business events like `intent.confirmed`, `match.created`
+
+### Implementation
+
+#### 2.1 Create dual-view Logs section with tabs
+
+**File: `src/components/dashboard/sections/LogsSection.tsx`**
+
+Changes:
+- Add `Tabs` component with two tabs:
+  - "Activity / Proof Events" - fetches from `/audit-logs` edge function
+  - "API Request Logs" - keeps existing `api_request_logs` query
+- For Activity tab:
+  - Call `/audit-logs` endpoint using JWT auth
+  - Display `intent.confirmed`, `match.created`, `search.completed` events
+  - Add "Open Proof" link for `intent.confirmed` entries pointing to `/dashboard/matches/:entityId`
+  - Show hash from metadata for proof verification
+
+Key structure:
+```typescript
+<Tabs defaultValue="activity">
+  <TabsList>
+    <TabsTrigger value="activity">Activity / Proof Events</TabsTrigger>
+    <TabsTrigger value="requests">API Request Logs</TabsTrigger>
+  </TabsList>
+  
+  <TabsContent value="activity">
+    {/* Fetch from /audit-logs edge function */}
+    {activityLogs.map(log => (
+      <TableRow>
+        <TableCell>{log.action}</TableCell>
+        <TableCell>{log.entity_id}</TableCell>
+        <TableCell>{log.metadata?.hash?.substring(0,8)}...</TableCell>
+        <TableCell>
+          {log.action === "intent.confirmed" && (
+            <Link to={`/dashboard/matches/${log.entity_id}`}>Open Proof</Link>
+          )}
+        </TableCell>
+      </TableRow>
+    ))}
+  </TabsContent>
+  
+  <TabsContent value="requests">
+    {/* Existing api_request_logs table */}
+  </TabsContent>
+</Tabs>
+```
+
+#### 2.2 Fetch activity logs via edge function
+
+Use the existing `/audit-logs` edge function which:
+- Authenticates via JWT (no API key needed for console users)
+- Returns org-scoped audit logs
+- Already supports filtering by action, entity_type, date range
+
+```typescript
+const fetchActivityLogs = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/audit-logs?limit=50`, {
+    headers: { Authorization: `Bearer ${session.access_token}` }
+  });
+  const data = await response.json();
+  setActivityLogs(data.items);
+};
+```
+
+---
+
+## Part 3: Fix Admin Visibility for Intent Confirmations
+
+### Current State
+- `src/components/admin/GlobalApiLogs.tsx` reads from `api_request_logs`
+- `src/components/admin/AdminAuditLogs.tsx` reads from `audit_logs` directly via RLS
+- However, AdminAuditLogs is a separate route (`/admin/audit`), not prominently shown
+
+### Implementation
+
+#### 3.1 Add "Business Events" tab to GlobalApiLogs
+
+**File: `src/components/admin/GlobalApiLogs.tsx`**
+
+Changes:
+- Add tabs similar to console LogsSection:
+  - "API Requests" - existing `api_request_logs` query
+  - "Business Events (Audit)" - queries `audit_logs` table (admin has RLS access)
+- For Business Events tab:
+  - Query `audit_logs` ordered by `created_at` desc
+  - Filter by action (`intent.confirmed`, `match.created`, etc.)
+  - Show "Open Proof" link for each intent confirmation
+  - Include org name via join with `organizations` table
+
+Key query for admin:
+```typescript
+const { data: businessLogs } = await supabase
+  .from("audit_logs")
+  .select(`
+    *,
+    organizations:org_id (name)
+  `)
+  .order("created_at", { ascending: false })
+  .limit(100);
+```
+
+Admin has RLS access via:
 ```sql
-CREATE TABLE public.document_access_logs (
+Policy Name: Admins can view all audit logs
+Command: SELECT
+Using Expression: has_role(auth.uid(), 'admin'::app_role)
+```
+
+---
+
+## Part 4: Counterparty Invite Flow (Simplified MVP)
+
+### Current State
+- No `invites` table exists
+- `notifyCounterpartyIntent` in `webhooks.ts` sends notifications AFTER intent is confirmed
+- No gate requiring counterparty acceptance before confirming intent
+
+### Implementation
+
+#### 4.1 Create `invites` table
+
+**Database Migration:**
+```sql
+CREATE TABLE public.invites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES match_documents(id),
-  match_id UUID NOT NULL REFERENCES matches(id),
-  accessor_user_id UUID NOT NULL REFERENCES profiles(id),
-  accessor_org_id UUID REFERENCES organizations(id),
-  action TEXT NOT NULL CHECK (action IN ('view', 'download')),
-  access_reason TEXT,  -- Required for admin access
-  is_admin_access BOOLEAN NOT NULL DEFAULT false,
-  ip_address TEXT,
-  user_agent TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  from_user_id UUID REFERENCES auth.users(id),
+  from_org_id UUID NOT NULL REFERENCES organizations(id),
+  to_email TEXT,
+  to_org_id UUID REFERENCES organizations(id),
+  search_query TEXT,
+  search_results JSONB DEFAULT '[]',
+  selected_result_id TEXT NOT NULL,
+  selected_result_data JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+  accepted_at TIMESTAMPTZ,
+  declined_at TIMESTAMPTZ,
+  declined_reason TEXT,
+  match_id UUID REFERENCES matches(id),
+  expires_at TIMESTAMPTZ DEFAULT (now() + INTERVAL '7 days')
 );
 
-CREATE INDEX idx_doc_access_logs_document ON document_access_logs(document_id);
-CREATE INDEX idx_doc_access_logs_match ON document_access_logs(match_id);
-CREATE INDEX idx_doc_access_logs_created ON document_access_logs(created_at DESC);
+-- RLS Policies
+ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE document_access_logs ENABLE ROW LEVEL SECURITY;
+-- Sender can view/create invites from their org
+CREATE POLICY "Users can view their org's sent invites" ON invites
+  FOR SELECT USING (from_org_id IN (
+    SELECT org_id FROM profiles WHERE id = auth.uid()
+  ));
+
+CREATE POLICY "Users can create invites for their org" ON invites
+  FOR INSERT WITH CHECK (from_org_id IN (
+    SELECT org_id FROM profiles WHERE id = auth.uid()
+  ));
+
+-- Recipients can view/update invites sent to them
+CREATE POLICY "Recipients can view invites sent to them" ON invites
+  FOR SELECT USING (
+    to_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
+    OR to_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Recipients can accept/decline invites" ON invites
+  FOR UPDATE USING (
+    to_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
+    OR to_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
+
+-- Admin can view all
+CREATE POLICY "Admins can view all invites" ON invites
+  FOR ALL USING (has_role(auth.uid(), 'admin'::app_role));
 ```
 
-#### 1.5 RLS Policies for Document Visibility
+#### 4.2 Create Invite Edge Function
 
-```sql
--- Drop existing overly simple policy
-DROP POLICY IF EXISTS "Users can view their org's match documents" ON match_documents;
+**File: `supabase/functions/invites/index.ts`**
 
--- New comprehensive visibility policy
-CREATE POLICY "Document visibility based on ownership and sharing"
-ON public.match_documents FOR SELECT
-USING (
-  -- Case 1: Uploader's org always sees their docs
-  uploader_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-  OR
-  -- Case 2: Counterparty visibility for shared docs
-  (
-    visibility = 'share_with_counterparty'
-    AND match_id IN (
-      SELECT id FROM matches m
-      WHERE (m.buyer_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-             OR m.seller_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid()))
-    )
-  )
-  OR
-  -- Case 3: Explicit access grants
-  (
-    visibility = 'share_with_roles'
-    AND id IN (
-      SELECT document_id FROM document_access da
-      WHERE da.revoked_at IS NULL
-        AND (
-          da.granted_to_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-          OR da.granted_to_user_id = auth.uid()
-        )
-    )
-  )
-  OR
-  -- Case 4: Admin access
-  has_role(auth.uid(), 'admin'::app_role)
-);
+Endpoints:
+- `POST /invites` - Create invite (from search results)
+- `GET /invites` - List invites (sent + received)
+- `POST /invites/:id/accept` - Accept invite
+- `POST /invites/:id/decline` - Decline invite
 
--- Restrict uploads to match participants
-DROP POLICY IF EXISTS "Users can upload documents to their org's matches" ON match_documents;
+Flow:
+1. User searches and selects counterparties
+2. User clicks "Invite" → creates invite record with status=pending
+3. Counterparty sees invite in their inbox
+4. Counterparty clicks Accept/Decline
+5. Only after acceptance can the inviter confirm intent
 
-CREATE POLICY "Users can upload documents to POI they're party to"
-ON public.match_documents FOR INSERT
-WITH CHECK (
-  match_id IN (
-    SELECT id FROM matches m
-    WHERE m.buyer_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-       OR m.seller_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-       OR m.org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-  )
-);
+#### 4.3 Update CounterpartySearch UI
+
+Add two-button flow:
+- "Invite Selected" - Creates invite, shows confirmation
+- "Confirm Intent" - Only enabled if there's an accepted invite for this search
+
+```typescript
+<Button onClick={handleInvite} disabled={selectedResults.size === 0}>
+  <Send className="h-4 w-4 mr-2" />
+  Invite ({selectedResults.size})
+</Button>
+
+{hasAcceptedInvite && (
+  <Button onClick={handleConfirmIntent}>
+    <CheckCircle className="h-4 w-4 mr-2" />
+    Confirm Intent
+  </Button>
+)}
 ```
 
-#### 1.6 Storage Bucket Policy Updates
-Update storage policies to align with document visibility:
+#### 4.4 Create Invites Inbox Page
 
-```sql
--- Update storage policy to respect document visibility
-DROP POLICY IF EXISTS "Users can view their org match documents" ON storage.objects;
+**File: `src/pages/Invites.tsx`**
 
-CREATE POLICY "Document storage visibility"
-ON storage.objects FOR SELECT
-USING (
-  bucket_id = 'match-documents'
-  AND (
-    -- Check if user has access via match_documents RLS
-    EXISTS (
-      SELECT 1 FROM match_documents md
-      WHERE md.storage_path = name
-      AND (
-        md.uploader_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-        OR (
-          md.visibility = 'share_with_counterparty'
-          AND md.match_id IN (
-            SELECT id FROM matches m
-            WHERE m.buyer_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-               OR m.seller_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-          )
-        )
-        OR (
-          md.visibility = 'share_with_roles'
-          AND md.id IN (
-            SELECT document_id FROM document_access
-            WHERE revoked_at IS NULL
-              AND (granted_to_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-                   OR granted_to_user_id = auth.uid())
-          )
-        )
-        OR has_role(auth.uid(), 'admin'::app_role)
-      )
-    )
-  )
-);
-```
+Simple page showing:
+- Received invites (pending) with Accept/Decline buttons
+- Sent invites with status
+- Link to match when invite leads to confirmed intent
 
-### Phase 2: Backend Edge Functions
+#### 4.5 Add to sidebar navigation
 
-#### 2.1 Document Upload Enhancement
-Modify upload flow to capture visibility and metadata:
-- Accept `title`, `notes`, `visibility`, `valid_from`, `valid_to` on upload
-- Compute SHA-256 hash server-side for integrity
-- Log `document.uploaded` event to audit trail
+**File: `src/components/AppSidebar.tsx`**
 
-#### 2.2 Document Download with Signed URLs
-Create `/documents/{id}/download` endpoint:
-- Generate short-lived signed URL (5-15 minutes)
-- Enforce visibility rules
-- Log all downloads to `document_access_logs`
-- Require `access_reason` for admin downloads
-
-#### 2.3 Visibility Management
-Create `/documents/{id}/share` endpoint:
-- Allow uploader to change visibility
-- Create `document_access` grants for role-based sharing
-- Log `document.shared` and `document.visibility_changed` events
-
-#### 2.4 Revoke Access
-Create `/documents/{id}/revoke` endpoint:
-- Soft-revoke by setting `status = 'revoked'` or revoking specific grants
-- Log `document.revoked` event
-- Immediately remove counterparty access
-
-### Phase 3: Frontend Components
-
-#### 3.1 Enhanced MatchDocuments Component
-Update the existing component at `src/components/match/MatchDocuments.tsx`:
-- Add visibility selector on upload (private/counterparty/roles)
-- Add title and notes fields
-- Add valid_from/valid_to date pickers
-- Show visibility column in document list
-- Add "Share Settings" action to change visibility
-- Add "Revoke Access" action for soft-revoke
-
-#### 3.2 Document Sharing Dialog
-New component for managing document access:
-- Toggle counterparty visibility
-- Add/remove specific role grants
-- Show current access list
-
-#### 3.3 Counterparty View
-For counterparty users viewing shared documents:
-- Show only documents with `share_with_counterparty` or explicit grants
-- Read-only view (no upload unless explicitly permitted)
-- Download with access logging
-
-#### 3.4 Admin Documents Panel Enhancement
-Update `src/components/admin/AdminDocumentVerification.tsx`:
-- Add filters for: POI, org, doc type, status, visibility, date
-- Add "Access Reason" required field before download
-- Show access logs in document detail view
-- Add visibility override capability (with audit)
-
-### Phase 4: Audit Trail Integration
-
-#### 4.1 Audit Events
-All document actions log to `audit_logs`:
-- `document.uploaded` - includes poi_id, doc_id, uploader, visibility
-- `document.shared` - includes poi_id, doc_id, actor, target org/user
-- `document.visibility_changed` - includes poi_id, doc_id, old/new visibility
-- `document.revoked` - includes poi_id, doc_id, actor
-- `document.downloaded` - includes poi_id, doc_id, accessor
-- `admin.document.accessed` - includes poi_id, doc_id, admin user, access reason
-
-#### 4.2 Evidence Chain Integration
-Update `evidence-pack` edge function to include:
-- Document list with hashes
-- Visibility settings
-- Access log history
+Add "Invites" menu item under Data section with notification badge for pending invites.
 
 ---
 
-## File Changes Summary
+## Files to Create/Modify
 
-### New Files
-| File | Purpose |
-|------|---------|
-| `src/components/match/DocumentSharingDialog.tsx` | Dialog for managing document visibility and access grants |
-| `src/components/match/DocumentAccessLogs.tsx` | Display access history for a document |
-| `supabase/functions/document-download/index.ts` | Signed URL generation with access logging |
-| `supabase/functions/document-share/index.ts` | Visibility management endpoint |
-| `supabase/functions/document-revoke/index.ts` | Soft-revoke endpoint |
+### Create New Files:
+1. `supabase/functions/invites/index.ts` - Invite management endpoints
+2. `src/pages/Invites.tsx` - Invites inbox page
 
-### Modified Files
-| File | Changes |
-|------|---------|
-| `src/components/match/MatchDocuments.tsx` | Add visibility, title, notes fields; sharing/revoke actions |
-| `src/components/admin/AdminDocumentVerification.tsx` | Add filters, access reason dialog, access logs view |
-| `src/pages/MatchDetails.tsx` | Pass buyer/seller org context to MatchDocuments |
-| `supabase/functions/evidence-pack/index.ts` | Include document visibility and access logs |
+### Modify Existing Files:
+1. `src/components/CounterpartySearch.tsx` - Add match creation + intent confirmation + invite flow
+2. `src/components/dashboard/sections/LogsSection.tsx` - Add Activity/Proof Events tab
+3. `src/components/admin/GlobalApiLogs.tsx` - Add Business Events tab
+4. `src/components/AppSidebar.tsx` - Add Invites menu item
+5. `src/App.tsx` - Add /invites route
+6. `supabase/config.toml` - Register invites function
 
-### Database Migrations
-| Migration | Purpose |
-|-----------|---------|
-| `add_document_visibility_fields.sql` | Extend match_documents with visibility, metadata fields |
-| `add_buyer_seller_orgs_to_matches.sql` | Add buyer_org_id, seller_org_id to matches |
-| `create_document_access_table.sql` | Create document_access for explicit grants |
-| `create_document_access_logs_table.sql` | Create document_access_logs for audit |
-| `update_document_rls_policies.sql` | Update RLS for visibility-aware access |
-| `update_storage_policies.sql` | Update storage bucket policies |
+### Database Migration:
+1. Create `invites` table with RLS policies
 
 ---
 
-## UI Location
+## Acceptance Test Walkthrough
 
-### User-Facing
-- **POI Detail Page** (`/dashboard/matches/:matchId`): "Documents" section below match details
-  - Upload CTA with visibility selector
-  - Document table with visibility, status, actions
-  - Share Settings and Revoke Access buttons per document
+### Test 1: Search → Confirm Intent Pipeline
+1. Sign in as James (james@test.com)
+2. Go to Dashboard → Search
+3. Enter "coffee buyers in Kenya"
+4. Wait for results
+5. Select one counterparty
+6. Click "Confirm Intent"
+7. **Expected**: Match created, intent confirmed, navigated to match details page
+8. Verify: Timeline shows `match.created` and `intent.confirmed` events
+9. Verify: Can download evidence pack JSON
 
-### Admin Panel
-- **Admin > Document Verification** (`/admin/documents`): Enhanced with:
-  - Filter bar: POI, org, doc type, status, visibility, date range
-  - Access reason modal before download
-  - Access logs tab per document
+### Test 2: Console Logs Show Proof Events
+1. After confirming intent (Test 1)
+2. Go to Dashboard → Logs
+3. Click "Activity / Proof Events" tab
+4. **Expected**: See `intent.confirmed` entry with timestamp and hash
+5. Click "Open Proof" link
+6. **Expected**: Navigated to match details page
+7. Refresh page
+8. **Expected**: Same entry still visible
 
----
+### Test 3: Admin Can See Intent Confirmations
+1. Sign in as Admin
+2. Go to Admin Panel → API Logs
+3. Click "Business Events" tab
+4. **Expected**: See James's `intent.confirmed` entry
+5. Can see org name, timestamp, match ID
+6. Click "View Proof"
+7. **Expected**: Can access match details
 
-## Acceptance Tests
-
-1. **User uploads a doc into a POI** - User sees it immediately under Documents
-2. **Counterparty does NOT see it if set to private** - Visibility enforced by RLS
-3. **Counterparty DOES see it if shared_with_counterparty** - RLS allows access
-4. **Admin sees it regardless** - Admin role bypasses visibility
-5. **Admin access is logged** - document_access_logs entry created with reason
-6. **Revoke action removes counterparty access immediately** - Document hidden without file deletion
-7. **No routes on www.izenzo expose docs or doc metadata** - Public site has no document endpoints
-
----
-
-## Security Guardrails
-
-1. **RLS Enforcement**: All document access goes through RLS policies
-2. **No Hard Deletes**: Status changes only; files remain in storage
-3. **Admin Audit Trail**: All admin access requires reason and is logged
-4. **Signed URLs**: Downloads use short-lived signed URLs (5 min default)
-5. **POI Scoping**: Documents only accessible within POI context
-6. **Enumeration Prevention**: No listing documents outside POI scope
-
----
-
-## Documentation Updates
-
-After implementation:
-- Update developer docs explaining "Documents are stored per POI; sharing is explicit; no liability; evidence-grade logging"
-- Add changelog entry for this feature
-- Update API reference with new endpoints
+### Test 4: Invite Flow (MVP)
+1. Sign in as User A
+2. Search and select counterparty
+3. Click "Invite"
+4. Sign in as User B (counterparty email)
+5. Go to Invites page
+6. See pending invite from User A
+7. Click "Accept"
+8. Sign in as User A
+9. See accepted invite
+10. Click "Confirm Intent"
+11. **Expected**: Match and proof created
 
 ---
 
 ## Technical Notes
 
-### Counterparty Detection Challenge
-The current `matches` table only has a single `org_id`. To implement counterparty visibility properly, we need to:
-1. Add `buyer_org_id` and `seller_org_id` columns
-2. Backfill existing matches (may require manual mapping or lookup from buyer_id/seller_id)
-3. Update match creation to capture both org IDs
+### Security Considerations
+- Demo mode NEVER writes to database - only shows simulated UI
+- Invites table has proper RLS - users only see their sent/received invites
+- Audit logs accessed via edge function (JWT auth) or RLS (admin direct query)
+- No SECURITY DEFINER views for user-facing data
 
-This is a prerequisite for proper counterparty document sharing.
+### Logging Events Written
+All these events are already written by `supabase/functions/match/index.ts`:
+- `match.created` → audit_logs + match_events
+- `intent.confirmed` → audit_logs + match_events
+- `intent.denied` → audit_logs (if eligibility fails)
 
-### Storage Path Format
-Following spec recommendation:
-```
-/poi/<match_id>/<doc_id>/<filename>
-```
-This ensures documents are grouped by POI for easy management.
+New events for invites:
+- `invite.created` → audit_logs
+- `invite.accepted` → audit_logs
+- `invite.declined` → audit_logs
+
+### Evidence Pack Retrieval
+The existing `supabase/functions/evidence-pack/index.ts` generates complete JSON with:
+- Match details
+- Hash chain verification
+- Document list
+- Timeline events
+- Audit trail
+
+---
+
+## Implementation Order
+
+1. **Phase 1** (Critical - fixes broken pipeline):
+   - Update CounterpartySearch.tsx with match creation flow
+   - Update LogsSection.tsx with Activity tab
+
+2. **Phase 2** (Admin visibility):
+   - Update GlobalApiLogs.tsx with Business Events tab
+
+3. **Phase 3** (Invite flow - full SOW compliance):
+   - Create invites table migration
+   - Create invites edge function
+   - Create Invites page
+   - Update CounterpartySearch with invite button
+   - Update sidebar navigation
