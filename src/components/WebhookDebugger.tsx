@@ -94,7 +94,7 @@ export default function WebhookDebugger() {
           .limit(100),
         supabase
           .from("webhook_endpoints")
-          .select("*")
+          .select("id, url, events, status")
           .eq("status", "active"),
       ]);
 
