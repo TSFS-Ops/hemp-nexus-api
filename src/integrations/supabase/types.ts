@@ -813,6 +813,66 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          declined_at: string | null
+          declined_reason: string | null
+          expires_at: string | null
+          from_org_id: string
+          from_user_id: string | null
+          id: string
+          match_id: string | null
+          search_query: string | null
+          search_results: Json | null
+          selected_result_data: Json
+          selected_result_id: string
+          status: string
+          to_email: string | null
+          to_org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          declined_at?: string | null
+          declined_reason?: string | null
+          expires_at?: string | null
+          from_org_id: string
+          from_user_id?: string | null
+          id?: string
+          match_id?: string | null
+          search_query?: string | null
+          search_results?: Json | null
+          selected_result_data?: Json
+          selected_result_id: string
+          status?: string
+          to_email?: string | null
+          to_org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          declined_at?: string | null
+          declined_reason?: string | null
+          expires_at?: string | null
+          from_org_id?: string
+          from_user_id?: string | null
+          id?: string
+          match_id?: string | null
+          search_query?: string | null
+          search_results?: Json | null
+          selected_result_data?: Json
+          selected_result_id?: string
+          status?: string
+          to_email?: string | null
+          to_org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       match_analytics: {
         Row: {
           avg_match_time_hours: number | null
