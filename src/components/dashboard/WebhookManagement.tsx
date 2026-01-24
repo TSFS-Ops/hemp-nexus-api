@@ -70,7 +70,7 @@ export function WebhookManagement() {
       setLoading(true);
       const { data, error } = await supabase
         .from("webhook_endpoints")
-        .select("*")
+        .select("id, url, events, status, last_delivery_at, created_at, updated_at, org_id")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
