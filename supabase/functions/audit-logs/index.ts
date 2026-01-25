@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const corsResponse = handleCors(req, allowedOrigins);
     if (corsResponse) return corsResponse;
 
-    if (req.method !== "GET") {
+   if (req.method !== "GET" && req.method !== "POST") {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
 
@@ -40,17 +40,38 @@ Deno.serve(async (req) => {
     );
 
     const url = new URL(req.url);
-    console.log(`[${requestId}] GET /audit-logs`);
+   console.log(`[${requestId}] ${req.method} /audit-logs`);
 
-    // Parse query parameters
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
-    const offset = parseInt(url.searchParams.get("offset") || "0");
-    const action = url.searchParams.get("action");
-    const entityType = url.searchParams.get("entity_type");
-    const entityId = url.searchParams.get("entity_id");
-    const requestIdFilter = url.searchParams.get("request_id");
-    const startDate = url.searchParams.get("start_date");
-    const endDate = url.searchParams.get("end_date");
+   // Parse query parameters (for GET) or body (for POST)
+   let limit = 50;
+   let offset = 0;
+   let action: string | null = null;
+   let entityType: string | null = null;
+   let entityId: string | null = null;
+   let requestIdFilter: string | null = null;
+   let startDate: string | null = null;
+   let endDate: string | null = null;
+
+   if (req.method === "POST") {
+     const body = await req.json();
+     limit = Math.min(parseInt(body.limit || "50"), 100);
+     offset = parseInt(body.offset || "0");
+     action = body.action || null;
+     entityType = body.entity_type || null;
+     entityId = body.entity_id || null;
+     requestIdFilter = body.request_id || null;
+     startDate = body.start_date || null;
+     endDate = body.end_date || null;
+   } else {
+     limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
+     offset = parseInt(url.searchParams.get("offset") || "0");
+     action = url.searchParams.get("action");
+     entityType = url.searchParams.get("entity_type");
+     entityId = url.searchParams.get("entity_id");
+     requestIdFilter = url.searchParams.get("request_id");
+     startDate = url.searchParams.get("start_date");
+     endDate = url.searchParams.get("end_date");
+   }
 
     // Build query
     let query = supabase
