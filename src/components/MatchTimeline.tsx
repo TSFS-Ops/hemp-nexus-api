@@ -71,6 +71,7 @@ export function MatchTimeline({ matchId }: MatchTimelineProps) {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
         {
+          method: "GET", // Explicit: evidence-pack is GET-only
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
