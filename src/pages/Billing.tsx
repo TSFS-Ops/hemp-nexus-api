@@ -7,51 +7,67 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Coins, CreditCard, TrendingUp, AlertTriangle, History, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  Coins, CreditCard, TrendingUp, AlertTriangle, History, 
+  Shield, Building2, FileText, Check, Mail 
+} from "lucide-react";
 import { toast } from "sonner";
 import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { cn } from "@/lib/utils";
 
-// Token packages from Price List (NGN pricing for Africa via Paystack)
-const TOKEN_PACKAGES = [
+// ==============================================
+// CREDIT PACKAGES (USD pricing - final)
+// ==============================================
+const CREDIT_PACKAGES = [
   { 
     id: 'starter',
-    tokens: 10000, 
-    price_usd: 500,
-    price_ngn: 400000, 
+    credits: 20, 
+    priceUsd: 99,
     label: 'Starter',
-    pricePerToken: 0.05,
-    discount: null,
+    pricePerCredit: '4.95',
+    description: 'For testing and small projects',
+    popular: false,
   },
   { 
-    id: 'growth',
-    tokens: 50000, 
-    price_usd: 2250,
-    price_ngn: 1800000, 
-    label: 'Growth',
-    pricePerToken: 0.045,
-    discount: '10% off',
+    id: 'professional',
+    credits: 100, 
+    priceUsd: 350,
+    label: 'Professional',
+    pricePerCredit: '3.50',
+    description: 'Best value for active users',
     popular: true,
   },
   { 
-    id: 'scale',
-    tokens: 100000, 
-    price_usd: 4000,
-    price_ngn: 3200000, 
-    label: 'Scale',
-    pricePerToken: 0.04,
-    discount: '20% off',
-  },
-  { 
     id: 'enterprise',
-    tokens: 500000, 
-    price_usd: 17500,
-    price_ngn: 14000000, 
+    credits: 500, 
+    priceUsd: 1500,
     label: 'Enterprise',
-    pricePerToken: 0.035,
-    discount: '30% off',
+    pricePerCredit: '3.00',
+    description: 'For high-volume operations',
+    popular: false,
   },
 ];
+
+// ==============================================
+// ANNUAL LICENCES (manual invoice)
+// ==============================================
+const LICENCE_TIERS = [
+  { name: 'Professional', price: '$25,000/year', description: 'Standard API access with SLA' },
+  { name: 'Institutional', price: '$75k–$150k/year', description: 'Enhanced limits and dedicated support' },
+  { name: 'Corridor / Network', price: '$250k+/year', description: 'Custom integration and white-label options' },
+];
+
+// ==============================================
+// CHARGING ENTITY
+// ==============================================
+const CHARGING_ENTITY = {
+  name: "Starfair162 (Pty) Ltd t/a Izenzo",
+  registration: "2018 / 331720 / 07",
+  address: "44 Campbell Street, Port Alfred, South Africa",
+  supportEmail: "support@izenzo.co.za",
+  vatNote: "No VAT charged — supplier not VAT registered in South Africa.",
+};
 
 export default function Billing() {
   const { session, isAdmin } = useAuth();
@@ -59,7 +75,7 @@ export default function Billing() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch token balance
-  const { data: balance, isLoading: balanceLoading } = useQuery({
+  const { data: balance } = useQuery({
     queryKey: ["token-balance-billing"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -86,11 +102,11 @@ export default function Billing() {
       
       if (error) throw error;
       
-      const totalBurned = data?.reduce((sum, e) => sum + (e.tokens_burned || 0), 0) || 0;
+      const totalBurned = data?.reduce((sum, e) => sum + Math.max(0, e.tokens_burned || 0), 0) || 0;
       const actionBreakdown: Record<string, number> = {};
       for (const entry of data || []) {
-        if (entry.action_type) {
-          actionBreakdown[entry.action_type] = (actionBreakdown[entry.action_type] || 0) + (entry.tokens_burned || 0);
+        if (entry.action_type && entry.tokens_burned > 0) {
+          actionBreakdown[entry.action_type] = (actionBreakdown[entry.action_type] || 0) + entry.tokens_burned;
         }
       }
       
@@ -119,11 +135,11 @@ export default function Billing() {
     setSelectedPackage(packageId);
     
     try {
-      const pkg = TOKEN_PACKAGES.find(p => p.id === packageId);
-      if (!pkg) throw new Error("Package not found");
-
       const { data, error } = await supabase.functions.invoke("token-purchase", {
-        body: { packageId },
+        body: { 
+          packageId,
+          callbackUrl: `${window.location.origin}/billing?status=success`,
+        },
       });
 
       if (error) throw error;
@@ -151,9 +167,9 @@ export default function Billing() {
     <DashboardLayout activeSection="usage" onSectionChange={() => {}} isAdmin={isAdmin}>
       <div className="space-y-6">
         <header>
-          <h1 className="text-2xl font-bold tracking-tight">Usage & Billing</h1>
+          <h1 className="text-2xl font-bold tracking-tight">API Credits</h1>
           <p className="text-muted-foreground">
-            Manage your token balance and purchase additional tokens
+            Purchase credits to use the Compliance Matching API
           </p>
         </header>
 
@@ -165,10 +181,10 @@ export default function Billing() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Coins className="h-5 w-5" />
-              Token Balance
+              Credit Balance
             </CardTitle>
             <CardDescription>
-              Your current token balance and usage this month
+              Your current credit balance and usage this month
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -188,7 +204,7 @@ export default function Billing() {
               </div>
               
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Burned This Month</p>
+                <p className="text-sm text-muted-foreground">Used This Month</p>
                 <p className="text-3xl font-bold">
                   {(usageStats?.totalBurned || 0).toLocaleString()}
                 </p>
@@ -222,52 +238,46 @@ export default function Billing() {
           </CardContent>
         </Card>
 
-        {/* Token Packages */}
+        {/* Credit Packages */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Purchase Tokens</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {TOKEN_PACKAGES.map((pkg) => (
+          <h2 className="text-lg font-semibold mb-4">Purchase Credits</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {CREDIT_PACKAGES.map((pkg) => (
               <Card 
                 key={pkg.id}
                 className={cn(
-                  "relative cursor-pointer transition-all hover:border-primary",
+                  "relative transition-all hover:border-primary",
                   pkg.popular && "border-primary ring-1 ring-primary"
                 )}
-                onClick={() => !isProcessing && handlePurchase(pkg.id)}
               >
                 {pkg.popular && (
-                  <Badge 
-                    className="absolute -top-2 left-1/2 -translate-x-1/2"
-                  >
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
                     Most Popular
                   </Badge>
                 )}
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 text-center">
                   <CardTitle className="text-lg">{pkg.label}</CardTitle>
-                  <CardDescription>
-                    {pkg.tokens.toLocaleString()} tokens
-                  </CardDescription>
+                  <CardDescription>{pkg.description}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-2xl font-bold">
-                      ₦{pkg.price_ngn.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      ~${pkg.price_usd.toLocaleString()} USD
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      ${pkg.pricePerToken.toFixed(3)}/token
-                    </p>
-                    {pkg.discount && (
-                      <Badge variant="secondary" className="text-xs">
-                        {pkg.discount}
-                      </Badge>
-                    )}
+                <CardContent className="text-center">
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold">${pkg.priceUsd}</span>
+                    <span className="text-muted-foreground"> USD</span>
+                  </div>
+                  <div className="space-y-2 text-sm text-muted-foreground mb-6">
+                    <div className="flex items-center justify-center gap-2">
+                      <Coins className="h-4 w-4 text-primary" />
+                      <span>{pkg.credits} credits</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      <span>${pkg.pricePerCredit} per credit</span>
+                    </div>
                   </div>
                   <Button 
-                    className="w-full mt-4" 
+                    className="w-full" 
                     variant={pkg.popular ? "default" : "outline"}
+                    onClick={() => handlePurchase(pkg.id)}
                     disabled={isProcessing}
                   >
                     {isProcessing && selectedPackage === pkg.id ? (
@@ -290,6 +300,55 @@ export default function Billing() {
 
         <Separator />
 
+        {/* Annual Licences */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle>Annual Licences</CardTitle>
+            </div>
+            <CardDescription>
+              For institutional access with priority support and custom terms
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              {LICENCE_TIERS.map((tier) => (
+                <div key={tier.name} className="p-4 rounded-lg border bg-card">
+                  <h4 className="font-semibold">{tier.name}</h4>
+                  <p className="text-2xl font-bold text-primary mt-1">{tier.price}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{tier.description}</p>
+                </div>
+              ))}
+            </div>
+            <Alert className="mt-4">
+              <FileText className="h-4 w-4" />
+              <AlertDescription>
+                Licences are billed via manual invoice. Contact{" "}
+                <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">
+                  {CHARGING_ENTITY.supportEmail}
+                </a>{" "}
+                to discuss your requirements.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* Refund Policy */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <CardTitle className="text-lg">Refund Policy</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>• <strong>Unused credits:</strong> Refundable within 7 days of purchase</p>
+            <p>• <strong>Consumed credits:</strong> Non-refundable</p>
+            <p>• <strong>POI, WaD, and Licences:</strong> Non-refundable once issued</p>
+          </CardContent>
+        </Card>
+
         {/* Usage Breakdown */}
         {usageStats?.actionBreakdown && Object.keys(usageStats.actionBreakdown).length > 0 && (
           <Card>
@@ -299,20 +358,20 @@ export default function Billing() {
                 Usage Breakdown
               </CardTitle>
               <CardDescription>
-                Token usage by action type this month
+                Credit usage by action type this month
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {Object.entries(usageStats.actionBreakdown)
                   .sort(([, a], [, b]) => b - a)
-                  .map(([action, tokens]) => (
+                  .map(([action, credits]) => (
                     <div key={action} className="flex items-center justify-between">
                       <span className="text-sm capitalize">
                         {action.replace(/_/g, ' ')}
                       </span>
                       <span className="font-medium">
-                        {tokens.toLocaleString()} tokens
+                        {credits.toLocaleString()} credits
                       </span>
                     </div>
                   ))}
@@ -326,7 +385,7 @@ export default function Billing() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Recent Token Activity
+              Recent Credit Activity
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -348,9 +407,12 @@ export default function Billing() {
                     <div className="text-right">
                       <p className={cn(
                         "text-sm font-medium",
+                        tx.tokens_burned < 0 && "text-green-600",
                         tx.outcome === 'blocked' && "text-destructive"
                       )}>
-                        {tx.outcome === 'blocked' ? 'Blocked' : `-${tx.tokens_burned}`}
+                        {tx.outcome === 'blocked' ? 'Blocked' : 
+                         tx.tokens_burned < 0 ? `+${Math.abs(tx.tokens_burned)}` : 
+                         `-${tx.tokens_burned}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Balance: {tx.remaining_balance?.toLocaleString()}
@@ -361,11 +423,38 @@ export default function Billing() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No recent token activity
+                No recent credit activity
               </p>
             )}
           </CardContent>
         </Card>
+
+        {/* Billing Entity */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">Billing Entity</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="text-sm space-y-1">
+            <p className="font-medium">{CHARGING_ENTITY.name}</p>
+            <p className="text-muted-foreground">Reg: {CHARGING_ENTITY.registration}</p>
+            <p className="text-muted-foreground">{CHARGING_ENTITY.address}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">
+                {CHARGING_ENTITY.supportEmail}
+              </a>
+            </div>
+            <p className="text-muted-foreground mt-2 italic">{CHARGING_ENTITY.vatNote}</p>
+          </CardContent>
+        </Card>
+
+        {/* Payment Security Note */}
+        <p className="text-center text-xs text-muted-foreground">
+          Payments processed securely by Paystack. All amounts in USD.
+        </p>
       </div>
     </DashboardLayout>
   );

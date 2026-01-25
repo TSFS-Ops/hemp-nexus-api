@@ -10,12 +10,59 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
-// Token packages from Price List
-const TOKEN_PACKAGES: Record<string, { tokens: number; price_ngn: number; price_usd: number; label: string }> = {
-  starter: { tokens: 10000, price_ngn: 400000, price_usd: 500, label: "Starter" },
-  growth: { tokens: 50000, price_ngn: 1800000, price_usd: 2250, label: "Growth" },
-  scale: { tokens: 100000, price_ngn: 3200000, price_usd: 4000, label: "Scale" },
-  enterprise: { tokens: 500000, price_ngn: 14000000, price_usd: 17500, label: "Enterprise" },
+// ==============================================
+// CHARGING ENTITY (for invoices)
+// ==============================================
+const CHARGING_ENTITY = {
+  name: "Starfair162 (Pty) Ltd t/a Izenzo",
+  registration: "2018 / 331720 / 07",
+  address: "44 Campbell Street, Port Alfred, South Africa",
+  vatStatus: "Not VAT-registered",
+  supportEmail: "support@izenzo.co.za",
+  invoiceNote: "No VAT charged — supplier not VAT registered in South Africa.",
+};
+
+// ==============================================
+// TOKEN PACKAGES (USD pricing - final)
+// $99 = 20 credits, $350 = 100 credits, $1500 = 500 credits
+// ==============================================
+const TOKEN_PACKAGES: Record<string, { 
+  credits: number; 
+  price_usd: number; 
+  price_cents: number; 
+  label: string;
+  pricePerCredit: string;
+}> = {
+  starter: { 
+    credits: 20, 
+    price_usd: 99, 
+    price_cents: 9900, 
+    label: "Starter",
+    pricePerCredit: "4.95",
+  },
+  professional: { 
+    credits: 100, 
+    price_usd: 350, 
+    price_cents: 35000, 
+    label: "Professional",
+    pricePerCredit: "3.50",
+  },
+  enterprise: { 
+    credits: 500, 
+    price_usd: 1500, 
+    price_cents: 150000, 
+    label: "Enterprise",
+    pricePerCredit: "3.00",
+  },
+};
+
+// ==============================================
+// REFUND POLICY
+// ==============================================
+const REFUND_POLICY = {
+  unusedCreditsRefundableDays: 7,
+  consumedCreditsRefundable: false,
+  poiWadLicencesRefundable: false,
 };
 
 Deno.serve(async (req) => {
@@ -25,14 +72,28 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const isWebhook = url.pathname.endsWith("/webhook");
+  const path = url.pathname.split("/").pop();
+  const isWebhook = path === "webhook";
 
   try {
     if (isWebhook) {
       return await handleWebhook(req);
     }
 
-    // Regular checkout flow - requires authentication
+    // GET /packages - public endpoint
+    if (req.method === "GET" && path === "packages") {
+      return handleGetPackages();
+    }
+
+    // GET /entity - public endpoint
+    if (req.method === "GET" && path === "entity") {
+      return new Response(
+        JSON.stringify(CHARGING_ENTITY),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // All other endpoints require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -68,7 +129,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { packageId } = body;
+    const { packageId, callbackUrl } = body;
 
     const pkg = TOKEN_PACKAGES[packageId];
     if (!pkg) {
@@ -78,7 +139,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Paystack transaction
+    // Get client IP for audit
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+    // Create Paystack transaction (USD currency)
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -87,18 +151,21 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         email: profile.email || userData.user.email,
-        amount: pkg.price_ngn * 100, // Paystack uses kobo (1 NGN = 100 kobo)
-        currency: "NGN",
-        callback_url: `${req.headers.get("origin")}/billing?status=success`,
+        amount: pkg.price_cents, // Paystack uses cents
+        currency: "USD",
+        callback_url: callbackUrl || `${req.headers.get("origin")}/billing?status=success`,
         metadata: {
           org_id: profile.org_id,
           user_id: userData.user.id,
           package_id: packageId,
-          tokens: pkg.tokens,
+          credits: pkg.credits,
           price_usd: pkg.price_usd,
+          client_ip: clientIp,
+          timestamp: new Date().toISOString(),
           custom_fields: [
             { display_name: "Package", variable_name: "package", value: pkg.label },
-            { display_name: "Tokens", variable_name: "tokens", value: pkg.tokens.toString() },
+            { display_name: "Credits", variable_name: "credits", value: pkg.credits.toString() },
+            { display_name: "Entity", variable_name: "entity", value: CHARGING_ENTITY.name },
           ],
         },
       }),
@@ -118,13 +185,14 @@ Deno.serve(async (req) => {
     await supabase.from("audit_logs").insert({
       org_id: profile.org_id,
       actor_user_id: userData.user.id,
-      action: "token_purchase.initiated",
+      action: "credits.purchase_initiated",
       entity_type: "token_purchase",
       metadata: {
         package_id: packageId,
-        tokens: pkg.tokens,
-        amount_ngn: pkg.price_ngn,
+        credits: pkg.credits,
+        amount_usd: pkg.price_usd,
         reference: paystackData.data.reference,
+        client_ip: clientIp,
       },
     });
 
@@ -133,6 +201,12 @@ Deno.serve(async (req) => {
         success: true,
         checkoutUrl: paystackData.data.authorization_url,
         reference: paystackData.data.reference,
+        package: {
+          name: pkg.label,
+          credits: pkg.credits,
+          priceUsd: pkg.price_usd,
+        },
+        entity: CHARGING_ENTITY,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -145,6 +219,32 @@ Deno.serve(async (req) => {
   }
 });
 
+// ==============================================
+// GET /packages - List available packages
+// ==============================================
+function handleGetPackages(): Response {
+  const packages = Object.entries(TOKEN_PACKAGES).map(([id, pkg]) => ({
+    id,
+    name: pkg.label,
+    credits: pkg.credits,
+    priceUsd: pkg.price_usd,
+    pricePerCredit: pkg.pricePerCredit,
+  }));
+
+  return new Response(
+    JSON.stringify({ 
+      packages,
+      currency: "USD",
+      entity: CHARGING_ENTITY,
+      refundPolicy: REFUND_POLICY,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// ==============================================
+// Webhook Handler
+// ==============================================
 async function handleWebhook(req: Request): Promise<Response> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -178,88 +278,256 @@ async function handleWebhook(req: Request): Promise<Response> {
     }
 
     const event = JSON.parse(body);
-    console.log("Paystack webhook event:", event.event);
+    console.log("[Webhook] Event:", event.event);
 
-    if (event.event === "charge.success") {
-      const { metadata, reference, amount } = event.data;
-      const orgId = metadata?.org_id;
-      const tokens = metadata?.tokens;
-      const userId = metadata?.user_id;
-      const packageId = metadata?.package_id;
+    switch (event.event) {
+      case "charge.success":
+        await handleChargeSuccess(supabase, event.data);
+        break;
 
-      if (!orgId || !tokens) {
-        console.error("Missing metadata in webhook:", metadata);
-        return new Response("Missing metadata", { status: 400 });
-      }
+      case "charge.failed":
+        await handleChargeFailed(supabase, event.data);
+        break;
 
-      // Check if already processed (idempotency)
-      const { data: existing } = await supabase
-        .from("token_ledger")
-        .select("id")
-        .eq("request_id", reference)
-        .single();
+      case "refund.processed":
+        await handleRefundProcessed(supabase, event.data);
+        break;
 
-      if (existing) {
-        console.log("Already processed:", reference);
-        return new Response("Already processed", { status: 200 });
-      }
+      case "dispute.create":
+        await handleDisputeCreated(supabase, event.data);
+        break;
 
-      // Credit tokens to org
-      const { data: balance, error: balanceError } = await supabase
-        .from("token_balances")
-        .select("balance")
-        .eq("org_id", orgId)
-        .single();
-
-      if (balanceError) {
-        console.error("Failed to fetch balance:", balanceError);
-        return new Response("Balance fetch failed", { status: 500 });
-      }
-
-      const newBalance = (balance?.balance || 0) + tokens;
-
-      await supabase
-        .from("token_balances")
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-        .eq("org_id", orgId);
-
-      // Record in ledger
-      await supabase.from("token_ledger").insert({
-        org_id: orgId,
-        endpoint: "token-purchase",
-        tokens_burned: -tokens, // Negative = credit
-        remaining_balance: newBalance,
-        outcome: "purchased",
-        action_type: "token_purchase",
-        request_id: reference,
-        metadata: {
-          package_id: packageId,
-          amount_kobo: amount,
-          payment_reference: reference,
-        },
-      });
-
-      // Audit log
-      await supabase.from("audit_logs").insert({
-        org_id: orgId,
-        actor_user_id: userId,
-        action: "token_purchase.completed",
-        entity_type: "token_purchase",
-        metadata: {
-          package_id: packageId,
-          tokens_credited: tokens,
-          amount_kobo: amount,
-          reference,
-          new_balance: newBalance,
-        },
-      });
-
-      console.log(`Credited ${tokens} tokens to org ${orgId}`);
+      default:
+        console.log(`[Webhook] Unhandled event: ${event.event}`);
     }
 
     return new Response("OK", { status: 200 });
   } catch (error) {
     console.error("Webhook error:", error);
     return new Response("Webhook error", { status: 500 });
+  }
+}
+
+// ==============================================
+// charge.success handler
+// ==============================================
+// deno-lint-ignore no-explicit-any
+async function handleChargeSuccess(
+  supabase: any,
+  data: {
+    reference: string;
+    amount: number;
+    metadata?: {
+      org_id?: string;
+      user_id?: string;
+      package_id?: string;
+      credits?: number;
+      price_usd?: number;
+      client_ip?: string;
+    };
+    customer?: { email?: string };
+    paid_at?: string;
+  }
+): Promise<void> {
+  const { reference, metadata, customer, paid_at } = data;
+  
+  if (!metadata?.org_id || !metadata?.credits) {
+    console.error("[Webhook] Missing metadata in charge.success:", reference);
+    return;
+  }
+
+  const orgId = metadata.org_id;
+  const credits = metadata.credits;
+  const userId = metadata.user_id;
+
+  console.log(`[Webhook] Processing charge.success: org=${orgId}, credits=${credits}, ref=${reference}`);
+
+  // Check if already processed (idempotency)
+  const { data: existing } = await supabase
+    .from("token_ledger")
+    .select("id")
+    .eq("request_id", reference)
+    .maybeSingle();
+
+  if (existing) {
+    console.log("[Webhook] Already processed:", reference);
+    return;
+  }
+
+  // Credit tokens to org
+  const { data: balance } = await supabase
+    .from("token_balances")
+    .select("balance")
+    .eq("org_id", orgId)
+    .single();
+
+  const currentBalance = balance?.balance || 0;
+  const newBalance = currentBalance + credits;
+
+  await supabase
+    .from("token_balances")
+    .upsert({
+      org_id: orgId,
+      balance: newBalance,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "org_id" });
+
+  // Record in ledger (credit = negative burn)
+  await supabase.from("token_ledger").insert({
+    org_id: orgId,
+    endpoint: "payment:paystack",
+    tokens_burned: -credits, // Negative = credit
+    remaining_balance: newBalance,
+    outcome: "allowed",
+    request_id: reference,
+    action_type: "credit_purchase",
+    metadata: {
+      payment_reference: reference,
+      package_id: metadata.package_id,
+      price_usd: metadata.price_usd,
+      customer_email: customer?.email,
+      paid_at,
+      client_ip: metadata.client_ip,
+    },
+  });
+
+  // Audit log
+  await supabase.from("audit_logs").insert({
+    org_id: orgId,
+    actor_user_id: userId || null,
+    action: "credits.purchased",
+    entity_type: "token_balance",
+    entity_id: orgId,
+    metadata: {
+      credits_added: credits,
+      new_balance: newBalance,
+      payment_reference: reference,
+      price_usd: metadata.price_usd,
+      package_id: metadata.package_id,
+    },
+  });
+
+  console.log(`[Webhook] Credited ${credits} credits to org ${orgId}`);
+}
+
+// ==============================================
+// charge.failed handler
+// ==============================================
+// deno-lint-ignore no-explicit-any
+async function handleChargeFailed(
+  supabase: any,
+  data: { reference: string; metadata?: { org_id?: string; user_id?: string } }
+): Promise<void> {
+  console.log(`[Webhook] Charge failed: ${data.reference}`);
+  
+  if (data.metadata?.org_id) {
+    await supabase.from("audit_logs").insert({
+      org_id: data.metadata.org_id,
+      actor_user_id: data.metadata.user_id || null,
+      action: "credits.purchase_failed",
+      entity_type: "token_balance",
+      metadata: { payment_reference: data.reference },
+    });
+  }
+}
+
+// ==============================================
+// refund.processed handler
+// ==============================================
+// deno-lint-ignore no-explicit-any
+async function handleRefundProcessed(
+  supabase: any,
+  data: { 
+    reference: string;
+    transaction_reference?: string;
+    metadata?: { org_id?: string; credits?: number };
+  }
+): Promise<void> {
+  console.log(`[Webhook] Refund processed: ${data.reference}`);
+  
+  if (!data.metadata?.org_id || !data.metadata?.credits) {
+    console.log("[Webhook] Refund missing metadata, skipping credit deduction");
+    return;
+  }
+
+  const orgId = data.metadata.org_id;
+  const creditsToDeduct = data.metadata.credits;
+
+  // Get current balance
+  const { data: balance } = await supabase
+    .from("token_balances")
+    .select("balance")
+    .eq("org_id", orgId)
+    .single();
+
+  const currentBalance = balance?.balance || 0;
+  const newBalance = Math.max(0, currentBalance - creditsToDeduct);
+
+  // Update balance
+  await supabase
+    .from("token_balances")
+    .update({ balance: newBalance, updated_at: new Date().toISOString() })
+    .eq("org_id", orgId);
+
+  // Record in ledger
+  await supabase.from("token_ledger").insert({
+    org_id: orgId,
+    endpoint: "refund:paystack",
+    tokens_burned: creditsToDeduct,
+    remaining_balance: newBalance,
+    outcome: "allowed",
+    request_id: data.reference,
+    action_type: "credit_refund",
+    metadata: { original_reference: data.transaction_reference },
+  });
+
+  // Audit log
+  await supabase.from("audit_logs").insert({
+    org_id: orgId,
+    action: "credits.refunded",
+    entity_type: "token_balance",
+    metadata: {
+      credits_refunded: creditsToDeduct,
+      new_balance: newBalance,
+      refund_reference: data.reference,
+    },
+  });
+
+  console.log(`[Webhook] Deducted ${creditsToDeduct} credits for refund`);
+}
+
+// ==============================================
+// dispute.create handler
+// ==============================================
+// deno-lint-ignore no-explicit-any
+async function handleDisputeCreated(
+  supabase: any,
+  data: { 
+    reference: string;
+    transaction_reference?: string;
+    metadata?: { org_id?: string };
+  }
+): Promise<void> {
+  console.log(`[Webhook] Dispute created: ${data.reference}`);
+  
+  if (data.metadata?.org_id) {
+    await supabase.from("audit_logs").insert({
+      org_id: data.metadata.org_id,
+      action: "credits.dispute_created",
+      entity_type: "token_balance",
+      metadata: {
+        dispute_reference: data.reference,
+        transaction_reference: data.transaction_reference,
+        requires_review: true,
+      },
+    });
+
+    // Create risk item for admin review
+    await supabase.from("admin_risk_items").insert({
+      title: `Payment Dispute: ${data.reference}`,
+      description: `Dispute created for transaction ${data.transaction_reference || 'unknown'}. Org: ${data.metadata.org_id}`,
+      severity: "high",
+      status: "open",
+    });
   }
 }
