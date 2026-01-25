@@ -873,6 +873,53 @@ export type Database = {
         }
         Relationships: []
       }
+      licences: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          expires_at: string
+          id: string
+          org_id: string
+          payment_reference: string | null
+          starts_at: string
+          status: string
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          expires_at: string
+          id?: string
+          org_id: string
+          payment_reference?: string | null
+          starts_at?: string
+          status?: string
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          org_id?: string
+          payment_reference?: string | null
+          starts_at?: string
+          status?: string
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_analytics: {
         Row: {
           avg_match_time_hours: number | null
@@ -1140,13 +1187,17 @@ export type Database = {
       }
       matches: {
         Row: {
+          buyer_committed_at: string | null
           buyer_id: string
           buyer_name: string
           buyer_org_id: string | null
           commodity: string
+          counterparty_sighted_at: string | null
           created_at: string
           created_by: string | null
+          declared_value_usd: number | null
           event_chain_hash: string | null
+          finality_tokens_burned: number | null
           hash: string
           id: string
           metadata: Json | null
@@ -1156,21 +1207,28 @@ export type Database = {
           price_currency: string
           quantity_amount: number
           quantity_unit: string
+          seller_committed_at: string | null
           seller_id: string
           seller_name: string
           seller_org_id: string | null
           settled_at: string | null
+          sighting_tokens_burned: number | null
+          state: string
           status: string
           terms: string | null
         }
         Insert: {
+          buyer_committed_at?: string | null
           buyer_id: string
           buyer_name: string
           buyer_org_id?: string | null
           commodity: string
+          counterparty_sighted_at?: string | null
           created_at?: string
           created_by?: string | null
+          declared_value_usd?: number | null
           event_chain_hash?: string | null
+          finality_tokens_burned?: number | null
           hash: string
           id?: string
           metadata?: Json | null
@@ -1180,21 +1238,28 @@ export type Database = {
           price_currency: string
           quantity_amount: number
           quantity_unit: string
+          seller_committed_at?: string | null
           seller_id: string
           seller_name: string
           seller_org_id?: string | null
           settled_at?: string | null
+          sighting_tokens_burned?: number | null
+          state?: string
           status?: string
           terms?: string | null
         }
         Update: {
+          buyer_committed_at?: string | null
           buyer_id?: string
           buyer_name?: string
           buyer_org_id?: string | null
           commodity?: string
+          counterparty_sighted_at?: string | null
           created_at?: string
           created_by?: string | null
+          declared_value_usd?: number | null
           event_chain_hash?: string | null
+          finality_tokens_burned?: number | null
           hash?: string
           id?: string
           metadata?: Json | null
@@ -1204,10 +1269,13 @@ export type Database = {
           price_currency?: string
           quantity_amount?: number
           quantity_unit?: string
+          seller_committed_at?: string | null
           seller_id?: string
           seller_name?: string
           seller_org_id?: string | null
           settled_at?: string | null
+          sighting_tokens_burned?: number | null
+          state?: string
           status?: string
           terms?: string | null
         }
@@ -1671,9 +1739,11 @@ export type Database = {
       }
       token_ledger: {
         Row: {
+          action_type: string | null
           api_key_id: string | null
           created_at: string
           endpoint: string
+          entity_id: string | null
           id: string
           metadata: Json | null
           org_id: string
@@ -1683,9 +1753,11 @@ export type Database = {
           tokens_burned: number
         }
         Insert: {
+          action_type?: string | null
           api_key_id?: string | null
           created_at?: string
           endpoint: string
+          entity_id?: string | null
           id?: string
           metadata?: Json | null
           org_id: string
@@ -1695,9 +1767,11 @@ export type Database = {
           tokens_burned?: number
         }
         Update: {
+          action_type?: string | null
           api_key_id?: string | null
           created_at?: string
           endpoint?: string
+          entity_id?: string | null
           id?: string
           metadata?: Json | null
           org_id?: string

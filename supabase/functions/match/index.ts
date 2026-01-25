@@ -7,13 +7,28 @@ import { matchSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks, notifyCounterpartyIntent } from "../_shared/webhooks.ts";
 import { recordMatchEvent } from "../_shared/match-events.ts";
-import { enforceTokenMetering } from "../_shared/token-metering.ts";
+import { 
+  enforceTokenMetering, 
+  burnTokensForAction, 
+  calculateFinalityBurn,
+  ensureSufficientTokens,
+  ACTION_TOKEN_COSTS 
+} from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
-
+import { enforceLicence } from "../_shared/licence-enforcement.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
+
+// Valid state transitions for transaction state machine
+const VALID_STATE_TRANSITIONS: Record<string, string[]> = {
+  'discovery': ['intent_declared'],
+  'intent_declared': ['counterparty_sighted'],
+  'counterparty_sighted': ['committed'],
+  'committed': ['completed'],
+  'completed': [],
+};
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -307,7 +322,348 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Route: GET /match/:id
+    // ============================================
+    // Route: POST /match/:id/declare-intent
+    // Transitions: discovery → intent_declared
+    // Token Cost: 500 tokens
+    // ============================================
+    if (req.method === "POST" && matchId && action === "declare-intent") {
+      const endpointLabel = "/match/:id/declare-intent";
+      
+      const uuidResult = uuidSchema.safeParse(matchId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
+      console.log(`[${requestId}] POST /match/${matchId}/declare-intent`);
+
+      // Enforce licence for billable action
+      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
+
+      const { data: match, error: fetchError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .maybeSingle();
+
+      if (fetchError) handleDatabaseError(fetchError, requestId);
+      if (!match) {
+        throw new ApiException("NOT_FOUND", "Match not found", 404);
+      }
+
+      if (match.org_id !== authCtx.orgId) {
+        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      }
+
+      // Check current state
+      const currentState = match.state || 'discovery';
+      if (currentState !== 'discovery') {
+        throw new ApiException(
+          "INVALID_STATE", 
+          `Cannot declare intent from state '${currentState}'. Must be in 'discovery' state.`, 
+          400
+        );
+      }
+
+      // Burn tokens for declaring intent
+      await burnTokensForAction(
+        supabase,
+        authCtx.orgId,
+        actorApiKeyId,
+        'declare_intent',
+        requestId,
+        matchId
+      );
+
+      // Update state
+      const { data: updated, error: updateError } = await supabase
+        .from("matches")
+        .update({ state: 'intent_declared' })
+        .eq("id", matchId)
+        .select()
+        .single();
+
+      if (updateError) handleDatabaseError(updateError, requestId);
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        org_id: match.org_id,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: "intent.declared",
+        entity_type: "match",
+        entity_id: matchId,
+        metadata: {
+          request_id: requestId,
+          tokens_burned: ACTION_TOKEN_COSTS.declare_intent,
+          previous_state: currentState,
+          new_state: 'intent_declared',
+        }
+      });
+
+      await recordMatchEvent(
+        supabase, matchId, match.org_id, "intent.declared",
+        { tokensCharged: ACTION_TOKEN_COSTS.declare_intent, state: 'intent_declared' },
+        actorUserId, actorApiKeyId
+      );
+
+      triggerWebhooks(supabase, match.org_id, "intent.declared", {
+        matchId, state: 'intent_declared', tokensCharged: ACTION_TOKEN_COSTS.declare_intent
+      }).catch(err => console.error(`Webhook error:`, err));
+
+      await logApiRequest({
+        supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+        endpoint: endpointLabel, method: "POST", statusCode: 200
+      });
+
+      return new Response(JSON.stringify(updated), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    // ============================================
+    // Route: POST /match/:id/reveal-counterparty
+    // Transitions: intent_declared → counterparty_sighted
+    // Token Cost: 1,500 tokens
+    // ============================================
+    if (req.method === "POST" && matchId && action === "reveal-counterparty") {
+      const endpointLabel = "/match/:id/reveal-counterparty";
+      
+      const uuidResult = uuidSchema.safeParse(matchId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
+      console.log(`[${requestId}] POST /match/${matchId}/reveal-counterparty`);
+
+      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
+
+      const { data: match, error: fetchError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .maybeSingle();
+
+      if (fetchError) handleDatabaseError(fetchError, requestId);
+      if (!match) {
+        throw new ApiException("NOT_FOUND", "Match not found", 404);
+      }
+
+      if (match.org_id !== authCtx.orgId) {
+        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      }
+
+      const currentState = match.state || 'discovery';
+      if (currentState !== 'intent_declared') {
+        throw new ApiException(
+          "INVALID_STATE", 
+          `Cannot reveal counterparty from state '${currentState}'. Must declare intent first.`, 
+          400
+        );
+      }
+
+      // Burn tokens for counterparty sighting
+      await burnTokensForAction(
+        supabase,
+        authCtx.orgId,
+        actorApiKeyId,
+        'counterparty_sighting',
+        requestId,
+        matchId
+      );
+
+      // Update state
+      const { data: updated, error: updateError } = await supabase
+        .from("matches")
+        .update({ 
+          state: 'counterparty_sighted',
+          counterparty_sighted_at: new Date().toISOString(),
+          sighting_tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
+        })
+        .eq("id", matchId)
+        .select()
+        .single();
+
+      if (updateError) handleDatabaseError(updateError, requestId);
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        org_id: match.org_id,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: "counterparty.sighted",
+        entity_type: "match",
+        entity_id: matchId,
+        metadata: {
+          request_id: requestId,
+          tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
+          previous_state: currentState,
+          new_state: 'counterparty_sighted',
+          fields_revealed: ['seller_id', 'seller_name', 'buyer_id', 'buyer_name'],
+        }
+      });
+
+      await recordMatchEvent(
+        supabase, matchId, match.org_id, "counterparty.sighted",
+        { tokensCharged: ACTION_TOKEN_COSTS.counterparty_sighting, state: 'counterparty_sighted' },
+        actorUserId, actorApiKeyId
+      );
+
+      triggerWebhooks(supabase, match.org_id, "counterparty.sighted", {
+        matchId, state: 'counterparty_sighted', tokensCharged: ACTION_TOKEN_COSTS.counterparty_sighting
+      }).catch(err => console.error(`Webhook error:`, err));
+
+      await logApiRequest({
+        supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+        endpoint: endpointLabel, method: "POST", statusCode: 200
+      });
+
+      return new Response(JSON.stringify(updated), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    // ============================================
+    // Route: POST /match/:id/commit
+    // Transitions: counterparty_sighted → committed
+    // Token Cost: 1,000 tokens + Finality Burn (50,000-150,000)
+    // ============================================
+    if (req.method === "POST" && matchId && action === "commit") {
+      const endpointLabel = "/match/:id/commit";
+      
+      const uuidResult = uuidSchema.safeParse(matchId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
+      console.log(`[${requestId}] POST /match/${matchId}/commit`);
+
+      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
+
+      const { data: match, error: fetchError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .maybeSingle();
+
+      if (fetchError) handleDatabaseError(fetchError, requestId);
+      if (!match) {
+        throw new ApiException("NOT_FOUND", "Match not found", 404);
+      }
+
+      if (match.org_id !== authCtx.orgId) {
+        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      }
+
+      const currentState = match.state || 'discovery';
+      if (currentState !== 'counterparty_sighted') {
+        throw new ApiException(
+          "INVALID_STATE", 
+          `Cannot commit from state '${currentState}'. Must reveal counterparty first.`, 
+          400
+        );
+      }
+
+      // Calculate transaction value for finality burn
+      const transactionValueUsd = (match.declared_value_usd || 
+        (match.price_amount * match.quantity_amount)) || 0;
+      const finalityBurn = calculateFinalityBurn(transactionValueUsd);
+      const commitCost = ACTION_TOKEN_COSTS.buyer_commit;
+      const totalCost = commitCost + finalityBurn;
+
+      // Ensure sufficient tokens for full commit cost
+      await ensureSufficientTokens(supabase, authCtx.orgId, totalCost);
+
+      // Burn commit tokens
+      await burnTokensForAction(
+        supabase,
+        authCtx.orgId,
+        actorApiKeyId,
+        'buyer_commit',
+        requestId,
+        matchId
+      );
+
+      // Burn finality tokens
+      await burnTokensForAction(
+        supabase,
+        authCtx.orgId,
+        actorApiKeyId,
+        'buyer_commit', // Using buyer_commit as action type for finality burn
+        requestId,
+        matchId,
+        finalityBurn,
+        { type: 'finality_burn', transactionValue: transactionValueUsd }
+      );
+
+      // Update state
+      const { data: updated, error: updateError } = await supabase
+        .from("matches")
+        .update({ 
+          state: 'committed',
+          buyer_committed_at: new Date().toISOString(),
+          finality_tokens_burned: finalityBurn,
+          declared_value_usd: transactionValueUsd,
+        })
+        .eq("id", matchId)
+        .select()
+        .single();
+
+      if (updateError) handleDatabaseError(updateError, requestId);
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        org_id: match.org_id,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: "transaction.committed",
+        entity_type: "match",
+        entity_id: matchId,
+        metadata: {
+          request_id: requestId,
+          commit_tokens_burned: commitCost,
+          finality_tokens_burned: finalityBurn,
+          total_tokens_burned: totalCost,
+          transaction_value_usd: transactionValueUsd,
+          previous_state: currentState,
+          new_state: 'committed',
+        }
+      });
+
+      await recordMatchEvent(
+        supabase, matchId, match.org_id, "transaction.committed",
+        { 
+          commitCost, 
+          finalityBurn, 
+          totalCost, 
+          transactionValueUsd,
+          state: 'committed' 
+        },
+        actorUserId, actorApiKeyId
+      );
+
+      triggerWebhooks(supabase, match.org_id, "transaction.committed", {
+        matchId, 
+        state: 'committed', 
+        commitTokens: commitCost,
+        finalityTokens: finalityBurn,
+        transactionValueUsd,
+      }).catch(err => console.error(`Webhook error:`, err));
+
+      await logApiRequest({
+        supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+        endpoint: endpointLabel, method: "POST", statusCode: 200
+      });
+
+      return new Response(JSON.stringify(updated), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+
     if (req.method === "GET" && matchId && !action) {
       // Validate matchId is a valid UUID
       const uuidResult = uuidSchema.safeParse(matchId);
