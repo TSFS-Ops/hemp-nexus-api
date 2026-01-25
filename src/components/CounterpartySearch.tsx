@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { CheckCircle, Info } from "lucide-react";
+import { CheckCircle, Info, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
@@ -115,6 +116,7 @@ interface CounterpartySearchProps {
 
 export default function CounterpartySearch({ isDemoMode: propDemoMode }: CounterpartySearchProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -122,6 +124,9 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   const [parsedQuery, setParsedQuery] = useState<ParsedQuery | null>(null);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [showDemoConfirm, setShowDemoConfirm] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
+  const [acceptedInvites, setAcceptedInvites] = useState<string[]>([]);
 
   // Demo mode is active if explicitly set via props OR if user is not authenticated
   const isDemoMode = propDemoMode ?? !isAuthenticated;
@@ -207,6 +212,79 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     });
   };
 
+  // Check for accepted invites when results change
+  useEffect(() => {
+    const checkAcceptedInvites = async () => {
+      if (isDemoMode || results.length === 0) return;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const { data: invites } = await supabase.functions.invoke("invites", {
+          body: { type: "sent" }
+        });
+
+        if (invites?.items) {
+          const accepted = invites.items
+            .filter((inv: any) => inv.status === "accepted")
+            .map((inv: any) => inv.selected_result_id);
+          setAcceptedInvites(accepted);
+        }
+      } catch (error) {
+        console.error("Failed to check invites:", error);
+      }
+    };
+
+    checkAcceptedInvites();
+  }, [results, isDemoMode]);
+
+  const handleInvite = async () => {
+    if (selectedResults.size === 0) {
+      toast.error("Please select at least one counterparty");
+      return;
+    }
+
+    if (isDemoMode) {
+      toast.info("Sign in to invite counterparties");
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to invite counterparties");
+        return;
+      }
+
+      // Create invite for each selected result
+      for (const resultId of Array.from(selectedResults)) {
+        const selectedResult = results.find(r => r.id === resultId);
+        if (!selectedResult) continue;
+
+        const { error } = await supabase.functions.invoke("invites", {
+          body: {
+            selected_result_id: resultId,
+            selected_result_data: selectedResult,
+            search_query: query,
+            search_results: results,
+          }
+        });
+
+        if (error) throw error;
+      }
+
+      toast.success(`Invited ${selectedResults.size} counterpart${selectedResults.size > 1 ? "ies" : "y"}`);
+      setSelectedResults(new Set());
+    } catch (error) {
+      console.error("Invite error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to send invite");
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   const handleConfirmIntent = async () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one counterparty");
@@ -219,9 +297,101 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       return;
     }
     
-    // Real confirmation for authenticated users
-    toast.success(`Selected ${selectedResults.size} counterparties for intent confirmation`);
-    // TODO: Navigate to match creation flow
+    // Check if any selected result has an accepted invite
+    const hasAcceptedInvite = Array.from(selectedResults).some(id => acceptedInvites.includes(id));
+    if (!hasAcceptedInvite) {
+      toast.error("Please invite counterparties first. Confirm Intent is available after they accept.");
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to confirm intent");
+        return;
+      }
+
+      // Get user's profile for org info
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("org_id, full_name")
+        .eq("id", session.user.id)
+        .single();
+
+      if (!profile) {
+        toast.error("Profile not found");
+        return;
+      }
+
+      // Get org name
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", profile.org_id)
+        .single();
+
+      // Create match for first selected result with accepted invite
+      const selectedResultId = Array.from(selectedResults).find(id => acceptedInvites.includes(id));
+      const selectedResult = results.find(r => r.id === selectedResultId);
+      
+      if (!selectedResult) {
+        toast.error("No valid counterparty selected");
+        return;
+      }
+
+      // Create match via edge function
+      const { data: matchData, error: matchError } = await supabase.functions.invoke("match", {
+        body: {
+          buyer: { 
+            id: profile.org_id, 
+            name: org?.name || profile.full_name || "Your Organisation" 
+          },
+          seller: { 
+            id: selectedResult.id, 
+            name: selectedResult.title 
+          },
+          commodity: parsedQuery?.product || query,
+          quantity: { amount: 1, unit: "lot" },
+          price: { amount: 0, currency: "USD" },
+          terms: "Intent confirmation only - not a binding agreement",
+          metadata: { 
+            searchQuery: query, 
+            parsedQuery,
+            source: selectedResult.source,
+            coherenceScore: selectedResult.coherence?.score
+          }
+        }
+      });
+
+      if (matchError) throw matchError;
+
+      const matchId = matchData?.id;
+      if (!matchId) {
+        throw new Error("Match ID not returned");
+      }
+
+      // Confirm intent on the match (settle)
+      const settleResponse = await supabase.functions.invoke("match", {
+        body: { matchId, action: "settle" }
+      });
+
+      if (settleResponse.error) throw settleResponse.error;
+
+      toast.success("Intent confirmed. Proof generated.", {
+        action: {
+          label: "Open Proof",
+          onClick: () => navigate(`/dashboard/matches/${matchId}`)
+        }
+      });
+      
+      navigate(`/dashboard/matches/${matchId}`);
+    } catch (error) {
+      console.error("Confirm intent error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to confirm intent");
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   // Show loading while checking auth status
@@ -305,20 +475,46 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         {/* Results */}
         {!isSearching && results.length > 0 && (
           <div className="space-y-3 sm:space-y-4">
-            {/* Results header with selection action */}
-            <div className="flex items-center justify-between gap-2">
+            {/* Results header with selection actions */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-semibold text-sm sm:text-base">
                 {results.length} {isDemoMode ? "Example" : ""} Counterparties
               </h3>
               {selectedResults.size > 0 && (
-                <Button 
-                  onClick={handleConfirmIntent} 
-                  size="sm" 
-                  className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
-                >
-                  <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
-                  Confirm ({selectedResults.size})
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* Invite button - always available */}
+                  <Button 
+                    onClick={handleInvite}
+                    disabled={isInviting}
+                    variant="outline"
+                    size="sm" 
+                    className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
+                  >
+                    {isInviting ? (
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
+                    )}
+                    Invite ({selectedResults.size})
+                  </Button>
+                  
+                  {/* Confirm Intent - only if any selected has accepted invite */}
+                  {Array.from(selectedResults).some(id => acceptedInvites.includes(id)) && (
+                    <Button 
+                      onClick={handleConfirmIntent}
+                      disabled={isConfirming}
+                      size="sm" 
+                      className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
+                    >
+                      {isConfirming ? (
+                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
+                      )}
+                      Confirm Intent
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
 

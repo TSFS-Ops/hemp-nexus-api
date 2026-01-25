@@ -1,4 +1,4 @@
-import { Key, Code, FileText, Activity, BookOpen, Handshake, BarChart3, Package, Search, Lock, LogIn, Database, User, Coins, Settings, HelpCircle } from "lucide-react";
+import { Key, Code, FileText, Activity, BookOpen, Handshake, BarChart3, Package, Search, Lock, LogIn, Database, User, Coins, Settings, HelpCircle, Mail } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -41,6 +41,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
 
   const dataItems = [
     { id: "search", title: "Search", icon: Search },
+    { id: "invites", title: "Invites", icon: Mail, requiresAuth: true },
     { id: "matches", title: "Evidence Packs", icon: Handshake, requiresAuth: true },
     { id: "audit-logs", title: "Logs", icon: Activity, requiresAuth: true },
   ];

@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.wad]
 verify_jwt = false
+
+[functions.invites]
+verify_jwt = false
