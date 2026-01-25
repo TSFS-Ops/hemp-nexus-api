@@ -170,19 +170,19 @@ export function MatchTimeline({ matchId }: MatchTimelineProps) {
                   )}
                 </div>
                 <div className="flex-1 pb-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div>
-                      <h4 className="font-medium">{getEventLabel(event.event_type)}</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h4 className="font-medium text-sm sm:text-base">{getEventLabel(event.event_type)}</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {format(new Date(event.created_at), "MMM dd, yyyy HH:mm:ss")}
                       </p>
                     </div>
-                    <Badge variant="outline" className="font-mono text-xs">
+                    <Badge variant="outline" className="font-mono text-xs w-fit">
                       {event.payload_hash.substring(0, 8)}...
                     </Badge>
                   </div>
-                  <div className="mt-2 text-sm bg-muted p-3 rounded-lg">
-                    <pre className="text-xs overflow-x-auto">
+                  <div className="mt-2 text-sm bg-muted p-2 sm:p-3 rounded-lg overflow-hidden">
+                    <pre className="text-[10px] sm:text-xs overflow-x-auto max-h-32 sm:max-h-48">
                       {JSON.stringify(event.event_data, null, 2)}
                     </pre>
                   </div>

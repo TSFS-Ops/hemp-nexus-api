@@ -507,8 +507,8 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Step indicators */}
-        <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
+        {/* Step indicators - horizontal scroll on mobile, flex on desktop */}
+        <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2 -mx-2 px-2 lg:justify-between lg:gap-0 lg:mx-0 lg:px-0">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
             const isActive = index === activeStep;
@@ -520,7 +520,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
               <button
                 key={step.id}
                 onClick={() => setActiveStep(index)}
-                className={`flex flex-col items-center gap-1 px-2 py-1 rounded transition-colors min-w-[80px] ${
+                className={`flex flex-col items-center gap-1 px-2 py-1 rounded transition-colors min-w-[70px] flex-shrink-0 lg:min-w-[80px] lg:flex-shrink ${
                   isActive 
                     ? "bg-primary/10 text-primary" 
                     : isCompleted
@@ -528,17 +528,17 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <div className={`p-2 rounded-full ${
+                <div className={`p-1.5 lg:p-2 rounded-full ${
                   isActive ? "bg-primary text-primary-foreground" : 
                   isCompleted ? "bg-green-100 text-green-600" : "bg-muted"
                 }`}>
                   {isCompleted && !isActive ? (
-                    <Check className="h-4 w-4" />
+                    <Check className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                   ) : (
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                   )}
                 </div>
-                <span className="text-xs font-medium whitespace-nowrap">{step.label}</span>
+                <span className="text-[10px] lg:text-xs font-medium whitespace-nowrap">{step.label}</span>
               </button>
             );
           })}

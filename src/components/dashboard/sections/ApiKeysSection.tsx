@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Copy, Loader2, Key, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
@@ -45,7 +45,6 @@ const availableScopes = [
 
 export function ApiKeysSection() {
   const { session } = useAuth();
-  const { toast } = useToast();
   const [creating, setCreating] = useState(false);
   const [keyName, setKeyName] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<string[]>(["signals:write", "signals:read"]);
@@ -64,16 +63,12 @@ export function ApiKeysSection() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error fetching API keys",
-        description: error.message,
-      });
+      toast.error("Error fetching API keys", { description: error.message });
       return;
     }
 
     setApiKeys(data || []);
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (session) {
@@ -123,22 +118,15 @@ export function ApiKeysSection() {
       await navigator.clipboard.writeText(data.key);
       await fetchApiKeys();
 
-      toast({
-        title: "API Key created & copied!",
+      toast.success("API Key created & copied!", {
         description: "Your new API key has been copied to your clipboard. This is the only time you'll see it - save it securely now!",
         duration: 8000,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          variant: "destructive",
-          title: "Validation error",
-          description: error.errors[0].message,
-        });
+        toast.error("Validation error", { description: error.errors[0].message });
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error creating API key",
+        toast.error("Error creating API key", {
           description: error instanceof Error ? error.message : "An error occurred",
         });
       }
@@ -150,10 +138,7 @@ export function ApiKeysSection() {
   const handleCopyKey = () => {
     if (newKey) {
       navigator.clipboard.writeText(newKey);
-      toast({
-        title: "Copied!",
-        description: "API key copied to clipboard",
-      });
+      toast.success("Copied!", { description: "API key copied to clipboard" });
     }
   };
 
@@ -175,17 +160,11 @@ export function ApiKeysSection() {
     );
 
     if (!response.ok) {
-      toast({
-        variant: "destructive",
-        title: "Error revoking API key",
-      });
+      toast.error("Error revoking API key");
       return;
     }
 
-    toast({
-      title: "API Key revoked",
-      description: "The API key has been revoked successfully",
-    });
+    toast.success("API Key revoked", { description: "The API key has been revoked successfully" });
 
     await fetchApiKeys();
   };

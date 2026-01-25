@@ -158,10 +158,10 @@ export function AdminOverview() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">API Platform Overview</h2>
-        <p className="text-muted-foreground mt-2">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">API Platform Overview</h2>
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
           Monitor and manage your compliance matching API infrastructure
         </p>
       </div>
@@ -182,11 +182,11 @@ export function AdminOverview() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>Common administrative tasks</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 px-4 sm:px-6">
           <a
             href="/admin/matches"
             className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"

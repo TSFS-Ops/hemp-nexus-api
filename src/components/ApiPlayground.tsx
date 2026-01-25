@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Play, Copy, CheckCircle2, AlertCircle, Loader2, History, Star, Trash2, RotateCcw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import HistoryItem from "./HistoryItem";
 
 interface RequestHistoryItem {
@@ -32,7 +32,6 @@ export default function ApiPlayground() {
   const [responseTime, setResponseTime] = useState<number | null>(null);
   const [requestHistory, setRequestHistory] = useState<RequestHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const { toast } = useToast();
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -84,7 +83,7 @@ export default function ApiPlayground() {
   const copyResponse = () => {
     if (response) {
       navigator.clipboard.writeText(JSON.stringify(response, null, 2));
-      toast({ title: "Copied!", description: "Response copied to clipboard" });
+      toast.success("Copied!", { description: "Response copied to clipboard" });
     }
   };
 
@@ -113,13 +112,13 @@ export default function ApiPlayground() {
 
   const deleteHistoryItem = (id: string) => {
     setRequestHistory((prev) => prev.filter((item) => item.id !== id));
-    toast({ title: "Deleted", description: "Request removed from history" });
+    toast.success("Deleted", { description: "Request removed from history" });
   };
 
   const clearHistory = () => {
     setRequestHistory([]);
     localStorage.removeItem("api-playground-history");
-    toast({ title: "Cleared", description: "Request history cleared" });
+    toast.success("Cleared", { description: "Request history cleared" });
   };
 
   const replayRequest = (item: RequestHistoryItem) => {
@@ -156,16 +155,12 @@ export default function ApiPlayground() {
     }
 
     setShowHistory(false);
-    toast({ title: "Request Loaded", description: "Form populated with previous request" });
+    toast.success("Request Loaded", { description: "Form populated with previous request" });
   };
 
   const executeRequest = async (endpoint: string, method: string, body?: any) => {
     if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your API key to test endpoints",
-        variant: "destructive",
-      });
+      toast.error("API Key Required", { description: "Please enter your API key to test endpoints" });
       return;
     }
 
@@ -203,11 +198,7 @@ export default function ApiPlayground() {
       addToHistory(endpoint, method, body, res.status, responseTimeMs);
 
       if (!res.ok) {
-        toast({
-          title: "Request Failed",
-          description: `${res.status}: ${data.error || res.statusText}`,
-          variant: "destructive",
-        });
+        toast.error("Request Failed", { description: `${res.status}: ${data.error || res.statusText}` });
       }
     } catch (error: any) {
       setResponse({
@@ -216,11 +207,7 @@ export default function ApiPlayground() {
         body: { error: error.message },
       });
       addToHistory(endpoint, method, body, 0);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message });
     } finally {
       setLoading(false);
     }

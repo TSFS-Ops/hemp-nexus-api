@@ -262,30 +262,31 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           <Progress value={progress} className="h-2" />
         </div>
 
-        {/* Step Indicators */}
-        <div className="flex items-center justify-between">
+        {/* Step Indicators - scrollable on mobile, flex on desktop */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 lg:justify-between lg:gap-0 lg:mx-0 lg:px-0 lg:overflow-visible">
           {steps.map((step, index) => {
             const Icon = step.icon;
             const isActive = currentStep === step.id;
             const isCompleted = step.completed;
             
             return (
-              <div key={step.id} className="flex flex-col items-center flex-1">
+              <div key={step.id} className="flex flex-col items-center flex-shrink-0 min-w-[60px] lg:flex-1 lg:min-w-0 relative">
                 <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center
+                  w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center
                   ${isCompleted ? 'bg-green-500 text-white' : 
                     isActive ? 'bg-primary text-primary-foreground' : 
                     'bg-muted text-muted-foreground'}
                   transition-colors
                 `}>
-                  {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                  {isCompleted ? <CheckCircle2 className="h-4 w-4 lg:h-5 lg:w-5" /> : <Icon className="h-4 w-4 lg:h-5 lg:w-5" />}
                 </div>
-                <span className={`text-xs mt-1 text-center ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
+                <span className={`text-[10px] lg:text-xs mt-1 text-center whitespace-nowrap ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
                   {step.title}
                 </span>
+                {/* Connector line - only visible on desktop */}
                 {index < steps.length - 1 && (
-                  <div className="absolute top-5 w-full h-0.5 bg-muted -z-10" 
-                       style={{ left: '50%', width: 'calc(100% / 4)' }} />
+                  <div className="hidden lg:block absolute top-4 lg:top-5 h-0.5 bg-muted -z-10" 
+                       style={{ left: '60%', width: '80%' }} />
                 )}
               </div>
             );
