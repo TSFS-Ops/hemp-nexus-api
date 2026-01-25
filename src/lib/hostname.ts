@@ -100,7 +100,9 @@ export const CONSOLE_ONLY_ROUTES = [
   '/admin',
   '/activity',
   '/analytics',
-  '/marketplace'
+  '/marketplace',
+  '/invites',
+  '/billing'
 ];
 
 /**
