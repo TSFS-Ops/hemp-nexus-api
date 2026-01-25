@@ -18,6 +18,7 @@ import Marketplace from "@/pages/Marketplace";
 import Analytics from "@/pages/Analytics";
 import Docs from "@/pages/Docs";
 import MyActivity from "@/pages/MyActivity";
+import Invites from "@/pages/Invites";
 
 /**
  * Root element that renders based on host type:
@@ -52,6 +53,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
                 <Route path="/activity" element={<MyActivity />} />
+                <Route path="/invites" element={<Invites />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/docs" element={<Docs />} />
