@@ -1,442 +1,418 @@
 
-# Implementation Plan: Fix Search → Confirm Intent Pipeline End-to-End
+# Implementation Plan: P-2 Completion & API Price List Enforcement
 
 ## Executive Summary
-This plan addresses 4 major issues in the Compliance Matching API:
-1. **Search → Confirm Intent pipeline is broken** - CounterpartySearch has a TODO and doesn't create matches
-2. **Console Logs shows wrong data** - LogsSection reads from `api_request_logs` (technical) instead of `audit_logs` (business events)
-3. **Admin visibility is incomplete** - Admin can only see technical request logs, not business audit events
-4. **Invite flow is missing** - No counterparty accept/decline gate before Confirm Intent
+
+Based on the two documents provided:
+1. **API_Price_List.pdf** - Unified Commercial Pricing Framework (token-based monetisation)
+2. **P-2_Final_Close-Out_Work_Program.pdf** - Work Authorisation for P-2 Completion
+
+This plan addresses the **8 requirements for P-2 completion** (p.10 of Work Program):
+1. Discovery is free and anonymised ✅ DONE
+2. Intent matching is token-gated ✅ DONE  
+3. Counterparty sighting is explicit, paid, and logged ⚠️ PARTIAL
+4. COMMIT + WaD are enforced and blocking ⚠️ PARTIAL
+5. Transaction finality burns tokens automatically ❌ NOT DONE
+6. Payment enablement for token purchase is live ❌ NOT DONE
+7. Pricing is enforced in code ⚠️ PARTIAL
+8. Hemp is separated by URL ✅ N/A (excluded from P-2)
 
 ---
 
-## Part 1: Fix Search → Confirm Intent Pipeline
+## Current State Analysis
 
-### Current State
-- `src/components/CounterpartySearch.tsx:222-224` has a TODO comment: "Navigate to match creation flow"
-- When user clicks "Confirm Intent", it only shows a toast message but doesn't:
-  - Create a match record
-  - Confirm intent on that match
-  - Generate evidence pack
-  - Navigate to proof page
+### What's DONE
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| Token metering infrastructure | ✅ | `token-metering.ts` with `burnTokens()` |
+| Token balance enforcement | ✅ | `enforceTokenMetering()` returns 402 if insufficient |
+| Token ledger (append-only) | ✅ | `token_ledger` table with RLS |
+| Discovery (free search) | ✅ | `/search` endpoint works without token gating |
+| Intent confirmation flow | ✅ | `CounterpartySearch.tsx` + `/match` edge function |
+| WaD module (5-step sealing) | ✅ | `WadStepper.tsx` + `wad` edge function |
+| Evidence pack generation | ✅ | `evidence-pack` edge function |
+| Invite/accept/decline gate | ✅ | `invites` table + edge function |
 
-### Implementation
-
-#### 1.1 Update CounterpartySearch.tsx to create match + confirm intent
-
-**File: `src/components/CounterpartySearch.tsx`**
-
-Changes:
-- Import `useNavigate` from react-router-dom
-- Add `isConfirming` state for loading indicator
-- Update `handleConfirmIntent` to:
-  1. Get authenticated session
-  2. For each selected counterparty, call `/match` endpoint to create match
-  3. Then call `/match/:id/settle` endpoint to confirm intent
-  4. Navigate to match details page with success toast
-- Demo mode continues to show demo dialog only (no DB writes)
-
-Key logic:
-```typescript
-const handleConfirmIntent = async () => {
-  if (selectedResults.size === 0) { toast.error(...); return; }
-  if (isDemoMode) { setShowDemoConfirm(true); return; }
-  
-  setIsConfirming(true);
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Please sign in");
-    
-    // Get user's org profile for buyer info
-    const { data: profile } = await supabase.from("profiles")
-      .select("org_id").single();
-    
-    // Create match for first selected result (or batch)
-    const selectedResult = results.find(r => selectedResults.has(r.id));
-    
-    // Create match via edge function
-    const matchResponse = await supabase.functions.invoke("match", {
-      body: {
-        buyer: { id: profile.org_id, name: "Your Organization" },
-        seller: { id: selectedResult.id, name: selectedResult.title },
-        commodity: parsedQuery?.product || query,
-        quantity: { amount: 1, unit: "lot" },
-        price: { amount: 0, currency: "USD" },
-        terms: "Intent confirmation only - not a binding agreement",
-        metadata: { searchQuery: query, parsedQuery }
-      }
-    });
-    
-    // Confirm intent on the match
-    const settleResponse = await fetch(
-      `${SUPABASE_URL}/functions/v1/match/${matchResponse.data.id}/settle`,
-      { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` }}
-    );
-    
-    toast.success("Intent confirmed. Proof generated.");
-    navigate(`/dashboard/matches/${matchResponse.data.id}`);
-  } catch (error) {
-    toast.error(error.message);
-  } finally {
-    setIsConfirming(false);
-  }
-};
-```
-
-#### 1.2 Add success confirmation with "Open Proof" button
-
-After successful confirmation, the user is navigated to `/dashboard/matches/:matchId` which already shows:
-- Match details with status CONFIRMED
-- Timeline tab with hash-chained events
-- Documents tab
-- WaD tab for evidence bundle
-
-The existing `MatchDetails.tsx` page already has the evidence pack download in `MatchTimeline.tsx`.
+### What's NOT DONE
+| Feature | Status | Required By |
+|---------|--------|-------------|
+| Annual licence table + enforcement | ❌ | Work Program §2 |
+| Counterparty sighting (paid reveal) | ❌ | Work Program §5-6 |
+| Transaction state machine | ❌ | Work Program §4 |
+| Value-based finality token burn | ❌ | Work Program §9 |
+| Stripe payment integration | ❌ | Work Program §12 |
+| Action-specific token costs | ❌ | Price List §2-6 |
 
 ---
 
-## Part 2: Fix Console "Logs" Tab to Show Business Events
+## Implementation Plan
 
-### Current State
-- `src/components/dashboard/sections/LogsSection.tsx` reads from `api_request_logs` table
-- This shows technical HTTP request logs (endpoints, status codes, latency)
-- Users cannot see business events like `intent.confirmed`, `match.created`
+### Part 1: Annual Licence Enforcement (Access Gate)
 
-### Implementation
+**Requirement** (Work Program p.2):
+> An active paid annual licence is required [for all chargeable actions]. Licence validity checked before any action.
 
-#### 2.1 Create dual-view Logs section with tabs
+**Price List** (p.9):
+- Professional: USD $5,000/year
+- Corporate: USD $15,000/year
+- Institutional: USD $50,000/year
 
-**File: `src/components/dashboard/sections/LogsSection.tsx`**
+**Implementation**:
 
-Changes:
-- Add `Tabs` component with two tabs:
-  - "Activity / Proof Events" - fetches from `/audit-logs` edge function
-  - "API Request Logs" - keeps existing `api_request_logs` query
-- For Activity tab:
-  - Call `/audit-logs` endpoint using JWT auth
-  - Display `intent.confirmed`, `match.created`, `search.completed` events
-  - Add "Open Proof" link for `intent.confirmed` entries pointing to `/dashboard/matches/:entityId`
-  - Show hash from metadata for proof verification
-
-Key structure:
-```typescript
-<Tabs defaultValue="activity">
-  <TabsList>
-    <TabsTrigger value="activity">Activity / Proof Events</TabsTrigger>
-    <TabsTrigger value="requests">API Request Logs</TabsTrigger>
-  </TabsList>
-  
-  <TabsContent value="activity">
-    {/* Fetch from /audit-logs edge function */}
-    {activityLogs.map(log => (
-      <TableRow>
-        <TableCell>{log.action}</TableCell>
-        <TableCell>{log.entity_id}</TableCell>
-        <TableCell>{log.metadata?.hash?.substring(0,8)}...</TableCell>
-        <TableCell>
-          {log.action === "intent.confirmed" && (
-            <Link to={`/dashboard/matches/${log.entity_id}`}>Open Proof</Link>
-          )}
-        </TableCell>
-      </TableRow>
-    ))}
-  </TabsContent>
-  
-  <TabsContent value="requests">
-    {/* Existing api_request_logs table */}
-  </TabsContent>
-</Tabs>
-```
-
-#### 2.2 Fetch activity logs via edge function
-
-Use the existing `/audit-logs` edge function which:
-- Authenticates via JWT (no API key needed for console users)
-- Returns org-scoped audit logs
-- Already supports filtering by action, entity_type, date range
-
-```typescript
-const fetchActivityLogs = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/audit-logs?limit=50`, {
-    headers: { Authorization: `Bearer ${session.access_token}` }
-  });
-  const data = await response.json();
-  setActivityLogs(data.items);
-};
-```
-
----
-
-## Part 3: Fix Admin Visibility for Intent Confirmations
-
-### Current State
-- `src/components/admin/GlobalApiLogs.tsx` reads from `api_request_logs`
-- `src/components/admin/AdminAuditLogs.tsx` reads from `audit_logs` directly via RLS
-- However, AdminAuditLogs is a separate route (`/admin/audit`), not prominently shown
-
-### Implementation
-
-#### 3.1 Add "Business Events" tab to GlobalApiLogs
-
-**File: `src/components/admin/GlobalApiLogs.tsx`**
-
-Changes:
-- Add tabs similar to console LogsSection:
-  - "API Requests" - existing `api_request_logs` query
-  - "Business Events (Audit)" - queries `audit_logs` table (admin has RLS access)
-- For Business Events tab:
-  - Query `audit_logs` ordered by `created_at` desc
-  - Filter by action (`intent.confirmed`, `match.created`, etc.)
-  - Show "Open Proof" link for each intent confirmation
-  - Include org name via join with `organizations` table
-
-Key query for admin:
-```typescript
-const { data: businessLogs } = await supabase
-  .from("audit_logs")
-  .select(`
-    *,
-    organizations:org_id (name)
-  `)
-  .order("created_at", { ascending: false })
-  .limit(100);
-```
-
-Admin has RLS access via:
+1. **Create `licences` table**:
 ```sql
-Policy Name: Admins can view all audit logs
-Command: SELECT
-Using Expression: has_role(auth.uid(), 'admin'::app_role)
-```
-
----
-
-## Part 4: Counterparty Invite Flow (Simplified MVP)
-
-### Current State
-- No `invites` table exists
-- `notifyCounterpartyIntent` in `webhooks.ts` sends notifications AFTER intent is confirmed
-- No gate requiring counterparty acceptance before confirming intent
-
-### Implementation
-
-#### 4.1 Create `invites` table
-
-**Database Migration:**
-```sql
-CREATE TABLE public.invites (
+CREATE TABLE public.licences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  tier TEXT NOT NULL CHECK (tier IN ('professional', 'corporate', 'institutional', 'sovereign')),
+  starts_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  payment_reference TEXT,
+  amount_usd NUMERIC NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  from_user_id UUID REFERENCES auth.users(id),
-  from_org_id UUID NOT NULL REFERENCES organizations(id),
-  to_email TEXT,
-  to_org_id UUID REFERENCES organizations(id),
-  search_query TEXT,
-  search_results JSONB DEFAULT '[]',
-  selected_result_id TEXT NOT NULL,
-  selected_result_data JSONB NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
-  accepted_at TIMESTAMPTZ,
-  declined_at TIMESTAMPTZ,
-  declined_reason TEXT,
-  match_id UUID REFERENCES matches(id),
-  expires_at TIMESTAMPTZ DEFAULT (now() + INTERVAL '7 days')
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- RLS Policies
-ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
-
--- Sender can view/create invites from their org
-CREATE POLICY "Users can view their org's sent invites" ON invites
-  FOR SELECT USING (from_org_id IN (
-    SELECT org_id FROM profiles WHERE id = auth.uid()
-  ));
-
-CREATE POLICY "Users can create invites for their org" ON invites
-  FOR INSERT WITH CHECK (from_org_id IN (
-    SELECT org_id FROM profiles WHERE id = auth.uid()
-  ));
-
--- Recipients can view/update invites sent to them
-CREATE POLICY "Recipients can view invites sent to them" ON invites
-  FOR SELECT USING (
-    to_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-    OR to_email = (SELECT email FROM auth.users WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Recipients can accept/decline invites" ON invites
-  FOR UPDATE USING (
-    to_org_id IN (SELECT org_id FROM profiles WHERE id = auth.uid())
-    OR to_email = (SELECT email FROM auth.users WHERE id = auth.uid())
-  );
-
--- Admin can view all
-CREATE POLICY "Admins can view all invites" ON invites
-  FOR ALL USING (has_role(auth.uid(), 'admin'::app_role));
+-- RLS: Org can view their own, admin can manage all
 ```
 
-#### 4.2 Create Invite Edge Function
+2. **Create `checkLicenceValidity()` function**:
+- Add to `_shared/licence-enforcement.ts`
+- Check if org has active licence before any billable action
+- Return `403 LICENCE_REQUIRED` if no valid licence
 
-**File: `supabase/functions/invites/index.ts`**
+3. **Integrate into edge functions**:
+- Add `enforceLicence(supabase, orgId)` call before `enforceTokenMetering()` in all billable endpoints
 
-Endpoints:
-- `POST /invites` - Create invite (from search results)
-- `GET /invites` - List invites (sent + received)
-- `POST /invites/:id/accept` - Accept invite
-- `POST /invites/:id/decline` - Decline invite
+---
 
-Flow:
-1. User searches and selects counterparties
-2. User clicks "Invite" → creates invite record with status=pending
-3. Counterparty sees invite in their inbox
-4. Counterparty clicks Accept/Decline
-5. Only after acceptance can the inviter confirm intent
+### Part 2: Transaction State Machine
 
-#### 4.3 Update CounterpartySearch UI
+**Requirement** (Work Program p.3-7):
+States: `DISCOVERY` → `INTENT_DECLARED` → `COUNTERPARTY_SIGHTED` → `COMMITTED`
 
-Add two-button flow:
-- "Invite Selected" - Creates invite, shows confirmation
-- "Confirm Intent" - Only enabled if there's an accepted invite for this search
+**Implementation**:
 
+1. **Add `state` column to `matches` table**:
+```sql
+ALTER TABLE matches ADD COLUMN state TEXT NOT NULL DEFAULT 'discovery'
+  CHECK (state IN ('discovery', 'intent_declared', 'counterparty_sighted', 'committed', 'completed'));
+```
+
+2. **Update match edge function** to enforce state transitions:
+- `POST /match` → Creates match in `discovery` state (FREE)
+- `POST /match/:id/declare-intent` → Transitions to `intent_declared` (500 tokens)
+- `POST /match/:id/reveal-counterparty` → Transitions to `counterparty_sighted` (1,500 tokens)
+- `POST /match/:id/commit` → Transitions to `committed` (1,000 tokens per party + finality burn)
+
+3. **Block invalid transitions**:
+- Cannot `reveal-counterparty` without being in `intent_declared`
+- Cannot `commit` without being in `counterparty_sighted`
+
+---
+
+### Part 3: Counterparty Sighting (Paid Reveal)
+
+**Requirement** (Work Program p.4-6):
+> Counterparty sighting is a standalone monetisation event. Revealing counterparty-identifying information must trigger an immediate token deduction.
+
+**Token Cost**: 1,500 tokens per counterparty per transaction
+
+**Implementation**:
+
+1. **Add `counterparty_sighted_at` and `sighting_tokens_burned` to matches table**
+
+2. **Create "Reveal Counterparty" endpoint** (`POST /match/:id/reveal-counterparty`):
 ```typescript
-<Button onClick={handleInvite} disabled={selectedResults.size === 0}>
-  <Send className="h-4 w-4 mr-2" />
-  Invite ({selectedResults.size})
-</Button>
-
-{hasAcceptedInvite && (
-  <Button onClick={handleConfirmIntent}>
-    <CheckCircle className="h-4 w-4 mr-2" />
-    Confirm Intent
-  </Button>
-)}
+// In match/index.ts
+if (action === "reveal-counterparty") {
+  // 1. Check licence validity
+  await enforceLicence(supabase, authCtx.orgId);
+  
+  // 2. Check state is INTENT_DECLARED
+  if (match.state !== "intent_declared") {
+    throw new ApiException("INVALID_STATE", "Must declare intent before revealing counterparty", 400);
+  }
+  
+  // 3. Burn 1,500 tokens
+  await burnTokensForAction(supabase, orgId, "counterparty_sighting", 1500, matchId);
+  
+  // 4. Update state
+  await supabase.from("matches")
+    .update({ 
+      state: "counterparty_sighted", 
+      counterparty_sighted_at: new Date().toISOString(),
+      sighting_tokens_burned: 1500
+    })
+    .eq("id", matchId);
+  
+  // 5. Log event
+  await supabase.from("audit_logs").insert({
+    action: "counterparty.sighted",
+    entity_type: "match",
+    entity_id: matchId,
+    metadata: { tokens_burned: 1500, fields_revealed: [...] }
+  });
+  
+  // 6. Return unredacted counterparty data
+  return { ...match, seller_name: match.seller_name, seller_id: match.seller_id };
+}
 ```
 
-#### 4.4 Create Invites Inbox Page
-
-**File: `src/pages/Invites.tsx`**
-
-Simple page showing:
-- Received invites (pending) with Accept/Decline buttons
-- Sent invites with status
-- Link to match when invite leads to confirmed intent
-
-#### 4.5 Add to sidebar navigation
-
-**File: `src/components/AppSidebar.tsx`**
-
-Add "Invites" menu item under Data section with notification badge for pending invites.
+3. **Update UI** (`CounterpartySearch.tsx`):
+- Add "Reveal Counterparty" button that costs 1,500 tokens
+- Show masked counterparty info until reveal
+- Display token cost confirmation before reveal
 
 ---
 
-## Files to Create/Modify
+### Part 4: Action-Specific Token Burns
 
-### Create New Files:
-1. `supabase/functions/invites/index.ts` - Invite management endpoints
-2. `src/pages/Invites.tsx` - Invites inbox page
+**Requirement** (Price List p.2-3 & Work Program p.9):
 
-### Modify Existing Files:
-1. `src/components/CounterpartySearch.tsx` - Add match creation + intent confirmation + invite flow
-2. `src/components/dashboard/sections/LogsSection.tsx` - Add Activity/Proof Events tab
-3. `src/components/admin/GlobalApiLogs.tsx` - Add Business Events tab
-4. `src/components/AppSidebar.tsx` - Add Invites menu item
-5. `src/App.tsx` - Add /invites route
-6. `supabase/config.toml` - Register invites function
+| Action | Tokens |
+|--------|--------|
+| Create transaction shell | 500 |
+| "Other / Manual Description" | 250 |
+| Document upload | 50 per document |
+| Counterparty reveal (sighting) | 1,500 |
+| Buyer COMMIT | 1,000 |
+| Seller COMMIT | 1,000 |
 
-### Database Migration:
-1. Create `invites` table with RLS policies
+**Implementation**:
+
+1. **Create `burnTokensForAction()` helper**:
+```typescript
+// In _shared/token-metering.ts
+const ACTION_TOKEN_COSTS = {
+  'transaction_shell': 500,
+  'manual_description': 250,
+  'document_upload': 50,
+  'counterparty_sighting': 1500,
+  'buyer_commit': 1000,
+  'seller_commit': 1000,
+};
+
+export async function burnTokensForAction(
+  supabase: SupabaseClient,
+  orgId: string,
+  action: keyof typeof ACTION_TOKEN_COSTS,
+  amount?: number,
+  entityId?: string
+): Promise<void> {
+  const tokensToBurn = amount ?? ACTION_TOKEN_COSTS[action];
+  // ... burn logic with specific action tracking
+}
+```
+
+2. **Update each endpoint** to call `burnTokensForAction()` with correct action type
 
 ---
 
-## Acceptance Test Walkthrough
+### Part 5: Transaction Finality Token Burn
 
-### Test 1: Search → Confirm Intent Pipeline
-1. Sign in as James (james@test.com)
-2. Go to Dashboard → Search
-3. Enter "coffee buyers in Kenya"
-4. Wait for results
-5. Select one counterparty
-6. Click "Confirm Intent"
-7. **Expected**: Match created, intent confirmed, navigated to match details page
-8. Verify: Timeline shows `match.created` and `intent.confirmed` events
-9. Verify: Can download evidence pack JSON
+**Requirement** (Work Program p.7):
 
-### Test 2: Console Logs Show Proof Events
-1. After confirming intent (Test 1)
-2. Go to Dashboard → Logs
-3. Click "Activity / Proof Events" tab
-4. **Expected**: See `intent.confirmed` entry with timestamp and hash
-5. Click "Open Proof" link
-6. **Expected**: Navigated to match details page
-7. Refresh page
-8. **Expected**: Same entry still visible
+| Declared Transaction Value | Token Burn |
+|---------------------------|------------|
+| ≤ USD 250k | 50,000 |
+| USD 250k – 1m | 75,000 |
+| USD 1m – 5m | 100,000 |
+| USD 5m+ | 150,000 |
 
-### Test 3: Admin Can See Intent Confirmations
-1. Sign in as Admin
-2. Go to Admin Panel → API Logs
-3. Click "Business Events" tab
-4. **Expected**: See James's `intent.confirmed` entry
-5. Can see org name, timestamp, match ID
-6. Click "View Proof"
-7. **Expected**: Can access match details
+**Implementation**:
 
-### Test 4: Invite Flow (MVP)
-1. Sign in as User A
-2. Search and select counterparty
-3. Click "Invite"
-4. Sign in as User B (counterparty email)
-5. Go to Invites page
-6. See pending invite from User A
-7. Click "Accept"
-8. Sign in as User A
-9. See accepted invite
-10. Click "Confirm Intent"
-11. **Expected**: Match and proof created
+1. **Create `calculateFinalityBurn()` function**:
+```typescript
+function calculateFinalityBurn(transactionValueUsd: number): number {
+  if (transactionValueUsd <= 250000) return 50000;
+  if (transactionValueUsd <= 1000000) return 75000;
+  if (transactionValueUsd <= 5000000) return 100000;
+  return 150000;
+}
+```
+
+2. **Enforce in COMMIT endpoint**:
+```typescript
+if (action === "commit") {
+  // Calculate transaction value from match
+  const valueUsd = match.price_amount * match.quantity_amount;
+  const finalityBurn = calculateFinalityBurn(valueUsd);
+  
+  // Check sufficient balance for COMMIT (1,000) + finality burn
+  const totalRequired = 1000 + finalityBurn;
+  await ensureSufficientTokens(supabase, orgId, totalRequired);
+  
+  // Burn tokens
+  await burnTokensForAction(supabase, orgId, 'buyer_commit', 1000);
+  await burnTokensForAction(supabase, orgId, 'finality_burn', finalityBurn);
+  
+  // Update state
+  await supabase.from("matches").update({ state: "committed" }).eq("id", matchId);
+}
+```
+
+---
+
+### Part 6: Payment Integration (Stripe)
+
+**Requirement** (Work Program p.10):
+> Payment enablement for token purchase is live and operational, including:
+> - an active Izenzo-controlled payment endpoint
+> - automatic crediting of tokens upon successful payment
+> - settlement of token purchase proceeds into an Izenzo-designated operating account
+
+**Implementation**:
+
+1. **Add Stripe secret** via connector (STRIPE_SECRET_KEY)
+
+2. **Create `token-purchase` edge function**:
+```typescript
+// supabase/functions/token-purchase/index.ts
+// POST /token-purchase - Create Stripe checkout session
+// POST /token-purchase/webhook - Handle Stripe webhook for payment success
+
+const TOKEN_PACKAGES = [
+  { tokens: 10000, price_usd: 500 },   // $0.05/token
+  { tokens: 50000, price_usd: 2250 },  // 10% discount
+  { tokens: 100000, price_usd: 4000 }, // 20% discount
+];
+
+// On successful payment:
+// 1. Credit tokens to org's token_balances
+// 2. Record in token_ledger with outcome: "purchased"
+// 3. Send confirmation email
+```
+
+3. **Create "Buy Tokens" UI component**:
+- Display current balance
+- Show package options with pricing
+- "Buy Now" button → redirects to Stripe checkout
+- Return URL shows confirmation
+
+4. **Create `token-purchase-webhook` handler**:
+- Verify Stripe signature
+- Credit tokens to org
+- Record in ledger
+
+---
+
+### Part 7: UI Updates
+
+1. **Token Balance Display** (everywhere):
+- Show current balance in header/sidebar
+- Warning banner when below 6,000 tokens
+- Block UI when below 5,000 tokens
+
+2. **"Buy Tokens" Page** (`/dashboard/billing`):
+- Package selection
+- Stripe checkout integration
+- Purchase history from `token_ledger`
+
+3. **Licence Management** (`/dashboard/licence`):
+- Current licence status
+- Expiry date
+- Upgrade/renew options
+
+4. **Transaction State UI** (MatchDetails.tsx):
+- Visual state indicator (Discovery → Intent → Sighted → Committed)
+- Action buttons appropriate to current state
+- Token cost shown before each action
+
+---
+
+## Database Migrations Required
+
+```sql
+-- 1. Licences table
+CREATE TABLE public.licences (...);
+
+-- 2. Match state machine
+ALTER TABLE matches ADD COLUMN state TEXT DEFAULT 'discovery';
+ALTER TABLE matches ADD COLUMN counterparty_sighted_at TIMESTAMPTZ;
+ALTER TABLE matches ADD COLUMN sighting_tokens_burned INTEGER;
+ALTER TABLE matches ADD COLUMN buyer_committed_at TIMESTAMPTZ;
+ALTER TABLE matches ADD COLUMN seller_committed_at TIMESTAMPTZ;
+ALTER TABLE matches ADD COLUMN finality_tokens_burned INTEGER;
+ALTER TABLE matches ADD COLUMN declared_value_usd NUMERIC;
+
+-- 3. Update token_ledger for action tracking
+ALTER TABLE token_ledger ADD COLUMN action_type TEXT;
+ALTER TABLE token_ledger ADD COLUMN entity_id UUID;
+```
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/_shared/licence-enforcement.ts` | Licence validation logic |
+| `supabase/functions/token-purchase/index.ts` | Stripe checkout + webhook |
+| `src/pages/Billing.tsx` | Token purchase UI |
+| `src/pages/Licence.tsx` | Licence management UI |
+| `src/components/TokenBalanceDisplay.tsx` | Header balance indicator |
+| `src/components/TransactionStateIndicator.tsx` | Visual state machine |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `supabase/functions/match/index.ts` | Add state machine, reveal, commit endpoints |
+| `supabase/functions/_shared/token-metering.ts` | Add action-specific burns |
+| `src/components/CounterpartySearch.tsx` | Add reveal button, show costs |
+| `src/pages/MatchDetails.tsx` | State indicator, action buttons |
+| `src/components/wad/WadStepper.tsx` | Token cost display before seal |
+| `supabase/config.toml` | Register `token-purchase` function |
+
+---
+
+## Implementation Order
+
+| Phase | Deliverables | Priority |
+|-------|--------------|----------|
+| **Phase 1** | Licence table + enforcement | HIGH |
+| **Phase 2** | Transaction state machine | HIGH |
+| **Phase 3** | Counterparty sighting (paid reveal) | HIGH |
+| **Phase 4** | Action-specific token burns | HIGH |
+| **Phase 5** | Finality token burn | HIGH |
+| **Phase 6** | Stripe payment integration | CRITICAL |
+| **Phase 7** | UI updates (balance, states, buy) | MEDIUM |
+
+---
+
+## Acceptance Criteria (from Work Program p.10)
+
+| # | Criterion | Test |
+|---|-----------|------|
+| 1 | Discovery is free and anonymised | Search returns results without token burn |
+| 2 | Intent matching is token-gated | Declaring intent burns 500 tokens |
+| 3 | Counterparty sighting is explicit, paid, logged | Reveal burns 1,500 tokens + audit log |
+| 4 | COMMIT + WaD are enforced and blocking | Cannot seal WaD without COMMIT; COMMIT burns 1,000 tokens |
+| 5 | Transaction finality burns tokens automatically | COMMIT triggers value-based burn (50k-150k) |
+| 6 | Payment enablement is live | Stripe checkout → tokens credited |
+| 7 | Pricing is enforced in code | All costs from Price List are coded |
+| 8 | Hemp is separated by URL | N/A (P-3 scope) |
 
 ---
 
 ## Technical Notes
 
 ### Security Considerations
-- Demo mode NEVER writes to database - only shows simulated UI
-- Invites table has proper RLS - users only see their sent/received invites
-- Audit logs accessed via edge function (JWT auth) or RLS (admin direct query)
-- No SECURITY DEFINER views for user-facing data
+- Stripe webhook must verify signature
+- Token burns are atomic (no partial burns)
+- Licence checks happen server-side only
+- State transitions are irreversible (no rollback)
 
-### Logging Events Written
-All these events are already written by `supabase/functions/match/index.ts`:
-- `match.created` → audit_logs + match_events
-- `intent.confirmed` → audit_logs + match_events
-- `intent.denied` → audit_logs (if eligibility fails)
+### Error Handling
+- `402 Payment Required` - Insufficient tokens
+- `403 Licence Required` - No active licence
+- `400 Invalid State` - Wrong state for action
+- `409 Already Committed` - Idempotent protection
 
-New events for invites:
-- `invite.created` → audit_logs
-- `invite.accepted` → audit_logs
-- `invite.declined` → audit_logs
-
-### Evidence Pack Retrieval
-The existing `supabase/functions/evidence-pack/index.ts` generates complete JSON with:
-- Match details
-- Hash chain verification
-- Document list
-- Timeline events
-- Audit trail
-
----
-
-## Implementation Order
-
-1. **Phase 1** (Critical - fixes broken pipeline):
-   - Update CounterpartySearch.tsx with match creation flow
-   - Update LogsSection.tsx with Activity tab
-
-2. **Phase 2** (Admin visibility):
-   - Update GlobalApiLogs.tsx with Business Events tab
-
-3. **Phase 3** (Invite flow - full SOW compliance):
-   - Create invites table migration
-   - Create invites edge function
-   - Create Invites page
-   - Update CounterpartySearch with invite button
-   - Update sidebar navigation
+### Audit Trail
+All billable actions are logged to:
+- `token_ledger` (token burns with action type)
+- `audit_logs` (business events with entity context)
+- `match_events` (hash-chained timeline)
