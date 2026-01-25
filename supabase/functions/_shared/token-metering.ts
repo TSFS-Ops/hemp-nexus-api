@@ -10,13 +10,43 @@ const NON_BILLABLE_ENDPOINTS = [
   '/auth',
   '/demo',
   '/_shared',
+  '/search', // Discovery is free per Work Program
 ];
 
 // Minimum token balance required to make API calls
 const MINIMUM_TOKEN_BALANCE = 5000;
 
-// Tokens consumed per API call
+// Tokens consumed per generic API call
 const TOKENS_PER_CALL = 1;
+
+// ==============================================
+// ACTION-SPECIFIC TOKEN COSTS (from Price List)
+// ==============================================
+export const ACTION_TOKEN_COSTS = {
+  // Transaction lifecycle
+  'transaction_shell': 500,        // Create transaction shell
+  'manual_description': 250,       // "Other / Manual Description"
+  'document_upload': 50,           // Per document upload
+  'counterparty_sighting': 1500,   // Reveal counterparty identity
+  'buyer_commit': 1000,            // Buyer COMMIT
+  'seller_commit': 1000,           // Seller COMMIT
+  'declare_intent': 500,           // Declare intent (state transition)
+  
+  // Generic/legacy
+  'api_call': 1,                   // Standard API call
+} as const;
+
+export type ActionType = keyof typeof ACTION_TOKEN_COSTS;
+
+// ==============================================
+// FINALITY BURN TIERS (from Work Program p.7)
+// ==============================================
+export function calculateFinalityBurn(transactionValueUsd: number): number {
+  if (transactionValueUsd <= 250000) return 50000;
+  if (transactionValueUsd <= 1000000) return 75000;
+  if (transactionValueUsd <= 5000000) return 100000;
+  return 150000;
+}
 
 // Low balance warning thresholds
 const LOW_BALANCE_THRESHOLDS = [6000, 5500, 5001];
@@ -397,6 +427,170 @@ export async function enforceTokenMetering(
 }
 
 /**
+ * Burn tokens for a specific action with action-type tracking
+ * Used for action-specific pricing (counterparty sighting, commits, etc.)
+ */
+export async function burnTokensForAction(
+  supabase: SupabaseClient,
+  orgId: string,
+  apiKeyId: string | null,
+  actionType: ActionType,
+  requestId: string,
+  entityId?: string,
+  customAmount?: number,
+  metadata?: Record<string, unknown>
+): Promise<TokenBurnResult> {
+  const tokensToBurn = customAmount ?? ACTION_TOKEN_COSTS[actionType];
+  
+  // Fetch current balance
+  const { data: currentBalanceData } = await supabase
+    .from("token_balances")
+    .select("balance")
+    .eq("org_id", orgId)
+    .single();
+  
+  if (!currentBalanceData) {
+    throw new ApiException(
+      "TOKEN_NOT_FOUND",
+      "Token balance not initialized. Contact support.",
+      500
+    );
+  }
+  
+  const previousBalance = currentBalanceData.balance;
+  const newBalance = Math.max(0, previousBalance - tokensToBurn);
+  
+  // Check if sufficient balance for this action
+  if (previousBalance < tokensToBurn + MINIMUM_TOKEN_BALANCE) {
+    throw new ApiException(
+      "INSUFFICIENT_TOKEN_BALANCE",
+      `Insufficient tokens for ${actionType}. Required: ${tokensToBurn}, Available: ${previousBalance - MINIMUM_TOKEN_BALANCE}`,
+      402,
+      {
+        actionType,
+        required: tokensToBurn,
+        available: previousBalance - MINIMUM_TOKEN_BALANCE,
+        minimumReserve: MINIMUM_TOKEN_BALANCE,
+      }
+    );
+  }
+  
+  // Update balance
+  const { error: updateError } = await supabase
+    .from("token_balances")
+    .update({ balance: newBalance })
+    .eq("org_id", orgId);
+  
+  if (updateError) {
+    console.error("Error burning tokens for action:", updateError);
+    throw new ApiException(
+      "TOKEN_BURN_FAILED",
+      "Failed to burn tokens",
+      500
+    );
+  }
+  
+  // Check if we crossed any low balance thresholds
+  await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
+  
+  // Record in ledger with action type
+  const validApiKeyId = apiKeyId && apiKeyId.length > 0 ? apiKeyId : null;
+  const validEntityId = entityId && entityId.length > 0 ? entityId : null;
+  
+  const { data: ledgerEntry, error: ledgerError } = await supabase
+    .from("token_ledger")
+    .insert({
+      org_id: orgId,
+      api_key_id: validApiKeyId,
+      endpoint: `action:${actionType}`,
+      tokens_burned: tokensToBurn,
+      outcome: "allowed",
+      remaining_balance: newBalance,
+      request_id: requestId,
+      action_type: actionType,
+      entity_id: validEntityId,
+      metadata: {
+        ...metadata,
+        action: actionType,
+        tokens_burned: tokensToBurn,
+      },
+    })
+    .select("id")
+    .single();
+  
+  if (ledgerError) {
+    console.error("Error recording token ledger entry:", ledgerError);
+  }
+  
+  console.log(`[Token Metering] Burned ${tokensToBurn} tokens for ${actionType} (org: ${orgId})`);
+  
+  return {
+    success: true,
+    newBalance,
+    ledgerEntryId: ledgerEntry?.id || "",
+  };
+}
+
+/**
+ * Check if org has sufficient tokens for a specific action
+ */
+export async function checkSufficientTokensForAction(
+  supabase: SupabaseClient,
+  orgId: string,
+  actionType: ActionType,
+  customAmount?: number
+): Promise<{ sufficient: boolean; required: number; available: number }> {
+  const required = customAmount ?? ACTION_TOKEN_COSTS[actionType];
+  
+  const { data: balance } = await supabase
+    .from("token_balances")
+    .select("balance")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  
+  const currentBalance = balance?.balance || 0;
+  const available = Math.max(0, currentBalance - MINIMUM_TOKEN_BALANCE);
+  
+  return {
+    sufficient: available >= required,
+    required,
+    available,
+  };
+}
+
+/**
+ * Ensure sufficient tokens for an action, throw if not
+ */
+export async function ensureSufficientTokens(
+  supabase: SupabaseClient,
+  orgId: string,
+  requiredTokens: number
+): Promise<void> {
+  const { data: balance } = await supabase
+    .from("token_balances")
+    .select("balance")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  
+  const currentBalance = balance?.balance || 0;
+  const available = Math.max(0, currentBalance - MINIMUM_TOKEN_BALANCE);
+  
+  if (available < requiredTokens) {
+    throw new ApiException(
+      "INSUFFICIENT_TOKEN_BALANCE",
+      `Insufficient tokens. Required: ${requiredTokens}, Available: ${available}`,
+      402,
+      {
+        required: requiredTokens,
+        available,
+        minimumReserve: MINIMUM_TOKEN_BALANCE,
+        topUpRequired: requiredTokens - available,
+      }
+    );
+  }
+}
+
+/**
  * Get token usage statistics for an organization
  */
 export async function getTokenUsageStats(
@@ -410,6 +604,7 @@ export async function getTokenUsageStats(
   totalBurnedThisMonth: number;
   callsThisMonth: number;
   blockedCallsThisMonth: number;
+  actionBreakdown: Record<string, number>;
 }> {
   // Get current balance
   const { data: balance } = await supabase
@@ -426,7 +621,7 @@ export async function getTokenUsageStats(
   // Get usage stats from ledger
   const { data: ledgerStats, error } = await supabase
     .from("token_ledger")
-    .select("tokens_burned, outcome")
+    .select("tokens_burned, outcome, action_type")
     .eq("org_id", orgId)
     .gte("created_at", monthStart.toISOString())
     .lte("created_at", monthEnd.toISOString());
@@ -440,11 +635,20 @@ export async function getTokenUsageStats(
   const allowedCalls = stats.filter(entry => entry.outcome === "allowed").length;
   const blockedCalls = stats.filter(entry => entry.outcome === "blocked").length;
   
+  // Calculate action breakdown
+  const actionBreakdown: Record<string, number> = {};
+  for (const entry of stats) {
+    if (entry.action_type) {
+      actionBreakdown[entry.action_type] = (actionBreakdown[entry.action_type] || 0) + (entry.tokens_burned || 0);
+    }
+  }
+  
   return {
     currentBalance: balance?.balance || 0,
     minimumRequired: balance?.minimum_required || MINIMUM_TOKEN_BALANCE,
     totalBurnedThisMonth: totalBurned,
     callsThisMonth: allowedCalls,
     blockedCallsThisMonth: blockedCalls,
+    actionBreakdown,
   };
 }
