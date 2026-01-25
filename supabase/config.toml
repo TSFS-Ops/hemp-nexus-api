@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.token-purchase]
 verify_jwt = false
+
+[functions.evidence-pack]
+verify_jwt = false
