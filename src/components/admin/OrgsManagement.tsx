@@ -130,6 +130,7 @@ export default function OrgsManagement() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              aria-label="Search organisations"
             />
           </div>
           <Button variant="outline" size="sm" onClick={fetchOrgs} disabled={loading}>

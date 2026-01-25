@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { Loader2, RefreshCw, Filter, Shield, Hash, Download } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,6 @@ interface AuditLog {
 }
 
 export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -43,11 +43,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
 
   const fetchAuditLogs = async () => {
     if (!apiKey) {
-      toast({
-        title: "No API Key",
-        description: "Please set an API key for testing first",
-        variant: "destructive",
-      });
+      toast.error("Please set an API key for testing first");
       return;
     }
 
@@ -76,16 +72,9 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
       setLogs(data.items);
       setTotalCount(data.totalCount);
       
-      toast({
-        title: "Audit Logs Retrieved",
-        description: `Found ${data.items.length} logs (${data.totalCount} total)`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.success(`Found ${data.items.length} logs (${data.totalCount} total)`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to fetch audit logs");
     } finally {
       setLoading(false);
     }
@@ -100,11 +89,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
 
   const exportToCSV = () => {
     if (logs.length === 0) {
-      toast({
-        title: "No Data",
-        description: "No audit logs to export",
-        variant: "destructive",
-      });
+      toast.error("No audit logs to export");
       return;
     }
 

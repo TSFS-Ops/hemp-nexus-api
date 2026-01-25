@@ -250,7 +250,7 @@ async function listMatches() {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>API Key Security:</strong> Never expose your API key in client-side code or public repositories.
-                    Get your API key from the <a href="/dashboard" className="underline">Dashboard</a>.
+                    Get your API key from the <Link to="/dashboard" className="underline">Dashboard</Link>.
                   </AlertDescription>
                 </Alert>
               </CardContent>
