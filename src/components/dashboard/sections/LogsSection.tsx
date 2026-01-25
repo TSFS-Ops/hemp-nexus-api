@@ -192,14 +192,15 @@ export function LogsSection() {
       </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="activity" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Activity / Proof Events
+        <TabsList className="grid w-full max-w-md grid-cols-2 h-auto">
+          <TabsTrigger value="activity" className="flex items-center gap-1.5 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+            <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">Activity</span>
+            <span className="hidden sm:inline">/ Proof Events</span>
           </TabsTrigger>
-          <TabsTrigger value="requests" className="flex items-center gap-2">
-            <Server className="h-4 w-4" />
-            API Request Logs
+          <TabsTrigger value="requests" className="flex items-center gap-1.5 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+            <Server className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">API Logs</span>
           </TabsTrigger>
         </TabsList>
 

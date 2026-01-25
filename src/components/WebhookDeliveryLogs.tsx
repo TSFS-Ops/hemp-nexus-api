@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, RefreshCw, Webhook, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ interface WebhookDeliveryLog {
 }
 
 export default function WebhookDeliveryLogs() {
-  const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data: logs, isLoading, refetch } = useQuery({
@@ -97,10 +96,10 @@ export default function WebhookDeliveryLogs() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filters */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -110,7 +109,7 @@ export default function WebhookDeliveryLogs() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isLoading} className="touch-target h-9 sm:h-8">
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -121,40 +120,74 @@ export default function WebhookDeliveryLogs() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : logs && logs.length > 0 ? (
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Endpoint URL</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Attempt</TableHead>
-                  <TableHead>Details</TableHead>
-              </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs">
+          <>
+            {/* Mobile card view */}
+            <div className="space-y-3 md:hidden">
+              {logs.map((log) => (
+                <div key={log.id} className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <Badge variant="outline" className="text-xs">{log.event_type}</Badge>
+                    {getStatusBadge(log)}
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <p className="text-muted-foreground">
                       {new Date(log.delivered_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{log.event_type}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs max-w-xs truncate">
+                    </p>
+                    <p className="font-mono truncate text-muted-foreground">
                       {log.webhook_endpoints.url}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(log)}</TableCell>
-                    <TableCell className="text-xs">{log.delivery_attempt}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
-                      {log.error_message || log.response_body || "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Attempt:</span>
+                      <span>{log.delivery_attempt}</span>
+                    </div>
+                    {(log.error_message || log.response_body) && (
+                      <p className="text-muted-foreground truncate">
+                        {log.error_message || log.response_body}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="border rounded-lg overflow-hidden hidden md:block">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Timestamp</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead className="hidden lg:table-cell">Endpoint URL</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden xl:table-cell">Attempt</TableHead>
+                      <TableHead className="hidden xl:table-cell">Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {logs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {new Date(log.delivered_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{log.event_type}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs max-w-xs truncate hidden lg:table-cell">
+                          {log.webhook_endpoints.url}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(log)}</TableCell>
+                        <TableCell className="text-xs hidden xl:table-cell">{log.delivery_attempt}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-xs truncate hidden xl:table-cell">
+                          {log.error_message || log.response_body || "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             No webhook delivery logs found.

@@ -177,16 +177,18 @@ export function AdminBehavioralAnalytics() {
                 const count = analytics.byType[type.value] || 0;
                 const percentage = analytics.total > 0 ? (count / analytics.total * 100).toFixed(1) : 0;
                 return (
-                  <div key={type.value} className="flex items-center gap-4">
-                    <div className="w-24 text-sm font-medium">{type.label}</div>
-                    <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${type.color} transition-all`} 
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <div className="w-20 text-sm text-right">
-                      {count} ({percentage}%)
+                  <div key={type.value} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="text-sm font-medium sm:w-24 sm:flex-shrink-0">{type.label}</div>
+                    <div className="flex items-center gap-2 sm:gap-4 flex-1">
+                      <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${type.color} transition-all`} 
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <div className="text-sm text-right whitespace-nowrap min-w-[70px] sm:min-w-[80px]">
+                        {count} ({percentage}%)
+                      </div>
                     </div>
                   </div>
                 );
@@ -210,18 +212,18 @@ export function AdminBehavioralAnalytics() {
           ) : behavioralData && behavioralData.length > 0 ? (
             <div className="space-y-2 max-h-96 overflow-auto">
               {behavioralData.slice(0, 50).map((signal) => (
-                <div key={signal.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="capitalize">
+                <div key={signal.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="capitalize text-xs">
                       {signal.action_type.replace('_', ' ')}
                     </Badge>
                     {signal.match_id && (
-                      <span className="text-xs font-mono text-muted-foreground">
+                      <span className="text-xs font-mono text-muted-foreground truncate max-w-[120px] sm:max-w-none">
                         Match: {signal.match_id.substring(0, 8)}...
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(signal.created_at), "MMM dd HH:mm")}
                   </span>
                 </div>

@@ -142,10 +142,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     link.click();
     document.body.removeChild(link);
 
-    toast({
-      title: "Export Successful",
-      description: `Exported ${logs.length} audit logs to CSV`,
-    });
+    toast.success(`Exported ${logs.length} audit logs to CSV`);
   };
 
   return (
@@ -270,71 +267,136 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
               </div>
             </div>
 
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity Type</TableHead>
-                    <TableHead>Entity ID</TableHead>
-                    <TableHead>Hash</TableHead>
-                    <TableHead>Actor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map((log) => {
-                    const isProofOfIntent =
-                      log.action === "match.created" ||
-                      log.action === "match.settled" ||
-                      log.action === "intent.confirmed";
-                    const hash = log.metadata?.hash;
-                    
-                    return (
-                      <TableRow 
-                        key={log.id}
-                        className={isProofOfIntent ? "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-600" : ""}
-                      >
-                        <TableCell className="text-xs">
-                          {new Date(log.created_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={getActionBadgeVariant(log.action)}>
-                              {log.action}
-                            </Badge>
-                            {isProofOfIntent && (
-                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Proof
-                              </Badge>
-                            )}
+            {/* Mobile card view for <768px */}
+            <div className="space-y-3 md:hidden">
+              {logs.map((log) => {
+                const isProofOfIntent =
+                  log.action === "match.created" ||
+                  log.action === "match.settled" ||
+                  log.action === "intent.confirmed";
+                const hash = log.metadata?.hash;
+                
+                return (
+                  <div 
+                    key={log.id}
+                    className={`p-3 border rounded-lg ${isProofOfIntent ? "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-600" : ""}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={getActionBadgeVariant(log.action)} className="text-xs">
+                          {log.action}
+                        </Badge>
+                        {isProofOfIntent && (
+                          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 text-xs">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Proof
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {log.actor_api_key_id ? "API Key" : "User"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Timestamp</span>
+                        <p className="font-mono">{new Date(log.created_at).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Entity</span>
+                        <p className="font-mono truncate">{log.entity_type}</p>
+                      </div>
+                      {log.entity_id && (
+                        <div>
+                          <span className="text-muted-foreground">Entity ID</span>
+                          <p className="font-mono truncate">{log.entity_id.substring(0, 8)}</p>
+                        </div>
+                      )}
+                      {hash && (
+                        <div>
+                          <span className="text-muted-foreground">Hash</span>
+                          <div className="flex items-center gap-1">
+                            <Hash className="h-3 w-3 text-green-600" />
+                            <code className="text-green-700 dark:text-green-400 truncate">
+                              {hash.substring(0, 12)}...
+                            </code>
                           </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{log.entity_type}</TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {log.entity_id ? log.entity_id.substring(0, 8) : "—"}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {hash ? (
-                            <div className="flex items-center gap-2">
-                              <Hash className="h-3 w-3 text-green-600" />
-                              <code className="text-green-700 dark:text-green-400" title={hash}>
-                                {hash.substring(0, 12)}...
-                              </code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table view for ≥768px */}
+            <div className="border rounded-lg overflow-hidden hidden md:block">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Timestamp</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead className="hidden lg:table-cell">Entity Type</TableHead>
+                      <TableHead className="hidden lg:table-cell">Entity ID</TableHead>
+                      <TableHead>Hash</TableHead>
+                      <TableHead className="hidden xl:table-cell">Actor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {logs.map((log) => {
+                      const isProofOfIntent =
+                        log.action === "match.created" ||
+                        log.action === "match.settled" ||
+                        log.action === "intent.confirmed";
+                      const hash = log.metadata?.hash;
+                      
+                      return (
+                        <TableRow 
+                          key={log.id}
+                          className={isProofOfIntent ? "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-600" : ""}
+                        >
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant={getActionBadgeVariant(log.action)}>
+                                {log.action}
+                              </Badge>
+                              {isProofOfIntent && (
+                                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Proof
+                                </Badge>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {log.actor_api_key_id ? "API Key" : "User"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs hidden lg:table-cell">{log.entity_type}</TableCell>
+                          <TableCell className="font-mono text-xs hidden lg:table-cell">
+                            {log.entity_id ? log.entity_id.substring(0, 8) : "—"}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {hash ? (
+                              <div className="flex items-center gap-2">
+                                <Hash className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                <code className="text-green-700 dark:text-green-400 truncate max-w-[100px]" title={hash}>
+                                  {hash.substring(0, 12)}...
+                                </code>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground hidden xl:table-cell">
+                            {log.actor_api_key_id ? "API Key" : "User"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         )}

@@ -311,67 +311,124 @@ export function MatchesList() {
         ) : isLoading ? (
           <TableSkeleton rows={5} columns={6} />
         ) : matches && matches.length > 0 ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                   <TableHead className="w-12">
-                     <Checkbox
-                       checked={allUnsettledSelected}
-                       onCheckedChange={toggleSelectAll}
-                       disabled={unsettledMatches.length === 0}
-                     />
-                   </TableHead>
-                   <TableHead>Commodity</TableHead>
-                   <TableHead>Buyer</TableHead>
-                   <TableHead>Seller</TableHead>
-                   <TableHead>Quantity</TableHead>
-                   <TableHead>Price</TableHead>
-                   <TableHead>Status</TableHead>
-                   <TableHead>Evidence</TableHead>
-                   <TableHead>Created</TableHead>
-                   <TableHead className="text-right">Actions</TableHead>
-                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matches.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell>
+          <>
+            {/* Mobile card view for <768px */}
+            <div className="space-y-3 md:hidden">
+              {matches.map((match) => (
+                <Card key={match.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
                       <Checkbox
                         checked={selectedMatches.has(match.id)}
                         onCheckedChange={() => toggleMatchSelection(match.id)}
                         disabled={match.status === "settled"}
                       />
-                    </TableCell>
-                    <TableCell className="font-medium">{match.commodity}</TableCell>
-                    <TableCell>{match.buyer_name}</TableCell>
-                    <TableCell>{match.seller_name}</TableCell>
-                    <TableCell>
-                      {match.quantity_amount} {match.quantity_unit}
-                    </TableCell>
-                    <TableCell>
-                      {match.price_currency} {match.price_amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(match.status)}</TableCell>
-                    <TableCell>
+                      <span className="font-medium text-sm">{match.commodity}</span>
+                    </div>
+                    {getStatusBadge(match.status)}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                      <span className="text-muted-foreground text-xs">Buyer</span>
+                      <p className="truncate">{match.buyer_name}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Seller</span>
+                      <p className="truncate">{match.seller_name}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Quantity</span>
+                      <p>{match.quantity_amount} {match.quantity_unit}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Price</span>
+                      <p>{match.price_currency} {match.price_amount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-2">
                       <EvidenceChainIndicator matchId={match.id} compact />
-                    </TableCell>
-                    <TableCell>{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/dashboard/matches/${match.id}`)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(match.created_at), "MMM dd")}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 touch-target"
+                      onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop table view for ≥768px */}
+            <div className="rounded-md border hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                     <TableHead className="w-12">
+                       <Checkbox
+                         checked={allUnsettledSelected}
+                         onCheckedChange={toggleSelectAll}
+                         disabled={unsettledMatches.length === 0}
+                       />
+                     </TableHead>
+                     <TableHead>Commodity</TableHead>
+                     <TableHead className="hidden lg:table-cell">Buyer</TableHead>
+                     <TableHead className="hidden lg:table-cell">Seller</TableHead>
+                     <TableHead>Quantity</TableHead>
+                     <TableHead>Price</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead className="hidden xl:table-cell">Evidence</TableHead>
+                     <TableHead className="hidden lg:table-cell">Created</TableHead>
+                     <TableHead className="text-right">Actions</TableHead>
+                   </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {matches.map((match) => (
+                    <TableRow key={match.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedMatches.has(match.id)}
+                          onCheckedChange={() => toggleMatchSelection(match.id)}
+                          disabled={match.status === "settled"}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{match.commodity}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{match.buyer_name}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{match.seller_name}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {match.quantity_amount} {match.quantity_unit}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {match.price_currency} {match.price_amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(match.status)}</TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        <EvidenceChainIndicator matchId={match.id} compact />
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             No matches found. Try adjusting your filters.
