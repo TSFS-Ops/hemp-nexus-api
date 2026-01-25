@@ -57,9 +57,11 @@ export default function Dashboard() {
   const isDemoMode = !session;
 
   const fetchApiKeys = useCallback(async () => {
+    // SECURITY: Explicitly select only safe columns to avoid exposing key_hash
+    // Never request key_hash or key_history from the api_keys table
     const { data, error } = await supabase
       .from("api_keys")
-      .select("*")
+      .select("id, name, scopes, status, created_at, last_used_at, expires_at")
       .eq("status", "active")
       .order("created_at", { ascending: false });
 
