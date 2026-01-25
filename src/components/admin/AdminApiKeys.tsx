@@ -180,6 +180,7 @@ export function AdminApiKeys() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
+                aria-label="Search API keys"
               />
             </div>
           </div>

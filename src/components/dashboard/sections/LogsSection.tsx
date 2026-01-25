@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +41,6 @@ interface AuditLog {
 
 export function LogsSection() {
   const { session } = useAuth();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("activity");
   
   // API Request Logs state
@@ -82,15 +82,11 @@ export function LogsSection() {
       setLogs(data || []);
     } catch (error) {
       console.error("Error fetching logs:", error);
-      toast({
-        variant: "destructive",
-        title: "Error fetching logs",
-        description: "Could not load API request logs.",
-      });
+      toast.error("Could not load API request logs.");
     } finally {
       setIsLoading(false);
     }
-  }, [session, endpointFilter, statusFilter, toast]);
+  }, [session, endpointFilter, statusFilter]);
 
   const fetchActivityLogs = useCallback(async () => {
     if (!session) {
@@ -109,15 +105,11 @@ export function LogsSection() {
       setActivityLogs(data?.items || []);
     } catch (error) {
       console.error("Failed to fetch activity logs:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to fetch activity logs",
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to fetch activity logs");
     } finally {
       setActivityLoading(false);
     }
-  }, [session, toast]);
+  }, [session]);
 
   useEffect(() => {
     if (activeTab === "activity") {
@@ -174,28 +166,18 @@ export function LogsSection() {
   const exportToCSV = () => {
     if (filteredLogs.length === 0) return;
 
-    const headers = ["Timestamp", "Method", "Endpoint", "Status", "Response Time (ms)", "Request ID"];
+    const headers = ["Timestamp", "Method", "Endpoint", "Status", "Response Time", "Request ID"];
     const rows = filteredLogs.map((log) => [
       new Date(log.created_at).toISOString(),
       log.method,
       log.endpoint,
-      log.status_code,
-      log.response_time_ms,
+      log.status_code.toString(),
+      `${log.response_time_ms}ms`,
       log.request_id || "",
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `api-logs-${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-
-    toast({ title: "Exported", description: `${filteredLogs.length} logs exported to CSV.` });
+    downloadCSV(headers, rows, timestampedFilename("api-logs", "csv"));
+    toast.success(`${filteredLogs.length} logs exported to CSV.`);
   };
 
   const uniqueActions = [...new Set(activityLogs.map((log) => log.action))];

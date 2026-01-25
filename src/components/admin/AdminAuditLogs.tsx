@@ -168,6 +168,7 @@ export function AdminAuditLogs() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
+                aria-label="Search audit logs"
               />
             </div>
             <Select value={actionFilter} onValueChange={setActionFilter}>

@@ -50,6 +50,7 @@ export function SearchHeader({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSearch()}
               className="pr-10 h-10 sm:h-9 text-sm"
+              aria-label="Search for counterparties"
             />
             <Globe className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>

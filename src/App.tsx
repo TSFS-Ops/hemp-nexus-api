@@ -59,7 +59,6 @@ function App() {
                 <Route path="/docs" element={<Docs />} />
                 <Route path="/admin/*" element={<Admin />} />
               </Routes>
-              <Toaster />
               <Sonner />
             </HostnameRouter>
           </Router>

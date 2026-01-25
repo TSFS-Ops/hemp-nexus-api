@@ -286,6 +286,7 @@ export default function UsersManagement() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              aria-label="Search users"
             />
           </div>
           <Button variant="outline" size="sm" onClick={exportAll} disabled={loading || filteredUsers.length === 0}>

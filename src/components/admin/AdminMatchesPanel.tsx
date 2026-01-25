@@ -135,6 +135,7 @@ export function AdminMatchesPanel() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
+                aria-label="Search matches"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

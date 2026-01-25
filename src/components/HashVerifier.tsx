@@ -3,12 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Shield, Hash, CheckCircle2, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function HashVerifier() {
-  const { toast } = useToast();
   const [buyerId, setBuyerId] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [sellerId, setSellerId] = useState("");
@@ -26,11 +25,7 @@ export default function HashVerifier() {
 
   const computeHash = async () => {
     if (!buyerId || !sellerId || !commodity || !quantity || !price) {
-      toast({
-        title: "Missing Fields",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -61,32 +56,23 @@ export default function HashVerifier() {
       setIsMatch(hashHex === expectedHash.toLowerCase().trim());
     }
 
-    toast({
-      title: "Hash Computed",
-      description: "SHA-256 hash generated from deal terms",
-    });
+    toast.success("SHA-256 hash generated from deal terms");
   };
 
   const verifyHash = () => {
     if (!computedHash || !expectedHash) {
-      toast({
-        title: "Missing Data",
-        description: "Please compute a hash and enter the expected hash",
-        variant: "destructive",
-      });
+      toast.error("Please compute a hash and enter the expected hash");
       return;
     }
 
     const match = computedHash === expectedHash.toLowerCase().trim();
     setIsMatch(match);
 
-    toast({
-      title: match ? "Hash Match!" : "Hash Mismatch",
-      description: match
-        ? "The computed hash matches the audit trail record"
-        : "The hashes do not match - deal terms may differ",
-      variant: match ? "default" : "destructive",
-    });
+    if (match) {
+      toast.success("Hash Match! The computed hash matches the audit trail record");
+    } else {
+      toast.error("Hash Mismatch - deal terms may differ");
+    }
   };
 
   return (

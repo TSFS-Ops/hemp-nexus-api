@@ -277,6 +277,7 @@ export function MatchesList() {
               value={commoditySearch}
               onChange={(e) => setCommoditySearch(e.target.value)}
               className="pl-10"
+              aria-label="Search matches by commodity"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
