@@ -12,12 +12,13 @@ import { toast } from "sonner";
 import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { cn } from "@/lib/utils";
 
-// Token packages from Price List
+// Token packages from Price List (NGN pricing for Africa via Paystack)
 const TOKEN_PACKAGES = [
   { 
     id: 'starter',
     tokens: 10000, 
-    price_usd: 500, 
+    price_usd: 500,
+    price_ngn: 400000, 
     label: 'Starter',
     pricePerToken: 0.05,
     discount: null,
@@ -25,7 +26,8 @@ const TOKEN_PACKAGES = [
   { 
     id: 'growth',
     tokens: 50000, 
-    price_usd: 2250, 
+    price_usd: 2250,
+    price_ngn: 1800000, 
     label: 'Growth',
     pricePerToken: 0.045,
     discount: '10% off',
@@ -34,7 +36,8 @@ const TOKEN_PACKAGES = [
   { 
     id: 'scale',
     tokens: 100000, 
-    price_usd: 4000, 
+    price_usd: 4000,
+    price_ngn: 3200000, 
     label: 'Scale',
     pricePerToken: 0.04,
     discount: '20% off',
@@ -42,7 +45,8 @@ const TOKEN_PACKAGES = [
   { 
     id: 'enterprise',
     tokens: 500000, 
-    price_usd: 17500, 
+    price_usd: 17500,
+    price_ngn: 14000000, 
     label: 'Enterprise',
     pricePerToken: 0.035,
     discount: '30% off',
@@ -119,11 +123,7 @@ export default function Billing() {
       if (!pkg) throw new Error("Package not found");
 
       const { data, error } = await supabase.functions.invoke("token-purchase", {
-        body: { 
-          packageId,
-          tokens: pkg.tokens,
-          priceUsd: pkg.price_usd,
-        },
+        body: { packageId },
       });
 
       if (error) throw error;
@@ -131,7 +131,7 @@ export default function Billing() {
       if (data?.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        toast.success("Purchase initiated! Redirecting...");
+        toast.error("No checkout URL returned");
       }
     } catch (err) {
       console.error("Purchase error:", err);
@@ -251,7 +251,10 @@ export default function Billing() {
                 <CardContent>
                   <div className="space-y-2">
                     <p className="text-2xl font-bold">
-                      ${pkg.price_usd.toLocaleString()}
+                      ₦{pkg.price_ngn.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      ~${pkg.price_usd.toLocaleString()} USD
                     </p>
                     <p className="text-sm text-muted-foreground">
                       ${pkg.pricePerToken.toFixed(3)}/token
