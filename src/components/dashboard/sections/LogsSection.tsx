@@ -97,8 +97,9 @@ export function LogsSection() {
 
     setActivityLoading(true);
     try {
+      // The audit-logs edge function requires GET method with query params
       const { data, error } = await supabase.functions.invoke("audit-logs", {
-        body: { limit: 100 }
+        method: "GET",
       });
 
       if (error) throw error;
