@@ -1,228 +1,240 @@
 
-# Security Hardening Plan: Email Address Exposure Prevention
 
-## Root Cause Analysis
+# Implementation Plan: Intent Confirmation & Flow Cleanup
 
-### What's Wrong
-The security scanner correctly identified that **email addresses in the `profiles` table could potentially be accessed by authenticated users from other organizations**. While the current RLS policies *are actually correct* (`id = auth.uid()` for self-only access), there are two architectural patterns that create risk:
+## Executive Summary
 
-1. **Frontend querying `profiles.email` directly** (in `AdminApiKeys.tsx` lines 90-94) — relies on RLS working correctly
-2. **No defense-in-depth** — if RLS is accidentally weakened in a future migration, emails could leak across organizations
-
-### Current State (Actually Secure, But Fragile)
-```sql
--- Current policy: Users can ONLY see their own profile
-USING (auth.uid() IS NOT NULL AND id = auth.uid())
-```
-
-This is correct! But the problem is:
-- Frontend code **directly queries** `profiles.email` assuming RLS will block
-- If someone accidentally adds a policy like "Users can view profiles in their org", emails leak
-- No server-side enforcement layer exists as a backup
+This plan addresses the fundamental product positioning issue where the Compliance Matching API currently conflates "messaging/brokerage" concepts with "proof-of-intent" concepts. The changes ensure the system behaves as a pure **evidence recording API** with no implied communication, agency, or obligation.
 
 ---
 
-## Site-Wide Pattern Changes
+## Current State Analysis
 
-### Pattern 1: Never Query PII from Frontend — Use Edge Functions
+### Problems Identified
 
-**Current (Fragile):**
+1. **Invite-gated Confirm Intent**: Currently, "Confirm Intent" requires a counterparty to "accept" an invite first — this implies messaging/brokerage
+2. **notifyCounterpartyIntent function**: Active code that sends webhooks to counterparties on intent confirmation
+3. **UI Language Issues**:
+   - "Invite" button with `Send` icon in CounterpartySearch
+   - "Invited X counterparties" toast messages
+   - "Send invites to start" messaging in Invites page
+   - invite.created/accepted/declined events shown in logs
+4. **Billing Mismatch**: Token burn happens on `/match/:id/declare-intent` (500 tokens) but the "Confirm Intent" button calls `/match/:id/settle` which does NOT burn tokens (only enforceTokenMetering at 1 token/call)
+5. **Missing Logs Visibility**: `intent.confirmed` events from audit_logs are correctly fetched but invite.* events pollute the log
+
+### What's Working Correctly
+
+- Demo page (Demo.tsx) correctly shows preview without creating records
+- Discovery search is free (NON_BILLABLE_ENDPOINTS includes /search)
+- LogsSection dual-tab structure (Activity/API Logs) is correct
+- Match state machine (discovery → intent_declared → counterparty_sighted → committed) is defined
+- Token metering infrastructure exists
+
+---
+
+## Implementation Changes
+
+### Phase 1: Remove Counterparty Notification & Invite Gating
+
+#### 1.1 Disable `notifyCounterpartyIntent` in match function
+
+**File**: `supabase/functions/match/index.ts`
+
+Remove or comment out lines 277-292 that call `notifyCounterpartyIntent()`. This function explicitly sends webhooks to counterparties, which violates the "no outbound contact" requirement.
+
+```text
+BEFORE:
+  // Notify the counterparty about the intent confirmation
+  notifyCounterpartyIntent(supabase, { ... })
+
+AFTER:
+  // REMOVED: No counterparty notification - API records proof only
+  // Counterparty contact is handled externally by the calling system
+```
+
+#### 1.2 Remove invite-gating from CounterpartySearch
+
+**File**: `src/components/CounterpartySearch.tsx`
+
+The current flow requires:
+1. User selects counterparty
+2. User clicks "Invite" → creates invite record
+3. Counterparty accepts invite
+4. ONLY THEN can user "Confirm Intent"
+
+**Change to**:
+1. User selects counterparty
+2. User clicks "Confirm Intent" → creates match + POI + audit log + burns tokens
+
+Remove the "Invite" button entirely and remove the `acceptedInvites` check that gates Confirm Intent.
+
+### Phase 2: Fix Billing/Token Burn Alignment
+
+#### 2.1 Align "Confirm Intent" with proper token burn
+
+**Issue**: The `/match/:id/settle` endpoint does NOT call `burnTokensForAction` with a meaningful action type — it only burns 1 token via `enforceTokenMetering`.
+
+**Options**:
+- **Option A**: Make `/settle` call `burnTokensForAction('declare_intent', ...)` for 500 tokens
+- **Option B**: Direct frontend to call `/declare-intent` instead of `/settle`
+
+**Recommended**: Option A — Update `/settle` to burn 500 tokens explicitly since it's the user-facing "Confirm Intent" action.
+
+**File**: `supabase/functions/match/index.ts`
+
+Add token burn to the settle endpoint:
+
 ```typescript
-// AdminApiKeys.tsx — directly queries profiles for email
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("email")
-  .eq("id", key.created_by)
-  .single();
+// Before updating status, burn tokens for intent confirmation
+await burnTokensForAction(
+  supabase,
+  authCtx.orgId,
+  actorApiKeyId,
+  'declare_intent',  // 500 tokens
+  requestId,
+  matchId
+);
 ```
 
-**New Pattern (Defense-in-Depth):**
-```typescript
-// Call an Edge Function that explicitly checks admin role server-side
-const { data } = await supabase.functions.invoke("admin-lookup-email", {
-  body: { user_ids: [key.created_by] }
-});
-```
+### Phase 3: UI Language Cleanup
 
-**Rule**: PII fields (email, phone, full_name, address) must NEVER be selected directly from frontend. Always go through an Edge Function that:
-1. Verifies caller is admin OR is requesting their own data
-2. Uses service_role client to fetch
-3. Applies redaction before returning
+#### 3.1 Remove "Invite" button and messaging icons
 
-### Pattern 2: Database-Level Deny for Email Column
+**File**: `src/components/CounterpartySearch.tsx`
 
-Add a **database function** that wraps email access:
+- Remove the entire "Invite" button (lines 486-499)
+- Remove `Send` icon import
+- Remove `handleInvite` function
+- Remove `isInviting` state
+- Remove `acceptedInvites` state and check
+- Make "Confirm Intent" always visible when results are selected
 
-```sql
--- Security Definer function: Only returns email for self or admin
-CREATE OR REPLACE FUNCTION public.get_user_email(target_user_id uuid)
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  caller_id uuid := auth.uid();
-  caller_is_admin boolean;
-  result_email text;
-BEGIN
-  -- Self-access is always allowed
-  IF caller_id = target_user_id THEN
-    SELECT email INTO result_email FROM profiles WHERE id = target_user_id;
-    RETURN result_email;
-  END IF;
-  
-  -- Admin access is allowed
-  SELECT has_role(caller_id, 'admin') INTO caller_is_admin;
-  IF caller_is_admin THEN
-    SELECT email INTO result_email FROM profiles WHERE id = target_user_id;
-    RETURN result_email;
-  END IF;
-  
-  -- Everyone else gets redacted
-  RETURN '***@***.***';
-END;
-$$;
-```
+#### 3.2 Update Invites page messaging
 
-### Pattern 3: Create `profiles_safe` View
+**File**: `src/pages/Invites.tsx`
 
-Create a view that **never exposes email** to non-admin callers:
+This page can remain for users who have historical invites, but update messaging:
 
-```sql
-CREATE OR REPLACE VIEW public.profiles_safe
-WITH (security_invoker = true)
-AS
-SELECT 
-  id,
-  org_id,
-  full_name,
-  status,
-  created_at,
-  -- Email is always redacted in this view
-  CASE 
-    WHEN id = auth.uid() THEN email
-    WHEN public.has_role(auth.uid(), 'admin') THEN email
-    ELSE '***@***.***'
-  END as email
-FROM public.profiles;
+- Change "Send invites to start" → "Intent confirmations appear here"
+- Consider hiding this page entirely or renaming to "Intent History"
 
--- Revoke direct profiles access from authenticated role
--- (Optional: aggressive hardening)
-```
+#### 3.3 Remove invite.* event badges from logs
+
+**File**: `src/components/dashboard/sections/LogsSection.tsx`
+
+Remove or deprioritise invite.created, invite.accepted, invite.declined from the action badge colors. These should not appear as business events since invites are being deprecated.
+
+**File**: `src/components/admin/GlobalApiLogs.tsx`
+
+Same cleanup for admin view.
+
+### Phase 4: Ensure Logs Visibility
+
+The current LogsSection correctly fetches activity from `/audit-logs` endpoint. Verify that `intent.confirmed` events appear with:
+- Timestamp
+- Action badge
+- Entity (match ID)
+- Hash reference
+- "Open Proof" link
+
+This is already implemented correctly. The only change needed is ensuring the `intent.confirmed` audit entry includes the `request_id` in metadata (already present).
+
+### Phase 5: Documentation and Webhook Cleanup
+
+#### 5.1 Remove brokerage language from webhooks.ts
+
+**File**: `supabase/functions/_shared/webhooks.ts`
+
+- Remove `notifyCounterpartyIntent` function entirely (lines 206-300+)
+- Remove `intent.received` event type references
+
+#### 5.2 Update DemoConfirmDialog
+
+**File**: `src/components/DemoConfirmDialog.tsx`
+
+Line 119 says "Counterparty notification via webhook" — change to:
+"Webhook delivery to YOUR registered endpoints" (clarifying it's the caller's webhooks, not the counterparty's)
 
 ---
 
-## Implementation Steps
+## Files to Modify
 
-### Step 1: Create `admin-lookup-profiles` Edge Function
-Create a new Edge Function that:
-- Accepts a list of user IDs
-- Verifies caller is admin
-- Returns enriched profile data (email, name, org)
-- This replaces all frontend profile email lookups
-
-### Step 2: Refactor `AdminApiKeys.tsx`
-Replace direct `profiles.email` query with call to the new Edge Function
-
-### Step 3: Add Database Function `get_user_email`
-Security Definer function that returns email only for self/admin
-
-### Step 4: Add Guardrail Check
-Add a new function `check_frontend_pii_exposure()` that:
-- Scans for SELECT policies on profiles that could expose email cross-org
-- Runs as part of Phase 2 Verification
-
-### Step 5: Update Security Constants
-Add `profiles.email` to a new `BACKEND_ONLY_FIELDS` constant
-
----
-
-## Files to Create/Modify
-
-| File | Change |
-|------|--------|
-| `supabase/functions/admin-lookup-profiles/index.ts` | **NEW** — Admin-only profile enrichment |
-| `src/components/admin/AdminApiKeys.tsx` | Replace direct profiles query with Edge Function call |
-| `supabase/migrations/XXXXX_email_access_hardening.sql` | Add `get_user_email()` function |
-| `src/lib/security/constants.ts` | Add `BACKEND_ONLY_FIELDS` constant |
-| `src/components/admin/Phase2Verification.tsx` | Add check for PII exposure patterns |
+| File | Changes |
+|------|---------|
+| `supabase/functions/match/index.ts` | Add token burn to /settle; remove notifyCounterpartyIntent call |
+| `supabase/functions/_shared/webhooks.ts` | Remove notifyCounterpartyIntent function |
+| `src/components/CounterpartySearch.tsx` | Remove Invite button, remove invite-gating, always show Confirm Intent |
+| `src/pages/Invites.tsx` | Update empty state messaging, consider deprecation |
+| `src/components/dashboard/sections/LogsSection.tsx` | Remove invite.* badge styling |
+| `src/components/admin/GlobalApiLogs.tsx` | Remove invite.* badge styling |
+| `src/components/DemoConfirmDialog.tsx` | Fix webhook language |
 
 ---
 
 ## Technical Details
 
-### New Edge Function: `admin-lookup-profiles`
+### Token Burn Flow (After Changes)
 
-```typescript
-// supabase/functions/admin-lookup-profiles/index.ts
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-Deno.serve(async (req) => {
-  // 1. Verify caller is admin (using is_admin RPC)
-  // 2. Accept { user_ids: string[] }
-  // 3. Query profiles using service_role
-  // 4. Return enriched data with org names
-});
+```text
+User searches → FREE (no token burn, /search is non-billable)
+                   ↓
+User views results → FREE (discovery state)
+                   ↓
+User clicks "Confirm Intent" → 
+  1. Creates match record (state: matched, status: matched)
+  2. Calls /match/:id/settle which:
+     - Burns 500 tokens (declare_intent action)
+     - Updates status to "settled", settled_at timestamp
+     - Creates audit_logs entry with intent.confirmed
+     - Creates match_events entry with hash chain
+     - Triggers user's registered webhooks (NOT counterparty)
+  3. UI shows "Intent recorded"
+  4. Event appears in Activity tab with proof link
 ```
 
-### Migration: Email Access Hardening
+### State Machine Clarification
 
-```sql
--- Create secure email accessor
-CREATE OR REPLACE FUNCTION public.get_user_email(target_user_id uuid)
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
--- ... (as described above)
-$$;
+The current state machine has two parallel concepts that need reconciliation:
 
--- Grant execute to authenticated (controlled access)
-GRANT EXECUTE ON FUNCTION public.get_user_email(uuid) TO authenticated;
+1. **status** field: `matched` → `settled`
+2. **state** field: `discovery` → `intent_declared` → `counterparty_sighted` → `committed`
 
--- Add comment for documentation
-COMMENT ON FUNCTION public.get_user_email IS 
-'Security: Returns email only for self or admin. Prevents email enumeration.';
-```
+For the simplified flow (single-sided POI), we use:
+- `status: settled` = Intent confirmed
+- `state: intent_declared` = Intent confirmed
+
+The `/settle` endpoint should update BOTH fields consistently.
+
+### Acceptance Test Verification
+
+After implementation, this test should pass:
+
+1. Note credit balance: X
+2. Run 3 searches → Credits still X (search is free)
+3. Select result, click "Confirm Intent" → Credits = X - 500
+4. UI shows "Intent recorded"
+5. Open Logs (Activity tab) → See `intent.confirmed` with hash and "Open Proof" link
+6. Open Admin API Logs → See same event correlated by request_id
+7. Verify no email/SMS/webhook sent to counterparty
 
 ---
 
-## Verification Checklist
+## Rollback Plan
 
-After implementation:
-
-1. **Test non-admin user**:
-   - Query `profiles` directly → should only return own profile
-   - Call `get_user_email(other_user_id)` → should return `***@***.***`
-
-2. **Test admin user**:
-   - Call `admin-lookup-profiles` → should return emails
-   - Call `get_user_email(any_id)` → should return actual email
-
-3. **Regression check**:
-   - `AdminApiKeys.tsx` still shows creator emails for admins
-   - `UsersManagement.tsx` still works (already uses Edge Function)
-
-4. **Run guardrail**:
-   - `check_anon_grants()` passes
-   - `check_view_security_invoker()` passes
-   - New `check_frontend_pii_exposure()` passes
+If issues arise:
+1. Re-enable notifyCounterpartyIntent by uncommenting
+2. Restore Invite button visibility
+3. Database records (matches, audit_logs) will remain valid regardless
 
 ---
 
-## Prevention: Site-Wide Standards
+## Summary of Invariants Enforced
 
-To prevent this class of error from recurring:
+| Rule | Enforcement |
+|------|-------------|
+| No POI → no charge | Search is in NON_BILLABLE_ENDPOINTS; Confirm Intent burns 500 tokens |
+| Charge → POI must exist | Token burn happens AFTER match record created, INSIDE audit log creation block |
+| No messaging icons | Remove Send icon from CounterpartySearch |
+| No "sent/introduced/connected" | Remove Invite flow entirely; update toast messages |
+| No counterparty notification | Remove notifyCounterpartyIntent call |
 
-1. **Code Review Checklist Item**: "Does this query select email/phone from profiles? If yes, use Edge Function."
-
-2. **ESLint Rule** (future): Flag `.from("profiles").select("email")` patterns
-
-3. **Memory Entry**: Add to project memory:
-   > "PII fields (email, phone, full_name) must NEVER be queried directly from frontend components. All PII lookups must go through Edge Functions that verify authorization server-side."
-
-4. **Phase 2 Verification**: Add automated check that scans for frontend PII exposure patterns
-
-This approach provides **defense-in-depth**: even if RLS is accidentally weakened, the Edge Function layer prevents email leakage.
