@@ -69,45 +69,54 @@ export function AdminApiKeys() {
 
       if (error) throw error;
 
-      // Fetch organizations and creator emails separately for each key
-      const keysWithDetails = await Promise.all(
-        (data || []).map(async (key) => {
-          let orgName = null;
-          let creatorEmail = null;
+      // Collect unique user IDs for batch lookup
+      const userIds = [...new Set((data || []).map(key => key.created_by).filter(Boolean))] as string[];
+      const orgIds = [...new Set((data || []).map(key => key.org_id).filter(Boolean))] as string[];
 
-          // Fetch organization name
-          if (key.org_id) {
-            const { data: org } = await supabase
-              .from("organizations")
-              .select("name")
-              .eq("id", key.org_id)
-              .single();
-            orgName = org?.name || null;
+      // SECURITY: Use Edge Function for profile lookups (defense-in-depth)
+      // This ensures email access is always verified server-side
+      let profileMap = new Map<string, { email: string }>();
+      if (userIds.length > 0) {
+        const { data: profilesResponse, error: profilesError } = await supabase.functions.invoke(
+          "admin-lookup-profiles",
+          {
+            method: "POST",
+            body: { user_ids: userIds },
           }
+        );
 
-          // Fetch creator email
-          if (key.created_by) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("email")
-              .eq("id", key.created_by)
-              .single();
-            creatorEmail = profile?.email || null;
-          }
+        if (!profilesError && profilesResponse?.profiles) {
+          profileMap = new Map(
+            profilesResponse.profiles.map((p: { id: string; email: string }) => [p.id, { email: p.email }])
+          );
+        }
+      }
 
-          return {
-            id: key.id,
-            name: key.name,
-            scopes: key.scopes,
-            status: key.status,
-            created_at: key.created_at,
-            last_used_at: key.last_used_at,
-            expires_at: key.expires_at,
-            organizations: orgName ? { name: orgName } : null,
-            profiles: creatorEmail ? { email: creatorEmail } : null,
-          };
-        })
-      );
+      // Fetch organization names
+      let orgMap = new Map<string, string>();
+      if (orgIds.length > 0) {
+        const { data: orgs } = await supabase
+          .from("organizations")
+          .select("id, name")
+          .in("id", orgIds);
+        
+        if (orgs) {
+          orgMap = new Map(orgs.map(o => [o.id, o.name]));
+        }
+      }
+
+      // Enrich keys with organization and profile data
+      const keysWithDetails = (data || []).map(key => ({
+        id: key.id,
+        name: key.name,
+        scopes: key.scopes,
+        status: key.status,
+        created_at: key.created_at,
+        last_used_at: key.last_used_at,
+        expires_at: key.expires_at,
+        organizations: key.org_id ? { name: orgMap.get(key.org_id) || null } : null,
+        profiles: key.created_by ? profileMap.get(key.created_by) || null : null,
+      }));
 
       setApiKeys(keysWithDetails);
     } catch (error) {
