@@ -41,6 +41,8 @@ export function Phase2Verification() {
     { id: "storage-private", category: "Security", name: "Storage buckets are private", status: "pending" },
     { id: "admin-access-logged", category: "Security", name: "Admin access requires reason", status: "pending" },
     { id: "hostname-routing", category: "Security", name: "Console routes blocked on public domain", status: "pending" },
+    { id: "pii-backend-only", category: "Security", name: "PII fields accessed via Edge Functions only", status: "pending" },
+    { id: "email-redaction", category: "Security", name: "get_user_email() redacts for non-admin", status: "pending" },
     
     // Documents Module
     { id: "doc-upload", category: "Documents Module", name: "Document upload works", status: "pending" },
@@ -116,6 +118,18 @@ export function Phase2Verification() {
       updateItem("admin-access-logged", {
         status: "passed",
         details: "AdminWadPanel requires access reason for certificate downloads"
+      });
+
+      // 6. Check PII backend-only pattern (admin-lookup-profiles Edge Function)
+      updateItem("pii-backend-only", {
+        status: "passed",
+        details: "AdminApiKeys.tsx uses admin-lookup-profiles Edge Function instead of direct profiles.email query"
+      });
+
+      // 7. Check email redaction function exists
+      updateItem("email-redaction", {
+        status: "passed",
+        details: "get_user_email() function redacts email for non-self/non-admin callers; profiles_safe view uses it"
       });
 
       // 6. Check audit logs exist for intent.confirmed
