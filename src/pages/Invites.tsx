@@ -373,10 +373,10 @@ export default function Invites() {
           ) : invites.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Send className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No invites sent</h3>
+                <CheckCircle2 className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No intent confirmations yet</h3>
                 <p className="text-muted-foreground text-center">
-                  Search for counterparties and send invites to start.
+                  Your intent confirmations will appear here after you confirm interest in counterparties.
                 </p>
                 <Button className="mt-4" onClick={() => navigate("/dashboard")}>
                   Go to Search

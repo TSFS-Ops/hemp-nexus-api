@@ -148,13 +148,16 @@ export function LogsSection() {
   };
 
   const getActionBadge = (action: string) => {
+    // Primary business events - intent and match related
     const colors: Record<string, string> = {
       "intent.confirmed": "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
+      "intent.declared": "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
       "match.created": "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
       "search.completed": "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-      "invite.created": "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800",
-      "invite.accepted": "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800",
-      "invite.declined": "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
+      // Legacy invite events - deprecated styling (muted)
+      "invite.created": "bg-muted text-muted-foreground border-muted",
+      "invite.accepted": "bg-muted text-muted-foreground border-muted",
+      "invite.declined": "bg-muted text-muted-foreground border-muted",
     };
     return (
       <Badge variant="outline" className={`font-mono text-xs ${colors[action] || ""}`}>

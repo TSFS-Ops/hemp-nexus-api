@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { CheckCircle, Info, Send, Loader2 } from "lucide-react";
+import { CheckCircle, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
@@ -125,8 +125,6 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [showDemoConfirm, setShowDemoConfirm] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [isInviting, setIsInviting] = useState(false);
-  const [acceptedInvites, setAcceptedInvites] = useState<string[]>([]);
 
   // Demo mode is active if explicitly set via props OR if user is not authenticated
   const isDemoMode = propDemoMode ?? !isAuthenticated;
@@ -212,79 +210,6 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     });
   };
 
-  // Check for accepted invites when results change
-  useEffect(() => {
-    const checkAcceptedInvites = async () => {
-      if (isDemoMode || results.length === 0) return;
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        const { data: invites } = await supabase.functions.invoke("invites", {
-          body: { type: "sent" }
-        });
-
-        if (invites?.items) {
-          const accepted = invites.items
-            .filter((inv: any) => inv.status === "accepted")
-            .map((inv: any) => inv.selected_result_id);
-          setAcceptedInvites(accepted);
-        }
-      } catch (error) {
-        console.error("Failed to check invites:", error);
-      }
-    };
-
-    checkAcceptedInvites();
-  }, [results, isDemoMode]);
-
-  const handleInvite = async () => {
-    if (selectedResults.size === 0) {
-      toast.error("Please select at least one counterparty");
-      return;
-    }
-
-    if (isDemoMode) {
-      toast.info("Sign in to invite counterparties");
-      return;
-    }
-
-    setIsInviting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please sign in to invite counterparties");
-        return;
-      }
-
-      // Create invite for each selected result
-      for (const resultId of Array.from(selectedResults)) {
-        const selectedResult = results.find(r => r.id === resultId);
-        if (!selectedResult) continue;
-
-        const { error } = await supabase.functions.invoke("invites", {
-          body: {
-            selected_result_id: resultId,
-            selected_result_data: selectedResult,
-            search_query: query,
-            search_results: results,
-          }
-        });
-
-        if (error) throw error;
-      }
-
-      toast.success(`Invited ${selectedResults.size} counterpart${selectedResults.size > 1 ? "ies" : "y"}`);
-      setSelectedResults(new Set());
-    } catch (error) {
-      console.error("Invite error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to send invite");
-    } finally {
-      setIsInviting(false);
-    }
-  };
-
   const handleConfirmIntent = async () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one counterparty");
@@ -294,13 +219,6 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     // If in demo mode, show the demo confirmation dialog
     if (isDemoMode) {
       setShowDemoConfirm(true);
-      return;
-    }
-    
-    // Check if any selected result has an accepted invite
-    const hasAcceptedInvite = Array.from(selectedResults).some(id => acceptedInvites.includes(id));
-    if (!hasAcceptedInvite) {
-      toast.error("Please invite counterparties first. Confirm Intent is available after they accept.");
       return;
     }
 
@@ -331,8 +249,8 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .eq("id", profile.org_id)
         .single();
 
-      // Create match for first selected result with accepted invite
-      const selectedResultId = Array.from(selectedResults).find(id => acceptedInvites.includes(id));
+      // Create match for first selected result
+      const selectedResultId = Array.from(selectedResults)[0];
       const selectedResult = results.find(r => r.id === selectedResultId);
       
       if (!selectedResult) {
@@ -371,14 +289,14 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         throw new Error("Match ID not returned");
       }
 
-      // Confirm intent on the match (settle)
+      // Confirm intent on the match (settle) - this burns 500 tokens
       const settleResponse = await supabase.functions.invoke("match", {
         body: { matchId, action: "settle" }
       });
 
       if (settleResponse.error) throw settleResponse.error;
 
-      toast.success("Intent confirmed. Proof generated.", {
+      toast.success("Intent recorded", {
         action: {
           label: "Open Proof",
           onClick: () => navigate(`/dashboard/matches/${matchId}`)
@@ -482,38 +400,20 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
               </h3>
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
-                  {/* Invite button - always available */}
+                  {/* Confirm Intent - always available when results are selected */}
                   <Button 
-                    onClick={handleInvite}
-                    disabled={isInviting}
-                    variant="outline"
+                    onClick={handleConfirmIntent}
+                    disabled={isConfirming}
                     size="sm" 
                     className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
                   >
-                    {isInviting ? (
+                    {isConfirming ? (
                       <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
                     ) : (
-                      <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
+                      <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                     )}
-                    Invite ({selectedResults.size})
+                    Confirm Intent ({selectedResults.size})
                   </Button>
-                  
-                  {/* Confirm Intent - only if any selected has accepted invite */}
-                  {Array.from(selectedResults).some(id => acceptedInvites.includes(id)) && (
-                    <Button 
-                      onClick={handleConfirmIntent}
-                      disabled={isConfirming}
-                      size="sm" 
-                      className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
-                    >
-                      {isConfirming ? (
-                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
-                      )}
-                      Confirm Intent
-                    </Button>
-                  )}
                 </div>
               )}
             </div>

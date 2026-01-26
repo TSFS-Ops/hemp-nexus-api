@@ -5,7 +5,7 @@ import { errorResponse, ApiException, handleDatabaseError } from "../_shared/err
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { matchSchema, validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
-import { triggerWebhooks, notifyCounterpartyIntent } from "../_shared/webhooks.ts";
+import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { recordMatchEvent } from "../_shared/match-events.ts";
 import { 
   enforceTokenMetering, 
@@ -195,10 +195,25 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Burn tokens for intent confirmation (500 tokens for declare_intent action)
+      await burnTokensForAction(
+        supabase,
+        authCtx.orgId,
+        actorApiKeyId,
+        'declare_intent',
+        requestId,
+        matchId
+      );
+
       // Update to confirmed (status remains "settled" in DB for compatibility)
+      // Also update state to intent_declared for consistency with state machine
       const { data: updated, error: updateError } = await supabase
         .from("matches")
-        .update({ status: "settled", settled_at: new Date().toISOString() })
+        .update({ 
+          status: "settled", 
+          state: "intent_declared",
+          settled_at: new Date().toISOString() 
+        })
         .eq("id", matchId)
         .select()
         .single();
@@ -274,22 +289,9 @@ Deno.serve(async (req) => {
         quantity: match.quantity_amount,
       }).catch(err => console.error(`Webhook trigger error:`, err));
 
-      // Notify the counterparty about the intent confirmation
-      // Determine who is confirming (buyer or seller) and who is counterparty
-      notifyCounterpartyIntent(supabase, {
-        matchId,
-        hash: match.hash,
-        confirmedAt: updated.settled_at,
-        confirmingPartyId: match.buyer_id, // Assuming confirmer is buyer; could be dynamic
-        confirmingPartyName: match.buyer_name,
-        counterpartyId: match.seller_id,
-        counterpartyName: match.seller_name,
-        commodity: match.commodity,
-        quantity: match.quantity_amount,
-        quantityUnit: match.quantity_unit,
-        priceAmount: match.price_amount,
-        priceCurrency: match.price_currency,
-      }).catch(err => console.error(`Counterparty notification error:`, err));
+      // NOTE: Counterparty notification REMOVED per product requirement
+      // This API records proof-of-intent only - no outbound contact
+      // Counterparty communication is handled externally by the calling system
 
       await logApiRequest({
         supabase,
