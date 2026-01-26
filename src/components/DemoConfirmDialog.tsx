@@ -116,7 +116,7 @@ export function DemoConfirmDialog({ open, onOpenChange, selectedCount, queryCont
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-3 w-3 text-green-500" />
-                    Counterparty notification via webhook
+                    Webhook delivery to your registered endpoints
                   </li>
                 </ul>
               </div>

@@ -142,13 +142,16 @@ export function GlobalApiLogs() {
   };
 
   const getActionBadge = (action: string) => {
+    // Primary business events - intent and match related
     const colors: Record<string, string> = {
       "intent.confirmed": "bg-green-500/10 text-green-600 border-green-500/20",
+      "intent.declared": "bg-green-500/10 text-green-600 border-green-500/20",
       "match.created": "bg-blue-500/10 text-blue-600 border-blue-500/20",
       "search.completed": "bg-purple-500/10 text-purple-600 border-purple-500/20",
-      "invite.created": "bg-orange-500/10 text-orange-600 border-orange-500/20",
-      "invite.accepted": "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-      "invite.declined": "bg-red-500/10 text-red-600 border-red-500/20",
+      // Legacy invite events - deprecated styling (muted)
+      "invite.created": "bg-muted/50 text-muted-foreground border-muted",
+      "invite.accepted": "bg-muted/50 text-muted-foreground border-muted",
+      "invite.declined": "bg-muted/50 text-muted-foreground border-muted",
     };
     return (
       <Badge variant="outline" className={colors[action] || ""}>
