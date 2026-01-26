@@ -105,5 +105,5 @@ verify_jwt = false
 [functions.token-purchase]
 verify_jwt = false
 
-[functions.evidence-pack]
+[functions.admin-lookup-profiles]
 verify_jwt = false

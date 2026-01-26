@@ -97,6 +97,23 @@ export const SENSITIVE_HEADERS = [
   'x-access-token',
 ] as const;
 
+// Fields that must NEVER be queried directly from frontend
+// All lookups for these fields must go through Edge Functions with server-side auth checks
+export const BACKEND_ONLY_FIELDS = [
+  'profiles.email',
+  'profiles.full_name',
+  'profiles.phone',
+  'api_keys.key_hash',
+  'api_keys.key_history',
+  'webhook_endpoints.secret_hash',
+] as const;
+
+// Tables that contain PII and require Edge Function access for cross-user lookups
+export const PII_TABLES = [
+  'profiles',
+  'data_source_registrations',
+] as const;
+
 // Viewer roles for evidence packs
 export type ViewerRole = 'demo' | 'client' | 'admin' | 'auditor';
 
