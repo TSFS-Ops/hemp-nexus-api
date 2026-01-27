@@ -147,6 +147,15 @@ export function LogsSection() {
     return <Badge variant="secondary" className="font-mono text-xs">{status}</Badge>;
   };
 
+  // Shared mapping for legacy action names to modern terminology
+  const actionDisplayLabels: Record<string, string> = {
+    "invite.created": "intent.declared",
+    "invite.accepted": "intent.confirmed",
+    "invite.declined": "intent.declined",
+  };
+  
+  const getActionDisplayLabel = (action: string) => actionDisplayLabels[action] || action;
+
   const getActionBadge = (action: string) => {
     // Primary business events - intent and match related
     const colors: Record<string, string> = {
@@ -161,18 +170,9 @@ export function LogsSection() {
       "invite.declined": "bg-muted text-muted-foreground border-muted",
     };
     
-    // Map legacy action names to modern terminology for display
-    const displayLabels: Record<string, string> = {
-      "invite.created": "intent.declared",
-      "invite.accepted": "intent.confirmed",
-      "invite.declined": "intent.declined",
-    };
-    
-    const displayLabel = displayLabels[action] || action;
-    
     return (
       <Badge variant="outline" className={`font-mono text-xs ${colors[action] || ""}`}>
-        {displayLabel}
+        {getActionDisplayLabel(action)}
       </Badge>
     );
   };
@@ -194,6 +194,7 @@ export function LogsSection() {
     toast.success(`${filteredLogs.length} logs exported to CSV.`);
   };
 
+  // Get unique actions for filter dropdown
   const uniqueActions = [...new Set(activityLogs.map((log) => log.action))];
 
   return (
@@ -229,7 +230,7 @@ export function LogsSection() {
                 <SelectItem value="all">All Actions</SelectItem>
                 {uniqueActions.map((action) => (
                   <SelectItem key={action} value={action}>
-                    {action}
+                    {getActionDisplayLabel(action)}
                   </SelectItem>
                 ))}
               </SelectContent>
