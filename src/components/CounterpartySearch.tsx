@@ -290,11 +290,18 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       }
 
       // Confirm intent on the match (settle) - this burns 500 tokens
-      const settleResponse = await supabase.functions.invoke("match", {
-        body: { matchId, action: "settle" }
+      // Call the path-based endpoint /match/:id/settle
+      const settleResponse = await supabase.functions.invoke(`match/${matchId}/settle`, {
+        method: 'POST',
+        body: {}
       });
 
-      if (settleResponse.error) throw settleResponse.error;
+      if (settleResponse.error) {
+        // Extract specific error message from response
+        const errorData = settleResponse.data;
+        const errorMessage = errorData?.message || errorData?.error || settleResponse.error.message;
+        throw new Error(errorMessage || "Failed to confirm intent");
+      }
 
       toast.success("Intent recorded", {
         action: {
