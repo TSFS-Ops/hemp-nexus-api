@@ -152,16 +152,27 @@ export function LogsSection() {
     const colors: Record<string, string> = {
       "intent.confirmed": "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
       "intent.declared": "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
+      "intent.denied": "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
       "match.created": "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
       "search.completed": "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-      // Legacy invite events - deprecated styling (muted)
+      // Legacy invite events - map to new terminology with muted styling
       "invite.created": "bg-muted text-muted-foreground border-muted",
       "invite.accepted": "bg-muted text-muted-foreground border-muted",
       "invite.declined": "bg-muted text-muted-foreground border-muted",
     };
+    
+    // Map legacy action names to modern terminology for display
+    const displayLabels: Record<string, string> = {
+      "invite.created": "intent.declared",
+      "invite.accepted": "intent.confirmed",
+      "invite.declined": "intent.declined",
+    };
+    
+    const displayLabel = displayLabels[action] || action;
+    
     return (
       <Badge variant="outline" className={`font-mono text-xs ${colors[action] || ""}`}>
-        {action}
+        {displayLabel}
       </Badge>
     );
   };

@@ -271,7 +271,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
           },
           commodity: parsedQuery?.product || query,
           quantity: { amount: 1, unit: "lot" },
-          price: { amount: 0, currency: "USD" },
+          price: { amount: 1, currency: "USD" },
           terms: "Intent confirmation only - not a binding agreement",
           metadata: { 
             searchQuery: query, 
