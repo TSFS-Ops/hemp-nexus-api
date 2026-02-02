@@ -2385,19 +2385,6 @@ export type Database = {
           },
         ]
       }
-      match_evidence_public: {
-        Row: {
-          event_timeline: Json | null
-          match_created_at: string | null
-          match_data: Json | null
-          match_hash: string | null
-          match_id: string | null
-          org_id: string | null
-          settled_at: string | null
-          status: string | null
-        }
-        Relationships: []
-      }
       profiles_safe: {
         Row: {
           created_at: string | null
