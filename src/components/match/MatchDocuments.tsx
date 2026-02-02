@@ -225,9 +225,10 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         return;
       }
 
-      // Storage path format: poi/<match_id>/<doc_id>/<filename>
+      // Storage path format: <org_id>/poi/<match_id>/<doc_id>/<filename>
+      // First folder must be org_id to satisfy storage RLS policy
       const docId = crypto.randomUUID();
-      const storagePath = `poi/${matchId}/${docId}/${selectedFile.name}`;
+      const storagePath = `${effectiveOrgId}/poi/${matchId}/${docId}/${selectedFile.name}`;
 
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
