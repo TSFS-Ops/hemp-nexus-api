@@ -137,20 +137,20 @@ export default function MatchDetails() {
             {match.status === "matched" && (
               <div className="flex flex-col items-end gap-2">
                 <div className="flex items-center gap-2">
-                  <Button onClick={handleSettle}>Confirm intent</Button>
+                  <Button onClick={handleSettle}>Confirm Intent</Button>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Signals your interest so the seller can prepare final terms. This does not create any contract, payment, or legal obligation.</p>
+                        <p>Confirms your intent and burns 500 credits. Upload any supporting documents first using the Documents tab below.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
                 <p className="text-xs text-muted-foreground text-right max-w-xs">
-                  This does not create any legal obligation. It only signals interest so the seller can prepare final terms.
+                  Upload documents before confirming. 500 credits will be deducted. No legal obligation.
                 </p>
               </div>
             )}

@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { CheckCircle, Info, Loader2 } from "lucide-react";
+import { FileText, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
@@ -210,7 +210,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     });
   };
 
-  const handleConfirmIntent = async () => {
+  const handleStartPOI = async () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one counterparty");
       return;
@@ -226,7 +226,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Please sign in to confirm intent");
+        toast.error("Please sign in to start a POI");
         return;
       }
 
@@ -258,7 +258,8 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         return;
       }
 
-      // Create match via edge function
+      // Create match via edge function - match is created in "discovery" state by default
+      // This is FREE - no credits are burned until "Confirm Intent" is clicked
       const { data: matchData, error: matchError } = await supabase.functions.invoke("match", {
         body: {
           buyer: { 
@@ -272,7 +273,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
           commodity: parsedQuery?.product || query,
           quantity: { amount: 1, unit: "lot" },
           price: { amount: 1, currency: "USD" },
-          terms: "Intent confirmation only - not a binding agreement",
+          terms: "POI draft - upload documents before confirming intent",
           metadata: { 
             searchQuery: query, 
             parsedQuery,
@@ -289,31 +290,19 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         throw new Error("Match ID not returned");
       }
 
-      // Confirm intent on the match (settle) - this burns 500 tokens
-      // Call the path-based endpoint /match/:id/settle
-      const settleResponse = await supabase.functions.invoke(`match/${matchId}/settle`, {
-        method: 'POST',
-        body: {}
-      });
-
-      if (settleResponse.error) {
-        // Extract specific error message from response
-        const errorData = settleResponse.data;
-        const errorMessage = errorData?.message || errorData?.error || settleResponse.error.message;
-        throw new Error(errorMessage || "Failed to confirm intent");
-      }
-
-      toast.success("Intent recorded", {
+      // Navigate to match detail page where user can upload documents
+      // User will click "Confirm Intent" there after uploading documents
+      toast.success("POI created - upload documents, then confirm intent", {
         action: {
-          label: "Open Proof",
+          label: "Open",
           onClick: () => navigate(`/dashboard/matches/${matchId}`)
         }
       });
       
       navigate(`/dashboard/matches/${matchId}`);
     } catch (error) {
-      console.error("Confirm intent error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to confirm intent");
+      console.error("Start POI error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to start POI");
     } finally {
       setIsConfirming(false);
     }
@@ -407,9 +396,9 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
               </h3>
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
-                  {/* Confirm Intent - always available when results are selected */}
+                  {/* Start POI - creates match in discovery state for document upload */}
                   <Button 
-                    onClick={handleConfirmIntent}
+                    onClick={handleStartPOI}
                     disabled={isConfirming}
                     size="sm" 
                     className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
@@ -417,9 +406,9 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                     {isConfirming ? (
                       <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
                     ) : (
-                      <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
+                      <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                     )}
-                    Confirm Intent ({selectedResults.size})
+                    Start POI ({selectedResults.size})
                   </Button>
                 </div>
               )}
