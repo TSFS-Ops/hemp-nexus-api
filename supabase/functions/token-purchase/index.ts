@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
+const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -76,6 +76,17 @@ Deno.serve(async (req) => {
   const isWebhook = path === "webhook";
 
   try {
+    if (!PAYSTACK_SECRET_KEY) {
+      console.error("PAYSTACK_SECRET_KEY is not configured");
+      return new Response(
+        JSON.stringify({
+          error: "Payment provider is not configured",
+          code: "PAYMENTS_NOT_CONFIGURED",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (isWebhook) {
       return await handleWebhook(req);
     }
@@ -176,8 +187,13 @@ Deno.serve(async (req) => {
     if (!paystackData.status) {
       console.error("Paystack error:", paystackData);
       return new Response(
-        JSON.stringify({ error: "Payment initialisation failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Payment initialisation failed",
+          provider: "paystack",
+          providerCode: paystackData?.code ?? null,
+          providerMessage: paystackData?.message ?? null,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -249,6 +265,11 @@ async function handleWebhook(req: Request): Promise<Response> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    if (!PAYSTACK_SECRET_KEY) {
+      console.error("PAYSTACK_SECRET_KEY is not configured");
+      return new Response("Not configured", { status: 500 });
+    }
+
     // Verify Paystack signature
     const signature = req.headers.get("x-paystack-signature");
     const body = await req.text();

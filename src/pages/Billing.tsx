@@ -131,18 +131,53 @@ export default function Billing() {
   });
 
   const handlePurchase = async (packageId: string) => {
+    if (!session) {
+      toast.error("Please sign in to purchase credits.");
+      return;
+    }
+
     setIsProcessing(true);
     setSelectedPackage(packageId);
     
     try {
       const { data, error } = await supabase.functions.invoke("token-purchase", {
+        method: "POST",
         body: { 
           packageId,
           callbackUrl: `${window.location.origin}/billing?status=success`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to surface structured errors returned by the backend function
+        const anyError = error as unknown as {
+          message?: string;
+          context?: { body?: any };
+        };
+
+        const rawBody = anyError?.context?.body;
+        let body: any = rawBody;
+        if (typeof rawBody === "string") {
+          try {
+            body = JSON.parse(rawBody);
+          } catch {
+            body = { error: rawBody };
+          }
+        }
+
+        const providerCode = body?.providerCode as string | undefined;
+        const providerMessage = body?.providerMessage as string | undefined;
+        const fallbackMessage = body?.error || anyError?.message;
+
+        const message =
+          providerCode === "unsupported_currency"
+            ? "Your Paystack account is not enabled for USD. Enable USD on your Paystack integration (or tell me to switch pricing to ZAR)."
+            : providerMessage || fallbackMessage || "Failed to initiate purchase. Please try again.";
+
+        console.error("Purchase error:", error);
+        toast.error(message);
+        return;
+      }
 
       if (data?.checkoutUrl) {
         window.location.href = data.checkoutUrl;
