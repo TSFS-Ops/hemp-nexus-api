@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, Info, FileText, Shield, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, Info, FileText, Shield, Clock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
+import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import { WadModule } from "@/components/wad/WadModule";
 import {
   Tooltip,
@@ -24,8 +25,10 @@ type Match = Tables<"matches">;
 export default function MatchDetails() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
@@ -60,9 +63,10 @@ export default function MatchDetails() {
   };
 
   const handleSettle = async () => {
-    if (!match) return;
+    if (!match || confirming) return;
 
     try {
+      setConfirming(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("You must be logged in to confirm intent");
@@ -91,11 +95,17 @@ export default function MatchDetails() {
         throw new Error(errorMessage);
       }
 
-      toast.success("Intent confirmed successfully");
-      fetchMatch();
+      toast.success("Intent confirmed successfully! Redirecting to logs...");
+      
+      // Navigate to logs page to show proof
+      setTimeout(() => {
+        navigate("/dashboard?section=logs");
+      }, 1000);
     } catch (error: any) {
       console.error("Error confirming intent:", error);
       toast.error(error.message || "Failed to confirm intent");
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -110,6 +120,8 @@ export default function MatchDetails() {
   if (!match) {
     return null;
   }
+
+  const isSettled = match.status === "settled";
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -126,32 +138,18 @@ export default function MatchDetails() {
             <div>
               <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
               <div className="flex items-center gap-2">
-              <Badge variant={match.status === "settled" ? "default" : "secondary"}>
-                  {match.status === "settled" ? "CONFIRMED" : "MATCHED"}
+                <Badge variant={isSettled ? "default" : "secondary"}>
+                  {isSettled ? "CONFIRMED" : "MATCHED"}
                 </Badge>
                 <span className="text-sm text-muted-foreground font-mono">
                   {match.hash.substring(0, 8)}...
                 </span>
               </div>
             </div>
-            {match.status === "matched" && (
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  <Button onClick={handleSettle}>Confirm Intent</Button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Confirms your intent and burns 500 credits. Upload any supporting documents first using the Documents tab below.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <p className="text-xs text-muted-foreground text-right max-w-xs">
-                  Upload documents before confirming. 500 credits will be deducted. No legal obligation.
-                </p>
+            {isSettled && (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="text-sm font-medium">Intent Confirmed</span>
               </div>
             )}
           </div>
@@ -233,6 +231,14 @@ export default function MatchDetails() {
               </div>
             </>
           )}
+
+          {/* Show documents directly on proof page when settled */}
+          {isSettled && (
+            <>
+              <Separator className="my-6" />
+              <ProofDocumentsList matchId={match.id} />
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -253,8 +259,50 @@ export default function MatchDetails() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details" className="mt-4">
+        <TabsContent value="details" className="mt-4 space-y-4">
           <MatchDocuments matchId={match.id} orgId={match.org_id} />
+          
+          {/* Confirm Intent button below documents - only for unconfirmed matches */}
+          {!isSettled && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h4 className="font-semibold">Ready to Confirm Intent?</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Upload any supporting documents above first. 500 credits will be deducted. No legal obligation is created.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={handleSettle} 
+                      disabled={confirming}
+                      size="lg"
+                    >
+                      {confirming ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Confirming...
+                        </>
+                      ) : (
+                        "Confirm Intent"
+                      )}
+                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Confirms your intent and burns 500 credits. This creates an immutable proof record that will appear in your logs.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="wad" className="mt-4">
