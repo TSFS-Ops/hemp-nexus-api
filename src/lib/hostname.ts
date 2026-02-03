@@ -89,7 +89,7 @@ export function getPublicUrl(path: string = ''): string {
  * Routes that are only allowed on the public face (www.izenzo.co.za)
  * These show the product demo, search, and proof-of-intent
  */
-export const PUBLIC_ONLY_ROUTES = ['/', '/demo', '/docs'];
+export const PUBLIC_ONLY_ROUTES = ['/', '/demo', '/docs', '/pricing'];
 
 /**
  * Routes that are only allowed on the console face (api.trade.izenzo.co.za)
@@ -128,6 +128,7 @@ export function isRouteAllowed(pathname: string): boolean {
       pathname === '/' ||
       pathname === '/demo' ||
       pathname === '/docs' ||
+      pathname === '/pricing' ||
       pathname === '/auth'
     );
   }
