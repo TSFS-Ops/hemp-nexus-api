@@ -38,6 +38,12 @@ export default function Landing() {
               Documentation
             </Link>
             <Link 
+              to="/pricing" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link 
               to="/demo" 
               className="text-sm font-medium text-foreground"
             >
@@ -69,6 +75,13 @@ export default function Landing() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Documentation
+            </Link>
+            <Link 
+              to="/pricing" 
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Pricing
             </Link>
             <Link 
               to="/demo" 
@@ -248,6 +261,7 @@ export default function Landing() {
           <span>Compliance Matching API</span>
           <div className="flex items-center gap-6">
             <Link to="/docs" className="hover:text-foreground transition-colors">Documentation</Link>
+            <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
             <Link to="/demo" className="hover:text-foreground transition-colors">Demo</Link>
             <AuthLink className="hover:text-foreground transition-colors">Sign in</AuthLink>
           </div>
