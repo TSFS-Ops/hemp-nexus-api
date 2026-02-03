@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Shield, Lock, Users, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { listMatchDocuments } from "@/lib/match-documents-client";
 
 interface ProofDocument {
   id: string;
@@ -43,22 +44,23 @@ export function ProofDocumentsList({ matchId }: ProofDocumentsListProps) {
     try {
       setLoading(true);
 
-      // Avoid firing protected queries when logged out (prevents noisy errors in demo/unauth states).
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setDocuments([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("match_documents")
-        .select("id, doc_type, filename, sha256_hash, file_size, status, created_at, title, visibility")
-        .eq("match_id", matchId)
-        .neq("status", "revoked")
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      setDocuments(data || []);
+      const docs = await listMatchDocuments(matchId, { order: "asc" });
+      const safeDocs = (docs || [])
+        .filter((d) => d.status !== "revoked" && d.status !== "archived")
+        .map(
+          (d): ProofDocument => ({
+            id: d.id,
+            doc_type: d.doc_type,
+            filename: d.filename,
+            sha256_hash: d.sha256_hash,
+            file_size: d.file_size,
+            status: d.status,
+            created_at: d.created_at,
+            title: d.title,
+            visibility: d.visibility,
+          })
+        );
+      setDocuments(safeDocs);
     } catch (err) {
       console.error("Error fetching proof documents:", err);
     } finally {

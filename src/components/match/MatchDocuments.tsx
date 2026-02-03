@@ -53,6 +53,7 @@ import {
 import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
 import { DocumentAccessLogs } from "./DocumentAccessLogs";
+import { listMatchDocuments } from "@/lib/match-documents-client";
 
 interface MatchDocument {
   id: string;
@@ -148,38 +149,15 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       setLoading(true);
       setError(null);
 
-      // Documents are protected backend data; if the user is logged out we should not
-      // attempt a direct table query (it will fail and surface as a generic error).
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setDocuments([]);
-        setError("Please sign in to view documents.");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("match_documents")
-        .select("id, match_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, notes, visibility, valid_from, valid_to")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        const msg = (error.message || "").toLowerCase();
-        if (
-          msg.includes("jwt") ||
-          msg.includes("permission") ||
-          msg.includes("not authorized")
-        ) {
-          setDocuments([]);
-          setError("Please sign in to view documents.");
-          return;
-        }
-        throw error;
-      }
-      setDocuments(data || []);
+      // Load via backend function to avoid direct table query failures and keep access
+      // logic centralized with the same rules as downloads.
+      const docs = await listMatchDocuments(matchId, { order: "desc" });
+      setDocuments(docs as unknown as MatchDocument[]);
     } catch (err) {
       console.error("Error fetching documents:", err);
-      toast.error("Failed to load documents");
+      const message = err instanceof Error ? err.message : "Failed to load documents";
+      setError(message);
+      toast.error("Failed to load documents", { description: message });
     } finally {
       setLoading(false);
     }
