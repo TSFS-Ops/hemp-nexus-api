@@ -23,36 +23,36 @@ const CHARGING_ENTITY = {
 };
 
 // ==============================================
-// TOKEN PACKAGES (USD pricing - final)
-// $99 = 20 credits, $350 = 100 credits, $1500 = 500 credits
+// TOKEN PACKAGES (ZAR pricing)
+// R1,799 = 20 credits, R6,299 = 100 credits, R26,999 = 500 credits
 // ==============================================
 const TOKEN_PACKAGES: Record<string, { 
   credits: number; 
-  price_usd: number; 
+  price_zar: number; 
   price_cents: number; 
   label: string;
   pricePerCredit: string;
 }> = {
   starter: { 
     credits: 20, 
-    price_usd: 99, 
-    price_cents: 9900, 
+    price_zar: 1799, 
+    price_cents: 179900, 
     label: "Starter",
-    pricePerCredit: "4.95",
+    pricePerCredit: "89.95",
   },
   professional: { 
     credits: 100, 
-    price_usd: 350, 
-    price_cents: 35000, 
+    price_zar: 6299, 
+    price_cents: 629900, 
     label: "Professional",
-    pricePerCredit: "3.50",
+    pricePerCredit: "62.99",
   },
   enterprise: { 
     credits: 500, 
-    price_usd: 1500, 
-    price_cents: 150000, 
+    price_zar: 26999, 
+    price_cents: 2699900, 
     label: "Enterprise",
-    pricePerCredit: "3.00",
+    pricePerCredit: "54.00",
   },
 };
 
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
-    // Create Paystack transaction (USD currency)
+    // Create Paystack transaction (ZAR currency)
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -163,14 +163,14 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         email: profile.email || userData.user.email,
         amount: pkg.price_cents, // Paystack uses cents
-        currency: "USD",
+        currency: "ZAR",
         callback_url: callbackUrl || `${req.headers.get("origin")}/billing?status=success`,
         metadata: {
           org_id: profile.org_id,
           user_id: userData.user.id,
           package_id: packageId,
           credits: pkg.credits,
-          price_usd: pkg.price_usd,
+          price_zar: pkg.price_zar,
           client_ip: clientIp,
           timestamp: new Date().toISOString(),
           custom_fields: [
@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
       metadata: {
         package_id: packageId,
         credits: pkg.credits,
-        amount_usd: pkg.price_usd,
+        amount_zar: pkg.price_zar,
         reference: paystackData.data.reference,
         client_ip: clientIp,
       },
@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
         package: {
           name: pkg.label,
           credits: pkg.credits,
-          priceUsd: pkg.price_usd,
+          priceZar: pkg.price_zar,
         },
         entity: CHARGING_ENTITY,
       }),
@@ -243,14 +243,14 @@ function handleGetPackages(): Response {
     id,
     name: pkg.label,
     credits: pkg.credits,
-    priceUsd: pkg.price_usd,
+    priceZar: pkg.price_zar,
     pricePerCredit: pkg.pricePerCredit,
   }));
 
   return new Response(
     JSON.stringify({ 
       packages,
-      currency: "USD",
+      currency: "ZAR",
       entity: CHARGING_ENTITY,
       refundPolicy: REFUND_POLICY,
     }),

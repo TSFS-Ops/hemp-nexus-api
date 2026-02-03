@@ -17,33 +17,33 @@ import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { cn } from "@/lib/utils";
 
 // ==============================================
-// CREDIT PACKAGES (USD pricing - final)
+// CREDIT PACKAGES (ZAR pricing)
 // ==============================================
 const CREDIT_PACKAGES = [
   { 
     id: 'starter',
     credits: 20, 
-    priceUsd: 99,
+    priceZar: 1799,
     label: 'Starter',
-    pricePerCredit: '4.95',
+    pricePerCredit: '89.95',
     description: 'For testing and small projects',
     popular: false,
   },
   { 
     id: 'professional',
     credits: 100, 
-    priceUsd: 350,
+    priceZar: 6299,
     label: 'Professional',
-    pricePerCredit: '3.50',
+    pricePerCredit: '62.99',
     description: 'Best value for active users',
     popular: true,
   },
   { 
     id: 'enterprise',
     credits: 500, 
-    priceUsd: 1500,
+    priceZar: 26999,
     label: 'Enterprise',
-    pricePerCredit: '3.00',
+    pricePerCredit: '54.00',
     description: 'For high-volume operations',
     popular: false,
   },
@@ -296,8 +296,8 @@ export default function Billing() {
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
-                    <span className="text-4xl font-bold">${pkg.priceUsd}</span>
-                    <span className="text-muted-foreground"> USD</span>
+                    <span className="text-4xl font-bold">R{pkg.priceZar.toLocaleString()}</span>
+                    <span className="text-muted-foreground"> ZAR</span>
                   </div>
                   <div className="space-y-2 text-sm text-muted-foreground mb-6">
                     <div className="flex items-center justify-center gap-2">
@@ -306,7 +306,7 @@ export default function Billing() {
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span>${pkg.pricePerCredit} per credit</span>
+                      <span>R{pkg.pricePerCredit} per credit</span>
                     </div>
                   </div>
                   <Button 
@@ -488,7 +488,7 @@ export default function Billing() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. All amounts in USD.
+          Payments processed securely by Paystack. All amounts in ZAR.
         </p>
       </div>
     </DashboardLayout>

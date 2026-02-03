@@ -8,9 +8,9 @@ import { getConsoleUrl } from "@/lib/hostname";
 const packages = [
   {
     name: "Starter",
-    price: 99,
+    price: 1799,
     credits: 20,
-    perCredit: "4.95",
+    perCredit: "89.95",
     description: "For small businesses testing the waters",
     features: [
       "20 Proof-of-Intent credits",
@@ -22,9 +22,9 @@ const packages = [
   },
   {
     name: "Professional",
-    price: 350,
+    price: 6299,
     credits: 100,
-    perCredit: "3.50",
+    perCredit: "62.99",
     description: "For growing businesses with regular trading",
     features: [
       "100 Proof-of-Intent credits",
@@ -37,9 +37,9 @@ const packages = [
   },
   {
     name: "Enterprise",
-    price: 1500,
+    price: 26999,
     credits: 500,
-    perCredit: "3.00",
+    perCredit: "54.00",
     description: "For high-volume traders and institutions",
     features: [
       "500 Proof-of-Intent credits",
@@ -115,11 +115,11 @@ export default function Pricing() {
                 <CardContent className="flex-1">
                   <div className="text-center mb-6">
                     <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold text-foreground">${pkg.price}</span>
-                      <span className="text-muted-foreground">USD</span>
+                      <span className="text-4xl font-bold text-foreground">R{pkg.price.toLocaleString()}</span>
+                      <span className="text-muted-foreground">ZAR</span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {pkg.credits} credits · ${pkg.perCredit}/credit
+                      {pkg.credits} credits · R{pkg.perCredit}/credit
                     </p>
                   </div>
                   <ul className="space-y-3">
