@@ -146,13 +146,36 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
+      setError(null);
+
+      // Documents are protected backend data; if the user is logged out we should not
+      // attempt a direct table query (it will fail and surface as a generic error).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setDocuments([]);
+        setError("Please sign in to view documents.");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("match_documents")
         .select("id, match_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, notes, visibility, valid_from, valid_to")
         .eq("match_id", matchId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        const msg = (error.message || "").toLowerCase();
+        if (
+          msg.includes("jwt") ||
+          msg.includes("permission") ||
+          msg.includes("not authorized")
+        ) {
+          setDocuments([]);
+          setError("Please sign in to view documents.");
+          return;
+        }
+        throw error;
+      }
       setDocuments(data || []);
     } catch (err) {
       console.error("Error fetching documents:", err);
