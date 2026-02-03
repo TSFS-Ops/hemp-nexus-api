@@ -42,6 +42,14 @@ export function ProofDocumentsList({ matchId }: ProofDocumentsListProps) {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
+
+      // Avoid firing protected queries when logged out (prevents noisy errors in demo/unauth states).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setDocuments([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("match_documents")
         .select("id, doc_type, filename, sha256_hash, file_size, status, created_at, title, visibility")
