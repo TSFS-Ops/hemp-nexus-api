@@ -188,6 +188,10 @@ export default function PublicSearch() {
               API Docs
             </Link>
             <span className="text-border">·</span>
+            <Link to="/pricing" className="hover:text-primary transition-colors">
+              Pricing
+            </Link>
+            <span className="text-border">·</span>
             <a href={authUrl} className="hover:text-primary transition-colors">
               Developer Console
             </a>
