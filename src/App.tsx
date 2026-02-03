@@ -19,6 +19,7 @@ import Analytics from "@/pages/Analytics";
 import Docs from "@/pages/Docs";
 import MyActivity from "@/pages/MyActivity";
 import Invites from "@/pages/Invites";
+import Pricing from "@/pages/Pricing";
 
 /**
  * Root element that renders based on host type:
@@ -57,6 +58,7 @@ function App() {
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/docs" element={<Docs />} />
+                <Route path="/pricing" element={<Pricing />} />
                 <Route path="/admin/*" element={<Admin />} />
               </Routes>
               <Sonner />
