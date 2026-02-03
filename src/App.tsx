@@ -12,6 +12,7 @@ import Landing from "@/pages/Landing";
 import Demo from "@/pages/Demo";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
+import Billing from "@/pages/Billing";
 import Admin from "@/pages/Admin";
 import MatchDetails from "@/pages/MatchDetails";
 import Marketplace from "@/pages/Marketplace";
@@ -52,6 +53,7 @@ function App() {
                 <Route path="/demo" element={<Demo />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/billing" element={<Billing />} />
                 <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
                 <Route path="/activity" element={<MyActivity />} />
                 <Route path="/invites" element={<Invites />} />
