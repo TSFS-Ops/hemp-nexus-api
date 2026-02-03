@@ -89,7 +89,7 @@ export function getPublicUrl(path: string = ''): string {
  * Routes that are only allowed on the public face (www.izenzo.co.za)
  * These show the product demo, search, and proof-of-intent
  */
-export const PUBLIC_ONLY_ROUTES = ['/', '/demo', '/docs', '/pricing'];
+export const PUBLIC_ONLY_ROUTES = ['/', '/demo', '/docs'];
 
 /**
  * Routes that are only allowed on the console face (api.trade.izenzo.co.za)
@@ -108,7 +108,7 @@ export const CONSOLE_ONLY_ROUTES = [
 /**
  * Shared routes allowed on both domains
  */
-export const SHARED_ROUTES = ['/auth'];
+export const SHARED_ROUTES = ['/auth', '/pricing'];
 
 /**
  * Check if a route is allowed on the current host
@@ -123,7 +123,7 @@ export function isRouteAllowed(pathname: string): boolean {
   
   // Public face restrictions
   if (hostType === 'public') {
-    // Allow public routes and auth
+    // Allow public routes, auth, and shared routes like pricing
     return (
       pathname === '/' ||
       pathname === '/demo' ||

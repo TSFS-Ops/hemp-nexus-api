@@ -1,4 +1,4 @@
-import { Key, Code, FileText, Activity, BookOpen, Handshake, BarChart3, Package, Search, Lock, LogIn, Database, User, Coins, Settings, HelpCircle, Mail } from "lucide-react";
+import { Key, Code, FileText, Activity, BookOpen, Handshake, BarChart3, Package, Search, Lock, LogIn, Database, User, Coins, Settings, HelpCircle, Mail, CreditCard } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -53,6 +53,7 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
   ];
 
   const supportItems = [
+    { id: "pricing", title: "Pricing", icon: CreditCard, isLink: true, linkTo: "/pricing" },
     { id: "troubleshooting", title: "Help", icon: HelpCircle },
   ];
 
@@ -71,21 +72,30 @@ export function AppSidebar({ activeSection, onSectionChange, isAdmin, isDemoMode
 
   const isActive = (id: string) => activeSection === id;
 
-  const renderMenuItems = (items: typeof overviewItems) => (
+  const renderMenuItems = (items: typeof supportItems) => (
     <SidebarMenu>
       {items.map((item) => (
         <SidebarMenuItem key={item.id}>
-          <SidebarMenuButton
-            onClick={() => onSectionChange(item.id)}
-            isActive={isActive(item.id)}
-            className="w-full px-2 py-1.5 text-sm"
-          >
-            <item.icon className="h-4 w-4" />
-            <span>{item.title}</span>
-            {isDemoMode && 'requiresAuth' in item && item.requiresAuth && (
-              <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
-            )}
-          </SidebarMenuButton>
+          {'isLink' in item && item.isLink ? (
+            <SidebarMenuButton asChild className="w-full px-2 py-1.5 text-sm">
+              <Link to={item.linkTo}>
+                <item.icon className="h-4 w-4" />
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          ) : (
+            <SidebarMenuButton
+              onClick={() => onSectionChange(item.id)}
+              isActive={isActive(item.id)}
+              className="w-full px-2 py-1.5 text-sm"
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.title}</span>
+              {isDemoMode && 'requiresAuth' in item && item.requiresAuth && (
+                <Lock className="h-3 w-3 ml-auto text-muted-foreground" />
+              )}
+            </SidebarMenuButton>
+          )}
         </SidebarMenuItem>
       ))}
     </SidebarMenu>
