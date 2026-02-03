@@ -55,6 +55,7 @@ const packages = [
 
 export default function Pricing() {
   const consoleAuthUrl = getConsoleUrl("/auth");
+  const consoleBillingUrl = getConsoleUrl("/billing");
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,7 +133,7 @@ export default function Pricing() {
                 </CardContent>
                 <CardFooter>
                   <Button asChild className="w-full" variant={pkg.popular ? "default" : "outline"}>
-                    <a href={consoleAuthUrl}>Get Started</a>
+                    <a href={consoleBillingUrl}>Get Started</a>
                   </Button>
                 </CardFooter>
               </Card>
