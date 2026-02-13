@@ -2,7 +2,7 @@
 
 All notable changes to the Compliance Matching API are documented here.
 
-**Last updated:** 24 January 2026
+**Last updated:** 13 February 2026
 
 ## Versioning
 
@@ -10,6 +10,81 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backwards compatible)
 - **PATCH**: Bug fixes (backwards compatible)
+
+---
+
+## [2.0.0] - 2026-02-13
+
+### Enterprise-Grade Rebuild (Phases 1–10)
+
+**Focus: Complete platform rebuild for production readiness — schema, auth, billing, security, and code quality.**
+
+#### Phase 1: Foundation (Schema + Auth + Roles)
+- **[Auth]** Expanded `app_role` enum: `platform_admin`, `org_admin`, `org_member`
+- **[Auth]** Migrated legacy roles (`admin` → `platform_admin`, `buyer` → `org_member`)
+- **[Auth]** Updated `handle_new_user()` trigger for new role structure
+- **[Auth]** Added `is_org_admin()` check function
+- **[Security]** Tightened all RLS policies for granular role structure
+- **[Auth]** Updated `AuthContext` to expose role info
+
+#### Phase 2: Core Flow (Signals → Match → POI)
+- **[API]** Consolidated signal creation and search edge functions
+- **[API]** Streamlined match creation flow (Start POI → upload docs → Confirm Intent)
+- **[Security]** Verified SHA-256 hash-chaining integrity
+- **[UI]** Consolidated match detail view
+
+#### Phase 3: Invites + Counterparty Flow
+- **[API]** Simplified invite edge function with Zod validation and `actor-context`
+- **[UI]** Migrated invite UI from legacy `useToast` to `sonner`
+- **[Audit]** Invite state transitions logged with `actor_user_id`/`actor_api_key_id`
+
+#### Phase 4: WaD Evidence Bundles
+- **[API]** Refactored WaD edge function (Zod, `deriveActorIds`, parallel DB queries)
+- **[Security]** SHA-256 sealing verified (canonical payload → deterministic hash → ledger chain)
+- **[Security]** Access control enforced (involved parties + `platform_admin` only)
+
+#### Phase 5: Billing (Token Burn + Paystack)
+- **[Billing]** Token-purchase edge function with Zod validation
+- **[Billing]** Token burn at each state transition (declare: 500, sighting: 1500, commit: 1000+finality)
+- **[Billing]** ZAR pricing aligned across UI and metadata
+- **[Security]** HMAC SHA-512 verification on Paystack webhooks
+- **[Billing]** Dual-path reliability: webhook + client-side `/verify` fallback
+
+#### Phase 6: Developer Console
+- **[API]** Fixed API key auth — JWT users manage keys without scope check
+- **[API]** Fixed audit-logs — console users no longer burn tokens viewing logs
+- **[UI]** Dashboard migrated from legacy `useToast` to `sonner`
+- **[Docs]** DocsSection with overview, key concepts, and quick examples
+
+#### Phase 7: Admin Panel
+- **[Admin]** Reorganised sidebar into 5 logical groups
+- **[Admin]** Migrated all 16 sub-panels to `sonner` notifications
+- **[Admin]** Parallelised stat queries with `Promise.all`
+- **[Admin]** Replaced `<a>` tags with React Router `<Link>`
+
+#### Phase 8: Public Site + Sandbox
+- **[UI]** Fixed API example URL on landing page
+- **[UI]** Fixed currency label on pricing page (ZAR, not USD)
+- **[UI]** Migrated `PublicSearch` from hardcoded colours to semantic tokens
+- **[Sandbox]** Verified demo-only data with zero DB writes
+
+#### Phase 9: Enterprise Hardening
+- **[Security]** Created `webhook_endpoints_safe` view (excludes `secret_hash`)
+- **[Security]** All views use `security_invoker = true`
+- **[API]** Migrated `calculate-reputation`, `web-search`, `sr-discover` to `Deno.serve()`
+- **[API]** All edge functions standardised: `authenticateRequest`, Zod, `errorResponse`, `deriveActorIds`
+- **[Security]** 13 security findings reviewed and triaged
+
+#### Phase 10: Code Cleanup
+- **[Cleanup]** Deleted 13 unused components (SignalTester, MatchTester, ApiAnalytics, TransactionStateIndicator, ReputationBadge, ApiSmokeTests, EmbeddableWidget, WebhookDebugger, HashVerifier, CronSetupInstructions, SystemHealthMonitor, AutomatedTestSuite, ErrorMonitoringDashboard)
+- **[Cleanup]** Removed `run-tests` edge function (not for production)
+- **[Cleanup]** Removed 8 unreachable Dashboard sections
+- **[Docs]** Updated CHANGELOG with full rebuild history
+
+#### Breaking Changes
+- Role enum values changed (`admin` → `platform_admin`, `buyer` → `org_member`)
+- `run-tests` edge function removed
+- Several UI components removed (not user-facing)
 
 ---
 

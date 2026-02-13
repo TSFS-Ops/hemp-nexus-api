@@ -1,16 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { QuickstartGuide } from "@/components/dashboard/QuickstartGuide";
 import { SdkDocumentation } from "@/components/SdkDocumentation";
-import EmbeddableWidget from "@/components/EmbeddableWidget";
-import WebhookDebugger from "@/components/WebhookDebugger";
-import HashVerifier from "@/components/HashVerifier";
-import CronSetupInstructions from "@/components/CronSetupInstructions";
-import SystemHealthMonitor from "@/components/SystemHealthMonitor";
-import AutomatedTestSuite from "@/components/AutomatedTestSuite";
-import ErrorMonitoringDashboard from "@/components/ErrorMonitoringDashboard";
 import Troubleshooting from "@/components/Troubleshooting";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { SandboxIndicator } from "@/components/SandboxIndicator";
@@ -124,95 +116,14 @@ export default function Dashboard() {
           </div>
         );
 
-      case "embed":
-        return (
-          <div className="space-y-6">
-            <EmbeddableWidget />
-          </div>
-        );
-
       case "webhooks":
         return <WebhooksSection />;
-
-      case "webhook-debugger":
-        return (
-          <div className="space-y-6">
-            <WebhookDebugger />
-          </div>
-        );
 
       case "audit-logs":
         return <LogsSection />;
 
       case "usage":
         return <UsageBillingSection />;
-
-      case "data-sources":
-        return (
-          <div className="space-y-5 sm:space-y-6">
-            <header className="space-y-1">
-              <h1 className="font-bold tracking-tight">Data Sources</h1>
-              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-                Configure external data integrations
-              </p>
-            </header>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base sm:text-lg">Coming Soon</CardTitle>
-                <CardDescription className="text-sm leading-relaxed">
-                  Data source management interface will be available soon
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        );
-
-      case "hash-verify":
-        return (
-          <div className="space-y-5 sm:space-y-6">
-            <header className="space-y-1">
-              <h1 className="font-bold tracking-tight">Hash Verifier</h1>
-              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-                Cryptographic verification for audit trails
-              </p>
-            </header>
-            <HashVerifier />
-          </div>
-        );
-
-      case "automation":
-        return (
-          <div className="space-y-5 sm:space-y-6">
-            <header className="space-y-1">
-              <h1 className="font-bold tracking-tight">Changelog</h1>
-              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-                API updates, improvements, and breaking changes
-              </p>
-            </header>
-            <CronSetupInstructions />
-          </div>
-        );
-
-      case "system-health":
-        return (
-          <div className="space-y-6">
-            <SystemHealthMonitor />
-          </div>
-        );
-
-      case "automated-tests":
-        return (
-          <div className="space-y-6">
-            <AutomatedTestSuite />
-          </div>
-        );
-
-      case "error-monitoring":
-        return (
-          <div className="space-y-6">
-            <ErrorMonitoringDashboard />
-          </div>
-        );
 
       case "troubleshooting":
         return <Troubleshooting />;
