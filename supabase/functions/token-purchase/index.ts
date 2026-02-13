@@ -104,6 +104,133 @@ Deno.serve(async (req) => {
       );
     }
 
+    // POST /verify - verify a Paystack transaction and credit if successful
+    // This is the fallback for when webhooks fail/are missed
+    if (req.method === "POST" && path === "verify") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorised" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !userData.user) {
+        return new Response(
+          JSON.stringify({ error: "Invalid token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const body = await req.json();
+      const { reference } = body;
+      if (!reference || typeof reference !== "string") {
+        return new Response(
+          JSON.stringify({ error: "Missing reference" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if already credited (idempotency)
+      const { data: existing } = await supabase
+        .from("token_ledger")
+        .select("id")
+        .eq("request_id", reference)
+        .maybeSingle();
+
+      if (existing) {
+        return new Response(
+          JSON.stringify({ success: true, alreadyCredited: true, message: "Credits already applied" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify with Paystack API
+      const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+        headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.status || verifyData.data?.status !== "success") {
+        return new Response(
+          JSON.stringify({ success: false, message: "Transaction not successful", paystackStatus: verifyData.data?.status }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify the org matches the user
+      const meta = verifyData.data.metadata;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", userData.user.id)
+        .single();
+
+      if (!profile || profile.org_id !== meta?.org_id) {
+        return new Response(
+          JSON.stringify({ error: "Transaction does not belong to your organisation" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Credit the tokens (same logic as webhook handler)
+      const credits = meta.credits;
+      const orgId = meta.org_id;
+
+      const { data: balanceRow } = await supabase
+        .from("token_balances")
+        .select("balance")
+        .eq("org_id", orgId)
+        .single();
+
+      const currentBalance = balanceRow?.balance || 0;
+      const newBalance = currentBalance + credits;
+
+      await supabase
+        .from("token_balances")
+        .upsert({ org_id: orgId, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: "org_id" });
+
+      await supabase.from("token_ledger").insert({
+        org_id: orgId,
+        endpoint: "payment:paystack:verify",
+        tokens_burned: -credits,
+        remaining_balance: newBalance,
+        outcome: "allowed",
+        request_id: reference,
+        action_type: "credit_purchase",
+        metadata: {
+          payment_reference: reference,
+          package_id: meta.package_id,
+          price_zar: meta.price_zar,
+          verification_fallback: true,
+        },
+      });
+
+      await supabase.from("audit_logs").insert({
+        org_id: orgId,
+        actor_user_id: userData.user.id,
+        action: "credits.purchased",
+        entity_type: "token_balance",
+        entity_id: orgId,
+        metadata: {
+          credits_added: credits,
+          new_balance: newBalance,
+          payment_reference: reference,
+          package_id: meta.package_id,
+          verification_fallback: true,
+        },
+      });
+
+      console.log(`[Verify] Credited ${credits} credits to org ${orgId} via verification fallback`);
+
+      return new Response(
+        JSON.stringify({ success: true, alreadyCredited: false, credits, newBalance }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // All other endpoints require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {

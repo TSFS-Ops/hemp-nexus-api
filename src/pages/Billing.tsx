@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -73,6 +73,51 @@ export default function Billing() {
   const { session, isAdmin } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const queryClient = useQueryClient();
+  const verifyAttempted = useRef(false);
+
+  // Auto-verify payment when returning from Paystack checkout
+  useEffect(() => {
+    if (!session || verifyAttempted.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const reference = params.get("reference") || params.get("trxref");
+    if (status === "success" && reference) {
+      verifyAttempted.current = true;
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+      // Verify the transaction
+      (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
+            method: "POST",
+            body: { reference },
+          });
+          if (error) {
+            console.error("Verify error:", error);
+            toast.error("Could not verify payment. If credits don't appear, contact support.");
+            return;
+          }
+          if (data?.success) {
+            if (data.alreadyCredited) {
+              toast.success("Credits already applied to your account.");
+            } else {
+              toast.success(`${data.credits} credits added to your account!`);
+            }
+            // Refresh balance queries
+            queryClient.invalidateQueries({ queryKey: ["token-balance-billing"] });
+            queryClient.invalidateQueries({ queryKey: ["recent-token-transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["token-usage-stats"] });
+          } else {
+            toast.info("Payment is still being processed. Credits will appear shortly.");
+          }
+        } catch (err) {
+          console.error("Verify error:", err);
+          toast.error("Could not verify payment. If credits don't appear, contact support.");
+        }
+      })();
+    }
+  }, [session, queryClient]);
 
   // Fetch token balance
   const { data: balance } = useQuery({
