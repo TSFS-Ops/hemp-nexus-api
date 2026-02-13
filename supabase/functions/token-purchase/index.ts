@@ -1,8 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+// Zod schemas
+const purchaseSchema = z.object({
+  packageId: z.enum(["starter", "professional", "enterprise"]),
+  callbackUrl: z.string().url().optional(),
+});
+
+const verifySchema = z.object({
+  reference: z.string().min(1, "Missing reference"),
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,13 +136,14 @@ Deno.serve(async (req) => {
       }
 
       const body = await req.json();
-      const { reference } = body;
-      if (!reference || typeof reference !== "string") {
+      const parsed = verifySchema.safeParse(body);
+      if (!parsed.success) {
         return new Response(
-          JSON.stringify({ error: "Missing reference" }),
+          JSON.stringify({ error: parsed.error.issues[0]?.message || "Invalid request" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      const { reference } = parsed.data;
 
       // Check if already credited (idempotency)
       const { data: existing } = await supabase
@@ -267,15 +279,15 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { packageId, callbackUrl } = body;
-
-    const pkg = TOKEN_PACKAGES[packageId];
-    if (!pkg) {
+    const parsed = purchaseSchema.safeParse(body);
+    if (!parsed.success) {
       return new Response(
-        JSON.stringify({ error: "Invalid package" }),
+        JSON.stringify({ error: parsed.error.issues[0]?.message || "Invalid request" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const { packageId, callbackUrl } = parsed.data;
+    const pkg = TOKEN_PACKAGES[packageId]!;
 
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
@@ -470,7 +482,7 @@ async function handleChargeSuccess(
       user_id?: string;
       package_id?: string;
       credits?: number;
-      price_usd?: number;
+      price_zar?: number;
       client_ip?: string;
     };
     customer?: { email?: string };
@@ -532,7 +544,7 @@ async function handleChargeSuccess(
     metadata: {
       payment_reference: reference,
       package_id: metadata.package_id,
-      price_usd: metadata.price_usd,
+      price_zar: metadata.price_zar,
       customer_email: customer?.email,
       paid_at,
       client_ip: metadata.client_ip,
@@ -550,7 +562,7 @@ async function handleChargeSuccess(
       credits_added: credits,
       new_balance: newBalance,
       payment_reference: reference,
-      price_usd: metadata.price_usd,
+      price_zar: metadata.price_zar,
       package_id: metadata.package_id,
     },
   });

@@ -107,12 +107,14 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 5: Billing (Token Burn + Paystack)
-**Status:** TODO
+**Status:** DONE ✅
 
-1. Verify token-purchase + webhook
-2. Verify token burn at each state transition
-3. Clean billing UI
-4. Ensure idempotency
+1. ✅ Token-purchase edge function: Added Zod validation, fixed `price_usd` → `price_zar` metadata inconsistency
+2. ✅ Token burn verified at each state transition (declare_intent: 500, counterparty_sighting: 1500, commit: 1000+finality)
+3. ✅ Billing UI cleaned: aligned `minimumRequired` default with database, correct ZAR pricing
+4. ✅ Idempotency enforced via `token_ledger.request_id` check in both webhook and verify paths
+5. ✅ HMAC SHA-512 signature verification on Paystack webhooks
+6. ✅ Dual-path reliability: webhook handler + client-side `/verify` fallback
 
 ---
 
