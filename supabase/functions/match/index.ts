@@ -108,28 +108,27 @@ Deno.serve(async (req) => {
       requestId
     );
 
-    // Route: POST /match/:id/settle (Confirm Intent - creates audit record)
-    if (req.method === "POST" && matchId && action === "settle") {
-      const endpointLabel = "/match/:id/settle";
+    // Route: POST /match/:id/settle OR /match/:id/declare-intent
+    // Both endpoints do the same thing: discovery → intent_declared (500 credits)
+    // "settle" is kept for backward compatibility
+    if (req.method === "POST" && matchId && (action === "settle" || action === "declare-intent")) {
+      const endpointLabel = `/match/:id/${action}`;
 
-      // Validate matchId is a valid UUID to prevent injection attacks
+      // Validate matchId is a valid UUID
       const uuidResult = uuidSchema.safeParse(matchId);
       if (!uuidResult.success) {
         await logApiRequest({
-          supabase,
-          orgId: authCtx.orgId,
-          apiKeyId: actorApiKeyId,
-          endpoint: endpointLabel,
-          method: "POST",
-          statusCode: 400,
+          supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel, method: "POST", statusCode: 400,
           errorMessage: "Invalid match ID format",
         });
         throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
       }
 
-      console.log(`[${requestId}] POST /match/${matchId}/settle (Confirm Intent)`);
+      console.log(`[${requestId}] POST /match/${matchId}/${action} (Confirm Intent)`);
 
-      try {
+      // Enforce licence for billable action
+      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
       const { data: match, error: fetchError } = await supabase
         .from("matches")
@@ -144,19 +143,37 @@ Deno.serve(async (req) => {
 
       // Verify match belongs to authenticated user's organization
       if (match.org_id !== authCtx.orgId) {
+        throw new ApiException("FORBIDDEN", "You do not have permission to confirm intent for this match", 403);
+      }
+
+      // Check state machine — must be in 'discovery'
+      const currentState = match.state || 'discovery';
+      
+      // If already confirmed, return idempotently
+      if (currentState === 'intent_declared' || match.status === 'settled') {
+        console.log(`[${requestId}] Intent already confirmed — returning idempotently`);
+        await logApiRequest({
+          supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel, method: "POST", statusCode: 200,
+        });
+        return new Response(JSON.stringify(match), {
+          status: 200,
+          headers: { ...headers, "Content-Type": "application/json" },
+        });
+      }
+
+      if (currentState !== 'discovery') {
         throw new ApiException(
-          "FORBIDDEN", 
-          "You do not have permission to confirm intent for this match", 
-          403
+          "INVALID_STATE",
+          `Cannot declare intent from state '${currentState}'. Must be in 'discovery' state.`,
+          400
         );
       }
 
-      // ELIGIBILITY CHECK - "Ambiguity = Automatic Denial"
-      // Block Confirm Intent if any required field is missing or invalid
+      // ELIGIBILITY CHECK
       try {
         enforceEligibility(match);
       } catch (eligibilityError) {
-        // Record the denied attempt in audit log (non-proof entry)
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
           actor_user_id: actorUserId,
@@ -171,48 +188,22 @@ Deno.serve(async (req) => {
             eligibility: formatEligibilityResponse(evaluateEligibility(match)),
           }
         });
-        
-        console.log(`[${requestId}] Intent denied due to eligibility check failure`);
         throw eligibilityError;
       }
 
-      // If already confirmed, return as-is (idempotent)
-      if (match.status === "settled") {
-        console.log(`[${requestId}] Intent already confirmed`);
-
-        await logApiRequest({
-          supabase,
-          orgId: authCtx.orgId,
-          apiKeyId: actorApiKeyId,
-          endpoint: endpointLabel,
-          method: "POST",
-          statusCode: 200,
-        });
-
-        return new Response(JSON.stringify(match), {
-          status: 200,
-          headers: { ...headers, "Content-Type": "application/json" },
-        });
-      }
-
-      // Burn tokens for intent confirmation (500 tokens for declare_intent action)
+      // Burn 500 tokens for intent declaration
       await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'declare_intent',
-        requestId,
-        matchId
+        supabase, authCtx.orgId, actorApiKeyId,
+        'declare_intent', requestId, matchId
       );
 
-      // Update to confirmed (status remains "settled" in DB for compatibility)
-      // Also update state to intent_declared for consistency with state machine
+      // Update state: discovery → intent_declared
       const { data: updated, error: updateError } = await supabase
         .from("matches")
-        .update({ 
-          status: "settled", 
+        .update({
+          status: "settled",
           state: "intent_declared",
-          settled_at: new Date().toISOString() 
+          settled_at: new Date().toISOString(),
         })
         .eq("id", matchId)
         .select()
@@ -220,7 +211,7 @@ Deno.serve(async (req) => {
 
       if (updateError) handleDatabaseError(updateError, requestId);
 
-      // Create audit log for intent confirmation (immutable proof-of-intent)
+      // Audit log — immutable proof-of-intent
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -240,182 +231,42 @@ Deno.serve(async (req) => {
             quantity_unit: match.quantity_unit,
             price_amount: match.price_amount,
             price_currency: match.price_currency,
+            tokens_burned: ACTION_TOKEN_COSTS.declare_intent,
+            previous_state: currentState,
+            new_state: 'intent_declared',
             note: "Intent confirmation signals interest only - no payment or legal obligation created"
           }
         });
-        console.log(`[${requestId}] Audit log created for intent confirmation with hash: ${match.hash}`);
 
-        // Record event in hash-chained timeline
         await recordMatchEvent(
-          supabase,
-          matchId,
-          match.org_id,
-          "intent.confirmed",
+          supabase, matchId, match.org_id, "intent.confirmed",
           {
             confirmedAt: updated.settled_at,
             hash: match.hash,
             commodity: match.commodity,
-            quantityAmount: match.quantity_amount,
-            priceAmount: match.price_amount,
+            tokensCharged: ACTION_TOKEN_COSTS.declare_intent,
+            state: 'intent_declared',
             note: "Signals serious interest - no legal obligation"
           },
-          actorUserId,
-          actorApiKeyId
+          actorUserId, actorApiKeyId
         );
       } catch (auditError) {
         console.error(`[${requestId}] Failed to create audit log:`, auditError);
-        // Critical: audit log creation failure should fail the request
         throw new ApiException("AUDIT_LOG_ERROR", "Failed to create audit trail", 500);
       }
 
       console.log(`[${requestId}] Intent confirmed successfully`);
-      
-      // Trigger webhooks in background (using both event names for compatibility)
+
+      // Trigger webhooks
       triggerWebhooks(supabase, match.org_id, "intent.confirmed", {
-        matchId,
-        hash: match.hash,
-        confirmedAt: updated.settled_at,
-        commodity: match.commodity,
-        quantity: match.quantity_amount,
+        matchId, hash: match.hash, confirmedAt: updated.settled_at,
+        commodity: match.commodity, quantity: match.quantity_amount,
         note: "Intent confirmation signals interest only - no payment or legal obligation"
-      }).catch(err => console.error(`Webhook trigger error:`, err));
-
-      // Also trigger legacy event name for backward compatibility
-      triggerWebhooks(supabase, match.org_id, "match.settled", {
-        matchId,
-        hash: match.hash,
-        settledAt: updated.settled_at,
-        commodity: match.commodity,
-        quantity: match.quantity_amount,
-      }).catch(err => console.error(`Webhook trigger error:`, err));
-
-      // NOTE: Counterparty notification REMOVED per product requirement
-      // This API records proof-of-intent only - no outbound contact
-      // Counterparty communication is handled externally by the calling system
-
-      await logApiRequest({
-        supabase,
-        orgId: authCtx.orgId,
-        apiKeyId: actorApiKeyId,
-        endpoint: endpointLabel,
-        method: "POST",
-        statusCode: 200,
-      });
-
-      return new Response(JSON.stringify(updated), {
-        status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
-      });
-      } catch (e) {
-        const statusCode = e instanceof ApiException ? e.statusCode : 500;
-        const errorMessage = e instanceof ApiException ? e.message : (e instanceof Error ? e.message : "Unknown error");
-
-        await logApiRequest({
-          supabase,
-          orgId: authCtx.orgId,
-          apiKeyId: actorApiKeyId,
-          endpoint: endpointLabel,
-          method: "POST",
-          statusCode,
-          errorMessage,
-        });
-
-        throw e;
-      }
-    }
-
-    // ============================================
-    // Route: POST /match/:id/declare-intent
-    // Transitions: discovery → intent_declared
-    // Token Cost: 500 tokens
-    // ============================================
-    if (req.method === "POST" && matchId && action === "declare-intent") {
-      const endpointLabel = "/match/:id/declare-intent";
-      
-      const uuidResult = uuidSchema.safeParse(matchId);
-      if (!uuidResult.success) {
-        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
-      }
-
-      console.log(`[${requestId}] POST /match/${matchId}/declare-intent`);
-
-      // Enforce licence for billable action
-      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
-
-      const { data: match, error: fetchError } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("id", matchId)
-        .maybeSingle();
-
-      if (fetchError) handleDatabaseError(fetchError, requestId);
-      if (!match) {
-        throw new ApiException("NOT_FOUND", "Match not found", 404);
-      }
-
-      if (match.org_id !== authCtx.orgId) {
-        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
-      }
-
-      // Check current state
-      const currentState = match.state || 'discovery';
-      if (currentState !== 'discovery') {
-        throw new ApiException(
-          "INVALID_STATE", 
-          `Cannot declare intent from state '${currentState}'. Must be in 'discovery' state.`, 
-          400
-        );
-      }
-
-      // Burn tokens for declaring intent
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'declare_intent',
-        requestId,
-        matchId
-      );
-
-      // Update state
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({ state: 'intent_declared' })
-        .eq("id", matchId)
-        .select()
-        .single();
-
-      if (updateError) handleDatabaseError(updateError, requestId);
-
-      // Audit log
-      await supabase.from("audit_logs").insert({
-        org_id: match.org_id,
-        actor_user_id: actorUserId,
-        actor_api_key_id: actorApiKeyId,
-        action: "intent.declared",
-        entity_type: "match",
-        entity_id: matchId,
-        metadata: {
-          request_id: requestId,
-          tokens_burned: ACTION_TOKEN_COSTS.declare_intent,
-          previous_state: currentState,
-          new_state: 'intent_declared',
-        }
-      });
-
-      await recordMatchEvent(
-        supabase, matchId, match.org_id, "intent.declared",
-        { tokensCharged: ACTION_TOKEN_COSTS.declare_intent, state: 'intent_declared' },
-        actorUserId, actorApiKeyId
-      );
-
-      triggerWebhooks(supabase, match.org_id, "intent.declared", {
-        matchId, state: 'intent_declared', tokensCharged: ACTION_TOKEN_COSTS.declare_intent
       }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
-        endpoint: endpointLabel, method: "POST", statusCode: 200
+        endpoint: endpointLabel, method: "POST", statusCode: 200,
       });
 
       return new Response(JSON.stringify(updated), {
@@ -423,6 +274,8 @@ Deno.serve(async (req) => {
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
+    // NOTE: declare-intent is now handled by the unified settle/declare-intent block above
 
     // ============================================
     // Route: POST /match/:id/reveal-counterparty
