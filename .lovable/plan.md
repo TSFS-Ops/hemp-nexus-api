@@ -96,12 +96,13 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 4: WaD Evidence Bundles
-**Status:** TODO
+**Status:** DONE ✅
 
-1. Review WaD edge function and stepper UI
-2. Verify SHA-256 sealing
-3. Test certificate generation
-4. Access control (involved parties + platform_admin only)
+1. ✅ Refactored WaD edge function (Zod validation, deriveActorIds, admin role check includes platform_admin, parallel DB queries)
+2. ✅ Verified SHA-256 sealing (canonical payload → deterministic hash → ledger chain)
+3. ✅ Certificate generation verified (JSON cert with seal hash, attestations, evidence bundle hash)
+4. ✅ Access control enforced (involved parties + platform_admin only, admin access logged)
+5. ✅ UI cleaned (explicit HTTP methods on all fetch calls)
 
 ---
 
