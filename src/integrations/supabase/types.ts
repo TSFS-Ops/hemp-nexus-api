@@ -2512,6 +2512,10 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_org_admin: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       reset_auth_rate_limit: {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined

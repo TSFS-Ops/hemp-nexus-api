@@ -58,7 +58,7 @@ It produces tamper-evident, legally admissible proof records:
 ## 4. Phased Rebuild
 
 ### Phase 1: Foundation (Schema + Auth + Roles)
-**Status:** TODO
+**Status:** DONE ✅
 
 **Goal:** Clean database schema, expanded role system, hardened auth.
 
