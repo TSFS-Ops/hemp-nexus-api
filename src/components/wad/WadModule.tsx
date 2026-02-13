@@ -57,6 +57,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad?poi_id=${match.id}`,
         {
+          method: "GET",
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
@@ -74,6 +75,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
           const detailResponse = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${activeWad.id}`,
             {
+              method: "GET",
               headers: {
                 Authorization: `Bearer ${session.access_token}`,
               },

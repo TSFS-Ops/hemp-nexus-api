@@ -190,6 +190,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wad.id}/certificate`,
         {
+          method: "GET",
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
