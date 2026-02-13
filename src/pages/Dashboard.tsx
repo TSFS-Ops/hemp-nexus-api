@@ -18,7 +18,7 @@ import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Import modular section components
 import {
@@ -46,7 +46,7 @@ interface ApiKey {
 
 export default function Dashboard() {
   const { session, isLoading, isAdmin } = useAuth();
-  const { toast } = useToast();
+  
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [activeSection, setActiveSection] = useState(() => {
     return localStorage.getItem("dashboard_active_section") || "overview";
@@ -66,11 +66,7 @@ export default function Dashboard() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error fetching API keys",
-        description: error.message,
-      });
+      toast.error("Error fetching API keys", { description: error.message });
       return;
     }
 

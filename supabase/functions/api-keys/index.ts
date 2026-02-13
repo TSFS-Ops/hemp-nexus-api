@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException, handleDatabaseError } from '../_shared/errors.ts';
 import { authenticateRequest, hashApiKey, requireScope } from '../_shared/auth.ts';
 import { apiKeyCreateSchema, validateInput } from '../_shared/validation.ts';
+import { deriveActorIds } from '../_shared/actor-context.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -19,8 +20,15 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    requireScope(authCtx, 'api_keys');
-    
+
+    // JWT users can always manage their own keys.
+    // API-key callers need explicit scope.
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, 'api_keys');
+    }
+
+    const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
+
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
 
@@ -48,7 +56,7 @@ Deno.serve(async (req) => {
           name,
           key_hash: keyHash,
           scopes: scopes || [],
-          created_by: authCtx.isApiKey ? null : authCtx.userId,
+          created_by: actorUserId,
           expires_at: expires_at || null,
         })
         .select()
@@ -59,12 +67,12 @@ Deno.serve(async (req) => {
       // Log audit trail
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
-        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
         action: 'api_key.created',
         entity_type: 'api_key',
         entity_id: data.id,
-        metadata: { name, scopes },
+        metadata: { name, scopes, request_id: requestId },
       });
 
       return new Response(
@@ -111,11 +119,12 @@ Deno.serve(async (req) => {
 
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
-        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
-        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
         action: 'api_key.revoked',
         entity_type: 'api_key',
         entity_id: keyId,
+        metadata: { request_id: requestId },
       });
 
       return new Response(null, { status: 204, headers });
