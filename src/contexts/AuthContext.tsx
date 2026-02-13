@@ -2,12 +2,20 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+type AppRole = 'platform_admin' | 'org_admin' | 'org_member' | 'admin' | 'buyer' | 'auditor';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  isAdmin: boolean;
   isAuthenticated: boolean;
+  // Granular role checks
+  isPlatformAdmin: boolean;
+  isOrgAdmin: boolean;
+  isOrgMember: boolean;
+  /** @deprecated Use isPlatformAdmin instead */
+  isAdmin: boolean;
+  roles: AppRole[];
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -18,17 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState<AppRole[]>([]);
 
-  const checkAdminRole = useCallback(async (userId: string) => {
+  const fetchRoles = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+      .eq("user_id", userId);
     
-    setIsAdmin(!!data);
+    const userRoles = (data || []).map(r => r.role as AppRole);
+    setRoles(userRoles);
   }, []);
 
   const refreshSession = useCallback(async () => {
@@ -36,43 +43,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(session);
     setUser(session?.user ?? null);
     if (session?.user) {
-      setTimeout(() => checkAdminRole(session.user.id), 0);
+      setTimeout(() => fetchRoles(session.user.id), 0);
     }
-  }, [checkAdminRole]);
+  }, [fetchRoles]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setIsAdmin(false);
+    setRoles([]);
   }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => checkAdminRole(session.user.id), 0);
+        setTimeout(() => fetchRoles(session.user.id), 0);
       } else {
-        setIsAdmin(false);
+        setRoles([]);
       }
     });
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
       
       if (session?.user) {
-        setTimeout(() => checkAdminRole(session.user.id), 0);
+        setTimeout(() => fetchRoles(session.user.id), 0);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [checkAdminRole]);
+  }, [fetchRoles]);
+
+  const isPlatformAdmin = roles.includes('platform_admin') || roles.includes('admin');
+  const isOrgAdmin = roles.includes('org_admin') || isPlatformAdmin;
+  const isOrgMember = roles.includes('org_member') || isOrgAdmin;
 
   return (
     <AuthContext.Provider
@@ -80,8 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
-        isAdmin,
         isAuthenticated: !!session,
+        isPlatformAdmin,
+        isOrgAdmin,
+        isOrgMember,
+        isAdmin: isPlatformAdmin, // backward compat
+        roles,
         signOut,
         refreshSession,
       }}
