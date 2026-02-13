@@ -2,8 +2,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { deriveActorIds } from "../_shared/actor-context.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { validateInput } from "../_shared/validation.ts";
 
-const MAX_BODY_SIZE = 64 * 1024; // 64KB
+const MAX_BODY_SIZE = 64 * 1024;
+
+// Validation schemas
+const inviteCreateSchema = z.object({
+  to_email: z.string().email().max(255).nullish(),
+  to_org_id: z.string().uuid().nullish(),
+  search_query: z.string().max(500).nullish(),
+  search_results: z.array(z.record(z.unknown())).max(50).optional(),
+  selected_result_id: z.string().min(1).max(200),
+  selected_result_data: z.record(z.unknown()),
+});
+
+const declineSchema = z.object({
+  reason: z.string().max(1000).nullish(),
+});
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -21,68 +38,67 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
-    // pathParts: ["invites"] or ["invites", ":id"] or ["invites", ":id", "accept"|"decline"]
-    
     const inviteId = pathParts.length > 1 ? pathParts[1] : null;
     const action = pathParts.length > 2 ? pathParts[2] : null;
 
-    // Authenticate request
+    // Authenticate
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    console.log(`[${requestId}] ${req.method} /invites${inviteId ? `/${inviteId}` : ""}${action ? `/${action}` : ""} - org: ${authCtx.orgId}`);
+    const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
+    console.log(`[${requestId}] ${req.method} /invites${inviteId ? `/${inviteId}` : ""}${action ? `/${action}` : ""} org:${authCtx.orgId}`);
 
-    // POST /invites/:id/accept
-    if (req.method === "POST" && inviteId && action === "accept") {
-      // Verify invite exists and is pending
-      const { data: invite, error: fetchError } = await supabase
+    // Helper: fetch invite and verify it exists + is pending
+    const fetchPendingInvite = async (id: string) => {
+      const { data: invite, error } = await supabase
         .from("invites")
         .select("*")
-        .eq("id", inviteId)
+        .eq("id", id)
         .single();
+      if (error || !invite) throw new ApiException("NOT_FOUND", "Invite not found", 404);
+      if (invite.status !== "pending") throw new ApiException("INVALID_STATE", `Invite is already ${invite.status}`, 400);
+      return invite;
+    };
 
-      if (fetchError || !invite) {
-        throw new ApiException("NOT_FOUND", "Invite not found", 404);
-      }
-
-      if (invite.status !== "pending") {
-        throw new ApiException("INVALID_STATE", `Invite is already ${invite.status}`, 400);
-      }
-
-      // Verify recipient is authorized (to_org_id matches or to_email matches user's email)
+    // Helper: verify caller is the recipient
+    const verifyRecipient = async (invite: any) => {
       const { data: userData } = await supabase.auth.admin.getUserById(authCtx.userId);
       const userEmail = userData.user?.email;
-
-      const isRecipient = 
+      const isRecipient =
         (invite.to_org_id && invite.to_org_id === authCtx.orgId) ||
         (invite.to_email && invite.to_email === userEmail);
+      if (!isRecipient) throw new ApiException("FORBIDDEN", "You are not the recipient of this invite", 403);
+    };
 
-      if (!isRecipient) {
-        throw new ApiException("FORBIDDEN", "You are not the recipient of this invite", 403);
-      }
+    // Helper: write audit log
+    const writeAuditLog = async (action: string, entityId: string, metadata: Record<string, unknown>) => {
+      await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action,
+        entity_type: "invite",
+        entity_id: entityId,
+        metadata: { ...metadata, request_id: requestId },
+      });
+    };
 
-      // Update invite to accepted
+    // ── POST /invites/:id/accept ──
+    if (req.method === "POST" && inviteId && action === "accept") {
+      const invite = await fetchPendingInvite(inviteId);
+      await verifyRecipient(invite);
+
       const { error: updateError } = await supabase
         .from("invites")
         .update({
           status: "accepted",
           accepted_at: new Date().toISOString(),
-          to_org_id: authCtx.orgId, // Link the accepting org
+          to_org_id: authCtx.orgId,
         })
         .eq("id", inviteId);
-
       if (updateError) handleDatabaseError(updateError, requestId);
 
-      // Write audit log
-      await supabase.from("audit_logs").insert({
-        org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId,
-        action: "invite.accepted",
-        entity_type: "invite",
-        entity_id: inviteId,
-        metadata: {
-          from_org_id: invite.from_org_id,
-          search_query: invite.search_query,
-          request_id: requestId,
-        },
+      await writeAuditLog("invite.accepted", inviteId, {
+        from_org_id: invite.from_org_id,
+        search_query: invite.search_query,
       });
 
       return new Response(
@@ -91,62 +107,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // POST /invites/:id/decline
+    // ── POST /invites/:id/decline ──
     if (req.method === "POST" && inviteId && action === "decline") {
       const body = await req.json().catch(() => ({}));
-      const reason = body.reason || null;
+      const { reason } = validateInput(declineSchema, body);
 
-      const { data: invite, error: fetchError } = await supabase
-        .from("invites")
-        .select("*")
-        .eq("id", inviteId)
-        .single();
+      const invite = await fetchPendingInvite(inviteId);
+      await verifyRecipient(invite);
 
-      if (fetchError || !invite) {
-        throw new ApiException("NOT_FOUND", "Invite not found", 404);
-      }
-
-      if (invite.status !== "pending") {
-        throw new ApiException("INVALID_STATE", `Invite is already ${invite.status}`, 400);
-      }
-
-      // Verify recipient
-      const { data: userData } = await supabase.auth.admin.getUserById(authCtx.userId);
-      const userEmail = userData.user?.email;
-
-      const isRecipient = 
-        (invite.to_org_id && invite.to_org_id === authCtx.orgId) ||
-        (invite.to_email && invite.to_email === userEmail);
-
-      if (!isRecipient) {
-        throw new ApiException("FORBIDDEN", "You are not the recipient of this invite", 403);
-      }
-
-      // Update invite to declined
       const { error: updateError } = await supabase
         .from("invites")
         .update({
           status: "declined",
           declined_at: new Date().toISOString(),
-          declined_reason: reason,
+          declined_reason: reason || null,
           to_org_id: authCtx.orgId,
         })
         .eq("id", inviteId);
-
       if (updateError) handleDatabaseError(updateError, requestId);
 
-      // Write audit log
-      await supabase.from("audit_logs").insert({
-        org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId,
-        action: "invite.declined",
-        entity_type: "invite",
-        entity_id: inviteId,
-        metadata: {
-          from_org_id: invite.from_org_id,
-          reason: reason,
-          request_id: requestId,
-        },
+      await writeAuditLog("invite.declined", inviteId, {
+        from_org_id: invite.from_org_id,
+        reason: reason || null,
       });
 
       return new Response(
@@ -155,14 +137,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // GET /invites - List invites (sent and received)
+    // ── GET /invites ── List invites
     if (req.method === "GET" && !inviteId) {
-      const type = url.searchParams.get("type") || "all"; // "sent", "received", "all"
+      const type = url.searchParams.get("type") || "all";
       const status = url.searchParams.get("status") || null;
       const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
       const offset = parseInt(url.searchParams.get("offset") || "0");
 
-      // Get user's email for matching received invites
       const { data: userData } = await supabase.auth.admin.getUserById(authCtx.userId);
       const userEmail = userData.user?.email;
 
@@ -175,57 +156,40 @@ Deno.serve(async (req) => {
       if (type === "sent") {
         query = query.eq("from_org_id", authCtx.orgId);
       } else if (type === "received") {
-        // Received = to_org_id matches OR to_email matches
         query = query.or(`to_org_id.eq.${authCtx.orgId},to_email.eq.${userEmail}`);
       } else {
-        // All = sent OR received
         query = query.or(`from_org_id.eq.${authCtx.orgId},to_org_id.eq.${authCtx.orgId},to_email.eq.${userEmail}`);
       }
 
-      if (status) {
-        query = query.eq("status", status);
-      }
+      if (status) query = query.eq("status", status);
 
       const { data: invites, error, count } = await query;
-
       if (error) handleDatabaseError(error, requestId);
 
       return new Response(
-        JSON.stringify({
-          items: invites || [],
-          totalCount: count || 0,
-          limit,
-          offset,
-        }),
+        JSON.stringify({ items: invites || [], totalCount: count || 0, limit, offset }),
         { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
-    // GET /invites/:id - Get single invite
+    // ── GET /invites/:id ── Single invite
     if (req.method === "GET" && inviteId) {
       const { data: invite, error } = await supabase
         .from("invites")
         .select("*")
         .eq("id", inviteId)
         .single();
+      if (error || !invite) throw new ApiException("NOT_FOUND", "Invite not found", 404);
 
-      if (error || !invite) {
-        throw new ApiException("NOT_FOUND", "Invite not found", 404);
-      }
-
-      // Verify access (sender or recipient)
       const { data: userData } = await supabase.auth.admin.getUserById(authCtx.userId);
       const userEmail = userData.user?.email;
-
-      const hasAccess = 
+      const hasAccess =
         invite.from_org_id === authCtx.orgId ||
         invite.to_org_id === authCtx.orgId ||
         invite.to_email === userEmail ||
-        authCtx.roles.includes("admin");
-
-      if (!hasAccess) {
-        throw new ApiException("FORBIDDEN", "You do not have access to this invite", 403);
-      }
+        authCtx.roles.includes("admin") ||
+        authCtx.roles.includes("platform_admin");
+      if (!hasAccess) throw new ApiException("FORBIDDEN", "You do not have access to this invite", 403);
 
       return new Response(
         JSON.stringify(invite),
@@ -233,7 +197,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // POST /invites - Create new invite
+    // ── POST /invites ── Create invite
     if (req.method === "POST" && !inviteId) {
       const contentLength = req.headers.get("content-length");
       if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
@@ -241,23 +205,19 @@ Deno.serve(async (req) => {
       }
 
       const body = await req.json();
-      
-      // Validate required fields
-      if (!body.selected_result_id || !body.selected_result_data) {
-        throw new ApiException("VALIDATION_ERROR", "selected_result_id and selected_result_data are required", 400);
-      }
+      const validated = validateInput(inviteCreateSchema, body);
 
       const invite = {
-        from_user_id: authCtx.userId,
+        from_user_id: actorUserId,
         from_org_id: authCtx.orgId,
-        to_email: body.to_email || null,
-        to_org_id: body.to_org_id || null,
-        search_query: body.search_query || null,
-        search_results: body.search_results || [],
-        selected_result_id: body.selected_result_id,
-        selected_result_data: body.selected_result_data,
+        to_email: validated.to_email || null,
+        to_org_id: validated.to_org_id || null,
+        search_query: validated.search_query || null,
+        search_results: validated.search_results || [],
+        selected_result_id: validated.selected_result_id,
+        selected_result_data: validated.selected_result_data,
         status: "pending",
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       };
 
       const { data: newInvite, error } = await supabase
@@ -265,22 +225,12 @@ Deno.serve(async (req) => {
         .insert(invite)
         .select()
         .single();
-
       if (error) handleDatabaseError(error, requestId);
 
-      // Write audit log
-      await supabase.from("audit_logs").insert({
-        org_id: authCtx.orgId,
-        actor_user_id: authCtx.userId,
-        action: "invite.created",
-        entity_type: "invite",
-        entity_id: newInvite.id,
-        metadata: {
-          to_email: body.to_email,
-          to_org_id: body.to_org_id,
-          search_query: body.search_query,
-          request_id: requestId,
-        },
+      await writeAuditLog("invite.created", newInvite.id, {
+        to_email: validated.to_email,
+        to_org_id: validated.to_org_id,
+        search_query: validated.search_query,
       });
 
       return new Response(

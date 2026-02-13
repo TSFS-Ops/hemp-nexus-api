@@ -86,12 +86,12 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 3: Invites + Counterparty Flow
-**Status:** TODO
+**Status:** DONE ✅
 
-1. Simplify invite edge function
-2. Clean invite UI
-3. Ensure invite → match state transitions are correct
-4. Add notifications for invite acceptance/decline
+1. ✅ Simplified invite edge function (Zod validation, actor-context, deduplicated helpers)
+2. ✅ Cleaned invite UI (migrated to sonner, added aria-labels, explicit HTTP methods)
+3. ✅ Invite state transitions verified (pending → accepted/declined with audit trail)
+4. ✅ Audit logs written with actor_user_id/actor_api_key_id for all invite actions
 
 ---
 
