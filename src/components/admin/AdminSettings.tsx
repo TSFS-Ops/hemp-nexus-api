@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, Save, Settings, Bell, Key } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Json } from "@/integrations/supabase/types";
@@ -46,7 +46,6 @@ export function AdminSettings() {
     slackWebhook: "",
     alertThreshold: 10,
   });
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
@@ -77,11 +76,7 @@ export function AdminSettings() {
       });
     } catch (error) {
       console.error("Error fetching settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load settings",
-        variant: "destructive",
-      });
+      toast.error("Failed to load settings");
     } finally {
       setLoading(false);
     }
@@ -102,14 +97,10 @@ export function AdminSettings() {
 
       if (error) throw error;
 
-      toast({ title: "Settings saved successfully" });
+      toast.success("Settings saved successfully");
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save settings",
-        variant: "destructive",
-      });
+      toast.error("Failed to save settings");
     } finally {
       setSaving(false);
     }

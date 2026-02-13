@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio, Brain, MousePointer } from "lucide-react";
+import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 interface OverviewStats {
@@ -36,54 +37,30 @@ export function AdminOverview() {
     try {
       setLoading(true);
 
-      // Fetch users count
-      const { count: usersCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      // Fetch organizations count
-      const { count: orgsCount } = await supabase
-        .from("organizations")
-        .select("*", { count: "exact", head: true });
-
-      // Fetch active API keys count
-      const { count: keysCount } = await supabase
-        .from("api_keys")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "active");
-
-      // Fetch recent errors (last 24 hours)
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const { count: errorsCount } = await supabase
-        .from("api_request_logs")
-        .select("*", { count: "exact", head: true })
-        .gte("status_code", 400)
-        .gte("created_at", yesterday.toISOString());
-
-      // Fetch requests today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { count: requestsCount } = await supabase
-        .from("api_request_logs")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", today.toISOString());
 
-      // Fetch matches stats
-      const { count: matchesCount } = await supabase
-        .from("matches")
-        .select("*", { count: "exact", head: true });
-
-      const { count: confirmedCount } = await supabase
-        .from("matches")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "settled");
-
-      // Fetch active signals
-      const { count: signalsCount } = await supabase
-        .from("signals")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+      const [
+        { count: usersCount },
+        { count: orgsCount },
+        { count: keysCount },
+        { count: errorsCount },
+        { count: requestsCount },
+        { count: matchesCount },
+        { count: confirmedCount },
+        { count: signalsCount },
+      ] = await Promise.all([
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("organizations").select("*", { count: "exact", head: true }),
+        supabase.from("api_keys").select("*", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("api_request_logs").select("*", { count: "exact", head: true }).gte("status_code", 400).gte("created_at", yesterday.toISOString()),
+        supabase.from("api_request_logs").select("*", { count: "exact", head: true }).gte("created_at", today.toISOString()),
+        supabase.from("matches").select("*", { count: "exact", head: true }),
+        supabase.from("matches").select("*", { count: "exact", head: true }).eq("status", "settled"),
+        supabase.from("signals").select("*", { count: "exact", head: true }).eq("status", "active"),
+      ]);
 
       setStats({
         totalUsers: usersCount || 0,
@@ -104,49 +81,13 @@ export function AdminOverview() {
   };
 
   const statCards = [
-    {
-      title: "Total Matches",
-      value: stats.totalMatches,
-      icon: GitCompare,
-      description: `${stats.confirmedMatches} confirmed`,
-    },
-    {
-      title: "Active Signals",
-      value: stats.activeSignals,
-      icon: Radio,
-      description: "Buyer/seller signals",
-    },
-    {
-      title: "Total Users",
-      value: stats.totalUsers,
-      icon: Users,
-      description: "Registered users",
-    },
-    {
-      title: "Organizations",
-      value: stats.totalOrgs,
-      icon: Activity,
-      description: "Active organizations",
-    },
-    {
-      title: "Active API Keys",
-      value: stats.activeApiKeys,
-      icon: Key,
-      description: "Currently active",
-    },
-    {
-      title: "Recent Errors",
-      value: stats.recentErrors,
-      icon: AlertTriangle,
-      description: "Last 24 hours",
-      alert: stats.recentErrors > 10,
-    },
-    {
-      title: "Requests Today",
-      value: stats.requestsToday,
-      icon: TrendingUp,
-      description: "API calls today",
-    },
+    { title: "Total Matches", value: stats.totalMatches, icon: GitCompare, description: `${stats.confirmedMatches} confirmed` },
+    { title: "Active Signals", value: stats.activeSignals, icon: Radio, description: "Buyer/seller signals" },
+    { title: "Total Users", value: stats.totalUsers, icon: Users, description: "Registered users" },
+    { title: "Organizations", value: stats.totalOrgs, icon: Activity, description: "Active organizations" },
+    { title: "Active API Keys", value: stats.activeApiKeys, icon: Key, description: "Currently active" },
+    { title: "Recent Errors", value: stats.recentErrors, icon: AlertTriangle, description: "Last 24 hours", alert: stats.recentErrors > 10 },
+    { title: "Requests Today", value: stats.requestsToday, icon: TrendingUp, description: "API calls today" },
   ];
 
   if (loading) {
@@ -156,6 +97,17 @@ export function AdminOverview() {
       </div>
     );
   }
+
+  const quickActions = [
+    { to: "/admin/matches", icon: GitCompare, label: "Matches" },
+    { to: "/admin/signals", icon: Radio, label: "Signals" },
+    { to: "/admin/coherence", icon: TrendingUp, label: "Coherence Engine" },
+    { to: "/admin/behavioral", icon: Activity, label: "Behavioral Analytics" },
+    { to: "/admin/audit", icon: FileText, label: "Audit Logs" },
+    { to: "/admin/api-keys", icon: Key, label: "API Keys" },
+    { to: "/admin/users-orgs", icon: Users, label: "Users & Orgs" },
+    { to: "/admin/settings", icon: Settings, label: "Settings" },
+  ];
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -187,62 +139,16 @@ export function AdminOverview() {
           <CardDescription>Common administrative tasks</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 px-4 sm:px-6">
-          <a
-            href="/admin/matches"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <GitCompare className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Matches</span>
-          </a>
-          <a
-            href="/admin/signals"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Radio className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Signals</span>
-          </a>
-          <a
-            href="/admin/coherence"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <TrendingUp className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Coherence Engine</span>
-          </a>
-          <a
-            href="/admin/behavioral"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Activity className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Behavioral Analytics</span>
-          </a>
-          <a
-            href="/admin/audit"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <FileText className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Audit Logs</span>
-          </a>
-          <a
-            href="/admin/api-keys"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Key className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">API Keys</span>
-          </a>
-          <a
-            href="/admin/users-orgs"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Users className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Users & Orgs</span>
-          </a>
-          <a
-            href="/admin/settings"
-            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Settings className="h-6 w-6 mb-2" />
-            <span className="text-sm font-medium">Settings</span>
-          </a>
+          {quickActions.map((action) => (
+            <Link
+              key={action.to}
+              to={action.to}
+              className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <action.icon className="h-6 w-6 mb-2" />
+              <span className="text-sm font-medium">{action.label}</span>
+            </Link>
+          ))}
         </CardContent>
       </Card>
 
