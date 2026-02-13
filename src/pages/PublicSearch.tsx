@@ -79,7 +79,7 @@ export default function PublicSearch() {
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="e.g., 'buyers for cashew in India' or 'copper cathode suppliers'"
                 aria-label="Search for verified buyers or sellers"
-                className="w-full h-14 px-5 text-base bg-white/80 border border-border rounded-xl 
+                className="w-full h-14 px-5 text-base bg-card/80 border border-border rounded-xl 
                          placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 
                          focus:ring-primary/30 focus:border-primary/40 transition-all"
               />
@@ -120,8 +120,8 @@ export default function PublicSearch() {
                         className={`w-full text-left p-4 rounded-lg border transition-all min-h-[44px]
                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                           selectedResults.has(result.id)
-                            ? "bg-primary/5 border-primary/20"
-                            : "bg-white/40 border-black/[0.04] hover:bg-white/60"
+                        ? "bg-primary/5 border-primary/20"
+                            : "bg-card/40 border-border hover:bg-card/60"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -134,15 +134,15 @@ export default function PublicSearch() {
                             </p>
                           </div>
                           <div 
-                            className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors ${
+                             className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors ${
                               selectedResults.has(result.id)
                                 ? "bg-primary border-primary"
-                                : "border-black/20"
+                                : "border-muted-foreground/30"
                             }`}
                             aria-hidden="true"
                           >
                             {selectedResults.has(result.id) && (
-                              <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <svg className="w-full h-full text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             )}
