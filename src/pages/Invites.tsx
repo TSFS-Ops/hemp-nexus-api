@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +52,6 @@ interface Invite {
 export default function Invites() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
-  const { toast } = useToast();
   
   const [activeTab, setActiveTab] = useState("received");
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -77,6 +76,7 @@ export default function Invites() {
       const response = await fetch(
         `${supabaseUrl}/functions/v1/invites?type=${type}&limit=50`,
         {
+          method: "GET",
           headers: {
             "Authorization": `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
@@ -92,15 +92,13 @@ export default function Invites() {
       setInvites(data.items || []);
     } catch (error) {
       console.error("Failed to fetch invites:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to load invites",
+      toast.error("Failed to load invites", {
         description: error instanceof Error ? error.message : "Please try again",
       });
     } finally {
       setLoading(false);
     }
-  }, [user, activeTab, toast]);
+  }, [user, activeTab]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -131,17 +129,14 @@ export default function Invites() {
         throw new Error(error.message || `Failed: ${response.status}`);
       }
 
-      toast({
-        title: "Invite accepted",
+      toast.success("Invite accepted", {
         description: "The sender can now confirm intent for this match.",
       });
 
       fetchInvites();
     } catch (error) {
       console.error("Accept error:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to accept invite",
+      toast.error("Failed to accept invite", {
         description: error instanceof Error ? error.message : "Please try again",
       });
     } finally {
@@ -183,17 +178,14 @@ export default function Invites() {
         throw new Error(error.message || `Failed: ${response.status}`);
       }
 
-      toast({
-        title: "Invite declined",
+      toast.success("Invite declined", {
         description: "The sender has been notified.",
       });
 
       fetchInvites();
     } catch (error) {
       console.error("Decline error:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to decline invite",
+      toast.error("Failed to decline invite", {
         description: error instanceof Error ? error.message : "Please try again",
       });
     } finally {
@@ -316,7 +308,7 @@ export default function Invites() {
                       )}
                       <span>Received: {formatDate(invite.created_at)}</span>
                       {invite.search_query && (
-                        <span>Query: "{invite.search_query}"</span>
+                        <span>Query: &quot;{invite.search_query}&quot;</span>
                       )}
                     </div>
 
@@ -405,7 +397,7 @@ export default function Invites() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                       <span>Sent: {formatDate(invite.created_at)}</span>
                       {invite.search_query && (
-                        <span>Query: "{invite.search_query}"</span>
+                        <span>Query: &quot;{invite.search_query}&quot;</span>
                       )}
                       {invite.expires_at && invite.status === "pending" && (
                         <span>Expires: {formatDate(invite.expires_at)}</span>
@@ -459,6 +451,7 @@ export default function Invites() {
               placeholder="Optional: Add a reason for declining..."
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
+              aria-label="Decline reason"
             />
           </div>
           <AlertDialogFooter>
