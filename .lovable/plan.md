@@ -119,13 +119,14 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 6: Developer Console
-**Status:** TODO
+**Status:** DONE ✅
 
-1. API key management (create, revoke, rotate)
-2. Webhook management
-3. Log views (audit + API request)
-4. API documentation
-5. SDK examples
+1. ✅ API key management: Fixed auth — JWT users can manage keys without scope check; API-key callers need `api_keys` scope. Integrated `deriveActorIds` for consistent actor tracking. Added `request_id` to audit metadata.
+2. ✅ Webhook management: Already standardised with Zod validation, audit logging, and encrypted secret storage.
+3. ✅ Log views: Fixed audit-logs — JWT/console users no longer burn tokens viewing their own logs (only API-key callers are metered). Dual-tab UI (Activity/Proof Events + API Request Logs) verified.
+4. ✅ API documentation: DocsSection with overview, key concepts, base URL, and quick example in place.
+5. ✅ SDK examples: SdkDocumentation component available in console sidebar.
+6. ✅ Dashboard.tsx: Migrated from legacy `useToast` to `sonner` for notification consistency.
 
 ---
 

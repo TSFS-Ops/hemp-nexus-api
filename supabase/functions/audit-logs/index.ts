@@ -24,20 +24,19 @@ Deno.serve(async (req) => {
 
     // Authenticate
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    // Allow console users (Bearer/JWT) to view their org's audit logs.
-    // Restrict API-key callers unless they explicitly have the audit_logs scope.
+
+    // JWT/console users can always view their org's audit logs (no token burn).
+    // API-key callers need explicit scope AND burn a token.
     if (authCtx.isApiKey) {
       requireScope(authCtx, 'audit_logs');
+      await enforceTokenMetering(
+        supabase,
+        authCtx.orgId,
+        authCtx.userId,
+        "/audit-logs",
+        requestId
+      );
     }
-    
-    // Enforce token metering - burns 1 token per request
-    await enforceTokenMetering(
-      supabase,
-      authCtx.orgId,
-      authCtx.isApiKey ? authCtx.userId : null,
-      "/audit-logs",
-      requestId
-    );
 
     const url = new URL(req.url);
    console.log(`[${requestId}] ${req.method} /audit-logs`);
@@ -95,49 +94,31 @@ Deno.serve(async (req) => {
     }
 
     if (requestIdFilter) {
-      // Correlate by request_id stored in audit_logs.metadata.
-      // Uses JSON field filter (metadata->>request_id) for exact matches.
       query = query.filter("metadata->>request_id", "eq", requestIdFilter);
     }
 
     if (startDate) {
-      try {
-        const start = new Date(startDate);
-        if (isNaN(start.getTime())) {
-          throw new ApiException(
-            "VALIDATION_ERROR",
-            "Invalid start_date format. Use ISO 8601 format (e.g., 2025-01-01T00:00:00Z)",
-            400
-          );
-        }
-        query = query.gte("created_at", start.toISOString());
-      } catch (error) {
+      const start = new Date(startDate);
+      if (isNaN(start.getTime())) {
         throw new ApiException(
           "VALIDATION_ERROR",
           "Invalid start_date format. Use ISO 8601 format (e.g., 2025-01-01T00:00:00Z)",
           400
         );
       }
+      query = query.gte("created_at", start.toISOString());
     }
 
     if (endDate) {
-      try {
-        const end = new Date(endDate);
-        if (isNaN(end.getTime())) {
-          throw new ApiException(
-            "VALIDATION_ERROR",
-            "Invalid end_date format. Use ISO 8601 format (e.g., 2025-01-01T00:00:00Z)",
-            400
-          );
-        }
-        query = query.lte("created_at", end.toISOString());
-      } catch (error) {
+      const end = new Date(endDate);
+      if (isNaN(end.getTime())) {
         throw new ApiException(
           "VALIDATION_ERROR",
           "Invalid end_date format. Use ISO 8601 format (e.g., 2025-01-01T00:00:00Z)",
           400
         );
       }
+      query = query.lte("created_at", end.toISOString());
     }
 
     // Execute query
