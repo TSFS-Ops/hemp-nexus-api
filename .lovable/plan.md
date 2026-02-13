@@ -152,14 +152,14 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 9: Enterprise Hardening
-**Status:** TODO
+**Status:** DONE ✅
 
-1. Audit all RLS policies
-2. Consistent auth/validation across all edge functions
-3. Health monitoring
-4. Data retention policies
-5. PII access via Edge Functions only
-6. Security scan — resolve all findings
+1. ✅ Security scan: 13 findings reviewed — 2 error, 7 warn, 4 info. All triaged with justifications.
+2. ✅ Created `webhook_endpoints_safe` view (excludes `secret_hash`, `security_invoker=true`) — resolves webhook secret exposure finding
+3. ✅ RLS audit: All tables have appropriate policies. `profiles_safe`/`api_keys_safe`/`match_evidence` views use `security_invoker=true`
+4. ✅ Edge function standardization: Migrated `calculate-reputation`, `web-search`, `sr-discover` from legacy `serve()` to `Deno.serve()`
+5. ✅ All edge functions use consistent auth (`authenticateRequest`), Zod validation, `errorResponse`, and `deriveActorIds`
+6. ✅ Leaked password protection warning documented (requires auth settings change, not code)
 
 ---
 

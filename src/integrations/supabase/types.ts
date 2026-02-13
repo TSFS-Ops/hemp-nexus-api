@@ -2186,6 +2186,13 @@ export type Database = {
             referencedRelation: "webhook_endpoints"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "webhook_deliveries_webhook_endpoint_id_fkey"
+            columns: ["webhook_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       webhook_endpoints: {
@@ -2285,6 +2292,13 @@ export type Database = {
             columns: ["webhook_endpoint_id"]
             isOneToOne: false
             referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_events_webhook_endpoint_id_fkey"
+            columns: ["webhook_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2416,6 +2430,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_endpoints_safe: {
+        Row: {
+          created_at: string | null
+          events: string[] | null
+          id: string | null
+          last_delivery_at: string | null
+          org_id: string | null
+          status: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          events?: string[] | null
+          id?: string | null
+          last_delivery_at?: string | null
+          org_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          events?: string[] | null
+          id?: string | null
+          last_delivery_at?: string | null
+          org_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

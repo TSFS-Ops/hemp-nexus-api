@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { scoreOption } from "../_shared/scoring.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { srDiscoverSchema, validateInput } from "../_shared/validation.ts";
@@ -14,10 +13,11 @@ import {
   type DiscoveryResult,
   type DiscoveryMetrics
 } from "../_shared/discovery-engine.ts";
+import { errorResponse } from "../_shared/errors.ts";
 
 const headers = corsHeaders('*');
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers });
   }
