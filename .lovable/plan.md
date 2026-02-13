@@ -72,7 +72,7 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 2: Core Flow (Signals → Match → POI)
-**Status:** TODO
+**Status:** DONE ✅
 
 **Goal:** Clean, tested implementation of the happy path.
 
