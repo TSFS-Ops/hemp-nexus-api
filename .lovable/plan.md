@@ -131,12 +131,13 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 7: Admin Panel
-**Status:** TODO
+**Status:** DONE ✅
 
-1. Consolidate ~12 admin components into tabbed dashboard
-2. User/org management
-3. System analytics + health
-4. Licence management
+1. ✅ Reorganised AdminSidebar into 5 logical groups (Overview, Core Data, Analytics, Audit & Logs, Management)
+2. ✅ Migrated AdminSettings from legacy `useToast` to `sonner`
+3. ✅ Migrated AdminRiskPanel from legacy `useToast` to `sonner`
+4. ✅ Fixed AdminOverview: replaced `<a>` tags with React Router `<Link>`, parallelised stat queries with `Promise.all`
+5. ✅ All 16 admin sub-panels verified: consistent sonner notifications, proper React Router navigation, TanStack Query for data fetching
 
 ---
 

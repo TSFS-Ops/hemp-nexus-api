@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -46,7 +46,6 @@ export function AdminRiskPanel() {
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newRisk, setNewRisk] = useState({ title: "", description: "", severity: "medium" });
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchRiskItems();
@@ -64,11 +63,7 @@ export function AdminRiskPanel() {
       setRiskItems(data || []);
     } catch (error) {
       console.error("Error fetching risk items:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load risk items",
-        variant: "destructive",
-      });
+      toast.error("Failed to load risk items");
     } finally {
       setLoading(false);
     }
@@ -76,11 +71,7 @@ export function AdminRiskPanel() {
 
   const handleAddRisk = async () => {
     if (!newRisk.title.trim()) {
-      toast({
-        title: "Error",
-        description: "Title is required",
-        variant: "destructive",
-      });
+      toast.error("Title is required");
       return;
     }
 
@@ -95,17 +86,13 @@ export function AdminRiskPanel() {
 
       if (error) throw error;
 
-      toast({ title: "Risk item added" });
+      toast.success("Risk item added");
       setNewRisk({ title: "", description: "", severity: "medium" });
       setShowAddDialog(false);
       fetchRiskItems();
     } catch (error) {
       console.error("Error adding risk:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add risk item",
-        variant: "destructive",
-      });
+      toast.error("Failed to add risk item");
     }
   };
 
@@ -124,15 +111,11 @@ export function AdminRiskPanel() {
 
       if (error) throw error;
 
-      toast({ title: "Risk item resolved" });
+      toast.success("Risk item resolved");
       fetchRiskItems();
     } catch (error) {
       console.error("Error resolving risk:", error);
-      toast({
-        title: "Error",
-        description: "Failed to resolve risk item",
-        variant: "destructive",
-      });
+      toast.error("Failed to resolve risk item");
     }
   };
 
@@ -149,15 +132,11 @@ export function AdminRiskPanel() {
 
       if (error) throw error;
 
-      toast({ title: "Risk item reopened" });
+      toast.success("Risk item reopened");
       fetchRiskItems();
     } catch (error) {
       console.error("Error reopening risk:", error);
-      toast({
-        title: "Error",
-        description: "Failed to reopen risk item",
-        variant: "destructive",
-      });
+      toast.error("Failed to reopen risk item");
     }
   };
 
