@@ -89,7 +89,7 @@ export default function Pricing() {
             Purchase prepaid credits to record Proof-of-Intent for your trade compliance needs.
           </p>
           <p className="text-sm text-muted-foreground">
-            All prices in USD. No hidden fees. Unused credits refundable within 7 days.
+            All prices in ZAR. No hidden fees. Unused credits refundable within 7 days.
           </p>
         </div>
       </section>

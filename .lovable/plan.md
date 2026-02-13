@@ -142,12 +142,12 @@ It produces tamper-evident, legally admissible proof records:
 ---
 
 ### Phase 8: Public Site + Sandbox
-**Status:** TODO
+**Status:** DONE ✅
 
-1. Landing page
-2. PublicSearch with demo data
-3. Sandbox mode for API testing
-4. Pricing page
+1. ✅ Landing page: Fixed API example URL (→ api.trade.izenzo.co.za), verified cross-domain auth links, mobile nav, "How it works" flow
+2. ✅ PublicSearch: Verified demo-only data (zero DB writes), fixed hardcoded white/black colours → semantic tokens (bg-card, border-muted-foreground)
+3. ✅ Sandbox mode: SandboxIndicator generates sample signals/matches via edge functions, isolated per-org
+4. ✅ Pricing page: Fixed currency label ("All prices in ZAR"), verified 3-tier ZAR pricing (R1,799 / R6,299 / R26,999), VAT notice
 
 ---
 

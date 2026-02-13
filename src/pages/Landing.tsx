@@ -218,7 +218,7 @@ export default function Landing() {
               </Link>
             </div>
             <pre className="p-4 text-sm text-foreground overflow-x-auto font-mono">
-              <code>{`curl -X POST https://api.compliancematch.dev/v1/match \\
+              <code>{`curl -X POST https://api.trade.izenzo.co.za/v1/match \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
