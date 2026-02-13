@@ -239,9 +239,9 @@ export default function Billing() {
   };
 
   const currentBalance = balance?.balance || 0;
-  const minimumRequired = balance?.minimum_required || 5000;
-  const isLow = currentBalance <= 6000;
-  const isCritical = currentBalance <= minimumRequired + 1000;
+  const minimumRequired = balance?.minimum_required || 0;
+  const isLow = minimumRequired > 0 && currentBalance <= minimumRequired * 1.2;
+  const isCritical = minimumRequired > 0 && currentBalance <= minimumRequired + 1000;
 
   return (
     <DashboardLayout activeSection="usage" onSectionChange={() => {}} isAdmin={isAdmin}>
