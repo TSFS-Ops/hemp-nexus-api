@@ -24,9 +24,9 @@ import Pricing from "@/pages/Pricing";
 
 /**
  * Root element that renders based on host type:
- * - Public domain: Minimalist search page
+ * - Public domain: Landing page with embedded demo search
  * - Console domain: Redirect to Dashboard
- * - Preview: Minimalist search page (for testing)
+ * - Preview: Landing page (for testing)
  */
 function RootElement() {
   const hostType = getHostType();
@@ -36,8 +36,8 @@ function RootElement() {
     return <Navigate to="/dashboard" replace />;
   }
   
-  // Public domain or preview: show minimalist search
-  return <PublicSearch />;
+  // Public domain or preview: show landing page with embedded demo
+  return <Landing />;
 }
 
 function App() {
