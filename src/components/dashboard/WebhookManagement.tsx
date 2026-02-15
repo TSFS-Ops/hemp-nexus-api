@@ -68,13 +68,21 @@ export function WebhookManagement() {
   const fetchWebhooks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("webhook_endpoints")
-        .select("id, url, events, status, last_delivery_at, created_at, updated_at, org_id")
-        .order("created_at", { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
 
-      if (error) throw error;
-      setWebhooks(data || []);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch webhooks");
+      const result = await response.json();
+      setWebhooks(result.data || []);
     } catch (error) {
       console.error("Error fetching webhooks:", error);
       toast.error("Failed to load webhooks");
@@ -91,39 +99,31 @@ export function WebhookManagement() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) throw new Error("Not authenticated");
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", session.user.id)
-        .single();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url,
+            events: Array.from(selectedEvents),
+          }),
+        }
+      );
 
-      if (!profile) return;
-
-      // Generate a webhook secret
-      const secret = `whsec_${crypto.randomUUID().replace(/-/g, '')}`;
-      const encoder = new TextEncoder();
-      const data = encoder.encode(secret);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const secretHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-      const { error } = await supabase
-        .from("webhook_endpoints")
-        .insert({
-          org_id: profile.org_id,
-          url,
-          events: Array.from(selectedEvents),
-          secret_hash: secretHash,
-          status: "active",
-        });
-
-      if (error) throw error;
+      if (!response.ok) throw new Error("Failed to create webhook");
+      const result = await response.json();
 
       toast.success("Webhook endpoint created successfully");
-      toast.info(`Secret: ${secret}`, { duration: 10000 });
-      
+      if (result.secret) {
+        toast.info(`Secret: ${result.secret}`, { duration: 10000 });
+      }
+
       setCreateDialogOpen(false);
       setUrl("");
       setSelectedEvents(new Set());
@@ -136,12 +136,20 @@ export function WebhookManagement() {
 
   const handleDeleteWebhook = async (webhookId: string) => {
     try {
-      const { error } = await supabase
-        .from("webhook_endpoints")
-        .delete()
-        .eq("id", webhookId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
 
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks/${webhookId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to delete webhook");
 
       toast.success("Webhook endpoint deleted");
       fetchWebhooks();
