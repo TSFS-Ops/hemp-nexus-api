@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ConsoleWelcome } from "@/components/ConsoleWelcome";
 
 // Import modular section components
 import {
@@ -141,22 +142,24 @@ export default function Dashboard() {
     );
   }
 
+  // Unauthenticated: show welcome interstitial instead of empty dashboard
+  if (isDemoMode) {
+    return <ConsoleWelcome />;
+  }
+
   return (
     <>
-      {!isDemoMode && (
-        <OnboardingWizard 
-          open={showOnboarding} 
-          onClose={() => setShowOnboarding(false)} 
-        />
-      )}
+      <OnboardingWizard 
+        open={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+      />
       <DashboardLayout 
         activeSection={activeSection} 
         onSectionChange={setActiveSection}
         isAdmin={isAdmin}
-        isDemoMode={isDemoMode}
+        isDemoMode={false}
       >
-        {isDemoMode && <DemoModeBanner variant="compact" />}
-        {!isDemoMode && <SandboxIndicator isSandbox={true} />}
+        <SandboxIndicator isSandbox={true} />
         <ErrorBoundary>
           {content}
         </ErrorBoundary>
