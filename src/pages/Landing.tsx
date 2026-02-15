@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Search, CheckCircle, FileText, Shield, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Search, CheckCircle, FileText, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
+import { PublicHeader } from "@/components/PublicHeader";
 import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
 
 export default function Landing() {
@@ -53,83 +53,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
-              <span className="text-background font-bold text-xs">CM</span>
-            </div>
-            <span className="font-semibold text-sm tracking-tight">Compliance Matching API</span>
-          </div>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link 
-              to="/docs" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Documentation
-            </Link>
-            <Link 
-              to="/pricing" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <a 
-              href="#try-it" 
-              className="text-sm font-medium text-foreground"
-            >
-              Try Demo
-            </a>
-            <AuthLink className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
-              Sign in
-              <ArrowRight className="h-3.5 w-3.5" />
-            </AuthLink>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background px-4 py-4 space-y-3">
-            <Link 
-              to="/docs" 
-              className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Documentation
-            </Link>
-            <Link 
-              to="/pricing" 
-              className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Pricing
-            </Link>
-            <a 
-              href="#try-it" 
-              className="block text-sm font-medium text-foreground py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Try Demo
-            </a>
-            <AuthLink className="block text-sm font-medium text-foreground py-2">
-              Sign in
-            </AuthLink>
-          </div>
-        )}
-      </nav>
+      <PublicHeader showDemo />
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-16 sm:pb-20">

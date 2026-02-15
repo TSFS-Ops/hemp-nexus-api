@@ -14,19 +14,19 @@ interface MobileBottomNavProps {
 }
 
 const primaryItems = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "docs", label: "Overview", icon: LayoutDashboard },
   { id: "keys", label: "API Keys", icon: Key, requiresAuth: true },
   { id: "matches", label: "Evidence", icon: FileText, requiresAuth: true },
   { id: "audit-logs", label: "Logs", icon: ScrollText, requiresAuth: true },
 ];
 
 const moreItems = [
-  { id: "docs", label: "API Reference" },
+  { id: "test", label: "API Reference" },
   { id: "search", label: "Search" },
   { id: "webhooks", label: "Webhooks" },
   { id: "analytics", label: "Analytics" },
-  { id: "hash-verify", label: "Hash Verifier" },
-  { id: "troubleshooting", label: "Support" },
+  { id: "usage", label: "Usage & Billing" },
+  { id: "troubleshooting", label: "Help" },
 ];
 
 export function MobileBottomNav({ activeSection, onSectionChange, isDemoMode }: MobileBottomNavProps) {

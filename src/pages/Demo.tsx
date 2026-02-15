@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, ArrowLeft, Check, Info, Sparkles, Copy } from "lucide-react";
+import { ArrowRight, Check, Info, Sparkles, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
+import { PublicHeader } from "@/components/PublicHeader";
 import { type DemoSearchResult, getDemoResultsForQuery, calculateSearchMetrics } from "@/lib/demo-data";
 
 export default function Demo() {
@@ -82,28 +83,7 @@ export default function Demo() {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <nav className="border-b border-border bg-background sticky top-0 z-50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center">
-                <span className="text-background font-bold text-[10px]">CM</span>
-              </div>
-              <span className="font-medium text-sm text-foreground hidden sm:inline">Compliance Matching API</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <span className="px-2 py-1 text-xs font-medium text-muted-foreground border border-border rounded">
-                Sandbox
-              </span>
-              <AuthLink className="inline-flex items-center justify-center">
-                <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">
-                  Get API Key
-                </Button>
-              </AuthLink>
-            </div>
-          </div>
-        </nav>
+        <PublicHeader />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           {/* Demo Notice */}

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { getConsoleUrl } from "@/lib/hostname";
+import { PublicHeader } from "@/components/PublicHeader";
 
 const packages = [
   {
@@ -59,29 +60,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-              CM
-            </div>
-            <span className="font-semibold text-foreground">Izenzo</span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Documentation
-            </Link>
-            <Button asChild variant="outline" size="sm">
-              <a href={consoleAuthUrl}>Sign In</a>
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* Hero */}
       <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4 text-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
             Simple, Transparent Pricing
           </h1>
@@ -96,7 +79,7 @@ export default function Pricing() {
 
       {/* Pricing Cards */}
       <section className="pb-16 md:pb-24">
-        <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {packages.map((pkg) => (
               <Card 
@@ -144,7 +127,7 @@ export default function Pricing() {
 
       {/* Enterprise CTA */}
       <section className="py-16 bg-muted/30 border-t border-border/40">
-        <div className="container mx-auto px-4 text-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">
             Need an Annual Licence?
           </h2>
@@ -160,7 +143,7 @@ export default function Pricing() {
 
       {/* Footer */}
       <footer className="border-t border-border/40 py-8">
-        <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} Starfair162 (Pty) Ltd t/a Izenzo. All rights reserved.
