@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Shield, Key, FileText, BarChart3 } from "lucide-react";
+import { PublicHeader } from "@/components/PublicHeader";
 
 /**
  * Welcome interstitial shown to unauthenticated visitors on the console domain.
@@ -8,15 +9,7 @@ import { ArrowRight, Shield, Key, FileText, BarChart3 } from "lucide-react";
 export function ConsoleWelcome() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <nav className="border-b border-border h-14 flex items-center px-4 sm:px-6">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
-            <span className="text-background font-bold text-xs">CM</span>
-          </div>
-          <span className="font-semibold text-sm tracking-tight">Developer Console</span>
-        </div>
-      </nav>
+      <PublicHeader />
 
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center px-4 py-16">

@@ -387,7 +387,7 @@ export default function Auth() {
             <div className="h-8 w-8 rounded bg-foreground flex items-center justify-center">
               <span className="text-background font-bold text-xs">CM</span>
             </div>
-            <span className="font-semibold text-foreground">Compliance Match</span>
+            <span className="font-semibold text-foreground">Compliance Matching API</span>
           </div>
           <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome</h1>
           <p className="text-sm text-muted-foreground">
