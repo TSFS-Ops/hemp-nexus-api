@@ -88,7 +88,15 @@ export default function MatchDetails() {
         let errorMessage = "Failed to confirm intent";
         try {
           const error = await response.json();
-          errorMessage = error.error || error.message || errorMessage;
+          if (response.status === 401) {
+            errorMessage = "Please sign in to confirm intent.";
+          } else if (response.status === 402) {
+            errorMessage = "Insufficient credits. Please purchase credits on the Billing page to continue.";
+          } else if (response.status === 403) {
+            errorMessage = "You do not have permission. Please create an account or contact support.";
+          } else {
+            errorMessage = error.error || error.message || errorMessage;
+          }
         } catch {
           errorMessage = response.statusText || errorMessage;
         }

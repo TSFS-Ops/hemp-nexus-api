@@ -13,8 +13,8 @@ const NON_BILLABLE_ENDPOINTS = [
   '/search', // Discovery is free per Work Program
 ];
 
-// Minimum token balance required to make API calls
-const MINIMUM_TOKEN_BALANCE = 5000;
+// Default minimum token balance (used only if DB value is missing entirely)
+const DEFAULT_MINIMUM_TOKEN_BALANCE = 0;
 
 // Tokens consumed per generic API call
 const TOKENS_PER_CALL = 1;
@@ -49,7 +49,7 @@ export function calculateFinalityBurn(transactionValueUsd: number): number {
 }
 
 // Low balance warning thresholds
-const LOW_BALANCE_THRESHOLDS = [6000, 5500, 5001];
+const LOW_BALANCE_THRESHOLDS = [500, 200, 50];
 
 export interface TokenCheckResult {
   allowed: boolean;
@@ -130,7 +130,7 @@ export async function checkTokenBalance(
   }
   
   const currentBalance = balance.balance;
-  const minimumRequired = balance.minimum_required || MINIMUM_TOKEN_BALANCE;
+  const minimumRequired = balance.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
   
   // Check if balance is sufficient
   const allowed = currentBalance >= minimumRequired;
@@ -310,18 +310,18 @@ async function checkAndTriggerLowBalanceWebhooks(
 }
 
 function getWarningMessage(threshold: number, balance: number): string {
-  if (balance <= 5001) {
-    return "CRITICAL: Token balance is at minimum. API calls will be blocked if balance drops below 5000.";
+  if (balance <= 50) {
+    return "CRITICAL: Token balance is very low. API calls may fail for actions requiring credits.";
   }
-  if (balance <= 5500) {
-    return "WARNING: Token balance is very low. Please top up soon to avoid service interruption.";
+  if (balance <= 200) {
+    return "WARNING: Token balance is low. Please top up soon to avoid service interruption.";
   }
-  return "NOTICE: Token balance is approaching minimum threshold. Consider topping up.";
+  return "NOTICE: Token balance is approaching low levels. Consider topping up.";
 }
 
 function getUrgencyLevel(balance: number): "critical" | "warning" | "notice" {
-  if (balance <= 5001) return "critical";
-  if (balance <= 5500) return "warning";
+  if (balance <= 50) return "critical";
+  if (balance <= 200) return "warning";
   return "notice";
 }
 
@@ -460,17 +460,25 @@ export async function burnTokensForAction(
   const previousBalance = currentBalanceData.balance;
   const newBalance = Math.max(0, previousBalance - tokensToBurn);
   
+  // Get the org's minimum_required from DB
+  const { data: balanceRecord } = await supabase
+    .from("token_balances")
+    .select("minimum_required")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  const minRequired = balanceRecord?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
+
   // Check if sufficient balance for this action
-  if (previousBalance < tokensToBurn + MINIMUM_TOKEN_BALANCE) {
+  if (previousBalance < tokensToBurn + minRequired) {
     throw new ApiException(
       "INSUFFICIENT_TOKEN_BALANCE",
-      `Insufficient tokens for ${actionType}. Required: ${tokensToBurn}, Available: ${previousBalance - MINIMUM_TOKEN_BALANCE}`,
+      `Insufficient tokens for ${actionType}. Required: ${tokensToBurn}, Available: ${previousBalance - minRequired}`,
       402,
       {
         actionType,
         required: tokensToBurn,
-        available: previousBalance - MINIMUM_TOKEN_BALANCE,
-        minimumReserve: MINIMUM_TOKEN_BALANCE,
+        available: previousBalance - minRequired,
+        minimumReserve: minRequired,
       }
     );
   }
@@ -549,7 +557,8 @@ export async function checkSufficientTokensForAction(
     .maybeSingle();
   
   const currentBalance = balance?.balance || 0;
-  const available = Math.max(0, currentBalance - MINIMUM_TOKEN_BALANCE);
+  const minRequired = balance?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
+  const available = Math.max(0, currentBalance - minRequired);
   
   return {
     sufficient: available >= required,
@@ -568,12 +577,13 @@ export async function ensureSufficientTokens(
 ): Promise<void> {
   const { data: balance } = await supabase
     .from("token_balances")
-    .select("balance")
+    .select("balance, minimum_required")
     .eq("org_id", orgId)
     .maybeSingle();
   
   const currentBalance = balance?.balance || 0;
-  const available = Math.max(0, currentBalance - MINIMUM_TOKEN_BALANCE);
+  const minRequired = balance?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
+  const available = Math.max(0, currentBalance - minRequired);
   
   if (available < requiredTokens) {
     throw new ApiException(
@@ -583,7 +593,7 @@ export async function ensureSufficientTokens(
       {
         required: requiredTokens,
         available,
-        minimumReserve: MINIMUM_TOKEN_BALANCE,
+        minimumReserve: minRequired,
         topUpRequired: requiredTokens - available,
       }
     );
@@ -645,7 +655,7 @@ export async function getTokenUsageStats(
   
   return {
     currentBalance: balance?.balance || 0,
-    minimumRequired: balance?.minimum_required || MINIMUM_TOKEN_BALANCE,
+    minimumRequired: balance?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE,
     totalBurnedThisMonth: totalBurned,
     callsThisMonth: allowedCalls,
     blockedCallsThisMonth: blockedCalls,

@@ -35,9 +35,9 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
   }
 
   const currentBalance = balance.balance || 0;
-  const minimumRequired = balance.minimum_required || 5000;
-  const isLow = currentBalance <= 6000;
-  const isCritical = currentBalance <= minimumRequired + 1000;
+  const minimumRequired = balance.minimum_required ?? 0;
+  const isLow = currentBalance <= 200;
+  const isCritical = currentBalance <= 50;
   const isBlocked = currentBalance < minimumRequired;
 
   const formatBalance = (num: number) => {
