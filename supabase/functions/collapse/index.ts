@@ -197,6 +197,37 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── Check global collapse freeze (break-glass) ──
+    const { data: freezeSetting } = await adminClient
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "collapse_freeze")
+      .maybeSingle();
+
+    if ((freezeSetting?.value as any)?.enabled) {
+      throw new ApiException(
+        "COLLAPSE_FROZEN",
+        "Global collapse freeze is active. All collapse operations are halted by break-glass protocol.",
+        503,
+        { frozenBy: (freezeSetting?.value as any)?.frozen_by, frozenAt: (freezeSetting?.value as any)?.frozen_at }
+      );
+    }
+
+    // ── Check org-level freeze ──
+    const { data: orgData } = await adminClient
+      .from("organizations")
+      .select("frozen, frozen_reason")
+      .eq("id", org_id)
+      .maybeSingle();
+
+    if (orgData?.frozen) {
+      throw new ApiException(
+        "ORG_FROZEN",
+        `Organisation ${org_id} is frozen: ${orgData.frozen_reason || "No reason provided"}`,
+        503
+      );
+    }
+
     // ── CAP partition check — consistency first ──
     const partition = await checkPartitionHealth(adminClient);
     if (!partition.healthy) {

@@ -419,6 +419,129 @@ export type Database = {
           },
         ]
       }
+      brd_change_records: {
+        Row: {
+          approved_by: string | null
+          constraint_key: string
+          created_at: string
+          id: string
+          new_value: string
+          old_value: string
+          reason: string
+          requested_by: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          constraint_key: string
+          created_at?: string
+          id?: string
+          new_value: string
+          old_value: string
+          reason: string
+          requested_by: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          constraint_key?: string
+          created_at?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+          reason?: string
+          requested_by?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      brd_constraints: {
+        Row: {
+          change_record_id: string | null
+          constraint_key: string
+          created_at: string
+          current_value: string
+          description: string
+          id: string
+          last_changed_at: string | null
+          last_changed_by: string | null
+          locked: boolean
+        }
+        Insert: {
+          change_record_id?: string | null
+          constraint_key: string
+          created_at?: string
+          current_value: string
+          description: string
+          id?: string
+          last_changed_at?: string | null
+          last_changed_by?: string | null
+          locked?: boolean
+        }
+        Update: {
+          change_record_id?: string | null
+          constraint_key?: string
+          created_at?: string
+          current_value?: string
+          description?: string
+          id?: string
+          last_changed_at?: string | null
+          last_changed_by?: string | null
+          locked?: boolean
+        }
+        Relationships: []
+      }
+      break_glass_actions: {
+        Row: {
+          action_type: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          org_id: string | null
+          reason: string
+          target_org_id: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          org_id?: string | null
+          reason: string
+          target_org_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          org_id?: string | null
+          reason?: string
+          target_org_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "break_glass_actions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "break_glass_actions_target_org_id_fkey"
+            columns: ["target_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collapse_ledger: {
         Row: {
           actor_user_id: string | null
@@ -1879,6 +2002,12 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          cross_border_consent: boolean
+          data_region: string
+          frozen: boolean
+          frozen_at: string | null
+          frozen_by: string | null
+          frozen_reason: string | null
           id: string
           name: string
           sandbox_enabled: boolean | null
@@ -1887,6 +2016,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cross_border_consent?: boolean
+          data_region?: string
+          frozen?: boolean
+          frozen_at?: string | null
+          frozen_by?: string | null
+          frozen_reason?: string | null
           id?: string
           name: string
           sandbox_enabled?: boolean | null
@@ -1895,6 +2030,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cross_border_consent?: boolean
+          data_region?: string
+          frozen?: boolean
+          frozen_at?: string | null
+          frozen_by?: string | null
+          frozen_reason?: string | null
           id?: string
           name?: string
           sandbox_enabled?: boolean | null
@@ -3225,6 +3366,11 @@ export type Database = {
         | "platform_admin"
         | "org_admin"
         | "org_member"
+        | "api_admin"
+        | "billing_admin"
+        | "compliance_analyst"
+        | "legal_reviewer"
+        | "director"
       signal_type: "buyer" | "seller"
     }
     CompositeTypes: {
@@ -3362,6 +3508,11 @@ export const Constants = {
         "platform_admin",
         "org_admin",
         "org_member",
+        "api_admin",
+        "billing_admin",
+        "compliance_analyst",
+        "legal_reviewer",
+        "director",
       ],
       signal_type: ["buyer", "seller"],
     },

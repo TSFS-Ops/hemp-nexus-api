@@ -25,6 +25,10 @@ import { AdminWadPanel } from "@/components/admin/AdminWadPanel";
 import { Phase2Verification } from "@/components/admin/Phase2Verification";
 import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
 import { CollapseLedgerViewer } from "@/components/admin/CollapseLedgerViewer";
+import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
+import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
+import { RbacPanel } from "@/components/admin/RbacPanel";
+import { DataResidencyPanel } from "@/components/admin/DataResidencyPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -131,6 +135,10 @@ export default function Admin() {
                 </div>
               } />
               <Route path="/collapse-ledger" element={<CollapseLedgerViewer />} />
+              <Route path="/rbac" element={<RbacPanel />} />
+              <Route path="/break-glass" element={<BreakGlassPanel />} />
+              <Route path="/brd-constraints" element={<BrdConstraintsPanel />} />
+              <Route path="/data-residency" element={<DataResidencyPanel />} />
               <Route
                 path="/users-orgs"
                 element={

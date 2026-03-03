@@ -16,6 +16,10 @@ import {
   Lock,
   ClipboardCheck,
   BookLock,
+  AlertTriangle,
+  Globe,
+  UserCog,
+  FileWarning,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -62,6 +66,15 @@ const sidebarGroups = [
       { title: "POI State History", url: "/admin/poi-history", icon: Shield },
       { title: "Collapse Ledger", url: "/admin/collapse-ledger", icon: BookLock },
       { title: "API Logs", url: "/admin/logs", icon: FileText },
+    ],
+  },
+  {
+    label: "Governance",
+    items: [
+      { title: "RBAC", url: "/admin/rbac", icon: UserCog },
+      { title: "Break-Glass", url: "/admin/break-glass", icon: AlertTriangle },
+      { title: "BRD Constraints", url: "/admin/brd-constraints", icon: FileWarning },
+      { title: "Data Residency", url: "/admin/data-residency", icon: Globe },
     ],
   },
   {
