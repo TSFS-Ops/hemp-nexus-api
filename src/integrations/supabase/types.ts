@@ -1230,6 +1230,7 @@ export type Database = {
           id: string
           metadata: Json | null
           org_id: string
+          poi_state: string
           previous_event_hash: string | null
           price_amount: number
           price_currency: string
@@ -1261,6 +1262,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           org_id: string
+          poi_state?: string
           previous_event_hash?: string | null
           price_amount: number
           price_currency: string
@@ -1292,6 +1294,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           org_id?: string
+          poi_state?: string
           previous_event_hash?: string | null
           price_amount?: number
           price_currency?: string
@@ -1429,6 +1432,67 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      poi_events: {
+        Row: {
+          actor_api_key_id: string | null
+          actor_user_id: string | null
+          created_at: string
+          from_state: string
+          id: string
+          match_id: string
+          metadata: Json | null
+          org_id: string
+          reason: string | null
+          to_state: string
+        }
+        Insert: {
+          actor_api_key_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          from_state: string
+          id?: string
+          match_id: string
+          metadata?: Json | null
+          org_id: string
+          reason?: string | null
+          to_state: string
+        }
+        Update: {
+          actor_api_key_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          from_state?: string
+          id?: string
+          match_id?: string
+          metadata?: Json | null
+          org_id?: string
+          reason?: string | null
+          to_state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poi_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "poi_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
