@@ -21,8 +21,6 @@ Deno.serve(async (req) => {
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
 
-    // JWT users can always manage their own keys.
-    // API-key callers need explicit scope.
     if (authCtx.isApiKey) {
       requireScope(authCtx, 'api_keys');
     }
@@ -31,9 +29,14 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
+    // Normalize: strip functions/v1/api-keys prefix
+    const parts = [...pathParts];
+    if (parts[0] === 'functions') parts.shift();
+    if (parts[0] === 'v1') parts.shift();
+    if (parts[0] === 'api-keys') parts.shift();
 
-    // POST /api-keys - Create new API key
-    if (req.method === 'POST' && pathParts.length === 1) {
+    // POST / - Create new API key
+    if (req.method === 'POST' && parts.length === 0) {
       const rawBody = await req.json();
       
       let validatedData;
@@ -45,7 +48,6 @@ Deno.serve(async (req) => {
 
       const { name, scopes, expires_at } = validatedData;
 
-      // Generate a random API key
       const apiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
       const keyHash = await hashApiKey(apiKey);
 
@@ -64,7 +66,6 @@ Deno.serve(async (req) => {
 
       if (error) handleDatabaseError(error, requestId);
 
-      // Log audit trail
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
         actor_user_id: actorUserId,
@@ -88,11 +89,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // GET /api-keys - List API keys
-    if (req.method === 'GET' && pathParts.length === 1) {
+    // GET / - List API keys
+    if (req.method === 'GET' && parts.length === 0) {
       const { data, error } = await supabase
         .from('api_keys')
-        .select('id, name, scopes, last_used_at, created_at, status, expires_at')
+        .select('id, name, scopes, last_used_at, created_at, status, expires_at, environment')
         .eq('org_id', authCtx.orgId)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
@@ -105,9 +106,100 @@ Deno.serve(async (req) => {
       );
     }
 
-    // DELETE /api-keys/:id - Revoke API key
-    if (req.method === 'DELETE' && pathParts.length === 2) {
-      const keyId = pathParts[1];
+    // POST /:id/rotate - Rotate API key (revoke old, create new with same config)
+    if (req.method === 'POST' && parts.length === 2 && parts[1] === 'rotate') {
+      const keyId = parts[0];
+
+      // Fetch existing key config
+      const { data: existingKey, error: fetchErr } = await supabase
+        .from('api_keys')
+        .select('id, name, scopes, expires_at, org_id, key_history')
+        .eq('id', keyId)
+        .eq('org_id', authCtx.orgId)
+        .eq('status', 'active')
+        .single();
+
+      if (fetchErr || !existingKey) {
+        throw new ApiException('NOT_FOUND', 'API key not found or already revoked', 404);
+      }
+
+      // Revoke old key
+      await supabase
+        .from('api_keys')
+        .update({ 
+          status: 'revoked', 
+          revoked_at: new Date().toISOString(),
+          key_history: [
+            ...((existingKey.key_history as Array<unknown>) || []),
+            { rotated_at: new Date().toISOString(), rotated_by: actorUserId }
+          ],
+        })
+        .eq('id', keyId);
+
+      // Create new key with same config
+      const newApiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
+      const newKeyHash = await hashApiKey(newApiKey);
+
+      // Calculate new expiry if original had one
+      let newExpiresAt = existingKey.expires_at;
+      if (newExpiresAt) {
+        const originalExpiry = new Date(newExpiresAt);
+        const now = new Date();
+        if (originalExpiry <= now) {
+          // If expired, set to 90 days from now
+          newExpiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      }
+
+      const { data: newKey, error: createErr } = await supabase
+        .from('api_keys')
+        .insert({
+          org_id: authCtx.orgId,
+          name: existingKey.name,
+          key_hash: newKeyHash,
+          scopes: existingKey.scopes,
+          created_by: actorUserId,
+          expires_at: newExpiresAt,
+          key_history: [{ rotated_from: keyId, rotated_at: new Date().toISOString() }],
+        })
+        .select()
+        .single();
+
+      if (createErr) handleDatabaseError(createErr, requestId);
+
+      // Audit log
+      await supabase.from('audit_logs').insert({
+        org_id: authCtx.orgId,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: 'api_key.rotated',
+        entity_type: 'api_key',
+        entity_id: newKey.id,
+        metadata: { 
+          previous_key_id: keyId,
+          new_key_id: newKey.id,
+          request_id: requestId,
+        },
+      });
+
+      return new Response(
+        JSON.stringify({
+          id: newKey.id,
+          name: newKey.name,
+          key: newApiKey,
+          scopes: newKey.scopes,
+          expires_at: newKey.expires_at,
+          created_at: newKey.created_at,
+          rotated_from: keyId,
+          message: "Key rotated. Old key has been revoked. Save this new key securely.",
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json', ...headers } }
+      );
+    }
+
+    // DELETE /:id - Revoke API key
+    if (req.method === 'DELETE' && parts.length === 1) {
+      const keyId = parts[0];
 
       const { error } = await supabase
         .from('api_keys')

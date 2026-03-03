@@ -14,12 +14,13 @@ const DEFAULT_LIMITS: RateLimitConfig = {
   requestsPerDay: 10000,
 };
 
-// Scope-specific rate limits (more restrictive for write operations)
+// Scope-specific rate limits
 const SCOPE_LIMITS: Record<string, RateLimitConfig> = {
   "signals:write": { requestsPerMinute: 30, requestsPerHour: 500, requestsPerDay: 5000 },
   "match": { requestsPerMinute: 20, requestsPerHour: 300, requestsPerDay: 3000 },
+  "collapse": { requestsPerMinute: 10, requestsPerHour: 100, requestsPerDay: 1000 },
+  "preflight": { requestsPerMinute: 30, requestsPerHour: 500, requestsPerDay: 5000 },
   "data-sources:write": { requestsPerMinute: 10, requestsPerHour: 100, requestsPerDay: 1000 },
-  // Admin endpoints - very restrictive to prevent abuse
   "admin:reputation": { requestsPerMinute: 5, requestsPerHour: 30, requestsPerDay: 100 },
   "admin:tests": { requestsPerMinute: 2, requestsPerHour: 10, requestsPerDay: 50 },
 };
@@ -41,8 +42,6 @@ async function getOrCreateRateLimit(
   const windowStart = new Date(now.getTime() - (now.getTime() % (windowMinutes * 60 * 1000)));
   const windowEnd = new Date(windowStart.getTime() + windowMinutes * 60 * 1000);
 
-  // Use UPSERT (ON CONFLICT DO UPDATE) to atomically create/get rate limit record
-  // This fixes the race condition where concurrent requests could both create new records
   const { data: existing, error: upsertError } = await supabase
     .from('rate_limits')
     .upsert(
@@ -52,7 +51,7 @@ async function getOrCreateRateLimit(
         endpoint,
         window_start: windowStart.toISOString(),
         window_end: windowEnd.toISOString(),
-        request_count: 0, // Will be ignored on conflict
+        request_count: 0,
       },
       {
         onConflict: 'org_id,endpoint,window_end',
@@ -63,7 +62,6 @@ async function getOrCreateRateLimit(
     .single();
 
   if (upsertError) {
-    // If upsert fails due to unique constraint (concurrent request), try to fetch existing
     const { data: fallback, error: fetchError } = await supabase
       .from('rate_limits')
       .select('request_count, window_start, window_end')
@@ -74,7 +72,6 @@ async function getOrCreateRateLimit(
 
     if (fetchError || !fallback) {
       console.error('Rate limit getOrCreate failed:', upsertError, fetchError);
-      // Return safe defaults on error - don't block requests due to rate limit DB issues
       return { windowStart, windowEnd, requestCount: 0 };
     }
 
@@ -92,10 +89,6 @@ async function getOrCreateRateLimit(
   };
 }
 
-/**
- * Atomically increment rate limit counter using database RPC function.
- * This prevents race conditions where concurrent requests bypass limits.
- */
 async function incrementRateLimitAtomic(
   supabase: SupabaseClient,
   orgId: string,
@@ -110,7 +103,6 @@ async function incrementRateLimitAtomic(
 
   if (error) {
     console.error("Error incrementing rate limit atomically:", error);
-    // Fallback: return 0 but log the failure for monitoring
     return 0;
   }
 
@@ -124,10 +116,8 @@ export async function checkRateLimit(
   endpoint: string,
   scope?: string
 ): Promise<void> {
-  // Get rate limit config based on scope
   const limits = scope && SCOPE_LIMITS[scope] ? SCOPE_LIMITS[scope] : DEFAULT_LIMITS;
 
-  // Check per-minute limit
   if (limits.requestsPerMinute) {
     const minuteWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:minute`, 1);
     if (minuteWindow.requestCount >= limits.requestsPerMinute) {
@@ -136,19 +126,12 @@ export async function checkRateLimit(
         "RATE_LIMIT_EXCEEDED",
         `Rate limit exceeded: ${limits.requestsPerMinute} requests per minute. Try again in ${resetTime} seconds.`,
         429,
-        {
-          limit: limits.requestsPerMinute,
-          window: "minute",
-          resetIn: resetTime,
-          retryAfter: resetTime,
-        }
+        { limit: limits.requestsPerMinute, window: "minute", resetIn: resetTime, retryAfter: resetTime }
       );
     }
-    // Use atomic increment to prevent race conditions
     await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:minute`, minuteWindow.windowEnd);
   }
 
-  // Check per-hour limit
   if (limits.requestsPerHour) {
     const hourWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:hour`, 60);
     if (hourWindow.requestCount >= limits.requestsPerHour) {
@@ -157,18 +140,12 @@ export async function checkRateLimit(
         "RATE_LIMIT_EXCEEDED",
         `Rate limit exceeded: ${limits.requestsPerHour} requests per hour. Try again in ${resetTime} seconds.`,
         429,
-        {
-          limit: limits.requestsPerHour,
-          window: "hour",
-          resetIn: resetTime,
-          retryAfter: resetTime,
-        }
+        { limit: limits.requestsPerHour, window: "hour", resetIn: resetTime, retryAfter: resetTime }
       );
     }
     await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:hour`, hourWindow.windowEnd);
   }
 
-  // Check per-day limit
   if (limits.requestsPerDay) {
     const dayWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:day`, 1440);
     if (dayWindow.requestCount >= limits.requestsPerDay) {
@@ -177,12 +154,7 @@ export async function checkRateLimit(
         "RATE_LIMIT_EXCEEDED",
         `Rate limit exceeded: ${limits.requestsPerDay} requests per day. Try again in ${resetTime} seconds.`,
         429,
-        {
-          limit: limits.requestsPerDay,
-          window: "day",
-          resetIn: resetTime,
-          retryAfter: resetTime,
-        }
+        { limit: limits.requestsPerDay, window: "day", resetIn: resetTime, retryAfter: resetTime }
       );
     }
     await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:day`, dayWindow.windowEnd);

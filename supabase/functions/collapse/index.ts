@@ -1,10 +1,9 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { deriveActorIds } from "../_shared/actor-context.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -64,29 +63,23 @@ async function checkPartitionHealth(
   adminClient: ReturnType<typeof createClient>
 ): Promise<{ healthy: boolean; reason?: string }> {
   try {
-    // Verify we can perform a write-read round-trip (consistency check)
     const probe = crypto.randomUUID();
     const { error: writeErr } = await adminClient
       .from("audit_logs")
       .insert({
-        org_id: "00000000-0000-0000-0000-000000000000", // will fail FK but tests write path
+        org_id: "00000000-0000-0000-0000-000000000000",
         action: `partition.probe.${probe}`,
         entity_type: "system",
       });
-    
-    // FK failure is expected — what we're checking is that the DB is reachable and writable
-    // A true partition would cause a connection timeout or network error, not an FK violation
+
     if (writeErr) {
       const msg = writeErr.message || "";
-      // FK violation = DB is reachable and processing writes = healthy
       if (msg.includes("foreign key") || msg.includes("violates") || msg.includes("23503")) {
         return { healthy: true };
       }
-      // Connection/timeout errors = unhealthy
       if (msg.includes("timeout") || msg.includes("connection") || msg.includes("ECONNREFUSED")) {
         return { healthy: false, reason: `Database connectivity issue: ${msg}` };
       }
-      // Other errors — still reachable
       return { healthy: true };
     }
     return { healthy: true };
@@ -99,51 +92,39 @@ async function checkPartitionHealth(
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
-    // ── Auth ──
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorised" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const corsResponse = handleCors(req, allowedOrigins);
+    if (corsResponse) return corsResponse;
+
+    if (req.method !== "POST") {
+      throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const {
-      data: { user },
-      error: authError,
-    } = await userClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorised" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // ── Auth via shared module (JWT + API key) ──
+    const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, "collapse");
     }
+
+    const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
+
+    const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // ── Rate limiting ──
+    await checkRateLimit(adminClient, authCtx.orgId, actorApiKeyId, "collapse", "collapse");
 
     // ── Body size check ──
     const contentLength = req.headers.get("content-length");
     if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
-      return new Response(
-        JSON.stringify({ error: "Payload too large (max 1 MB)" }),
-        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new ApiException("PAYLOAD_TOO_LARGE", "Payload too large (max 1 MB)", 413);
     }
 
     const body = await req.json();
@@ -156,16 +137,9 @@ Deno.serve(async (req: Request) => {
       }
     }
     if (missing.length > 0) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing mandatory fields",
-          missingFields: missing,
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new ApiException("VALIDATION_ERROR", `Missing mandatory fields: ${missing.join(", ")}`, 400, { missingFields: missing });
     }
 
-    // ── Type validation ──
     const {
       org_id,
       counterparty_org_id,
@@ -182,44 +156,46 @@ Deno.serve(async (req: Request) => {
       metadata,
     } = body;
 
-    if (!UUID_RE.test(org_id)) {
-      return new Response(
-        JSON.stringify({ error: "org_id must be a valid UUID" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!UUID_RE.test(counterparty_org_id)) {
-      return new Response(
-        JSON.stringify({ error: "counterparty_org_id must be a valid UUID" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (org_id === counterparty_org_id) {
-      return new Response(
-        JSON.stringify({ error: "org_id and counterparty_org_id must differ" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (typeof quantity !== "number" || quantity <= 0) {
-      return new Response(
-        JSON.stringify({ error: "quantity must be a positive number" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (typeof price !== "number" || price <= 0) {
-      return new Response(
-        JSON.stringify({ error: "price must be a positive number" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!CURRENCY_RE.test(currency)) {
-      return new Response(
-        JSON.stringify({ error: "currency must be a 3-letter uppercase ISO code" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // ── Type validation ──
+    if (!UUID_RE.test(org_id)) throw new ApiException("VALIDATION_ERROR", "org_id must be a valid UUID", 400);
+    if (!UUID_RE.test(counterparty_org_id)) throw new ApiException("VALIDATION_ERROR", "counterparty_org_id must be a valid UUID", 400);
+    if (org_id === counterparty_org_id) throw new ApiException("VALIDATION_ERROR", "org_id and counterparty_org_id must differ", 400);
+    if (typeof quantity !== "number" || quantity <= 0) throw new ApiException("VALIDATION_ERROR", "quantity must be a positive number", 400);
+    if (typeof price !== "number" || price <= 0) throw new ApiException("VALIDATION_ERROR", "price must be a positive number", 400);
+    if (!CURRENCY_RE.test(currency)) throw new ApiException("VALIDATION_ERROR", "currency must be a 3-letter uppercase ISO code", 400);
+
+    // ── Org ownership check: API key org must match org_id ──
+    if (authCtx.orgId !== org_id) {
+      throw new ApiException("FORBIDDEN", "API key org does not match org_id in payload", 403);
     }
 
-    const adminClient = createClient(supabaseUrl, serviceKey);
+    // ── Trade Approval enforcement for BOTH parties ──
+    for (const [label, oid] of [["Requesting org", org_id], ["Counterparty", counterparty_org_id]] as const) {
+      const { data: approval } = await adminClient
+        .from("trade_approvals")
+        .select("status, valid_until")
+        .eq("org_id", oid)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!approval || approval.status !== "approved") {
+        throw new ApiException(
+          "ELIGIBILITY_FAILED",
+          `${label} (${oid}) is not Approved to Trade. Collapse rejected.`,
+          422,
+          { orgId: oid, currentStatus: approval?.status || "none" }
+        );
+      }
+      if (approval.valid_until && new Date(approval.valid_until) < new Date()) {
+        throw new ApiException(
+          "ELIGIBILITY_FAILED",
+          `${label} (${oid}) trade approval has expired. Collapse rejected.`,
+          422,
+          { orgId: oid, expiredAt: approval.valid_until }
+        );
+      }
+    }
 
     // ── CAP partition check — consistency first ──
     const partition = await checkPartitionHealth(adminClient);
@@ -230,7 +206,7 @@ Deno.serve(async (req: Request) => {
           partitionState: true,
           reason: partition.reason,
         }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 503, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
@@ -252,7 +228,7 @@ Deno.serve(async (req: Request) => {
           created_at: existing.created_at,
           message: "Duplicate request — returning original collapse record",
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
@@ -267,12 +243,11 @@ Deno.serve(async (req: Request) => {
       if (match) {
         const allowed = ["ELIGIBLE", "COLLAPSE_REQUESTED"];
         if (!allowed.includes(match.poi_state)) {
-          return new Response(
-            JSON.stringify({
-              error: `Collapse not allowed from state ${match.poi_state}. Must be ELIGIBLE or COLLAPSE_REQUESTED.`,
-              currentState: match.poi_state,
-            }),
-            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          throw new ApiException(
+            "STATE_VIOLATION",
+            `Collapse not allowed from state ${match.poi_state}. Must be ELIGIBLE or COLLAPSE_REQUESTED.`,
+            422,
+            { currentState: match.poi_state }
           );
         }
       }
@@ -281,26 +256,20 @@ Deno.serve(async (req: Request) => {
     // ── ECDSA signature verification ──
     let signatureValid = false;
     if (public_key_jwk && signed_payload) {
-      // The signed_payload contains: base64(signature):canonicalPayload
       const parts = signed_payload.split(":");
       if (parts.length >= 2) {
         const signatureB64 = parts[0];
         const canonicalPayload = parts.slice(1).join(":");
-        signatureValid = await verifyEcdsaSignature(
-          canonicalPayload,
-          signatureB64,
-          public_key_jwk
-        );
+        signatureValid = await verifyEcdsaSignature(canonicalPayload, signatureB64, public_key_jwk);
       }
     }
 
     if (!signatureValid) {
-      return new Response(
-        JSON.stringify({
-          error: "Invalid ECDSA signature — collapse rejected",
-          signatureValid: false,
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      throw new ApiException(
+        "SIGNATURE_INVALID",
+        "Invalid ECDSA signature — collapse rejected",
+        400,
+        { signatureValid: false }
       );
     }
 
@@ -336,13 +305,12 @@ Deno.serve(async (req: Request) => {
         payload_hash: payloadHash,
         poi_state: "COLLAPSED",
         metadata: metadata || {},
-        actor_user_id: user.id,
+        actor_user_id: actorUserId || null,
       })
       .select()
       .single();
 
     if (insertError) {
-      // Handle idempotency race condition (unique constraint)
       if (insertError.message?.includes("unique_idempotency_per_org") || insertError.code === "23505") {
         const { data: raceExisting } = await adminClient
           .from("collapse_ledger")
@@ -361,16 +329,13 @@ Deno.serve(async (req: Request) => {
               created_at: raceExisting.created_at,
               message: "Duplicate request — returning original collapse record",
             }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
           );
         }
       }
 
       console.error("Collapse insert error:", insertError);
-      return new Response(
-        JSON.stringify({ error: "Failed to create collapse record" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new ApiException("INTERNAL_ERROR", "Failed to create collapse record", 500);
     }
 
     // ── Update match state if linked ──
@@ -380,13 +345,13 @@ Deno.serve(async (req: Request) => {
         .update({ poi_state: "COLLAPSED" })
         .eq("id", match_id);
 
-      // Append POI event
       await adminClient.from("poi_events").insert({
         match_id,
         org_id,
         from_state: "COLLAPSE_REQUESTED",
         to_state: "COLLAPSED",
-        actor_user_id: user.id,
+        actor_user_id: actorUserId || null,
+        actor_api_key_id: actorApiKeyId || null,
         reason: "Deterministic collapse via collapse engine",
         metadata: {
           collapse_id: record.id,
@@ -400,7 +365,8 @@ Deno.serve(async (req: Request) => {
     // ── Audit log ──
     await adminClient.from("audit_logs").insert({
       org_id,
-      actor_user_id: user.id,
+      actor_user_id: actorUserId || null,
+      actor_api_key_id: actorApiKeyId || null,
       action: "poi.collapsed",
       entity_type: "collapse_ledger",
       entity_id: record.id,
@@ -413,6 +379,7 @@ Deno.serve(async (req: Request) => {
         quantity,
         price,
         currency,
+        request_id: requestId,
       },
     });
 
@@ -426,13 +393,10 @@ Deno.serve(async (req: Request) => {
         poi_state: "COLLAPSED",
         created_at: record.created_at,
       }),
-      { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 201, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("Collapse engine error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error(`[${requestId}] Collapse engine error:`, err);
+    return errorResponse(err as Error, requestId, headers);
   }
 });

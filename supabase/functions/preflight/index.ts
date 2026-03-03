@@ -1,20 +1,9 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-interface PreflightRequest {
-  buyerOrgId: string;
-  sellerOrgId: string;
-  commodity?: string;
-  quantityAmount?: number;
-  quantityUnit?: string;
-  priceAmount?: number;
-  priceCurrency?: string;
-}
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { deriveActorIds } from "../_shared/actor-context.ts";
 
 interface RiskDelta {
   category: string;
@@ -24,68 +13,49 @@ interface RiskDelta {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  const requestId = crypto.randomUUID();
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorised" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const corsResponse = handleCors(req, allowedOrigins);
+    if (corsResponse) return corsResponse;
+
+    if (req.method !== "POST") {
+      throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorised" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const body: PreflightRequest = await req.json();
-    const { buyerOrgId, sellerOrgId, commodity, quantityAmount, quantityUnit, priceAmount, priceCurrency } = body;
-
-    if (!buyerOrgId || !sellerOrgId) {
-      return new Response(
-        JSON.stringify({ error: "buyerOrgId and sellerOrgId are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate UUIDs
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(buyerOrgId) || !uuidRegex.test(sellerOrgId)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid org ID format" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (buyerOrgId === sellerOrgId) {
-      return new Response(
-        JSON.stringify({ error: "Buyer and seller cannot be the same organisation" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // ── Auth via shared module (JWT + API key) ──
+    const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
+    if (authCtx.isApiKey) {
+      requireScope(authCtx, "preflight");
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
+    const { actorApiKeyId } = deriveActorIds(authCtx);
+
+    await checkRateLimit(adminClient, authCtx.orgId, actorApiKeyId, "preflight", "preflight");
+
+    const body = await req.json();
+    const { buyerOrgId, sellerOrgId, commodity, quantityAmount, quantityUnit, priceAmount, priceCurrency } = body;
+
+    if (!buyerOrgId || !sellerOrgId) {
+      throw new ApiException("VALIDATION_ERROR", "buyerOrgId and sellerOrgId are required", 400);
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(buyerOrgId) || !uuidRegex.test(sellerOrgId)) {
+      throw new ApiException("VALIDATION_ERROR", "Invalid org ID format", 400);
+    }
+
+    if (buyerOrgId === sellerOrgId) {
+      throw new ApiException("VALIDATION_ERROR", "Buyer and seller cannot be the same organisation", 400);
+    }
+
     const deltas: RiskDelta[] = [];
 
     // ── 1. Trade approval status for both parties ──
@@ -140,12 +110,12 @@ Deno.serve(async (req: Request) => {
       } else if (kyc.status !== "complete") {
         const required = Array.isArray(kyc.required_docs) ? kyc.required_docs : [];
         const submitted = Array.isArray(kyc.submitted_docs) ? kyc.submitted_docs : [];
-        const missing = required.filter((d: string) => !submitted.includes(d));
+        const missingItems = required.filter((d: string) => !submitted.includes(d));
         deltas.push({
           category: "kyc",
           status: "fail",
           message: `${label} KYC incomplete (${kyc.completeness_percentage}%)`,
-          details: { orgId, completeness: kyc.completeness_percentage, missingDocs: missing },
+          details: { orgId, completeness: kyc.completeness_percentage, missingDocs: missingItems },
         });
       } else {
         deltas.push({
@@ -209,13 +179,13 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Trade fields validation ──
     const fieldChecks: RiskDelta[] = [];
-    if (!commodity || commodity.trim() === "") {
+    if (!commodity || String(commodity).trim() === "") {
       fieldChecks.push({ category: "fields", status: "fail", message: "Commodity is required" });
     }
     if (!quantityAmount || quantityAmount <= 0) {
       fieldChecks.push({ category: "fields", status: "fail", message: "Quantity must be greater than zero" });
     }
-    if (!quantityUnit || quantityUnit.trim() === "") {
+    if (!quantityUnit || String(quantityUnit).trim() === "") {
       fieldChecks.push({ category: "fields", status: "fail", message: "Quantity unit is required" });
     }
     if (!priceAmount || priceAmount <= 0) {
@@ -241,13 +211,10 @@ Deno.serve(async (req: Request) => {
         checkedAt: new Date().toISOString(),
         note: "This is a non-binding pre-flight check. No POI has been created.",
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("Preflight error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error(`[${requestId}] Preflight error:`, err);
+    return errorResponse(err as Error, requestId, headers);
   }
 });
