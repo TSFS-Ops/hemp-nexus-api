@@ -29,6 +29,7 @@ import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { RbacPanel } from "@/components/admin/RbacPanel";
 import { DataResidencyPanel } from "@/components/admin/DataResidencyPanel";
+import { CheckpointDemo } from "@/components/admin/CheckpointDemo";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -139,6 +140,7 @@ export default function Admin() {
               <Route path="/break-glass" element={<BreakGlassPanel />} />
               <Route path="/brd-constraints" element={<BrdConstraintsPanel />} />
               <Route path="/data-residency" element={<DataResidencyPanel />} />
+              <Route path="/checkpoint-2026-04-16" element={<CheckpointDemo />} />
               <Route
                 path="/users-orgs"
                 element={
