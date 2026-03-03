@@ -9,6 +9,7 @@
  * - Option scoring and ranking
  * - Data source orchestration
  * - Shortlist management
+ * - Pre-flight validation (risk deltas before POI commitment)
  */
 
 export interface ExplorationSignal {
@@ -32,6 +33,21 @@ export interface ExplorationOption {
   source: string;
 }
 
+export interface RiskDelta {
+  category: 'trade_approval' | 'kyc' | 'risk' | 'approval_workflow' | 'fields';
+  status: 'pass' | 'fail' | 'warning';
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface PreflightResult {
+  canCollapse: boolean;
+  overallStatus: 'pass' | 'fail' | 'warning';
+  deltas: RiskDelta[];
+  checkedAt: string;
+  note: string;
+}
+
 /**
  * Determine if exploration results are sufficient to proceed to POI.
  */
@@ -46,4 +62,12 @@ export function scoreOption(option: ExplorationOption): number {
   const baseScore = option.score ?? 0.5;
   const priceBonus = option.price ? 0.1 : 0;
   return Math.min(1, baseScore + priceBonus);
+}
+
+/**
+ * Client-side guard: collapse is only allowed when preflight passes.
+ * This is a UI-level check; the server enforces the real rules.
+ */
+export function isCollapseAllowed(preflight: PreflightResult | null): boolean {
+  return preflight !== null && preflight.canCollapse === true;
 }
