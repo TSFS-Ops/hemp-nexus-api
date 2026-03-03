@@ -245,6 +245,47 @@ export type Database = {
           },
         ]
       }
+      approval_thresholds: {
+        Row: {
+          created_at: string
+          high_threshold: number
+          id: string
+          low_threshold: number
+          org_id: string
+          override_approved_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          high_threshold?: number
+          id?: string
+          low_threshold?: number
+          org_id: string
+          override_approved_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          high_threshold?: number
+          id?: string
+          low_threshold?: number
+          org_id?: string
+          override_approved_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_thresholds_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -665,6 +706,181 @@ export type Database = {
           },
         ]
       }
+      dd_approval_actions: {
+        Row: {
+          action: string
+          actor_role: string
+          actor_user_id: string
+          approval_request_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_role: string
+          actor_user_id: string
+          approval_request_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_role?: string
+          actor_user_id?: string
+          approval_request_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_approval_actions_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "dd_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_approval_requests: {
+        Row: {
+          completed_roles: string[]
+          created_at: string
+          id: string
+          reason: string | null
+          requesting_org_id: string
+          required_roles: string[]
+          risk_score_id: string | null
+          status: string
+          target_org_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_roles?: string[]
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requesting_org_id: string
+          required_roles?: string[]
+          risk_score_id?: string | null
+          status?: string
+          target_org_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_roles?: string[]
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requesting_org_id?: string
+          required_roles?: string[]
+          risk_score_id?: string | null
+          status?: string
+          target_org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_approval_requests_requesting_org_id_fkey"
+            columns: ["requesting_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_approval_requests_risk_score_id_fkey"
+            columns: ["risk_score_id"]
+            isOneToOne: false
+            referencedRelation: "dd_risk_scores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_approval_requests_target_org_id_fkey"
+            columns: ["target_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_risk_scores: {
+        Row: {
+          computed_at: string
+          computed_by: string | null
+          created_at: string
+          factors: Json
+          id: string
+          org_id: string
+          risk_band: string
+          score: number
+          weights: Json
+        }
+        Insert: {
+          computed_at?: string
+          computed_by?: string | null
+          created_at?: string
+          factors?: Json
+          id?: string
+          org_id: string
+          risk_band?: string
+          score?: number
+          weights?: Json
+        }
+        Update: {
+          computed_at?: string
+          computed_by?: string | null
+          created_at?: string
+          factors?: Json
+          id?: string
+          org_id?: string
+          risk_band?: string
+          score?: number
+          weights?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_risk_scores_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_roles: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_roles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_access: {
         Row: {
           access_type: string
@@ -893,6 +1109,121 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          expiry_date: string | null
+          extracted_metadata: Json | null
+          file_size: number | null
+          filename: string
+          id: string
+          id_number_hash: string | null
+          issuing_country: string | null
+          mime_type: string | null
+          org_id: string
+          sha256_hash: string
+          status: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          expiry_date?: string | null
+          extracted_metadata?: Json | null
+          file_size?: number | null
+          filename: string
+          id?: string
+          id_number_hash?: string | null
+          issuing_country?: string | null
+          mime_type?: string | null
+          org_id: string
+          sha256_hash: string
+          status?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          expiry_date?: string | null
+          extracted_metadata?: Json | null
+          file_size?: number | null
+          filename?: string
+          id?: string
+          id_number_hash?: string | null
+          issuing_country?: string | null
+          mime_type?: string | null
+          org_id?: string
+          sha256_hash?: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_status: {
+        Row: {
+          completeness_percentage: number
+          created_at: string
+          id: string
+          last_reviewed_at: string | null
+          org_id: string
+          required_docs: Json
+          status: string
+          submitted_docs: Json
+          updated_at: string
+        }
+        Insert: {
+          completeness_percentage?: number
+          created_at?: string
+          id?: string
+          last_reviewed_at?: string | null
+          org_id: string
+          required_docs?: Json
+          status?: string
+          submitted_docs?: Json
+          updated_at?: string
+        }
+        Update: {
+          completeness_percentage?: number
+          created_at?: string
+          id?: string
+          last_reviewed_at?: string | null
+          org_id?: string
+          required_docs?: Json
+          status?: string
+          submitted_docs?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_status_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       licences: {
         Row: {
@@ -1406,6 +1737,53 @@ export type Database = {
           },
         ]
       }
+      org_directors: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          id_number_hash: string | null
+          is_pep: boolean | null
+          nationality: string | null
+          org_id: string
+          ownership_percentage: number | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          id_number_hash?: string | null
+          is_pep?: boolean | null
+          nationality?: string | null
+          org_id: string
+          ownership_percentage?: number | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          id_number_hash?: string | null
+          is_pep?: boolean | null
+          nationality?: string | null
+          org_id?: string
+          ownership_percentage?: number | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_directors_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -1658,6 +2036,53 @@ export type Database = {
           },
         ]
       }
+      screening_results: {
+        Row: {
+          created_at: string
+          id: string
+          matched_entities: Json | null
+          next_screening_at: string | null
+          org_id: string
+          raw_response: Json | null
+          screened_at: string
+          screened_by: string | null
+          screening_type: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matched_entities?: Json | null
+          next_screening_at?: string | null
+          org_id: string
+          raw_response?: Json | null
+          screened_at?: string
+          screened_by?: string | null
+          screening_type: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matched_entities?: Json | null
+          next_screening_at?: string | null
+          org_id?: string
+          raw_response?: Json | null
+          screened_at?: string
+          screened_by?: string | null
+          screening_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screening_results_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sdk_examples: {
         Row: {
           code_snippet: string
@@ -1905,6 +2330,60 @@ export type Database = {
             foreignKeyName: "token_ledger_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_approvals: {
+        Row: {
+          approval_request_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          org_id: string
+          risk_band: string | null
+          status: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          approval_request_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          org_id: string
+          risk_band?: string | null
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          approval_request_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          org_id?: string
+          risk_band?: string | null
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_approvals_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "dd_approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_approvals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -2619,6 +3098,10 @@ export type Database = {
         }[]
       }
       get_user_email: { Args: { target_user_id: string }; Returns: string }
+      has_dd_role: {
+        Args: { _org_id: string; _role: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
