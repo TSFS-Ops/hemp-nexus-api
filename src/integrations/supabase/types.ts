@@ -419,6 +419,98 @@ export type Database = {
           },
         ]
       }
+      collapse_ledger: {
+        Row: {
+          actor_user_id: string | null
+          asset_id: string
+          client_timestamp: string
+          counterparty_org_id: string
+          created_at: string
+          currency: string
+          id: string
+          idempotency_key: string
+          match_id: string | null
+          metadata: Json | null
+          org_id: string
+          payload_hash: string
+          poi_state: string
+          price: number
+          quantity: number
+          signature_key_id: string | null
+          signature_valid: boolean
+          signed_payload: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          asset_id: string
+          client_timestamp: string
+          counterparty_org_id: string
+          created_at?: string
+          currency: string
+          id?: string
+          idempotency_key: string
+          match_id?: string | null
+          metadata?: Json | null
+          org_id: string
+          payload_hash: string
+          poi_state?: string
+          price: number
+          quantity: number
+          signature_key_id?: string | null
+          signature_valid?: boolean
+          signed_payload: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          asset_id?: string
+          client_timestamp?: string
+          counterparty_org_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          idempotency_key?: string
+          match_id?: string | null
+          metadata?: Json | null
+          org_id?: string
+          payload_hash?: string
+          poi_state?: string
+          price?: number
+          quantity?: number
+          signature_key_id?: string | null
+          signature_valid?: boolean
+          signed_payload?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collapse_ledger_counterparty_org_id_fkey"
+            columns: ["counterparty_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collapse_ledger_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "collapse_ledger_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collapse_ledger_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           data_source_id: string

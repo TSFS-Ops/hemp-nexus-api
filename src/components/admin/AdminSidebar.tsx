@@ -15,6 +15,7 @@ import {
   FileCheck,
   Lock,
   ClipboardCheck,
+  BookLock,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -59,6 +60,7 @@ const sidebarGroups = [
     items: [
       { title: "Audit Trail", url: "/admin/audit", icon: ScrollText },
       { title: "POI State History", url: "/admin/poi-history", icon: Shield },
+      { title: "Collapse Ledger", url: "/admin/collapse-ledger", icon: BookLock },
       { title: "API Logs", url: "/admin/logs", icon: FileText },
     ],
   },
