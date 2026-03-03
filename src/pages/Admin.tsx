@@ -23,6 +23,7 @@ import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminDocumentVerification } from "@/components/admin/AdminDocumentVerification";
 import { AdminWadPanel } from "@/components/admin/AdminWadPanel";
 import { Phase2Verification } from "@/components/admin/Phase2Verification";
+import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -123,6 +124,11 @@ export default function Admin() {
               <Route path="/tokens" element={<AdminTokenManagement />} />
               <Route path="/documents" element={<AdminDocumentVerification />} />
               <Route path="/wad" element={<AdminWadPanel />} />
+              <Route path="/poi-history" element={
+                <div className="p-6">
+                  <PoiStateHistory />
+                </div>
+              } />
               <Route
                 path="/users-orgs"
                 element={

@@ -58,6 +58,7 @@ const sidebarGroups = [
     label: "Audit & Logs",
     items: [
       { title: "Audit Trail", url: "/admin/audit", icon: ScrollText },
+      { title: "POI State History", url: "/admin/poi-history", icon: Shield },
       { title: "API Logs", url: "/admin/logs", icon: FileText },
     ],
   },
