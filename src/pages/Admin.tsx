@@ -24,6 +24,7 @@ import { AdminDocumentVerification } from "@/components/admin/AdminDocumentVerif
 import { AdminWadPanel } from "@/components/admin/AdminWadPanel";
 import { Phase2Verification } from "@/components/admin/Phase2Verification";
 import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
+import { CollapseLedgerViewer } from "@/components/admin/CollapseLedgerViewer";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -129,6 +130,7 @@ export default function Admin() {
                   <PoiStateHistory />
                 </div>
               } />
+              <Route path="/collapse-ledger" element={<CollapseLedgerViewer />} />
               <Route
                 path="/users-orgs"
                 element={
