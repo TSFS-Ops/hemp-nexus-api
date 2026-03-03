@@ -80,9 +80,27 @@ export function CheckpointDemo() {
   const hasAccess = roles.some(r => allowedRoles.includes(r));
 
   const callDemo = async (action: string, stepData?: any) => {
+    let { data: { session } } = await supabase.auth.getSession();
+
+    const isExpiringSoon = session?.expires_at
+      ? session.expires_at * 1000 < Date.now() + 30_000
+      : true;
+
+    if (!session || isExpiringSoon) {
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshed.session) {
+        throw new Error("Session expired. Please sign in again.");
+      }
+      session = refreshed.session;
+    }
+
     const { data, error } = await supabase.functions.invoke("checkpoint-demo", {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: { action, run_id: runId, step_data: stepData },
     });
+
     if (error) throw new Error(error.message || "Edge function call failed");
     return data;
   };

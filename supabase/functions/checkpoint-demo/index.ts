@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
 
 /**
  * Checkpoint Demo Harness — orchestrates demo steps against REAL services.
@@ -28,27 +29,18 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Auth check
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new ApiException("UNAUTHORIZED", "Not authenticated", 401);
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) throw new ApiException("UNAUTHORIZED", "Invalid session", 401);
-
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Role check: must be platform_admin, admin, director, or api_admin
-    const { data: userRoles } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
+    // Auth check via shared auth module (supports valid JWT parsing)
+    const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
+    if (authCtx.isApiKey) {
+      throw new ApiException("FORBIDDEN", "Checkpoint demo requires an authenticated user session", 403);
+    }
 
-    const roles = (userRoles || []).map((r: any) => r.role);
+    const user = { id: authCtx.userId };
+
+    // Role check: must be platform_admin, admin, director, or api_admin
+    const roles = authCtx.roles || [];
     const allowed = ["platform_admin", "admin", "director", "api_admin"];
     const hasAccess = roles.some((r: string) => allowed.includes(r));
 
