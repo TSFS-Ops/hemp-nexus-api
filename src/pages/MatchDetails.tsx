@@ -12,6 +12,7 @@ import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import { WadModule } from "@/components/wad/WadModule";
+import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import {
   Tooltip,
   TooltipContent,
@@ -252,10 +253,14 @@ export default function MatchDetails() {
 
       {/* Tabbed sections for Documents, WaD, and Timeline */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="details" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Documents
+          </TabsTrigger>
+          <TabsTrigger value="evidence" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Evidence
           </TabsTrigger>
           <TabsTrigger value="wad" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
@@ -311,6 +316,10 @@ export default function MatchDetails() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="evidence" className="mt-4">
+          <EvidencePackPanel matchId={match.id} matchStatus={match.status} />
         </TabsContent>
 
         <TabsContent value="wad" className="mt-4">

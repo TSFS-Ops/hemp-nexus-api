@@ -5,6 +5,230 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 
+/**
+ * Deterministic canonical JSON serialisation.
+ * Keys sorted recursively, no whitespace — ensures identical hash on regeneration.
+ */
+function canonicalStringify(obj: unknown): string {
+  if (obj === null || obj === undefined) return "null";
+  if (typeof obj === "string") return JSON.stringify(obj);
+  if (typeof obj === "number" || typeof obj === "boolean") return String(obj);
+  if (Array.isArray(obj)) {
+    return "[" + obj.map(canonicalStringify).join(",") + "]";
+  }
+  if (typeof obj === "object") {
+    const keys = Object.keys(obj as Record<string, unknown>).sort();
+    const pairs = keys.map(
+      (k) => JSON.stringify(k) + ":" + canonicalStringify((obj as Record<string, unknown>)[k])
+    );
+    return "{" + pairs.join(",") + "}";
+  }
+  return String(obj);
+}
+
+async function sha256Hex(data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(data));
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Build the deterministic evidence payload (no metadata that changes per-request).
+ * This is the "canonical signed JSON" source of truth.
+ */
+function buildCanonicalPayload(
+  match: Record<string, unknown>,
+  events: Record<string, unknown>[],
+  documents: Record<string, unknown>[],
+  auditLogs: Record<string, unknown>[],
+  chainVerification: { valid: boolean; details: unknown[] },
+  collapseRecord: Record<string, unknown> | null
+) {
+  return {
+    match: {
+      id: match.id,
+      hash: match.hash,
+      status: match.status,
+      poi_state: match.poi_state,
+      commodity: match.commodity,
+      quantity: { amount: match.quantity_amount, unit: match.quantity_unit },
+      price: { amount: match.price_amount, currency: match.price_currency },
+      buyer: { id: match.buyer_id, name: match.buyer_name, org_id: match.buyer_org_id },
+      seller: { id: match.seller_id, name: match.seller_name, org_id: match.seller_org_id },
+      terms: match.terms || null,
+      created_at: match.created_at,
+      settled_at: match.settled_at || null,
+    },
+    collapse: collapseRecord
+      ? {
+          id: collapseRecord.id,
+          payload_hash: collapseRecord.payload_hash,
+          signature_valid: collapseRecord.signature_valid,
+          signature_key_id: collapseRecord.signature_key_id,
+          poi_state: collapseRecord.poi_state,
+          client_timestamp: collapseRecord.client_timestamp,
+          created_at: collapseRecord.created_at,
+        }
+      : null,
+    timeline: events.map((e) => ({
+      id: e.id,
+      event_type: e.event_type,
+      payload_hash: e.payload_hash,
+      previous_event_hash: e.previous_event_hash,
+      created_at: e.created_at,
+    })),
+    chain_verification: {
+      valid: chainVerification.valid,
+      event_count: events.length,
+    },
+    documents: documents.map((d) => ({
+      id: d.id,
+      doc_type: d.doc_type,
+      filename: d.filename,
+      sha256_hash: d.sha256_hash,
+      status: d.status,
+      visibility: d.visibility,
+      created_at: d.created_at,
+    })),
+    approval_chain: auditLogs
+      .filter((l) => {
+        const action = String(l.action || "");
+        return (
+          action.includes("approval") ||
+          action.includes("collapse") ||
+          action.includes("settle") ||
+          action.includes("confirm") ||
+          action.includes("evidence")
+        );
+      })
+      .map((l) => ({
+        id: l.id,
+        action: l.action,
+        actor_user_id: l.actor_user_id,
+        actor_api_key_id: l.actor_api_key_id,
+        created_at: l.created_at,
+        metadata: l.metadata,
+      })),
+    audit_log_refs: auditLogs.map((l) => ({
+      id: l.id,
+      action: l.action,
+      created_at: l.created_at,
+    })),
+  };
+}
+
+function generatePdfHtml(
+  canonical: ReturnType<typeof buildCanonicalPayload>,
+  packHash: string,
+  signatureValid: boolean | null,
+  generatedAt: string
+): string {
+  const m = canonical.match;
+  const chainStatus = canonical.chain_verification.valid ? "VERIFIED" : "COMPROMISED";
+  const sigStatus =
+    signatureValid === true ? "VALID" : signatureValid === false ? "INVALID" : "N/A";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Evidence Pack – ${m.id}</title>
+<style>
+body{font-family:'Courier New',monospace;margin:40px;color:#111;font-size:12px}
+h1{font-size:18px;border-bottom:2px solid #000;padding-bottom:8px}
+h2{font-size:14px;margin-top:24px;border-bottom:1px solid #666;padding-bottom:4px}
+.hash{font-family:monospace;background:#f0f0f0;padding:4px 8px;word-break:break-all;font-size:11px}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-weight:bold;font-size:11px}
+.pass{background:#d4edda;color:#155724}.fail{background:#f8d7da;color:#721c24}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+th,td{border:1px solid #ddd;padding:6px;text-align:left}
+th{background:#f5f5f5}
+.footer{margin-top:40px;border-top:1px solid #999;padding-top:8px;font-size:10px;color:#666}
+</style></head>
+<body>
+<h1>Evidence Pack</h1>
+<p><strong>Match ID:</strong> ${m.id}</p>
+<p><strong>Generated:</strong> ${generatedAt} UTC</p>
+<p><strong>Pack SHA-256:</strong></p><div class="hash">${packHash}</div>
+<p><strong>Chain Integrity:</strong> <span class="badge ${canonical.chain_verification.valid ? "pass" : "fail"}">${chainStatus}</span></p>
+<p><strong>Signature:</strong> <span class="badge ${signatureValid ? "pass" : "fail"}">${sigStatus}</span></p>
+
+<h2>Match Summary</h2>
+<table>
+<tr><th>Commodity</th><td>${m.commodity}</td></tr>
+<tr><th>Quantity</th><td>${m.quantity.amount} ${m.quantity.unit}</td></tr>
+<tr><th>Price</th><td>${m.price.currency} ${m.price.amount}</td></tr>
+<tr><th>Buyer</th><td>${m.buyer.name} (${m.buyer.id})</td></tr>
+<tr><th>Seller</th><td>${m.seller.name} (${m.seller.id})</td></tr>
+<tr><th>Status</th><td>${m.status}</td></tr>
+<tr><th>POI State</th><td>${m.poi_state}</td></tr>
+<tr><th>Created</th><td>${m.created_at}</td></tr>
+<tr><th>Settled</th><td>${m.settled_at || "—"}</td></tr>
+<tr><th>Match Hash</th><td class="hash">${m.hash}</td></tr>
+</table>
+
+${
+  canonical.collapse
+    ? `<h2>Collapse Record</h2>
+<table>
+<tr><th>Collapse ID</th><td>${canonical.collapse.id}</td></tr>
+<tr><th>Payload Hash</th><td class="hash">${canonical.collapse.payload_hash}</td></tr>
+<tr><th>Signature Valid</th><td><span class="badge ${canonical.collapse.signature_valid ? "pass" : "fail"}">${canonical.collapse.signature_valid ? "YES" : "NO"}</span></td></tr>
+<tr><th>Key ID</th><td>${canonical.collapse.signature_key_id || "—"}</td></tr>
+<tr><th>Client Timestamp</th><td>${canonical.collapse.client_timestamp}</td></tr>
+<tr><th>Server Timestamp</th><td>${canonical.collapse.created_at}</td></tr>
+</table>`
+    : ""
+}
+
+<h2>Event Timeline (${canonical.timeline.length} events)</h2>
+<table>
+<tr><th>#</th><th>Event</th><th>Payload Hash</th><th>Timestamp</th></tr>
+${canonical.timeline
+  .map(
+    (e, i) =>
+      `<tr><td>${i + 1}</td><td>${e.event_type}</td><td class="hash">${e.payload_hash}</td><td>${e.created_at}</td></tr>`
+  )
+  .join("")}
+</table>
+
+<h2>Documents (${canonical.documents.length})</h2>
+<table>
+<tr><th>Filename</th><th>Type</th><th>SHA-256</th><th>Status</th></tr>
+${canonical.documents
+  .map(
+    (d) =>
+      `<tr><td>${d.filename}</td><td>${d.doc_type}</td><td class="hash">${d.sha256_hash}</td><td>${d.status}</td></tr>`
+  )
+  .join("")}
+</table>
+
+<h2>Approval Chain (${canonical.approval_chain.length} entries)</h2>
+<table>
+<tr><th>Action</th><th>Actor</th><th>Timestamp</th></tr>
+${canonical.approval_chain
+  .map(
+    (a) =>
+      `<tr><td>${a.action}</td><td>${a.actor_user_id || a.actor_api_key_id || "system"}</td><td>${a.created_at}</td></tr>`
+  )
+  .join("")}
+</table>
+
+<h2>Full Audit Log References (${canonical.audit_log_refs.length})</h2>
+<table>
+<tr><th>ID</th><th>Action</th><th>Timestamp</th></tr>
+${canonical.audit_log_refs
+  .map((a) => `<tr><td>${a.id}</td><td>${a.action}</td><td>${a.created_at}</td></tr>`)
+  .join("")}
+</table>
+
+<div class="footer">
+<p>This document is a rendered view of the canonical evidence pack. The SHA-256 hash above is computed from the deterministic canonical JSON. Regenerating the evidence pack for this match will produce an identical hash if no data has been tampered with.</p>
+<p>Hash algorithm: SHA-256 | Serialisation: Deterministic canonical JSON (sorted keys, no whitespace)</p>
+</div>
+</body></html>`;
+}
+
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
@@ -17,20 +241,18 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const rawParts = url.pathname.split("/").filter(Boolean);
-    
-    // Normalize path
     const parts = [...rawParts];
     if (parts[0] === "functions") parts.shift();
     if (parts[0] === "v1") parts.shift();
     if (parts[0] === "evidence-pack") parts.shift();
-    
+
     const matchId = parts[0];
+    const subAction = parts[1]; // optional: "pdf"
 
     if (!matchId) {
       throw new ApiException("BAD_REQUEST", "Match ID is required", 400);
     }
 
-    // SECURITY: Validate matchId is a valid UUID format to prevent injection
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(matchId)) {
       throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
@@ -41,222 +263,145 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    
-    // SECURITY: Require 'evidence' scope for API key access
-    if (authCtx.isApiKey) {
-      requireScope(authCtx, 'evidence');
-    }
-    
-    await checkRateLimit(supabase, authCtx.orgId, authCtx.isApiKey ? authCtx.userId : null, 'evidence-pack', 'evidence-pack');
-    
-    // Enforce token metering - burns 1 token per request
-    await enforceTokenMetering(
-      supabase,
-      authCtx.orgId,
+    if (authCtx.isApiKey) requireScope(authCtx, "evidence");
+
+    await checkRateLimit(
+      supabase, authCtx.orgId,
       authCtx.isApiKey ? authCtx.userId : null,
-      "/evidence-pack",
-      requestId
+      "evidence-pack", "evidence-pack"
     );
 
-    // GET /:matchId - Generate evidence pack
-    if (req.method === "GET") {
-      console.log(`[${requestId}] GET /evidence-pack/${matchId}`);
+    await enforceTokenMetering(
+      supabase, authCtx.orgId,
+      authCtx.isApiKey ? authCtx.userId : null,
+      "/evidence-pack", requestId
+    );
 
-      // Fetch match data
-      const { data: match, error: matchError } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("id", matchId)
-        .single();
+    if (req.method !== "GET" && req.method !== "POST") {
+      throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
+    }
 
-      if (matchError) {
-        if (matchError.code === "PGRST116") {
-          throw new ApiException("NOT_FOUND", "Match not found", 404);
-        }
-        handleDatabaseError(matchError, requestId);
-      }
+    // Determine format from subAction or query param
+    const format = subAction === "pdf" ? "pdf" : (url.searchParams.get("format") || "json");
 
-      // Verify match belongs to authenticated user's organization
-      if (match.org_id !== authCtx.orgId) {
-        throw new ApiException(
-          "FORBIDDEN", 
-          "You do not have permission to access this match", 
-          403
-        );
-      }
-
-      // Fetch match events (timeline with hash chain)
-      const { data: events, error: eventsError } = await supabase
-        .from("match_events")
-        .select("*")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: true });
-
-      if (eventsError) handleDatabaseError(eventsError, requestId);
-
-      // Fetch audit logs for this match
-      const { data: auditLogs, error: auditError } = await supabase
-        .from("audit_logs")
-        .select("*")
-        .eq("entity_type", "match")
-        .eq("entity_id", matchId)
-        .order("created_at", { ascending: true });
-
-      if (auditError) handleDatabaseError(auditError, requestId);
-
-      // Fetch match documents with visibility info
-      const { data: documents, error: docsError } = await supabase
-        .from("match_documents")
+    // ── Fetch all data in parallel ──
+    const [matchRes, eventsRes, docsRes, auditRes, collapseRes] = await Promise.all([
+      supabase.from("matches").select("*").eq("id", matchId).single(),
+      supabase.from("match_events").select("*").eq("match_id", matchId).order("created_at", { ascending: true }),
+      supabase.from("match_documents")
         .select("id, doc_type, filename, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, visibility, valid_from, valid_to")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: true });
+        .eq("match_id", matchId).order("created_at", { ascending: true }),
+      supabase.from("audit_logs").select("*").eq("entity_type", "match").eq("entity_id", matchId).order("created_at", { ascending: true }),
+      supabase.from("collapse_ledger").select("*").eq("match_id", matchId).order("created_at", { ascending: true }).limit(1),
+    ]);
 
-      if (docsError) handleDatabaseError(docsError, requestId);
+    if (matchRes.error) {
+      if (matchRes.error.code === "PGRST116") throw new ApiException("NOT_FOUND", "Match not found", 404);
+      handleDatabaseError(matchRes.error, requestId);
+    }
 
-      // Fetch document access logs for audit trail
-      const { data: accessLogs, error: accessLogsError } = await supabase
-        .from("document_access_logs")
-        .select("id, document_id, action, accessor_user_id, is_admin_access, access_reason, created_at")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: true });
+    const match = matchRes.data;
+    if (match.org_id !== authCtx.orgId) {
+      throw new ApiException("FORBIDDEN", "You do not have permission to access this match", 403);
+    }
 
-      if (accessLogsError) {
-        console.warn(`[${requestId}] Failed to fetch access logs:`, accessLogsError);
-      }
+    if (eventsRes.error) handleDatabaseError(eventsRes.error, requestId);
+    if (docsRes.error) handleDatabaseError(docsRes.error, requestId);
+    if (auditRes.error) handleDatabaseError(auditRes.error, requestId);
 
-      // Verify hash chain integrity
-      let chainValid = true;
-      const chainVerification = [];
+    const events = eventsRes.data || [];
+    const documents = docsRes.data || [];
+    const auditLogs = auditRes.data || [];
+    const collapseRecord = collapseRes.data?.[0] || null;
 
-      if (events && events.length > 0) {
-        for (let i = 0; i < events.length; i++) {
-          const event = events[i];
-          const expectedPreviousHash = i === 0 ? null : events[i - 1].payload_hash;
-          
-          const isValid = event.previous_event_hash === expectedPreviousHash;
-          chainValid = chainValid && isValid;
+    // Verify hash chain
+    let chainValid = true;
+    const chainDetails: unknown[] = [];
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i];
+      const expectedPrev = i === 0 ? null : events[i - 1].payload_hash;
+      const isValid = ev.previous_event_hash === expectedPrev;
+      chainValid = chainValid && isValid;
+      chainDetails.push({ eventId: ev.id, index: i, valid: isValid });
+    }
 
-          chainVerification.push({
-            eventId: event.id,
-            index: i,
-            valid: isValid,
-            hash: event.payload_hash,
-            expectedPreviousHash,
-            actualPreviousHash: event.previous_event_hash,
-          });
-        }
-      }
+    // Build deterministic canonical payload
+    const canonical = buildCanonicalPayload(
+      match, events, documents, auditLogs,
+      { valid: chainValid, details: chainDetails },
+      collapseRecord
+    );
 
-      // Build evidence pack
-      const evidencePack = {
-        metadata: {
-          packId: crypto.randomUUID(),
-          generatedAt: new Date().toISOString(),
-          generatedBy: authCtx.userId,
-          requestId,
-        },
-        match: {
-          id: match.id,
-          hash: match.hash,
-          status: match.status,
-          createdAt: match.created_at,
-          settledAt: match.settled_at,
-          buyer: {
-            id: match.buyer_id,
-            name: match.buyer_name,
-          },
-          seller: {
-            id: match.seller_id,
-            name: match.seller_name,
-          },
-          commodity: match.commodity,
-          quantity: {
-            amount: match.quantity_amount,
-            unit: match.quantity_unit,
-          },
-          price: {
-            amount: match.price_amount,
-            currency: match.price_currency,
-          },
-          terms: match.terms,
-          metadata: match.metadata,
-        },
-        timeline: {
-          events: events || [],
-          totalEvents: events?.length || 0,
-        },
-        hashChainVerification: {
-          valid: chainValid,
-          details: chainVerification,
-        },
-        documents: {
-          files: (documents || []).map((doc) => ({
-            id: doc.id,
-            type: doc.doc_type,
-            title: doc.title,
-            filename: doc.filename,
-            sha256Hash: doc.sha256_hash,
-            fileSize: doc.file_size,
-            mimeType: doc.mime_type,
-            status: doc.status,
-            visibility: doc.visibility,
-            uploadedAt: doc.created_at,
-            expiresAt: doc.expiry_date,
-            validFrom: doc.valid_from,
-            validTo: doc.valid_to,
-          })),
-          totalDocuments: documents?.length || 0,
-          accessLogs: (accessLogs || []).map((log) => ({
-            id: log.id,
-            documentId: log.document_id,
-            action: log.action,
-            accessorUserId: log.accessor_user_id,
-            isAdminAccess: log.is_admin_access,
-            accessReason: log.access_reason,
-            timestamp: log.created_at,
-          })),
-        },
-        auditTrail: {
-          logs: auditLogs || [],
-          totalLogs: auditLogs?.length || 0,
-        },
-        verification: {
-          matchHashAlgorithm: "SHA-256",
-          eventHashAlgorithm: "SHA-256",
-          documentHashAlgorithm: "SHA-256",
-          chainIntegrity: chainValid ? "VERIFIED" : "COMPROMISED",
-          immutabilityGuarantee: "All events and document hashes are cryptographically verified",
-        },
-      };
+    // Compute SHA-256 of canonical JSON
+    const canonicalJson = canonicalStringify(canonical);
+    const packHash = await sha256Hex(canonicalJson);
 
-      // Create audit log for evidence pack generation
-      await supabase.from("audit_logs").insert({
-        org_id: authCtx.orgId,
-        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
-        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
-        action: "evidence-pack.generated",
-        entity_type: "match",
-        entity_id: matchId,
-        metadata: {
-          packId: evidencePack.metadata.packId,
-          chainValid,
-          eventCount: events?.length || 0,
-          documentCount: documents?.length || 0,
-        },
-      });
+    const signatureValid = collapseRecord?.signature_valid ?? null;
+    const generatedAt = new Date().toISOString();
 
-      return new Response(JSON.stringify(evidencePack, null, 2), {
+    // Audit log
+    await supabase.from("audit_logs").insert({
+      org_id: authCtx.orgId,
+      actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+      actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+      action: "evidence-pack.generated",
+      entity_type: "match",
+      entity_id: matchId,
+      metadata: { packHash, format, chainValid, requestId },
+    });
+
+    if (format === "pdf") {
+      const html = generatePdfHtml(canonical, packHash, signatureValid, generatedAt);
+      return new Response(html, {
         status: 200,
         headers: {
           ...headers,
-          "Content-Type": "application/json",
-          "Content-Disposition": `attachment; filename="evidence-pack-${matchId}.json"`,
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Disposition": `attachment; filename="evidence-pack-${matchId}.html"`,
         },
       });
     }
 
-    throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
+    // JSON response — includes metadata envelope + canonical payload + hash
+    const envelope = {
+      metadata: {
+        packId: crypto.randomUUID(),
+        generatedAt,
+        generatedBy: authCtx.userId,
+        requestId,
+        format: "canonical-json-v1",
+      },
+      packHash,
+      hashAlgorithm: "SHA-256",
+      signatureValidation: {
+        hasCollapseRecord: !!collapseRecord,
+        signatureValid,
+        signatureKeyId: collapseRecord?.signature_key_id || null,
+      },
+      timestampMetadata: {
+        serverTimestampUtc: generatedAt,
+        matchCreatedAt: match.created_at,
+        matchSettledAt: match.settled_at || null,
+        collapseClientTimestamp: collapseRecord?.client_timestamp || null,
+        collapseServerTimestamp: collapseRecord?.created_at || null,
+        timestampSource: "database-server-utc",
+      },
+      chainVerification: {
+        valid: chainValid,
+        eventCount: events.length,
+        details: chainDetails,
+      },
+      canonical,
+    };
 
+    return new Response(JSON.stringify(envelope, null, 2), {
+      status: 200,
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="evidence-pack-${matchId}.json"`,
+      },
+    });
   } catch (error) {
     console.error(`[${requestId}] Error:`, error);
     return errorResponse(error as Error, requestId, headers);
