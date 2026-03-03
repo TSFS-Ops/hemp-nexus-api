@@ -87,6 +87,12 @@ const sidebarGroups = [
       { title: "Settings", url: "/admin/settings", icon: Settings },
     ],
   },
+  {
+    label: "Checkpoints",
+    items: [
+      { title: "Checkpoint Demo (16 Apr 2026)", url: "/admin/checkpoint-2026-04-16", icon: ClipboardCheck },
+    ],
+  },
 ];
 
 export function AdminSidebar() {

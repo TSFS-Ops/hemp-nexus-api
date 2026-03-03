@@ -1096,6 +1096,95 @@ export type Database = {
           },
         ]
       }
+      demo_run_steps: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          demo_run_id: string
+          error_message: string | null
+          id: string
+          result: Json | null
+          started_at: string | null
+          status: string
+          step_name: string
+          step_number: number
+          step_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          demo_run_id: string
+          error_message?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          step_name: string
+          step_number: number
+          step_type?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          demo_run_id?: string
+          error_message?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          step_name?: string
+          step_number?: number
+          step_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_run_steps_demo_run_id_fkey"
+            columns: ["demo_run_id"]
+            isOneToOne: false
+            referencedRelation: "demo_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_runs: {
+        Row: {
+          actor_user_id: string
+          completed_at: string | null
+          created_at: string
+          environment: string
+          id: string
+          org_id: string
+          run_id: string
+          started_at: string
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          actor_user_id: string
+          completed_at?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          org_id: string
+          run_id: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          actor_user_id?: string
+          completed_at?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          org_id?: string
+          run_id?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: []
+      }
       document_access: {
         Row: {
           access_type: string
