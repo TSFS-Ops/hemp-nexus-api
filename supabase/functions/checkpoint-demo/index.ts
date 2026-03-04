@@ -855,7 +855,7 @@ Deno.serve(async (req: Request) => {
     if (action === "negative_idempotency_burst") {
       const { org_a_id, org_b_id } = step_data || {};
       const burstKey = `burst-test-${Date.now()}`;
-      const burstCount = 10;
+      const burstCount = 500; // BRD acceptance test: 500 identical requests
 
       const keyPair = await crypto.subtle.generateKey(
         { name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]
@@ -873,8 +873,9 @@ Deno.serve(async (req: Request) => {
       const pubJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
 
       const results: any[] = [];
-      for (let i = 0; i < burstCount; i++) {
-        const res = await fetch(`${supabaseUrl}/functions/v1/collapse`, {
+      // Fire all 500 requests concurrently per BRD acceptance test
+      const promises = Array.from({ length: burstCount }, (_, i) =>
+        fetch(`${supabaseUrl}/functions/v1/collapse`, {
           method: "POST",
           headers: { Authorization: authHeader, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -884,15 +885,17 @@ Deno.serve(async (req: Request) => {
             idempotency_key: burstKey,
             signed_payload: `${sigB64}:${payload}`, public_key_jwk: pubJwk,
           }),
-        });
-        const data = await res.json();
-        results.push({ status: res.status, idempotent: data.idempotent, collapse_id: data.collapse_id });
-      }
+        }).then(async (res) => {
+          const data = await res.json();
+          return { status: res.status, idempotent: data.idempotent, collapse_id: data.collapse_id };
+        }).catch((err) => ({ status: 0, idempotent: false, collapse_id: null, error: err.message }))
+      );
+      const allResults = await Promise.all(promises);
 
-      const uniqueIds = new Set(results.map(r => r.collapse_id).filter(Boolean));
+      const uniqueIds = new Set(allResults.map(r => r.collapse_id).filter(Boolean));
       const passed = uniqueIds.size === 1;
-      await recordStep(19, "Negative: idempotency burst", "negative", passed ? "pass" : "fail",
-        { burst_count: burstCount, unique_records: uniqueIds.size, passed, sample: results.slice(0, 3) });
+      await recordStep(19, "Negative: idempotency burst (500 concurrent)", "negative", passed ? "pass" : "fail",
+        { burst_count: burstCount, unique_records: uniqueIds.size, passed, sample: allResults.slice(0, 5) });
       return json({ success: passed, test: "idempotency_burst", burst_count: burstCount, unique_records: uniqueIds.size });
     }
 

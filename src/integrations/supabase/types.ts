@@ -664,6 +664,7 @@ export type Database = {
       collapse_ledger: {
         Row: {
           actor_user_id: string | null
+          annulment_reference: string | null
           asset_id: string
           client_timestamp: string
           counterparty_org_id: string
@@ -674,6 +675,7 @@ export type Database = {
           match_id: string | null
           metadata: Json | null
           org_id: string
+          payload_ciphertext: string | null
           payload_hash: string
           poi_state: string
           price: number
@@ -681,9 +683,11 @@ export type Database = {
           signature_key_id: string | null
           signature_valid: boolean
           signed_payload: string
+          timestamp_source_metadata: Json | null
         }
         Insert: {
           actor_user_id?: string | null
+          annulment_reference?: string | null
           asset_id: string
           client_timestamp: string
           counterparty_org_id: string
@@ -694,6 +698,7 @@ export type Database = {
           match_id?: string | null
           metadata?: Json | null
           org_id: string
+          payload_ciphertext?: string | null
           payload_hash: string
           poi_state?: string
           price: number
@@ -701,9 +706,11 @@ export type Database = {
           signature_key_id?: string | null
           signature_valid?: boolean
           signed_payload: string
+          timestamp_source_metadata?: Json | null
         }
         Update: {
           actor_user_id?: string | null
+          annulment_reference?: string | null
           asset_id?: string
           client_timestamp?: string
           counterparty_org_id?: string
@@ -714,6 +721,7 @@ export type Database = {
           match_id?: string | null
           metadata?: Json | null
           org_id?: string
+          payload_ciphertext?: string | null
           payload_hash?: string
           poi_state?: string
           price?: number
@@ -721,6 +729,7 @@ export type Database = {
           signature_key_id?: string | null
           signature_valid?: boolean
           signed_payload?: string
+          timestamp_source_metadata?: Json | null
         }
         Relationships: [
           {

@@ -173,7 +173,7 @@ Deno.serve(async (req: Request) => {
     for (const [label, oid] of [["Requesting org", org_id], ["Counterparty", counterparty_org_id]] as const) {
       const { data: approval } = await adminClient
         .from("trade_approvals")
-        .select("status, valid_until")
+        .select("status, valid_until, risk_band")
         .eq("org_id", oid)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -195,6 +195,63 @@ Deno.serve(async (req: Request) => {
           { orgId: oid, expiredAt: approval.valid_until }
         );
       }
+    }
+
+    // ── Dynamic approval threshold enforcement ──
+    // Query configurable thresholds for the requesting org
+    const { data: thresholdConfig } = await adminClient
+      .from("approval_thresholds")
+      .select("low_threshold, high_threshold")
+      .eq("org_id", org_id)
+      .maybeSingle();
+
+    const tradeValue = quantity * price;
+    const lowThreshold = thresholdConfig?.low_threshold ?? 100000;
+    const highThreshold = thresholdConfig?.high_threshold ?? 1000000;
+
+    // Determine required approval tier based on trade value
+    let requiredApprovalTier: string;
+    if (tradeValue >= highThreshold) {
+      requiredApprovalTier = "director";
+    } else if (tradeValue >= lowThreshold) {
+      requiredApprovalTier = "legal_reviewer";
+    } else {
+      requiredApprovalTier = "compliance_analyst";
+    }
+
+    // Check that the requesting org has completed the required approval level
+    const { data: approvalReq } = await adminClient
+      .from("dd_approval_requests")
+      .select("completed_roles, status")
+      .eq("target_org_id", counterparty_org_id)
+      .eq("requesting_org_id", org_id)
+      .eq("status", "approved")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!approvalReq) {
+      throw new ApiException(
+        "ELIGIBILITY_FAILED",
+        "No approved due diligence request found for counterparty. Collapse rejected.",
+        422,
+        { requiredTier: requiredApprovalTier, tradeValue }
+      );
+    }
+
+    const completedRoles: string[] = approvalReq.completed_roles || [];
+    const tierHierarchy = ["compliance_analyst", "legal_reviewer", "director"];
+    const requiredIndex = tierHierarchy.indexOf(requiredApprovalTier);
+    const tiersNeeded = tierHierarchy.slice(0, requiredIndex + 1);
+    const missingTiers = tiersNeeded.filter(t => !completedRoles.includes(t));
+
+    if (missingTiers.length > 0) {
+      throw new ApiException(
+        "APPROVAL_INSUFFICIENT",
+        `Trade value ${currency} ${tradeValue} requires ${requiredApprovalTier} approval. Missing: ${missingTiers.join(", ")}`,
+        422,
+        { requiredTier: requiredApprovalTier, tradeValue, missingTiers, completedRoles }
+      );
     }
 
     // ── Check global collapse freeze (break-glass) ──
@@ -317,7 +374,7 @@ Deno.serve(async (req: Request) => {
     });
     const payloadHash = await sha256(canonicalData);
 
-    // ── Insert into append-only ledger ──
+    // ── Insert into append-only ledger (incl. BRD §7 fields) ──
     const { data: record, error: insertError } = await adminClient
       .from("collapse_ledger")
       .insert({
@@ -337,6 +394,14 @@ Deno.serve(async (req: Request) => {
         poi_state: "COLLAPSED",
         metadata: metadata || {},
         actor_user_id: actorUserId || null,
+        payload_ciphertext: body.payload_ciphertext || null,
+        timestamp_source_metadata: {
+          source: "database-server-utc",
+          client_timestamp,
+          server_timestamp: new Date().toISOString(),
+          ntp_status: "not-hardened",
+        },
+        annulment_reference: body.annulment_reference || null,
       })
       .select()
       .single();
