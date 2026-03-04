@@ -2,7 +2,27 @@
 
 All notable changes to the Compliance Matching API are documented here.
 
-**Last updated:** 13 February 2026
+**Last updated:** 4 March 2026
+
+---
+
+## [3.0.0-sprint8] - 2026-03-04
+
+### SDK V3 Extension & Integration Tests
+
+**Focus: Extend the TypeScript SDK with all V3 deal-pipeline resources and add comprehensive contract tests.**
+
+#### SDK Extension (`izenzo-sdk.ts`)
+- **[Entities]** `client.entities.create()`, `.list()`, `.update()`, `.screen()` — full CRUD + screening stub
+- **[Authority]** `client.authority.createUbo()`, `.createAtb()`, `.checkGates()` — ATB/UBO management with gate validation
+- **[Trade Approvals]** `client.tradeApprovals.getStatus()`, `.issue()`, `.revoke()` — approval lifecycle
+- **[PoDs]** `client.pods.create()`, `.list()`, `.completeMilestone()`, `.recordBreach()`, `.finalise()` — delivery tracking with idempotency
+- **[Compliance]** `client.complianceCases.open()`, `.list()`, `.decide()` — compliance case lifecycle
+
+#### Integration Tests (`v3-deal-pipeline.test.ts`)
+- 11 contract tests covering all V3 SDK resources
+- Validates request shapes (methods, headers, body), response parsing, and type safety
+- Tests idempotency key propagation for PoD creation
 
 ## Versioning
 

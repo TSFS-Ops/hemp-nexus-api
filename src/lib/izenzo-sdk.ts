@@ -210,6 +210,12 @@ export class IzenzoClient {
   public readonly apiKeys: ApiKeysResource;
   public readonly webhooks: WebhooksResource;
   public readonly health: HealthResource;
+  // V3 Resources
+  public readonly entities: EntitiesResource;
+  public readonly authority: AuthorityResource;
+  public readonly tradeApprovals: TradeApprovalsResource;
+  public readonly pods: PodsResource;
+  public readonly complianceCases: ComplianceCasesResource;
 
   constructor(apiKeyOrConfig: string | IzenzoClientConfig) {
     if (typeof apiKeyOrConfig === 'string') {
@@ -228,6 +234,12 @@ export class IzenzoClient {
     this.apiKeys = new ApiKeysResource(this);
     this.webhooks = new WebhooksResource(this);
     this.health = new HealthResource(this);
+    // V3
+    this.entities = new EntitiesResource(this);
+    this.authority = new AuthorityResource(this);
+    this.tradeApprovals = new TradeApprovalsResource(this);
+    this.pods = new PodsResource(this);
+    this.complianceCases = new ComplianceCasesResource(this);
   }
 
   /**
@@ -485,6 +497,243 @@ class HealthResource {
    */
   async check(): Promise<HealthStatus> {
     return this.client.request<HealthStatus>('GET', '/healthz');
+  }
+}
+
+// ─── V3 Types ───
+
+export interface Entity {
+  id: string;
+  org_id: string;
+  legal_name: string;
+  entity_type: string;
+  jurisdiction_code: string;
+  registration_number?: string;
+  tax_number?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface EntityCreateParams {
+  legal_name: string;
+  entity_type: string;
+  jurisdiction_code: string;
+  registration_number?: string;
+  tax_number?: string;
+}
+
+export interface UboLink {
+  id: string;
+  person_entity_id: string;
+  company_entity_id: string;
+  ownership_percentage: number;
+  status: string;
+}
+
+export interface AtbRecord {
+  id: string;
+  person_entity_id: string;
+  company_entity_id: string;
+  method: string;
+  status: string;
+  expires_at?: string;
+}
+
+export interface GateCheckResult {
+  ubo_passed: boolean;
+  atb_passed: boolean;
+  total_ownership: number;
+  verified_ubo_count: number;
+  active_atb_count: number;
+}
+
+export interface TradeApproval {
+  org_id: string;
+  approved_to_trade: boolean;
+  trade_status: string;
+  approved_at: string | null;
+  risk_band: string | null;
+  valid_until: string | null;
+}
+
+export interface PodCreateParams {
+  wad_id: string;
+  milestones: { name: string; due_at: string }[];
+}
+
+export interface Pod {
+  id: string;
+  org_id: string;
+  wad_id: string;
+  state: string;
+  created_at: string;
+  finalised_at: string | null;
+}
+
+export interface ComplianceCase {
+  id: string;
+  org_id: string;
+  entity_id: string;
+  status: string;
+  decided_at: string | null;
+  decision_notes: string | null;
+  created_at: string;
+}
+
+// ─── V3 Resources ───
+
+/**
+ * Entities API Resource (V3)
+ */
+class EntitiesResource {
+  constructor(private client: IzenzoClient) {}
+
+  async create(params: EntityCreateParams): Promise<Entity> {
+    return this.client.request<Entity>('POST', '/entities', { body: params });
+  }
+
+  async list(params: { status?: string; entity_type?: string } = {}): Promise<Entity[]> {
+    const resp = await this.client.request<{ data: Entity[] }>('GET', '/entities', {
+      params: params as Record<string, string | number | undefined>,
+    });
+    return resp.data;
+  }
+
+  async update(id: string, updates: Partial<EntityCreateParams>): Promise<Entity> {
+    return this.client.request<Entity>('PATCH', '/entities', {
+      body: { entity_id: id, ...updates },
+    });
+  }
+
+  async screen(entityId: string): Promise<{ result: string; details: string }> {
+    const resp = await this.client.request<{ data: { result: string; details: string } }>(
+      'POST', '/entities', {
+        body: { entity_id: entityId },
+        headers: { 'X-Action': 'screen' },
+      }
+    );
+    return resp.data;
+  }
+}
+
+/**
+ * Authority-to-Bind & UBO Resource (V3)
+ */
+class AuthorityResource {
+  constructor(private client: IzenzoClient) {}
+
+  async createUbo(personEntityId: string, companyEntityId: string, ownershipPercentage: number): Promise<UboLink> {
+    const resp = await this.client.request<{ data: UboLink }>('POST', '/authority-bind', {
+      body: { action: 'ubo_create', person_entity_id: personEntityId, company_entity_id: companyEntityId, ownership_percentage: ownershipPercentage },
+    });
+    return resp.data;
+  }
+
+  async createAtb(personEntityId: string, companyEntityId: string, method: string, documentId?: string): Promise<AtbRecord> {
+    const resp = await this.client.request<{ data: AtbRecord }>('POST', '/authority-bind', {
+      body: { action: 'atb_create', person_entity_id: personEntityId, company_entity_id: companyEntityId, method, document_id: documentId },
+    });
+    return resp.data;
+  }
+
+  async checkGates(personEntityId: string, companyEntityId: string): Promise<GateCheckResult> {
+    const resp = await this.client.request<{ data: GateCheckResult }>('POST', '/authority-bind', {
+      body: { action: 'check', person_entity_id: personEntityId, company_entity_id: companyEntityId },
+    });
+    return resp.data;
+  }
+}
+
+/**
+ * Trade Approvals Resource (V3)
+ */
+class TradeApprovalsResource {
+  constructor(private client: IzenzoClient) {}
+
+  async getStatus(orgId: string): Promise<TradeApproval> {
+    return this.client.request<TradeApproval>('GET', '/trade-status', {
+      params: { org_id: orgId },
+    });
+  }
+
+  async issue(orgId: string, validDays = 365): Promise<TradeApproval> {
+    const resp = await this.client.request<{ data: any }>('POST', '/trade-approval', {
+      body: { action: 'issue', org_id: orgId, valid_days: validDays },
+    });
+    return resp.data;
+  }
+
+  async revoke(orgId: string, reason: string): Promise<void> {
+    await this.client.request('POST', '/trade-approval', {
+      body: { action: 'revoke', org_id: orgId, reason },
+    });
+  }
+}
+
+/**
+ * PoD (Proof-of-Delivery) Resource (V3)
+ */
+class PodsResource {
+  constructor(private client: IzenzoClient) {}
+
+  async create(params: PodCreateParams, idempotencyKey: string): Promise<Pod> {
+    const resp = await this.client.request<{ data: Pod }>('POST', '/pods', {
+      body: params,
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
+    return resp.data;
+  }
+
+  async list(): Promise<Pod[]> {
+    const resp = await this.client.request<{ data: Pod[] }>('GET', '/pods');
+    return resp.data;
+  }
+
+  async completeMilestone(milestoneId: string, evidenceDocId?: string): Promise<void> {
+    await this.client.request('POST', '/pods?action=complete-milestone', {
+      body: { milestone_id: milestoneId, evidence_document_id: evidenceDocId },
+    });
+  }
+
+  async recordBreach(podId: string, reason: string, milestoneId?: string): Promise<void> {
+    await this.client.request('POST', '/pods?action=breach', {
+      body: { pod_id: podId, reason, milestone_id: milestoneId },
+    });
+  }
+
+  async finalise(podId: string): Promise<Pod> {
+    const resp = await this.client.request<{ data: Pod }>('POST', '/pods?action=finalise', {
+      body: { pod_id: podId },
+    });
+    return resp.data;
+  }
+}
+
+/**
+ * Compliance Cases Resource (V3)
+ */
+class ComplianceCasesResource {
+  constructor(private client: IzenzoClient) {}
+
+  async open(entityId: string): Promise<ComplianceCase> {
+    const resp = await this.client.request<{ data: ComplianceCase }>('POST', '/compliance-cases', {
+      body: { entity_id: entityId },
+    });
+    return resp.data;
+  }
+
+  async list(params: { entity_id?: string; status?: string } = {}): Promise<ComplianceCase[]> {
+    const resp = await this.client.request<{ data: ComplianceCase[] }>('GET', '/compliance-cases', {
+      params: params as Record<string, string | number | undefined>,
+    });
+    return resp.data;
+  }
+
+  async decide(caseId: string, status: 'cleared' | 'escalated' | 'blocked', notes?: string): Promise<ComplianceCase> {
+    const resp = await this.client.request<{ data: ComplianceCase }>('PATCH', '/compliance-cases', {
+      body: { case_id: caseId, status, decision_notes: notes },
+    });
+    return resp.data;
   }
 }
 
