@@ -32,6 +32,7 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     // Auth check via shared auth module (supports valid JWT parsing)
+    const authHeader = req.headers.get("Authorization") || "";
     const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
     if (authCtx.isApiKey) {
       throw new ApiException("FORBIDDEN", "Checkpoint demo requires an authenticated user session", 403);
