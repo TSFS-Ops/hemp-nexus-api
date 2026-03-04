@@ -29,6 +29,18 @@ security:
   - ApiKeyAuth: []
 
 tags:
+  - name: Entities
+    description: Legal entity management and screening
+  - name: Interests
+    description: Declared interest operations
+  - name: POIs
+    description: Proof-of-Intent lifecycle
+  - name: WaD
+    description: Willing-and-Able Deal hard-gates
+  - name: PoD
+    description: Proof-of-Delivery milestones and breaches
+  - name: Compliance
+    description: Compliance case management
   - name: Matches
     description: Trade match operations
   - name: Signals
@@ -41,6 +53,299 @@ tags:
     description: System health checks
 
 paths:
+  /entities:
+    post:
+      tags: [Entities]
+      summary: Create a legal entity
+      operationId: createEntity
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntityCreate'
+      responses:
+        '201':
+          description: Entity created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Entities]
+      summary: List entities
+      operationId: listEntities
+      parameters:
+        - name: entity_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Get a specific entity by ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended, blocked, archived]
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+            enum: [INDIVIDUAL, COMPANY]
+        - name: all
+          in: query
+          schema:
+            type: string
+            enum: ["true"]
+          description: Admin only — list across all organisations
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+      responses:
+        '200':
+          description: Entity list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Entities]
+      summary: Update an entity (admin only)
+      operationId: updateEntity
+      parameters:
+        - name: entity_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntityUpdate'
+      responses:
+        '200':
+          description: Entity updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Admin role required
+
+  /entities/screen:
+    post:
+      tags: [Entities]
+      summary: Run screening on an entity (admin only)
+      operationId: screenEntity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScreeningRequest'
+      responses:
+        '200':
+          description: Screening result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '403':
+          description: Admin role required
+
+  /interests:
+    post:
+      tags: [Interests]
+      summary: Declare interest between entities
+      operationId: createInterest
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from_entity_id, to_entity_id]
+              properties:
+                from_entity_id:
+                  type: string
+                  format: uuid
+                to_entity_id:
+                  type: string
+                  format: uuid
+                context:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '201':
+          description: Interest declared
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Interests]
+      summary: List interests
+      operationId: listInterests
+      responses:
+        '200':
+          description: Interest list
+
+  /pois:
+    post:
+      tags: [POIs]
+      summary: Issue a Proof-of-Intent
+      operationId: createPoi
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mutual_interest_id, completion_probability]
+              properties:
+                mutual_interest_id:
+                  type: string
+                  format: uuid
+                completion_probability:
+                  type: number
+                  minimum: 0.501
+                  maximum: 1.0
+      responses:
+        '201':
+          description: POI issued
+        '422':
+          description: Probability below threshold
+
+  /pois/transition:
+    post:
+      tags: [POIs]
+      summary: Transition POI state
+      operationId: transitionPoi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [poi_id, to_state]
+              properties:
+                poi_id:
+                  type: string
+                  format: uuid
+                to_state:
+                  type: string
+      responses:
+        '200':
+          description: State transitioned
+
+  /p3-wad:
+    post:
+      tags: [WaD]
+      summary: Issue a Willing-and-Able Deal
+      operationId: issueWad
+      description: |
+        Runs 7 deterministic hard-gates:
+        1. POI state = COLLAPSED
+        2. Both entities ACTIVE
+        3. UBO integrity verified
+        4. Authority-to-Bind records present
+        5. Mandatory governance docs validated
+        6. Zero open compliance cases
+        7. Sufficient token liquidity
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [poi_id]
+              properties:
+                poi_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: WaD issued or denied with gate results
+        '422':
+          description: Hard-gate failure
+
+  /pods:
+    post:
+      tags: [PoD]
+      summary: Create a Proof-of-Delivery
+      operationId: createPod
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [wad_id, milestones]
+              properties:
+                wad_id:
+                  type: string
+                  format: uuid
+                milestones:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: object
+                    required: [title, due_date]
+                    properties:
+                      title:
+                        type: string
+                      due_date:
+                        type: string
+                        format: date
+      responses:
+        '201':
+          description: PoD created with milestones
+
+  /compliance-cases:
+    post:
+      tags: [Compliance]
+      summary: Create a compliance case
+      operationId: createComplianceCase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entity_id]
+              properties:
+                entity_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Case opened
+    get:
+      tags: [Compliance]
+      summary: List compliance cases
+      operationId: listComplianceCases
+      responses:
+        '200':
+          description: Case list
+
   /match:
     post:
       tags: [Matches]
@@ -382,6 +687,13 @@ components:
       description: JWT token for dashboard operations
 
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Unique key to ensure idempotent processing
     MatchId:
       name: id
       in: path
@@ -392,6 +704,70 @@ components:
       description: Match UUID
 
   schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [SUCCESS]
+        timestamp:
+          type: string
+          format: date-time
+        correlation_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+
+    EntityCreate:
+      type: object
+      required: [entity_type, legal_name, jurisdiction_code]
+      properties:
+        entity_type:
+          type: string
+          enum: [INDIVIDUAL, COMPANY]
+        legal_name:
+          type: string
+          minLength: 2
+          maxLength: 256
+        jurisdiction_code:
+          type: string
+          minLength: 2
+          maxLength: 8
+        registration_number:
+          type: string
+          nullable: true
+        tax_number:
+          type: string
+          nullable: true
+
+    EntityUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, suspended, blocked, archived]
+        legal_name:
+          type: string
+        registration_number:
+          type: string
+          nullable: true
+
+    ScreeningRequest:
+      type: object
+      required: [entity_id, result]
+      properties:
+        entity_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          default: stub
+        result:
+          type: string
+          enum: [clear, match, review]
+        details:
+          type: object
     MatchCreate:
       type: object
       required: [buyer, seller, commodity, quantity, price]
