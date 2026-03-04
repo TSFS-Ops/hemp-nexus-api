@@ -377,6 +377,70 @@ export type Database = {
         }
         Relationships: []
       }
+      authority_records: {
+        Row: {
+          company_entity_id: string
+          created_at: string
+          document_id: string | null
+          expires_at: string | null
+          id: string
+          method: string
+          org_id: string
+          person_entity_id: string
+          status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          company_entity_id: string
+          created_at?: string
+          document_id?: string | null
+          expires_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          person_entity_id: string
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          company_entity_id?: string
+          created_at?: string
+          document_id?: string | null
+          expires_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          person_entity_id?: string
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authority_records_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authority_records_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authority_records_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       behavioral_signals: {
         Row: {
           action_type: string
@@ -493,6 +557,61 @@ export type Database = {
           locked?: boolean
         }
         Relationships: []
+      }
+      breaches: {
+        Row: {
+          detected_at: string
+          id: string
+          milestone_id: string | null
+          org_id: string
+          pod_id: string
+          reason: string
+          recorded_at: string
+          status: string
+        }
+        Insert: {
+          detected_at?: string
+          id?: string
+          milestone_id?: string | null
+          org_id: string
+          pod_id: string
+          reason: string
+          recorded_at?: string
+          status?: string
+        }
+        Update: {
+          detected_at?: string
+          id?: string
+          milestone_id?: string | null
+          org_id?: string
+          pod_id?: string
+          reason?: string
+          recorded_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breaches_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "pod_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breaches_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breaches_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       break_glass_actions: {
         Row: {
@@ -627,6 +746,54 @@ export type Database = {
           },
           {
             foreignKeyName: "collapse_ledger_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_cases: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          entity_id: string
+          id: string
+          org_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          entity_id: string
+          id?: string
+          org_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          entity_id?: string
+          id?: string
+          org_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_cases_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_cases_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1310,6 +1477,213 @@ export type Database = {
           },
         ]
       }
+      entities: {
+        Row: {
+          created_at: string
+          entity_type: string
+          id: string
+          jurisdiction_code: string
+          legal_name: string
+          org_id: string
+          registration_number: string | null
+          status: string
+          tax_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_type: string
+          id?: string
+          jurisdiction_code: string
+          legal_name: string
+          org_id: string
+          registration_number?: string | null
+          status?: string
+          tax_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_type?: string
+          id?: string
+          jurisdiction_code?: string
+          legal_name?: string
+          org_id?: string
+          registration_number?: string | null
+          status?: string
+          tax_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entities_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_store: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          aggregate_id: string
+          aggregate_type: string
+          domain: string
+          event_hash: string
+          event_type: string
+          event_version: number
+          id: string
+          occurred_at: string
+          org_id: string
+          payload: Json
+          prev_hash: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          aggregate_id: string
+          aggregate_type: string
+          domain: string
+          event_hash: string
+          event_type: string
+          event_version?: number
+          id?: string
+          occurred_at?: string
+          org_id: string
+          payload?: Json
+          prev_hash?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          aggregate_id?: string
+          aggregate_type?: string
+          domain?: string
+          event_hash?: string
+          event_type?: string
+          event_version?: number
+          id?: string
+          occurred_at?: string
+          org_id?: string
+          payload?: Json
+          prev_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_store_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_doc_registry: {
+        Row: {
+          active: boolean
+          allowed_from_state: string
+          allowed_to_state: string
+          category: string
+          doc_type: string
+          fixed_token_burn_amount: number
+          id: string
+          industry_code: string
+          jurisdiction_code: string
+          mandatory_flag: boolean
+          org_id: string
+          requires_signature: boolean
+        }
+        Insert: {
+          active?: boolean
+          allowed_from_state: string
+          allowed_to_state: string
+          category: string
+          doc_type: string
+          fixed_token_burn_amount?: number
+          id?: string
+          industry_code: string
+          jurisdiction_code: string
+          mandatory_flag?: boolean
+          org_id: string
+          requires_signature?: boolean
+        }
+        Update: {
+          active?: boolean
+          allowed_from_state?: string
+          allowed_to_state?: string
+          category?: string
+          doc_type?: string
+          fixed_token_burn_amount?: number
+          id?: string
+          industry_code?: string
+          jurisdiction_code?: string
+          mandatory_flag?: boolean
+          org_id?: string
+          requires_signature?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_doc_registry_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_documents: {
+        Row: {
+          created_at: string
+          deal_reference_id: string
+          deal_reference_type: string
+          id: string
+          org_id: string
+          registry_id: string
+          status: string
+          token_burned: boolean
+          validated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          deal_reference_id: string
+          deal_reference_type: string
+          id?: string
+          org_id: string
+          registry_id: string
+          status?: string
+          token_burned?: boolean
+          validated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          deal_reference_id?: string
+          deal_reference_type?: string
+          id?: string
+          org_id?: string
+          registry_id?: string
+          status?: string
+          token_burned?: boolean
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_registry_id_fkey"
+            columns: ["registry_id"]
+            isOneToOne: false
+            referencedRelation: "governance_doc_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           created_at: string
@@ -1350,6 +1724,58 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interests: {
+        Row: {
+          context: string | null
+          created_at: string
+          from_entity_id: string
+          id: string
+          org_id: string
+          status: string
+          to_entity_id: string
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          from_entity_id: string
+          id?: string
+          org_id: string
+          status?: string
+          to_entity_id: string
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          from_entity_id?: string
+          id?: string
+          org_id?: string
+          status?: string
+          to_entity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interests_from_entity_id_fkey"
+            columns: ["from_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interests_to_entity_id_fkey"
+            columns: ["to_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
         ]
@@ -1969,6 +2395,58 @@ export type Database = {
           },
         ]
       }
+      mutual_interests: {
+        Row: {
+          entity_a: string
+          entity_b: string
+          expires_at: string
+          formed_at: string
+          id: string
+          org_id: string
+          status: string
+        }
+        Insert: {
+          entity_a: string
+          entity_b: string
+          expires_at: string
+          formed_at?: string
+          id?: string
+          org_id: string
+          status?: string
+        }
+        Update: {
+          entity_a?: string
+          entity_b?: string
+          expires_at?: string
+          formed_at?: string
+          id?: string
+          org_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mutual_interests_entity_a_fkey"
+            columns: ["entity_a"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mutual_interests_entity_b_fkey"
+            columns: ["entity_b"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mutual_interests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       options: {
         Row: {
           confidence_score: number | null
@@ -2133,6 +2611,248 @@ export type Database = {
         }
         Relationships: []
       }
+      ownership_links: {
+        Row: {
+          company_entity_id: string
+          created_at: string
+          id: string
+          org_id: string
+          owner_entity_id: string
+          ownership_percent: number
+        }
+        Insert: {
+          company_entity_id: string
+          created_at?: string
+          id?: string
+          org_id: string
+          owner_entity_id: string
+          ownership_percent: number
+        }
+        Update: {
+          company_entity_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          owner_entity_id?: string
+          ownership_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ownership_links_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ownership_links_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ownership_links_owner_entity_id_fkey"
+            columns: ["owner_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p3_attestations: {
+        Row: {
+          clause_pack_id: string
+          id: string
+          org_id: string
+          signatory_person_id: string
+          signature_payload: string
+          signed_at: string
+          status: string
+          wad_id: string
+        }
+        Insert: {
+          clause_pack_id: string
+          id?: string
+          org_id: string
+          signatory_person_id: string
+          signature_payload: string
+          signed_at?: string
+          status?: string
+          wad_id: string
+        }
+        Update: {
+          clause_pack_id?: string
+          id?: string
+          org_id?: string
+          signatory_person_id?: string
+          signature_payload?: string
+          signed_at?: string
+          status?: string
+          wad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p3_attestations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p3_attestations_signatory_person_id_fkey"
+            columns: ["signatory_person_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p3_attestations_wad_id_fkey"
+            columns: ["wad_id"]
+            isOneToOne: false
+            referencedRelation: "p3_wads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p3_wads: {
+        Row: {
+          created_at: string
+          denial_reasons: Json | null
+          id: string
+          issued_at: string | null
+          org_id: string
+          poi_id: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          denial_reasons?: Json | null
+          id?: string
+          issued_at?: string | null
+          org_id: string
+          poi_id: string
+          state?: string
+        }
+        Update: {
+          created_at?: string
+          denial_reasons?: Json | null
+          id?: string
+          issued_at?: string | null
+          org_id?: string
+          poi_id?: string
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p3_wads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p3_wads_poi_id_fkey"
+            columns: ["poi_id"]
+            isOneToOne: false
+            referencedRelation: "pois"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pod_milestones: {
+        Row: {
+          completed_at: string | null
+          detected_deficiency_at: string | null
+          due_at: string
+          evidence_document_id: string | null
+          id: string
+          name: string
+          org_id: string
+          pod_id: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          detected_deficiency_at?: string | null
+          due_at: string
+          evidence_document_id?: string | null
+          id?: string
+          name: string
+          org_id: string
+          pod_id: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          detected_deficiency_at?: string | null
+          due_at?: string
+          evidence_document_id?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          pod_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_milestones_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pod_milestones_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pods: {
+        Row: {
+          created_at: string
+          finalised_at: string | null
+          id: string
+          org_id: string
+          state: string
+          wad_id: string
+        }
+        Insert: {
+          created_at?: string
+          finalised_at?: string | null
+          id?: string
+          org_id: string
+          state?: string
+          wad_id: string
+        }
+        Update: {
+          created_at?: string
+          finalised_at?: string | null
+          id?: string
+          org_id?: string
+          state?: string
+          wad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pods_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pods_wad_id_fkey"
+            columns: ["wad_id"]
+            isOneToOne: false
+            referencedRelation: "p3_wads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poi_events: {
         Row: {
           actor_api_key_id: string | null
@@ -2190,6 +2910,70 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pois: {
+        Row: {
+          buyer_entity_id: string
+          completion_probability: number
+          created_at: string
+          id: string
+          industry_code: string
+          jurisdiction_code: string
+          last_activity_at: string
+          org_id: string
+          seller_entity_id: string
+          state: string
+          terms: Json
+        }
+        Insert: {
+          buyer_entity_id: string
+          completion_probability?: number
+          created_at?: string
+          id?: string
+          industry_code: string
+          jurisdiction_code: string
+          last_activity_at?: string
+          org_id: string
+          seller_entity_id: string
+          state?: string
+          terms?: Json
+        }
+        Update: {
+          buyer_entity_id?: string
+          completion_probability?: number
+          created_at?: string
+          id?: string
+          industry_code?: string
+          jurisdiction_code?: string
+          last_activity_at?: string
+          org_id?: string
+          seller_entity_id?: string
+          state?: string
+          terms?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pois_buyer_entity_id_fkey"
+            columns: ["buyer_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pois_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pois_seller_entity_id_fkey"
+            columns: ["seller_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
         ]
@@ -2358,6 +3142,51 @@ export type Database = {
           },
         ]
       }
+      risk_snapshots: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          inputs: Json
+          org_id: string
+          risk_band: string
+          risk_score: number
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          inputs?: Json
+          org_id: string
+          risk_band: string
+          risk_score: number
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          inputs?: Json
+          org_id?: string
+          risk_band?: string
+          risk_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_snapshots_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_snapshots_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       screening_results: {
         Row: {
           created_at: string
@@ -2398,6 +3227,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "screening_results_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screening_runs: {
+        Row: {
+          details: Json | null
+          entity_id: string
+          id: string
+          org_id: string
+          provider: string
+          ran_at: string
+          response_hash: string
+          status: string
+        }
+        Insert: {
+          details?: Json | null
+          entity_id: string
+          id?: string
+          org_id: string
+          provider: string
+          ran_at?: string
+          response_hash: string
+          status: string
+        }
+        Update: {
+          details?: Json | null
+          entity_id?: string
+          id?: string
+          org_id?: string
+          provider?: string
+          ran_at?: string
+          response_hash?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screening_runs_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screening_runs_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2657,6 +3534,106 @@ export type Database = {
           },
         ]
       }
+      token_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          governance_doc_id: string | null
+          id: string
+          idempotency_key: string
+          org_id: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at?: string
+          governance_doc_id?: string | null
+          id?: string
+          idempotency_key: string
+          org_id: string
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          governance_doc_id?: string | null
+          id?: string
+          idempotency_key?: string
+          org_id?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_transactions_governance_doc_id_fkey"
+            columns: ["governance_doc_id"]
+            isOneToOne: false
+            referencedRelation: "governance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_transactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "token_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_wallets: {
+        Row: {
+          balance: number
+          entity_id: string
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          entity_id: string
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          entity_id?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_wallets_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_wallets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_approvals: {
         Row: {
           approval_request_id: string | null
@@ -2731,6 +3708,97 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vault_documents: {
+        Row: {
+          case_id: string | null
+          classification: string
+          doc_type: string
+          id: string
+          org_id: string
+          owner_entity_id: string | null
+          pod_id: string | null
+          poi_id: string | null
+          sha256_hash: string
+          storage_uri: string
+          uploaded_at: string
+          uploaded_by: string | null
+          wad_id: string | null
+        }
+        Insert: {
+          case_id?: string | null
+          classification?: string
+          doc_type: string
+          id?: string
+          org_id: string
+          owner_entity_id?: string | null
+          pod_id?: string | null
+          poi_id?: string | null
+          sha256_hash: string
+          storage_uri: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          wad_id?: string | null
+        }
+        Update: {
+          case_id?: string | null
+          classification?: string
+          doc_type?: string
+          id?: string
+          org_id?: string
+          owner_entity_id?: string | null
+          pod_id?: string | null
+          poi_id?: string | null
+          sha256_hash?: string
+          storage_uri?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          wad_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_documents_owner_entity_id_fkey"
+            columns: ["owner_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_documents_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_documents_poi_id_fkey"
+            columns: ["poi_id"]
+            isOneToOne: false
+            referencedRelation: "pois"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_documents_wad_id_fkey"
+            columns: ["wad_id"]
+            isOneToOne: false
+            referencedRelation: "p3_wads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wad_attestations: {
         Row: {
