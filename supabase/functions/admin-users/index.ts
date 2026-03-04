@@ -1,3 +1,13 @@
+/**
+ * Admin Users Edge Function (consolidated)
+ *
+ * Handles two actions:
+ *   GET  → list all users (enriched with profiles, roles, orgs)
+ *   POST { action: "lookup_profiles", user_ids: [...] } → batch profile lookup
+ *
+ * Both paths require platform_admin role.
+ */
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -5,6 +15,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,100 +31,155 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Create admin client
+
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify caller is admin
+    // ── Auth ─────────────────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
+
     if (authError || !caller) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'Invalid token' }, 401);
     }
 
-    // Check if caller is admin
     const { data: isAdmin } = await supabaseAdmin.rpc('is_admin', { user_id: caller.id });
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'Admin access required' }, 403);
     }
 
-    // Get all users from auth.users
-    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (usersError) {
-      throw usersError;
-    }
+    // ── Route by method ──────────────────────────────────────────────────
 
-    // Get profiles with organizations
-    const { data: profiles } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email, full_name, org_id, status, created_at, organizations(name)');
-
-    const { data: roles } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id, role');
-
-    // Combine data
-    const enrichedUsers = users.map(authUser => {
-      const profile = profiles?.find(p => p.id === authUser.id);
-      const userRoles = roles?.filter(r => r.user_id === authUser.id) || [];
-      
-      // Handle organizations which could be an object or array
-      let orgName = 'Unknown';
-      if (profile?.organizations) {
-        const org = profile.organizations;
-        if (Array.isArray(org) && org.length > 0) {
-          orgName = org[0].name;
-        } else if (typeof org === 'object' && 'name' in org) {
-          orgName = (org as { name: string }).name;
-        }
+    // POST: lookup_profiles action OR default list
+    if (req.method === 'POST') {
+      let body: Record<string, unknown>;
+      try {
+        body = await req.json();
+      } catch {
+        return jsonResponse({ error: 'Invalid request body' }, 400);
       }
-      
-      return {
-        id: authUser.id,
-        email: authUser.email,
-        full_name: profile?.full_name || null,
-        org_id: profile?.org_id || null,
-        organization_name: orgName,
-        status: profile?.status || 'unknown',
-        created_at: authUser.created_at,
-        last_sign_in_at: authUser.last_sign_in_at,
-        email_confirmed_at: authUser.email_confirmed_at,
-        roles: userRoles.map(r => r.role),
-      };
-    });
 
-    return new Response(JSON.stringify({ users: enrichedUsers }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      if (body.action === 'lookup_profiles') {
+        return await handleLookupProfiles(supabaseAdmin, caller.id, body);
+      }
+      // fallthrough: treat as list users (backward compat)
+    }
 
+    // GET (or POST without action): list all users
+    return await handleListUsers(supabaseAdmin);
   } catch (error) {
     console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: message }, 500);
   }
 });
+
+// ── List Users ────────────────────────────────────────────────────────────
+
+async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
+  const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+  if (usersError) throw usersError;
+
+  const { data: profiles } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email, full_name, org_id, status, created_at, organizations(name)');
+
+  const { data: roles } = await supabaseAdmin
+    .from('user_roles')
+    .select('user_id, role');
+
+  const enrichedUsers = users.map((authUser) => {
+    const profile = profiles?.find((p) => p.id === authUser.id);
+    const userRoles = roles?.filter((r) => r.user_id === authUser.id) || [];
+
+    let orgName = 'Unknown';
+    if (profile?.organizations) {
+      const org = profile.organizations;
+      if (Array.isArray(org) && org.length > 0) {
+        orgName = org[0].name;
+      } else if (typeof org === 'object' && 'name' in org) {
+        orgName = (org as { name: string }).name;
+      }
+    }
+
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      full_name: profile?.full_name || null,
+      org_id: profile?.org_id || null,
+      organization_name: orgName,
+      status: profile?.status || 'unknown',
+      created_at: authUser.created_at,
+      last_sign_in_at: authUser.last_sign_in_at,
+      email_confirmed_at: authUser.email_confirmed_at,
+      roles: userRoles.map((r) => r.role),
+    };
+  });
+
+  return jsonResponse({ users: enrichedUsers });
+}
+
+// ── Lookup Profiles ───────────────────────────────────────────────────────
+
+async function handleLookupProfiles(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  adminUserId: string,
+  body: Record<string, unknown>,
+) {
+  const userIds = body.user_ids;
+
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return jsonResponse({ error: 'user_ids must be a non-empty array' }, 400);
+  }
+  if (userIds.length > 100) {
+    return jsonResponse({ error: 'Maximum 100 user_ids per request' }, 400);
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const invalidIds = userIds.filter((id: string) => !uuidRegex.test(id));
+  if (invalidIds.length > 0) {
+    return jsonResponse({ error: 'Invalid UUID format in user_ids' }, 400);
+  }
+
+  const { data: profiles, error: profilesError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email, full_name, org_id')
+    .in('id', userIds);
+
+  if (profilesError) {
+    console.error('Error fetching profiles:', profilesError);
+    return jsonResponse({ error: 'Failed to fetch profiles' }, 500);
+  }
+
+  const orgIds = [...new Set(profiles?.map((p) => p.org_id) ?? [])];
+  const { data: orgs } = await supabaseAdmin
+    .from('organizations')
+    .select('id, name')
+    .in('id', orgIds);
+
+  const orgMap = new Map(orgs?.map((o) => [o.id, o.name]) ?? []);
+
+  const results = (profiles ?? []).map((p) => ({
+    id: p.id,
+    email: p.email,
+    full_name: p.full_name,
+    org_id: p.org_id,
+    org_name: orgMap.get(p.org_id) ?? null,
+  }));
+
+  // Audit log
+  await supabaseAdmin.from('admin_audit_logs').insert({
+    admin_user_id: adminUserId,
+    action: 'lookup_profiles',
+    target_type: 'profiles',
+    details: { user_ids_count: userIds.length },
+  });
+
+  return jsonResponse({ profiles: results });
+}
