@@ -374,6 +374,16 @@ Deno.serve(async (req: Request) => {
     });
     const payloadHash = await sha256(canonicalData);
 
+    // ── NTP drift measurement ──
+    // Measure clock drift: compare server UTC with client_timestamp
+    const serverNow = new Date();
+    const clientTs = new Date(client_timestamp);
+    const measuredDriftMs = isNaN(clientTs.getTime()) ? null : serverNow.getTime() - clientTs.getTime();
+    const ntpSource = body.ntp_source || "edge-server-utc";
+    const ntpStatus = measuredDriftMs !== null
+      ? (Math.abs(measuredDriftMs) <= 1000 ? "hardened" : "drift-detected")
+      : "not-measurable";
+
     // ── Insert into append-only ledger (incl. BRD §7 fields) ──
     const { data: record, error: insertError } = await adminClient
       .from("collapse_ledger")
@@ -395,16 +405,17 @@ Deno.serve(async (req: Request) => {
         metadata: metadata || {},
         actor_user_id: actorUserId || null,
         payload_ciphertext: body.payload_ciphertext || null,
-        ntp_source: body.ntp_source || "database-server-utc",
-        ntp_drift_ms: typeof body.ntp_drift_ms === "number" ? body.ntp_drift_ms : null,
+        ntp_source: ntpSource,
+        ntp_drift_ms: measuredDriftMs,
         timestamp_source_metadata: {
-          source: body.ntp_source || "database-server-utc",
+          source: ntpSource,
           client_timestamp,
-          server_timestamp: new Date().toISOString(),
-          ntp_status: body.ntp_status || "not-hardened",
-          ntp_server: body.ntp_server || null,
-          drift_ms: typeof body.ntp_drift_ms === "number" ? body.ntp_drift_ms : null,
-          measurement_method: body.ntp_measurement_method || null,
+          server_timestamp: serverNow.toISOString(),
+          ntp_status: ntpStatus,
+          ntp_server: body.ntp_server || "edge-runtime-clock",
+          drift_ms: measuredDriftMs,
+          measurement_method: "server-client-delta",
+          drift_acceptable: measuredDriftMs !== null ? Math.abs(measuredDriftMs) <= 1000 : null,
         },
         annulment_reference: body.annulment_reference || null,
       })

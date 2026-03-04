@@ -2586,6 +2586,7 @@ export type Database = {
           created_at: string
           cross_border_consent: boolean
           data_region: string
+          data_residency_region: string | null
           frozen: boolean
           frozen_at: string | null
           frozen_by: string | null
@@ -2600,6 +2601,7 @@ export type Database = {
           created_at?: string
           cross_border_consent?: boolean
           data_region?: string
+          data_residency_region?: string | null
           frozen?: boolean
           frozen_at?: string | null
           frozen_by?: string | null
@@ -2614,6 +2616,7 @@ export type Database = {
           created_at?: string
           cross_border_consent?: boolean
           data_region?: string
+          data_residency_region?: string | null
           frozen?: boolean
           frozen_at?: string | null
           frozen_by?: string | null
