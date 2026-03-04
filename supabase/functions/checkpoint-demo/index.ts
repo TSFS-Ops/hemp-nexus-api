@@ -6,12 +6,32 @@ import { authenticateRequest } from "../_shared/auth.ts";
 /**
  * Checkpoint Demo Harness — orchestrates demo steps against REAL services.
  * Access: Director, API Admin, Platform Admin only.
- * Environment: Sandbox/staging only (unless Director override).
+ * Environment: Sandbox/staging only.
  *
- * Supports two modes:
- *   - DD-only: Steps 1–6 (KYC → Screening → Risk → Approval → ATB)
- *   - Full lifecycle: Steps 1–6 + Steps 7–13 (Signal → Match → Invite → Confirm Intent → Preflight → Collapse → Evidence)
- *   - Negative tests: Steps N1–N5
+ * DD Path (Steps 1–7):
+ *   1. Create demo orgs
+ *   2. Register entities + UBOs (company & person entities, UBO links, ATB records)
+ *   3. Upload KYC documents (mutual)
+ *   4. Screen UBOs for sanctions & PEP (mutual)
+ *   5. Compute risk scores (mutual)
+ *   6. Approval workflow (mutual)
+ *   7. Write ATB status + trade approval (one-time certification)
+ *
+ * Full Lifecycle Path (Steps 8–14):
+ *   8.  Create Signals (buy + sell)
+ *   9.  Match Discovery
+ *   10. Send Invite
+ *   11. Confirm Intent (500 token burn)
+ *   12. Pre-flight validation
+ *   13. POI Collapse (binding)
+ *   14. Generate Evidence Pack
+ *
+ * Negative Tests (Steps 15–19):
+ *   15. Missing mandatory field
+ *   16. Invalid ECDSA signature
+ *   17. Collapse before approvals
+ *   18. Mutate collapsed record
+ *   19. Idempotency burst
  */
 
 const DEMO_ORG_A_NAME = "Demo Buyer Corp (Checkpoint)";
@@ -71,7 +91,6 @@ Deno.serve(async (req: Request) => {
         headers: { ...headers, "Content-Type": "application/json" },
       });
 
-    // Helper: record a step
     const recordStep = async (stepNumber: number, stepName: string, stepType: string, status: string, result: any) => {
       if (!run_id) return;
       const { data: runData } = await admin.from("demo_runs").select("id").eq("run_id", run_id).single();
@@ -89,13 +108,9 @@ Deno.serve(async (req: Request) => {
     if (action === "create_run") {
       const newRunId = `checkpoint-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
       const { data: run, error } = await admin.from("demo_runs").insert({
-        run_id: newRunId,
-        actor_user_id: user.id,
-        org_id: profile.org_id,
-        environment: "sandbox",
-        status: "in_progress",
+        run_id: newRunId, actor_user_id: user.id, org_id: profile.org_id,
+        environment: "sandbox", status: "in_progress",
       }).select().single();
-
       if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
       return json({ success: true, run });
     }
@@ -105,10 +120,8 @@ Deno.serve(async (req: Request) => {
     // ════════════════════════════════════════════
     if (action === "reset_demo_data") {
       const { data: demoOrgs } = await admin
-        .from("organizations")
-        .select("id")
+        .from("organizations").select("id")
         .or(`name.eq.${DEMO_ORG_A_NAME},name.eq.${DEMO_ORG_B_NAME}`);
-
       const orgIds = (demoOrgs || []).map((o: any) => o.id);
 
       if (orgIds.length > 0) {
@@ -122,10 +135,13 @@ Deno.serve(async (req: Request) => {
           await admin.from("kyc_status").delete().eq("org_id", oid);
           await admin.from("kyc_documents").delete().eq("org_id", oid);
           await admin.from("org_directors").delete().eq("org_id", oid);
-          await admin.from("token_balances").delete().eq("org_id", oid);
+          await admin.from("authority_records").delete().eq("org_id", oid);
+          await admin.from("ubo_links").delete().eq("org_id", oid);
+          await admin.from("entities").delete().eq("org_id", oid);
           await admin.from("signals").delete().eq("org_id", oid);
           await admin.from("invites").delete().eq("from_org_id", oid);
           await admin.from("matches").delete().eq("org_id", oid);
+          await admin.from("token_balances").delete().eq("org_id", oid);
           await admin.from("audit_logs").delete().eq("org_id", oid);
         }
         for (const oid of orgIds) {
@@ -137,7 +153,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // ════════════════════════════════════════════
-    // STEP 1: Create demo organisations (Buyer + Seller)
+    // STEP 1: Create demo organisations
     // ════════════════════════════════════════════
     if (action === "step_1_create_orgs") {
       let orgA, orgB;
@@ -167,31 +183,137 @@ Deno.serve(async (req: Request) => {
       }
 
       await recordStep(1, "Create demo organisations", "positive", "pass", { org_a_id: orgA.id, org_b_id: orgB.id });
-
       return json({ success: true, org_a: { id: orgA.id, name: orgA.name }, org_b: { id: orgB.id, name: orgB.name } });
     }
 
     // ════════════════════════════════════════════
-    // STEP 2: Upload KYC documents (mutual — both orgs)
+    // STEP 2: Register entities + UBOs + ATB records
     // ════════════════════════════════════════════
-    if (action === "step_2_upload_kyc") {
+    if (action === "step_2_entities_ubos") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
-      const docTypes = ["company_registration", "proof_of_address", "director_id", "tax_certificate"];
+      const entityResults: any = { org_a: {}, org_b: {} };
+
+      for (const [label, orgId, orgName] of [
+        ["org_a", org_a_id, DEMO_ORG_A_NAME],
+        ["org_b", org_b_id, DEMO_ORG_B_NAME],
+      ] as const) {
+        // Create company entity
+        const { data: existingCompany } = await admin.from("entities")
+          .select("id").eq("org_id", orgId).eq("entity_type", "company").maybeSingle();
+
+        let companyEntity;
+        if (existingCompany) {
+          companyEntity = existingCompany;
+        } else {
+          const { data, error } = await admin.from("entities").insert({
+            org_id: orgId, entity_type: "company", legal_name: orgName,
+            jurisdiction_code: "ZA", status: "active",
+            registration_number: `REG-${orgId.slice(0, 8).toUpperCase()}`,
+            tax_number: `TAX-${orgId.slice(0, 8).toUpperCase()}`,
+          }).select().single();
+          if (error) throw new ApiException("INTERNAL_ERROR", `Company entity: ${error.message}`, 500);
+          companyEntity = data;
+        }
+
+        // Create 2 person entities (UBOs)
+        const uboNames = label === "org_a"
+          ? [{ name: "Alice Mogale (UBO)", pct: 60 }, { name: "Brian Nkosi (UBO)", pct: 40 }]
+          : [{ name: "Claire van der Merwe (UBO)", pct: 55 }, { name: "David Dlamini (UBO)", pct: 45 }];
+
+        const personEntities: any[] = [];
+        const uboLinksCreated: any[] = [];
+        const atbRecords: any[] = [];
+
+        for (const ubo of uboNames) {
+          // Check if person entity already exists
+          const { data: existingPerson } = await admin.from("entities")
+            .select("id").eq("org_id", orgId).eq("legal_name", ubo.name).maybeSingle();
+
+          let personEntity;
+          if (existingPerson) {
+            personEntity = existingPerson;
+          } else {
+            const { data, error } = await admin.from("entities").insert({
+              org_id: orgId, entity_type: "person", legal_name: ubo.name,
+              jurisdiction_code: "ZA", status: "active",
+            }).select().single();
+            if (error) throw new ApiException("INTERNAL_ERROR", `Person entity: ${error.message}`, 500);
+            personEntity = data;
+          }
+          personEntities.push(personEntity);
+
+          // Create UBO link
+          const { data: existingUbo } = await admin.from("ubo_links")
+            .select("id").eq("company_entity_id", companyEntity.id)
+            .eq("person_entity_id", personEntity.id).maybeSingle();
+
+          if (!existingUbo) {
+            const { data: uboLink, error: uboErr } = await admin.from("ubo_links").insert({
+              org_id: orgId, company_entity_id: companyEntity.id,
+              person_entity_id: personEntity.id, ownership_percentage: ubo.pct,
+              status: "verified", verified_at: new Date().toISOString(), verified_by: user.id,
+              verification_method: "demo_checkpoint",
+            }).select().single();
+            if (uboErr) throw new ApiException("INTERNAL_ERROR", `UBO link: ${uboErr.message}`, 500);
+            uboLinksCreated.push(uboLink);
+          }
+
+          // Create ATB record (authority to bind)
+          const { data: existingAtb } = await admin.from("authority_records")
+            .select("id").eq("company_entity_id", companyEntity.id)
+            .eq("person_entity_id", personEntity.id).maybeSingle();
+
+          if (!existingAtb) {
+            const { data: atb, error: atbErr } = await admin.from("authority_records").insert({
+              org_id: orgId, company_entity_id: companyEntity.id,
+              person_entity_id: personEntity.id, method: "board_resolution",
+              status: "verified", verified_at: new Date().toISOString(), verified_by: user.id,
+            }).select().single();
+            if (atbErr) throw new ApiException("INTERNAL_ERROR", `ATB record: ${atbErr.message}`, 500);
+            atbRecords.push(atb);
+          }
+        }
+
+        // Also seed org_directors for backwards compatibility with screening
+        const { data: existingDirs } = await admin.from("org_directors").select("id").eq("org_id", orgId);
+        if (!existingDirs || existingDirs.length === 0) {
+          await admin.from("org_directors").insert(
+            uboNames.map(u => ({
+              org_id: orgId, full_name: u.name, role: "ubo",
+              nationality: "ZA", is_pep: false,
+            }))
+          );
+        }
+
+        (entityResults as any)[label] = {
+          company_entity_id: companyEntity.id,
+          person_entities: personEntities.map(p => p.id),
+          ubo_links: uboLinksCreated.length,
+          atb_records: atbRecords.length,
+          total_ownership: uboNames.reduce((s, u) => s + u.pct, 0),
+        };
+      }
+
+      await recordStep(2, "Register entities + UBOs + ATB", "positive", "pass", entityResults);
+      return json({ success: true, entities: entityResults });
+    }
+
+    // ════════════════════════════════════════════
+    // STEP 3: Upload KYC documents (mutual)
+    // ════════════════════════════════════════════
+    if (action === "step_3_upload_kyc") {
+      const { org_a_id, org_b_id } = step_data || {};
+      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+
+      const docTypes = ["company_registration", "proof_of_address", "director_id", "tax_certificate", "ubo_declaration"];
       const results: any = { org_a: [], org_b: [] };
 
       for (const [label, orgId] of [["org_a", org_a_id], ["org_b", org_b_id]] as const) {
-        const { data: existingDirs } = await admin.from("org_directors").select("id").eq("org_id", orgId);
-        if (!existingDirs || existingDirs.length === 0) {
-          await admin.from("org_directors").insert([
-            { org_id: orgId, full_name: `${label === "org_a" ? "Alice" : "Bob"} Director`, role: "director", nationality: "ZA", is_pep: false },
-            { org_id: orgId, full_name: `${label === "org_a" ? "Carol" : "Dave"} CFO`, role: "cfo", nationality: "ZA", is_pep: false },
-          ]);
-        }
-
         for (const docType of docTypes) {
-          const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${orgId}-${docType}-demo`))))
+          const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",
+            new TextEncoder().encode(`${orgId}-${docType}-demo`))))
             .map(b => b.toString(16).padStart(2, "0")).join("");
 
           await admin.from("kyc_documents").upsert({
@@ -210,66 +332,85 @@ Deno.serve(async (req: Request) => {
         }, { onConflict: "org_id" });
       }
 
-      await recordStep(2, "Upload KYC documents (mutual)", "positive", "pass", results);
+      await recordStep(3, "Upload KYC documents (mutual, incl. UBO declaration)", "positive", "pass", results);
       return json({ success: true, kyc_results: results });
     }
 
     // ════════════════════════════════════════════
-    // STEP 3: Sanctions & PEP screening (mutual)
+    // STEP 4: Screen UBOs for sanctions & PEP (mutual)
     // ════════════════════════════════════════════
-    if (action === "step_3_screening") {
+    if (action === "step_4_screen_ubos") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
       const screeningResults: any = {};
 
       for (const [label, orgId] of [["org_a", org_a_id], ["org_b", org_b_id]] as const) {
-        const { data: directors } = await admin.from("org_directors").select("*").eq("org_id", orgId);
+        // Get UBO person entities (the actual beneficial owners, not generic directors)
+        const { data: uboLinks } = await admin.from("ubo_links")
+          .select("person_entity_id, ownership_percentage").eq("org_id", orgId).eq("status", "verified");
+
+        const personIds = (uboLinks || []).map((l: any) => l.person_entity_id);
+        const { data: persons } = personIds.length > 0
+          ? await admin.from("entities").select("id, legal_name").in("id", personIds)
+          : { data: [] };
+
         const results: any[] = [];
-        for (const dir of (directors || [])) {
+        for (const person of (persons || [])) {
+          const uboLink = uboLinks?.find((l: any) => l.person_entity_id === person.id);
           results.push({
             screening_type: "sanctions", org_id: orgId, status: "clear",
-            matched_entities: [], screened_at: new Date().toISOString(), screened_by: user.id,
+            matched_entities: [],
+            screened_at: new Date().toISOString(), screened_by: user.id,
             next_screening_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
           });
           results.push({
-            screening_type: "pep", org_id: orgId,
-            status: dir.is_pep ? "match" : "clear",
-            matched_entities: dir.is_pep ? [{ name: dir.full_name, type: "PEP" }] : [],
+            screening_type: "pep", org_id: orgId, status: "clear",
+            matched_entities: [],
             screened_at: new Date().toISOString(), screened_by: user.id,
             next_screening_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
           });
         }
 
-        await admin.from("screening_results").insert(results);
+        if (results.length > 0) {
+          await admin.from("screening_results").insert(results);
+        }
+
         screeningResults[label] = {
-          total: results.length,
+          ubos_screened: (persons || []).map((p: any) => p.legal_name),
+          total_screenings: results.length,
           clear: results.filter((r: any) => r.status === "clear").length,
           matches: results.filter((r: any) => r.status === "match").length,
           timestamp: new Date().toISOString(),
         };
       }
 
-      await recordStep(3, "Sanctions & PEP screening (mutual)", "positive", "pass", screeningResults);
+      await recordStep(4, "Screen UBOs for sanctions & PEP (mutual)", "positive", "pass", screeningResults);
       return json({ success: true, screening: screeningResults });
     }
 
     // ════════════════════════════════════════════
-    // STEP 4: Compute risk scores (mutual)
+    // STEP 5: Compute risk scores (mutual)
     // ════════════════════════════════════════════
-    if (action === "step_4_risk_score") {
+    if (action === "step_5_risk_score") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
-      const weights = { kyc_completeness: 0.25, sanctions_screening: 0.30, pep_exposure: 0.15, jurisdiction_risk: 0.15, business_age: 0.15 };
+      const weights = { kyc_completeness: 0.20, sanctions_screening: 0.25, pep_exposure: 0.15, ubo_integrity: 0.15, jurisdiction_risk: 0.10, business_age: 0.15 };
       const riskResults: any = {};
 
       for (const [label, orgId] of [["org_a", org_a_id], ["org_b", org_b_id]] as const) {
+        // Check UBO coverage
+        const { data: uboLinks } = await admin.from("ubo_links")
+          .select("ownership_percentage").eq("org_id", orgId).eq("status", "verified");
+        const totalOwnership = (uboLinks || []).reduce((s: number, l: any) => s + Number(l.ownership_percentage), 0);
+
         const factors = [
-          { factor: "kyc_completeness", weight: 0.25, value: 0, contribution: 0, reason: "KYC documentation complete" },
-          { factor: "sanctions_screening", weight: 0.30, value: 0, contribution: 0, reason: "No sanctions matches" },
-          { factor: "pep_exposure", weight: 0.15, value: 0, contribution: 0, reason: "No PEP exposure" },
-          { factor: "jurisdiction_risk", weight: 0.15, value: 10, contribution: 1.5, reason: "Low-risk jurisdiction (ZA)" },
+          { factor: "kyc_completeness", weight: 0.20, value: 0, contribution: 0, reason: "KYC documentation complete (incl. UBO declaration)" },
+          { factor: "sanctions_screening", weight: 0.25, value: 0, contribution: 0, reason: "No sanctions matches on UBOs" },
+          { factor: "pep_exposure", weight: 0.15, value: 0, contribution: 0, reason: "No PEP exposure on UBOs" },
+          { factor: "ubo_integrity", weight: 0.15, value: totalOwnership >= 100 ? 0 : 50, contribution: totalOwnership >= 100 ? 0 : 7.5, reason: totalOwnership >= 100 ? `UBO coverage ${totalOwnership}% — complete` : `UBO coverage ${totalOwnership}% — incomplete` },
+          { factor: "jurisdiction_risk", weight: 0.10, value: 10, contribution: 1, reason: "Low-risk jurisdiction (ZA)" },
           { factor: "business_age", weight: 0.15, value: 5, contribution: 0.75, reason: "Organisation age adequate" },
         ];
         const totalScore = Math.round(factors.reduce((s, f) => s + f.contribution, 0));
@@ -278,19 +419,19 @@ Deno.serve(async (req: Request) => {
         const { data: riskScore, error } = await admin.from("dd_risk_scores").insert({
           org_id: orgId, score: totalScore, risk_band: riskBand, weights, factors, computed_by: user.id,
         }).select().single();
-
         if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
-        riskResults[label] = { score: totalScore, risk_band: riskBand, risk_score_id: riskScore.id, factors };
+
+        riskResults[label] = { score: totalScore, risk_band: riskBand, risk_score_id: riskScore.id, ubo_coverage: totalOwnership, factors };
       }
 
-      await recordStep(4, "Compute risk scores (mutual)", "positive", "pass", riskResults);
+      await recordStep(5, "Compute risk scores (incl. UBO integrity)", "positive", "pass", riskResults);
       return json({ success: true, risk_scores: riskResults });
     }
 
     // ════════════════════════════════════════════
-    // STEP 5: Approval workflow (mutual)
+    // STEP 6: Approval workflow (mutual)
     // ════════════════════════════════════════════
-    if (action === "step_5_approval_workflow") {
+    if (action === "step_6_approval_workflow") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
@@ -311,7 +452,6 @@ Deno.serve(async (req: Request) => {
           risk_score_id: latestScore?.id || null,
           required_roles: requiredRoles, completed_roles: [], status: "pending",
         }).select().single();
-
         if (reqErr) throw new ApiException("INTERNAL_ERROR", reqErr.message, 500);
 
         for (const role of requiredRoles) {
@@ -337,20 +477,38 @@ Deno.serve(async (req: Request) => {
         };
       }
 
-      await recordStep(5, "Approval workflow (mutual)", "positive", "pass", approvalResults);
+      await recordStep(6, "Approval workflow (mutual)", "positive", "pass", approvalResults);
       return json({ success: true, approvals: approvalResults });
     }
 
     // ════════════════════════════════════════════
-    // STEP 6: Write 'Approved to Trade' status (one-time org certification)
+    // STEP 7: Write ATB status + trade approval (one-time certification)
     // ════════════════════════════════════════════
-    if (action === "step_6_trade_approval") {
+    if (action === "step_7_trade_approval") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
       const tradeResults: any = {};
 
       for (const [label, orgId] of [["org_a", org_a_id], ["org_b", org_b_id]] as const) {
+        // Verify UBO + ATB gates pass
+        const { data: companyEntity } = await admin.from("entities")
+          .select("id").eq("org_id", orgId).eq("entity_type", "company").maybeSingle();
+
+        let uboGatePassed = false;
+        let atbGatePassed = false;
+
+        if (companyEntity) {
+          const { data: uboLinks } = await admin.from("ubo_links")
+            .select("ownership_percentage").eq("company_entity_id", companyEntity.id).eq("status", "verified");
+          const totalOwnership = (uboLinks || []).reduce((s: number, l: any) => s + Number(l.ownership_percentage), 0);
+          uboGatePassed = totalOwnership >= 100;
+
+          const { data: atbRecords } = await admin.from("authority_records")
+            .select("id").eq("company_entity_id", companyEntity.id).eq("status", "verified");
+          atbGatePassed = (atbRecords || []).length > 0;
+        }
+
         const { data: latestApproval } = await admin
           .from("dd_approval_requests").select("id, risk_score_id")
           .eq("target_org_id", orgId).eq("status", "approved")
@@ -367,29 +525,29 @@ Deno.serve(async (req: Request) => {
           valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         }, { onConflict: "org_id" });
 
-        tradeResults[label] = { org_id: orgId, status: "approved", risk_band: riskScore?.risk_band || "low" };
+        tradeResults[label] = {
+          org_id: orgId, status: "approved", risk_band: riskScore?.risk_band || "low",
+          ubo_gate_passed: uboGatePassed, atb_gate_passed: atbGatePassed,
+        };
       }
 
-      await recordStep(6, "Write ATB status (one-time certification)", "positive", "pass", tradeResults);
+      await recordStep(7, "Write ATB + trade approval (one-time certification)", "positive", "pass", tradeResults);
       return json({ success: true, trade_approvals: tradeResults });
     }
 
     // ════════════════════════════════════════════
-    // STEP 7: Create Signals (buy + sell intents)
+    // STEP 8: Create Signals (buy + sell intents)
     // ════════════════════════════════════════════
-    if (action === "step_7_create_signals") {
+    if (action === "step_8_create_signals") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
       const signalContent = {
-        commodity: "Gold",
-        quantity: { amount: 100, unit: "oz" },
-        price: { amount: 50000, currency: "USD" },
-        delivery_region: "ZA",
+        commodity: "Gold", quantity: { amount: 100, unit: "oz" },
+        price: { amount: 50000, currency: "USD" }, delivery_region: "ZA",
         notes: "Checkpoint demo signal",
       };
 
-      // Org A creates a buy signal
       const { data: buySignal, error: buyErr } = await admin.from("signals").insert({
         org_id: org_a_id, type: "buyer", status: "active",
         content: signalContent, created_by: user.id,
@@ -397,7 +555,6 @@ Deno.serve(async (req: Request) => {
       }).select().single();
       if (buyErr) throw new ApiException("INTERNAL_ERROR", `Buy signal: ${buyErr.message}`, 500);
 
-      // Org B creates a sell signal
       const { data: sellSignal, error: sellErr } = await admin.from("signals").insert({
         org_id: org_b_id, type: "seller", status: "active",
         content: signalContent, created_by: user.id,
@@ -409,19 +566,17 @@ Deno.serve(async (req: Request) => {
         buy_signal: { id: buySignal.id, org_id: org_a_id, type: "buyer" },
         sell_signal: { id: sellSignal.id, org_id: org_b_id, type: "seller" },
       };
-
-      await recordStep(7, "Create Signals (buy + sell)", "positive", "pass", result);
+      await recordStep(8, "Create Signals (buy + sell)", "positive", "pass", result);
       return json({ success: true, signals: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 8: Match Discovery
+    // STEP 9: Match Discovery
     // ════════════════════════════════════════════
-    if (action === "step_8_match_discovery") {
+    if (action === "step_9_match_discovery") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
-      // Generate hash for match
       const matchPayload = JSON.stringify({
         buyer_org_id: org_a_id, seller_org_id: org_b_id,
         commodity: "Gold", quantity: 100, price: 50000, ts: Date.now(),
@@ -438,18 +593,17 @@ Deno.serve(async (req: Request) => {
         hash: matchHash, status: "discovered", state: "discovered", poi_state: "DRAFT",
         created_by: user.id,
       }).select().single();
-
       if (matchErr) throw new ApiException("INTERNAL_ERROR", `Match: ${matchErr.message}`, 500);
 
       const result = { match_id: match.id, status: "discovered", hash: matchHash };
-      await recordStep(8, "Match discovery", "positive", "pass", result);
+      await recordStep(9, "Match discovery", "positive", "pass", result);
       return json({ success: true, match: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 9: Send Invite (Org A invites Org B)
+    // STEP 10: Send Invite
     // ════════════════════════════════════════════
-    if (action === "step_9_send_invite") {
+    if (action === "step_10_send_invite") {
       const { org_a_id, org_b_id, match_id } = step_data || {};
       if (!org_a_id || !org_b_id || !match_id) throw new ApiException("VALIDATION_ERROR", "org_a_id, org_b_id and match_id required", 400);
 
@@ -461,44 +615,36 @@ Deno.serve(async (req: Request) => {
         status: "pending",
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       }).select().single();
-
       if (inviteErr) throw new ApiException("INTERNAL_ERROR", `Invite: ${inviteErr.message}`, 500);
 
-      // Update match state
       await admin.from("matches").update({ status: "invited", state: "invited" }).eq("id", match_id);
 
       const result = { invite_id: invite.id, from_org: org_a_id, to_org: org_b_id, match_id, status: "pending" };
-      await recordStep(9, "Send Invite", "positive", "pass", result);
+      await recordStep(10, "Send Invite", "positive", "pass", result);
       return json({ success: true, invite: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 10: Confirm Intent (Org B accepts)
+    // STEP 11: Confirm Intent
     // ════════════════════════════════════════════
-    if (action === "step_10_confirm_intent") {
+    if (action === "step_11_confirm_intent") {
       const { org_a_id, org_b_id, match_id } = step_data || {};
       if (!match_id) throw new ApiException("VALIDATION_ERROR", "match_id required", 400);
 
-      // Find the pending invite
       const { data: invite } = await admin.from("invites")
         .select("id").eq("match_id", match_id).eq("status", "pending").maybeSingle();
-
       if (!invite) throw new ApiException("NOT_FOUND", "No pending invite found for this match", 404);
 
-      // Accept invite
       await admin.from("invites").update({
         status: "accepted", accepted_at: new Date().toISOString(),
       }).eq("id", invite.id);
 
-      // Update match: both parties committed
       const now = new Date().toISOString();
       await admin.from("matches").update({
         status: "confirmed", state: "confirmed", poi_state: "ISSUED",
-        buyer_committed_at: now, seller_committed_at: now,
-        counterparty_sighted_at: now,
+        buyer_committed_at: now, seller_committed_at: now, counterparty_sighted_at: now,
       }).eq("id", match_id);
 
-      // Burn 500 tokens from Org B (the accepting party)
       if (org_b_id) {
         const { data: balance } = await admin.from("token_balances").select("balance").eq("org_id", org_b_id).single();
         if (balance) {
@@ -518,14 +664,14 @@ Deno.serve(async (req: Request) => {
       });
 
       const result = { match_id, invite_id: invite.id, status: "confirmed", tokens_burned: 500 };
-      await recordStep(10, "Confirm Intent (accept)", "positive", "pass", result);
+      await recordStep(11, "Confirm Intent (accept)", "positive", "pass", result);
       return json({ success: true, confirmation: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 11: Pre-flight validation (non-binding)
+    // STEP 12: Pre-flight validation
     // ════════════════════════════════════════════
-    if (action === "step_11_preflight") {
+    if (action === "step_12_preflight") {
       const { org_a_id, org_b_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
@@ -540,28 +686,26 @@ Deno.serve(async (req: Request) => {
       });
 
       const preflightData = await preflightRes.json();
-      await recordStep(11, "Pre-flight validation", "positive", preflightData.canCollapse ? "pass" : "fail", preflightData);
+      await recordStep(12, "Pre-flight validation", "positive", preflightData.canCollapse ? "pass" : "fail", preflightData);
       return json({ success: true, preflight: preflightData });
     }
 
     // ════════════════════════════════════════════
-    // STEP 12: POI Collapse (binding event)
+    // STEP 13: POI Collapse
     // ════════════════════════════════════════════
-    if (action === "step_12_collapse") {
+    if (action === "step_13_collapse") {
       const { org_a_id, org_b_id, match_id } = step_data || {};
       if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
 
       const keyPair = await crypto.subtle.generateKey(
         { name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]
       );
-
       const canonicalPayload = JSON.stringify({
         org_id: org_a_id, counterparty_org_id: org_b_id,
         asset_id: "GOLD", quantity: 100, price: 50000, currency: "USD",
         client_timestamp: new Date().toISOString(),
         idempotency_key: `demo-collapse-${run_id || Date.now()}`,
       });
-
       const signature = await crypto.subtle.sign(
         { name: "ECDSA", hash: "SHA-256" }, keyPair.privateKey,
         new TextEncoder().encode(canonicalPayload)
@@ -586,7 +730,6 @@ Deno.serve(async (req: Request) => {
       const collapseData = await collapseRes.json();
       const passed = collapseRes.status === 201 || (collapseRes.status === 200 && collapseData.idempotent);
 
-      // Update match to COLLAPSED if we have a match_id
       if (passed && match_id) {
         await admin.from("matches").update({
           status: "collapsed", state: "collapsed", poi_state: "COLLAPSED",
@@ -594,59 +737,44 @@ Deno.serve(async (req: Request) => {
         }).eq("id", match_id);
       }
 
-      await recordStep(12, "POI Collapse (binding)", "positive", passed ? "pass" : "fail", { ...collapseData, http_status: collapseRes.status });
+      await recordStep(13, "POI Collapse (binding)", "positive", passed ? "pass" : "fail", { ...collapseData, http_status: collapseRes.status });
       return json({ success: passed, collapse: collapseData, http_status: collapseRes.status });
     }
 
     // ════════════════════════════════════════════
-    // STEP 13: Generate Evidence Pack
+    // STEP 14: Generate Evidence Pack
     // ════════════════════════════════════════════
-    if (action === "step_13_evidence_pack") {
+    if (action === "step_14_evidence_pack") {
       const { collapse_id, match_id } = step_data || {};
-
-      const result: any = {
-        collapse_id, match_id,
-        timestamp: new Date().toISOString(),
-      };
+      const result: any = { collapse_id, match_id, timestamp: new Date().toISOString() };
 
       if (collapse_id) {
-        const { data: collapse } = await admin
-          .from("collapse_ledger")
+        const { data: collapse } = await admin.from("collapse_ledger")
           .select("match_id, payload_hash, signature_valid, created_at, poi_state")
           .eq("id", collapse_id).maybeSingle();
-
         if (collapse) {
           result.collapse_record = collapse;
           result.payload_hash = collapse.payload_hash;
           result.signature_valid = collapse.signature_valid;
-
           const evidenceMatchId = collapse.match_id || match_id;
           if (evidenceMatchId) {
             const epRes = await fetch(`${supabaseUrl}/functions/v1/evidence-pack/${evidenceMatchId}`, {
-              method: "GET",
-              headers: { Authorization: authHeader },
+              method: "GET", headers: { Authorization: authHeader },
             });
-            if (epRes.ok) {
-              result.evidence_pack = await epRes.json();
-            }
+            if (epRes.ok) result.evidence_pack = await epRes.json();
           }
         }
       } else if (match_id) {
-        // No collapse_id but we have match_id — try evidence pack directly
         const epRes = await fetch(`${supabaseUrl}/functions/v1/evidence-pack/${match_id}`, {
-          method: "GET",
-          headers: { Authorization: authHeader },
+          method: "GET", headers: { Authorization: authHeader },
         });
-        if (epRes.ok) {
-          result.evidence_pack = await epRes.json();
-        } else {
-          result.note = "Evidence pack endpoint returned non-200. Match may not have full evidence chain yet.";
-        }
+        if (epRes.ok) result.evidence_pack = await epRes.json();
+        else result.note = "Evidence pack endpoint returned non-200. Match may not have full evidence chain yet.";
       } else {
-        result.note = "No collapse_id or match_id provided. Evidence pack requires a linked match.";
+        result.note = "No collapse_id or match_id provided.";
       }
 
-      await recordStep(13, "Generate Evidence Pack", "positive", "pass", result);
+      await recordStep(14, "Generate Evidence Pack", "positive", "pass", result);
       return json({ success: true, evidence: result });
     }
 
@@ -663,13 +791,11 @@ Deno.serve(async (req: Request) => {
           asset_id: "GOLD", quantity: 100, price: 50000, currency: "USD",
           client_timestamp: new Date().toISOString(),
           idempotency_key: `neg-missing-${Date.now()}`,
-          // signed_payload intentionally omitted
         }),
       });
       const data = await res.json();
       const passed = res.status === 400;
-
-      await recordStep(14, "Negative: missing mandatory field", "negative", passed ? "pass" : "fail", { http_status: res.status, ...data });
+      await recordStep(15, "Negative: missing mandatory field", "negative", passed ? "pass" : "fail", { http_status: res.status, ...data });
       return json({ success: passed, test: "missing_field", http_status: res.status, response: data });
     }
 
@@ -683,26 +809,22 @@ Deno.serve(async (req: Request) => {
           asset_id: "GOLD", quantity: 100, price: 50000, currency: "USD",
           client_timestamp: new Date().toISOString(),
           idempotency_key: `neg-sig-${Date.now()}`,
-          signed_payload: "invalidbase64:invalidpayload",
-          public_key_jwk: {},
+          signed_payload: "invalidbase64:invalidpayload", public_key_jwk: {},
         }),
       });
       const data = await res.json();
       const passed = res.status === 400 || res.status === 422;
-
-      await recordStep(15, "Negative: invalid signature", "negative", passed ? "pass" : "fail", { http_status: res.status, ...data });
+      await recordStep(16, "Negative: invalid signature", "negative", passed ? "pass" : "fail", { http_status: res.status, ...data });
       return json({ success: passed, test: "invalid_signature", http_status: res.status, response: data });
     }
 
     if (action === "negative_collapse_before_approval") {
-      const fakeOrgA = "00000000-0000-0000-0000-000000000099";
-      const fakeOrgB = "00000000-0000-0000-0000-000000000098";
-
       const res = await fetch(`${supabaseUrl}/functions/v1/collapse`, {
         method: "POST",
         headers: { Authorization: authHeader, "Content-Type": "application/json" },
         body: JSON.stringify({
-          org_id: fakeOrgA, counterparty_org_id: fakeOrgB,
+          org_id: "00000000-0000-0000-0000-000000000099",
+          counterparty_org_id: "00000000-0000-0000-0000-000000000098",
           asset_id: "GOLD", quantity: 100, price: 50000, currency: "USD",
           client_timestamp: new Date().toISOString(),
           idempotency_key: `neg-noapproval-${Date.now()}`,
@@ -711,28 +833,22 @@ Deno.serve(async (req: Request) => {
       });
       const data = await res.json();
       const passed = res.status === 403 || res.status === 422;
-
-      await recordStep(16, "Negative: collapse before approval", "negative", passed ? "pass" : "fail", { http_status: res.status, ...data });
+      await recordStep(17, "Negative: collapse before approval", "negative", passed ? "pass" : "fail", { http_status: res.status, ...data });
       return json({ success: passed, test: "collapse_before_approval", http_status: res.status, response: data });
     }
 
     if (action === "negative_mutate_collapsed") {
-      const { data: anyCollapse } = await admin
-        .from("collapse_ledger").select("id").limit(1).maybeSingle();
-
+      const { data: anyCollapse } = await admin.from("collapse_ledger").select("id").limit(1).maybeSingle();
       let passed = true;
       let detail: any = {};
-
       if (anyCollapse) {
-        const { error } = await admin
-          .from("collapse_ledger").update({ poi_state: "TAMPERED" }).eq("id", anyCollapse.id);
+        const { error } = await admin.from("collapse_ledger").update({ poi_state: "TAMPERED" }).eq("id", anyCollapse.id);
         passed = !!error;
         detail = { collapse_id: anyCollapse.id, mutation_blocked: passed, error: error?.message };
       } else {
         detail = { message: "No collapse records to test mutation against" };
       }
-
-      await recordStep(17, "Negative: mutate collapsed record", "negative", passed ? "pass" : "fail", detail);
+      await recordStep(18, "Negative: mutate collapsed record", "negative", passed ? "pass" : "fail", detail);
       return json({ success: passed, test: "mutate_collapsed", ...detail });
     }
 
@@ -766,8 +882,7 @@ Deno.serve(async (req: Request) => {
             asset_id: "GOLD", quantity: 1, price: 100, currency: "USD",
             client_timestamp: new Date().toISOString(),
             idempotency_key: burstKey,
-            signed_payload: `${sigB64}:${payload}`,
-            public_key_jwk: pubJwk,
+            signed_payload: `${sigB64}:${payload}`, public_key_jwk: pubJwk,
           }),
         });
         const data = await res.json();
@@ -776,14 +891,13 @@ Deno.serve(async (req: Request) => {
 
       const uniqueIds = new Set(results.map(r => r.collapse_id).filter(Boolean));
       const passed = uniqueIds.size === 1;
-
-      await recordStep(18, "Negative: idempotency burst", "negative", passed ? "pass" : "fail",
+      await recordStep(19, "Negative: idempotency burst", "negative", passed ? "pass" : "fail",
         { burst_count: burstCount, unique_records: uniqueIds.size, passed, sample: results.slice(0, 3) });
       return json({ success: passed, test: "idempotency_burst", burst_count: burstCount, unique_records: uniqueIds.size });
     }
 
     // ════════════════════════════════════════════
-    // ACTION: get_run_results
+    // ACTION: get_run_results / complete_run
     // ════════════════════════════════════════════
     if (action === "get_run_results") {
       if (!run_id) throw new ApiException("VALIDATION_ERROR", "run_id required", 400);
@@ -794,25 +908,18 @@ Deno.serve(async (req: Request) => {
       return json({ run, steps: steps || [] });
     }
 
-    // ════════════════════════════════════════════
-    // ACTION: complete_run
-    // ════════════════════════════════════════════
     if (action === "complete_run") {
       if (!run_id) throw new ApiException("VALIDATION_ERROR", "run_id required", 400);
       const { data: run } = await admin.from("demo_runs").select("id").eq("run_id", run_id).single();
       if (!run) throw new ApiException("NOT_FOUND", "Run not found", 404);
-
       const { data: steps } = await admin.from("demo_run_steps").select("status").eq("demo_run_id", run.id);
       const total = steps?.length || 0;
       const passed = steps?.filter((s: any) => s.status === "pass").length || 0;
       const failed = steps?.filter((s: any) => s.status === "fail").length || 0;
-
       await admin.from("demo_runs").update({
         status: failed > 0 ? "completed_with_failures" : "completed",
-        completed_at: new Date().toISOString(),
-        summary: { total, passed, failed },
+        completed_at: new Date().toISOString(), summary: { total, passed, failed },
       }).eq("id", run.id);
-
       return json({ success: true, summary: { total, passed, failed } });
     }
 
