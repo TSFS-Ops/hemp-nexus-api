@@ -186,12 +186,25 @@ Deno.serve(async (req: Request) => {
       return json({ success: true, org_a: { id: orgA.id, name: orgA.name }, org_b: { id: orgB.id, name: orgB.name } });
     }
 
+    // Helper: auto-resolve demo org IDs if not provided
+    const resolveDemoOrgs = async (sd: any) => {
+      let orgAId = sd?.org_a_id;
+      let orgBId = sd?.org_b_id;
+      if (!orgAId || !orgBId) {
+        const { data: orgA } = await admin.from("organizations").select("id").eq("name", DEMO_ORG_A_NAME).maybeSingle();
+        const { data: orgB } = await admin.from("organizations").select("id").eq("name", DEMO_ORG_B_NAME).maybeSingle();
+        orgAId = orgAId || orgA?.id;
+        orgBId = orgBId || orgB?.id;
+      }
+      if (!orgAId || !orgBId) throw new ApiException("VALIDATION_ERROR", "Demo orgs not found. Please run Step 1 first.", 400);
+      return { org_a_id: orgAId, org_b_id: orgBId };
+    };
+
     // ════════════════════════════════════════════
     // STEP 2: Register entities + UBOs + ATB records
     // ════════════════════════════════════════════
     if (action === "step_2_entities_ubos") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const entityResults: any = { org_a: {}, org_b: {} };
 
@@ -304,8 +317,7 @@ Deno.serve(async (req: Request) => {
     // STEP 3: Upload KYC documents (mutual)
     // ════════════════════════════════════════════
     if (action === "step_3_upload_kyc") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const docTypes = ["company_registration", "proof_of_address", "director_id", "tax_certificate", "ubo_declaration"];
       const results: any = { org_a: [], org_b: [] };
@@ -340,8 +352,7 @@ Deno.serve(async (req: Request) => {
     // STEP 4: Screen UBOs for sanctions & PEP (mutual)
     // ════════════════════════════════════════════
     if (action === "step_4_screen_ubos") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const screeningResults: any = {};
 
@@ -441,8 +452,7 @@ Deno.serve(async (req: Request) => {
     // STEP 5: Compute risk scores (mutual)
     // ════════════════════════════════════════════
     if (action === "step_5_risk_score") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const weights = { kyc_completeness: 0.20, sanctions_screening: 0.25, pep_exposure: 0.15, ubo_integrity: 0.15, jurisdiction_risk: 0.10, business_age: 0.15 };
       const riskResults: any = {};
@@ -480,8 +490,7 @@ Deno.serve(async (req: Request) => {
     // STEP 6: Approval workflow (mutual)
     // ════════════════════════════════════════════
     if (action === "step_6_approval_workflow") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const approvalResults: any = {};
 
@@ -533,8 +542,7 @@ Deno.serve(async (req: Request) => {
     // STEP 7: Write ATB status + trade approval (one-time certification)
     // ════════════════════════════════════════════
     if (action === "step_7_trade_approval") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const tradeResults: any = {};
 
@@ -587,8 +595,7 @@ Deno.serve(async (req: Request) => {
     // STEP 8: Create Signals (buy + sell intents)
     // ════════════════════════════════════════════
     if (action === "step_8_create_signals") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const signalContent = {
         commodity: "Gold", quantity: { amount: 100, unit: "oz" },
@@ -622,8 +629,7 @@ Deno.serve(async (req: Request) => {
     // STEP 9: Match Discovery
     // ════════════════════════════════════════════
     if (action === "step_9_match_discovery") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const matchPayload = JSON.stringify({
         buyer_org_id: org_a_id, seller_org_id: org_b_id,
@@ -652,8 +658,9 @@ Deno.serve(async (req: Request) => {
     // STEP 10: Send Invite
     // ════════════════════════════════════════════
     if (action === "step_10_send_invite") {
-      const { org_a_id, org_b_id, match_id } = step_data || {};
-      if (!org_a_id || !org_b_id || !match_id) throw new ApiException("VALIDATION_ERROR", "org_a_id, org_b_id and match_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
+      const match_id = step_data?.match_id;
+      if (!match_id) throw new ApiException("VALIDATION_ERROR", "match_id required", 400);
 
       const { data: invite, error: inviteErr } = await admin.from("invites").insert({
         from_org_id: org_a_id, to_org_id: org_b_id,
@@ -720,8 +727,7 @@ Deno.serve(async (req: Request) => {
     // STEP 12: Pre-flight validation
     // ════════════════════════════════════════════
     if (action === "step_12_preflight") {
-      const { org_a_id, org_b_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const preflightRes = await fetch(`${supabaseUrl}/functions/v1/preflight`, {
         method: "POST",
@@ -742,8 +748,8 @@ Deno.serve(async (req: Request) => {
     // STEP 13: POI Collapse
     // ════════════════════════════════════════════
     if (action === "step_13_collapse") {
-      const { org_a_id, org_b_id, match_id } = step_data || {};
-      if (!org_a_id || !org_b_id) throw new ApiException("VALIDATION_ERROR", "org_a_id and org_b_id required", 400);
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
+      const match_id = step_data?.match_id;
 
       const keyPair = await crypto.subtle.generateKey(
         { name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]

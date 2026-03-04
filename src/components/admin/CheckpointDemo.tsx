@@ -198,8 +198,8 @@ export function CheckpointDemo() {
 
       const data = await callDemo(action, stepData);
 
-      // Extract IDs from responses
-      if (stepNumber === 1 && data.org_a && data.org_b) {
+      // Extract IDs from responses (step 1 returns org IDs, others may echo them back)
+      if (data.org_a && data.org_b) {
         setOrgAId(data.org_a.id); orgARef.current = data.org_a.id;
         setOrgBId(data.org_b.id); orgBRef.current = data.org_b.id;
       }
