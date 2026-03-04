@@ -44,6 +44,7 @@ const sidebarGroups = [
     label: "Overview",
     items: [
       { title: "Dashboard", url: "/admin", icon: Activity, exact: true },
+      { title: "Deal Pipeline", url: "/admin/deal-pipeline", icon: GitCompare },
       { title: "Verification Checklist", url: "/admin/verification", icon: ClipboardCheck },
     ],
   },
@@ -60,6 +61,7 @@ const sidebarGroups = [
       { title: "WaD Hard-Gates", url: "/admin/wad-governance", icon: ShieldCheck },
       { title: "WaD Bundles", url: "/admin/wad", icon: Lock },
       { title: "PoD Delivery", url: "/admin/pods", icon: Package },
+      { title: "Trade Approvals", url: "/admin/trade-approvals", icon: ShieldCheck },
       { title: "Compliance Cases", url: "/admin/compliance", icon: Scale },
     ],
   },
