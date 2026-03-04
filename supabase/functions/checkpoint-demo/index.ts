@@ -281,8 +281,8 @@ Deno.serve(async (req: Request) => {
           if (!existingAtb) {
             const { data: atb, error: atbErr } = await admin.from("authority_records").insert({
               org_id: orgId, company_entity_id: companyEntity.id,
-              person_entity_id: personEntity.id, method: "board_resolution",
-              status: "verified", verified_at: new Date().toISOString(), verified_by: user.id,
+              person_entity_id: personEntity.id, method: "BOARD_RESOLUTION",
+              status: "VERIFIED", verified_at: new Date().toISOString(), verified_by: user.id,
             }).select().single();
             if (atbErr) throw new ApiException("INTERNAL_ERROR", `ATB record: ${atbErr.message}`, 500);
             atbRecords.push(atb);
