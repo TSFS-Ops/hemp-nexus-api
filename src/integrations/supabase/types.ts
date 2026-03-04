@@ -286,6 +286,82 @@ export type Database = {
           },
         ]
       }
+      attestations: {
+        Row: {
+          attestation_text: string
+          attestation_type: string
+          attester_name: string
+          attester_role: string
+          attester_user_id: string
+          created_at: string
+          id: string
+          match_id: string | null
+          metadata: Json | null
+          org_id: string
+          poi_id: string | null
+          signature_hash: string
+          signature_payload: string
+          signed_at: string
+          wad_id: string | null
+        }
+        Insert: {
+          attestation_text: string
+          attestation_type?: string
+          attester_name: string
+          attester_role: string
+          attester_user_id: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          metadata?: Json | null
+          org_id: string
+          poi_id?: string | null
+          signature_hash: string
+          signature_payload: string
+          signed_at?: string
+          wad_id?: string | null
+        }
+        Update: {
+          attestation_text?: string
+          attestation_type?: string
+          attester_name?: string
+          attester_role?: string
+          attester_user_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          metadata?: Json | null
+          org_id?: string
+          poi_id?: string | null
+          signature_hash?: string
+          signature_payload?: string
+          signed_at?: string
+          wad_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attestations_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "attestations_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attestations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -2780,10 +2856,12 @@ export type Database = {
       }
       pod_milestones: {
         Row: {
+          breach_detected_at: string | null
           completed_at: string | null
           detected_deficiency_at: string | null
           due_at: string
           evidence_document_id: string | null
+          grace_period_ends_at: string | null
           id: string
           name: string
           org_id: string
@@ -2791,10 +2869,12 @@ export type Database = {
           status: string
         }
         Insert: {
+          breach_detected_at?: string | null
           completed_at?: string | null
           detected_deficiency_at?: string | null
           due_at: string
           evidence_document_id?: string | null
+          grace_period_ends_at?: string | null
           id?: string
           name: string
           org_id: string
@@ -2802,10 +2882,12 @@ export type Database = {
           status?: string
         }
         Update: {
+          breach_detected_at?: string | null
           completed_at?: string | null
           detected_deficiency_at?: string | null
           due_at?: string
           evidence_document_id?: string | null
+          grace_period_ends_at?: string | null
           id?: string
           name?: string
           org_id?: string
