@@ -30,6 +30,8 @@ import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { RbacPanel } from "@/components/admin/RbacPanel";
 import { DataResidencyPanel } from "@/components/admin/DataResidencyPanel";
 import { CheckpointDemo } from "@/components/admin/CheckpointDemo";
+import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
+import { AdminPoisPanel } from "@/components/admin/AdminPoisPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,8 @@ export default function Admin() {
               <Route path="/verification" element={<Phase2Verification />} />
               <Route path="/logs" element={<GlobalApiLogs />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route path="/interests" element={<AdminInterestsPanel />} />
+              <Route path="/pois" element={<AdminPoisPanel />} />
               <Route path="/matches" element={<AdminMatchesPanel />} />
               <Route path="/signals" element={<AdminSignalsPanel />} />
               <Route path="/coherence" element={<AdminCoherencePanel />} />
