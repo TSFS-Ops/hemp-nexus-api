@@ -20,6 +20,7 @@ import {
   Globe,
   UserCog,
   FileWarning,
+  Heart,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -45,6 +46,8 @@ const sidebarGroups = [
   {
     label: "Core Data",
     items: [
+      { title: "Interests", url: "/admin/interests", icon: Heart },
+      { title: "POIs", url: "/admin/pois", icon: Shield },
       { title: "Matches", url: "/admin/matches", icon: GitCompare },
       { title: "Signals", url: "/admin/signals", icon: Radio },
       { title: "Documents", url: "/admin/documents", icon: FileCheck },
