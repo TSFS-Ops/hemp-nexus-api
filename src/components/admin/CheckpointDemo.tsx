@@ -1,14 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertTriangle, CheckCircle, XCircle, Play, RotateCcw, Download,
-  Shield, Clock, Hash, FileJson, Loader2,
+  Shield, Clock, Hash, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -76,6 +75,12 @@ export function CheckpointDemo() {
   const [isRunning, setIsRunning] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
+  // Use refs to avoid stale closures in sequential runAll loops
+  const orgARef = useRef<string | null>(null);
+  const orgBRef = useRef<string | null>(null);
+  const collapseRef = useRef<string | null>(null);
+  const runIdRef = useRef<string | null>(null);
+
   const allowedRoles = ["platform_admin", "admin", "director", "api_admin"];
   const hasAccess = roles.some(r => allowedRoles.includes(r));
 
@@ -94,15 +99,26 @@ export function CheckpointDemo() {
       session = refreshed.session;
     }
 
-    const { data, error } = await supabase.functions.invoke("checkpoint-demo", {
+    // Use fetch directly to handle non-2xx responses gracefully
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/checkpoint-demo`;
+    const response = await fetch(url, {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: { action, run_id: runId, step_data: stepData },
+      body: JSON.stringify({ action, run_id: runIdRef.current, step_data: stepData }),
     });
 
-    if (error) throw new Error(error.message || "Edge function call failed");
-    return data;
+    const data = await response.json();
+
+    if (!response.ok) {
+      // For negative tests, non-2xx is expected — return the data with success info
+      return { ...data, _httpStatus: response.status, _isError: true };
+    }
+
+    return { ...data, _httpStatus: response.status, _isError: false };
   };
 
   const updateStep = (stepNumber: number, updates: Partial<StepResult>) => {
@@ -112,10 +128,14 @@ export function CheckpointDemo() {
   const createRun = async () => {
     try {
       const data = await callDemo("create_run");
-      setRunId(data.run.run_id);
-      toast.success(`Run created: ${data.run.run_id}`);
+      const newRunId = data.run?.run_id;
+      setRunId(newRunId);
+      runIdRef.current = newRunId;
+      toast.success(`Run created: ${newRunId}`);
+      return newRunId;
     } catch (err: any) {
       toast.error(`Failed to create run: ${err.message}`);
+      return null;
     }
   };
 
@@ -123,10 +143,10 @@ export function CheckpointDemo() {
     try {
       await callDemo("reset_demo_data");
       setSteps(prev => prev.map(s => ({ ...s, status: "pending" as const, result: undefined, error: undefined, timestamp: undefined })));
-      setOrgAId(null);
-      setOrgBId(null);
-      setCollapseId(null);
-      setRunId(null);
+      setOrgAId(null); orgARef.current = null;
+      setOrgBId(null); orgBRef.current = null;
+      setCollapseId(null); collapseRef.current = null;
+      setRunId(null); runIdRef.current = null;
       toast.success("Demo data reset successfully");
     } catch (err: any) {
       toast.error(`Reset failed: ${err.message}`);
@@ -142,27 +162,40 @@ export function CheckpointDemo() {
 
     try {
       const stepData: any = {};
-      if (orgAId) stepData.org_a_id = orgAId;
-      if (orgBId) stepData.org_b_id = orgBId;
-      if (collapseId) stepData.collapse_id = collapseId;
+      if (orgARef.current) stepData.org_a_id = orgARef.current;
+      if (orgBRef.current) stepData.org_b_id = orgBRef.current;
+      if (collapseRef.current) stepData.collapse_id = collapseRef.current;
 
       const data = await callDemo(action, stepData);
 
       // Extract org IDs from step 1
       if (stepNumber === 1 && data.org_a && data.org_b) {
-        setOrgAId(data.org_a.id);
-        setOrgBId(data.org_b.id);
+        setOrgAId(data.org_a.id); orgARef.current = data.org_a.id;
+        setOrgBId(data.org_b.id); orgBRef.current = data.org_b.id;
       }
 
       // Extract collapse ID from step 8
       if (stepNumber === 8 && data.collapse?.collapse_id) {
         setCollapseId(data.collapse.collapse_id);
+        collapseRef.current = data.collapse.collapse_id;
       }
 
-      const passed = data.success !== false;
+      // Determine pass/fail
+      const isNegativeTest = stepNumber >= 10;
+      let passed: boolean;
+
+      if (isNegativeTest) {
+        // Negative tests: the edge function returns success:true/false based on its own logic
+        // If the call itself errored but the function handled it, check the data
+        passed = data.success === true;
+      } else {
+        passed = data.success !== false && !data._isError;
+      }
+
       updateStep(stepNumber, {
         status: passed ? "pass" : "fail",
         result: data,
+        error: !passed && data._isError ? (data.error || data.message || `HTTP ${data._httpStatus}`) : undefined,
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
@@ -172,14 +205,13 @@ export function CheckpointDemo() {
         timestamp: new Date().toISOString(),
       });
     }
-  }, [orgAId, orgBId, collapseId, runId]);
+  }, []);
 
   const runAllPositive = async () => {
     setIsRunning(true);
-    if (!runId) await createRun();
+    if (!runIdRef.current) await createRun();
     for (let i = 1; i <= 9; i++) {
       await runStep(i);
-      // Small delay between steps
       await new Promise(r => setTimeout(r, 500));
     }
     setIsRunning(false);
@@ -196,13 +228,13 @@ export function CheckpointDemo() {
 
   const runAll = async () => {
     setIsRunning(true);
-    if (!runId) await createRun();
+    if (!runIdRef.current) await createRun();
     for (let i = 1; i <= 14; i++) {
       await runStep(i);
       await new Promise(r => setTimeout(r, 500));
     }
     // Complete run
-    if (runId) {
+    if (runIdRef.current) {
       try { await callDemo("complete_run"); } catch {}
     }
     setIsRunning(false);
