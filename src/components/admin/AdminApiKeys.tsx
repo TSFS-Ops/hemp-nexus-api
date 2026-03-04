@@ -78,10 +78,10 @@ export function AdminApiKeys() {
       let profileMap = new Map<string, { email: string }>();
       if (userIds.length > 0) {
         const { data: profilesResponse, error: profilesError } = await supabase.functions.invoke(
-          "admin-lookup-profiles",
+          "admin-users",
           {
             method: "POST",
-            body: { user_ids: userIds },
+            body: { action: "lookup_profiles", user_ids: userIds },
           }
         );
 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Loader2, Play, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -25,7 +25,7 @@ interface TestSuite {
 export default function ComprehensiveApiTests() {
   const [running, setRunning] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const { toast } = useToast();
+  // Using sonner toast (no destructuring needed)
 
   const [testSuites, setTestSuites] = useState<TestSuite[]>([
     {
@@ -123,11 +123,7 @@ export default function ComprehensiveApiTests() {
       // Get session token for authenticated requests
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to run tests",
-          variant: "destructive",
-        });
+        toast.error("Authentication Required", { description: "Please log in to run tests" });
         setRunning(false);
         return;
       }
@@ -152,17 +148,10 @@ export default function ComprehensiveApiTests() {
       // Test Suite 6: Data Sources
       await testDataSources(token);
 
-      toast({
-        title: "Tests Complete",
-        description: "All API tests have finished running",
-      });
+      toast.success("Tests Complete", { description: "All API tests have finished running" });
     } catch (error) {
       console.error("Test suite error:", error);
-      toast({
-        title: "Test Suite Error",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
+      toast.error("Test Suite Error", { description: error instanceof Error ? error.message : "Unknown error occurred" });
     } finally {
       setRunning(false);
     }

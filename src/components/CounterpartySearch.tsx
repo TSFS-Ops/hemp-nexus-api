@@ -9,7 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { FileText, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { DemoModeBanner } from "@/components/EnvironmentIndicator";
 import { DemoConfirmDialog } from "@/components/DemoConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";

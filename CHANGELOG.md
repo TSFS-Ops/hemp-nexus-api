@@ -6,6 +6,28 @@ All notable changes to the Compliance Matching API are documented here.
 
 ---
 
+## [3.0.0-final] - 2026-03-04
+
+### Sprint 10: Component Consolidation
+
+- **Merged** `DemoModeBanner` + `SandboxIndicator` → `EnvironmentIndicator` (single file, named exports)
+- **Fixed** `ComprehensiveApiTests`: migrated from legacy `useToast` to `sonner`
+- **Deleted** 2 orphan component files (`DemoModeBanner.tsx`, `SandboxIndicator.tsx`)
+
+### Sprint 11: Edge Function Consolidation
+
+- **Merged** `admin-lookup-profiles` into `admin-users` (action-based routing: GET = list, POST `{ action: "lookup_profiles" }` = batch profile lookup)
+- **Deleted** `admin-lookup-profiles/` edge function directory
+- **Updated** `AdminApiKeys.tsx` to invoke consolidated `admin-users` function
+
+### Sprint 12: Final Testing & Sign-off
+
+- All existing unit and integration tests passing
+- Codebase reduced from 42 → 41 edge functions, component consolidation in progress
+- Legacy `useToast` fully eliminated from all components
+
+---
+
 ## [3.0.0-sprint8] - 2026-03-04
 
 ### SDK V3 Extension & Integration Tests
