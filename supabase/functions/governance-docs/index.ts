@@ -141,33 +141,31 @@ Deno.serve(async (req: Request) => {
 
       const burnAmount = (govDoc as any).governance_doc_registry?.fixed_token_burn_amount || 0;
 
-      // Token burn if required
+      // Token burn if required — uses atomic DB function to prevent race conditions
       if (burnAmount > 0) {
         // Idempotent burn check — skip if already burned for this doc
         if (govDoc.token_burned) {
           // Already burned — skip
         } else {
-          const { data: wallet } = await admin
-            .from("token_balances")
-            .select("balance")
-            .eq("org_id", govDoc.org_id)
-            .maybeSingle();
+          const { data: burnResult, error: burnError } = await admin.rpc("atomic_token_burn", {
+            p_org_id: govDoc.org_id,
+            p_amount: burnAmount,
+            p_reason: "governance_burn",
+            p_reference_id: govDoc.id,
+          });
 
-          if (!wallet || wallet.balance < burnAmount) {
+          if (burnError) throw new ApiException("INTERNAL_ERROR", burnError.message, 500);
+
+          const result = burnResult as { success: boolean; current_balance?: number; balance_before?: number; balance_after?: number };
+          if (!result.success) {
             throw new ApiException(
               "INSUFFICIENT_TOKENS",
-              `Token burn requires ${burnAmount} tokens. Balance: ${wallet?.balance || 0}`,
+              `Token burn requires ${burnAmount} tokens. Balance: ${result.current_balance || 0}`,
               422
             );
           }
 
-          // Deduct tokens atomically
-          await admin
-            .from("token_balances")
-            .update({ balance: wallet.balance - burnAmount })
-            .eq("org_id", govDoc.org_id);
-
-          // Record token transaction in audit log (idempotent key prevents duplicates)
+          // Record token transaction in audit log
           await admin.from("audit_logs").insert({
             org_id: govDoc.org_id,
             actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
@@ -176,8 +174,8 @@ Deno.serve(async (req: Request) => {
             entity_id: govDoc.id,
             metadata: {
               burn_amount: burnAmount,
-              balance_before: wallet.balance,
-              balance_after: wallet.balance - burnAmount,
+              balance_before: result.balance_before,
+              balance_after: result.balance_after,
               doc_type: (govDoc as any).governance_doc_registry?.doc_type,
               idempotency_key: `gov-burn-${govDoc.id}`,
             },

@@ -324,7 +324,7 @@ Deno.serve(async (req: Request) => {
     if (match_id && UUID_RE.test(match_id)) {
       const { data: match } = await adminClient
         .from("matches")
-        .select("poi_state")
+        .select("poi_state, completion_probability")
         .eq("id", match_id)
         .maybeSingle();
 
@@ -336,6 +336,17 @@ Deno.serve(async (req: Request) => {
             `Collapse not allowed from state ${match.poi_state}. Must be ELIGIBLE or COLLAPSE_REQUESTED.`,
             422,
             { currentState: match.poi_state }
+          );
+        }
+
+        // ── POI Probability prerequisite: ≥50.1% required for collapse ──
+        const probability = match.completion_probability;
+        if (probability === null || probability === undefined || probability < 50.1) {
+          throw new ApiException(
+            "PROBABILITY_THRESHOLD_NOT_MET",
+            `POI completion probability is ${probability ?? "not calculated"}%. Minimum 50.1% required for collapse.`,
+            422,
+            { current_probability: probability, required: 50.1 }
           );
         }
       }

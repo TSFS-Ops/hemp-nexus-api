@@ -137,6 +137,59 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "POI must be confirmed before creating WaD", 400);
       }
 
+      // ── Hard-gate: POI state must be COLLAPSED ──
+      if (poi.poi_state !== "COLLAPSED") {
+        throw new ApiException("HARD_GATE_FAILED", `POI state must be COLLAPSED, currently: ${poi.poi_state}`, 422);
+      }
+
+      // ── Hard-gate: Screening recentness (within 30 days) + risk_band checks ──
+      const partyOrgIds = [poi.buyer_org_id, poi.seller_org_id].filter(Boolean);
+      for (const partyOrgId of partyOrgIds) {
+        // Check latest screening is within 30 days
+        const { data: latestScreening } = await supabase
+          .from("screening_results")
+          .select("status, screened_at")
+          .eq("org_id", partyOrgId)
+          .order("screened_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!latestScreening) {
+          throw new ApiException("HARD_GATE_FAILED", `No screening results found for org ${partyOrgId}. WaD denied.`, 422);
+        }
+
+        const screenedAt = new Date(latestScreening.screened_at);
+        const daysSinceScreening = (Date.now() - screenedAt.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceScreening > 30) {
+          throw new ApiException(
+            "HARD_GATE_FAILED",
+            `Screening for org ${partyOrgId} is ${Math.floor(daysSinceScreening)} days old. Must be rescreened within 30 days. WaD denied.`,
+            422
+          );
+        }
+
+        if (latestScreening.status !== "clear") {
+          throw new ApiException("HARD_GATE_FAILED", `Screening status for org ${partyOrgId} is '${latestScreening.status}', not 'clear'. WaD denied.`, 422);
+        }
+
+        // Check risk_band is not 'critical' or 'high'
+        const { data: riskScore } = await supabase
+          .from("dd_risk_scores")
+          .select("risk_band, score")
+          .eq("org_id", partyOrgId)
+          .order("computed_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (riskScore && ["critical", "high"].includes(riskScore.risk_band)) {
+          throw new ApiException(
+            "HARD_GATE_FAILED",
+            `Risk band for org ${partyOrgId} is '${riskScore.risk_band}' (score: ${riskScore.score}). WaD denied.`,
+            422
+          );
+        }
+      }
+
       // Check if active WaD already exists
       const { data: existingWad } = await supabase
         .from("wads")
