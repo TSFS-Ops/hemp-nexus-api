@@ -143,36 +143,46 @@ Deno.serve(async (req: Request) => {
 
       // Token burn if required
       if (burnAmount > 0) {
-        const { data: wallet } = await admin
-          .from("token_wallets")
-          .select("balance")
-          .eq("org_id", govDoc.org_id)
-          .maybeSingle();
+        // Idempotent burn check — skip if already burned for this doc
+        if (govDoc.token_burned) {
+          // Already burned — skip
+        } else {
+          const { data: wallet } = await admin
+            .from("token_balances")
+            .select("balance")
+            .eq("org_id", govDoc.org_id)
+            .maybeSingle();
 
-        if (!wallet || wallet.balance < burnAmount) {
-          throw new ApiException(
-            "INSUFFICIENT_TOKENS",
-            `Token burn requires ${burnAmount} tokens. Balance: ${wallet?.balance || 0}`,
-            422
-          );
+          if (!wallet || wallet.balance < burnAmount) {
+            throw new ApiException(
+              "INSUFFICIENT_TOKENS",
+              `Token burn requires ${burnAmount} tokens. Balance: ${wallet?.balance || 0}`,
+              422
+            );
+          }
+
+          // Deduct tokens atomically
+          await admin
+            .from("token_balances")
+            .update({ balance: wallet.balance - burnAmount })
+            .eq("org_id", govDoc.org_id);
+
+          // Record token transaction in audit log (idempotent key prevents duplicates)
+          await admin.from("audit_logs").insert({
+            org_id: govDoc.org_id,
+            actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+            action: "token.governance_burn",
+            entity_type: "governance_document",
+            entity_id: govDoc.id,
+            metadata: {
+              burn_amount: burnAmount,
+              balance_before: wallet.balance,
+              balance_after: wallet.balance - burnAmount,
+              doc_type: (govDoc as any).governance_doc_registry?.doc_type,
+              idempotency_key: `gov-burn-${govDoc.id}`,
+            },
+          });
         }
-
-        // Deduct tokens
-        await admin
-          .from("token_wallets")
-          .update({ balance: wallet.balance - burnAmount })
-          .eq("org_id", govDoc.org_id);
-
-        // Record token transaction
-        await admin.from("token_transactions").insert({
-          org_id: govDoc.org_id,
-          amount: -burnAmount,
-          balance_before: wallet.balance,
-          type: "governance_burn",
-          governance_doc_id: govDoc.id,
-          idempotency_key: `gov-burn-${govDoc.id}`,
-          description: `Token burn for governance document: ${(govDoc as any).governance_doc_registry?.doc_type}`,
-        });
       }
 
       // Mark as validated

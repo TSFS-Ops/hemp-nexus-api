@@ -107,38 +107,42 @@ Deno.serve(async (req: Request) => {
           : `POI is in ${poi.state} state — must be COLLAPSED`,
       });
 
-      // Gate 2: Both entities must be ACTIVE
+      // Gate 2: Both entities must be ACTIVE or VERIFIED
       const [buyerRes, sellerRes] = await Promise.all([
-        admin.from("entities").select("id, status").eq("id", poi.buyer_entity_id).maybeSingle(),
-        admin.from("entities").select("id, status").eq("id", poi.seller_entity_id).maybeSingle(),
+        admin.from("entities").select("id, status, entity_type").eq("id", poi.buyer_entity_id).maybeSingle(),
+        admin.from("entities").select("id, status, entity_type").eq("id", poi.seller_entity_id).maybeSingle(),
       ]);
-      const buyerActive = buyerRes.data?.status === "ACTIVE";
-      const sellerActive = sellerRes.data?.status === "ACTIVE";
+      const validStatuses = ["active", "ACTIVE", "verified", "VERIFIED"];
+      const buyerActive = buyerRes.data && validStatuses.includes(buyerRes.data.status);
+      const sellerActive = sellerRes.data && validStatuses.includes(sellerRes.data.status);
       gates.push({
         gate: "ENTITY_STATUS",
-        passed: buyerActive && sellerActive,
+        passed: !!(buyerActive && sellerActive),
         reason: buyerActive && sellerActive
-          ? "Both buyer and seller entities are ACTIVE"
+          ? "Both buyer and seller entities are active/verified"
           : `Buyer: ${buyerRes.data?.status || "NOT_FOUND"}, Seller: ${sellerRes.data?.status || "NOT_FOUND"}`,
       });
 
       // Gate 3: UBO ownership 100% for both entities (company type)
-      const [buyerOwnership, sellerOwnership] = await Promise.all([
-        admin.from("ownership_links").select("ownership_pct").eq("company_entity_id", poi.buyer_entity_id),
-        admin.from("ownership_links").select("ownership_pct").eq("company_entity_id", poi.seller_entity_id),
+      const [buyerUbo, sellerUbo] = await Promise.all([
+        admin.from("ubo_links").select("ownership_percentage, status").eq("company_entity_id", poi.buyer_entity_id),
+        admin.from("ubo_links").select("ownership_percentage, status").eq("company_entity_id", poi.seller_entity_id),
       ]);
-      const buyerUboTotal = (buyerOwnership.data || []).reduce((sum: number, o: any) => sum + (o.ownership_pct || 0), 0);
-      const sellerUboTotal = (sellerOwnership.data || []).reduce((sum: number, o: any) => sum + (o.ownership_pct || 0), 0);
-      // If no ownership links exist for INDIVIDUAL entities, pass by default
-      const buyerIsIndividual = buyerRes.data && !buyerOwnership.data?.length;
-      const sellerIsIndividual = sellerRes.data && !sellerOwnership.data?.length;
-      const uboPass = (buyerIsIndividual || buyerUboTotal >= 100) && (sellerIsIndividual || sellerUboTotal >= 100);
+      const buyerUboTotal = (buyerUbo.data || []).reduce((sum: number, o: any) => sum + Number(o.ownership_percentage || 0), 0);
+      const sellerUboTotal = (sellerUbo.data || []).reduce((sum: number, o: any) => sum + Number(o.ownership_percentage || 0), 0);
+      const buyerUboAllVerified = (buyerUbo.data || []).length > 0 && (buyerUbo.data || []).every((o: any) => o.status === "verified");
+      const sellerUboAllVerified = (sellerUbo.data || []).length > 0 && (sellerUbo.data || []).every((o: any) => o.status === "verified");
+      // If no UBO links exist for individual entities, pass by default
+      const buyerIsIndividual = buyerRes.data && (!buyerUbo.data || buyerUbo.data.length === 0);
+      const sellerIsIndividual = sellerRes.data && (!sellerUbo.data || sellerUbo.data.length === 0);
+      const uboPass = (buyerIsIndividual || (buyerUboTotal >= 100 && buyerUboAllVerified)) && 
+                       (sellerIsIndividual || (sellerUboTotal >= 100 && sellerUboAllVerified));
       gates.push({
         gate: "UBO_COMPLETENESS",
         passed: uboPass,
         reason: uboPass
-          ? "UBO ownership verified at 100% for both parties"
-          : `Buyer UBO: ${buyerIsIndividual ? "N/A (individual)" : buyerUboTotal + "%"}, Seller UBO: ${sellerIsIndividual ? "N/A (individual)" : sellerUboTotal + "%"}`,
+          ? "UBO ownership verified at 100% for both parties (all links verified)"
+          : `Buyer UBO: ${buyerIsIndividual ? "N/A (individual)" : buyerUboTotal + "%" + (buyerUboAllVerified ? " ✓" : " (unverified links)")}, Seller UBO: ${sellerIsIndividual ? "N/A (individual)" : sellerUboTotal + "%" + (sellerUboAllVerified ? " ✓" : " (unverified links)")}`,
       });
 
       // Gate 4: Authority-to-Bind verified for both
@@ -159,7 +163,7 @@ Deno.serve(async (req: Request) => {
       // Gate 5: Mandatory governance documents validated
       const { data: mandatoryDocs } = await admin
         .from("governance_doc_registry")
-        .select("id, doc_type")
+        .select("id, doc_type, fixed_token_burn_amount")
         .eq("org_id", orgId)
         .eq("mandatory_flag", true)
         .eq("active", true)
@@ -209,20 +213,21 @@ Deno.serve(async (req: Request) => {
           : "Unresolved compliance cases exist for one or both parties",
       });
 
-      // Gate 7: Token balance sufficient
+      // Gate 7: Token balance sufficient (uses token_balances table)
       const { data: wallet } = await admin
-        .from("token_wallets")
+        .from("token_balances")
         .select("balance")
         .eq("org_id", orgId)
         .maybeSingle();
 
-      const totalBurnRequired = (mandatoryDocs || []).length * 100; // Simplified: 100 tokens per mandatory doc
+      // Calculate total burn from registry fixed_token_burn_amount
+      const totalBurnRequired = (mandatoryDocs || []).reduce((sum: number, d: any) => sum + (d.fixed_token_burn_amount || 0), 0);
       const tokenPass = wallet ? wallet.balance >= totalBurnRequired : totalBurnRequired === 0;
       gates.push({
         gate: "TOKEN_BALANCE",
         passed: tokenPass,
         reason: tokenPass
-          ? `Token balance sufficient (required: ${totalBurnRequired})`
+          ? `Token balance sufficient (required: ${totalBurnRequired}, available: ${wallet?.balance || 0})`
           : `Insufficient tokens. Required: ${totalBurnRequired}, Available: ${wallet?.balance || 0}`,
       });
 
