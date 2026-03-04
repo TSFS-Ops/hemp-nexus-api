@@ -32,6 +32,7 @@ import { DataResidencyPanel } from "@/components/admin/DataResidencyPanel";
 import { CheckpointDemo } from "@/components/admin/CheckpointDemo";
 import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
 import { AdminPoisPanel } from "@/components/admin/AdminPoisPanel";
+import { AdminWadGovernancePanel } from "@/components/admin/AdminWadGovernancePanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -134,6 +135,7 @@ export default function Admin() {
               <Route path="/tokens" element={<AdminTokenManagement />} />
               <Route path="/documents" element={<AdminDocumentVerification />} />
               <Route path="/wad" element={<AdminWadPanel />} />
+              <Route path="/wad-governance" element={<AdminWadGovernancePanel />} />
               <Route path="/poi-history" element={
                 <div className="p-6">
                   <PoiStateHistory />
