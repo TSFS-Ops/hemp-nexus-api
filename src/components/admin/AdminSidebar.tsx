@@ -22,6 +22,8 @@ import {
   FileWarning,
   Heart,
   ShieldCheck,
+  Package,
+  Scale,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -54,6 +56,8 @@ const sidebarGroups = [
       { title: "Documents", url: "/admin/documents", icon: FileCheck },
       { title: "WaD Hard-Gates", url: "/admin/wad-governance", icon: ShieldCheck },
       { title: "WaD Bundles", url: "/admin/wad", icon: Lock },
+      { title: "PoD Delivery", url: "/admin/pods", icon: Package },
+      { title: "Compliance Cases", url: "/admin/compliance", icon: Scale },
     ],
   },
   {

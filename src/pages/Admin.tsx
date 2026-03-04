@@ -33,6 +33,8 @@ import { CheckpointDemo } from "@/components/admin/CheckpointDemo";
 import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
 import { AdminPoisPanel } from "@/components/admin/AdminPoisPanel";
 import { AdminWadGovernancePanel } from "@/components/admin/AdminWadGovernancePanel";
+import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
+import { AdminComplianceCasesPanel } from "@/components/admin/AdminComplianceCasesPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -136,6 +138,8 @@ export default function Admin() {
               <Route path="/documents" element={<AdminDocumentVerification />} />
               <Route path="/wad" element={<AdminWadPanel />} />
               <Route path="/wad-governance" element={<AdminWadGovernancePanel />} />
+              <Route path="/pods" element={<AdminPodPanel />} />
+              <Route path="/compliance" element={<AdminComplianceCasesPanel />} />
               <Route path="/poi-history" element={
                 <div className="p-6">
                   <PoiStateHistory />
