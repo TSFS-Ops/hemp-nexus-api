@@ -67,6 +67,29 @@ SELECT cron.schedule(
 - `0 */6 * * *` - Every 6 hours (more frequent checks)
 - `0 0 * * *` - Daily at midnight (off-peak hours)
 
+## 3. Data Retention Enforcement
+
+Schedule the data-retention function to run daily at 2 AM UTC to flag records approaching the 7-year mark:
+
+```sql
+SELECT cron.schedule(
+  'data-retention-job',
+  '0 2 * * *',  -- Daily at 2:00 AM UTC
+  $$
+  SELECT
+    net.http_post(
+        url := 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/data-retention',
+        headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb,
+        body := '{}'::jsonb
+    ) as request_id;
+  $$
+);
+```
+
+**Configuration Options:**
+- `0 2 * * *` - Daily at 2:00 AM UTC (recommended, off-peak)
+- `0 0 * * 0` - Weekly on Sunday at midnight (lighter load)
+
 ## 3. Verify Cron Jobs
 
 Check scheduled jobs:

@@ -352,12 +352,50 @@ Deno.serve(async (req) => {
 
     if (format === "pdf") {
       const html = generatePdfHtml(canonical, packHash, signatureValid, generatedAt);
+
+      // Attempt server-side PDF conversion via headless rendering
+      try {
+        // Use a PDF generation service if configured
+        const pdfServiceUrl = Deno.env.get("PDF_SERVICE_URL");
+        if (pdfServiceUrl) {
+          const pdfRes = await fetch(pdfServiceUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              html,
+              options: {
+                format: "A4",
+                margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
+                printBackground: true,
+              },
+            }),
+          });
+
+          if (pdfRes.ok) {
+            const pdfBuffer = await pdfRes.arrayBuffer();
+            return new Response(pdfBuffer, {
+              status: 200,
+              headers: {
+                ...headers,
+                "Content-Type": "application/pdf",
+                "Content-Disposition": `attachment; filename="evidence-pack-${matchId}.pdf"`,
+              },
+            });
+          }
+          console.warn(`PDF service returned ${pdfRes.status}, falling back to HTML`);
+        }
+      } catch (pdfErr) {
+        console.warn("PDF generation failed, falling back to HTML:", pdfErr);
+      }
+
+      // Fallback: return HTML with print-optimized styles
       return new Response(html, {
         status: 200,
         headers: {
           ...headers,
           "Content-Type": "text/html; charset=utf-8",
           "Content-Disposition": `attachment; filename="evidence-pack-${matchId}.html"`,
+          "X-PDF-Fallback": "true",
         },
       });
     }
@@ -384,7 +422,10 @@ Deno.serve(async (req) => {
         matchSettledAt: match.settled_at || null,
         collapseClientTimestamp: collapseRecord?.client_timestamp || null,
         collapseServerTimestamp: collapseRecord?.created_at || null,
-        timestampSource: "database-server-utc",
+        timestampSource: collapseRecord?.ntp_source || "database-server-utc",
+        ntpSource: collapseRecord?.ntp_source || null,
+        ntpDriftMs: collapseRecord?.ntp_drift_ms ?? null,
+        timestampSourceMetadata: collapseRecord?.timestamp_source_metadata || null,
       },
       chainVerification: {
         valid: chainValid,
