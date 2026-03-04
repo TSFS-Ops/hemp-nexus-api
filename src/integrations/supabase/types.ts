@@ -674,6 +674,8 @@ export type Database = {
           idempotency_key: string
           match_id: string | null
           metadata: Json | null
+          ntp_drift_ms: number | null
+          ntp_source: string | null
           org_id: string
           payload_ciphertext: string | null
           payload_hash: string
@@ -697,6 +699,8 @@ export type Database = {
           idempotency_key: string
           match_id?: string | null
           metadata?: Json | null
+          ntp_drift_ms?: number | null
+          ntp_source?: string | null
           org_id: string
           payload_ciphertext?: string | null
           payload_hash: string
@@ -720,6 +724,8 @@ export type Database = {
           idempotency_key?: string
           match_id?: string | null
           metadata?: Json | null
+          ntp_drift_ms?: number | null
+          ntp_source?: string | null
           org_id?: string
           payload_ciphertext?: string | null
           payload_hash?: string
@@ -3151,6 +3157,39 @@ export type Database = {
           },
         ]
       }
+      retention_flags: {
+        Row: {
+          archived_at: string | null
+          flag_type: string
+          flagged_at: string
+          id: string
+          record_created_at: string
+          record_id: string
+          retention_expires_at: string
+          table_name: string
+        }
+        Insert: {
+          archived_at?: string | null
+          flag_type?: string
+          flagged_at?: string
+          id?: string
+          record_created_at: string
+          record_id: string
+          retention_expires_at: string
+          table_name: string
+        }
+        Update: {
+          archived_at?: string | null
+          flag_type?: string
+          flagged_at?: string
+          id?: string
+          record_created_at?: string
+          record_id?: string
+          retention_expires_at?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       risk_snapshots: {
         Row: {
           created_at: string
@@ -3199,11 +3238,15 @@ export type Database = {
       screening_results: {
         Row: {
           created_at: string
+          entity_id: string | null
           id: string
           matched_entities: Json | null
           next_screening_at: string | null
           org_id: string
+          provider: string
+          provider_config: Json | null
           raw_response: Json | null
+          response_hash: string | null
           screened_at: string
           screened_by: string | null
           screening_type: string
@@ -3211,11 +3254,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          entity_id?: string | null
           id?: string
           matched_entities?: Json | null
           next_screening_at?: string | null
           org_id: string
+          provider?: string
+          provider_config?: Json | null
           raw_response?: Json | null
+          response_hash?: string | null
           screened_at?: string
           screened_by?: string | null
           screening_type: string
@@ -3223,17 +3270,28 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          entity_id?: string | null
           id?: string
           matched_entities?: Json | null
           next_screening_at?: string | null
           org_id?: string
+          provider?: string
+          provider_config?: Json | null
           raw_response?: Json | null
+          response_hash?: string | null
           screened_at?: string
           screened_by?: string | null
           screening_type?: string
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "screening_results_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "screening_results_org_id_fkey"
             columns: ["org_id"]

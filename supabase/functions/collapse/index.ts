@@ -395,11 +395,16 @@ Deno.serve(async (req: Request) => {
         metadata: metadata || {},
         actor_user_id: actorUserId || null,
         payload_ciphertext: body.payload_ciphertext || null,
+        ntp_source: body.ntp_source || "database-server-utc",
+        ntp_drift_ms: typeof body.ntp_drift_ms === "number" ? body.ntp_drift_ms : null,
         timestamp_source_metadata: {
-          source: "database-server-utc",
+          source: body.ntp_source || "database-server-utc",
           client_timestamp,
           server_timestamp: new Date().toISOString(),
-          ntp_status: "not-hardened",
+          ntp_status: body.ntp_status || "not-hardened",
+          ntp_server: body.ntp_server || null,
+          drift_ms: typeof body.ntp_drift_ms === "number" ? body.ntp_drift_ms : null,
+          measurement_method: body.ntp_measurement_method || null,
         },
         annulment_reference: body.annulment_reference || null,
       })

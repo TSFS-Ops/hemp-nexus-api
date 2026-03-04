@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.admin-lookup-profiles]
 verify_jwt = false
+
+[functions.data-retention]
+verify_jwt = false
