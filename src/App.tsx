@@ -23,6 +23,7 @@ import Invites from "@/pages/Invites";
 import Pricing from "@/pages/Pricing";
 import DueDiligence from "@/pages/DueDiligence";
 import Explore from "@/pages/Explore";
+import WalkthroughReport from "@/pages/WalkthroughReport";
 
 /**
  * Root element that renders based on host type:
@@ -62,6 +63,7 @@ function App() {
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/docs" element={<Docs />} />
+                <Route path="/walkthrough" element={<WalkthroughReport />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/due-diligence" element={<DueDiligence />} />
                 <Route path="/explore" element={<Explore />} />
