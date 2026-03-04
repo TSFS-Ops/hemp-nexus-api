@@ -18,7 +18,8 @@ import {
   Loader2,
   Copy,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Globe
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,6 +58,16 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [responseDetails, setResponseDetails] = useState<any>(null);
   const [showDebugger, setShowDebugger] = useState(false);
 
+  const [selectedRegion, setSelectedRegion] = useState("za-jnb");
+
+  const DATA_REGIONS = [
+    { value: "za-jnb", label: "South Africa (Johannesburg)", flag: "🇿🇦" },
+    { value: "eu-west", label: "Europe (Ireland)", flag: "🇪🇺" },
+    { value: "us-east", label: "United States (Virginia)", flag: "🇺🇸" },
+    { value: "ae-dubai", label: "UAE (Dubai)", flag: "🇦🇪" },
+    { value: "sg-sin", label: "Singapore", flag: "🇸🇬" },
+  ];
+
   const steps: OnboardingStep[] = [
     {
       id: 1,
@@ -67,24 +78,31 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     },
     {
       id: 2,
-      title: "Create API Key",
-      description: "Generate your first API key",
-      icon: Key,
-      completed: currentStep > 2 || !!apiKey
+      title: "Data Region",
+      description: "Choose where your data is stored",
+      icon: Globe,
+      completed: currentStep > 2
     },
     {
       id: 3,
-      title: "Test API",
-      description: "Make your first API call",
-      icon: Play,
-      completed: currentStep > 3 || testResult === "success"
+      title: "Create API Key",
+      description: "Generate your first API key",
+      icon: Key,
+      completed: currentStep > 3 || !!apiKey
     },
     {
       id: 4,
+      title: "Test API",
+      description: "Make your first API call",
+      icon: Play,
+      completed: currentStep > 4 || testResult === "success"
+    },
+    {
+      id: 5,
       title: "You're Ready!",
       description: "Start building amazing things",
       icon: Trophy,
-      completed: currentStep > 4
+      completed: currentStep > 5
     }
   ];
 
@@ -130,7 +148,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       
       // Auto-advance after a short delay
       setTimeout(() => {
-        setCurrentStep(3);
+        setCurrentStep(4);
       }, 1500);
     } catch (error) {
       console.error("Error creating API key:", error);
@@ -199,7 +217,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         
         // Auto-advance after a short delay
         setTimeout(() => {
-          setCurrentStep(4);
+          setCurrentStep(5);
         }, 1500);
       } else {
         setTestResult("error");
@@ -330,8 +348,71 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* Step 2: Create API Key */}
+          {/* Step 2: Data Region Selection */}
           {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold">Choose Your Data Region</h3>
+                <p className="text-muted-foreground">
+                  Select where your organisation's data will be stored. This affects compliance with local data residency regulations.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {DATA_REGIONS.map((region) => (
+                  <Card
+                    key={region.value}
+                    className={`p-4 cursor-pointer transition-colors ${
+                      selectedRegion === region.value
+                        ? "border-primary bg-primary/5"
+                        : "hover:border-muted-foreground/30"
+                    }`}
+                    onClick={() => setSelectedRegion(region.value)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{region.flag}</span>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{region.label}</p>
+                        <p className="text-xs text-muted-foreground">Region: {region.value}</p>
+                      </div>
+                      {selectedRegion === region.value && (
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <Alert>
+                <AlertDescription className="text-xs">
+                  Data residency affects where your collapse records, screening results, and audit logs are stored.
+                  This can be changed later by contacting support.
+                </AlertDescription>
+              </Alert>
+
+              <Button onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (session) {
+                    // Save region to org profile
+                    const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
+                    if (profile?.org_id) {
+                      await supabase.from("organizations").update({ data_residency_region: selectedRegion } as any).eq("id", profile.org_id);
+                    }
+                  }
+                } catch (e) {
+                  console.error("Failed to save region:", e);
+                }
+                setCurrentStep(3);
+              }} size="lg" className="w-full">
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Step 3: Create API Key */}
+          {currentStep === 3 && (
             <div className="space-y-6">
               <div className="space-y-2">
                 <h3 className="text-xl font-bold">Create Your First API Key</h3>
@@ -410,7 +491,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     </p>
                   </Card>
 
-                  <Button onClick={() => setCurrentStep(3)} size="lg" className="w-full">
+                  <Button onClick={() => setCurrentStep(4)} size="lg" className="w-full">
                     Continue to Testing
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -419,8 +500,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* Step 3: Test API */}
-          {currentStep === 3 && (
+          {/* Step 4: Test API */}
+          {currentStep === 4 && (
             <div className="space-y-6">
               <div className="space-y-2">
                 <h3 className="text-xl font-bold">Test Your API Connection</h3>
@@ -471,7 +552,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   </Button>
 
                   <Button 
-                    onClick={() => setCurrentStep(4)} 
+                    onClick={() => setCurrentStep(5)} 
                     variant="ghost" 
                     size="sm" 
                     className="w-full"
@@ -557,7 +638,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     </Card>
                   )}
 
-                  <Button onClick={() => setCurrentStep(4)} size="lg" className="w-full">
+                  <Button onClick={() => setCurrentStep(5)} size="lg" className="w-full">
                     Continue
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -664,7 +745,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     <Button onClick={handleTestApi} variant="outline" className="flex-1">
                       Try Again
                     </Button>
-                    <Button onClick={() => setCurrentStep(4)} variant="secondary" className="flex-1">
+                    <Button onClick={() => setCurrentStep(5)} variant="secondary" className="flex-1">
                       Skip Test
                     </Button>
                   </div>
@@ -680,8 +761,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* Step 4: Complete */}
-          {currentStep === 4 && (
+          {/* Step 5: Complete */}
+          {currentStep === 5 && (
             <div className="space-y-6 text-center">
               <div className="flex justify-center">
                 <div className="p-4 bg-green-500/10 rounded-full">

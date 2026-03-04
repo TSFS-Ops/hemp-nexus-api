@@ -27,6 +27,13 @@ The `/healthz` endpoint includes a partition probe that:
 
 **Recommended monitoring**: Poll `/healthz` every 30s from an external monitor (e.g. UptimeRobot, Datadog).
 
+### Deployment Runbook (RPO=0)
+1. Verify your Supabase plan supports synchronous replication (Enterprise tier required for RPO=0)
+2. Enable PITR in Supabase dashboard under Database → Backups
+3. Configure WAL archiving retention (minimum 7 days recommended)
+4. Set up external health check monitoring at 30s intervals
+5. RTO ≤ 60 min depends on Supabase's disaster recovery SLA — confirm with support
+
 ---
 
 ## 2. WAF & Circuit Breaker
@@ -67,6 +74,18 @@ plugins:
       excluded_status_codes: [400, 401, 403, 404, 422]
 ```
 
+### 1M RPS Acceptance Test
+The 1M RPS test requires dedicated load testing infrastructure and cannot be run from application code:
+
+```bash
+# k6 load test example
+k6 run --vus 10000 --duration 60s \
+  --env BASE_URL=https://your-project.supabase.co/functions/v1 \
+  scripts/collapse-load-test.js
+```
+
+**Recommended tools**: k6, Locust, or Gatling. Run from multiple regions to simulate realistic traffic.
+
 ---
 
 ## 3. Cold Storage Archival Pipeline
@@ -91,7 +110,7 @@ Records exceeding the 7-year BRD retention requirement should be archived to col
 ```
 
 #### Step 1: Flag (Implemented)
-The `data-retention` edge function runs daily and flags records in `retention_flags`:
+The `data-retention` edge function runs daily (cron scheduled at 2 AM UTC) and flags records in `retention_flags`:
 - `approaching_expiry` — within 90 days of the 7-year mark
 - `expired` — past the 7-year mark
 
@@ -124,7 +143,86 @@ Archived records should be retrievable via:
 
 ---
 
-## 4. Monitoring & Alerting Checklist
+## 4. SDK Distribution (Phase 2)
+
+The `izenzo-sdk.ts` is a fully functional client-side API helper. For external distribution as an npm package:
+
+1. Extract `src/lib/izenzo-sdk.ts` into a standalone repository
+2. Add TypeScript build pipeline (`tsup` or `tsc`)
+3. Publish to npm: `@izenzo/sdk`
+4. Include README with authentication, signal creation, and match query examples
+
+**Current status**: API is fully functional via direct HTTP calls or the in-app SDK. External npm packaging is a distribution concern, not a functionality gap.
+
+---
+
+## 5. IDV Provider Integration (Future Sprint)
+
+### Current State
+KYC document upload and storage is implemented. Document extraction is manual (human review).
+
+### Recommended IDV Integration
+Per V3 spec IDV-001, integrate **Onfido** or equivalent for automated document verification:
+
+| Provider | Capability | Status |
+|----------|-----------|--------|
+| **Onfido** | ID document OCR, facial biometrics, liveness | Recommended — add `ONFIDO_API_KEY` secret |
+| **Jumio** | Alternative IDV provider | Alternate |
+| **Veriff** | European-focused IDV | Regional option |
+
+**Integration points**:
+- After KYC document upload (Step 3 in DD path)
+- Before screening (Step 4)
+- Store verification result in `entities` table `status` field
+
+---
+
+## 6. Evidence Pack PDF Service
+
+### Current State
+Evidence Pack v1 generates deterministic HTML with tamper-evident SHA-256 hashes. Server-side PDF generation is attempted via configurable `PDF_SERVICE_URL`. Falls back to HTML if unavailable.
+
+### Deployment
+Deploy a headless Chrome PDF service:
+
+```bash
+# Option A: Google Cloud Run with Puppeteer
+gcloud run deploy pdf-service \
+  --image=ghcr.io/nicholasgasior/gcloud-puppeteer \
+  --region=us-central1 --allow-unauthenticated
+
+# Option B: AWS Lambda with Chromium
+# Use @sparticuz/chromium layer
+```
+
+Then set the secret:
+```
+PDF_SERVICE_URL=https://your-pdf-service.run.app/generate
+```
+
+---
+
+## 7. NTP Timestamp Hardening
+
+### Current State (Implemented)
+The collapse engine now measures clock drift between the edge server and the client timestamp at the moment of collapse. Fields populated:
+
+| Field | Value |
+|-------|-------|
+| `ntp_source` | `edge-server-utc` |
+| `ntp_drift_ms` | Measured delta (server time - client time) in milliseconds |
+| `ntp_status` | `hardened` (≤1s drift), `drift-detected` (>1s), or `not-measurable` |
+| `measurement_method` | `server-client-delta` |
+
+### Future Enhancement
+For sub-millisecond accuracy, integrate a dedicated NTP service:
+- Query `chrony` stats endpoint or NTP pool servers before each collapse
+- Store actual NTP server response (stratum, offset, jitter)
+- This requires a time-sync sidecar or external API
+
+---
+
+## 8. Monitoring & Alerting Checklist
 
 | Metric | Threshold | Action |
 |--------|-----------|--------|
@@ -138,13 +236,19 @@ Archived records should be retrievable via:
 
 ---
 
-## 5. Deployment Checklist
+## 9. Deployment Checklist
 
+- [x] Screening provider configured via admin_settings (`screening_provider` = `dilisense`)
+- [x] NTP drift measurement implemented in collapse engine
+- [x] Non-bypassability test (NEG-20) in checkpoint demo
+- [x] Data retention cron job scheduled (daily at 2 AM UTC)
+- [x] Data residency region selector in onboarding wizard
 - [ ] WAF enabled at CDN layer with rules for `/functions/v1/collapse`
 - [ ] Health check monitoring configured (30s interval)
 - [ ] Database PITR enabled (Supabase Pro)
-- [ ] `data-retention` cron job scheduled (daily at 2 AM UTC)
 - [ ] Cold storage bucket created for archival
 - [ ] Alert channels configured for all metrics above
-- [ ] Screening provider configured via admin_settings (`screening_provider`)
-- [ ] NTP source documented for timestamp audit trail
+- [ ] PDF service deployed and `PDF_SERVICE_URL` secret set
+- [ ] IDV provider integrated (Onfido) — Phase 2
+- [ ] SDK published to npm — Phase 2
+- [ ] 1M RPS load test executed — ops acceptance test
