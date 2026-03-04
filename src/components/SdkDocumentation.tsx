@@ -105,6 +105,51 @@ curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?limit=10&sta
   -H "X-API-Key: sk_your_api_key"`;
 
 
+const v3DealPipelineExample = `import { IzenzoClient } from '@/lib/izenzo-sdk';
+
+const client = new IzenzoClient('sk_your_api_key');
+
+// ── Step 1: Register an entity ──
+const entity = await client.entities.create({
+  legal_name: 'Acme Trading (Pty) Ltd',
+  entity_type: 'COMPANY',
+  jurisdiction_code: 'ZA',
+  registration_number: '2024/123456/07',
+});
+console.log('Entity:', entity.id);
+
+// ── Step 2: Register UBO and ATB ──
+await client.authority.createUbo(directorEntityId, entity.id, 51);
+await client.authority.createAtb(directorEntityId, entity.id, 'resolution');
+
+// ── Step 3: Check ATB/UBO gates ──
+const gates = await client.authority.checkGates(directorEntityId, entity.id);
+console.log('UBO passed:', gates.ubo_passed); // true when ≥ 100%
+console.log('ATB passed:', gates.atb_passed); // true when verified
+
+// ── Step 4: Get trade approval status ──
+const tradeStatus = await client.tradeApprovals.getStatus(orgId);
+console.log('Approved to trade:', tradeStatus.approved_to_trade);
+
+// ── Step 5: Create a PoD with milestones ──
+const pod = await client.pods.create(
+  {
+    wad_id: wadId,
+    milestones: [
+      { name: 'Goods shipped', due_at: '2026-04-01T00:00:00Z' },
+      { name: 'Customs cleared', due_at: '2026-04-15T00:00:00Z' },
+      { name: 'Delivery confirmed', due_at: '2026-04-30T00:00:00Z' },
+    ],
+  },
+  crypto.randomUUID() // Idempotency key
+);
+console.log('PoD:', pod.id, pod.state);
+
+// ── Step 6: Complete milestones ──
+await client.pods.completeMilestone(milestoneId);
+await client.pods.finalise(pod.id);`;
+
+
 const errorHandlingExample = `import { IzenzoClient, IzenzoApiError } from '@/lib/izenzo-sdk';
 
 const client = new IzenzoClient('sk_your_api_key');
@@ -265,8 +310,9 @@ export function SdkDocumentation() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="typescript" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="typescript">TypeScript</TabsTrigger>
+              <TabsTrigger value="v3-pipeline">V3 Pipeline</TabsTrigger>
               <TabsTrigger value="python">Python</TabsTrigger>
               <TabsTrigger value="curl">cURL</TabsTrigger>
               <TabsTrigger value="errors">Error Handling</TabsTrigger>
@@ -287,6 +333,24 @@ export function SdkDocumentation() {
                 customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
               >
                 {typescriptExample}
+              </SyntaxHighlighter>
+            </TabsContent>
+
+            <TabsContent value="v3-pipeline" className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 z-10"
+                onClick={() => copyToClipboard(v3DealPipelineExample)}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <SyntaxHighlighter
+                language="typescript"
+                style={atomOneDark}
+                customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
+              >
+                {v3DealPipelineExample}
               </SyntaxHighlighter>
             </TabsContent>
             
@@ -365,6 +429,17 @@ export function SdkDocumentation() {
                 <li><code className="bg-muted px-1 rounded">signal.matched</code> - Options found</li>
                 <li><code className="bg-muted px-1 rounded">option.selected</code> - Option selected</li>
               </ul>
+              <h4 className="font-medium mt-4 mb-2">V3 Events</h4>
+              <ul className="space-y-1 text-sm">
+                <li><code className="bg-muted px-1 rounded">entity.created</code> - Entity registered</li>
+                <li><code className="bg-muted px-1 rounded">entity.screened</code> - Screening completed</li>
+                <li><code className="bg-muted px-1 rounded">poi.collapsed</code> - POI reached COLLAPSED</li>
+                <li><code className="bg-muted px-1 rounded">wad.issued</code> - WaD bundle sealed</li>
+                <li><code className="bg-muted px-1 rounded">wad.denied</code> - WaD hard-gate failure</li>
+                <li><code className="bg-muted px-1 rounded">pod.finalised</code> - Delivery confirmed</li>
+                <li><code className="bg-muted px-1 rounded">breach.detected</code> - PoD breach recorded</li>
+                <li><code className="bg-muted px-1 rounded">compliance.case.opened</code> - Case opened</li>
+              </ul>
             </div>
             <div>
               <h4 className="font-medium mb-2">Security</h4>
@@ -404,7 +479,7 @@ export function SdkDocumentation() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <h4 className="font-medium mb-2 text-green-500">Success Codes</h4>
+              <h4 className="font-medium mb-2 text-primary">Success Codes</h4>
               <ul className="space-y-1 text-sm">
                 <li><code className="bg-muted px-1 rounded">200</code> - OK</li>
                 <li><code className="bg-muted px-1 rounded">201</code> - Created</li>
@@ -412,7 +487,7 @@ export function SdkDocumentation() {
               </ul>
             </div>
             <div>
-              <h4 className="font-medium mb-2 text-red-500">Error Codes</h4>
+              <h4 className="font-medium mb-2 text-destructive">Error Codes</h4>
               <ul className="space-y-1 text-sm">
                 <li><code className="bg-muted px-1 rounded">400</code> - Validation Error</li>
                 <li><code className="bg-muted px-1 rounded">401</code> - Unauthorized</li>
