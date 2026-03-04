@@ -55,6 +55,7 @@ const NEGATIVE_STEPS: Omit<StepResult, "status">[] = [
   { stepNumber: 17, name: "Collapse before approvals → rejected", type: "negative" },
   { stepNumber: 18, name: "Mutate collapsed record → impossible", type: "negative" },
   { stepNumber: 19, name: "Idempotency burst → only 1 record", type: "negative" },
+  { stepNumber: 20, name: "Direct POI without eligibility → rejected", type: "negative" },
 ];
 
 const ACTION_MAP: Record<number, string> = {
@@ -77,6 +78,7 @@ const ACTION_MAP: Record<number, string> = {
   17: "negative_collapse_before_approval",
   18: "negative_mutate_collapsed",
   19: "negative_idempotency_burst",
+  20: "negative_poi_without_eligibility",
 };
 
 type DemoMode = "dd_only" | "full_lifecycle";
@@ -251,7 +253,7 @@ export function CheckpointDemo() {
 
   const runNegative = async () => {
     setIsRunning(true);
-    for (let i = 15; i <= 19; i++) {
+    for (let i = 15; i <= 20; i++) {
       await runStep(i);
       await new Promise(r => setTimeout(r, 500));
     }
@@ -271,7 +273,7 @@ export function CheckpointDemo() {
         await new Promise(r => setTimeout(r, 500));
       }
     }
-    for (let i = 15; i <= 19; i++) {
+    for (let i = 15; i <= 20; i++) {
       await runStep(i);
       await new Promise(r => setTimeout(r, 500));
     }

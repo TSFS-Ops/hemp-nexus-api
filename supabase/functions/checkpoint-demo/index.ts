@@ -989,6 +989,82 @@ Deno.serve(async (req: Request) => {
     }
 
     // ════════════════════════════════════════════
+    // NEG-20: Direct POI creation without eligibility → rejected
+    // ════════════════════════════════════════════
+    if (action === "negative_poi_without_eligibility") {
+      // This test attempts to call the /collapse endpoint directly
+      // for demo orgs that exist and have DD approval, but WITHOUT
+      // going through the exploration layer (no signal, no match,
+      // no preflight). The collapse endpoint must reject because
+      // there is no valid match_id with COLLAPSE_REQUESTED state.
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
+
+      const fakePayload = JSON.stringify({
+        org_id: org_a_id,
+        counterparty_org_id: org_b_id,
+        asset_id: "FAKE-BYPASS-COMMODITY",
+        quantity: 999,
+        price: 1,
+        currency: "USD",
+        client_timestamp: new Date().toISOString(),
+      });
+
+      // Generate a real ECDSA key pair and sign the payload
+      const keyPair = await crypto.subtle.generateKey(
+        { name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]
+      );
+      const sig = await crypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" }, keyPair.privateKey,
+        new TextEncoder().encode(fakePayload)
+      );
+      const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
+
+      const payloadHashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(fakePayload));
+      const payloadHash = Array.from(new Uint8Array(payloadHashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // Attempt collapse via the real /collapse endpoint — no match, no preflight, no exploration
+      const collapseRes = await fetch(`${supabaseUrl}/functions/v1/collapse`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY") || "",
+        },
+        body: JSON.stringify({
+          org_id: org_a_id,
+          counterparty_org_id: org_b_id,
+          asset_id: "FAKE-BYPASS-COMMODITY",
+          quantity: 999,
+          price: 1,
+          currency: "USD",
+          client_timestamp: new Date().toISOString(),
+          idempotency_key: `neg-bypass-${Date.now()}`,
+          signed_payload: `${sigB64}:${fakePayload}`,
+          payload_hash: payloadHash,
+        }),
+      });
+
+      const collapseBody = await collapseRes.text();
+      let collapseJson: any;
+      try { collapseJson = JSON.parse(collapseBody); } catch { collapseJson = { raw: collapseBody }; }
+
+      // The collapse endpoint should reject (400/403/422) because:
+      // - No match_id in COLLAPSE_REQUESTED state exists
+      // - The exploration/preflight layer was bypassed
+      const rejected = collapseRes.status >= 400;
+      const detail = {
+        bypass_attempted: true,
+        rejected,
+        http_status: collapseRes.status,
+        response: collapseJson,
+        rule: "POI cannot be created without passing through exploration → preflight → collapse_requested flow",
+      };
+
+      await recordStep(20, "Negative: direct POI without eligibility → rejected", "negative", rejected ? "pass" : "fail", detail);
+      return json({ success: rejected, test: "poi_without_eligibility", ...detail });
+    }
+
+    // ════════════════════════════════════════════
     // ACTION: get_run_results / complete_run
     // ════════════════════════════════════════════
     if (action === "get_run_results") {
