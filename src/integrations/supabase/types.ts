@@ -3688,6 +3688,76 @@ export type Database = {
           },
         ]
       }
+      ubo_links: {
+        Row: {
+          company_entity_id: string
+          created_at: string
+          document_id: string | null
+          expires_at: string | null
+          id: string
+          org_id: string
+          ownership_percentage: number
+          person_entity_id: string
+          status: string
+          updated_at: string
+          verification_method: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          company_entity_id: string
+          created_at?: string
+          document_id?: string | null
+          expires_at?: string | null
+          id?: string
+          org_id: string
+          ownership_percentage: number
+          person_entity_id: string
+          status?: string
+          updated_at?: string
+          verification_method?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          company_entity_id?: string
+          created_at?: string
+          document_id?: string | null
+          expires_at?: string | null
+          id?: string
+          org_id?: string
+          ownership_percentage?: number
+          person_entity_id?: string
+          status?: string
+          updated_at?: string
+          verification_method?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ubo_links_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ubo_links_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ubo_links_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
