@@ -346,7 +346,7 @@ Deno.serve(async (req: Request) => {
       const screeningResults: any = {};
 
       for (const [label, orgId] of [["org_a", org_a_id], ["org_b", org_b_id]] as const) {
-        // Get UBO person entities (the actual beneficial owners, not generic directors)
+        // Get UBO person entities (the actual beneficial owners)
         const { data: uboLinks } = await admin.from("ubo_links")
           .select("person_entity_id, ownership_percentage").eq("org_id", orgId).eq("status", "verified");
 
@@ -357,35 +357,83 @@ Deno.serve(async (req: Request) => {
 
         const results: any[] = [];
         for (const person of (persons || [])) {
-          const uboLink = uboLinks?.find((l: any) => l.person_entity_id === person.id);
-          results.push({
-            screening_type: "sanctions", org_id: orgId, status: "clear",
-            matched_entities: [],
-            screened_at: new Date().toISOString(), screened_by: user.id,
-            next_screening_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+          // Call real Dilisense screening via our edge function
+          const screenRes = await fetch(`${supabaseUrl}/functions/v1/dilisense-screen`, {
+            method: "POST",
+            headers: { Authorization: authHeader, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              org_id: orgId,
+              screen_type: "individual",
+              name: person.legal_name,
+              fuzzy_search: 1,
+              entity_id: person.id,
+            }),
           });
+
+          const screenData = await screenRes.json();
           results.push({
-            screening_type: "pep", org_id: orgId, status: "clear",
-            matched_entities: [],
-            screened_at: new Date().toISOString(), screened_by: user.id,
-            next_screening_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+            entity_id: person.id,
+            name: person.legal_name,
+            provider: "dilisense",
+            overall_status: screenData.overall_status || "error",
+            total_hits: screenData.total_hits || 0,
+            confirmed_matches: screenData.confirmed_matches || 0,
+            potential_matches: screenData.potential_matches || 0,
+            has_sanction_hit: screenData.has_sanction_hit || false,
+            has_pep_hit: screenData.has_pep_hit || false,
+            screening_id: screenData.screening_id,
+            response_hash: screenData.response_hash,
+            next_screening_due: screenData.next_screening_due,
           });
         }
 
-        if (results.length > 0) {
-          await admin.from("screening_results").insert(results);
+        // Also screen the company entity via checkEntity
+        const { data: companyEntity } = await admin.from("entities")
+          .select("id, legal_name").eq("org_id", orgId).eq("entity_type", "company").maybeSingle();
+
+        if (companyEntity) {
+          const entityScreenRes = await fetch(`${supabaseUrl}/functions/v1/dilisense-screen`, {
+            method: "POST",
+            headers: { Authorization: authHeader, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              org_id: orgId,
+              screen_type: "entity",
+              name: companyEntity.legal_name,
+              fuzzy_search: 1,
+              entity_id: companyEntity.id,
+            }),
+          });
+
+          const entityScreenData = await entityScreenRes.json();
+          results.push({
+            entity_id: companyEntity.id,
+            name: companyEntity.legal_name,
+            type: "company",
+            provider: "dilisense",
+            overall_status: entityScreenData.overall_status || "error",
+            total_hits: entityScreenData.total_hits || 0,
+            confirmed_matches: entityScreenData.confirmed_matches || 0,
+            potential_matches: entityScreenData.potential_matches || 0,
+            has_sanction_hit: entityScreenData.has_sanction_hit || false,
+            screening_id: entityScreenData.screening_id,
+            response_hash: entityScreenData.response_hash,
+          });
         }
 
         screeningResults[label] = {
           ubos_screened: (persons || []).map((p: any) => p.legal_name),
+          company_screened: companyEntity?.legal_name || null,
           total_screenings: results.length,
-          clear: results.filter((r: any) => r.status === "clear").length,
-          matches: results.filter((r: any) => r.status === "match").length,
+          clear: results.filter((r: any) => r.overall_status === "clear").length,
+          review: results.filter((r: any) => r.overall_status === "review").length,
+          matches: results.filter((r: any) => r.overall_status === "match").length,
+          provider: "dilisense",
+          details: results,
           timestamp: new Date().toISOString(),
         };
       }
 
-      await recordStep(4, "Screen UBOs for sanctions & PEP (mutual)", "positive", "pass", screeningResults);
+      await recordStep(4, "Screen UBOs + companies via Dilisense (sanctions, PEP, criminal)", "positive", "pass", screeningResults);
       return json({ success: true, screening: screeningResults });
     }
 
