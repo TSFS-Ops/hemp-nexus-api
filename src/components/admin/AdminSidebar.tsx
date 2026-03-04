@@ -51,6 +51,7 @@ const sidebarGroups = [
     label: "Core Data",
     items: [
       { title: "Entities", url: "/admin/entities", icon: Building2 },
+      { title: "ATB & UBO", url: "/admin/atb-ubo", icon: UserCog },
       { title: "Interests", url: "/admin/interests", icon: Heart },
       { title: "POIs", url: "/admin/pois", icon: Shield },
       { title: "Matches", url: "/admin/matches", icon: GitCompare },

@@ -36,6 +36,7 @@ import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminWadGovernancePanel } from "@/components/admin/AdminWadGovernancePanel";
 import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
 import { AdminComplianceCasesPanel } from "@/components/admin/AdminComplianceCasesPanel";
+import { AdminAtbUboPanel } from "@/components/admin/AdminAtbUboPanel";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -128,6 +129,7 @@ export default function Admin() {
               <Route path="/logs" element={<GlobalApiLogs />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/entities" element={<AdminEntitiesPanel />} />
+              <Route path="/atb-ubo" element={<AdminAtbUboPanel />} />
               <Route path="/interests" element={<AdminInterestsPanel />} />
               <Route path="/pois" element={<AdminPoisPanel />} />
               <Route path="/matches" element={<AdminMatchesPanel />} />
