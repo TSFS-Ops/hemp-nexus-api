@@ -21,6 +21,7 @@ import {
   UserCog,
   FileWarning,
   Heart,
+  ShieldCheck,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -51,6 +52,7 @@ const sidebarGroups = [
       { title: "Matches", url: "/admin/matches", icon: GitCompare },
       { title: "Signals", url: "/admin/signals", icon: Radio },
       { title: "Documents", url: "/admin/documents", icon: FileCheck },
+      { title: "WaD Hard-Gates", url: "/admin/wad-governance", icon: ShieldCheck },
       { title: "WaD Bundles", url: "/admin/wad", icon: Lock },
     ],
   },
