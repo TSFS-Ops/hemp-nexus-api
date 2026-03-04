@@ -32,6 +32,7 @@ import { DataResidencyPanel } from "@/components/admin/DataResidencyPanel";
 import { CheckpointDemo } from "@/components/admin/CheckpointDemo";
 import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
 import { AdminPoisPanel } from "@/components/admin/AdminPoisPanel";
+import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminWadGovernancePanel } from "@/components/admin/AdminWadGovernancePanel";
 import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
 import { AdminComplianceCasesPanel } from "@/components/admin/AdminComplianceCasesPanel";
@@ -126,6 +127,7 @@ export default function Admin() {
               <Route path="/verification" element={<Phase2Verification />} />
               <Route path="/logs" element={<GlobalApiLogs />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route path="/entities" element={<AdminEntitiesPanel />} />
               <Route path="/interests" element={<AdminInterestsPanel />} />
               <Route path="/pois" element={<AdminPoisPanel />} />
               <Route path="/matches" element={<AdminMatchesPanel />} />

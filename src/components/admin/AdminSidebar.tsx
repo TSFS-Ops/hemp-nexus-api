@@ -20,6 +20,7 @@ import {
   Globe,
   UserCog,
   FileWarning,
+  Building2,
   Heart,
   ShieldCheck,
   Package,
@@ -49,6 +50,7 @@ const sidebarGroups = [
   {
     label: "Core Data",
     items: [
+      { title: "Entities", url: "/admin/entities", icon: Building2 },
       { title: "Interests", url: "/admin/interests", icon: Heart },
       { title: "POIs", url: "/admin/pois", icon: Shield },
       { title: "Matches", url: "/admin/matches", icon: GitCompare },
