@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Compliance Matching API
-  version: 1.3.1
+  version: 2.0.0
   description: |
     A sector-agnostic API for recording trade matches with cryptographic proof.
     
@@ -41,6 +41,12 @@ tags:
     description: Proof-of-Delivery milestones and breaches
   - name: Compliance
     description: Compliance case management
+  - name: Authority
+    description: Authority-to-Bind and UBO management
+  - name: Trade Approvals
+    description: Trade approval lifecycle
+  - name: Due Diligence
+    description: KYC, screening, risk scoring
   - name: Matches
     description: Trade match operations
   - name: Signals
@@ -345,6 +351,208 @@ paths:
       responses:
         '200':
           description: Case list
+
+  /authority-bind:
+    post:
+      tags: [Authority]
+      summary: Manage ATB and UBO records
+      operationId: authorityBind
+      description: |
+        Supports multiple actions via `action` field:
+        - `ubo_create` — Register a UBO link (person → company with ownership %)
+        - `ubo_verify` / `ubo_reject` — Verify or reject a UBO link
+        - `atb_create` — Create an Authority-to-Bind record
+        - `atb_verify` / `atb_reject` — Verify or reject an ATB record
+        - `check` — Validate WaD Gates #3 (UBO ≥ 100%) and #4 (active ATB)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [ubo_create, ubo_verify, ubo_reject, atb_create, atb_verify, atb_reject, check]
+                person_entity_id:
+                  type: string
+                  format: uuid
+                company_entity_id:
+                  type: string
+                  format: uuid
+                ownership_percentage:
+                  type: number
+                  minimum: 0.01
+                  maximum: 100
+                method:
+                  type: string
+                  description: ATB verification method (e.g. resolution, power_of_attorney)
+                document_id:
+                  type: string
+                  format: uuid
+            examples:
+              ubo_create:
+                summary: Register UBO link
+                value:
+                  action: ubo_create
+                  person_entity_id: "550e8400-e29b-41d4-a716-446655440001"
+                  company_entity_id: "550e8400-e29b-41d4-a716-446655440002"
+                  ownership_percentage: 51
+              gate_check:
+                summary: Check ATB/UBO gates
+                value:
+                  action: check
+                  person_entity_id: "550e8400-e29b-41d4-a716-446655440001"
+                  company_entity_id: "550e8400-e29b-41d4-a716-446655440002"
+      responses:
+        '200':
+          description: Action completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '201':
+          description: Record created
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Insufficient permissions
+    get:
+      tags: [Authority]
+      summary: List ATB and UBO records
+      operationId: listAuthority
+      parameters:
+        - name: entity_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [atb, ubo]
+      responses:
+        '200':
+          description: Authority records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+
+  /trade-approval:
+    post:
+      tags: [Trade Approvals]
+      summary: Manage trade approvals
+      operationId: tradeApproval
+      description: |
+        Supports actions: `issue`, `revoke`, `renew`.
+        Automatically pulls risk band from latest due-diligence score.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, org_id]
+              properties:
+                action:
+                  type: string
+                  enum: [issue, revoke, renew]
+                org_id:
+                  type: string
+                  format: uuid
+                valid_days:
+                  type: integer
+                  default: 365
+                  description: Validity period (issue/renew only)
+                reason:
+                  type: string
+                  description: Reason for revocation
+            examples:
+              issue:
+                summary: Issue trade approval
+                value:
+                  action: issue
+                  org_id: "550e8400-e29b-41d4-a716-446655440000"
+                  valid_days: 365
+              revoke:
+                summary: Revoke trade approval
+                value:
+                  action: revoke
+                  org_id: "550e8400-e29b-41d4-a716-446655440000"
+                  reason: "Expired KYC documents"
+      responses:
+        '200':
+          description: Approval action completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Admin role required
+
+  /trade-status:
+    get:
+      tags: [Trade Approvals]
+      summary: Get trade approval status
+      operationId: getTradeStatus
+      description: Returns approval outcome only — no sensitive KYC data.
+      parameters:
+        - name: org_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Trade status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradeStatus'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /due-diligence:
+    post:
+      tags: [Due Diligence]
+      summary: Due diligence operations
+      operationId: dueDiligence
+      description: |
+        Multi-action endpoint supporting the full KYC lifecycle:
+        - `register_directors` — Register company directors
+        - `upload_kyc` — Upload KYC document metadata
+        - `run_screening` — Trigger IDV/sanctions screening
+        - `compute_score` — Calculate risk score
+        - `submit_approval` — Submit for multi-role approval
+        - `approve_reject` — Approve or reject an approval request
+        - `get_dossier` — Retrieve complete DD dossier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [register_directors, upload_kyc, run_screening, compute_score, submit_approval, approve_reject, get_dossier]
+                org_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Action completed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /match:
     post:
@@ -718,6 +926,30 @@ components:
           format: uuid
         data:
           type: object
+
+    TradeStatus:
+      type: object
+      properties:
+        org_id:
+          type: string
+          format: uuid
+        approved_to_trade:
+          type: boolean
+        trade_status:
+          type: string
+          enum: [approved, revoked, not_approved]
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        risk_band:
+          type: string
+          enum: [low, medium, high]
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
 
     EntityCreate:
       type: object

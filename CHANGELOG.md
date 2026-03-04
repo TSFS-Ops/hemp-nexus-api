@@ -24,6 +24,26 @@ All notable changes to the Compliance Matching API are documented here.
 - Validates request shapes (methods, headers, body), response parsing, and type safety
 - Tests idempotency key propagation for PoD creation
 
+## [3.0.0-sprint9] - 2026-03-04
+
+### OpenAPI V3 Completion & SDK Documentation
+
+**Focus: Complete API documentation with all V3 paths and update SDK examples for the deal pipeline.**
+
+#### OpenAPI Spec (`public/openapi.yaml`)
+- **[Authority]** Added `/authority-bind` (POST + GET) — UBO/ATB CRUD with gate-check action
+- **[Trade Approvals]** Added `/trade-approval` (POST) — issue/revoke/renew actions
+- **[Trade Status]** Added `/trade-status` (GET) — public approval status endpoint
+- **[Due Diligence]** Added `/due-diligence` (POST) — multi-action KYC lifecycle
+- **[Schemas]** Added `TradeStatus` response schema
+- **[Tags]** Added Authority, Trade Approvals, Due Diligence tag groups
+- **[Version]** Bumped spec version to 2.0.0
+
+#### SDK Documentation (`SdkDocumentation.tsx`)
+- **[V3 Pipeline Tab]** New "V3 Pipeline" code example tab with 6-step deal flow (Entity → UBO → ATB → Trade → PoD → Finalise)
+- **[Webhook Events]** Added 8 V3 webhook events (entity.created, wad.issued, pod.finalised, breach.detected, etc.)
+- **[Design Tokens]** Fixed hardcoded color classes → semantic tokens (text-primary, text-destructive)
+
 ## Versioning
 
 This project follows semantic versioning: `MAJOR.MINOR.PATCH`
