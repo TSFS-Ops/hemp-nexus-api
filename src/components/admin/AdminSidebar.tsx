@@ -6,6 +6,7 @@ import {
   Shield,
   GitCompare,
   Scale,
+  Wrench,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -26,6 +27,7 @@ const sidebarItems = [
   { title: "Compliance", url: "/admin/compliance", icon: Scale },
   { title: "Audit", url: "/admin/audit", icon: Shield },
   { title: "API Keys", url: "/admin/api-keys", icon: Key },
+  { title: "Overrides", url: "/admin/overrides", icon: Wrench },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 

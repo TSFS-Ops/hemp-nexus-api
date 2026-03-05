@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationBell } from "./notifications/NotificationBell";
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -18,7 +19,10 @@ export function DashboardLayout({ children, isAdmin, isDemoMode }: DashboardLayo
           <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
             <div className="flex h-12 items-center justify-between px-4">
               <SidebarTrigger />
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                {!isDemoMode && <NotificationBell />}
+                <ThemeToggle />
+              </div>
             </div>
           </header>
           <div className="flex-1 py-6 px-4 sm:px-6 lg:px-8">

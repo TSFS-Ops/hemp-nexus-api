@@ -23,6 +23,7 @@ import OrgsManagement from "@/components/admin/OrgsManagement";
 import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
 import { CollapseLedgerViewer } from "@/components/admin/CollapseLedgerViewer";
+import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 
 /** Deals: Pipeline + Matches + Approvals */
 function DealsSection() {
@@ -169,6 +170,7 @@ export default function Admin() {
               <Route path="/compliance" element={<ComplianceSection />} />
               <Route path="/audit" element={<AuditSection />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route path="/overrides" element={<AdminManualOverrides />} />
               <Route path="/settings" element={<AdminSettings />} />
             </Routes>
           </main>
