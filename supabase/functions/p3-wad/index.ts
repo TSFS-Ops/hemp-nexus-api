@@ -231,6 +231,75 @@ Deno.serve(async (req: Request) => {
           : `Insufficient tokens. Required: ${totalBurnRequired}, Available: ${wallet?.balance || 0}`,
       });
 
+      // Gate 8 (DISC-007): Discovery eligibility PASS + sanctions clear + identity verified
+      {
+        // Check eligibility for both buyer and seller entities
+        let discoveryGatePass = true;
+        let discoveryReason = "Discovery eligibility PASS for both parties";
+        const entityIds = [poi.buyer_entity_id, poi.seller_entity_id].filter(Boolean);
+
+        for (const eid of entityIds) {
+          const { data: eligSnap } = await admin
+            .from("discovery_eligibility_snapshots")
+            .select("eligibility_status, eligibility_score, expires_at, signals")
+            .eq("entity_id", eid)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!eligSnap) {
+            discoveryGatePass = false;
+            discoveryReason = `No discovery eligibility snapshot found for entity ${eid}`;
+            break;
+          }
+
+          if (eligSnap.eligibility_status !== "PASS") {
+            discoveryGatePass = false;
+            discoveryReason = `Entity ${eid} eligibility is ${eligSnap.eligibility_status} (score: ${eligSnap.eligibility_score})`;
+            break;
+          }
+
+          if (eligSnap.expires_at && new Date(eligSnap.expires_at) < new Date()) {
+            discoveryGatePass = false;
+            discoveryReason = `Entity ${eid} eligibility snapshot expired at ${eligSnap.expires_at}`;
+            break;
+          }
+
+          // Check sanctions clear and identity verified from signals
+          const sigs = eligSnap.signals as any;
+          if (sigs?.sanctions_status === "CONFIRMED_MATCH") {
+            discoveryGatePass = false;
+            discoveryReason = `Entity ${eid} has CONFIRMED sanctions match`;
+            break;
+          }
+          if (sigs?.id_verified === false) {
+            discoveryGatePass = false;
+            discoveryReason = `Entity ${eid} identity not verified`;
+            break;
+          }
+        }
+
+        gates.push({
+          gate: "DISCOVERY_ELIGIBILITY",
+          passed: discoveryGatePass,
+          reason: discoveryReason,
+        });
+
+        // Emit blocked event if failed
+        if (!discoveryGatePass) {
+          await admin.from("event_store").insert({
+            org_id: orgId,
+            domain: "intel",
+            aggregate_type: "gate",
+            aggregate_id: parsed.poi_id,
+            event_type: "trade.wad.blocked_by_discovery_gate",
+            actor_id: authCtx.isApiKey ? null : authCtx.userId,
+            payload: { poi_id: parsed.poi_id, reason: discoveryReason },
+            event_hash: await computeHash(JSON.stringify({ poi_id: parsed.poi_id, gate: "discovery" })),
+          });
+        }
+      }
+
       // ── Evaluate all gates ──
       const allPassed = gates.every((g) => g.passed);
       const failedGates = gates.filter((g) => !g.passed);
