@@ -85,6 +85,62 @@ Deno.serve(async (req: Request) => {
 
     const fromState = match.poi_state;
 
+    // ── DISC-007: Discovery Gate Enforcement ──
+    // POI creation (DRAFT → PENDING_APPROVAL) requires eligibility_status == PASS
+    if (fromState === "DRAFT" && toState === "PENDING_APPROVAL") {
+      // Find the entity linked to this match's org
+      const { data: entities } = await adminClient
+        .from("entities")
+        .select("id")
+        .eq("org_id", match.org_id)
+        .limit(10);
+
+      if (entities && entities.length > 0) {
+        let discoveryPassed = false;
+        for (const entity of entities) {
+          const { data: eligibility } = await adminClient
+            .from("discovery_eligibility_snapshots")
+            .select("eligibility_status, expires_at")
+            .eq("entity_id", entity.id)
+            .eq("org_id", match.org_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (
+            eligibility &&
+            eligibility.eligibility_status === "PASS" &&
+            (!eligibility.expires_at || new Date(eligibility.expires_at) > new Date())
+          ) {
+            discoveryPassed = true;
+            break;
+          }
+        }
+
+        if (!discoveryPassed) {
+          // Emit blocked event
+          await adminClient.from("event_store").insert({
+            org_id: match.org_id,
+            domain: "intel",
+            aggregate_type: "gate",
+            aggregate_id: matchId,
+            event_type: "trade.poi.blocked_by_discovery_gate",
+            actor_id: user.id,
+            payload: { match_id: matchId, from_state: fromState, to_state: toState },
+            event_hash: crypto.randomUUID(),
+          });
+
+          return new Response(
+            JSON.stringify({
+              error: "Discovery eligibility PASS required before POI creation. Run discovery evaluation first.",
+              code: "DISCOVERY_GATE_FAILED",
+            }),
+            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     // ── Validate transition ──
     const allowed = VALID_TRANSITIONS[fromState];
     if (!allowed || !allowed.includes(toState)) {
