@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Search, CheckCircle, FileText, Shield } from "lucide-react";
+import { ArrowRight, Search, Handshake, FileCheck, Flame, ShieldCheck, Package, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
 
 export default function Landing() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<DemoSearchResult[]>([]);
@@ -34,15 +33,14 @@ export default function Landing() {
 
   const handleConfirmIntent = () => {
     toast.info("Sign in to confirm intent", {
-      description: "Create an account to save your selections and generate evidence packs.",
+      description: "Create an account to save your selections and begin the structured handshake.",
       action: {
         label: "Sign in",
         onClick: () => window.location.href = authUrl,
       },
     });
   };
-  
-  // Helper to handle auth navigation (cross-domain or internal)
+
   const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
     const authUrl = getAuthUrl();
     if (isPreview) {
@@ -55,30 +53,77 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       <PublicHeader showDemo />
 
-      {/* Hero */}
+      {/* Hero — Thin Trade Layer */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-16 sm:pb-20">
         <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-xs font-medium text-muted-foreground mb-6">
+            <Handshake className="h-3.5 w-3.5" />
+            Structured Handshake Protocol
+          </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] mb-5">
-            Prove trade intent with tamper-evident records
+            Search. Match. Agree.<br />Then go deep.
           </h1>
           <p className="text-lg sm:text-xl text-foreground/80 leading-relaxed mb-3">
-            Search for counterparties, record proof-of-intent, and generate audit trails regulators can verify.
+            Find your counterparty, agree on the basics, and commit — before compliance, due diligence, or governance begins.
           </p>
           <p className="text-base text-muted-foreground leading-relaxed mb-8">
-            For developers building regulated B2B marketplaces, brokerage platforms, and procurement systems.
+            No long forms. No ownership interrogation. Just product, quantity, price, and delivery terms.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a 
+            <a
               href="#try-it"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
             >
-              Try it now
+              Start searching
               <span className="text-background/60 text-xs font-normal">(No login)</span>
             </a>
             <AuthLink className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors">
-              Sign in / Create API Key
+              Sign in / Create account
             </AuthLink>
           </div>
+        </div>
+      </section>
+
+      {/* What You Agree On */}
+      <section className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <div className="text-center mb-10">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">The basics. Nothing more.</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              At the search and match stage, the information is intentionally minimal. Buyer and seller agree on just enough to move forward.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {[
+              { icon: Package, label: "Product", detail: "e.g. gold doré, copper cathode, cashews" },
+              { icon: "quantity", label: "Quantity", detail: "Volume and unit of measure" },
+              { icon: "price", label: "Price", detail: "Agreed price and currency" },
+              { icon: "delivery", label: "Delivery basis", detail: "Incoterms (CIF, FOB, etc.)" },
+              { icon: "logistics", label: "Basic logistics", detail: "Outline of shipping arrangement" },
+              { icon: Upload, label: "Supporting documents", detail: "COA, proof of product existence" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-start gap-3 p-4 rounded-lg border border-border bg-background">
+                <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                  {typeof item.icon === "string" ? (
+                    <span className="text-xs font-bold text-foreground/70">
+                      {item.label.charAt(0)}
+                    </span>
+                  ) : (
+                    <item.icon className="h-4 w-4 text-foreground" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-medium text-foreground text-sm">{item.label}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            No deep compliance yet. No long forms. No ownership interrogation at this stage.
+          </p>
         </div>
       </section>
 
@@ -86,8 +131,8 @@ export default function Landing() {
       <section id="try-it" className="border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
           <div className="text-center mb-8">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Try it now</h2>
-            <p className="text-muted-foreground">Search for counterparties — no login required</p>
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Find your counterparty</h2>
+            <p className="text-muted-foreground">Search for buyers or sellers — no login required</p>
           </div>
 
           <div className="max-w-2xl mx-auto">
@@ -99,7 +144,7 @@ export default function Landing() {
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   placeholder="e.g., 'buyers for cashew in India' or 'copper cathode suppliers'"
-                  aria-label="Search for verified buyers or sellers"
+                  aria-label="Search for buyers or sellers"
                   className="w-full h-14 px-5 text-base bg-muted/50 border border-border rounded-xl 
                            placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 
                            focus:ring-primary/30 focus:border-primary/40 transition-all"
@@ -189,40 +234,52 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How It Works - 4 Step Flow */}
+      {/* The Flow — 6 Steps */}
       <section className="border-t border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
           <div className="mb-10">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">How it works</h2>
-            <p className="text-muted-foreground">Four steps from search to verifiable proof</p>
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">The flow</h2>
+            <p className="text-muted-foreground">Simple to complex. Earn trust before demanding it.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 step: "1",
                 icon: Search,
                 title: "Search",
-                description: "Query for counterparties using natural language. Get ranked results with confidence scores."
+                description: "Find counterparties by product, region, or trade corridor. Natural language or structured queries."
               },
               {
                 step: "2",
-                icon: CheckCircle,
-                title: "Review",
-                description: "Evaluate results enriched by the Discovery Engine. See why each counterparty was surfaced."
+                icon: Handshake,
+                title: "Match",
+                description: "Select a counterparty. Both sides see the same minimal deal terms — product, quantity, price, delivery."
               },
               {
                 step: "3",
-                icon: Shield,
-                title: "Confirm Intent",
-                description: "Record buyer-seller interest with a single API call. Creates timestamped, hash-verified proof."
+                icon: FileCheck,
+                title: "Agree in Principle",
+                description: "Upload supporting commercial documents (COA, proof of product). Both parties signal willingness."
               },
               {
                 step: "4",
-                icon: FileText,
-                title: "Evidence Pack",
-                description: "Export tamper-evident audit trails for compliance reviews and regulatory reporting."
-              }
+                icon: ShieldCheck,
+                title: "Commit",
+                description: "Confirm Intent creates an immutable, timestamped, hash-verified record of mutual agreement."
+              },
+              {
+                step: "5",
+                icon: Flame,
+                title: "Burn First Token",
+                description: "A credit is consumed to seal the proof-of-intent. This is the cost of commitment — skin in the game."
+              },
+              {
+                step: "6",
+                icon: ArrowRight,
+                title: "Enter Governance",
+                description: "Only now does the deep layer begin: KYC, due diligence, UBO verification, and compliance checks."
+              },
             ].map((item) => (
               <div key={item.step} className="relative">
                 <div className="flex flex-col h-full p-5 rounded-lg border border-border bg-background">
@@ -241,81 +298,50 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Key Differentiators */}
+      {/* Clarity Section */}
       <section className="border-t border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Information only</h3>
+              <h3 className="font-semibold text-foreground mb-2">Not a compliance portal</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Confirm Intent records interest between parties. No payment processing, no contract execution, no legal obligations created.
+                The front end is deliberately simple. Compliance depth comes after commitment, not before.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Tamper-evident audit trail</h3>
+              <h3 className="font-semibold text-foreground mb-2">Not a data room</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Every event is SHA-256 hashed and chain-linked. Evidence packs are cryptographically verifiable for compliance and dispute resolution.
+                No document dumps, no regulatory interrogation upfront. Upload only what proves the product exists.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Discovery Engine</h3>
+              <h3 className="font-semibold text-foreground mb-2">A structured handshake</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Baseline search enhanced by supply chain adjacency, regional heuristics, and semantic expansion. Typically adds 12%+ relevant results.
+                Two parties agree on fundamentals. The system records it immutably. Everything else follows.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* API Example */}
+      {/* CTA */}
       <section className="border-t border-border bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-          <div className="mb-8">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Quick start</h2>
-            <p className="text-muted-foreground">Confirm trade intent with a single API call</p>
-          </div>
-
-          <div className="border border-border rounded-lg overflow-hidden bg-card">
-            <div className="border-b border-border px-4 py-2.5 bg-muted/50 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground font-mono">POST /v1/match</span>
-              <Link to="/docs" className="text-xs text-primary hover:underline">
-                Full documentation →
-              </Link>
-            </div>
-            <pre className="p-4 text-sm text-foreground overflow-x-auto font-mono">
-              <code>{`curl -X POST https://api.trade.izenzo.co.za/v1/match \\
-  -H "X-API-Key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "buyer_id": "org_abc",
-    "seller_id": "org_xyz",
-    "commodity": "cashew",
-    "quantity": { "amount": 1000, "unit": "MT" },
-    "price": { "amount": 1250, "currency": "USD" }
-  }'
-
-# Response
-{
-  "id": "match_8f3k2j",
-  "status": "confirmed",
-  "created_at": "2025-01-11T10:30:00Z",
-  "hash": "sha256:f4b2a1c9...",
-  "note": "Intent recorded. No legal obligation created."
-}`}</code>
-            </pre>
-          </div>
-
-          <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Link 
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-3">Ready to find your counterparty?</h2>
+          <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+            Start with a search. Agree on the basics. Commit when you're ready. Governance comes after.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <AuthLink className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
+              Create account
+              <ArrowRight className="h-4 w-4" />
+            </AuthLink>
+            <Link
               to="/docs"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-accent transition-colors"
             >
               Read documentation
             </Link>
-            <AuthLink className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors">
-              Create API key
-              <ArrowRight className="h-4 w-4" />
-            </AuthLink>
           </div>
         </div>
       </section>
