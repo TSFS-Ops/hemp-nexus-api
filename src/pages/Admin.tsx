@@ -1,50 +1,111 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Routes, Route, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, ArrowLeft } from "lucide-react";
-import UsersManagement from "@/components/admin/UsersManagement";
-import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminOverview } from "@/components/admin/AdminOverview";
-import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { AdminApiKeys } from "@/components/admin/AdminApiKeys";
 import { AdminSettings } from "@/components/admin/AdminSettings";
-import { AdminRiskPanel } from "@/components/admin/AdminRiskPanel";
 import { AdminMatchesPanel } from "@/components/admin/AdminMatchesPanel";
-import { AdminSignalsPanel } from "@/components/admin/AdminSignalsPanel";
-import { AdminCoherencePanel } from "@/components/admin/AdminCoherencePanel";
-import { AdminBehavioralAnalytics } from "@/components/admin/AdminBehavioralAnalytics";
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
-import { AdminDiscoveryMetrics } from "@/components/admin/AdminDiscoveryMetrics";
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
-import { AdminDocumentVerification } from "@/components/admin/AdminDocumentVerification";
-import { AdminWadPanel } from "@/components/admin/AdminWadPanel";
-import { Phase2Verification } from "@/components/admin/Phase2Verification";
+import { AdminComplianceCasesPanel } from "@/components/admin/AdminComplianceCasesPanel";
+import { AdminDealPipelinePanel } from "@/components/admin/AdminDealPipelinePanel";
+import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
+import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
+import { AdminRiskPanel } from "@/components/admin/AdminRiskPanel";
+import UsersManagement from "@/components/admin/UsersManagement";
+import OrgsManagement from "@/components/admin/OrgsManagement";
+import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
 import { CollapseLedgerViewer } from "@/components/admin/CollapseLedgerViewer";
-import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
-import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
-import { RbacPanel } from "@/components/admin/RbacPanel";
-import { DataResidencyPanel } from "@/components/admin/DataResidencyPanel";
-import { CheckpointDemo } from "@/components/admin/CheckpointDemo";
-import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
-import { AdminPoisPanel } from "@/components/admin/AdminPoisPanel";
-import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
-import { AdminWadGovernancePanel } from "@/components/admin/AdminWadGovernancePanel";
-import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
-import { AdminComplianceCasesPanel } from "@/components/admin/AdminComplianceCasesPanel";
-import { AdminAtbUboPanel } from "@/components/admin/AdminAtbUboPanel";
-import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
-import { AdminDealPipelinePanel } from "@/components/admin/AdminDealPipelinePanel";
+
+/** Deals: Pipeline + Matches + Approvals */
+function DealsSection() {
+  return (
+    <div className="p-6 space-y-6">
+      <h2 className="text-2xl font-bold tracking-tight">Deals</h2>
+      <Tabs defaultValue="pipeline">
+        <TabsList>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="matches">Matches</TabsTrigger>
+          <TabsTrigger value="approvals">Approvals</TabsTrigger>
+        </TabsList>
+        <TabsContent value="pipeline" className="mt-4"><AdminDealPipelinePanel /></TabsContent>
+        <TabsContent value="matches" className="mt-4"><AdminMatchesPanel /></TabsContent>
+        <TabsContent value="approvals" className="mt-4"><AdminTradeApprovalsPanel /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/** Users & Orgs: Users + Orgs + Entities */
+function UsersOrgsSection() {
+  return (
+    <div className="p-6 space-y-6">
+      <h2 className="text-2xl font-bold tracking-tight">Users & Organisations</h2>
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="orgs">Organisations</TabsTrigger>
+          <TabsTrigger value="entities">Entities</TabsTrigger>
+          <TabsTrigger value="tokens">Tokens</TabsTrigger>
+        </TabsList>
+        <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
+        <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
+        <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
+        <TabsContent value="tokens" className="mt-4"><AdminTokenManagement /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/** Compliance: Cases + Risk */
+function ComplianceSection() {
+  return (
+    <div className="p-6 space-y-6">
+      <h2 className="text-2xl font-bold tracking-tight">Compliance</h2>
+      <Tabs defaultValue="cases">
+        <TabsList>
+          <TabsTrigger value="cases">Cases</TabsTrigger>
+          <TabsTrigger value="risk">Risk Register</TabsTrigger>
+        </TabsList>
+        <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
+        <TabsContent value="risk" className="mt-4"><AdminRiskPanel /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/** Audit: Logs + POI History + Collapse Ledger + API Logs */
+function AuditSection() {
+  return (
+    <div className="p-6 space-y-6">
+      <h2 className="text-2xl font-bold tracking-tight">Audit Trail</h2>
+      <Tabs defaultValue="audit">
+        <TabsList>
+          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+          <TabsTrigger value="poi">POI History</TabsTrigger>
+          <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
+          <TabsTrigger value="api">API Logs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
+        <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
+        <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
+        <TabsContent value="api" className="mt-4"><GlobalApiLogs /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     checkAdminAccess();
@@ -53,37 +114,19 @@ export default function Admin() {
   const checkAdminAccess = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      if (!session) { navigate("/auth"); return; }
 
-      // Check if user has admin role
-      const { data, error } = await supabase.rpc('is_admin', {
-        user_id: session.user.id
-      });
-
+      const { data, error } = await supabase.rpc('is_admin', { user_id: session.user.id });
       if (error) throw error;
-
       if (!data) {
-        toast({
-          title: "Access Denied",
-          description: "You do not have admin privileges",
-          variant: "destructive",
-        });
+        toast.error("Access denied", { description: "You do not have admin privileges." });
         navigate("/dashboard");
         return;
       }
-
       setIsAdmin(true);
     } catch (error) {
       console.error("Admin check error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to verify admin access",
-        variant: "destructive",
-      });
+      toast.error("Failed to verify admin access");
       navigate("/dashboard");
     } finally {
       setLoading(false);
@@ -93,17 +136,13 @@ export default function Admin() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Shield className="h-12 w-12 animate-pulse mx-auto text-primary" />
-          <p className="text-muted-foreground">Verifying admin access...</p>
-        </div>
+        <Shield className="h-12 w-12 animate-pulse mx-auto text-primary" />
+        <p className="text-muted-foreground ml-3">Verifying access…</p>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
+  if (!isAdmin) return null;
 
   return (
     <SidebarProvider>
@@ -113,79 +152,24 @@ export default function Admin() {
           <header className="h-14 border-b flex items-center px-4 bg-background justify-between">
             <div className="flex items-center">
               <SidebarTrigger />
-              <div className="ml-4">
-                <h1 className="text-lg font-semibold">API Platform Admin</h1>
-              </div>
+              <h1 className="ml-4 text-lg font-semibold">Admin</h1>
             </div>
             <Button variant="outline" size="sm" asChild>
               <Link to="/dashboard">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
+                Console
               </Link>
             </Button>
           </header>
           <main className="flex-1 overflow-auto">
             <Routes>
               <Route path="/" element={<AdminOverview />} />
-              <Route path="/verification" element={<Phase2Verification />} />
-              <Route path="/logs" element={<GlobalApiLogs />} />
+              <Route path="/deals" element={<DealsSection />} />
+              <Route path="/users-orgs" element={<UsersOrgsSection />} />
+              <Route path="/compliance" element={<ComplianceSection />} />
+              <Route path="/audit" element={<AuditSection />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
-              <Route path="/entities" element={<AdminEntitiesPanel />} />
-              <Route path="/atb-ubo" element={<AdminAtbUboPanel />} />
-              <Route path="/trade-approvals" element={<AdminTradeApprovalsPanel />} />
-              <Route path="/deal-pipeline" element={<AdminDealPipelinePanel />} />
-              <Route path="/interests" element={<AdminInterestsPanel />} />
-              <Route path="/pois" element={<AdminPoisPanel />} />
-              <Route path="/matches" element={<AdminMatchesPanel />} />
-              <Route path="/signals" element={<AdminSignalsPanel />} />
-              <Route path="/coherence" element={<AdminCoherencePanel />} />
-              <Route path="/discovery" element={<AdminDiscoveryMetrics />} />
-              <Route path="/behavioral" element={<AdminBehavioralAnalytics />} />
-              <Route path="/audit" element={<AdminAuditLogs />} />
-              <Route path="/tokens" element={<AdminTokenManagement />} />
-              <Route path="/documents" element={<AdminDocumentVerification />} />
-              <Route path="/wad" element={<AdminWadPanel />} />
-              <Route path="/wad-governance" element={<AdminWadGovernancePanel />} />
-              <Route path="/pods" element={<AdminPodPanel />} />
-              <Route path="/compliance" element={<AdminComplianceCasesPanel />} />
-              <Route path="/poi-history" element={
-                <div className="p-6">
-                  <PoiStateHistory />
-                </div>
-              } />
-              <Route path="/collapse-ledger" element={<CollapseLedgerViewer />} />
-              <Route path="/rbac" element={<RbacPanel />} />
-              <Route path="/break-glass" element={<BreakGlassPanel />} />
-              <Route path="/brd-constraints" element={<BrdConstraintsPanel />} />
-              <Route path="/data-residency" element={<DataResidencyPanel />} />
-              <Route path="/checkpoint-2026-04-16" element={<CheckpointDemo />} />
-              <Route
-                path="/users-orgs"
-                element={
-                  <div className="p-6 space-y-6">
-                    <div>
-                      <h2 className="text-3xl font-bold tracking-tight">Users & Organizations</h2>
-                      <p className="text-muted-foreground mt-2">
-                        Manage user accounts and organizations
-                      </p>
-                    </div>
-                    <UsersManagement />
-                    <OrgsManagement />
-                  </div>
-                }
-              />
-              <Route
-                path="/settings"
-                element={<AdminSettings />}
-              />
-              <Route
-                path="/risk"
-                element={
-                  <div className="p-6">
-                    <AdminRiskPanel />
-                  </div>
-                }
-              />
+              <Route path="/settings" element={<AdminSettings />} />
             </Routes>
           </main>
         </div>

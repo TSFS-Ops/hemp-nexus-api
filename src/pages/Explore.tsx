@@ -187,7 +187,7 @@ export default function Explore() {
 
   if (!session) {
     return (
-      <DashboardLayout activeSection="explore" onSectionChange={() => {}} isDemoMode>
+      <DashboardLayout isDemoMode>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="max-w-md">
             <CardContent className="pt-6 text-center space-y-3">
@@ -202,7 +202,7 @@ export default function Explore() {
   }
 
   return (
-    <DashboardLayout activeSection="explore" onSectionChange={() => {}} isAdmin={isAdmin} isDemoMode={false}>
+    <DashboardLayout isAdmin={isAdmin} isDemoMode={false}>
       <div className="space-y-6 max-w-3xl">
         <header className="space-y-1">
           <div className="flex items-center gap-2">
