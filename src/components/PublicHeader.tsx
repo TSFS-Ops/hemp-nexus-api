@@ -36,9 +36,9 @@ export function PublicHeader({ showDemo, showThemeToggle }: PublicHeaderProps) {
         {/* Logo — always identical */}
         <Link to="/" className="flex items-center gap-2">
           <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
-            <span className="text-background font-bold text-xs">CM</span>
+            <span className="text-background font-bold text-xs">TI</span>
           </div>
-          <span className="font-semibold text-sm tracking-tight">Compliance Matching API</span>
+          <span className="font-semibold text-sm tracking-tight">Trade.Izenzo</span>
         </Link>
 
         {/* Desktop nav */}

@@ -99,6 +99,44 @@ export const DEMO_RESULTS: Record<string, DemoSearchResult[]> = {
       whySurfaced: "Regional mining hub: Zambia copper belt producer",
     },
   ],
+  gold: [
+    {
+      id: "demo-11",
+      title: "Rand Refinery (Pty) Ltd",
+      description: "South Africa's premier gold refinery. LBMA-accredited with capacity for doré, bullion, and industrial gold products.",
+      source: "Verified Trade Registry",
+      score: 95,
+      isEnriched: true,
+      enrichmentReason: "LBMA accreditation verified",
+      whySurfaced: "Direct match for gold doré refining and export",
+    },
+    {
+      id: "demo-12",
+      title: "Kaloti Precious Metals",
+      description: "Dubai-based refiner and trader of gold and precious metals with global distribution network.",
+      source: "Industry Database",
+      score: 90,
+      isEnriched: true,
+      enrichmentReason: "Cross-referenced with DMCC records",
+      whySurfaced: "Registered gold buyer with verified refining licence",
+    },
+    {
+      id: "demo-13",
+      title: "Metalor Technologies SA",
+      description: "Swiss-based precious metals refiner. Processes doré bars from mining operations worldwide.",
+      source: "Verified Trade Registry",
+      score: 87,
+      whySurfaced: "LBMA Good Delivery refiner with doré processing capability",
+    },
+    {
+      id: "demo-14",
+      title: "Emirates Gold DMCC",
+      description: "UAE gold refiner and bullion dealer. Licensed by DMCC with annual capacity of 200 tonnes.",
+      source: "Trade Directory",
+      score: 82,
+      whySurfaced: "Active gold buyer in Middle East corridor",
+    },
+  ],
   default: [
     {
       id: "demo-9",
@@ -134,6 +172,10 @@ export function getDemoResultsForQuery(query: string): DemoSearchResult[] {
   
   if (lowerQuery.includes("copper") || lowerQuery.includes("metal") || lowerQuery.includes("cathode")) {
     return DEMO_RESULTS.copper;
+  }
+
+  if (lowerQuery.includes("gold") || lowerQuery.includes("doré") || lowerQuery.includes("dore") || lowerQuery.includes("bullion") || lowerQuery.includes("precious")) {
+    return DEMO_RESULTS.gold;
   }
   
   return DEMO_RESULTS.default;
