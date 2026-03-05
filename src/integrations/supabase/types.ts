@@ -1354,6 +1354,76 @@ export type Database = {
           },
         ]
       }
+      deal_terms: {
+        Row: {
+          amendment_notes: string | null
+          created_at: string | null
+          delivery_terms: string | null
+          id: string
+          inspection_terms: string | null
+          match_id: string
+          org_id: string
+          partial_shipment: boolean | null
+          payment_terms: string | null
+          penalty_terms: string | null
+          proposed_by: string | null
+          status: string | null
+          version: number | null
+        }
+        Insert: {
+          amendment_notes?: string | null
+          created_at?: string | null
+          delivery_terms?: string | null
+          id?: string
+          inspection_terms?: string | null
+          match_id: string
+          org_id: string
+          partial_shipment?: boolean | null
+          payment_terms?: string | null
+          penalty_terms?: string | null
+          proposed_by?: string | null
+          status?: string | null
+          version?: number | null
+        }
+        Update: {
+          amendment_notes?: string | null
+          created_at?: string | null
+          delivery_terms?: string | null
+          id?: string
+          inspection_terms?: string | null
+          match_id?: string
+          org_id?: string
+          partial_shipment?: boolean | null
+          payment_terms?: string | null
+          penalty_terms?: string | null
+          proposed_by?: string | null
+          status?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_terms_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "deal_terms_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_terms_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_run_steps: {
         Row: {
           completed_at: string | null
@@ -1442,6 +1512,73 @@ export type Database = {
           summary?: Json | null
         }
         Relationships: []
+      }
+      disputes: {
+        Row: {
+          created_at: string | null
+          evidence_notes: string | null
+          id: string
+          match_id: string
+          raised_by_org_id: string
+          raised_by_user_id: string
+          reason: string
+          resolution_outcome: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          evidence_notes?: string | null
+          id?: string
+          match_id: string
+          raised_by_org_id: string
+          raised_by_user_id: string
+          reason: string
+          resolution_outcome?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          evidence_notes?: string | null
+          id?: string
+          match_id?: string
+          raised_by_org_id?: string
+          raised_by_user_id?: string
+          reason?: string
+          resolution_outcome?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "disputes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_raised_by_org_id_fkey"
+            columns: ["raised_by_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_access: {
         Row: {
@@ -2365,6 +2502,58 @@ export type Database = {
           },
         ]
       }
+      match_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          match_id: string
+          org_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          match_id: string
+          org_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          match_id?: string
+          org_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_notes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_notes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           buyer_committed_at: string | null
@@ -2538,6 +2727,50 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          id: string
+          link: string | null
+          org_id: string | null
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          org_id?: string | null
+          read?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          org_id?: string | null
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       options: {
         Row: {
           confidence_score: number | null
@@ -2659,6 +2892,8 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address: Json | null
+          authorised_signatory: string | null
           created_at: string
           cross_border_consent: boolean
           data_region: string
@@ -2668,12 +2903,23 @@ export type Database = {
           frozen_by: string | null
           frozen_reason: string | null
           id: string
+          industry: string | null
+          jurisdictions: string[] | null
+          legal_name: string | null
+          logo_url: string | null
           name: string
+          registration_number: string | null
           sandbox_enabled: boolean | null
           status: string
+          tax_number: string | null
+          trading_name: string | null
           updated_at: string
+          vat_number: string | null
+          website: string | null
         }
         Insert: {
+          address?: Json | null
+          authorised_signatory?: string | null
           created_at?: string
           cross_border_consent?: boolean
           data_region?: string
@@ -2683,12 +2929,23 @@ export type Database = {
           frozen_by?: string | null
           frozen_reason?: string | null
           id?: string
+          industry?: string | null
+          jurisdictions?: string[] | null
+          legal_name?: string | null
+          logo_url?: string | null
           name: string
+          registration_number?: string | null
           sandbox_enabled?: boolean | null
           status?: string
+          tax_number?: string | null
+          trading_name?: string | null
           updated_at?: string
+          vat_number?: string | null
+          website?: string | null
         }
         Update: {
+          address?: Json | null
+          authorised_signatory?: string | null
           created_at?: string
           cross_border_consent?: boolean
           data_region?: string
@@ -2698,10 +2955,19 @@ export type Database = {
           frozen_by?: string | null
           frozen_reason?: string | null
           id?: string
+          industry?: string | null
+          jurisdictions?: string[] | null
+          legal_name?: string | null
+          logo_url?: string | null
           name?: string
+          registration_number?: string | null
           sandbox_enabled?: boolean | null
           status?: string
+          tax_number?: string | null
+          trading_name?: string | null
           updated_at?: string
+          vat_number?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -3577,6 +3843,50 @@ export type Database = {
           },
           {
             foreignKeyName: "signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string
+          org_id: string
+          role: string | null
+          status: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by: string
+          org_id: string
+          role?: string | null
+          status?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string
+          org_id?: string
+          role?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

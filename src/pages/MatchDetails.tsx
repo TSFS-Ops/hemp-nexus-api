@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, Info, FileText, Shield, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, Info, FileText, Shield, Clock, CheckCircle2, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import { WadModule } from "@/components/wad/WadModule";
 import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
+import { MatchNotes } from "@/components/match/MatchNotes";
+import { DealTermsPanel } from "@/components/match/DealTermsPanel";
+import { DisputePanel } from "@/components/match/DisputePanel";
 import {
   Tooltip,
   TooltipContent,
@@ -251,31 +254,42 @@ export default function MatchDetails() {
         </CardContent>
       </Card>
 
-      {/* Tabbed sections for Documents, WaD, and Timeline */}
+      {/* Tabbed sections */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="details" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="details" className="flex items-center gap-1">
             <FileText className="h-4 w-4" />
-            Documents
+            <span className="hidden sm:inline">Documents</span>
           </TabsTrigger>
-          <TabsTrigger value="evidence" className="flex items-center gap-2">
+          <TabsTrigger value="terms" className="flex items-center gap-1">
+            <FileSignature className="h-4 w-4" />
+            <span className="hidden sm:inline">Terms</span>
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="flex items-center gap-1">
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Notes</span>
+          </TabsTrigger>
+          <TabsTrigger value="evidence" className="flex items-center gap-1">
             <Shield className="h-4 w-4" />
-            Evidence
+            <span className="hidden sm:inline">Evidence</span>
           </TabsTrigger>
-          <TabsTrigger value="wad" className="flex items-center gap-2">
+          <TabsTrigger value="wad" className="flex items-center gap-1">
             <Shield className="h-4 w-4" />
-            WaD
+            <span className="hidden sm:inline">WaD</span>
           </TabsTrigger>
-          <TabsTrigger value="timeline" className="flex items-center gap-2">
+          <TabsTrigger value="disputes" className="flex items-center gap-1">
+            <ShieldAlert className="h-4 w-4" />
+            <span className="hidden sm:inline">Disputes</span>
+          </TabsTrigger>
+          <TabsTrigger value="timeline" className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
-            Timeline
+            <span className="hidden sm:inline">Timeline</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="mt-4 space-y-4">
           <MatchDocuments matchId={match.id} orgId={match.org_id} />
           
-          {/* Confirm Intent button below documents - only for unconfirmed matches */}
           {!isSettled && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="pt-6">
@@ -318,12 +332,24 @@ export default function MatchDetails() {
           )}
         </TabsContent>
 
+        <TabsContent value="terms" className="mt-4">
+          <DealTermsPanel matchId={match.id} orgId={match.org_id} />
+        </TabsContent>
+
+        <TabsContent value="notes" className="mt-4">
+          <MatchNotes matchId={match.id} orgId={match.org_id} />
+        </TabsContent>
+
         <TabsContent value="evidence" className="mt-4">
           <EvidencePackPanel matchId={match.id} matchStatus={match.status} />
         </TabsContent>
 
         <TabsContent value="wad" className="mt-4">
           <WadModule match={match} onWadCreated={fetchMatch} />
+        </TabsContent>
+
+        <TabsContent value="disputes" className="mt-4">
+          <DisputePanel matchId={match.id} orgId={match.org_id} />
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-4">

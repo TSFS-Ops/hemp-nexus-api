@@ -1,10 +1,11 @@
-import { Search, Handshake, Settings, LogIn } from "lucide-react";
+import { Search, Handshake, Settings, LogIn, ShieldCheck, Building2, LayoutDashboard } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,11 +21,16 @@ interface AppSidebarProps {
   isDemoMode?: boolean;
 }
 
-const navItems = [
-  { path: "/dashboard", title: "Overview", icon: Search },
+const mainNavItems = [
+  { path: "/dashboard", title: "Overview", icon: LayoutDashboard },
   { path: "/dashboard/search", title: "Search", icon: Search },
   { path: "/dashboard/matches", title: "Matches", icon: Handshake },
+  { path: "/dashboard/compliance", title: "Compliance", icon: ShieldCheck },
+];
+
+const settingsNavItems = [
   { path: "/dashboard/settings", title: "Settings", icon: Settings },
+  { path: "/dashboard/account", title: "Organisation", icon: Building2 },
 ];
 
 export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
@@ -61,9 +67,32 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
 
       <SidebarContent className="px-2 py-3">
         <SidebarGroup>
+          <SidebarGroupLabel className="text-xs text-muted-foreground px-2 mb-1">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.path)}
+                    className="w-full px-2 py-1.5 text-sm"
+                  >
+                    <Link to={item.path}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="text-xs text-muted-foreground px-2 mb-1">Manage</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {settingsNavItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     asChild
@@ -83,6 +112,7 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
 
         {isAdmin && (
           <SidebarGroup className="mt-4">
+            <SidebarGroupLabel className="text-xs text-muted-foreground px-2 mb-1">Platform</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
