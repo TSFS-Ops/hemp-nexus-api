@@ -183,6 +183,7 @@ ${
 <tr><th>NTP Source</th><td>${canonical.collapse.ntp_source || "—"}</td></tr>
 <tr><th>NTP Drift (ms)</th><td>${canonical.collapse.ntp_drift_ms ?? "—"}</td></tr>
 <tr><th>Timestamp Metadata</th><td><pre style="font-size:10px;margin:0;white-space:pre-wrap">${canonical.collapse.timestamp_source_metadata ? JSON.stringify(canonical.collapse.timestamp_source_metadata, null, 2) : "—"}</pre></td></tr>
+</table>`
     : ""
 }
 
