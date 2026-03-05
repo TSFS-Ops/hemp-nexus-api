@@ -7,7 +7,7 @@ export function DocsSection() {
       <header>
         <h1 className="text-2xl font-semibold text-foreground mb-1">Overview</h1>
         <p className="text-muted-foreground">
-          Compliance Matching API — proof-of-intent for regulated B2B commerce
+          Trade.Izenzo — proof-of-intent for regulated B2B commerce
         </p>
       </header>
 

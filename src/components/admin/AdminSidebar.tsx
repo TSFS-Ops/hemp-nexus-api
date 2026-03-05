@@ -2,28 +2,9 @@ import {
   Activity,
   Key,
   Users,
-  FileText,
   Settings,
   Shield,
   GitCompare,
-  Radio,
-  Brain,
-  MousePointer,
-  ScrollText,
-  Zap,
-  Coins,
-  FileCheck,
-  Lock,
-  ClipboardCheck,
-  BookLock,
-  AlertTriangle,
-  Globe,
-  UserCog,
-  FileWarning,
-  Building2,
-  Heart,
-  ShieldCheck,
-  Package,
   Scale,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
@@ -32,86 +13,23 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 
-const sidebarGroups = [
-  {
-    label: "Overview",
-    items: [
-      { title: "Dashboard", url: "/admin", icon: Activity, exact: true },
-      { title: "Deal Pipeline", url: "/admin/deal-pipeline", icon: GitCompare },
-      { title: "Verification Checklist", url: "/admin/verification", icon: ClipboardCheck },
-    ],
-  },
-  {
-    label: "Core Data",
-    items: [
-      { title: "Entities", url: "/admin/entities", icon: Building2 },
-      { title: "ATB & UBO", url: "/admin/atb-ubo", icon: UserCog },
-      { title: "Interests", url: "/admin/interests", icon: Heart },
-      { title: "POIs", url: "/admin/pois", icon: Shield },
-      { title: "Matches", url: "/admin/matches", icon: GitCompare },
-      { title: "Signals", url: "/admin/signals", icon: Radio },
-      { title: "Documents", url: "/admin/documents", icon: FileCheck },
-      { title: "WaD Hard-Gates", url: "/admin/wad-governance", icon: ShieldCheck },
-      { title: "WaD Bundles", url: "/admin/wad", icon: Lock },
-      { title: "PoD Delivery", url: "/admin/pods", icon: Package },
-      { title: "Trade Approvals", url: "/admin/trade-approvals", icon: ShieldCheck },
-      { title: "Compliance Cases", url: "/admin/compliance", icon: Scale },
-    ],
-  },
-  {
-    label: "Analytics",
-    items: [
-      { title: "Coherence Engine", url: "/admin/coherence", icon: Brain },
-      { title: "Discovery Metrics", url: "/admin/discovery", icon: Zap },
-      { title: "Behavioral", url: "/admin/behavioral", icon: MousePointer },
-    ],
-  },
-  {
-    label: "Audit & Logs",
-    items: [
-      { title: "Audit Trail", url: "/admin/audit", icon: ScrollText },
-      { title: "POI State History", url: "/admin/poi-history", icon: Shield },
-      { title: "Collapse Ledger", url: "/admin/collapse-ledger", icon: BookLock },
-      { title: "API Logs", url: "/admin/logs", icon: FileText },
-    ],
-  },
-  {
-    label: "Governance",
-    items: [
-      { title: "RBAC", url: "/admin/rbac", icon: UserCog },
-      { title: "Break-Glass", url: "/admin/break-glass", icon: AlertTriangle },
-      { title: "BRD Constraints", url: "/admin/brd-constraints", icon: FileWarning },
-      { title: "Data Residency", url: "/admin/data-residency", icon: Globe },
-    ],
-  },
-  {
-    label: "Management",
-    items: [
-      { title: "Tokens", url: "/admin/tokens", icon: Coins },
-      { title: "Users & Orgs", url: "/admin/users-orgs", icon: Users },
-      { title: "API Keys", url: "/admin/api-keys", icon: Key },
-      { title: "Risk Register", url: "/admin/risk", icon: Shield },
-      { title: "Settings", url: "/admin/settings", icon: Settings },
-    ],
-  },
-  {
-    label: "Checkpoints",
-    items: [
-      { title: "Checkpoint Demo (16 Apr 2026)", url: "/admin/checkpoint-2026-04-16", icon: ClipboardCheck },
-    ],
-  },
+const sidebarItems = [
+  { title: "Overview", url: "/admin", icon: Activity, exact: true },
+  { title: "Deals", url: "/admin/deals", icon: GitCompare },
+  { title: "Users & Orgs", url: "/admin/users-orgs", icon: Users },
+  { title: "Compliance", url: "/admin/compliance", icon: Scale },
+  { title: "Audit", url: "/admin/audit", icon: Shield },
+  { title: "API Keys", url: "/admin/api-keys", icon: Key },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -121,34 +39,42 @@ export function AdminSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <SidebarContent>
-        {sidebarGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        to={item.url}
-                        className={`flex items-center gap-2 ${
-                          isActive(item.url, item.exact)
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-muted/50"
-                        }`}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+    <Sidebar className="w-60" collapsible="icon">
+      <SidebarHeader className="border-b border-border px-4 py-3">
+        <Link to="/admin" className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
+            <span className="text-background font-bold text-[10px]">TI</span>
+          </div>
+          <div>
+            <h2 className="font-semibold text-sm text-foreground">Trade.Izenzo</h2>
+            <p className="text-xs text-muted-foreground">Admin</p>
+          </div>
+        </Link>
+      </SidebarHeader>
+      <SidebarContent className="px-2 py-3">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {sidebarItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={item.url}
+                      className={`flex items-center gap-2 ${
+                        isActive(item.url, item.exact)
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );

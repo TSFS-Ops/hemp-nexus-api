@@ -244,7 +244,7 @@ export default function Billing() {
   const isCritical = minimumRequired > 0 && currentBalance <= minimumRequired + 1000;
 
   return (
-    <DashboardLayout activeSection="usage" onSectionChange={() => {}} isAdmin={isAdmin}>
+    <DashboardLayout isAdmin={isAdmin}>
       <div className="space-y-6">
         <header>
           <h1 className="text-2xl font-bold tracking-tight">API Credits</h1>

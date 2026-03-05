@@ -55,9 +55,7 @@ function App() {
                 <Route path="/landing" element={<Landing />} />
                 <Route path="/demo" element={<Demo />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/billing" element={<Billing />} />
-                <Route path="/dashboard/matches/:matchId" element={<MatchDetails />} />
+                <Route path="/dashboard/*" element={<Dashboard />} />
                 <Route path="/activity" element={<MyActivity />} />
                 <Route path="/invites" element={<Invites />} />
                 <Route path="/marketplace" element={<Marketplace />} />

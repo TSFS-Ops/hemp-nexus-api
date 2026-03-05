@@ -65,7 +65,7 @@ export default function WalkthroughReport() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <PublicHeader showThemeToggle />
+      <PublicHeader />
 
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 print:max-w-none print:px-0 print:py-0">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4 print:hidden">

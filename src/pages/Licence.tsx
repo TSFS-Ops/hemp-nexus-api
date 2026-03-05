@@ -78,7 +78,7 @@ export default function Licence() {
   };
 
   return (
-    <DashboardLayout activeSection="usage" onSectionChange={() => {}} isAdmin={isAdmin}>
+    <DashboardLayout isAdmin={isAdmin}>
       <div className="space-y-6">
         <header>
           <h1 className="text-2xl font-bold tracking-tight">Licence Management</h1>
