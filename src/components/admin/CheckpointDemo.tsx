@@ -37,25 +37,31 @@ const DD_STEPS: Omit<StepResult, "status">[] = [
   { stepNumber: 7, name: "Write ATB + 'Approved to Trade' status (one-time certification)", type: "positive" },
 ];
 
-// Lifecycle Path — Steps 8-14
-const LIFECYCLE_STEPS: Omit<StepResult, "status">[] = [
-  { stepNumber: 8, name: "Create Signals (buy + sell intents)", type: "lifecycle" },
-  { stepNumber: 9, name: "Match Discovery (counterparty pairing)", type: "lifecycle" },
-  { stepNumber: 10, name: "Send Invite (Org A → Org B)", type: "lifecycle" },
-  { stepNumber: 11, name: "Confirm Intent (Org B accepts, 500 tokens burned)", type: "lifecycle" },
-  { stepNumber: 12, name: "Pre-flight validation (non-binding)", type: "lifecycle" },
-  { stepNumber: 13, name: "POI Collapse (binding event)", type: "lifecycle" },
-  { stepNumber: 14, name: "Generate Evidence Pack v1", type: "lifecycle" },
+// Intel Discovery Path — Steps 8-9
+const INTEL_STEPS: Omit<StepResult, "status">[] = [
+  { stepNumber: 8, name: "OSINT Crawl (DISC-002/003) — buyer + seller entities", type: "lifecycle" },
+  { stepNumber: 9, name: "Eligibility Evaluation (DISC-006) — buyer + seller PASS gate", type: "lifecycle" },
 ];
 
-// Negative Tests — Steps 15-19
+// Lifecycle Path — Steps 10-16
+const LIFECYCLE_STEPS: Omit<StepResult, "status">[] = [
+  { stepNumber: 10, name: "Create Signals (buy + sell intents)", type: "lifecycle" },
+  { stepNumber: 11, name: "Match Discovery (counterparty pairing)", type: "lifecycle" },
+  { stepNumber: 12, name: "Send Invite (Org A → Org B)", type: "lifecycle" },
+  { stepNumber: 13, name: "Confirm Intent (Org B accepts, 500 tokens burned)", type: "lifecycle" },
+  { stepNumber: 14, name: "Pre-flight validation (non-binding)", type: "lifecycle" },
+  { stepNumber: 15, name: "POI Collapse (binding event)", type: "lifecycle" },
+  { stepNumber: 16, name: "Generate Evidence Pack v1", type: "lifecycle" },
+];
+
+// Negative Tests — Steps 17-22
 const NEGATIVE_STEPS: Omit<StepResult, "status">[] = [
-  { stepNumber: 15, name: "Missing mandatory field → rejected", type: "negative" },
-  { stepNumber: 16, name: "Invalid ECDSA signature → rejected", type: "negative" },
-  { stepNumber: 17, name: "Collapse before approvals → rejected", type: "negative" },
-  { stepNumber: 18, name: "Mutate collapsed record → impossible", type: "negative" },
-  { stepNumber: 19, name: "Idempotency burst → only 1 record", type: "negative" },
-  { stepNumber: 20, name: "Direct POI without eligibility → rejected", type: "negative" },
+  { stepNumber: 17, name: "Missing mandatory field → rejected", type: "negative" },
+  { stepNumber: 18, name: "Invalid ECDSA signature → rejected", type: "negative" },
+  { stepNumber: 19, name: "Collapse before approvals → rejected", type: "negative" },
+  { stepNumber: 20, name: "Mutate collapsed record → impossible", type: "negative" },
+  { stepNumber: 21, name: "Idempotency burst → only 1 record", type: "negative" },
+  { stepNumber: 22, name: "Direct POI without eligibility → rejected", type: "negative" },
 ];
 
 const ACTION_MAP: Record<number, string> = {
@@ -66,19 +72,21 @@ const ACTION_MAP: Record<number, string> = {
   5: "step_5_risk_score",
   6: "step_6_approval_workflow",
   7: "step_7_trade_approval",
-  8: "step_8_create_signals",
-  9: "step_9_match_discovery",
-  10: "step_10_send_invite",
-  11: "step_11_confirm_intent",
-  12: "step_12_preflight",
-  13: "step_13_collapse",
-  14: "step_14_evidence_pack",
-  15: "negative_missing_field",
-  16: "negative_invalid_signature",
-  17: "negative_collapse_before_approval",
-  18: "negative_mutate_collapsed",
-  19: "negative_idempotency_burst",
-  20: "negative_poi_without_eligibility",
+  8: "step_8_intel_crawl",
+  9: "step_9_eligibility_eval",
+  10: "step_10_create_signals",
+  11: "step_11_match_discovery",
+  12: "step_12_send_invite",
+  13: "step_13_confirm_intent",
+  14: "step_14_preflight",
+  15: "step_15_collapse",
+  16: "step_16_evidence_pack",
+  17: "negative_missing_field",
+  18: "negative_invalid_signature",
+  19: "negative_collapse_before_approval",
+  20: "negative_mutate_collapsed",
+  21: "negative_idempotency_burst",
+  22: "negative_poi_without_eligibility",
 };
 
 type DemoMode = "dd_only" | "full_lifecycle";
@@ -106,11 +114,12 @@ export function CheckpointDemo() {
 
   function buildSteps(m: DemoMode): StepResult[] {
     const base = DD_STEPS.map(s => ({ ...s, status: "pending" as const }));
+    const intel = INTEL_STEPS.map(s => ({ ...s, status: "pending" as const }));
     const lifecycle = m === "full_lifecycle"
       ? LIFECYCLE_STEPS.map(s => ({ ...s, status: "pending" as const }))
       : [];
     const negative = NEGATIVE_STEPS.map(s => ({ ...s, status: "pending" as const }));
-    return [...base, ...lifecycle, ...negative];
+    return [...base, ...intel, ...lifecycle, ...negative];
   }
 
   const switchMode = (m: DemoMode) => {
@@ -205,14 +214,14 @@ export function CheckpointDemo() {
         setOrgAId(data.org_a.id); orgARef.current = data.org_a.id;
         setOrgBId(data.org_b.id); orgBRef.current = data.org_b.id;
       }
-      if (stepNumber === 9 && data.match?.match_id) {
+      if (stepNumber === 11 && data.match?.match_id) {
         setMatchId(data.match.match_id); matchRef.current = data.match.match_id;
       }
-      if (stepNumber === 13 && data.collapse?.collapse_id) {
+      if (stepNumber === 15 && data.collapse?.collapse_id) {
         setCollapseId(data.collapse.collapse_id); collapseRef.current = data.collapse.collapse_id;
       }
 
-      const isNegativeTest = stepNumber >= 15;
+      const isNegativeTest = stepNumber >= 17;
       let passed: boolean;
       if (isNegativeTest) {
         passed = data.success === true;
@@ -244,7 +253,8 @@ export function CheckpointDemo() {
   const runLifecycle = async () => {
     setIsRunning(true);
     if (!runIdRef.current) await createRun();
-    for (let i = 8; i <= 14; i++) {
+    // Intel steps 8-9, then lifecycle 10-16
+    for (let i = 8; i <= 16; i++) {
       await runStep(i);
       await new Promise(r => setTimeout(r, 500));
     }
@@ -253,7 +263,7 @@ export function CheckpointDemo() {
 
   const runNegative = async () => {
     setIsRunning(true);
-    for (let i = 15; i <= 20; i++) {
+    for (let i = 17; i <= 22; i++) {
       await runStep(i);
       await new Promise(r => setTimeout(r, 500));
     }
@@ -268,12 +278,18 @@ export function CheckpointDemo() {
       await new Promise(r => setTimeout(r, 500));
     }
     if (mode === "full_lifecycle") {
-      for (let i = 8; i <= 14; i++) {
+      for (let i = 8; i <= 16; i++) {
+        await runStep(i);
+        await new Promise(r => setTimeout(r, 500));
+      }
+    } else {
+      // Even in DD-only, run intel steps
+      for (let i = 8; i <= 9; i++) {
         await runStep(i);
         await new Promise(r => setTimeout(r, 500));
       }
     }
-    for (let i = 15; i <= 20; i++) {
+    for (let i = 17; i <= 22; i++) {
       await runStep(i);
       await new Promise(r => setTimeout(r, 500));
     }
@@ -387,8 +403,8 @@ export function CheckpointDemo() {
         <CardContent className="pt-6">
           <Tabs value={mode} onValueChange={(v) => switchMode(v as DemoMode)}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="dd_only">DD Only (Steps 1–7)</TabsTrigger>
-              <TabsTrigger value="full_lifecycle">Full Lifecycle (Steps 1–14)</TabsTrigger>
+              <TabsTrigger value="dd_only">DD + Intel (Steps 1–9)</TabsTrigger>
+              <TabsTrigger value="full_lifecycle">Full Lifecycle (Steps 1–16)</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -468,20 +484,38 @@ export function CheckpointDemo() {
         </CardContent>
       </Card>
 
+      {/* Intel Discovery Path */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            Discovery Intelligence (Steps 8–9)
+          </CardTitle>
+          <CardDescription>
+            OSINT Crawl (DISC-002/003) → Eligibility Evaluation (DISC-006) — mutual gate check
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {steps.filter(s => s.stepNumber >= 8 && s.stepNumber <= 9).map(step => (
+            <StepRow key={step.stepNumber} step={step} />
+          ))}
+        </CardContent>
+      </Card>
+
       {/* Lifecycle Path */}
       {mode === "full_lifecycle" && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <ArrowRight className="h-5 w-5 text-primary" />
-              Trade Lifecycle Path (Steps 8–14)
+              Trade Lifecycle Path (Steps 10–16)
             </CardTitle>
             <CardDescription>
               Signal → Match → Invite → Confirm Intent → Preflight → Collapse → Evidence Pack
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {steps.filter(s => s.type === "lifecycle").map(step => (
+            {steps.filter(s => s.stepNumber >= 10 && s.stepNumber <= 16).map(step => (
               <StepRow key={step.stepNumber} step={step} />
             ))}
           </CardContent>
