@@ -213,14 +213,18 @@ async function generateSignature(payload: string, secret: string): Promise<strin
 }
 
 /**
- * Calculate next retry time with exponential backoff
- * Attempt 2: 5 minutes
- * Attempt 3: 30 minutes
- * Attempt 4+: 2 hours
+ * Calculate next retry time with exponential backoff over 24-hour window (§21)
+ * Attempt 2: 1 minute
+ * Attempt 3: 5 minutes
+ * Attempt 4: 15 minutes
+ * Attempt 5: 1 hour
+ * Attempt 6: 4 hours
+ * Attempt 7: 12 hours
+ * Attempt 8+: 24 hours (final, becomes dead letter)
  */
 function calculateNextRetry(attempt: number): string {
-  const delays = [0, 5, 30, 120]; // minutes
-  const delayMinutes = delays[attempt] || 120;
+  const delays = [0, 1, 5, 15, 60, 240, 720, 1440]; // minutes
+  const delayMinutes = delays[Math.min(attempt, delays.length - 1)] || 1440;
   
   const nextRetry = new Date();
   nextRetry.setMinutes(nextRetry.getMinutes() + delayMinutes);

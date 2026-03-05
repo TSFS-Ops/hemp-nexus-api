@@ -70,6 +70,9 @@ function buildCanonicalPayload(
           poi_state: collapseRecord.poi_state,
           client_timestamp: collapseRecord.client_timestamp,
           created_at: collapseRecord.created_at,
+          ntp_source: collapseRecord.ntp_source || null,
+          ntp_drift_ms: collapseRecord.ntp_drift_ms ?? null,
+          timestamp_source_metadata: collapseRecord.timestamp_source_metadata || null,
         }
       : null,
     timeline: events.map((e) => ({
@@ -177,7 +180,9 @@ ${
 <tr><th>Key ID</th><td>${canonical.collapse.signature_key_id || "—"}</td></tr>
 <tr><th>Client Timestamp</th><td>${canonical.collapse.client_timestamp}</td></tr>
 <tr><th>Server Timestamp</th><td>${canonical.collapse.created_at}</td></tr>
-</table>`
+<tr><th>NTP Source</th><td>${canonical.collapse.ntp_source || "—"}</td></tr>
+<tr><th>NTP Drift (ms)</th><td>${canonical.collapse.ntp_drift_ms ?? "—"}</td></tr>
+<tr><th>Timestamp Metadata</th><td><pre style="font-size:10px;margin:0;white-space:pre-wrap">${canonical.collapse.timestamp_source_metadata ? JSON.stringify(canonical.collapse.timestamp_source_metadata, null, 2) : "—"}</pre></td></tr>
     : ""
 }
 
