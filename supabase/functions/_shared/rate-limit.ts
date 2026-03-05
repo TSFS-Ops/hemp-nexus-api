@@ -109,6 +109,13 @@ async function incrementRateLimitAtomic(
   return data || 0;
 }
 
+// ── §22 Circuit Breaker ──
+// Trips when an org exceeds 10x its per-minute limit within a window,
+// blocking all requests from that org for a cooldown period.
+const CIRCUIT_BREAKER_MULTIPLIER = 10;
+const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000; // 1 minute cooldown
+const circuitBreakerState = new Map<string, { trippedAt: number }>();
+
 export async function checkRateLimit(
   supabase: SupabaseClient,
   orgId: string,
@@ -118,9 +125,30 @@ export async function checkRateLimit(
 ): Promise<void> {
   const limits = scope && SCOPE_LIMITS[scope] ? SCOPE_LIMITS[scope] : DEFAULT_LIMITS;
 
+  // Circuit breaker check — if tripped, reject immediately
+  const cbKey = `${orgId}:${endpoint}`;
+  const cbState = circuitBreakerState.get(cbKey);
+  if (cbState) {
+    const elapsed = Date.now() - cbState.trippedAt;
+    if (elapsed < CIRCUIT_BREAKER_COOLDOWN_MS) {
+      throw new ApiException(
+        "CIRCUIT_BREAKER_OPEN",
+        `Circuit breaker tripped for this endpoint. Try again in ${Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000)}s.`,
+        429,
+        { retryAfter: Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000) }
+      );
+    }
+    // Cooldown expired — reset
+    circuitBreakerState.delete(cbKey);
+  }
+
   if (limits.requestsPerMinute) {
     const minuteWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:minute`, 1);
     if (minuteWindow.requestCount >= limits.requestsPerMinute) {
+      // Trip circuit breaker if massively over limit
+      if (minuteWindow.requestCount >= limits.requestsPerMinute * CIRCUIT_BREAKER_MULTIPLIER) {
+        circuitBreakerState.set(cbKey, { trippedAt: Date.now() });
+      }
       const resetTime = Math.ceil((minuteWindow.windowEnd.getTime() - Date.now()) / 1000);
       throw new ApiException(
         "RATE_LIMIT_EXCEEDED",

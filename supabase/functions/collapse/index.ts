@@ -254,6 +254,51 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── §24 BRD constraints runtime validation ──
+    // Verify that core protocol rules haven't been tampered with
+    const REQUIRED_CONSTRAINTS: Record<string, string> = {
+      signed_payload_required: "enforced",
+      idempotency_mandatory: "enforced",
+      rpo_zero: "enforced",
+      partition_consistency: "enforced",
+      append_only_ledger: "enforced",
+    };
+
+    const { data: constraints } = await adminClient
+      .from("brd_constraints")
+      .select("constraint_key, current_value, locked")
+      .in("constraint_key", Object.keys(REQUIRED_CONSTRAINTS));
+
+    const constraintMap = new Map((constraints || []).map((c: any) => [c.constraint_key, c]));
+
+    for (const [key, requiredValue] of Object.entries(REQUIRED_CONSTRAINTS)) {
+      const constraint = constraintMap.get(key);
+      if (!constraint) {
+        throw new ApiException(
+          "GOVERNANCE_VIOLATION",
+          `BRD constraint '${key}' not found. Collapse rejected — protocol integrity cannot be verified.`,
+          503,
+          { missingConstraint: key }
+        );
+      }
+      if (constraint.current_value !== requiredValue) {
+        throw new ApiException(
+          "GOVERNANCE_VIOLATION",
+          `BRD constraint '${key}' has been modified (expected '${requiredValue}', got '${constraint.current_value}'). Collapse rejected.`,
+          503,
+          { constraint: key, expected: requiredValue, actual: constraint.current_value }
+        );
+      }
+      if (!constraint.locked) {
+        throw new ApiException(
+          "GOVERNANCE_VIOLATION",
+          `BRD constraint '${key}' is unlocked. Collapse rejected — all core constraints must be locked.`,
+          503,
+          { constraint: key, locked: false }
+        );
+      }
+    }
+
     // ── Check global collapse freeze (break-glass) ──
     const { data: freezeSetting } = await adminClient
       .from("admin_settings")
