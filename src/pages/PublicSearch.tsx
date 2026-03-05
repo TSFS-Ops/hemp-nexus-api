@@ -56,10 +56,10 @@ export default function PublicSearch() {
         <div className="mb-8 sm:mb-10 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">CM</span>
+              <span className="text-primary-foreground font-bold text-sm">TI</span>
             </div>
             <span className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-              Compliance Matching API
+              Trade.Izenzo
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -182,7 +182,7 @@ export default function PublicSearch() {
       {/* Footer with brand identity */}
       <footer className="py-6 px-4 border-t border-border/50">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">Compliance Matching API</span>
+          <span className="font-medium text-foreground/70">Trade.Izenzo</span>
           <div className="flex items-center gap-4">
             <Link to="/docs" className="hover:text-primary transition-colors">
               API Docs

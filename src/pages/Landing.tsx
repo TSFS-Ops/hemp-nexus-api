@@ -61,7 +61,7 @@ export default function Landing() {
             Find a buyer or seller
           </h1>
           <p className="text-base text-muted-foreground mb-8">
-            Search, match, and agree on the basics — product, quantity, price, and delivery.
+            Search, match, and agree on the basics — product, quantity, price, and delivery basis.
           </p>
 
           {/* Search */}
