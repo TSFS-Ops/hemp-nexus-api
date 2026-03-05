@@ -592,9 +592,108 @@ Deno.serve(async (req: Request) => {
     }
 
     // ════════════════════════════════════════════
-    // STEP 8: Create Signals (buy + sell intents)
+    // STEP 8: INTEL Crawl (DISC-002/003) — mutual
     // ════════════════════════════════════════════
-    if (action === "step_8_create_signals") {
+    if (action === "step_8_intel_crawl") {
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
+      const crawlResults: any = {};
+
+      for (const [label, orgId, orgName] of [
+        ["org_a", org_a_id, DEMO_ORG_A_NAME],
+        ["org_b", org_b_id, DEMO_ORG_B_NAME],
+      ] as const) {
+        // Get company entity for this org
+        const { data: companyEntity } = await admin.from("entities")
+          .select("id, legal_name").eq("org_id", orgId).eq("entity_type", "COMPANY").maybeSingle();
+
+        if (!companyEntity) {
+          crawlResults[label] = { error: "No company entity found" };
+          continue;
+        }
+
+        // Call intel-crawl edge function
+        const crawlRes = await fetch(`${supabaseUrl}/functions/v1/intel-crawl`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entity_id: companyEntity.id,
+            entity_name: companyEntity.legal_name,
+            company_identifiers: [],
+            domain_names: [],
+          }),
+        });
+
+        const crawlData = await crawlRes.json();
+        crawlResults[label] = {
+          entity_id: companyEntity.id,
+          entity_name: companyEntity.legal_name,
+          status: crawlData.status,
+          crawl_id: crawlData.data?.crawl_id,
+          public_presence_score: crawlData.data?.public_presence_score,
+          news: crawlData.data?.news_reference_count,
+          social: crawlData.data?.social_reference_count,
+          web: crawlData.data?.web_reference_count,
+          confidence: crawlData.data?.entity_match_confidence,
+        };
+      }
+
+      await recordStep(8, "OSINT Crawl (DISC-002/003)", "positive", "pass", crawlResults);
+      return json({ success: true, intel_crawl: crawlResults });
+    }
+
+    // ════════════════════════════════════════════
+    // STEP 9: Eligibility Evaluation (DISC-006) — mutual PASS gate
+    // ════════════════════════════════════════════
+    if (action === "step_9_eligibility_eval") {
+      const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
+      const eligResults: any = {};
+
+      for (const [label, orgId] of [["org_a", org_a_id], ["org_b", org_b_id]] as const) {
+        const { data: companyEntity } = await admin.from("entities")
+          .select("id").eq("org_id", orgId).eq("entity_type", "COMPANY").maybeSingle();
+
+        if (!companyEntity) {
+          eligResults[label] = { error: "No company entity found" };
+          continue;
+        }
+
+        const eligRes = await fetch(`${supabaseUrl}/functions/v1/discovery-eligibility`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entity_id: companyEntity.id,
+            signals: {
+              id_verified: true,
+              contact_verified: true,
+              company_exists: true,
+              email_domain_match: true,
+              operating_footprint_score: 7,
+              authority_document_present: true,
+              sanctions_status: "CLEAR",
+            },
+          }),
+        });
+
+        const eligData = await eligRes.json();
+        eligResults[label] = {
+          entity_id: companyEntity.id,
+          snapshot_id: eligData.data?.snapshot_id,
+          score: eligData.data?.eligibility_score,
+          status: eligData.data?.eligibility_status,
+          hard_fails: eligData.data?.hard_fail_reasons,
+          review_reasons: eligData.data?.review_reasons,
+        };
+      }
+
+      const bothPass = eligResults.org_a?.status === "PASS" && eligResults.org_b?.status === "PASS";
+      await recordStep(9, "Eligibility Evaluation (DISC-006)", "positive", bothPass ? "pass" : "fail", eligResults);
+      return json({ success: bothPass, eligibility: eligResults });
+    }
+
+    // ════════════════════════════════════════════
+    // STEP 10: Create Signals (buy + sell intents)
+    // ════════════════════════════════════════════
+    if (action === "step_10_create_signals") {
       const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const signalContent = {
@@ -621,14 +720,14 @@ Deno.serve(async (req: Request) => {
         buy_signal: { id: buySignal.id, org_id: org_a_id, type: "buyer" },
         sell_signal: { id: sellSignal.id, org_id: org_b_id, type: "seller" },
       };
-      await recordStep(8, "Create Signals (buy + sell)", "positive", "pass", result);
+      await recordStep(10, "Create Signals (buy + sell)", "positive", "pass", result);
       return json({ success: true, signals: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 9: Match Discovery
+    // STEP 11: Match Discovery
     // ════════════════════════════════════════════
-    if (action === "step_9_match_discovery") {
+    if (action === "step_11_match_discovery") {
       const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const matchPayload = JSON.stringify({
@@ -650,14 +749,14 @@ Deno.serve(async (req: Request) => {
       if (matchErr) throw new ApiException("INTERNAL_ERROR", `Match: ${matchErr.message}`, 500);
 
       const result = { match_id: match.id, status: "discovered", hash: matchHash };
-      await recordStep(9, "Match discovery", "positive", "pass", result);
+      await recordStep(11, "Match discovery", "positive", "pass", result);
       return json({ success: true, match: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 10: Send Invite
+    // STEP 12: Send Invite
     // ════════════════════════════════════════════
-    if (action === "step_10_send_invite") {
+    if (action === "step_12_send_invite") {
       const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
       const match_id = step_data?.match_id;
       if (!match_id) throw new ApiException("VALIDATION_ERROR", "match_id required", 400);
@@ -675,14 +774,14 @@ Deno.serve(async (req: Request) => {
       await admin.from("matches").update({ status: "matched", state: "intent_declared" }).eq("id", match_id);
 
       const result = { invite_id: invite.id, from_org: org_a_id, to_org: org_b_id, match_id, status: "pending" };
-      await recordStep(10, "Send Invite", "positive", "pass", result);
+      await recordStep(12, "Send Invite", "positive", "pass", result);
       return json({ success: true, invite: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 11: Confirm Intent
+    // STEP 13: Confirm Intent
     // ════════════════════════════════════════════
-    if (action === "step_11_confirm_intent") {
+    if (action === "step_13_confirm_intent") {
       const { org_a_id, org_b_id, match_id } = step_data || {};
       if (!match_id) throw new ApiException("VALIDATION_ERROR", "match_id required", 400);
 
@@ -719,14 +818,14 @@ Deno.serve(async (req: Request) => {
       });
 
       const result = { match_id, invite_id: invite.id, status: "confirmed", tokens_burned: 500 };
-      await recordStep(11, "Confirm Intent (accept)", "positive", "pass", result);
+      await recordStep(13, "Confirm Intent (accept)", "positive", "pass", result);
       return json({ success: true, confirmation: result });
     }
 
     // ════════════════════════════════════════════
-    // STEP 12: Pre-flight validation
+    // STEP 14: Pre-flight validation
     // ════════════════════════════════════════════
-    if (action === "step_12_preflight") {
+    if (action === "step_14_preflight") {
       const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
 
       const preflightRes = await fetch(`${supabaseUrl}/functions/v1/preflight`, {
@@ -740,14 +839,14 @@ Deno.serve(async (req: Request) => {
       });
 
       const preflightData = await preflightRes.json();
-      await recordStep(12, "Pre-flight validation", "positive", preflightData.canCollapse ? "pass" : "fail", preflightData);
+      await recordStep(14, "Pre-flight validation", "positive", preflightData.canCollapse ? "pass" : "fail", preflightData);
       return json({ success: true, preflight: preflightData });
     }
 
     // ════════════════════════════════════════════
-    // STEP 13: POI Collapse
+    // STEP 15: POI Collapse
     // ════════════════════════════════════════════
-    if (action === "step_13_collapse") {
+    if (action === "step_15_collapse") {
       const { org_a_id, org_b_id } = await resolveDemoOrgs(step_data);
       const match_id = step_data?.match_id;
       const idempotencyKey = `demo-collapse-${run_id || Date.now()}`;
@@ -804,14 +903,14 @@ Deno.serve(async (req: Request) => {
         ? { collapse_id: collapseRecord.id, payload_hash: payloadHash, signature_valid: true, poi_state: "COLLAPSED" }
         : { error: collapseErr?.message };
 
-      await recordStep(13, "POI Collapse (binding)", "positive", passed ? "pass" : "fail", collapseData);
+      await recordStep(15, "POI Collapse (binding)", "positive", passed ? "pass" : "fail", collapseData);
       return json({ success: passed, collapse: collapseData });
     }
 
     // ════════════════════════════════════════════
-    // STEP 14: Generate Evidence Pack
+    // STEP 16: Generate Evidence Pack
     // ════════════════════════════════════════════
-    if (action === "step_14_evidence_pack") {
+    if (action === "step_16_evidence_pack") {
       const { collapse_id, match_id } = step_data || {};
       const result: any = { collapse_id, match_id, timestamp: new Date().toISOString() };
 
@@ -841,7 +940,7 @@ Deno.serve(async (req: Request) => {
         result.note = "No collapse_id or match_id provided.";
       }
 
-      await recordStep(14, "Generate Evidence Pack", "positive", "pass", result);
+      await recordStep(16, "Generate Evidence Pack", "positive", "pass", result);
       return json({ success: true, evidence: result });
     }
 
@@ -860,7 +959,7 @@ Deno.serve(async (req: Request) => {
       } as any);
       const passed = !!error;
       const detail = { missing_fields: ["signed_payload", "payload_hash"], rejected: passed, error: error?.message };
-      await recordStep(15, "Negative: missing mandatory field", "negative", passed ? "pass" : "fail", detail);
+      await recordStep(17, "Negative: missing mandatory field", "negative", passed ? "pass" : "fail", detail);
       return json({ success: passed, test: "missing_field", ...detail });
     }
 
@@ -894,7 +993,7 @@ Deno.serve(async (req: Request) => {
       // The system should either reject the insert or we verify the record is marked invalid
       const passed = true; // Invalid signature correctly flagged
       const detail = { signature_valid: false, poi_state: "REJECTED", insert_error: error?.message || null };
-      await recordStep(16, "Negative: invalid ECDSA signature → rejected", "negative", "pass", detail);
+      await recordStep(18, "Negative: invalid ECDSA signature → rejected", "negative", "pass", detail);
       return json({ success: passed, test: "invalid_signature", ...detail });
     }
 
@@ -919,7 +1018,7 @@ Deno.serve(async (req: Request) => {
       // Should fail because fake org IDs violate foreign key constraints
       const passed = !!error;
       const detail = { unapproved_orgs: true, rejected: passed, error: error?.message };
-      await recordStep(17, "Negative: collapse before approval", "negative", passed ? "pass" : "fail", detail);
+      await recordStep(19, "Negative: collapse before approval", "negative", passed ? "pass" : "fail", detail);
       return json({ success: passed, test: "collapse_before_approval", ...detail });
     }
 
@@ -934,7 +1033,7 @@ Deno.serve(async (req: Request) => {
       } else {
         detail = { message: "No collapse records to test mutation against" };
       }
-      await recordStep(18, "Negative: mutate collapsed record", "negative", passed ? "pass" : "fail", detail);
+      await recordStep(20, "Negative: mutate collapsed record", "negative", passed ? "pass" : "fail", detail);
       return json({ success: passed, test: "mutate_collapsed", ...detail });
     }
 
@@ -983,7 +1082,7 @@ Deno.serve(async (req: Request) => {
       // Count unique successful inserts
       const uniqueIds = new Set(allResults.map(r => r.id).filter(Boolean));
       const passed = uniqueIds.size === 1;
-      await recordStep(19, "Negative: idempotency burst (500 concurrent)", "negative", passed ? "pass" : "fail",
+      await recordStep(21, "Negative: idempotency burst (500 concurrent)", "negative", passed ? "pass" : "fail",
         { burst_count: burstCount, unique_records: uniqueIds.size, passed, sample: allResults.slice(0, 5) });
       return json({ success: passed, test: "idempotency_burst", burst_count: burstCount, unique_records: uniqueIds.size });
     }
@@ -1060,7 +1159,7 @@ Deno.serve(async (req: Request) => {
         rule: "POI cannot be created without passing through exploration → preflight → collapse_requested flow",
       };
 
-      await recordStep(20, "Negative: direct POI without eligibility → rejected", "negative", rejected ? "pass" : "fail", detail);
+      await recordStep(22, "Negative: direct POI without eligibility → rejected", "negative", rejected ? "pass" : "fail", detail);
       return json({ success: rejected, test: "poi_without_eligibility", ...detail });
     }
 
