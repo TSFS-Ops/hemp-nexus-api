@@ -27,7 +27,9 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
       return data;
     },
     enabled: !!session,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    // Poll every 5 minutes instead of 30s — at 100x users the 30s poll
+    // generates enormous read load. Balance updates on mutation via cache invalidation.
+    refetchInterval: 5 * 60 * 1000,
   });
 
   if (!session || isLoading || !balance) {
