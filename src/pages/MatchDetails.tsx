@@ -76,9 +76,10 @@ export default function MatchDetails() {
     async () => {
       if (!match) return;
       await apiFetch(`match/${match.id}/settle`, { method: "POST" });
+      toast.success("Status updated to Confirmed. 500 tokens deducted.");
       fetchMatch();
     },
-    { successMessage: "Intent confirmed successfully!" }
+    { successMessage: undefined }
   );
 
   if (loading) {

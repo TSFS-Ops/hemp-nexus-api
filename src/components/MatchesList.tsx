@@ -197,25 +197,40 @@ export function MatchesList() {
         return;
       }
 
-      const settlePromises = Array.from(selectedMatches).map((matchId) =>
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
+      let succeeded = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      const settlePromises = Array.from(selectedMatches).map(async (matchId) => {
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
           },
-        })
-      );
+        });
 
-      const results = await Promise.allSettled(settlePromises);
-      const succeeded = results.filter(r => r.status === "fulfilled").length;
-      const failed = results.filter(r => r.status === "rejected").length;
+        if (res.ok) {
+          succeeded++;
+        } else {
+          failed++;
+          try {
+            const body = await res.json();
+            const msg = body?.error || body?.message || `HTTP ${res.status}`;
+            if (!errors.includes(msg)) errors.push(msg);
+          } catch {
+            errors.push(`HTTP ${res.status}`);
+          }
+        }
+      });
+
+      await Promise.allSettled(settlePromises);
 
       if (succeeded > 0) {
-        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? 'es' : ''}`);
+        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. 500 tokens deducted per match.`);
       }
       if (failed > 0) {
-        toast.error(`Failed to confirm intent for ${failed} match${failed > 1 ? 'es' : ''}`);
+        toast.error(`Failed for ${failed} match${failed > 1 ? "es" : ""}: ${errors[0] || "Unknown error"}`);
       }
 
       setSelectedMatches(new Set());
