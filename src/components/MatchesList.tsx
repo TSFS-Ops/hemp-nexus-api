@@ -460,14 +460,41 @@ export function MatchesList() {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const row = [
+                                    match.id, match.commodity, match.buyer_id, match.buyer_name,
+                                    match.seller_id, match.seller_name, match.quantity_amount,
+                                    match.quantity_unit, match.price_amount, match.price_currency,
+                                    match.status, match.created_at, match.settled_at || "", match.hash,
+                                  ];
+                                  const headers = [
+                                    "ID", "Commodity", "Buyer ID", "Buyer Name", "Seller ID", "Seller Name",
+                                    "Quantity", "Unit", "Price", "Currency", "Status", "Created At", "Settled At", "Hash",
+                                  ];
+                                  downloadCSV(headers, [row], `match-${match.id.slice(0, 8)}.csv`);
+                                  toast.success("Match exported");
+                                }}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Download this match as CSV</TooltipContent>
+                          </Tooltip>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
