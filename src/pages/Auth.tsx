@@ -417,6 +417,9 @@ export default function Auth() {
                   required
                   className="h-10"
                 />
+                {password.length > 0 && password.length < 8 && (
+                  <p className="text-xs text-destructive">Password must be at least 8 characters</p>
+                )}
               </div>
               <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
                 {loading ? (
