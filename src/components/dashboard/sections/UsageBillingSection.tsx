@@ -152,7 +152,7 @@ export function UsageBillingSection() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Date", "Endpoint", "Tokens Burned", "Outcome", "Balance After", "Request ID"];
+    const headers = ["Date", "Endpoint", "Tokens Burned", "Outcome", "Remaining Balance", "Request ID"];
     const escapeCell = (val: string) => {
       if (val.includes(",") || val.includes('"') || val.includes("\n")) {
         return `"${val.replace(/"/g, '""')}"`;
