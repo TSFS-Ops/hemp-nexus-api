@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Handshake, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Heart, Handshake, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { useSupabaseList } from "@/hooks/use-supabase-list";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Interest {
   id: string;
@@ -30,35 +30,36 @@ interface MutualInterest {
 }
 
 export function AdminInterestsPanel() {
-  const [interests, setInterests] = useState<Interest[]>([]);
-  const [mutualInterests, setMutualInterests] = useState<MutualInterest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: interests = [],
+    isLoading: intLoading,
+    isError: intError,
+    refetch: refetchInt,
+  } = useSupabaseList<Interest>("interests", { limit: 100 });
 
-  const fetchData = async () => {
-    setLoading(true);
-    const [intRes, miRes] = await Promise.all([
-      supabase.from("interests").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("mutual_interests").select("*").order("formed_at", { ascending: false }).limit(100),
-    ]);
-    setInterests((intRes.data as Interest[]) || []);
-    setMutualInterests((miRes.data as MutualInterest[]) || []);
-    setLoading(false);
-  };
+  const {
+    data: mutualInterests = [],
+    isLoading: miLoading,
+    isError: miError,
+    refetch: refetchMi,
+  } = useSupabaseList<MutualInterest>("mutual_interests", {
+    order: { column: "formed_at", ascending: false },
+    limit: 100,
+  });
 
-  useEffect(() => { fetchData(); }, []);
-
-  const statusBadge = (status: string) => {
-    const variant = status === "active" ? "default" : "secondary";
-    return <Badge variant={variant}>{status}</Badge>;
-  };
+  const loading = intLoading || miLoading;
+  const refetch = () => { refetchInt(); refetchMi(); };
 
   if (loading) {
     return (
       <div className="p-6 space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
+        <TableSkeleton rows={5} columns={6} />
       </div>
     );
+  }
+
+  if (intError || miError) {
+    return <ErrorState title="Failed to load interests" onRetry={refetch} />;
   }
 
   return (
@@ -70,7 +71,7 @@ export function AdminInterestsPanel() {
             Declared interests and auto-detected mutual interests (30-day expiry)
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchData}>
+        <Button variant="outline" size="sm" onClick={refetch}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -134,7 +135,7 @@ export function AdminInterestsPanel() {
                         <TableCell className="font-mono text-xs">{i.id.slice(0, 8)}…</TableCell>
                         <TableCell className="font-mono text-xs">{i.from_entity_id.slice(0, 8)}…</TableCell>
                         <TableCell className="font-mono text-xs">{i.to_entity_id.slice(0, 8)}…</TableCell>
-                        <TableCell>{statusBadge(i.status)}</TableCell>
+                        <TableCell><StatusBadge status={i.status} /></TableCell>
                         <TableCell className="max-w-[200px] truncate">{i.context || "—"}</TableCell>
                         <TableCell>{format(new Date(i.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                       </TableRow>
@@ -173,7 +174,7 @@ export function AdminInterestsPanel() {
                         <TableCell className="font-mono text-xs">{mi.id.slice(0, 8)}…</TableCell>
                         <TableCell className="font-mono text-xs">{mi.entity_a.slice(0, 8)}…</TableCell>
                         <TableCell className="font-mono text-xs">{mi.entity_b.slice(0, 8)}…</TableCell>
-                        <TableCell>{statusBadge(mi.status)}</TableCell>
+                        <TableCell><StatusBadge status={mi.status} /></TableCell>
                         <TableCell>{format(new Date(mi.formed_at), "dd MMM yyyy HH:mm")}</TableCell>
                         <TableCell>{format(new Date(mi.expires_at), "dd MMM yyyy HH:mm")}</TableCell>
                       </TableRow>
