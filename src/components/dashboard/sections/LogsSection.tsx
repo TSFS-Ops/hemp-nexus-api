@@ -357,6 +357,7 @@ export function LogsSection() {
             </div>
           </div>
 
+          <div className="min-h-[400px]">
           {isLoading ? (
             <TableSkeleton rows={8} columns={6} />
           ) : filteredLogs.length === 0 ? (
