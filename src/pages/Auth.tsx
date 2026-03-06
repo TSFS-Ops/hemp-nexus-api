@@ -350,12 +350,12 @@ export default function Auth() {
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <BackLink />
-          <div className="flex items-center gap-2 mb-4">
+          <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
             <div className="h-8 w-8 rounded bg-foreground flex items-center justify-center">
               <span className="text-background font-bold text-xs">CM</span>
             </div>
             <span className="font-semibold text-foreground">Compliance Match</span>
-          </div>
+          </Link>
           <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome</h1>
           <p className="text-sm text-muted-foreground">
             Sign in to access API keys and manage your account
