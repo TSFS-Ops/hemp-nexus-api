@@ -24,6 +24,7 @@ import Pricing from "@/pages/Pricing";
 import DueDiligence from "@/pages/DueDiligence";
 import Explore from "@/pages/Explore";
 import WalkthroughReport from "@/pages/WalkthroughReport";
+import ResetPassword from "@/pages/ResetPassword";
 
 /**
  * Root element that renders based on host type:
