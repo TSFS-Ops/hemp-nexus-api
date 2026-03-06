@@ -43,6 +43,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   const [wad, setWad] = useState<Wad | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [gateFailures, setGateFailures] = useState<string[]>([]);
 
   useEffect(() => {
     fetchWad();
@@ -116,12 +117,17 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create WaD");
+        const errorBody = await response.json();
+        // Surface specific gate failures from the backend
+        if (errorBody.failures && Array.isArray(errorBody.failures)) {
+          setGateFailures(errorBody.failures);
+        }
+        throw new Error(errorBody.message || "Failed to create WaD");
       }
 
       const newWad = await response.json();
       setWad(newWad);
+      setGateFailures([]);
       toast.success("WaD created successfully");
       onWadCreated?.();
     } catch (error: any) {
@@ -201,10 +207,26 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               </p>
             </div>
           </div>
+          {gateFailures.length > 0 && (
+            <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
+              <p className="text-sm font-medium text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                WaD creation blocked — {gateFailures.length} gate{gateFailures.length > 1 ? 's' : ''} failed:
+              </p>
+              <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
+                {gateFailures.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2">
+                Resolve the above issues and try again. Each gate must pass for the evidence bundle to be sealed.
+              </p>
+            </div>
+          )}
           <Button onClick={handleCreateWad} disabled={creating} className="w-full">
             {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <FileCheck className="h-4 w-4 mr-2" />
-            Create WaD
+            {gateFailures.length > 0 ? 'Retry WaD Creation' : 'Create WaD'}
           </Button>
         </CardContent>
       </Card>

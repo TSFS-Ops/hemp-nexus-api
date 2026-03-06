@@ -81,14 +81,33 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
     }
   };
 
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case "open": return <Badge variant="destructive">Open</Badge>;
-      case "under_review": return <Badge variant="secondary">Under Review</Badge>;
-      case "resolved": return <Badge className="bg-green-500 hover:bg-green-600">Resolved</Badge>;
-      case "escalated": return <Badge variant="destructive">Escalated</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
-    }
+  const statusInfo: Record<string, { badge: JSX.Element; help: string }> = {
+    open: { 
+      badge: <Badge variant="destructive">Open</Badge>,
+      help: "Dispute has been raised and is awaiting review. Settlement is frozen."
+    },
+    under_review: { 
+      badge: <Badge variant="secondary">Under Review</Badge>,
+      help: "A reviewer is investigating this dispute. You will be notified of the outcome."
+    },
+    resolved: { 
+      badge: <Badge className="bg-green-500 hover:bg-green-600">Resolved</Badge>,
+      help: "Dispute has been resolved. See the resolution notes below."
+    },
+    escalated: { 
+      badge: <Badge variant="destructive">Escalated</Badge>,
+      help: "Dispute has been escalated to senior review. Contact support if you need an update."
+    },
+  };
+
+  const getStatusBadge = (status: string) => {
+    const info = statusInfo[status];
+    if (!info) return <Badge variant="outline">{status}</Badge>;
+    return info.badge;
+  };
+
+  const getStatusHelp = (status: string) => {
+    return statusInfo[status]?.help || "";
   };
 
   if (loading) {
@@ -160,9 +179,12 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
             <Card key={d.id}>
               <CardContent className="pt-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  {statusBadge(d.status)}
+                  {getStatusBadge(d.status)}
                   <span className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd MMM yyyy HH:mm")}</span>
                 </div>
+                {getStatusHelp(d.status) && (
+                  <p className="text-xs text-muted-foreground italic">{getStatusHelp(d.status)}</p>
+                )}
                 <p className="text-sm font-medium">{d.reason}</p>
                 {d.evidence_notes && <p className="text-sm text-muted-foreground">{d.evidence_notes}</p>}
                 {d.resolution_outcome && (
