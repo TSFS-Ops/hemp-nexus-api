@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, CheckCircle2, FileText, Activity, Clock, Hash, Eye, ChevronRight, TrendingUp, AlertCircle } from "lucide-react";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
+import { ROUTES, MATCH_STATUS } from "@/lib/constants";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -85,15 +87,11 @@ export default function MyActivity() {
   });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
-  const confirmedMatches = matches?.filter(m => m.status === "settled") || [];
-  const pendingMatches = matches?.filter(m => m.status === "matched") || [];
+  const confirmedMatches = matches?.filter(m => m.status === MATCH_STATUS.SETTLED) || [];
+  const pendingMatches = matches?.filter(m => m.status === MATCH_STATUS.MATCHED) || [];
 
   const stats = {
     totalMatches: matches?.length || 0,
@@ -106,7 +104,7 @@ export default function MyActivity() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-muted-foreground">Please sign in to view your activity.</p>
-        <Button onClick={() => navigate("/auth")}>Sign In</Button>
+        <Button onClick={() => navigate(ROUTES.AUTH)} className="bg-foreground text-background hover:bg-foreground/90">Sign In</Button>
       </div>
     );
   }
