@@ -437,8 +437,8 @@ export function MatchesList() {
                 </TableHeader>
                 <TableBody>
                   {matches.map((match) => (
-                    <TableRow key={match.id}>
-                      <TableCell>
+                    <TableRow key={match.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedMatches.has(match.id)}
                           onCheckedChange={() => toggleMatchSelection(match.id)}
@@ -459,7 +459,7 @@ export function MatchesList() {
                         {renderEvidence(match.id)}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <Tooltip>
                             <TooltipTrigger asChild>

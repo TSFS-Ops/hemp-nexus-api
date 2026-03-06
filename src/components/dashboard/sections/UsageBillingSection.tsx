@@ -38,6 +38,7 @@ interface UsageStats {
 export function UsageBillingSection() {
   const [balance, setBalance] = useState<TokenBalance | null>(null);
   const [ledgerEntries, setLedgerEntries] = useState<TokenLedgerEntry[]>([]);
+  const [allEndpoints, setAllEndpoints] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [stats, setStats] = useState<UsageStats | null>(null);
@@ -99,6 +100,11 @@ export function UsageBillingSection() {
       }));
       
       setLedgerEntries(mappedData);
+      
+      // Populate allEndpoints from unfiltered fetches so the dropdown always shows every option
+      if (endpointFilter === "all") {
+        setAllEndpoints([...new Set(mappedData.map((e) => e.endpoint))]);
+      }
 
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -135,7 +141,8 @@ export function UsageBillingSection() {
     }
   }, [balance, endpointFilter, outcomeFilter, dateRange]);
 
-  const uniqueEndpoints = [...new Set(ledgerEntries.map((e) => e.endpoint))];
+  // Use allEndpoints (populated on initial unfiltered fetch) so the dropdown always shows all options
+  const uniqueEndpoints = allEndpoints;
 
   const balancePercentage = balance 
     ? Math.min(100, (balance.balance / (balance.minimum_required * 2)) * 100)
@@ -150,7 +157,7 @@ export function UsageBillingSection() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Date", "Endpoint", "Tokens Burned", "Outcome", "Balance After", "Request ID"];
+    const headers = ["Date", "Endpoint", "Tokens Burned", "Outcome", "Remaining Balance", "Request ID"];
     const escapeCell = (val: string) => {
       if (val.includes(",") || val.includes('"') || val.includes("\n")) {
         return `"${val.replace(/"/g, '""')}"`;
@@ -362,7 +369,7 @@ export function UsageBillingSection() {
                     <TableHead>Endpoint</TableHead>
                     <TableHead className="text-center">Tokens</TableHead>
                     <TableHead className="text-center">Outcome</TableHead>
-                    <TableHead className="text-right">Balance After</TableHead>
+                    <TableHead className="text-right">Remaining Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
