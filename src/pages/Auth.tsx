@@ -154,7 +154,7 @@ export default function Auth() {
       setLoading(true);
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
@@ -350,12 +350,12 @@ export default function Auth() {
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <BackLink />
-          <div className="flex items-center gap-2 mb-4">
+          <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
             <div className="h-8 w-8 rounded bg-foreground flex items-center justify-center">
               <span className="text-background font-bold text-xs">CM</span>
             </div>
             <span className="font-semibold text-foreground">Compliance Match</span>
-          </div>
+          </Link>
           <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome</h1>
           <p className="text-sm text-muted-foreground">
             Sign in to access API keys and manage your account
@@ -417,6 +417,9 @@ export default function Auth() {
                   required
                   className="h-10"
                 />
+                {password.length > 0 && password.length < 8 && (
+                  <p className="text-xs text-destructive">Password must be at least 8 characters</p>
+                )}
               </div>
               <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
                 {loading ? (
@@ -459,8 +462,14 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-10"
+                  className={`h-10 ${password.length > 0 && password.length < 8 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
+                {password.length > 0 && password.length < 8 && (
+                  <p className="text-xs text-destructive">Password must be at least 8 characters ({8 - password.length} more needed)</p>
+                )}
+                {password.length >= 8 && (
+                  <p className="text-xs text-green-600">✓ Password meets minimum length</p>
+                )}
               </div>
               <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
                 {loading ? (

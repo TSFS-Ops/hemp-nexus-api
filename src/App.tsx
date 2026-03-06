@@ -24,6 +24,7 @@ import Pricing from "@/pages/Pricing";
 import DueDiligence from "@/pages/DueDiligence";
 import Explore from "@/pages/Explore";
 import WalkthroughReport from "@/pages/WalkthroughReport";
+import ResetPassword from "@/pages/ResetPassword";
 
 /**
  * Root element that renders based on host type:
@@ -55,6 +56,7 @@ function App() {
                 <Route path={ROUTES.LANDING} element={<Landing />} />
                 <Route path={ROUTES.DEMO} element={<Demo />} />
                 <Route path={ROUTES.AUTH} element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
                 <Route path={ROUTES.ACTIVITY} element={<MyActivity />} />
                 <Route path={ROUTES.INVITES} element={<Invites />} />
