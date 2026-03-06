@@ -50,6 +50,7 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
 
   const handlePost = async () => {
     if (!newNote.trim() || !user) return;
+    const noteContent = newNote.trim();
     setPosting(true);
     try {
       const { error } = await supabase
@@ -58,13 +59,16 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
           match_id: matchId,
           org_id: orgId,
           user_id: user.id,
-          content: newNote.trim(),
+          content: noteContent,
         });
 
       if (error) throw error;
       setNewNote("");
+      toast.success("Note added");
       fetchNotes();
     } catch (err: any) {
+      // Preserve user input on failure so nothing is lost
+      setNewNote(noteContent);
       toast.error("Failed to post note", { description: err.message });
     } finally {
       setPosting(false);

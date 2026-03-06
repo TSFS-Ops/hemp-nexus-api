@@ -103,8 +103,12 @@ export default function MyActivity() {
   };
 
   if (!session) {
-    navigate("/auth");
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-muted-foreground">Please sign in to view your activity.</p>
+        <Button onClick={() => navigate("/auth")}>Sign In</Button>
+      </div>
+    );
   }
 
   return (

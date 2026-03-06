@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Copy, Loader2, Key, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +67,7 @@ export function ApiKeysSection() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const [revokeDialog, setRevokeDialog] = useState<{ open: boolean; keyId: string | null }>({ open: false, keyId: null });
 
   const fetchApiKeys = useCallback(async () => {
     // SECURITY: Explicitly select only safe columns to avoid exposing key_hash
@@ -148,12 +159,6 @@ export function ApiKeysSection() {
   };
 
   const handleRevokeKey = async (keyId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to revoke this API key? This action cannot be undone."
-    );
-
-    if (!confirmed) return;
-
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys/${keyId}`,
       {
@@ -166,11 +171,12 @@ export function ApiKeysSection() {
 
     if (!response.ok) {
       toast.error("Error revoking API key");
+      setRevokeDialog({ open: false, keyId: null });
       return;
     }
 
     toast.success("API Key revoked", { description: "The API key has been revoked successfully" });
-
+    setRevokeDialog({ open: false, keyId: null });
     await fetchApiKeys();
   };
 
@@ -375,7 +381,7 @@ export function ApiKeysSection() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRevokeKey(key.id)}
+                      onClick={() => setRevokeDialog({ open: true, keyId: key.id })}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -387,6 +393,26 @@ export function ApiKeysSection() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={revokeDialog.open} onOpenChange={(open) => setRevokeDialog({ open, keyId: open ? revokeDialog.keyId : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke this API key? This action cannot be undone and any integrations using this key will stop working immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => revokeDialog.keyId && handleRevokeKey(revokeDialog.keyId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Revoke Key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

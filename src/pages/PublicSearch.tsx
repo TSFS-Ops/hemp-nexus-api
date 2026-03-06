@@ -43,7 +43,7 @@ export default function PublicSearch() {
       description: "Create an account to save your selections and generate evidence packs.",
       action: {
         label: "Sign in",
-        onClick: () => window.location.href = authUrl,
+        onClick: () => window.location.assign(authUrl),
       },
     });
   };

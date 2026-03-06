@@ -109,30 +109,34 @@ export default function Admin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkAdminAccess();
-  }, []);
+    let cancelled = false;
+    const checkAdminAccess = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (!session) { navigate("/auth"); return; }
 
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth"); return; }
-
-      const { data, error } = await supabase.rpc('is_admin', { user_id: session.user.id });
-      if (error) throw error;
-      if (!data) {
-        toast.error("Access denied", { description: "You do not have admin privileges." });
+        const { data, error } = await supabase.rpc('is_admin', { user_id: session.user.id });
+        if (cancelled) return;
+        if (error) throw error;
+        if (!data) {
+          toast.error("Access denied", { description: "You do not have admin privileges." });
+          navigate("/dashboard");
+          return;
+        }
+        setIsAdmin(true);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Admin check error:", error);
+        toast.error("Failed to verify admin access");
         navigate("/dashboard");
-        return;
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setIsAdmin(true);
-    } catch (error) {
-      console.error("Admin check error:", error);
-      toast.error("Failed to verify admin access");
-      navigate("/dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    checkAdminAccess();
+    return () => { cancelled = true; };
+  }, [navigate]);
 
   if (loading) {
     return (
