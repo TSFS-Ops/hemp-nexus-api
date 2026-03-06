@@ -1,31 +1,12 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Globe, Users, Target, Award, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RequireAuth } from "@/components/RequireAuth";
 
-export default function Analytics() {
-  const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+function AnalyticsContent() {
 
   // Fetch match analytics
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
@@ -40,7 +21,7 @@ export default function Analytics() {
       if (error) throw error;
       return data;
     },
-    enabled: isAuthenticated,
+    enabled: true,
   });
 
   // Fetch data source performance
@@ -59,7 +40,7 @@ export default function Analytics() {
       if (error) throw error;
       return data;
     },
-    enabled: isAuthenticated,
+    enabled: true,
   });
 
   // Calculate cross-border stats
@@ -100,22 +81,7 @@ export default function Analytics() {
     return acc;
   }, {} as Record<string, any>);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Please sign in to view analytics.</p>
-        <Button onClick={() => navigate("/auth")}>Sign In</Button>
-      </div>
-    );
-  }
+  const isDataLoading = analyticsLoading || perfLoading;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -350,5 +316,13 @@ export default function Analytics() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function Analytics() {
+  return (
+    <RequireAuth>
+      <AnalyticsContent />
+    </RequireAuth>
   );
 }

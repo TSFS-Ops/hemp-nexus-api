@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./notifications/NotificationBell";
+import { PageContainer } from "@/components/ui/page-container";
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -26,9 +27,9 @@ export function DashboardLayout({ children, isAdmin, isDemoMode }: DashboardLayo
             </div>
           </header>
           <div className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto w-full max-w-5xl">
+            <PageContainer padY={false}>
               {children}
-            </div>
+            </PageContainer>
           </div>
         </main>
       </div>

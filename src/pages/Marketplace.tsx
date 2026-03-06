@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { Store, CheckCircle2, XCircle, Clock, Building2, Loader2 } from "lucide-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { z } from "zod";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const registrationSchema = z.object({
   company_name: z.string()
@@ -55,36 +55,10 @@ const registrationSchema = z.object({
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
 
-export default function Marketplace() {
-  const navigate = useNavigate();
+function MarketplaceContent() {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Auth check
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setIsAuthenticated(true);
-        setAuthLoading(false);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setIsAuthenticated(true);
-        setAuthLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
 
   // Form state
   const [formData, setFormData] = useState<RegistrationFormData>({
@@ -111,7 +85,7 @@ export default function Marketplace() {
       if (error) throw error;
       return data;
     },
-    enabled: isAuthenticated,
+    enabled: true,
   });
 
   // Submit registration
@@ -226,17 +200,6 @@ export default function Marketplace() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -482,5 +445,13 @@ export default function Marketplace() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function Marketplace() {
+  return (
+    <RequireAuth>
+      <MarketplaceContent />
+    </RequireAuth>
   );
 }

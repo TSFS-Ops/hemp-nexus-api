@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Info, FileText, Shield, Clock, CheckCircle2, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
+import { apiFetch, isAuthError, isApiError } from "@/lib/api-client";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
+import { MATCH_STATUS } from "@/lib/constants";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
@@ -72,67 +75,34 @@ export default function MatchDetails() {
 
     try {
       setConfirming(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("You must be logged in to confirm intent");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${match.id}/settle`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        let errorMessage = "Failed to confirm intent";
-        try {
-          const error = await response.json();
-          if (response.status === 401) {
-            errorMessage = "Please sign in to confirm intent.";
-          } else if (response.status === 402) {
-            errorMessage = "Insufficient credits. Please purchase credits on the Billing page to continue.";
-          } else if (response.status === 403) {
-            errorMessage = "You do not have permission. Please create an account or contact support.";
-          } else {
-            errorMessage = error.error || error.message || errorMessage;
-          }
-        } catch {
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-
+      await apiFetch(`match/${match.id}/settle`, { method: "POST" });
       toast.success("Intent confirmed successfully!");
-      
-      // Refresh match data to show updated status — stay on this page
       fetchMatch();
     } catch (error: any) {
       console.error("Error confirming intent:", error);
-      toast.error(error.message || "Failed to confirm intent");
+      if (isAuthError(error)) {
+        toast.error("You must be logged in to confirm intent");
+      } else if (isApiError(error, 402)) {
+        toast.error("Insufficient credits. Please purchase credits on the Billing page to continue.");
+      } else if (isApiError(error, 403)) {
+        toast.error("You do not have permission. Please create an account or contact support.");
+      } else {
+        toast.error(error.message || "Failed to confirm intent");
+      }
     } finally {
       setConfirming(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
   if (!match) {
     return null;
   }
 
-  const isSettled = match.status === "settled";
+  const isSettled = match.status === MATCH_STATUS.SETTLED;
 
   return (
     <div className="container mx-auto py-6 space-y-6">

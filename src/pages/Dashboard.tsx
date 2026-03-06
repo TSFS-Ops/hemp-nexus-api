@@ -1,6 +1,5 @@
-import { Loader2 } from "lucide-react";
-import { ROUTES } from "@/lib/constants";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { ROUTES } from "@/lib/constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,17 +11,14 @@ import { DashboardSettings } from "@/components/dashboard/DashboardSettings";
 import { AccountSection } from "@/components/dashboard/AccountSection";
 import { ComplianceSection } from "@/components/dashboard/sections/ComplianceSection";
 import MatchDetails from "@/pages/MatchDetails";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
 
 export default function Dashboard() {
   const { session, isLoading, isAdmin } = useAuth();
   const isDemoMode = !session;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
   if (isDemoMode) {

@@ -8,6 +8,8 @@ import {
   Send, Inbox, CheckCircle2, XCircle, Clock, 
   RefreshCw, ExternalLink, Building2, MapPin, Loader2 
 } from "lucide-react";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
+import { ROUTES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -220,11 +222,7 @@ export default function Invites() {
   };
 
   if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
   if (!user) {
@@ -232,7 +230,7 @@ export default function Invites() {
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <h1 className="text-xl font-semibold">Sign in required</h1>
         <p className="text-muted-foreground">Please sign in to view your invites.</p>
-        <Button onClick={() => navigate("/auth")}>Sign In</Button>
+        <Button onClick={() => navigate(ROUTES.AUTH)} className="bg-foreground text-background hover:bg-foreground/90">Sign In</Button>
       </div>
     );
   }
