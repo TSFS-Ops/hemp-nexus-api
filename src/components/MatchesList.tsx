@@ -503,11 +503,13 @@ export function MatchesList() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
-                </p>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                {totalPages > 1
+                  ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
+                  : `${totalCount} match${totalCount !== 1 ? 'es' : ''} total`}
+              </p>
+              {totalPages > 1 && (
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -515,9 +517,10 @@ export function MatchesList() {
                     disabled={page === 0}
                     onClick={() => setPage(p => p - 1)}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
                   </Button>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm font-medium text-foreground px-2">
                     {page + 1} / {totalPages}
                   </span>
                   <Button
@@ -526,11 +529,12 @@ export function MatchesList() {
                     disabled={page >= totalPages - 1}
                     onClick={() => setPage(p => p + 1)}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         ) : (
           <EmptyState title="No matches found" message="Try adjusting your filters." />

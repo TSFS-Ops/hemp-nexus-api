@@ -158,38 +158,56 @@ export default function Landing() {
               ) : results.length > 0 ? (
                 <div className="space-y-2">
                   {results.map((result) => (
-                    <button
+                    <div
                       key={result.id}
-                      onClick={() => toggleSelect(result.id)}
-                      aria-pressed={selectedResults.has(result.id)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all min-h-[44px]
-                                focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                        selectedResults.has(result.id)
+                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all
+                                ${selectedResults.has(result.id)
                           ? "bg-primary/5 border-primary/30"
                           : "border-border hover:bg-muted/50"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
+                        <button
+                          onClick={() => toggleSelect(result.id)}
+                          aria-pressed={selectedResults.has(result.id)}
+                          className="flex-1 min-w-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+                        >
                           <span className="font-medium text-foreground text-sm">{result.title}</span>
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">{result.description}</p>
-                        </div>
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-colors ${
-                            selectedResults.has(result.id)
-                              ? "bg-primary border-primary"
-                              : "border-muted-foreground/30"
-                          }`}
-                          aria-hidden="true"
-                        >
-                          {selectedResults.has(result.id) && (
-                            <svg className="w-full h-full text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
+                        </button>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              // Select this result and trigger intent
+                              if (!selectedResults.has(result.id)) {
+                                const newSelected = new Set(selectedResults);
+                                newSelected.add(result.id);
+                                setSelectedResults(newSelected);
+                              }
+                              handleConfirmIntent();
+                            }}
+                            className="text-xs font-medium px-3 py-1.5 rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors min-h-[32px]"
+                          >
+                            I'm interested
+                          </button>
+                          <div
+                            onClick={() => toggleSelect(result.id)}
+                            className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-colors ${
+                              selectedResults.has(result.id)
+                                ? "bg-primary border-primary"
+                                : "border-muted-foreground/30"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            {selectedResults.has(result.id) && (
+                              <svg className="w-full h-full text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
 
                   {selectedResults.size > 0 && (
