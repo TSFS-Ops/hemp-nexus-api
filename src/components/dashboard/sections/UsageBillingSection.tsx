@@ -151,13 +151,19 @@ export function UsageBillingSection() {
 
   const handleExportCSV = () => {
     const headers = ["Date", "Endpoint", "Tokens Burned", "Outcome", "Balance After", "Request ID"];
+    const escapeCell = (val: string) => {
+      if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+        return `"${val.replace(/"/g, '""')}"`;
+      }
+      return val;
+    };
     const rows = ledgerEntries.map((e) => [
-      format(new Date(e.created_at), "yyyy-MM-dd HH:mm:ss"),
-      e.endpoint,
+      escapeCell(format(new Date(e.created_at), "yyyy-MM-dd HH:mm:ss")),
+      escapeCell(e.endpoint),
       e.tokens_burned.toString(),
-      e.outcome,
+      escapeCell(e.outcome),
       e.remaining_balance.toString(),
-      e.request_id || "",
+      escapeCell(e.request_id || ""),
     ]);
     
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");

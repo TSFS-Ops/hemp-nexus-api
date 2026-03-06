@@ -57,7 +57,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   };
 
   const handleSubmit = async () => {
-    if (!reason.trim() || !user) return;
+    if (!reason.trim() || !user || submitting) return;
     setSubmitting(true);
     try {
       const { error } = await supabase.from("disputes").insert({

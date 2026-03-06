@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Webhook, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Webhook, Plus, Trash2, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
@@ -91,11 +91,16 @@ export function WebhookManagement() {
     }
   };
 
+  const [creatingWebhook, setCreatingWebhook] = useState(false);
+  const [deletingWebhook, setDeletingWebhook] = useState(false);
+
   const handleCreateWebhook = async () => {
     if (!url || selectedEvents.size === 0) {
       toast.error("Please provide a URL and select at least one event");
       return;
     }
+    if (creatingWebhook) return;
+    setCreatingWebhook(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -116,7 +121,10 @@ export function WebhookManagement() {
         }
       );
 
-      if (!response.ok) throw new Error("Failed to create webhook");
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to create webhook");
+      }
       const result = await response.json();
 
       toast.success("Webhook endpoint created successfully");
@@ -130,11 +138,17 @@ export function WebhookManagement() {
       fetchWebhooks();
     } catch (error) {
       console.error("Error creating webhook:", error);
-      toast.error("Failed to create webhook endpoint");
+      toast.error("Failed to create webhook endpoint", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setCreatingWebhook(false);
     }
   };
 
   const handleDeleteWebhook = async (webhookId: string) => {
+    if (deletingWebhook) return;
+    setDeletingWebhook(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -157,6 +171,7 @@ export function WebhookManagement() {
       console.error("Error deleting webhook:", error);
       toast.error("Failed to delete webhook endpoint");
     } finally {
+      setDeletingWebhook(false);
       setDeleteDialog({ open: false, webhookId: null });
     }
   };
@@ -236,7 +251,9 @@ export function WebhookManagement() {
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateWebhook}>Create Endpoint</Button>
+              <Button onClick={handleCreateWebhook} disabled={creatingWebhook}>
+                {creatingWebhook ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating…</> : "Create Endpoint"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -357,8 +374,9 @@ export function WebhookManagement() {
             <AlertDialogAction
               onClick={() => deleteDialog.webhookId && handleDeleteWebhook(deleteDialog.webhookId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deletingWebhook}
             >
-              Delete Endpoint
+              {deletingWebhook ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting…</> : "Delete Endpoint"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

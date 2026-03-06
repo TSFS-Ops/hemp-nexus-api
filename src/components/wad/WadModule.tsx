@@ -94,6 +94,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   };
 
   const handleCreateWad = async () => {
+    if (creating) return;
     try {
       setCreating(true);
       const { data: { session } } = await supabase.auth.getSession();
