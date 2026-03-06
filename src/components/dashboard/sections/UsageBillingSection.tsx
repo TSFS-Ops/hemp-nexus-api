@@ -136,7 +136,8 @@ export function UsageBillingSection() {
     }
   }, [balance, endpointFilter, outcomeFilter, dateRange]);
 
-  const uniqueEndpoints = [...new Set(ledgerEntries.map((e) => e.endpoint))];
+  // Use allEndpoints (populated on initial unfiltered fetch) so the dropdown always shows all options
+  const uniqueEndpoints = allEndpoints;
 
   const balancePercentage = balance 
     ? Math.min(100, (balance.balance / (balance.minimum_required * 2)) * 100)
