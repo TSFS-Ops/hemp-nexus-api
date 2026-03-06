@@ -1,86 +1,37 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { Key, Activity, FileText, BarChart3, Clock } from "lucide-react";
-
-interface OverviewStats {
-  activeApiKeys: number;
-  callsLast24h: number;
-  callsLast7d: number;
-  confirmedIntents: number;
-  lastActivity: string | null;
-}
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ConsoleOverview() {
   const { session } = useAuth();
-  const { toast } = useToast();
-  const [stats, setStats] = useState<OverviewStats>({
-    activeApiKeys: 0,
-    callsLast24h: 0,
-    callsLast7d: 0,
-    confirmedIntents: 0,
-    lastActivity: null,
-  });
-  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchStats = useCallback(async () => {
-    if (!session) return;
-
-    setIsLoading(true);
-    try {
-      // Fetch active API keys count
-      const { data: apiKeys, error: apiKeysError } = await supabase
-        .from("api_keys")
-        .select("id", { count: "exact" })
-        .eq("status", "active");
-
-      // Fetch API request logs for last 24h and 7d
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["console-overview-stats"],
+    queryFn: async () => {
       const now = new Date();
       const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
       const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      const { data: logs24h } = await supabase
-        .from("api_request_logs")
-        .select("id", { count: "exact" })
-        .gte("created_at", last24h);
+      const [apiKeys, logs24h, logs7d, matches, lastLog] = await Promise.all([
+        supabase.from("api_keys").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", last24h),
+        supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", last7d),
+        supabase.from("matches").select("id", { count: "exact", head: true }).eq("status", "confirmed"),
+        supabase.from("api_request_logs").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
 
-      const { data: logs7d } = await supabase
-        .from("api_request_logs")
-        .select("id", { count: "exact" })
-        .gte("created_at", last7d);
-
-      // Fetch confirmed matches count
-      const { data: matches, count: matchCount } = await supabase
-        .from("matches")
-        .select("id", { count: "exact" })
-        .eq("status", "confirmed");
-
-      // Get last activity
-      const { data: lastLog } = await supabase
-        .from("api_request_logs")
-        .select("created_at")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setStats({
-        activeApiKeys: apiKeys?.length || 0,
-        callsLast24h: logs24h?.length || 0,
-        callsLast7d: logs7d?.length || 0,
-        confirmedIntents: matchCount || 0,
-        lastActivity: lastLog?.created_at || null,
-      });
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [session]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+      return {
+        activeApiKeys: apiKeys.count || 0,
+        callsLast24h: logs24h.count || 0,
+        callsLast7d: logs7d.count || 0,
+        confirmedIntents: matches.count || 0,
+        lastActivity: lastLog.data?.created_at || null,
+      };
+    },
+    enabled: !!session,
+  });
 
   const formatLastActivity = (timestamp: string | null) => {
     if (!timestamp) return "No activity yet";
@@ -98,26 +49,10 @@ export function ConsoleOverview() {
   };
 
   const statCards = [
-    {
-      label: "Active API Keys",
-      value: stats.activeApiKeys,
-      icon: Key,
-    },
-    {
-      label: "Calls (24h)",
-      value: stats.callsLast24h,
-      icon: Activity,
-    },
-    {
-      label: "Calls (7d)",
-      value: stats.callsLast7d,
-      icon: BarChart3,
-    },
-    {
-      label: "Confirmed Intents",
-      value: stats.confirmedIntents,
-      icon: FileText,
-    },
+    { label: "Active API Keys", value: stats?.activeApiKeys ?? 0, icon: Key },
+    { label: "Calls (24h)", value: stats?.callsLast24h ?? 0, icon: Activity },
+    { label: "Calls (7d)", value: stats?.callsLast7d ?? 0, icon: BarChart3 },
+    { label: "Confirmed Intents", value: stats?.confirmedIntents ?? 0, icon: FileText },
   ];
 
   return (
@@ -140,9 +75,13 @@ export function ConsoleOverview() {
               <stat.icon className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">{stat.label}</span>
             </div>
-            <p className="text-2xl font-semibold text-foreground">
-              {isLoading ? "—" : stat.value.toLocaleString()}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <p className="text-2xl font-semibold text-foreground">
+                {stat.value.toLocaleString()}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -150,7 +89,7 @@ export function ConsoleOverview() {
       {/* Last Activity */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Clock className="h-4 w-4" />
-        <span>Last activity: {formatLastActivity(stats.lastActivity)}</span>
+        <span>Last activity: {formatLastActivity(stats?.lastActivity ?? null)}</span>
       </div>
 
       {/* Quick Info */}

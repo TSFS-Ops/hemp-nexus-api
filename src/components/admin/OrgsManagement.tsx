@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, Search, CheckCircle2, XCircle, RefreshCw, Building2 } from "lucide-react";
 import {
   Select,
@@ -31,7 +31,7 @@ export default function OrgsManagement() {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     fetchOrgs();
@@ -76,11 +76,7 @@ export default function OrgsManagement() {
 
       setOrgs(orgsWithCounts);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch organizations",
-        variant: "destructive",
-      });
+      toast.error("Failed to fetch organisations");
     } finally {
       setLoading(false);
     }
@@ -95,17 +91,10 @@ export default function OrgsManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Status Updated",
-        description: `Organization status changed to ${newStatus}`,
-      });
+      toast.success(`Organisation status changed to ${newStatus}`);
       fetchOrgs();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update organization status",
-        variant: "destructive",
-      });
+      toast.error("Failed to update organisation status");
     }
   };
 

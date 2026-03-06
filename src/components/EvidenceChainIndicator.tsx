@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Shield, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
 import {
   Tooltip,
@@ -14,27 +14,10 @@ interface EvidenceChainIndicatorProps {
   compact?: boolean;
 }
 
-interface ChainStatus {
-  eventCount: number;
-  chainValid: boolean;
-  hasIntentConfirmed: boolean;
-  loading: boolean;
-}
-
 export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceChainIndicatorProps) {
-  const [status, setStatus] = useState<ChainStatus>({
-    eventCount: 0,
-    chainValid: true,
-    hasIntentConfirmed: false,
-    loading: true,
-  });
-
-  useEffect(() => {
-    fetchChainStatus();
-  }, [matchId]);
-
-  const fetchChainStatus = async () => {
-    try {
+  const { data: status, isLoading } = useQuery({
+    queryKey: ["evidence-chain", matchId],
+    queryFn: async () => {
       const { data: events, error } = await supabase
         .from("match_events")
         .select("id, event_type, payload_hash, previous_event_hash")
@@ -44,16 +27,9 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       if (error) throw error;
 
       if (!events || events.length === 0) {
-        setStatus({
-          eventCount: 0,
-          chainValid: true,
-          hasIntentConfirmed: false,
-          loading: false,
-        });
-        return;
+        return { eventCount: 0, chainValid: true, hasIntentConfirmed: false };
       }
 
-      // Verify chain integrity
       let isValid = true;
       let hasIntent = false;
 
@@ -67,19 +43,12 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
         }
       }
 
-      setStatus({
-        eventCount: events.length,
-        chainValid: isValid,
-        hasIntentConfirmed: hasIntent,
-        loading: false,
-      });
-    } catch (error) {
-      console.error("Error fetching chain status:", error);
-      setStatus(prev => ({ ...prev, loading: false }));
-    }
-  };
+      return { eventCount: events.length, chainValid: isValid, hasIntentConfirmed: hasIntent };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (status.loading) {
+  if (isLoading) {
     return compact ? (
       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
     ) : (
@@ -90,7 +59,7 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     );
   }
 
-  if (status.eventCount === 0) {
+  if (!status || status.eventCount === 0) {
     return compact ? (
       <TooltipProvider>
         <Tooltip>

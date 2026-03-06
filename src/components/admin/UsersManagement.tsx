@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle, Download, UserX, UserCheck } from "lucide-react";
 import {
   Select,
@@ -53,7 +53,7 @@ export default function UsersManagement() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     fetchUsers();
@@ -78,11 +78,7 @@ export default function UsersManagement() {
       setSelectedUserIds(new Set());
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch users",
-        variant: "destructive",
-      });
+      toast.error("Failed to fetch users");
     } finally {
       setLoading(false);
     }
@@ -96,17 +92,10 @@ export default function UsersManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Password Reset Sent",
-        description: `Reset email sent to ${email}`,
-      });
+      toast.success(`Reset email sent to ${email}`);
       setShowResetDialog(false);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send reset email",
-        variant: "destructive",
-      });
+      toast.error("Failed to send reset email");
     }
   };
 
@@ -119,16 +108,9 @@ export default function UsersManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Verification Email Sent",
-        description: `Verification email sent to ${email}`,
-      });
+      toast.success(`Verification email sent to ${email}`);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send verification email",
-        variant: "destructive",
-      });
+      toast.error("Failed to send verification email");
     }
   };
 
@@ -141,17 +123,10 @@ export default function UsersManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Status Updated",
-        description: `User status changed to ${newStatus}`,
-      });
+      toast.success(`User status changed to ${newStatus}`);
       fetchUsers();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update user status",
-        variant: "destructive",
-      });
+      toast.error("Failed to update user status");
     }
   };
 
@@ -169,19 +144,12 @@ export default function UsersManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Bulk Update Complete",
-        description: `${userIds.length} users set to ${newStatus}`,
-      });
+      toast.success(`${userIds.length} users set to ${newStatus}`);
       
       setSelectedUserIds(new Set());
       fetchUsers();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update users",
-        variant: "destructive",
-      });
+      toast.error("Failed to update users");
     } finally {
       setBulkActionLoading(false);
     }
@@ -252,10 +220,7 @@ export default function UsersManagement() {
     link.click();
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Export Complete",
-      description: `Exported ${usersToExport.length} users to CSV`,
-    });
+    toast.success(`Exported ${usersToExport.length} users to CSV`);
   };
 
   const exportAll = () => exportToCSV(filteredUsers);
