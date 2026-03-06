@@ -199,6 +199,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       toast.error("Please select a file and document type");
       return;
     }
+    if (uploading) return;
 
     try {
       setUploading(true);

@@ -146,10 +146,11 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       
       toast.success("API key created and copied to clipboard!");
       
-      // Auto-advance after a short delay
-      setTimeout(() => {
-        setCurrentStep(4);
+      // Auto-advance after a short delay (guarded by open state)
+      const timer = setTimeout(() => {
+        if (open) setCurrentStep(4);
       }, 1500);
+      return () => clearTimeout(timer);
     } catch (error) {
       console.error("Error creating API key:", error);
       toast.error("Failed to create API key");
@@ -215,9 +216,9 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         setTestResult("success");
         toast.success("API test successful!");
         
-        // Auto-advance after a short delay
+        // Auto-advance after a short delay (guarded by open state)
         setTimeout(() => {
-          setCurrentStep(5);
+          if (open) setCurrentStep(5);
         }, 1500);
       } else {
         setTestResult("error");

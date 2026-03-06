@@ -70,6 +70,7 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     try {
       const latestVersion = terms.length > 0 ? terms[0].version : 0;

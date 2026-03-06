@@ -158,26 +158,37 @@ export function ApiKeysSection() {
     }
   };
 
+  const [revoking, setRevoking] = useState(false);
+
   const handleRevokeKey = async (keyId: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys/${keyId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+    if (revoking) return;
+    setRevoking(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys/${keyId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to revoke key");
       }
-    );
 
-    if (!response.ok) {
-      toast.error("Error revoking API key");
+      toast.success("API Key revoked", { description: "The API key has been revoked successfully" });
+      await fetchApiKeys();
+    } catch (error) {
+      toast.error("Error revoking API key", {
+        description: error instanceof Error ? error.message : "An error occurred",
+      });
+    } finally {
+      setRevoking(false);
       setRevokeDialog({ open: false, keyId: null });
-      return;
     }
-
-    toast.success("API Key revoked", { description: "The API key has been revoked successfully" });
-    setRevokeDialog({ open: false, keyId: null });
-    await fetchApiKeys();
   };
 
   const toggleScope = (scope: string) => {
@@ -407,8 +418,9 @@ export function ApiKeysSection() {
             <AlertDialogAction
               onClick={() => revokeDialog.keyId && handleRevokeKey(revokeDialog.keyId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={revoking}
             >
-              Revoke Key
+              {revoking ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Revoking…</> : "Revoke Key"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

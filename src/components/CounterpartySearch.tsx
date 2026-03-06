@@ -235,7 +235,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .from("profiles")
         .select("org_id, full_name")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (!profile) {
         toast.error("Profile not found");
@@ -247,7 +247,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .from("organizations")
         .select("name")
         .eq("id", profile.org_id)
-        .single();
+        .maybeSingle();
 
       // Create match for first selected result
       const selectedResultId = Array.from(selectedResults)[0];
