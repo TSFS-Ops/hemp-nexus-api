@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Eye, Download, RefreshCw } from "lucide-react";
+import { Search, Eye, Download, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
+import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +28,7 @@ export function AdminMatchesPanel() {
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  const { data: matches, isLoading, refetch } = useQuery({
+  const { data: matches, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-matches", statusFilter, search],
     queryFn: async () => {
       let query = supabase
@@ -75,28 +78,17 @@ export function AdminMatchesPanel() {
       m.settled_at || "",
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `admin-matches-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCSV(headers, rows, timestampedFilename("admin-matches", "csv"));
     toast.success("Matches exported successfully");
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === "settled" ? (
-      <Badge variant="default" className="bg-green-600">Confirmed</Badge>
-    ) : (
-      <Badge variant="secondary">Matched</Badge>
+  if (isError) {
+    return (
+      <div className="p-6">
+        <ErrorState title="Failed to load matches" onRetry={() => refetch()} type="server" />
+      </div>
     );
-  };
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -151,9 +143,7 @@ export function AdminMatchesPanel() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton rows={5} columns={9} />
           ) : matches && matches.length > 0 ? (
             <div className="rounded-md border">
               <Table>
@@ -182,7 +172,9 @@ export function AdminMatchesPanel() {
                       <TableCell>
                         {match.price_currency} {match.price_amount.toLocaleString()}
                       </TableCell>
-                      <TableCell>{getStatusBadge(match.status)}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={match.status === "settled" ? "confirmed" : match.status} />
+                      </TableCell>
                       <TableCell>
                         <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
@@ -229,7 +221,9 @@ export function AdminMatchesPanel() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Status</label>
-                  <p>{getStatusBadge(selectedMatch.status)}</p>
+                  <div className="mt-1">
+                    <StatusBadge status={selectedMatch.status === "settled" ? "confirmed" : selectedMatch.status} />
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Commodity</label>

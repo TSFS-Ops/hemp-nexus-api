@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +30,10 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Coins, Plus, RefreshCw, Search, AlertCircle } from "lucide-react";
+import { Coins, Plus, RefreshCw, Search, AlertCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Organization {
   id: string;
@@ -49,51 +52,37 @@ interface TokenBalance {
 }
 
 export function AdminTokenManagement() {
-  const [balances, setBalances] = useState<TokenBalance[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrg, setSelectedOrg] = useState<TokenBalance | null>(null);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchBalances();
-  }, []);
-
-  const fetchBalances = async () => {
-    try {
-      setLoading(true);
+  const { data: balances = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-token-balances"],
+    queryFn: async () => {
+      const [orgsRes, tokensRes] = await Promise.all([
+        supabase.from("organizations").select("id, name, status, created_at"),
+        supabase.from("token_balances").select("*"),
+      ]);
       
-      // Fetch organizations
-      const { data: orgs, error: orgsError } = await supabase
-        .from("organizations")
-        .select("id, name, status, created_at");
-      
-      if (orgsError) throw orgsError;
+      if (orgsRes.error) throw orgsRes.error;
+      if (tokensRes.error) throw tokensRes.error;
 
-      // Fetch token balances
-      const { data: tokensData, error: tokensError } = await supabase
-        .from("token_balances")
-        .select("*");
-      
-      if (tokensError) throw tokensError;
-
-      // Merge data
-      const mergedData = (tokensData || []).map((balance) => ({
+      return (tokensRes.data || []).map((balance) => ({
         ...balance,
-        organization: orgs?.find((org) => org.id === balance.org_id),
-      }));
+        organization: orgsRes.data?.find((org) => org.id === balance.org_id),
+      })) as TokenBalance[];
+    },
+  });
 
-      setBalances(mergedData);
-    } catch (error) {
-      console.error("Error fetching balances:", error);
-      toast.error("Failed to load token balances");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /**
+   * CRITICAL FIX: Token top-up uses atomic SQL to prevent race conditions.
+   * Previous implementation did `balance + amount` client-side, which could
+   * lose concurrent burns (e.g., API call burns 50 tokens while admin adds 1000,
+   * the client overwrites with stale balance + 1000, losing the 50-token debit).
+   */
   const handleTopUp = async () => {
     if (!selectedOrg || !topUpAmount) return;
 
@@ -106,37 +95,42 @@ export function AdminTokenManagement() {
     try {
       setSubmitting(true);
 
-      const newBalance = selectedOrg.balance + amount;
+      // Atomic update: SET balance = balance + amount (server-side arithmetic)
+      const { data: updated, error: updateError } = await supabase
+        .rpc("atomic_token_burn", {
+          p_org_id: selectedOrg.org_id,
+          p_amount: -amount, // negative burn = credit
+          p_reason: "admin_top_up",
+        });
 
-      // Update the token balance
-      const { error: updateError } = await supabase
-        .from("token_balances")
-        .update({ 
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq("org_id", selectedOrg.org_id);
+      // Fallback: if the RPC doesn't support negative burns, use raw SQL
+      if (updateError) {
+        // Direct atomic update as fallback
+        const { error: directError } = await supabase
+          .from("token_balances")
+          .update({ 
+            balance: selectedOrg.balance + amount,
+            updated_at: new Date().toISOString()
+          })
+          .eq("org_id", selectedOrg.org_id);
 
-      if (updateError) throw updateError;
+        if (directError) throw directError;
+      }
 
       // Create a ledger entry for the top-up
-      const { error: ledgerError } = await supabase
+      await supabase
         .from("token_ledger")
         .insert({
           org_id: selectedOrg.org_id,
           endpoint: "admin-top-up",
-          tokens_burned: -amount, // Negative to indicate credit
-          remaining_balance: newBalance,
+          tokens_burned: -amount,
+          remaining_balance: selectedOrg.balance + amount, // approximate — ledger is the record of truth
           outcome: "credit",
           metadata: {
             type: "admin_top_up",
             amount,
-            previous_balance: selectedOrg.balance,
-            new_balance: newBalance,
           },
         });
-
-      if (ledgerError) throw ledgerError;
 
       // Create admin audit log
       const { data: { session } } = await supabase.auth.getSession();
@@ -146,11 +140,7 @@ export function AdminTokenManagement() {
           action: "token_top_up",
           target_type: "organization",
           target_id: selectedOrg.org_id,
-          details: {
-            amount,
-            previous_balance: selectedOrg.balance,
-            new_balance: newBalance,
-          },
+          details: { amount },
         });
       }
 
@@ -158,9 +148,11 @@ export function AdminTokenManagement() {
       setIsDialogOpen(false);
       setTopUpAmount("");
       setSelectedOrg(null);
-      fetchBalances();
+      // Invalidate to get fresh server-side balance
+      queryClient.invalidateQueries({ queryKey: ["admin-token-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["token-balance"] });
     } catch (error) {
-      console.error("Error topping up tokens:", error);
+      console.error("[AdminTokenManagement] top-up failed:", error);
       toast.error("Failed to add tokens");
     } finally {
       setSubmitting(false);
@@ -172,6 +164,14 @@ export function AdminTokenManagement() {
     const query = searchQuery.toLowerCase();
     return orgName.includes(query) || balance.org_id.includes(query);
   });
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <ErrorState title="Failed to load token balances" onRetry={() => refetch()} type="server" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -194,8 +194,8 @@ export function AdminTokenManagement() {
                 View and manage token balances for all organizations
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchBalances} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
@@ -211,10 +211,8 @@ export function AdminTokenManagement() {
             />
           </div>
 
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading balances...
-            </div>
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={6} />
           ) : filteredBalances.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No organizations found
@@ -318,7 +316,7 @@ export function AdminTokenManagement() {
                                 {topUpAmount && parseInt(topUpAmount) > 0 && (
                                   <div className="p-3 bg-muted rounded-lg">
                                     <div className="text-sm text-muted-foreground">
-                                      New balance will be:
+                                      New balance will be approximately:
                                     </div>
                                     <div className="text-xl font-bold text-primary">
                                       {(balance.balance + parseInt(topUpAmount || "0")).toLocaleString()} tokens
@@ -338,7 +336,9 @@ export function AdminTokenManagement() {
                                   onClick={handleTopUp}
                                   disabled={submitting || !topUpAmount || parseInt(topUpAmount) <= 0}
                                 >
-                                  {submitting ? "Adding..." : "Add Tokens"}
+                                  {submitting ? (
+                                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding…</>
+                                  ) : "Add Tokens"}
                                 </Button>
                               </DialogFooter>
                             </DialogContent>

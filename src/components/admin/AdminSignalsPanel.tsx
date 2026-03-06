@@ -7,9 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Eye, Download, RefreshCw } from "lucide-react";
+import { Search, Eye, Download, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
+import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +29,7 @@ export function AdminSignalsPanel() {
   const [selectedSignal, setSelectedSignal] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  const { data: signals, isLoading, refetch } = useQuery({
+  const { data: signals, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-signals", statusFilter, typeFilter, search],
     queryFn: async () => {
       let query = supabase
@@ -55,7 +59,6 @@ export function AdminSignalsPanel() {
     }
 
     const headers = ["ID", "Org", "Type", "Status", "Content", "Created At", "Expires At"];
-
     const rows = signals.map(s => [
       s.id,
       (s as any).organizations?.name || s.org_id,
@@ -66,32 +69,8 @@ export function AdminSignalsPanel() {
       s.expires_at || "",
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `admin-signals-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCSV(headers, rows, timestampedFilename("admin-signals", "csv"));
     toast.success("Signals exported successfully");
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default">Active</Badge>;
-      case "matched":
-        return <Badge className="bg-green-600">Matched</Badge>;
-      case "expired":
-        return <Badge variant="secondary">Expired</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
   };
 
   const getTypeBadge = (type: string) => {
@@ -101,6 +80,14 @@ export function AdminSignalsPanel() {
       <Badge variant="outline" className="border-orange-500 text-orange-600">Seller</Badge>
     );
   };
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <ErrorState title="Failed to load signals" onRetry={() => refetch()} type="server" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -166,9 +153,7 @@ export function AdminSignalsPanel() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton rows={5} columns={8} />
           ) : signals && signals.length > 0 ? (
             <div className="rounded-md border">
               <Table>
@@ -199,7 +184,7 @@ export function AdminSignalsPanel() {
                         <TableCell>
                           {content?.quantity || content?.how_much || "N/A"} {content?.unit || ""}
                         </TableCell>
-                        <TableCell>{getStatusBadge(signal.status)}</TableCell>
+                        <TableCell><StatusBadge status={signal.status} /></TableCell>
                         <TableCell>{format(new Date(signal.created_at), "MMM dd")}</TableCell>
                         <TableCell>
                           {signal.expires_at 
@@ -254,7 +239,7 @@ export function AdminSignalsPanel() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Status</label>
-                  <p>{getStatusBadge(selectedSignal.status)}</p>
+                  <div className="mt-1"><StatusBadge status={selectedSignal.status} /></div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Organization</label>
