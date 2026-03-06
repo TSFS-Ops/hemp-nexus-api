@@ -347,6 +347,7 @@ export function MatchesList() {
           </Select>
         </div>
 
+        <div className="min-h-[400px]">
         {isError ? (
           <ErrorState 
             type="server" 
