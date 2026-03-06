@@ -91,7 +91,12 @@ export default function Landing() {
                        rounded-lg text-sm font-medium transition-colors hover:bg-foreground/90
                        disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isSearching ? "..." : "Search"}
+              {isSearching ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3.5 w-3.5 border-2 border-background/40 border-t-background rounded-full animate-spin" />
+                  <span className="sr-only">Searching</span>
+                </span>
+              ) : "Search"}
             </button>
           </div>
 

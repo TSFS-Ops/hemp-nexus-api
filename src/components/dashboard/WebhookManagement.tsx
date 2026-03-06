@@ -26,7 +26,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Webhook, Plus, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { Webhook, Plus, Trash2, RefreshCw, Loader2, Copy, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
@@ -60,6 +61,7 @@ export function WebhookManagement() {
   // Form state
   const [url, setUrl] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
+  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWebhooks();
@@ -128,13 +130,16 @@ export function WebhookManagement() {
       const result = await response.json();
 
       toast.success("Webhook endpoint created successfully");
-      if (result.secret) {
-        toast.info(`Secret: ${result.secret}`, { duration: 10000 });
-      }
 
       setCreateDialogOpen(false);
       setUrl("");
       setSelectedEvents(new Set());
+      
+      // Show secret inline if returned — never in a toast (it vanishes)
+      if (result.secret) {
+        setNewWebhookSecret(result.secret);
+      }
+      
       fetchWebhooks();
     } catch (error) {
       console.error("Error creating webhook:", error);
@@ -259,6 +264,37 @@ export function WebhookManagement() {
         </Dialog>
       </div>
 
+      {newWebhookSecret && (
+        <Alert className="border-primary bg-primary/5">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle className="flex items-center gap-2">
+            ⚠️ Save your webhook secret now
+          </AlertTitle>
+          <AlertDescription className="space-y-3">
+            <p className="text-sm">This is the only time you'll see this secret. Save it securely to verify webhook signatures.</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-2 bg-muted rounded text-sm font-mono break-all select-all">
+                {newWebhookSecret}
+              </code>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  navigator.clipboard.writeText(newWebhookSecret);
+                  toast.success("Secret copied to clipboard");
+                }}
+                title="Copy secret"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setNewWebhookSecret(null)} className="text-xs">
+              I've saved it — dismiss
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -309,7 +345,6 @@ export function WebhookManagement() {
                       <TableCell>
                         <Badge
                           variant={webhook.status === "active" ? "default" : "secondary"}
-                          className={webhook.status === "active" ? "bg-green-500 hover:bg-green-600" : ""}
                         >
                           {webhook.status}
                         </Badge>

@@ -16,6 +16,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { MATCH_STATUS, ROUTES } from "@/lib/constants";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { downloadCSV } from "@/lib/download-utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -159,11 +160,7 @@ export function MatchesList() {
   }, []);
 
   const getStatusBadge = (status: string) => {
-    return status === MATCH_STATUS.SETTLED ? (
-      <Badge variant="default">Confirmed</Badge>
-    ) : (
-      <Badge variant="secondary">Matched</Badge>
-    );
+    return <StatusBadge status={status === MATCH_STATUS.SETTLED ? "confirmed" : status} />;
   };
 
   const toggleMatchSelection = (matchId: string) => {

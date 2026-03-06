@@ -86,7 +86,7 @@ export function ComplianceSection() {
   const statusBadge = (status: string) => {
     const upper = status.toUpperCase();
     const variant = upper === "VERIFIED" ? "default" : upper === "PENDING" ? "secondary" : "destructive";
-    return <Badge variant={variant} className={upper === "VERIFIED" ? "bg-green-500 hover:bg-green-600" : ""}>{upper}</Badge>;
+    return <Badge variant={variant}>{upper}</Badge>;
   };
 
   const verifiedCount = entities.filter(e => e.status.toUpperCase() === "VERIFIED").length;
