@@ -95,17 +95,36 @@ export default function MatchDetails() {
   };
 
   if (loading) {
-    return <FullPageLoader />;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton fallback="/dashboard/matches" label="Back" />
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
   }
 
   if (!match) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton fallback="/dashboard/matches" label="Back" />
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="font-medium">Match not found</p>
+          <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
+        </div>
+      </div>
+    );
   }
 
   const isSettled = match.status === MATCH_STATUS.SETTLED;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <BackButton fallback="/dashboard/matches" label="Back" />
       </div>
@@ -222,36 +241,38 @@ export default function MatchDetails() {
 
       {/* Tabbed sections */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="details" className="flex items-center gap-1">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Documents</span>
-          </TabsTrigger>
-          <TabsTrigger value="terms" className="flex items-center gap-1">
-            <FileSignature className="h-4 w-4" />
-            <span className="hidden sm:inline">Terms</span>
-          </TabsTrigger>
-          <TabsTrigger value="notes" className="flex items-center gap-1">
-            <MessageSquare className="h-4 w-4" />
-            <span className="hidden sm:inline">Notes</span>
-          </TabsTrigger>
-          <TabsTrigger value="evidence" className="flex items-center gap-1">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Evidence</span>
-          </TabsTrigger>
-          <TabsTrigger value="wad" className="flex items-center gap-1">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">WaD</span>
-          </TabsTrigger>
-          <TabsTrigger value="disputes" className="flex items-center gap-1">
-            <ShieldAlert className="h-4 w-4" />
-            <span className="hidden sm:inline">Disputes</span>
-          </TabsTrigger>
-          <TabsTrigger value="timeline" className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Timeline</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-7">
+            <TabsTrigger value="details" className="flex items-center gap-1.5 min-w-[44px]">
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Documents</span>
+            </TabsTrigger>
+            <TabsTrigger value="terms" className="flex items-center gap-1.5 min-w-[44px]">
+              <FileSignature className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Terms</span>
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="flex items-center gap-1.5 min-w-[44px]">
+              <MessageSquare className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Notes</span>
+            </TabsTrigger>
+            <TabsTrigger value="evidence" className="flex items-center gap-1.5 min-w-[44px]">
+              <Shield className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Evidence</span>
+            </TabsTrigger>
+            <TabsTrigger value="wad" className="flex items-center gap-1.5 min-w-[44px]">
+              <Shield className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">WaD</span>
+            </TabsTrigger>
+            <TabsTrigger value="disputes" className="flex items-center gap-1.5 min-w-[44px]">
+              <ShieldAlert className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Disputes</span>
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="flex items-center gap-1.5 min-w-[44px]">
+              <Clock className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Timeline</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="details" className="mt-4 space-y-4">
           <MatchDocuments matchId={match.id} orgId={match.org_id} />
