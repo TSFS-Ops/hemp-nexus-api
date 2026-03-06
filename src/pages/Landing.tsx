@@ -36,7 +36,13 @@ export default function Landing() {
       description: "Create an account to confirm your interest and begin the process.",
       action: {
         label: "Sign in",
-        onClick: () => window.location.href = authUrl,
+        onClick: () => {
+          if (isPreview) {
+            window.location.assign("/auth");
+          } else {
+            window.location.href = authUrl;
+          }
+        },
       },
     });
   };

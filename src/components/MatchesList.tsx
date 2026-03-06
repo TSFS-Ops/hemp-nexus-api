@@ -16,6 +16,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { downloadCSV } from "@/lib/download-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -178,51 +179,17 @@ export function MatchesList() {
     }
 
     const headers = [
-      "ID",
-      "Commodity",
-      "Buyer ID",
-      "Buyer Name",
-      "Seller ID",
-      "Seller Name",
-      "Quantity",
-      "Unit",
-      "Price",
-      "Currency",
-      "Status",
-      "Created At",
-      "Settled At",
-      "Hash",
+      "ID", "Commodity", "Buyer ID", "Buyer Name", "Seller ID", "Seller Name",
+      "Quantity", "Unit", "Price", "Currency", "Status", "Created At", "Settled At", "Hash",
     ];
 
     const rows = matches.map(m => [
-      m.id,
-      m.commodity,
-      m.buyer_id,
-      m.buyer_name,
-      m.seller_id,
-      m.seller_name,
-      m.quantity_amount,
-      m.quantity_unit,
-      m.price_amount,
-      m.price_currency,
-      m.status,
-      m.created_at,
-      m.settled_at || "",
-      m.hash,
+      m.id, m.commodity, m.buyer_id, m.buyer_name, m.seller_id, m.seller_name,
+      m.quantity_amount, m.quantity_unit, m.price_amount, m.price_currency,
+      m.status, m.created_at, m.settled_at || "", m.hash,
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `matches-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCSV(headers, rows, `matches-${new Date().toISOString().split('T')[0]}.csv`);
     toast.success("CSV exported successfully");
   };
 

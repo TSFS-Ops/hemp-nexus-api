@@ -8,6 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Users, UserPlus, Loader2, Trash2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +45,7 @@ export function TeamManagement() {
   const [inviteRole, setInviteRole] = useState("org_member");
   const [inviting, setInviting] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; inviteId: string | null }>({ open: false, inviteId: null });
 
   useEffect(() => {
     fetchTeam();
@@ -244,7 +255,7 @@ export function TeamManagement() {
                     <TableCell>{inv.email}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{inv.role}</Badge></TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => cancelInvite(inv.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => setCancelDialog({ open: true, inviteId: inv.id })}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -255,6 +266,26 @@ export function TeamManagement() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog({ open, inviteId: open ? cancelDialog.inviteId : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this invitation? The recipient will no longer be able to join your organisation using this invite.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Invitation</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancelDialog.inviteId && cancelInvite(cancelDialog.inviteId).then(() => setCancelDialog({ open: false, inviteId: null }))}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel Invitation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
