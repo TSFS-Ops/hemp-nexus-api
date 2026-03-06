@@ -28,7 +28,7 @@ export interface ApiErrorOptions {
 const STATUS_MESSAGES: Record<number, string> = {
   401: "Session expired. Please sign in again.",
   402: "Insufficient credits. Please purchase credits on the Billing page to continue.",
-  403: "You do not have permission. Please create an account or contact support.",
+  403: "You do not have permission to perform this action. This match may belong to a different organisation.",
   404: "The requested resource was not found.",
   409: "A conflict occurred. Please refresh and try again.",
   429: "Too many requests. Please wait a moment and retry.",
