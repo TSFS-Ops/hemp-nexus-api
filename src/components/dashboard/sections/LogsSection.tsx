@@ -405,6 +405,7 @@ export function LogsSection() {
               </div>
             </div>
           )}
+          </div>
 
           <p className="text-xs text-muted-foreground">
             Showing {filteredLogs.length} of {logs.length} logs (last 100)

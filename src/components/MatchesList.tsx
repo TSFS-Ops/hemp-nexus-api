@@ -540,6 +540,7 @@ export function MatchesList() {
         ) : (
           <EmptyState title="No matches found" message="Try adjusting your filters." />
         )}
+        </div>
         </CardContent>
       </Card>
 

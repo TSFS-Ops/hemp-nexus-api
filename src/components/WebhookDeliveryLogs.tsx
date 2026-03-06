@@ -229,6 +229,7 @@ export default function WebhookDeliveryLogs() {
         ) : (
           <EmptyState title="No webhook delivery logs found" message="Logs will appear here once webhooks are triggered." />
         )}
+        </div>
       </CardContent>
     </Card>
   );
