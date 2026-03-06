@@ -105,8 +105,17 @@ export function TeamManagement() {
     }
   };
 
+  const ALLOWED_INVITE_ROLES = ["org_member", "org_admin"] as const;
+
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !orgId || !user) return;
+
+    // SECURITY: validate role against allowlist to prevent escalation via DOM tampering
+    if (!(ALLOWED_INVITE_ROLES as readonly string[]).includes(inviteRole)) {
+      toast.error("Invalid role selected");
+      return;
+    }
+
     setInviting(true);
     try {
       const { error } = await supabase
@@ -131,11 +140,14 @@ export function TeamManagement() {
   };
 
   const cancelInvite = async (id: string) => {
+    if (!orgId) return;
     try {
+      // SECURITY: scope delete to current org to prevent IDOR
       const { error } = await supabase
         .from("team_invitations")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("org_id", orgId);
 
       if (error) throw error;
       toast.success("Invitation cancelled");

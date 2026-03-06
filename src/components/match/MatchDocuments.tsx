@@ -54,6 +54,7 @@ import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
 import { DocumentAccessLogs } from "./DocumentAccessLogs";
 import { listMatchDocuments } from "@/lib/match-documents-client";
+import { apiFetch } from "@/lib/api-client";
 
 interface MatchDocument {
   id: string;
@@ -346,31 +347,10 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
   const handleDownload = async (doc: MatchDocument) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("You must be logged in to download documents");
-        return;
-      }
-
-      // Use edge function for proper access logging
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-download/${doc.id}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
+      const { data } = await apiFetch<{ data: { download_url: string } }>(
+        `document-download/${doc.id}`
       );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to get download URL");
-      }
-
-      const { data } = await response.json();
-      
-      // Open signed URL
       const a = document.createElement("a");
       a.href = data.download_url;
       a.download = doc.filename;
