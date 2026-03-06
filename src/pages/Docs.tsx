@@ -11,7 +11,7 @@ import {
   ArrowRight, ExternalLink, FileText, CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { PublicHeader } from "@/components/PublicHeader";
+import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
 const API_BASE_URL = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
@@ -56,8 +56,7 @@ export default function Docs() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
+    <PublicPageLayout>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Hero Section */}
@@ -706,16 +705,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
           </TabsContent>
         </Tabs>
 
-        {/* Footer */}
-        <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p className="mb-2">
-            <strong>Compliance Matching API</strong> by Trade.Izenzo
-          </p>
-          <p>
-            Questions? Contact <a href="mailto:api@izenzo.co.za" className="underline">api@izenzo.co.za</a>
-          </p>
-        </div>
       </div>
-    </div>
+    </PublicPageLayout>
   );
 }

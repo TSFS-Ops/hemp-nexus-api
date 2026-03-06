@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ArrowRight, Check, Info, Sparkles, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
-import { PublicHeader } from "@/components/PublicHeader";
+import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { type DemoSearchResult, getDemoResultsForQuery, calculateSearchMetrics } from "@/lib/demo-data";
 
 export default function Demo() {
@@ -82,8 +82,7 @@ export default function Demo() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background">
-        <PublicHeader />
+      <PublicPageLayout>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           {/* Demo Notice */}
@@ -357,7 +356,7 @@ export default function Demo() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      </PublicPageLayout>
     </TooltipProvider>
   );
 }
