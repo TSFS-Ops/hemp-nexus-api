@@ -364,7 +364,7 @@ export function UsageBillingSection() {
                     <TableHead>Endpoint</TableHead>
                     <TableHead className="text-center">Tokens</TableHead>
                     <TableHead className="text-center">Outcome</TableHead>
-                    <TableHead className="text-right">Balance After</TableHead>
+                    <TableHead className="text-right">Remaining Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
