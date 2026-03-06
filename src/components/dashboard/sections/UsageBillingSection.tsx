@@ -403,6 +403,7 @@ export function UsageBillingSection() {
               </Table>
             </div>
           )}
+          </div>
         </CardContent>
       </Card>
     </div>
