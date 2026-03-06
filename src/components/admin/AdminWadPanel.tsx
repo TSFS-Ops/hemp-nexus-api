@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import * as WadState from "@/lib/wad-state";
 import { apiFetch } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -213,7 +214,7 @@ export function AdminWadPanel() {
                       {new Date(wad.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      {wad.status === "sealed" && (
+                      {WadState.canDo(wad.status, "download_certificate") && (
                         <Dialog open={accessWadId === wad.id} onOpenChange={(open) => !open && setAccessWadId(null)}>
                           <DialogTrigger asChild>
                             <Button 
@@ -260,7 +261,7 @@ export function AdminWadPanel() {
                         </Dialog>
                       )}
                       
-                      {wad.status !== "revoked" && (
+                      {WadState.canDo(wad.status, "revoke") && (
                         <Dialog open={revokeWadId === wad.id} onOpenChange={(open) => !open && setRevokeWadId(null)}>
                           <DialogTrigger asChild>
                             <Button 

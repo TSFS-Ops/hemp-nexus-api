@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, CheckCircle2, FileText, Activity, Clock, Hash, Eye, ChevronRight, TrendingUp, AlertCircle } from "lucide-react";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { ROUTES, MATCH_STATUS } from "@/lib/constants";
+import * as MatchState from "@/lib/match-state";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -91,8 +92,8 @@ export default function MyActivity() {
     return <FullPageLoader />;
   }
 
-  const confirmedMatches = matches?.filter(m => m.status === MATCH_STATUS.SETTLED) || [];
-  const pendingMatches = matches?.filter(m => m.status === MATCH_STATUS.MATCHED) || [];
+  const confirmedMatches = matches?.filter(m => MatchState.isSettled(m.status)) || [];
+  const pendingMatches = matches?.filter(m => !MatchState.isSettled(m.status)) || [];
 
   const stats = {
     totalMatches: matches?.length || 0,
@@ -225,8 +226,8 @@ export default function MyActivity() {
                               {formatDistanceToNow(new Date(match.created_at), { addSuffix: true })}
                             </p>
                           </div>
-                          <Badge variant={match.status === "settled" ? "default" : "secondary"}>
-                            {match.status === "settled" ? "Confirmed" : "Matched"}
+                          <Badge variant={MatchState.isSettled(match.status) ? "default" : "secondary"}>
+                            {MatchState.statusLabel(match.status)}
                           </Badge>
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>

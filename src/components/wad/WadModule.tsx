@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileCheck, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api-client";
 import { WadStepper } from "./WadStepper";
 import type { Tables } from "@/integrations/supabase/types";
+import * as WadState from "@/lib/wad-state";
 
 type Match = Tables<"matches">;
 
@@ -52,40 +53,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   const fetchWad = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad?poi_id=${match.id}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const wads = await response.json();
-        // Get the active (non-revoked, non-superseded) WaD
-        const activeWad = wads.find((w: Wad) => 
-          w.status !== "revoked" && w.status !== "superseded"
-        );
-        if (activeWad) {
-          // Fetch full details with attestations
-          const detailResponse = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${activeWad.id}`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${session.access_token}`,
-              },
-            }
-          );
-          if (detailResponse.ok) {
-            setWad(await detailResponse.json());
-          }
-        }
+      const wads = await apiFetch<Wad[]>(`wad?poi_id=${match.id}`);
+      const activeWad = wads.find((w: Wad) => !WadState.isTerminal(w.status));
+      if (activeWad) {
+        const detail = await apiFetch<Wad>(`wad/${activeWad.id}`);
+        setWad(detail);
       }
     } catch (error) {
       console.error("Error fetching WaD:", error);
@@ -98,40 +70,20 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     if (creating) return;
     try {
       setCreating(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("You must be logged in");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ poi_id: match.id }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorBody = await response.json();
-        // Surface specific gate failures from the backend
-        if (errorBody.failures && Array.isArray(errorBody.failures)) {
-          setGateFailures(errorBody.failures);
-        }
-        throw new Error(errorBody.message || "Failed to create WaD");
-      }
-
-      const newWad = await response.json();
+      const newWad = await apiFetch<Wad>("wad", {
+        method: "POST",
+        body: JSON.stringify({ poi_id: match.id }),
+      });
       setWad(newWad);
       setGateFailures([]);
       toast.success("WaD created successfully");
       onWadCreated?.();
     } catch (error: any) {
       console.error("Error creating WaD:", error);
+      // Surface specific gate failures from the backend
+      if (error.failures && Array.isArray(error.failures)) {
+        setGateFailures(error.failures);
+      }
       toast.error(error.message || "Failed to create WaD");
     } finally {
       setCreating(false);
