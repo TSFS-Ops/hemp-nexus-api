@@ -22,6 +22,7 @@ import {
   Globe
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api-client";
 
 interface OnboardingStep {
   id: number;
@@ -111,34 +112,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const handleCreateApiKey = async () => {
     setCreating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please log in to create an API key");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            name: keyName,
-            scopes: ["signals:write", "signals:read"],
-            expires_at: null,
-            environment: "sandbox"
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to create API key");
-      }
-
-      const data = await response.json();
+      const data = await apiFetch<{ key: string }>("api-keys", {
+        method: "POST",
+        body: JSON.stringify({
+          name: keyName,
+          scopes: ["signals:write", "signals:read"],
+          expires_at: null,
+          environment: "sandbox"
+        }),
+      });
       setApiKey(data.key);
       
       // Auto-copy to clipboard

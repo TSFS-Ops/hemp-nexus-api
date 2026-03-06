@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio } from "lucide-react";
-import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MATCH_STATUS, RESOURCE_STATUS } from "@/lib/constants";
 
 interface OverviewStats {
@@ -18,26 +18,9 @@ interface OverviewStats {
 }
 
 export function AdminOverview() {
-  const [stats, setStats] = useState<OverviewStats>({
-    totalUsers: 0,
-    totalOrgs: 0,
-    activeApiKeys: 0,
-    recentErrors: 0,
-    requestsToday: 0,
-    totalMatches: 0,
-    confirmedMatches: 0,
-    activeSignals: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-
+  const { data: stats, isLoading: loading } = useQuery({
+    queryKey: ["admin-overview-stats"],
+    queryFn: async () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const today = new Date();
@@ -63,7 +46,7 @@ export function AdminOverview() {
         supabase.from("signals").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
       ]);
 
-      setStats({
+      return {
         totalUsers: usersCount || 0,
         totalOrgs: orgsCount || 0,
         activeApiKeys: keysCount || 0,
@@ -72,29 +55,38 @@ export function AdminOverview() {
         totalMatches: matchesCount || 0,
         confirmedMatches: confirmedCount || 0,
         activeSignals: signalsCount || 0,
-      });
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-      toast.error("Failed to load overview statistics");
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
+    },
+    staleTime: 30_000,
+  });
+
+  const s = stats ?? { totalMatches: 0, confirmedMatches: 0, activeSignals: 0, totalUsers: 0, totalOrgs: 0, activeApiKeys: 0, recentErrors: 0, requestsToday: 0 };
 
   const statCards = [
-    { title: "Total Matches", value: stats.totalMatches, icon: GitCompare, description: `${stats.confirmedMatches} confirmed` },
-    { title: "Active Signals", value: stats.activeSignals, icon: Radio, description: "Buyer/seller signals" },
-    { title: "Total Users", value: stats.totalUsers, icon: Users, description: "Registered users" },
-    { title: "Organizations", value: stats.totalOrgs, icon: Activity, description: "Active organizations" },
-    { title: "Active API Keys", value: stats.activeApiKeys, icon: Key, description: "Currently active" },
-    { title: "Recent Errors", value: stats.recentErrors, icon: AlertTriangle, description: "Last 24 hours", alert: stats.recentErrors > 10 },
-    { title: "Requests Today", value: stats.requestsToday, icon: TrendingUp, description: "API calls today" },
+    { title: "Total Matches", value: s.totalMatches, icon: GitCompare, description: `${s.confirmedMatches} confirmed` },
+    { title: "Active Signals", value: s.activeSignals, icon: Radio, description: "Buyer/seller signals" },
+    { title: "Total Users", value: s.totalUsers, icon: Users, description: "Registered users" },
+    { title: "Organizations", value: s.totalOrgs, icon: Activity, description: "Active organizations" },
+    { title: "Active API Keys", value: s.activeApiKeys, icon: Key, description: "Currently active" },
+    { title: "Recent Errors", value: s.recentErrors, icon: AlertTriangle, description: "Last 24 hours", alert: s.recentErrors > 10 },
+    { title: "Requests Today", value: s.requestsToday, icon: TrendingUp, description: "API calls today" },
   ];
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-6">Loading...</h2>
+      <div className="p-4 sm:p-6 space-y-6">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">API Platform Overview</h2>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Loading statistics…</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2"><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardContent><Skeleton className="h-8 w-16" /></CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
