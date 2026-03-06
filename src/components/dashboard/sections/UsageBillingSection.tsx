@@ -38,6 +38,7 @@ interface UsageStats {
 export function UsageBillingSection() {
   const [balance, setBalance] = useState<TokenBalance | null>(null);
   const [ledgerEntries, setLedgerEntries] = useState<TokenLedgerEntry[]>([]);
+  const [allEndpoints, setAllEndpoints] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [stats, setStats] = useState<UsageStats | null>(null);
