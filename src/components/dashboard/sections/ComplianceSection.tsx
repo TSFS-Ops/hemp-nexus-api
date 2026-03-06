@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Shield, FileText, Globe, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { ErrorState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 
 interface Entity {
@@ -36,6 +37,7 @@ export function ComplianceSection() {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [screenings, setScreenings] = useState<ScreeningResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function ComplianceSection() {
   }, [user]);
 
   const fetchComplianceData = async () => {
+    setFetchError(null);
     try {
       const { data: profile } = await supabase
         .from("profiles")
@@ -58,10 +61,14 @@ export function ComplianceSection() {
         supabase.from("screening_results").select("id, entity_id, screening_type, provider, status, screened_at").eq("org_id", profile.org_id).order("screened_at", { ascending: false }).limit(50),
       ]);
 
+      if (entitiesRes.error) throw entitiesRes.error;
+      if (screeningsRes.error) throw screeningsRes.error;
+
       setEntities(entitiesRes.data || []);
       setScreenings((screeningsRes.data as ScreeningResult[]) || []);
     } catch (err) {
-      console.error("Error fetching compliance data:", err);
+      console.error("[ComplianceSection] fetch failed:", err);
+      setFetchError(err instanceof Error ? err.message : "Failed to load compliance data");
     } finally {
       setLoading(false);
     }
@@ -87,6 +94,23 @@ export function ComplianceSection() {
 
   if (loading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (fetchError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Compliance Status</h1>
+          <p className="text-muted-foreground mt-1">Your organisation's KYC/KYB verification status</p>
+        </div>
+        <ErrorState
+          title="Failed to load compliance data"
+          message={fetchError}
+          type="server"
+          onRetry={fetchComplianceData}
+        />
+      </div>
+    );
   }
 
   return (

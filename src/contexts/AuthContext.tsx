@@ -28,13 +28,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
 
   const fetchRoles = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    
-    const userRoles = (data || []).map(r => r.role as AppRole);
-    setRoles(userRoles);
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      
+      if (error) {
+        console.error("[AuthContext] Failed to fetch roles:", error.message);
+        setRoles([]);
+        return;
+      }
+
+      const userRoles = (data || []).map(r => r.role as AppRole);
+      setRoles(userRoles);
+    } catch (err) {
+      console.error("[AuthContext] Unexpected error fetching roles:", err);
+      setRoles([]);
+    }
   }, []);
 
   const refreshSession = useCallback(async () => {

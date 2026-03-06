@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, FileText, Save, Clock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface DealTerm {
   id: string;
@@ -36,6 +37,7 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
   const { user } = useAuth();
   const [terms, setTerms] = useState<DealTerm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -53,6 +55,7 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
   }, [matchId]);
 
   const fetchTerms = async () => {
+    setFetchError(null);
     try {
       const { data, error } = await supabase
         .from("deal_terms")
@@ -63,7 +66,8 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
       if (error) throw error;
       setTerms((data as DealTerm[]) || []);
     } catch (err) {
-      console.error("Error fetching deal terms:", err);
+      console.error("[DealTermsPanel] fetch failed:", err);
+      setFetchError(err instanceof Error ? err.message : "Failed to load deal terms");
     } finally {
       setLoading(false);
     }
@@ -103,6 +107,10 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
 
   if (loading) {
     return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (fetchError) {
+    return <ErrorState variant="inline" title="Failed to load deal terms" message={fetchError} onRetry={fetchTerms} />;
   }
 
   return (

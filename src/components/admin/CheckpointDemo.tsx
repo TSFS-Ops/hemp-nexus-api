@@ -294,7 +294,9 @@ export function CheckpointDemo() {
       await new Promise(r => setTimeout(r, 500));
     }
     if (runIdRef.current) {
-      try { await callDemo("complete_run"); } catch {}
+      try { await callDemo("complete_run"); } catch (err) {
+        console.warn("[CheckpointDemo] Failed to complete run:", err instanceof Error ? err.message : err);
+      }
     }
     setIsRunning(false);
   };

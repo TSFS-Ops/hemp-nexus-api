@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Package, Milestone, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Pod {
   id: string;
@@ -55,18 +56,29 @@ export function AdminPodPanel() {
   const [milestones, setMilestones] = useState<PodMilestone[]>([]);
   const [breaches, setBreaches] = useState<Breach[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
-    const [podRes, msRes, brRes] = await Promise.all([
-      supabase.from("pods").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("pod_milestones").select("*").order("due_at", { ascending: true }).limit(500),
-      supabase.from("breaches").select("*").order("detected_at", { ascending: false }).limit(100),
-    ]);
-    setPods((podRes.data as Pod[]) || []);
-    setMilestones((msRes.data as PodMilestone[]) || []);
-    setBreaches((brRes.data as Breach[]) || []);
-    setLoading(false);
+    setFetchError(null);
+    try {
+      const [podRes, msRes, brRes] = await Promise.all([
+        supabase.from("pods").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("pod_milestones").select("*").order("due_at", { ascending: true }).limit(500),
+        supabase.from("breaches").select("*").order("detected_at", { ascending: false }).limit(100),
+      ]);
+      if (podRes.error) throw podRes.error;
+      if (msRes.error) throw msRes.error;
+      if (brRes.error) throw brRes.error;
+      setPods((podRes.data as Pod[]) || []);
+      setMilestones((msRes.data as PodMilestone[]) || []);
+      setBreaches((brRes.data as Breach[]) || []);
+    } catch (err) {
+      console.error("[AdminPodPanel] fetch failed:", err);
+      setFetchError(err instanceof Error ? err.message : "Failed to load PoD data");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -76,6 +88,14 @@ export function AdminPodPanel() {
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="p-6">
+        <ErrorState title="Failed to load PoD data" message={fetchError} type="server" onRetry={fetchData} />
       </div>
     );
   }
