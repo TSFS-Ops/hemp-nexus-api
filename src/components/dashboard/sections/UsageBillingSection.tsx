@@ -100,6 +100,11 @@ export function UsageBillingSection() {
       }));
       
       setLedgerEntries(mappedData);
+      
+      // Populate allEndpoints from unfiltered fetches so the dropdown always shows every option
+      if (endpointFilter === "all") {
+        setAllEndpoints([...new Set(mappedData.map((e) => e.endpoint))]);
+      }
 
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
