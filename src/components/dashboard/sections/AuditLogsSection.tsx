@@ -1,5 +1,6 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import { SectionHeader } from "@/components/ui/section-header";
 
 interface AuditLogsSectionProps {
   apiKeyId?: string;
@@ -8,12 +9,10 @@ interface AuditLogsSectionProps {
 export function AuditLogsSection({ apiKeyId }: AuditLogsSectionProps) {
   return (
     <div className="space-y-5 sm:space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-bold tracking-tight">Logs</h1>
-        <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-          Audit trail of all API operations
-        </p>
-      </header>
+      <SectionHeader
+        title="Logs"
+        description="Audit trail of all API operations"
+      />
       {apiKeyId ? (
         <AuditLogViewer apiKey={apiKeyId} />
       ) : (

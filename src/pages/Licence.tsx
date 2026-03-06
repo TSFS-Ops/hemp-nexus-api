@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Calendar, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
+import { SectionHeader } from "@/components/ui/section-header";
 
 const LICENCE_TIERS = {
   professional: {
@@ -80,12 +81,10 @@ export default function Licence() {
   return (
     <DashboardLayout isAdmin={isAdmin}>
       <div className="space-y-6">
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight">Licence Management</h1>
-          <p className="text-muted-foreground">
-            View and manage your annual API licence
-          </p>
-        </header>
+        <SectionHeader
+          title="Licence Management"
+          description="View and manage your annual API licence"
+        />
 
         {/* Current Licence Status */}
         <Card className={cn(

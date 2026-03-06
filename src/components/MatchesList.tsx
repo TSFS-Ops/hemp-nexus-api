@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { EmptyState } from "@/components/ui/error-state";
 import { MATCH_STATUS, ROUTES } from "@/lib/constants";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
@@ -503,9 +504,7 @@ export function MatchesList() {
             )}
           </>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No matches found. Try adjusting your filters.
-          </div>
+          <EmptyState title="No matches found" message="Try adjusting your filters." />
         )}
         </CardContent>
       </Card>

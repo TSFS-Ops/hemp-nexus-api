@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
+import { EmptyState } from "@/components/ui/error-state";
 
 interface WebhookDeliveryLog {
   id: string;
@@ -225,9 +226,7 @@ export default function WebhookDeliveryLogs() {
             </div>
           </>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No webhook delivery logs found.
-          </div>
+          <EmptyState title="No webhook delivery logs found" message="Logs will appear here once webhooks are triggered." />
         )}
       </CardContent>
     </Card>

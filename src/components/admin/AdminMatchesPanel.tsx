@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Eye, Download, RefreshCw } from "lucide-react";
+import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
@@ -197,9 +198,7 @@ export function AdminMatchesPanel() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No matches found.
-            </div>
+            <EmptyState title="No matches found" message="Matches will appear here once trade activity occurs." />
           )}
         </CardContent>
       </Card>

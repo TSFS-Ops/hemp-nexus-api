@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, RefreshCw, Download, Shield } from "lucide-react";
+import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -244,9 +245,7 @@ export function AdminAuditLogs() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No audit logs found.
-            </div>
+            <EmptyState title="No audit logs found" message="Audit logs will appear here once API activity occurs." />
           )}
         </CardContent>
       </Card>
@@ -298,9 +297,7 @@ export function AdminAuditLogs() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No admin audit logs found.
-            </div>
+            <EmptyState title="No admin audit logs found" message="Admin actions will appear here." />
           )}
         </CardContent>
       </Card>
