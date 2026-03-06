@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
@@ -27,7 +27,6 @@ export default function Auth() {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -36,23 +35,13 @@ export default function Auth() {
     
     if (type === "recovery") {
       setShowForgotPassword(true);
-      toast({
-        title: "Reset Your Password",
-        description: "Enter your new password below",
-      });
+      toast.info("Enter your new password below");
     } else if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) {
-          toast({
-            title: "Verification Failed",
-            description: error.message,
-            variant: "destructive",
-          });
+          toast.error(error.message);
         } else {
-          toast({
-            title: "Email Verified",
-            description: "Your email has been verified. You can now sign in.",
-          });
+          toast.success("Your email has been verified. You can now sign in.");
         }
       });
     }
@@ -70,7 +59,7 @@ export default function Auth() {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, searchParams, toast]);
+  }, [navigate, searchParams]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,23 +79,12 @@ export default function Auth() {
       if (error) throw error;
 
       setVerificationPending(true);
-      toast({
-        title: "Account Created",
-        description: "Check your email to verify your account.",
-      });
+      toast.success("Check your email to verify your account.");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation Error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
+        toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
-        toast({
-          title: "Sign Up Failed",
-          description: "Unable to create account. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Unable to create account. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -134,17 +112,9 @@ export default function Auth() {
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation Error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
+        toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
-        toast({
-          title: "Sign In Failed",
-          description: error.message || "Invalid credentials.",
-          variant: "destructive",
-        });
+        toast.error(error.message || "Invalid credentials.");
       }
     } finally {
       setLoading(false);
@@ -165,22 +135,12 @@ export default function Auth() {
       if (error) throw error;
 
       setResetEmailSent(true);
-      toast({
-        title: "Reset Email Sent",
-        description: "Check your email for a password reset link.",
-      });
+      toast.success("Check your email for a password reset link.");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation Error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
+        toast.error(error.errors[0].message);
       } else {
-        toast({
-          title: "Request Processed",
-          description: "If an account exists, you'll receive a reset email.",
-        });
+        toast.info("If an account exists, you'll receive a reset email.");
       }
     } finally {
       setLoading(false);
@@ -200,26 +160,15 @@ export default function Auth() {
 
       if (error) throw error;
 
-      toast({
-        title: "Password Reset",
-        description: "Your password has been updated.",
-      });
+      toast.success("Your password has been updated.");
       
       setShowForgotPassword(false);
       setPassword("");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation Error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
+        toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
-        toast({
-          title: "Reset Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast.error(error.message);
       }
     } finally {
       setLoading(false);
@@ -236,16 +185,9 @@ export default function Auth() {
 
       if (error) throw error;
 
-      toast({
-        title: "Verification Email Sent",
-        description: "Check your inbox for the verification link.",
-      });
+      toast.success("Check your inbox for the verification link.");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend verification email.",
-        variant: "destructive",
-      });
+      toast.error("Failed to resend verification email.");
     } finally {
       setLoading(false);
     }

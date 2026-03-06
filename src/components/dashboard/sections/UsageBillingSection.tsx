@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Coins, TrendingUp, AlertTriangle, Clock, Filter, Download, RefreshCw } from "lucide-react";
 import { format, subDays } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface TokenBalance {
   balance: number;
@@ -43,12 +42,9 @@ export function UsageBillingSection() {
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [stats, setStats] = useState<UsageStats | null>(null);
   
-  // Filters
   const [endpointFilter, setEndpointFilter] = useState<string>("all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<string>("30");
-  
-  const { toast } = useToast();
 
   const fetchBalance = async () => {
     try {
@@ -61,11 +57,7 @@ export function UsageBillingSection() {
       setBalance(data);
     } catch (error) {
       console.error("Error fetching token balance:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch token balance",
-        variant: "destructive",
-      });
+      toast.error("Failed to fetch token balance");
     } finally {
       setLoading(false);
     }
@@ -95,7 +87,6 @@ export function UsageBillingSection() {
 
       if (error) throw error;
       
-      // Map data to match our interface
       const mappedData: TokenLedgerEntry[] = (data || []).map((entry) => ({
         id: entry.id,
         endpoint: entry.endpoint,
@@ -109,7 +100,6 @@ export function UsageBillingSection() {
       
       setLedgerEntries(mappedData);
 
-      // Calculate stats from ledger
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthlyEntries = (data || []).filter(
@@ -129,11 +119,7 @@ export function UsageBillingSection() {
       });
     } catch (error) {
       console.error("Error fetching token ledger:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch usage data",
-        variant: "destructive",
-      });
+      toast.error("Failed to fetch usage data");
     } finally {
       setLedgerLoading(false);
     }
@@ -217,7 +203,6 @@ export function UsageBillingSection() {
         </Button>
       </header>
 
-      {/* Balance Warning Banner */}
       {isCriticalBalance && (
         <Card className="border-destructive bg-destructive/10">
           <CardContent className="py-4">
@@ -235,7 +220,6 @@ export function UsageBillingSection() {
         </Card>
       )}
 
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -298,7 +282,6 @@ export function UsageBillingSection() {
         </Card>
       </div>
 
-      {/* Token Ledger */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -313,7 +296,6 @@ export function UsageBillingSection() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -355,7 +337,6 @@ export function UsageBillingSection() {
             </Select>
           </div>
 
-          {/* Table */}
           {ledgerLoading ? (
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (

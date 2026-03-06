@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { 
   Loader2, 
   Users, 
@@ -42,7 +42,6 @@ export default function SystemAnalytics() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchAnalytics();
@@ -111,11 +110,7 @@ export default function SystemAnalytics() {
       );
     } catch (error) {
       console.error("Analytics fetch error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch system analytics",
-        variant: "destructive",
-      });
+      toast.error("Failed to fetch system analytics");
     } finally {
       setLoading(false);
     }

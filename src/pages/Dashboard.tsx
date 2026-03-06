@@ -10,6 +10,7 @@ import { MatchesSection } from "@/components/dashboard/sections/MatchesSection";
 import { DashboardSettings } from "@/components/dashboard/DashboardSettings";
 import { AccountSection } from "@/components/dashboard/AccountSection";
 import { ComplianceSection } from "@/components/dashboard/sections/ComplianceSection";
+import MatchDetails from "@/pages/MatchDetails";
 
 export default function Dashboard() {
   const { session, isLoading, isAdmin } = useAuth();
@@ -34,7 +35,7 @@ export default function Dashboard() {
           <Route path="/" element={<ConsoleOverview />} />
           <Route path="/search" element={<SearchSection />} />
           <Route path="/matches" element={<MatchesSection isDemoMode={false} />} />
-          <Route path="/matches/:matchId" element={<MatchesSection isDemoMode={false} />} />
+          <Route path="/matches/:matchId" element={<MatchDetails />} />
           <Route path="/settings" element={<DashboardSettings />} />
           <Route path="/account" element={<AccountSection />} />
           <Route path="/compliance" element={<ComplianceSection />} />

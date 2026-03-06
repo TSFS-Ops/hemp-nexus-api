@@ -8,13 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Store, CheckCircle2, XCircle, Clock, Building2, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { z } from "zod";
 
-// Input validation schema
 const registrationSchema = z.object({
   company_name: z.string()
     .min(2, "Company name must be at least 2 characters")
@@ -58,7 +57,6 @@ type RegistrationFormData = z.infer<typeof registrationSchema>;
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -145,7 +143,7 @@ export default function Marketplace() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Registration submitted for review" });
+      toast.success("Registration submitted for review");
       queryClient.invalidateQueries({ queryKey: ["data-source-registrations"] });
       setFormData({
         company_name: "",
@@ -161,11 +159,7 @@ export default function Marketplace() {
       setValidationErrors({});
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "Error", 
-        description: error.message, 
-        variant: "destructive" 
-      });
+      toast.error(error.message);
     },
   });
 
@@ -173,7 +167,6 @@ export default function Marketplace() {
     e.preventDefault();
     setValidationErrors({});
     
-    // Validate form data
     const result = registrationSchema.safeParse(formData);
     
     if (!result.success) {
@@ -184,11 +177,7 @@ export default function Marketplace() {
         }
       });
       setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: "Please fix the errors in the form",
-        variant: "destructive",
-      });
+      toast.error("Please fix the errors in the form");
       return;
     }
 
@@ -202,7 +191,6 @@ export default function Marketplace() {
 
   const updateField = (field: keyof RegistrationFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear validation error when user starts typing
     if (validationErrors[field]) {
       setValidationErrors(prev => {
         const next = { ...prev };
@@ -453,46 +441,42 @@ export default function Marketplace() {
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold">{reg.company_name}</h3>
+                        {getStatusIcon(reg.status)}
+                        <h3 className="font-semibold">{reg.data_source_name}</h3>
                         <Badge className={getStatusColor(reg.status)}>
-                          <span className="flex items-center gap-1">
-                            {getStatusIcon(reg.status)}
-                            {reg.status}
-                          </span>
+                          {reg.status}
                         </Badge>
                       </div>
-                      
-                      {reg.company_description && (
-                        <p className="text-sm text-muted-foreground">{reg.company_description}</p>
-                      )}
-                      
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <span><strong>Data Source:</strong> {reg.data_source_name}</span>
-                        <span><strong>Type:</strong> {reg.data_source_type}</span>
-                        {reg.endpoint_url && (
-                          <span className="truncate max-w-xs">
-                            <strong>Endpoint:</strong> {reg.endpoint_url}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground">
-                        Submitted {new Date(reg.created_at).toLocaleDateString()}
+                      <p className="text-sm text-muted-foreground">
+                        {reg.company_name} • {reg.data_source_type.toUpperCase()}
                       </p>
-                      
+                      {reg.endpoint_url && (
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {reg.endpoint_url}
+                        </p>
+                      )}
                       {reg.rejection_reason && (
                         <p className="text-sm text-destructive mt-2">
-                          <strong>Rejection reason:</strong> {reg.rejection_reason}
+                          Rejection reason: {reg.rejection_reason}
                         </p>
                       )}
                     </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(reg.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </Card>
               ))}
             </div>
           ) : (
-            <Card className="p-6 text-center text-muted-foreground">
-              No registrations yet. Submit your first registration to get started.
+            <Card className="p-6">
+              <div className="text-center py-8">
+                <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No registrations yet</h3>
+                <p className="text-muted-foreground">
+                  Register your data source to get started
+                </p>
+              </div>
             </Card>
           )}
         </TabsContent>
