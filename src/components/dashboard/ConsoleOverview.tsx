@@ -82,7 +82,7 @@ export function ConsoleOverview() {
 
       {/* Quick Info */}
       <div className="p-4 border border-border rounded-lg bg-muted/30">
-        <h3 className="font-medium text-foreground mb-2">What is Trade.Izenzo?</h3>
+        <h3 className="font-medium text-foreground mb-2">What is Compliance Match API?</h3>
         <p className="text-sm text-muted-foreground leading-relaxed mb-3">
           Search for counterparties, record proof-of-intent, and generate tamper-evident audit trails. 
           Confirm Intent creates an information-only record — no payment, no contract, no legal obligation.

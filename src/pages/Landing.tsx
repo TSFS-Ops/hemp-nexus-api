@@ -65,10 +65,10 @@ export default function Landing() {
         <div className="w-full max-w-xl mx-auto text-center">
           {/* Headline */}
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-tight mb-3">
-            Find a buyer or seller
+            Find a verified counterparty
           </h1>
           <p className="text-base text-muted-foreground mb-8">
-            Search, match, and agree on the basics — product, quantity, price, and delivery basis.
+            Search, match, and verify counterparties compliantly — with tamper-evident proof at every step.
           </p>
 
           {/* Search */}
@@ -78,8 +78,8 @@ export default function Landing() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="What are you looking for? e.g. cashew buyers in India"
-              aria-label="Search for buyers or sellers"
+              placeholder="Search counterparties, e.g. copper cathode suppliers in Zambia"
+              aria-label="Search for verified counterparties"
               className="w-full h-14 pl-5 pr-28 text-base bg-background border border-border rounded-xl 
                        placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 
                        focus:ring-primary/30 focus:border-primary/40 transition-all"

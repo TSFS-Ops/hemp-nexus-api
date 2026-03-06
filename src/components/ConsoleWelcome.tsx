@@ -17,7 +17,7 @@ export function ConsoleWelcome() {
           {/* Value prop */}
           <div className="mb-10">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3">
-              Trade.Izenzo
+              Compliance Match API
             </h1>
             <p className="text-muted-foreground leading-relaxed">
               Manage API keys, view request logs, and download tamper-evident evidence packs — all from one console.
