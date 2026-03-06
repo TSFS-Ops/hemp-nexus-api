@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, MessageSquare, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { InlineLoader } from "@/components/ui/inline-loader";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { useDataFetch } from "@/hooks/use-data-fetch";
 
 interface Note {
   id: string;
@@ -22,31 +25,21 @@ interface MatchNotesProps {
 
 export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
   const { user } = useAuth();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
   const [newNote, setNewNote] = useState("");
   const [posting, setPosting] = useState(false);
 
-  useEffect(() => {
-    fetchNotes();
-  }, [matchId]);
-
-  const fetchNotes = async () => {
-    try {
+  const { data: notes, loading, refetch } = useDataFetch(
+    async () => {
       const { data, error } = await supabase
         .from("match_notes")
         .select("id, content, user_id, created_at")
         .eq("match_id", matchId)
         .order("created_at", { ascending: true });
-
       if (error) throw error;
-      setNotes(data || []);
-    } catch (err) {
-      console.error("Error fetching notes:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (data || []) as Note[];
+    },
+    { deps: [matchId], errorMessage: false }
+  );
 
   const handlePost = async () => {
     if (!newNote.trim() || !user) return;
@@ -65,7 +58,7 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
       if (error) throw error;
       setNewNote("");
       toast.success("Note added");
-      fetchNotes();
+      refetch();
     } catch (err: any) {
       // Preserve user input on failure so nothing is lost
       setNewNote(noteContent);
@@ -85,8 +78,8 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
-          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-        ) : notes.length === 0 ? (
+          <InlineLoader />
+        ) : !notes || notes.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">No notes yet. Add the first note to this match.</p>
         ) : (
           <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -119,9 +112,9 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
             }}
             aria-label="Add a note"
           />
-          <Button onClick={handlePost} disabled={posting || !newNote.trim()} size="icon" className="shrink-0">
-            {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+          <LoadingButton onClick={handlePost} loading={posting} disabled={!newNote.trim()} size="icon" className="shrink-0">
+            <Send className="h-4 w-4" />
+          </LoadingButton>
         </div>
         <p className="text-xs text-muted-foreground">Press ⌘+Enter to send</p>
       </CardContent>

@@ -27,6 +27,11 @@ const ALLOWED_FILES = new Set([
   "src/components/ui/section-header.tsx",
   "src/components/ui/error-state.tsx",
   "src/components/ui/inline-loader.tsx",
+  "src/components/ui/loading-button.tsx",
+  "src/components/ui/match-status-badge.tsx",
+  "src/hooks/use-async-action.ts",
+  "src/hooks/use-data-fetch.ts",
+  "src/lib/api-error-handler.ts",
 ]);
 
 function walk(dir) {

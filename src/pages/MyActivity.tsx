@@ -11,6 +11,7 @@ import { Loader2, CheckCircle2, FileText, Activity, Clock, Hash, Eye, ChevronRig
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { ROUTES, MATCH_STATUS } from "@/lib/constants";
 import * as MatchState from "@/lib/match-state";
+import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -226,9 +227,7 @@ export default function MyActivity() {
                               {formatDistanceToNow(new Date(match.created_at), { addSuffix: true })}
                             </p>
                           </div>
-                          <Badge variant={MatchState.isSettled(match.status) ? "default" : "secondary"}>
-                            {MatchState.statusLabel(match.status)}
-                          </Badge>
+                          <MatchStatusBadge status={match.status} />
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>

@@ -2,13 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Loader2, Plus, ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
+import { AlertTriangle, Plus, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { InlineLoader } from "@/components/ui/inline-loader";
+import { useDataFetch } from "@/hooks/use-data-fetch";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { format } from "date-fns";
 
 interface Dispute {
@@ -28,38 +31,26 @@ interface DisputePanelProps {
 
 export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   const { user } = useAuth();
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
 
-  useEffect(() => {
-    fetchDisputes();
-  }, [matchId]);
-
-  const fetchDisputes = async () => {
-    try {
+  const { data: disputes, loading, refetch } = useDataFetch(
+    async () => {
       const { data, error } = await supabase
         .from("disputes")
         .select("*")
         .eq("match_id", matchId)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
-      setDisputes((data as Dispute[]) || []);
-    } catch (err) {
-      console.error("Error fetching disputes:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (data as Dispute[]) || [];
+    },
+    { deps: [matchId], errorMessage: false }
+  );
 
-  const handleSubmit = async () => {
-    if (!reason.trim() || !user || submitting) return;
-    setSubmitting(true);
-    try {
+  const { run: handleSubmit, loading: submitting } = useAsyncAction(
+    async () => {
+      if (!reason.trim() || !user) return;
       const { error } = await supabase.from("disputes").insert({
         match_id: matchId,
         raised_by_org_id: orgId,
@@ -67,19 +58,14 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
         reason: reason.trim(),
         evidence_notes: evidence.trim() || null,
       });
-
       if (error) throw error;
-      toast.success("Dispute raised successfully");
       setReason("");
       setEvidence("");
       setShowForm(false);
-      fetchDisputes();
-    } catch (err: any) {
-      toast.error("Failed to raise dispute", { description: err.message });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      refetch();
+    },
+    { successMessage: "Dispute raised successfully" }
+  );
 
   const statusInfo: Record<string, { badge: JSX.Element; help: string }> = {
     open: { 
@@ -91,7 +77,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
       help: "A reviewer is investigating this dispute. You will be notified of the outcome."
     },
     resolved: { 
-      badge: <Badge className="bg-green-500 hover:bg-green-600">Resolved</Badge>,
+      badge: <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400">Resolved</Badge>,
       help: "Dispute has been resolved. See the resolution notes below."
     },
     escalated: { 
@@ -111,7 +97,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+    return <InlineLoader />;
   }
 
   return (
@@ -159,15 +145,21 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
                 Raising a dispute will notify the counterparty and may freeze settlement. This action is logged in the audit trail.
               </AlertDescription>
             </Alert>
-            <Button variant="destructive" onClick={handleSubmit} disabled={submitting || !reason.trim()}>
-              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldAlert className="h-4 w-4 mr-2" />}
+            <LoadingButton
+              variant="destructive"
+              onClick={handleSubmit}
+              loading={submitting}
+              disabled={!reason.trim()}
+              icon={<ShieldAlert className="h-4 w-4" />}
+              loadingText="Submitting…"
+            >
               Submit Dispute
-            </Button>
+            </LoadingButton>
           </CardContent>
         </Card>
       )}
 
-      {disputes.length === 0 ? (
+      {(!disputes || disputes.length === 0) ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No disputes raised for this match.

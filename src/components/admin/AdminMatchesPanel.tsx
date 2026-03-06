@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Eye, Download, RefreshCw } from "lucide-react";
 import { EmptyState } from "@/components/ui/error-state";
 import * as MatchState from "@/lib/match-state";
+import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
@@ -175,7 +176,7 @@ export function AdminMatchesPanel() {
                         {match.price_currency} {match.price_amount.toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={MatchState.isSettled(match.status) ? "confirmed" : match.status} />
+                        <MatchStatusBadge status={match.status} />
                       </TableCell>
                       <TableCell>
                         <EvidenceChainIndicator matchId={match.id} compact />
@@ -222,7 +223,7 @@ export function AdminMatchesPanel() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Status</label>
                   <div className="mt-1">
-                    <StatusBadge status={MatchState.isSettled(selectedMatch.status) ? "confirmed" : selectedMatch.status} />
+                    <MatchStatusBadge status={selectedMatch.status} />
                   </div>
                 </div>
                 <div>
