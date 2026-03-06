@@ -226,8 +226,12 @@ export default function MatchDetails() {
       {/* Tabbed sections */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-7">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-8">
             <TabsTrigger value="details" className="flex items-center gap-1.5 min-w-[44px]">
+              <Info className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Details</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-1.5 min-w-[44px]">
               <FileText className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Documents</span>
             </TabsTrigger>
