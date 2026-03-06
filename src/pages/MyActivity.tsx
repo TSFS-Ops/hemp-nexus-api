@@ -12,6 +12,7 @@ import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { ROUTES, MATCH_STATUS } from "@/lib/constants";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { SectionHeader } from "@/components/ui/section-header";
 
 type Match = Tables<"matches">;
 type Signal = Tables<"signals">;
@@ -112,12 +113,10 @@ export default function MyActivity() {
   return (
     <DashboardLayout isAdmin={isAdmin}>
       <div className="space-y-6">
-        <header>
-          <h1 className="font-bold tracking-tight">My Activity</h1>
-          <p className="text-muted-foreground">
-            View your matches, intent confirmations, and activity history
-          </p>
-        </header>
+        <SectionHeader
+          title="My Activity"
+          description="View your matches, intent confirmations, and activity history"
+        />
 
         {/* Stats Overview */}
         <div className="grid gap-4 md:grid-cols-4 mb-8">

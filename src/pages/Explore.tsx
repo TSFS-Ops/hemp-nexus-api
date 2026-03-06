@@ -17,6 +17,7 @@ import {
   CheckCircle2, XCircle, Loader2, Lock, Info, Compass,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SectionHeader } from "@/components/ui/section-header";
 
 interface RiskDelta {
   category: string;
@@ -204,15 +205,10 @@ export default function Explore() {
   return (
     <DashboardLayout isAdmin={isAdmin} isDemoMode={false}>
       <div className="space-y-6 max-w-3xl">
-        <header className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Compass className="h-5 w-5 text-muted-foreground" />
-            <h1 className="font-bold tracking-tight">Exploration Layer</h1>
-          </div>
-          <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">
-            Draft a non-binding trade signal. No Proof-of-Intent is created until you explicitly seal it.
-          </p>
-        </header>
+        <SectionHeader
+          title="Exploration Layer"
+          description="Draft a non-binding trade signal. No Proof-of-Intent is created until you explicitly seal it."
+        />
 
         <Alert variant="default" className="border-border">
           <Info className="h-4 w-4" />

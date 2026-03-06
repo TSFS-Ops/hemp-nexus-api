@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Shield, FileText, Globe, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/ui/error-state";
+import { SectionHeader } from "@/components/ui/section-header";
 import { format } from "date-fns";
 
 interface Entity {
@@ -99,10 +100,10 @@ export function ComplianceSection() {
   if (fetchError) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Compliance Status</h1>
-          <p className="text-muted-foreground mt-1">Your organisation's KYC/KYB verification status</p>
-        </div>
+        <SectionHeader
+          title="Compliance Status"
+          description="Your organisation's KYC/KYB verification status"
+        />
         <ErrorState
           title="Failed to load compliance data"
           message={fetchError}
@@ -115,15 +116,11 @@ export function ComplianceSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Compliance Status</h1>
-          <p className="text-muted-foreground mt-1">Your organisation's KYC/KYB verification status, screening results, and compliance documents.</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchComplianceData}>
-          <RefreshCw className="h-4 w-4 mr-2" />Refresh
-        </Button>
-      </div>
+      <SectionHeader
+        title="Compliance Status"
+        description="Your organisation's KYC/KYB verification status, screening results, and compliance documents."
+        action={<Button variant="outline" size="sm" onClick={fetchComplianceData}><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>}
+      />
 
       {/* Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

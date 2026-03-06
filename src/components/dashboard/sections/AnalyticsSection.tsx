@@ -1,14 +1,13 @@
 import { MatchAnalytics } from "@/components/MatchAnalytics";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export function AnalyticsSection() {
   return (
     <div className="space-y-5 sm:space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-bold tracking-tight">Match Analytics</h1>
-        <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-          Insights and statistics about your trading activity
-        </p>
-      </header>
+      <SectionHeader
+        title="Match Analytics"
+        description="Insights and statistics about your trading activity"
+      />
       <MatchAnalytics />
     </div>
   );

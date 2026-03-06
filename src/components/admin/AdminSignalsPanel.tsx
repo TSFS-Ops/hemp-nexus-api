@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, Eye, Download, RefreshCw } from "lucide-react";
+import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -211,9 +212,7 @@ export function AdminSignalsPanel() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No signals found.
-            </div>
+            <EmptyState title="No signals found" message="Signals will appear here once trade activity occurs." />
           )}
         </CardContent>
       </Card>

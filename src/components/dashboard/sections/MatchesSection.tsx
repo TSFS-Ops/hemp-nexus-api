@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock, Shield } from "lucide-react";
 import { MatchesList } from "@/components/MatchesList";
+import { SectionHeader } from "@/components/ui/section-header";
 
 interface MatchesSectionProps {
   isDemoMode: boolean;
@@ -12,12 +13,10 @@ export function MatchesSection({ isDemoMode }: MatchesSectionProps) {
   if (isDemoMode) {
     return (
       <div className="space-y-5 sm:space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Matches</h1>
-          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-            View and manage trade matches with full audit trails
-          </p>
-        </header>
+        <SectionHeader
+          title="Matches"
+          description="View and manage trade matches with full audit trails"
+        />
         <Card className="border-dashed">
           <CardContent className="py-10 sm:py-12 text-center px-4">
             <Lock className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-4" />
@@ -39,12 +38,10 @@ export function MatchesSection({ isDemoMode }: MatchesSectionProps) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Matches</h1>
-        <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-          View and manage trade matches with full audit trails
-        </p>
-      </header>
+      <SectionHeader
+        title="Matches"
+        description="View and manage trade matches with full audit trails"
+      />
       <MatchesList />
     </div>
   );

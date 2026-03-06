@@ -24,6 +24,9 @@ const ALLOWED_FILES = new Set([
   "src/components/PublicPageLayout.tsx",
   "src/components/BackButton.tsx",
   "src/components/PublicHeader.tsx",
+  "src/components/ui/section-header.tsx",
+  "src/components/ui/error-state.tsx",
+  "src/components/ui/inline-loader.tsx",
 ]);
 
 function walk(dir) {

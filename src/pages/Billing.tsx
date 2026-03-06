@@ -13,6 +13,7 @@ import {
   Shield, Building2, FileText, Check, Mail 
 } from "lucide-react";
 import { toast } from "sonner";
+import { SectionHeader } from "@/components/ui/section-header";
 import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { cn } from "@/lib/utils";
 
@@ -246,12 +247,10 @@ export default function Billing() {
   return (
     <DashboardLayout isAdmin={isAdmin}>
       <div className="space-y-6">
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight">API Credits</h1>
-          <p className="text-muted-foreground">
-            Purchase credits to use the Compliance Matching API
-          </p>
-        </header>
+        <SectionHeader
+          title="API Credits"
+          description="Purchase credits to use the Compliance Matching API"
+        />
 
         {/* Current Balance Card */}
         <Card className={cn(
