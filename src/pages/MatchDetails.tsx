@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Info, FileText, Shield, Clock, CheckCircle2, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
+import { Info, FileText, Shield, Clock, CheckCircle2, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
-import { apiFetch, isAuthError, isApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
-import { MATCH_STATUS } from "@/lib/constants";
+import { InlineLoader } from "@/components/ui/inline-loader";
 import * as MatchState from "@/lib/match-state";
+import { MatchStatusBadge } from "@/components/ui/match-status-badge";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
@@ -37,7 +39,6 @@ export default function MatchDetails() {
   const [searchParams] = useSearchParams();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
-  const [confirming, setConfirming] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
@@ -71,29 +72,14 @@ export default function MatchDetails() {
     }
   };
 
-  const handleSettle = async () => {
-    if (!match || confirming) return;
-
-    try {
-      setConfirming(true);
+  const { run: handleSettle, loading: confirming } = useAsyncAction(
+    async () => {
+      if (!match) return;
       await apiFetch(`match/${match.id}/settle`, { method: "POST" });
-      toast.success("Intent confirmed successfully!");
       fetchMatch();
-    } catch (error: any) {
-      console.error("Error confirming intent:", error);
-      if (isAuthError(error)) {
-        toast.error("You must be logged in to confirm intent");
-      } else if (isApiError(error, 402)) {
-        toast.error("Insufficient credits. Please purchase credits on the Billing page to continue.");
-      } else if (isApiError(error, 403)) {
-        toast.error("You do not have permission. Please create an account or contact support.");
-      } else {
-        toast.error(error.message || "Failed to confirm intent");
-      }
-    } finally {
-      setConfirming(false);
-    }
-  };
+    },
+    { successMessage: "Intent confirmed successfully!" }
+  );
 
   if (loading) {
     return (
@@ -101,9 +87,7 @@ export default function MatchDetails() {
         <div className="flex items-center gap-4">
           <BackButton fallback="/dashboard/matches" label="Back" />
         </div>
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <InlineLoader message="Loading match details…" />
       </div>
     );
   }
@@ -124,8 +108,6 @@ export default function MatchDetails() {
 
   const isSettled = MatchState.isSettled(match.status);
   const canConfirm = MatchState.canDo(match.status, "confirm_intent");
-  const canCreateWad = MatchState.canDo(match.status, "create_wad");
-  const canDispute = MatchState.canDo(match.status, "raise_dispute");
 
   return (
     <div className="space-y-6">
@@ -139,9 +121,7 @@ export default function MatchDetails() {
             <div>
               <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
               <div className="flex items-center gap-2">
-                <Badge variant={isSettled ? "default" : "secondary"}>
-                  {MatchState.statusLabel(match.status)}
-                </Badge>
+                <MatchStatusBadge status={match.status} />
                 <span className="text-sm text-muted-foreground font-mono">
                   {match.hash.substring(0, 8)}...
                 </span>
@@ -292,20 +272,14 @@ export default function MatchDetails() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button 
-                      onClick={handleSettle} 
-                      disabled={confirming}
+                    <LoadingButton
+                      onClick={handleSettle}
+                      loading={confirming}
                       size="lg"
+                      loadingText="Confirming…"
                     >
-                      {confirming ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Confirming...
-                        </>
-                      ) : (
-                        "Confirm Intent"
-                      )}
-                    </Button>
+                      Confirm Intent
+                    </LoadingButton>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

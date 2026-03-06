@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, RefreshCw, Brain, TrendingUp, Target, Zap } from "lucide-react";
 import { format } from "date-fns";
 import * as MatchState from "@/lib/match-state";
+import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 
 /**
  * AdminCoherencePanel
@@ -177,9 +178,7 @@ export function AdminCoherencePanel() {
                         {match.price_currency} {match.price_amount?.toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={MatchState.isSettled(match.status) ? "default" : "secondary"}>
-                          {MatchState.statusLabel(match.status)}
-                        </Badge>
+                        <MatchStatusBadge status={match.status} />
                       </TableCell>
                       <TableCell>
                         {format(new Date(match.created_at), "MMM dd HH:mm")}

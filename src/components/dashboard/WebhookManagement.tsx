@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Webhook, Plus, Trash2, RefreshCw, Loader2, Copy, AlertCircle } from "lucide-react";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -256,9 +257,9 @@ export function WebhookManagement() {
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateWebhook} disabled={creatingWebhook}>
-                {creatingWebhook ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating…</> : "Create Endpoint"}
-              </Button>
+              <LoadingButton onClick={handleCreateWebhook} loading={creatingWebhook} loadingText="Creating…">
+                Create Endpoint
+              </LoadingButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -410,8 +411,11 @@ export function WebhookManagement() {
               onClick={() => deleteDialog.webhookId && handleDeleteWebhook(deleteDialog.webhookId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deletingWebhook}
+              asChild
             >
-              {deletingWebhook ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting…</> : "Delete Endpoint"}
+              <LoadingButton loading={deletingWebhook} loadingText="Deleting…" variant="destructive">
+                Delete Endpoint
+              </LoadingButton>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
