@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useSupabaseList } from "@/hooks/use-supabase-list";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Entity {
   id: string;
@@ -21,55 +25,22 @@ interface Entity {
   created_at: string;
 }
 
-const statusColour: Record<string, string> = {
-  active: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-  suspended: "bg-amber-500/10 text-amber-700 border-amber-200",
-  blocked: "bg-destructive/10 text-destructive border-destructive/20",
-  archived: "bg-muted text-muted-foreground border-muted",
-};
-
 export function AdminEntitiesPanel() {
-  const [entities, setEntities] = useState<Entity[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [screeningEntity, setScreeningEntity] = useState<string | null>(null);
 
-  const fetchEntities = async () => {
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const params: Record<string, string> = { all: "true", limit: "200" };
-      if (statusFilter !== "all") params.status = statusFilter;
-      if (typeFilter !== "all") params.entity_type = typeFilter;
-
-      const res = await supabase.functions.invoke("entities", {
-        method: "GET",
-        headers: { "X-Correlation-ID": crypto.randomUUID() },
-        body: null,
-      });
-
-      // Fallback: direct table query for admin
-      const { data, error } = await supabase
-        .from("entities")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-
-      if (error) throw error;
-      setEntities(data || []);
-    } catch (err) {
-      console.error("Failed to load entities:", err);
-      toast.error("Failed to load entities");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchEntities(); }, [statusFilter, typeFilter]);
+  const { data: entities = [], isLoading, isError, refetch } = useSupabaseList<Entity>("entities", {
+    limit: 200,
+    queryKeyExtra: [statusFilter, typeFilter],
+    filters: (q) => {
+      let query = q;
+      if (statusFilter !== "all") query = query.eq("status", statusFilter);
+      if (typeFilter !== "all") query = query.eq("entity_type", typeFilter);
+      return query;
+    },
+  });
 
   const runScreening = async (entityId: string) => {
     setScreeningEntity(entityId);
@@ -77,8 +48,7 @@ export function AdminEntitiesPanel() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Stub screening — always returns "clear" for demo
-      const res = await supabase.functions.invoke("entities", {
+      await supabase.functions.invoke("entities", {
         method: "POST",
         headers: {
           "Idempotency-Key": `screen-${entityId}-${Date.now()}`,
@@ -93,7 +63,7 @@ export function AdminEntitiesPanel() {
       });
 
       toast.success("Screening completed: CLEAR");
-      fetchEntities();
+      refetch();
     } catch (err) {
       console.error("Screening error:", err);
       toast.error("Screening failed");
@@ -103,12 +73,11 @@ export function AdminEntitiesPanel() {
   };
 
   const filtered = entities.filter((e) => {
-    const matchesSearch = !searchTerm ||
+    if (!searchTerm) return true;
+    return (
       e.legal_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.id.includes(searchTerm);
-    const matchesStatus = statusFilter === "all" || e.status === statusFilter;
-    const matchesType = typeFilter === "all" || e.entity_type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
+      e.id.includes(searchTerm)
+    );
   });
 
   const stats = {
@@ -118,6 +87,10 @@ export function AdminEntitiesPanel() {
     companies: entities.filter((e) => e.entity_type === "COMPANY").length,
     individuals: entities.filter((e) => e.entity_type === "INDIVIDUAL").length,
   };
+
+  if (isError) {
+    return <ErrorState title="Failed to load entities" onRetry={refetch} />;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -191,15 +164,13 @@ export function AdminEntitiesPanel() {
                 <SelectItem value="INDIVIDUAL">Individual</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" onClick={fetchEntities} aria-label="Refresh">
+            <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Refresh">
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={7} />
           ) : filtered.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No entities found</p>
           ) : (
@@ -235,9 +206,7 @@ export function AdminEntitiesPanel() {
                       <TableCell className="font-mono text-xs">{entity.jurisdiction_code}</TableCell>
                       <TableCell className="text-xs">{entity.registration_number || "—"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={statusColour[entity.status] || ""}>
-                          {entity.status}
-                        </Badge>
+                        <StatusBadge status={entity.status} />
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(entity.created_at).toLocaleDateString()}
