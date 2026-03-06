@@ -134,6 +134,7 @@ export default function WebhookDeliveryLogs() {
         </div>
 
         {/* Results */}
+        <div className="min-h-[300px]">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -228,6 +229,7 @@ export default function WebhookDeliveryLogs() {
         ) : (
           <EmptyState title="No webhook delivery logs found" message="Logs will appear here once webhooks are triggered." />
         )}
+        </div>
       </CardContent>
     </Card>
   );

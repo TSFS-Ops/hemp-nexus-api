@@ -350,6 +350,7 @@ export function UsageBillingSection() {
             </Select>
           </div>
 
+          <div className="min-h-[320px]">
           {ledgerLoading ? (
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -402,6 +403,7 @@ export function UsageBillingSection() {
               </Table>
             </div>
           )}
+          </div>
         </CardContent>
       </Card>
     </div>

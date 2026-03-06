@@ -347,6 +347,7 @@ export function MatchesList() {
           </Select>
         </div>
 
+        <div className="min-h-[400px]">
         {isError ? (
           <ErrorState 
             type="server" 
@@ -539,6 +540,7 @@ export function MatchesList() {
         ) : (
           <EmptyState title="No matches found" message="Try adjusting your filters." />
         )}
+        </div>
         </CardContent>
       </Card>
 
