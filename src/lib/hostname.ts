@@ -4,6 +4,7 @@
  * Public Face (www.izenzo.co.za): Landing, Demo, Docs
  * Developer Console (api.trade.izenzo.co.za): Dashboard, API Keys, Logs, Admin
  */
+import { HOSTNAMES, ROUTES } from "@/lib/constants";
 
 export type HostType = 'public' | 'console' | 'preview';
 
@@ -23,12 +24,12 @@ export function getHostType(): HostType {
   }
   
   // Console domain (api.trade.izenzo.co.za)
-  if (hostname.includes('api.trade.izenzo.co.za')) {
+  if (hostname.includes(HOSTNAMES.CONSOLE)) {
     return 'console';
   }
   
   // Public domain (www.izenzo.co.za or izenzo.co.za)
-  if (hostname.includes('izenzo.co.za')) {
+  if (hostname.includes(HOSTNAMES.PUBLIC)) {
     return 'public';
   }
   
@@ -68,7 +69,7 @@ export function getConsoleUrl(path: string = ''): string {
     return path;
   }
   
-  return `https://api.trade.izenzo.co.za${path}`;
+  return `https://${HOSTNAMES.CONSOLE}${path}`;
 }
 
 /**
@@ -82,33 +83,33 @@ export function getPublicUrl(path: string = ''): string {
     return path;
   }
   
-  return `https://www.izenzo.co.za${path}`;
+  return `https://${HOSTNAMES.PUBLIC_WWW}${path}`;
 }
 
 /**
  * Routes that are only allowed on the public face (www.izenzo.co.za)
  * These show the product demo, search, and proof-of-intent
  */
-export const PUBLIC_ONLY_ROUTES = ['/', '/landing', '/demo', '/docs'];
+export const PUBLIC_ONLY_ROUTES = [ROUTES.ROOT, ROUTES.LANDING, ROUTES.DEMO, ROUTES.DOCS];
 
 /**
  * Routes that are only allowed on the console face (api.trade.izenzo.co.za)
  * These show API keys, logs, evidence packs, admin features
  */
 export const CONSOLE_ONLY_ROUTES = [
-  '/dashboard',
-  '/admin',
-  '/activity',
-  '/analytics',
-  '/marketplace',
-  '/invites',
-  '/billing'
+  ROUTES.DASHBOARD,
+  ROUTES.ADMIN,
+  ROUTES.ACTIVITY,
+  ROUTES.ANALYTICS,
+  ROUTES.MARKETPLACE,
+  ROUTES.INVITES,
+  ROUTES.BILLING,
 ];
 
 /**
  * Shared routes allowed on both domains
  */
-export const SHARED_ROUTES = ['/auth', '/pricing'];
+export const SHARED_ROUTES = [ROUTES.AUTH, ROUTES.PRICING];
 
 /**
  * Check if a route is allowed on the current host
@@ -125,11 +126,11 @@ export function isRouteAllowed(pathname: string): boolean {
   if (hostType === 'public') {
     // Allow public routes, auth, and shared routes like pricing
     return (
-      pathname === '/' ||
-      pathname === '/demo' ||
-      pathname === '/docs' ||
-      pathname === '/pricing' ||
-      pathname === '/auth'
+      pathname === ROUTES.ROOT ||
+      pathname === ROUTES.DEMO ||
+      pathname === ROUTES.DOCS ||
+      pathname === ROUTES.PRICING ||
+      pathname === ROUTES.AUTH
     );
   }
   

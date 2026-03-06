@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CHECKPOINT_DEMO_ROLES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,8 +110,7 @@ export function CheckpointDemo() {
   const collapseRef = useRef<string | null>(null);
   const runIdRef = useRef<string | null>(null);
 
-  const allowedRoles = ["platform_admin", "admin", "director", "api_admin"];
-  const hasAccess = roles.some(r => allowedRoles.includes(r));
+  const hasAccess = roles.some(r => (CHECKPOINT_DEMO_ROLES as readonly string[]).includes(r));
 
   function buildSteps(m: DemoMode): StepResult[] {
     const base = DD_STEPS.map(s => ({ ...s, status: "pending" as const }));

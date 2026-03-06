@@ -19,16 +19,17 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import { ROUTES } from "@/lib/constants";
 
 const sidebarItems = [
-  { title: "Overview", url: "/admin", icon: Activity, exact: true },
-  { title: "Deals", url: "/admin/deals", icon: GitCompare },
-  { title: "Users & Orgs", url: "/admin/users-orgs", icon: Users },
-  { title: "Compliance", url: "/admin/compliance", icon: Scale },
-  { title: "Audit", url: "/admin/audit", icon: Shield },
-  { title: "API Keys", url: "/admin/api-keys", icon: Key },
-  { title: "Overrides", url: "/admin/overrides", icon: Wrench },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+  { title: "Overview", url: ROUTES.ADMIN, icon: Activity, exact: true },
+  { title: "Deals", url: ROUTES.ADMIN_DEALS, icon: GitCompare },
+  { title: "Users & Orgs", url: ROUTES.ADMIN_USERS_ORGS, icon: Users },
+  { title: "Compliance", url: ROUTES.ADMIN_COMPLIANCE, icon: Scale },
+  { title: "Audit", url: ROUTES.ADMIN_AUDIT, icon: Shield },
+  { title: "API Keys", url: ROUTES.ADMIN_API_KEYS, icon: Key },
+  { title: "Overrides", url: ROUTES.ADMIN_OVERRIDES, icon: Wrench },
+  { title: "Settings", url: ROUTES.ADMIN_SETTINGS, icon: Settings },
 ];
 
 export function AdminSidebar() {
@@ -43,7 +44,7 @@ export function AdminSidebar() {
   return (
     <Sidebar className="w-60" collapsible="icon">
       <SidebarHeader className="border-b border-border px-4 py-3">
-        <Link to="/admin" className="flex items-center gap-2.5">
+        <Link to={ROUTES.ADMIN} className="flex items-center gap-2.5">
           <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
             <span className="text-background font-bold text-[10px]">TI</span>
           </div>

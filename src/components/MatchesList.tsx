@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
+import { MATCH_STATUS, ROUTES } from "@/lib/constants";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
 import { downloadCSV } from "@/lib/download-utils";
@@ -102,7 +103,7 @@ export function MatchesList() {
   }, []);
 
   const getStatusBadge = (status: string) => {
-    return status === "settled" ? (
+    return status === MATCH_STATUS.SETTLED ? (
       <Badge variant="default">Confirmed</Badge>
     ) : (
       <Badge variant="secondary">Matched</Badge>
@@ -123,7 +124,7 @@ export function MatchesList() {
 
   const toggleSelectAll = () => {
     if (!matches) return;
-    const unsettledMatches = matches.filter(m => m.status === "matched");
+    const unsettledMatches = matches.filter(m => m.status === MATCH_STATUS.MATCHED);
     if (selectedMatches.size === unsettledMatches.length && unsettledMatches.length > 0) {
       setSelectedMatches(new Set());
     } else {
@@ -193,7 +194,7 @@ export function MatchesList() {
     toast.success("CSV exported successfully");
   };
 
-  const unsettledMatches = matches?.filter(m => m.status === "matched") || [];
+  const unsettledMatches = matches?.filter(m => m.status === MATCH_STATUS.MATCHED) || [];
   const allUnsettledSelected = unsettledMatches.length > 0 && selectedMatches.size === unsettledMatches.length;
 
   return (
@@ -253,8 +254,8 @@ export function MatchesList() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="matched">Matched</SelectItem>
-              <SelectItem value="settled">Confirmed</SelectItem>
+              <SelectItem value={MATCH_STATUS.MATCHED}>Matched</SelectItem>
+              <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
@@ -288,7 +289,7 @@ export function MatchesList() {
                       <Checkbox
                         checked={selectedMatches.has(match.id)}
                         onCheckedChange={() => toggleMatchSelection(match.id)}
-                        disabled={match.status === "settled"}
+                         disabled={match.status === MATCH_STATUS.SETTLED}
                       />
                       <span className="font-medium text-sm">{match.commodity}</span>
                     </div>
@@ -323,7 +324,7 @@ export function MatchesList() {
                       variant="ghost"
                       size="sm"
                       className="h-9 touch-target"
-                      onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                      onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       View
@@ -363,7 +364,7 @@ export function MatchesList() {
                         <Checkbox
                           checked={selectedMatches.has(match.id)}
                           onCheckedChange={() => toggleMatchSelection(match.id)}
-                          disabled={match.status === "settled"}
+                          disabled={match.status === MATCH_STATUS.SETTLED}
                         />
                       </TableCell>
                       <TableCell className="font-medium">{match.commodity}</TableCell>
@@ -384,7 +385,7 @@ export function MatchesList() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                          onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View

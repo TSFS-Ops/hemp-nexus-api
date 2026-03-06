@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DEMO_SEARCH_DELAY_MS } from "@/lib/constants";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ export default function Landing() {
     if (!query.trim()) return;
     setIsSearching(true);
     setHasSearched(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, DEMO_SEARCH_DELAY_MS));
     setResults(getDemoResultsForQuery(query));
     setIsSearching(false);
   };

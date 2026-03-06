@@ -3,6 +3,7 @@ import { useNavigate, Routes, Route, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, ArrowLeft } from "lucide-react";
@@ -114,14 +115,14 @@ export default function Admin() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
-        if (!session) { navigate("/auth"); return; }
+        if (!session) { navigate(ROUTES.AUTH); return; }
 
         const { data, error } = await supabase.rpc('is_admin', { user_id: session.user.id });
         if (cancelled) return;
         if (error) throw error;
         if (!data) {
           toast.error("Access denied", { description: "You do not have admin privileges." });
-          navigate("/dashboard");
+          navigate(ROUTES.DASHBOARD);
           return;
         }
         setIsAdmin(true);
@@ -129,7 +130,7 @@ export default function Admin() {
         if (cancelled) return;
         console.error("Admin check error:", error);
         toast.error("Failed to verify admin access");
-        navigate("/dashboard");
+        navigate(ROUTES.DASHBOARD);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -160,7 +161,7 @@ export default function Admin() {
               <h1 className="ml-4 text-lg font-semibold">Admin</h1>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/dashboard">
+              <Link to={ROUTES.DASHBOARD}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Console
               </Link>
