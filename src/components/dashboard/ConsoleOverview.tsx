@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Key, Activity, FileText, BarChart3, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatRelativeTime } from "@/lib/format";
 
 export function ConsoleOverview() {
   const { session } = useAuth();
@@ -33,20 +34,7 @@ export function ConsoleOverview() {
     enabled: !!session,
   });
 
-  const formatLastActivity = (timestamp: string | null) => {
-    if (!timestamp) return "No activity yet";
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
+  // Use centralized formatter — see src/lib/format.ts
 
   const statCards = [
     { label: "Active API Keys", value: stats?.activeApiKeys ?? 0, icon: Key },
@@ -89,7 +77,7 @@ export function ConsoleOverview() {
       {/* Last Activity */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Clock className="h-4 w-4" />
-        <span>Last activity: {formatLastActivity(stats?.lastActivity ?? null)}</span>
+        <span>Last activity: {formatRelativeTime(stats?.lastActivity)}</span>
       </div>
 
       {/* Quick Info */}

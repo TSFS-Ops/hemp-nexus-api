@@ -20,6 +20,8 @@ import { Copy, Loader2, Key, Trash2, Eye, EyeOff, AlertCircle } from "lucide-rea
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format";
 import { z } from "zod";
 
 const apiKeySchema = z.object({
@@ -103,28 +105,14 @@ export function ApiKeysSection() {
         ? null 
         : new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000).toISOString();
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            name: keyName,
-            scopes: selectedScopes,
-            expires_at: expiresAt,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || errorData.error || "Failed to create API key");
-      }
-
-      const data = await response.json();
+      const data = await apiFetch<{ key: string }>("api-keys", {
+        method: "POST",
+        body: JSON.stringify({
+          name: keyName,
+          scopes: selectedScopes,
+          expires_at: expiresAt,
+        }),
+      });
       setNewKey(data.key);
       setShowKey(true);
       setKeyName("");
@@ -164,20 +152,7 @@ export function ApiKeysSection() {
     if (revoking) return;
     setRevoking(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-keys/${keyId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to revoke key");
-      }
+      await apiFetch(`api-keys/${keyId}`, { method: "DELETE" });
 
       toast.success("API Key revoked", { description: "The API key has been revoked successfully" });
       await fetchApiKeys();
@@ -206,10 +181,7 @@ export function ApiKeysSection() {
     return expiryDate <= sevenDaysFromNow;
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString();
-  };
+  // formatDate imported from @/lib/format
 
   return (
     <div className="space-y-5 sm:space-y-6">
