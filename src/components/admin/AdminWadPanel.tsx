@@ -1,16 +1,20 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Shield, Eye, Download, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, Shield, Download, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorState } from "@/components/ui/error-state";
+import { apiFetch } from "@/lib/api-client";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Wad {
   id: string;
@@ -26,8 +30,6 @@ interface Wad {
 }
 
 export function AdminWadPanel() {
-  const [wads, setWads] = useState<Wad[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [revokeWadId, setRevokeWadId] = useState<string | null>(null);
@@ -35,47 +37,15 @@ export function AdminWadPanel() {
   const [revoking, setRevoking] = useState(false);
   const [accessReason, setAccessReason] = useState("");
   const [accessWadId, setAccessWadId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchWads();
-  }, [statusFilter]);
-
-  const fetchWads = async () => {
-    try {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Authentication required to view WaDs");
-        return;
-      }
-
-      let url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad`;
-      if (statusFilter !== "all") {
-        url += `?status=${statusFilter}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || `WaD fetch failed (${response.status})`);
-      }
-
-      const data = await response.json();
-      setWads(data);
-    } catch (error) {
-      console.error("[AdminWadPanel] fetch failed:", error);
-      toast.error("Failed to load WaDs", {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: wads = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-wads", statusFilter],
+    queryFn: async () => {
+      const path = statusFilter !== "all" ? `wad?status=${statusFilter}` : "wad";
+      return apiFetch<Wad[]>(path);
+    },
+  });
 
   const handleRevoke = async () => {
     if (!revokeWadId || !revokeReason.trim()) {
@@ -85,30 +55,15 @@ export function AdminWadPanel() {
 
     try {
       setRevoking(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${revokeWadId}/revoke`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ reason: revokeReason }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to revoke");
-      }
+      await apiFetch(`wad/${revokeWadId}/revoke`, {
+        method: "POST",
+        body: JSON.stringify({ reason: revokeReason }),
+      });
 
       toast.success("WaD revoked");
       setRevokeWadId(null);
       setRevokeReason("");
-      fetchWads();
+      queryClient.invalidateQueries({ queryKey: ["admin-wads"] });
     } catch (error: any) {
       toast.error(error.message || "Failed to revoke WaD");
     } finally {
@@ -123,33 +78,23 @@ export function AdminWadPanel() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       // Log admin access with reason
-      await supabase.from("audit_logs").insert({
-        org_id: (await supabase.from("profiles").select("org_id").eq("id", session.user.id).single()).data?.org_id,
-        actor_user_id: session.user.id,
-        action: "admin.wad.certificate.downloaded",
-        entity_type: "wad",
-        entity_id: wadId,
-        metadata: { reason: accessReason },
-      });
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wadId}/certificate`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
+        if (profile?.org_id) {
+          await supabase.from("audit_logs").insert({
+            org_id: profile.org_id,
+            actor_user_id: session.user.id,
+            action: "admin.wad.certificate.downloaded",
+            entity_type: "wad",
+            entity_id: wadId,
+            metadata: { reason: accessReason },
+          });
         }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to download certificate");
       }
 
-      const certificate = await response.json();
+      const certificate = await apiFetch(`wad/${wadId}/certificate`);
       const blob = new Blob([JSON.stringify(certificate, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -162,24 +107,8 @@ export function AdminWadPanel() {
       setAccessWadId(null);
       setAccessReason("");
     } catch (error) {
+      console.error("[AdminWadPanel] certificate download failed:", error);
       toast.error("Failed to download certificate");
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
-      case "awaiting_attestations":
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Awaiting</Badge>;
-      case "sealed":
-        return <Badge className="bg-green-600">Sealed</Badge>;
-      case "revoked":
-        return <Badge variant="destructive">Revoked</Badge>;
-      case "superseded":
-        return <Badge variant="outline">Superseded</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -191,6 +120,14 @@ export function AdminWadPanel() {
     }
     return true;
   });
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <ErrorState title="Failed to load WaDs" onRetry={() => refetch()} type="server" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -204,8 +141,8 @@ export function AdminWadPanel() {
             View and manage all Without-a-Doubt sealed evidence bundles
           </p>
         </div>
-        <Button variant="outline" onClick={fetchWads} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+        <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
@@ -241,10 +178,8 @@ export function AdminWadPanel() {
             </Select>
           </div>
 
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={6} />
           ) : filteredWads.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No WaDs found
@@ -270,7 +205,7 @@ export function AdminWadPanel() {
                     <TableCell className="font-mono text-xs">
                       {wad.poi_id.substring(0, 8)}...
                     </TableCell>
-                    <TableCell>{getStatusBadge(wad.status)}</TableCell>
+                    <TableCell><StatusBadge status={wad.status} /></TableCell>
                     <TableCell>
                       {wad.sealed_at ? new Date(wad.sealed_at).toLocaleDateString() : "-"}
                     </TableCell>
