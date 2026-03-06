@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DEMO_SEARCH_DELAY_MS } from "@/lib/constants";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
@@ -20,7 +21,7 @@ export default function PublicSearch() {
     setHasSearched(true);
     
     // Simulate search delay for demo
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, DEMO_SEARCH_DELAY_MS));
     
     const matchedResults = getDemoResultsForQuery(query);
     

@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-
-type AppRole = 'platform_admin' | 'org_admin' | 'org_member' | 'admin' | 'buyer' | 'auditor';
+import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
 
 interface AuthContextType {
   user: User | null;
@@ -79,9 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchRoles]);
 
-  const isPlatformAdmin = roles.includes('platform_admin') || roles.includes('admin');
-  const isOrgAdmin = roles.includes('org_admin') || isPlatformAdmin;
-  const isOrgMember = roles.includes('org_member') || isOrgAdmin;
+  const isPlatformAdmin = roles.some(r => (PLATFORM_ADMIN_ROLES as readonly string[]).includes(r));
+  const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
+  const isOrgMember = roles.includes(APP_ROLES.ORG_MEMBER) || isOrgAdmin;
 
   return (
     <AuthContext.Provider

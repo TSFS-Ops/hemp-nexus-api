@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -39,7 +40,7 @@ export default function Dashboard() {
           <Route path="/settings" element={<DashboardSettings />} />
           <Route path="/account" element={<AccountSection />} />
           <Route path="/compliance" element={<ComplianceSection />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
         </Routes>
       </ErrorBoundary>
     </DashboardLayout>

@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { HostnameRouter } from "@/components/HostnameRouter";
 import { getHostType } from "@/lib/hostname";
+import { ROUTES } from "@/lib/constants";
 import PublicSearch from "@/pages/PublicSearch";
 import Landing from "@/pages/Landing";
 import Demo from "@/pages/Demo";
@@ -35,7 +36,7 @@ function RootElement() {
   
   // Console domain: immediately navigate to dashboard (internal SPA route)
   if (hostType === 'console') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
   
   // Public domain or preview: show landing page with embedded demo
@@ -50,21 +51,21 @@ function App() {
           <Router>
             <HostnameRouter>
               <Routes>
-                <Route path="/" element={<RootElement />} />
-                <Route path="/landing" element={<Landing />} />
-                <Route path="/demo" element={<Demo />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard/*" element={<Dashboard />} />
-                <Route path="/activity" element={<MyActivity />} />
-                <Route path="/invites" element={<Invites />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/docs" element={<Docs />} />
-                <Route path="/walkthrough" element={<WalkthroughReport />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/due-diligence" element={<DueDiligence />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/admin/*" element={<Admin />} />
+                <Route path={ROUTES.ROOT} element={<RootElement />} />
+                <Route path={ROUTES.LANDING} element={<Landing />} />
+                <Route path={ROUTES.DEMO} element={<Demo />} />
+                <Route path={ROUTES.AUTH} element={<Auth />} />
+                <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
+                <Route path={ROUTES.ACTIVITY} element={<MyActivity />} />
+                <Route path={ROUTES.INVITES} element={<Invites />} />
+                <Route path={ROUTES.MARKETPLACE} element={<Marketplace />} />
+                <Route path={ROUTES.ANALYTICS} element={<Analytics />} />
+                <Route path={ROUTES.DOCS} element={<Docs />} />
+                <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
+                <Route path={ROUTES.PRICING} element={<Pricing />} />
+                <Route path={ROUTES.DUE_DILIGENCE} element={<DueDiligence />} />
+                <Route path={ROUTES.EXPLORE} element={<Explore />} />
+                <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
               </Routes>
               <Sonner />
             </HostnameRouter>

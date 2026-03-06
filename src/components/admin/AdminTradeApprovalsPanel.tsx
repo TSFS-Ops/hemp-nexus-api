@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShieldCheck, ShieldX, RefreshCw, Loader2, Clock, CheckCircle, XCircle, RotateCw } from "lucide-react";
 import { toast } from "sonner";
+import { TRADE_APPROVAL_STATUS, RISK_BAND, TRADE_APPROVAL_RENEWAL_YEARS, EXPIRY_WARNING_DAYS, ORG_ID_PREVIEW_LENGTH } from "@/lib/constants";
 
 interface TradeApproval {
   id: string;
@@ -21,16 +22,16 @@ interface TradeApproval {
 }
 
 const statusColour: Record<string, string> = {
-  approved: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-  revoked: "bg-destructive/10 text-destructive border-destructive/20",
-  expired: "bg-amber-500/10 text-amber-700 border-amber-200",
-  pending: "bg-muted text-muted-foreground border-muted",
+  [TRADE_APPROVAL_STATUS.APPROVED]: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  [TRADE_APPROVAL_STATUS.REVOKED]: "bg-destructive/10 text-destructive border-destructive/20",
+  [TRADE_APPROVAL_STATUS.EXPIRED]: "bg-amber-500/10 text-amber-700 border-amber-200",
+  [TRADE_APPROVAL_STATUS.PENDING]: "bg-muted text-muted-foreground border-muted",
 };
 
 const riskColour: Record<string, string> = {
-  low: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-  medium: "bg-amber-500/10 text-amber-700 border-amber-200",
-  high: "bg-destructive/10 text-destructive border-destructive/20",
+  [RISK_BAND.LOW]: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  [RISK_BAND.MEDIUM]: "bg-amber-500/10 text-amber-700 border-amber-200",
+  [RISK_BAND.HIGH]: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
 export function AdminTradeApprovalsPanel() {
@@ -56,7 +57,7 @@ export function AdminTradeApprovalsPanel() {
       const enriched = (approvalsData || []).map((a) => ({
         ...a,
         org_name: orgMap.get(a.org_id) || "Unknown",
-        is_valid: a.status === "approved" && (!a.valid_until || new Date(a.valid_until) > new Date()),
+        is_valid: a.status === TRADE_APPROVAL_STATUS.APPROVED && (!a.valid_until || new Date(a.valid_until) > new Date()),
       }));
 
       setApprovals(enriched);
@@ -75,7 +76,7 @@ export function AdminTradeApprovalsPanel() {
     try {
       const { error } = await supabase
         .from("trade_approvals")
-        .update({ status: "revoked", updated_at: new Date().toISOString() })
+        .update({ status: TRADE_APPROVAL_STATUS.REVOKED, updated_at: new Date().toISOString() })
         .eq("org_id", orgId);
 
       if (error) throw error;
@@ -93,12 +94,12 @@ export function AdminTradeApprovalsPanel() {
     setActionLoading(orgId);
     try {
       const newExpiry = new Date();
-      newExpiry.setFullYear(newExpiry.getFullYear() + 1);
+      newExpiry.setFullYear(newExpiry.getFullYear() + TRADE_APPROVAL_RENEWAL_YEARS);
 
       const { error } = await supabase
         .from("trade_approvals")
         .update({
-          status: "approved",
+          status: TRADE_APPROVAL_STATUS.APPROVED,
           valid_until: newExpiry.toISOString(),
           approved_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -119,11 +120,11 @@ export function AdminTradeApprovalsPanel() {
   const stats = {
     total: approvals.length,
     approved: approvals.filter((a) => a.is_valid).length,
-    revoked: approvals.filter((a) => a.status === "revoked").length,
+    revoked: approvals.filter((a) => a.status === TRADE_APPROVAL_STATUS.REVOKED).length,
     expiring: approvals.filter((a) => {
-      if (!a.valid_until || a.status !== "approved") return false;
+      if (!a.valid_until || a.status !== TRADE_APPROVAL_STATUS.APPROVED) return false;
       const daysLeft = (new Date(a.valid_until).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-      return daysLeft > 0 && daysLeft <= 30;
+      return daysLeft > 0 && daysLeft <= EXPIRY_WARNING_DAYS;
     }).length,
   };
 
@@ -198,14 +199,14 @@ export function AdminTradeApprovalsPanel() {
                 <TableBody>
                   {approvals.map((a) => {
                     const isExpired = a.valid_until && new Date(a.valid_until) < new Date();
-                    const displayStatus = isExpired && a.status === "approved" ? "expired" : a.status;
+                    const displayStatus = isExpired && a.status === TRADE_APPROVAL_STATUS.APPROVED ? TRADE_APPROVAL_STATUS.EXPIRED : a.status;
 
                     return (
                       <TableRow key={a.id}>
                         <TableCell>
                           <div>
                             <p className="font-medium text-sm">{a.org_name}</p>
-                            <p className="text-xs text-muted-foreground font-mono">{a.org_id.substring(0, 8)}…</p>
+                            <p className="text-xs text-muted-foreground font-mono">{a.org_id.substring(0, ORG_ID_PREVIEW_LENGTH)}…</p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -235,7 +236,7 @@ export function AdminTradeApprovalsPanel() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
-                            {(a.status === "approved" || displayStatus === "expired") && (
+                            {(a.status === TRADE_APPROVAL_STATUS.APPROVED || displayStatus === TRADE_APPROVAL_STATUS.EXPIRED) && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => renewApproval(a.org_id)}
@@ -244,7 +245,7 @@ export function AdminTradeApprovalsPanel() {
                                 <RotateCw className="h-3 w-3 mr-1" /> Renew
                               </Button>
                             )}
-                            {a.status === "approved" && (
+                            {a.status === TRADE_APPROVAL_STATUS.APPROVED && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => revokeApproval(a.org_id)}

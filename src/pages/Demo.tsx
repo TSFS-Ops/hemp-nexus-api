@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DEMO_SEARCH_DELAY_MS, ROUTES } from "@/lib/constants";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ export default function Demo() {
   const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
     const authUrl = getAuthUrl();
     if (isPreview) {
-      return <Link to="/auth" className={className}>{children}</Link>;
+      return <Link to={ROUTES.AUTH} className={className}>{children}</Link>;
     }
     return <a href={authUrl} className={className}>{children}</a>;
   };
@@ -40,7 +41,7 @@ export default function Demo() {
     setSelectedResults(new Set());
     setHasSearched(true);
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, DEMO_SEARCH_DELAY_MS));
 
     const demoData = getDemoResultsForQuery(query);
 

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio } from "lucide-react";
 import { toast } from "sonner";
+import { MATCH_STATUS, RESOURCE_STATUS } from "@/lib/constants";
 
 interface OverviewStats {
   totalUsers: number;
@@ -54,12 +55,12 @@ export function AdminOverview() {
       ] = await Promise.all([
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("organizations").select("*", { count: "exact", head: true }),
-        supabase.from("api_keys").select("*", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("api_keys").select("*", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
         supabase.from("api_request_logs").select("*", { count: "exact", head: true }).gte("status_code", 400).gte("created_at", yesterday.toISOString()),
         supabase.from("api_request_logs").select("*", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("matches").select("*", { count: "exact", head: true }),
-        supabase.from("matches").select("*", { count: "exact", head: true }).eq("status", "settled"),
-        supabase.from("signals").select("*", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("matches").select("*", { count: "exact", head: true }).eq("status", MATCH_STATUS.SETTLED),
+        supabase.from("signals").select("*", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
       ]);
 
       setStats({

@@ -1,5 +1,6 @@
 import { Search, Handshake, Settings, LogIn, ShieldCheck, Building2, LayoutDashboard } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { ROUTES } from "@/lib/constants";
 import {
   Sidebar,
   SidebarContent,
@@ -22,15 +23,15 @@ interface AppSidebarProps {
 }
 
 const mainNavItems = [
-  { path: "/dashboard", title: "Overview", icon: LayoutDashboard },
-  { path: "/dashboard/search", title: "Search", icon: Search },
-  { path: "/dashboard/matches", title: "Matches", icon: Handshake },
-  { path: "/dashboard/compliance", title: "Compliance", icon: ShieldCheck },
+  { path: ROUTES.DASHBOARD, title: "Overview", icon: LayoutDashboard },
+  { path: ROUTES.DASHBOARD_SEARCH, title: "Search", icon: Search },
+  { path: ROUTES.DASHBOARD_MATCHES, title: "Matches", icon: Handshake },
+  { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
 ];
 
 const settingsNavItems = [
-  { path: "/dashboard/settings", title: "Settings", icon: Settings },
-  { path: "/dashboard/account", title: "Organisation", icon: Building2 },
+  { path: ROUTES.DASHBOARD_SETTINGS, title: "Settings", icon: Settings },
+  { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
 ];
 
 export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
@@ -38,7 +39,7 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
   const location = useLocation();
 
   const isActive = (path: string) => {
-    if (path === "/dashboard") return location.pathname === "/dashboard";
+    if (path === ROUTES.DASHBOARD) return location.pathname === ROUTES.DASHBOARD;
     return location.pathname.startsWith(path);
   };
 
@@ -47,7 +48,7 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
     if (error) {
       toast.error("Error signing out", { description: error.message });
     } else {
-      navigate("/auth");
+      navigate(ROUTES.AUTH);
     }
   };
 
@@ -117,7 +118,7 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild className="w-full px-2 py-1.5 text-sm">
-                    <Link to="/admin">
+                    <Link to={ROUTES.ADMIN}>
                       <Settings className="h-4 w-4" />
                       <span>Admin</span>
                     </Link>
@@ -131,7 +132,7 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
 
       <SidebarFooter className="border-t border-border px-2 py-3">
         {isDemoMode ? (
-          <Link to="/auth" className="w-full">
+          <Link to={ROUTES.AUTH} className="w-full">
             <Button
               size="sm"
               className="w-full justify-start text-sm bg-foreground text-background hover:bg-foreground/90"
