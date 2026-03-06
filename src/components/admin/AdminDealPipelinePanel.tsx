@@ -54,18 +54,18 @@ export function AdminDealPipelinePanel() {
     setLoading(true);
     try {
       // Fetch all orgs
-      const { data: orgs } = await supabase.from("organizations").select("id, name").order("name");
+      const { data: orgs } = await supabase.from("organizations").select("id, name").order("name").limit(500);
       if (!orgs) return;
 
-      // Parallel fetch of all related data
+      // Parallel fetch of all related data — with limits to prevent full table scans
       const [entitiesRes, uboRes, atbRes, ddRes, approvalsRes, collapseRes, matchesRes] = await Promise.all([
-        supabase.from("entities").select("org_id, id").eq("status", "active"),
-        supabase.from("ubo_links").select("org_id, company_entity_id, ownership_percentage, status"),
-        supabase.from("authority_records").select("org_id, status"),
-        supabase.from("dd_risk_scores").select("org_id, risk_band").order("computed_at", { ascending: false }),
-        supabase.from("trade_approvals").select("org_id, status, valid_until"),
-        supabase.from("collapse_ledger").select("org_id, id"),
-        supabase.from("matches").select("org_id, poi_state"),
+        supabase.from("entities").select("org_id, id").eq("status", "active").limit(2000),
+        supabase.from("ubo_links").select("org_id, company_entity_id, ownership_percentage, status").limit(2000),
+        supabase.from("authority_records").select("org_id, status").limit(2000),
+        supabase.from("dd_risk_scores").select("org_id, risk_band").order("computed_at", { ascending: false }).limit(1000),
+        supabase.from("trade_approvals").select("org_id, status, valid_until").limit(1000),
+        supabase.from("collapse_ledger").select("org_id, id").limit(2000),
+        supabase.from("matches").select("org_id, poi_state").limit(2000),
       ]);
 
       // Build lookup maps
