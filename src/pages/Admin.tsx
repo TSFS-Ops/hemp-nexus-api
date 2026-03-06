@@ -115,14 +115,17 @@ export default function Admin() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
-        if (!session) { navigate(ROUTES.AUTH); return; }
+        if (!session) { navigate(ROUTES.AUTH, { replace: true }); return; }
 
+        // Use the SECURITY DEFINER RPC — this is the server-side check.
+        // Even if someone bypasses the UI gate, every admin panel's data
+        // queries are scoped by RLS + is_admin checks on the backend.
         const { data, error } = await supabase.rpc('is_admin', { user_id: session.user.id });
         if (cancelled) return;
         if (error) throw error;
         if (!data) {
           toast.error("Access denied", { description: "You do not have admin privileges." });
-          navigate(ROUTES.DASHBOARD);
+          navigate(ROUTES.DASHBOARD, { replace: true });
           return;
         }
         setIsAdmin(true);
@@ -130,7 +133,7 @@ export default function Admin() {
         if (cancelled) return;
         console.error("Admin check error:", error);
         toast.error("Failed to verify admin access");
-        navigate(ROUTES.DASHBOARD);
+        navigate(ROUTES.DASHBOARD, { replace: true });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -139,7 +142,8 @@ export default function Admin() {
     return () => { cancelled = true; };
   }, [navigate]);
 
-  if (loading) {
+  // SECURITY: Never render admin content while checking — prevents flash of admin UI
+  if (loading || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Shield className="h-12 w-12 animate-pulse mx-auto text-primary" />
@@ -147,8 +151,6 @@ export default function Admin() {
       </div>
     );
   }
-
-  if (!isAdmin) return null;
 
   return (
     <SidebarProvider>
