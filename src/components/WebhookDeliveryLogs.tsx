@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Webhook, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, RefreshCw, Webhook, AlertCircle, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api-client";
 
 interface WebhookDeliveryLog {
   id: string;
@@ -25,6 +26,23 @@ interface WebhookDeliveryLog {
 
 export default function WebhookDeliveryLogs() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [retrying, setRetrying] = useState<string | null>(null);
+
+  const handleRetry = async (deliveryId: string) => {
+    setRetrying(deliveryId);
+    try {
+      await apiFetch("webhook-retry", {
+        method: "POST",
+        body: JSON.stringify({ delivery_id: deliveryId }),
+      });
+      toast.success("Webhook replayed successfully");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to retry webhook delivery");
+    } finally {
+      setRetrying(null);
+    }
+  };
 
   const { data: logs, isLoading, refetch } = useQuery({
     queryKey: ["webhook-deliveries", statusFilter],
@@ -162,6 +180,7 @@ export default function WebhookDeliveryLogs() {
                       <TableHead>Status</TableHead>
                       <TableHead className="hidden xl:table-cell">Attempt</TableHead>
                       <TableHead className="hidden xl:table-cell">Details</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -180,6 +199,23 @@ export default function WebhookDeliveryLogs() {
                         <TableCell className="text-xs hidden xl:table-cell">{log.delivery_attempt}</TableCell>
                         <TableCell className="text-xs text-muted-foreground max-w-xs truncate hidden xl:table-cell">
                           {log.error_message || log.response_body || "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {(log.error_message || !log.response_status_code || log.response_status_code >= 300) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={retrying === log.id}
+                              onClick={() => handleRetry(log.id)}
+                            >
+                              {retrying === log.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-3 w-3" />
+                              )}
+                              <span className="ml-1 text-xs">Retry</span>
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

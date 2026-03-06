@@ -84,7 +84,15 @@ export default function Auth() {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
-        toast.error("Unable to create account. Please try again.");
+        // Surface specific signup failures users actually encounter
+        const msg = error.message;
+        if (msg.includes("already registered") || msg.includes("already been registered")) {
+          toast.error("An account with this email already exists. Try signing in instead.");
+        } else if (msg.includes("rate limit") || msg.includes("too many")) {
+          toast.error("Too many attempts. Please wait a moment and try again.");
+        } else {
+          toast.error("Unable to create account. Please try again.");
+        }
       }
     } finally {
       setLoading(false);
@@ -114,7 +122,16 @@ export default function Auth() {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
-        toast.error(error.message || "Invalid credentials.");
+        const msg = error.message;
+        if (msg.includes("Invalid login")) {
+          toast.error("Incorrect email or password. Check your credentials and try again.");
+        } else if (msg.includes("Email not confirmed") || msg.includes("verify your email")) {
+          toast.error(msg);
+        } else if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("locked")) {
+          toast.error("Account temporarily locked due to too many failed attempts. Try again in a few minutes.");
+        } else {
+          toast.error(msg || "Sign-in failed. Please check your credentials.");
+        }
       }
     } finally {
       setLoading(false);
