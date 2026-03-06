@@ -163,6 +163,29 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     }
   };
 
+  /** Map of allowed MIME types to their expected magic byte signatures */
+  const MAGIC_BYTES: Record<string, number[][]> = {
+    "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
+    "image/jpeg": [[0xFF, 0xD8, 0xFF]],
+    "image/png": [[0x89, 0x50, 0x4E, 0x47]],
+    "image/gif": [[0x47, 0x49, 0x46]],
+    // Office Open XML (docx, xlsx) — PK zip header
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [[0x50, 0x4B, 0x03, 0x04]],
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [[0x50, 0x4B, 0x03, 0x04]],
+    // Legacy Office — OLE compound file
+    "application/msword": [[0xD0, 0xCF, 0x11, 0xE0]],
+    "application/vnd.ms-excel": [[0xD0, 0xCF, 0x11, 0xE0]],
+  };
+
+  const validateMagicBytes = async (file: File): Promise<boolean> => {
+    const signatures = MAGIC_BYTES[file.type];
+    if (!signatures) return true; // No signature to check — allow (MIME already validated)
+    const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    return signatures.some(sig =>
+      sig.every((byte, i) => header[i] === byte)
+    );
+  };
+
   const computeFileHash = async (file: File): Promise<string> => {
     const buffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
@@ -170,7 +193,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const file = e.target.files?.[0];
     
@@ -187,6 +210,14 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       setError("File type not allowed. Please use PDF, images, or Office documents.");
+      setSelectedFile(null);
+      return;
+    }
+
+    // Validate magic bytes to prevent MIME spoofing (e.g. .exe renamed to .pdf)
+    const validMagic = await validateMagicBytes(file);
+    if (!validMagic) {
+      setError("File content does not match the declared file type. The file may be corrupted or renamed.");
       setSelectedFile(null);
       return;
     }
@@ -230,7 +261,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // Storage path format: <org_id>/poi/<match_id>/<doc_id>/<filename>
       // First folder must be org_id to satisfy storage RLS policy
       const docId = crypto.randomUUID();
-      const storagePath = `${effectiveOrgId}/poi/${matchId}/${docId}/${selectedFile.name}`;
+      // Sanitise filename in storage path to prevent path traversal
+      const safeStorageName = selectedFile.name
+        .replace(/[/\\:*?"<>|\x00-\x1f]/g, "_")
+        .replace(/\.{2,}/g, "_")
+        .slice(0, 255);
+      const storagePath = `${effectiveOrgId}/poi/${matchId}/${docId}/${safeStorageName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
@@ -241,6 +277,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
       if (uploadError) throw uploadError;
 
+      // Sanitise filename: strip path traversal, null bytes, and non-printable chars
+      const sanitisedFilename = selectedFile.name
+        .replace(/[/\\:*?"<>|\x00-\x1f]/g, "_")
+        .replace(/\.{2,}/g, "_")
+        .slice(0, 255);
+
       const { error: insertError } = await supabase
         .from("match_documents")
         .insert({
@@ -250,7 +292,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           uploader_user_id: session.user.id,
           uploader_org_id: effectiveOrgId,
           doc_type: docType,
-          filename: selectedFile.name,
+          filename: sanitisedFilename,
           storage_path: storagePath,
           sha256_hash: sha256Hash,
           file_size: selectedFile.size,

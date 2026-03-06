@@ -39,6 +39,8 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
   const [startDate, setStartDate] = useState("");
   const [limit, setLimit] = useState("20");
 
+  // NOTE: This component uses X-API-Key auth (for the API testing playground),
+  // not session auth — this is intentional and correct.
   const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
   const fetchAuditLogs = async () => {
