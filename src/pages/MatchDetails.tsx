@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { apiFetch, isAuthError, isApiError } from "@/lib/api-client";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { MATCH_STATUS } from "@/lib/constants";
+import * as MatchState from "@/lib/match-state";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
@@ -121,7 +122,10 @@ export default function MatchDetails() {
     );
   }
 
-  const isSettled = match.status === MATCH_STATUS.SETTLED;
+  const isSettled = MatchState.isSettled(match.status);
+  const canConfirm = MatchState.canDo(match.status, "confirm_intent");
+  const canCreateWad = MatchState.canDo(match.status, "create_wad");
+  const canDispute = MatchState.canDo(match.status, "raise_dispute");
 
   return (
     <div className="space-y-6">
@@ -136,7 +140,7 @@ export default function MatchDetails() {
               <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
               <div className="flex items-center gap-2">
                 <Badge variant={isSettled ? "default" : "secondary"}>
-                  {isSettled ? "CONFIRMED" : "MATCHED"}
+                  {MatchState.statusLabel(match.status)}
                 </Badge>
                 <span className="text-sm text-muted-foreground font-mono">
                   {match.hash.substring(0, 8)}...
@@ -277,7 +281,7 @@ export default function MatchDetails() {
         <TabsContent value="details" className="mt-4 space-y-4">
           <MatchDocuments matchId={match.id} orgId={match.org_id} />
           
-          {!isSettled && (
+          {canConfirm && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="pt-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

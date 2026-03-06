@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { EmptyState } from "@/components/ui/error-state";
 import { MATCH_STATUS, ROUTES } from "@/lib/constants";
+import * as MatchState from "@/lib/match-state";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -161,7 +162,7 @@ export function MatchesList() {
   }, []);
 
   const getStatusBadge = (status: string) => {
-    return <StatusBadge status={status === MATCH_STATUS.SETTLED ? "confirmed" : status} />;
+    return <StatusBadge status={MatchState.isSettled(status) ? "confirmed" : status} />;
   };
 
   const toggleMatchSelection = (matchId: string) => {
@@ -178,7 +179,7 @@ export function MatchesList() {
 
   const toggleSelectAll = () => {
     if (!matches) return;
-    const unsettledMatches = matches.filter(m => m.status === MATCH_STATUS.MATCHED);
+    const unsettledMatches = matches.filter(m => MatchState.canDo(m.status, "select_for_bulk"));
     if (selectedMatches.size === unsettledMatches.length && unsettledMatches.length > 0) {
       setSelectedMatches(new Set());
     } else {
@@ -248,7 +249,7 @@ export function MatchesList() {
     toast.success("CSV exported successfully");
   };
 
-  const unsettledMatches = matches?.filter(m => m.status === MATCH_STATUS.MATCHED) || [];
+  const unsettledMatches = matches?.filter(m => MatchState.canDo(m.status, "select_for_bulk")) || [];
   const allUnsettledSelected = unsettledMatches.length > 0 && selectedMatches.size === unsettledMatches.length;
 
   // Inline evidence indicator using batch data (avoids N+1)
@@ -365,8 +366,8 @@ export function MatchesList() {
                       <Checkbox
                         checked={selectedMatches.has(match.id)}
                         onCheckedChange={() => toggleMatchSelection(match.id)}
-                         disabled={match.status === MATCH_STATUS.SETTLED}
-                      />
+                          disabled={!MatchState.canDo(match.status, "select_for_bulk")}
+                       />
                       <span className="font-medium text-sm">{match.commodity}</span>
                     </div>
                     {getStatusBadge(match.status)}
@@ -440,7 +441,7 @@ export function MatchesList() {
                         <Checkbox
                           checked={selectedMatches.has(match.id)}
                           onCheckedChange={() => toggleMatchSelection(match.id)}
-                          disabled={match.status === MATCH_STATUS.SETTLED}
+                          disabled={!MatchState.canDo(match.status, "select_for_bulk")}
                         />
                       </TableCell>
                       <TableCell className="font-medium">{match.commodity}</TableCell>

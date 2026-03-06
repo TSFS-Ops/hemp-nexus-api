@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import * as WadState from "@/lib/wad-state";
 
 type Match = Tables<"matches">;
 
@@ -84,17 +85,18 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
   };
 
   const getStatusBadge = () => {
+    const label = WadState.statusLabel(wad.status);
     switch (wad.status) {
       case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
       case "awaiting_attestations":
         return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Awaiting Attestations</Badge>;
       case "sealed":
-        return <Badge className="bg-green-600">Sealed</Badge>;
+        return <Badge className="bg-primary text-primary-foreground">{label}</Badge>;
       case "revoked":
-        return <Badge variant="destructive">Revoked</Badge>;
+        return <Badge variant="destructive">{label}</Badge>;
       default:
-        return <Badge variant="secondary">{wad.status}</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
     }
   };
 
@@ -103,7 +105,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
   const userIsBuyer = userOrgId === wad.buyer_org_id;
   const userIsSeller = userOrgId === wad.seller_org_id;
   const userHasAttested = wad.attestations?.some(a => a.org_id === userOrgId);
-  const canSeal = buyerAttested && sellerAttested && wad.status !== "sealed";
+  const canSeal = buyerAttested && sellerAttested && WadState.canDo(wad.status, "seal");
 
   const handleAttest = async () => {
     if (!attestedName.trim()) {
@@ -378,7 +380,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         );
 
       case "attest":
-        if (wad.status === "sealed") {
+        if (WadState.isSealed(wad.status)) {
           return (
             <div className="text-center py-6">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -452,7 +454,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         );
 
       case "certificate":
-        if (wad.status !== "sealed") {
+        if (!WadState.isSealed(wad.status)) {
           return (
             <div className="text-center py-6">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -514,8 +516,8 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
             const Icon = step.icon;
             const isActive = index === activeStep;
             const isCompleted = index < activeStep || 
-              (step.id === "certificate" && wad.status === "sealed") ||
-              (step.id === "attest" && wad.status === "sealed");
+              (step.id === "certificate" && WadState.isSealed(wad.status)) ||
+              (step.id === "attest" && WadState.isSealed(wad.status));
             
             return (
               <button
