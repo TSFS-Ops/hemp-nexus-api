@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DEMO_SEARCH_DELAY_MS } from "@/lib/constants";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
+import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Landing() {
   const [query, setQuery] = useState("");
@@ -15,6 +17,36 @@ export default function Landing() {
   const [hasSearched, setHasSearched] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
+  const { isAuthenticated } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // Restore pre-auth state after sign-in
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const restored = consumePreAuthState();
+    if (!restored) return;
+
+    setQuery(restored.query);
+    setHasSearched(true);
+    // Re-run the search to populate results, then re-select
+    const matched = getDemoResultsForQuery(restored.query);
+    setResults(matched);
+    setSelectedResults(new Set(restored.selectedIds));
+    toast.success("Welcome back — your search has been restored.");
+  }, [isAuthenticated]);
+
+  // Also restore if returning via ?resume=1 while already authed
+  useEffect(() => {
+    if (searchParams.get("resume") === "1" && isAuthenticated) {
+      const restored = consumePreAuthState();
+      if (!restored) return;
+      setQuery(restored.query);
+      setHasSearched(true);
+      setResults(getDemoResultsForQuery(restored.query));
+      setSelectedResults(new Set(restored.selectedIds));
+      toast.success("Welcome back — your search has been restored.");
+    }
+  }, [searchParams, isAuthenticated]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -33,13 +65,27 @@ export default function Landing() {
   };
 
   const handleConfirmIntent = () => {
+    if (isAuthenticated) {
+      // Already signed in — proceed with the action
+      toast.success(`Interest confirmed for ${selectedResults.size} counterpart${selectedResults.size > 1 ? "ies" : "y"}.`);
+      return;
+    }
+
+    // Save state before redirecting to auth
+    savePreAuthState({
+      query,
+      selectedIds: Array.from(selectedResults),
+      pendingAction: "interested",
+      returnTo: "/",
+    });
+
     toast.info("Sign in to continue", {
       description: "Create an account to confirm your interest and begin the process.",
       action: {
         label: "Sign in",
         onClick: () => {
           if (isPreview) {
-            window.location.assign("/auth");
+            window.location.assign("/auth?returnTo=/");
           } else {
             window.location.href = authUrl;
           }
