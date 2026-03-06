@@ -134,6 +134,7 @@ export default function WebhookDeliveryLogs() {
         </div>
 
         {/* Results */}
+        <div className="min-h-[300px]">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
