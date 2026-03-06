@@ -44,7 +44,10 @@ export function AdminWadPanel() {
     try {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        toast.error("Authentication required to view WaDs");
+        return;
+      }
 
       let url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad`;
       if (statusFilter !== "all") {
@@ -57,13 +60,18 @@ export function AdminWadPanel() {
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setWads(data);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `WaD fetch failed (${response.status})`);
       }
+
+      const data = await response.json();
+      setWads(data);
     } catch (error) {
-      console.error("Error fetching WaDs:", error);
-      toast.error("Failed to load WaDs");
+      console.error("[AdminWadPanel] fetch failed:", error);
+      toast.error("Failed to load WaDs", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLoading(false);
     }
