@@ -28,13 +28,15 @@ interface CounterpartyResultCardProps {
   rank: number;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
+  onFindSimilar?: (result: SearchResult) => void;
 }
 
 export function CounterpartyResultCard({ 
   result, 
   rank, 
   isSelected, 
-  onToggleSelect 
+  onToggleSelect,
+  onFindSimilar,
 }: CounterpartyResultCardProps) {
   return (
     <Card 
@@ -183,14 +185,17 @@ export function CounterpartyResultCard({
                     variant="ghost" 
                     size="sm" 
                     className="h-8 sm:h-7 text-xs px-2 sm:px-3 touch-target" 
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFindSimilar?.(result);
+                    }}
                   >
                     <Users className="h-3 w-3 mr-1" />
                     Similar
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Find similar counterparties</p>
+                  <p>Show counterparties similar to this one</p>
                 </TooltipContent>
               </Tooltip>
             </div>

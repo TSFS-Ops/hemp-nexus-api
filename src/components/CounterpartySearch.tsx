@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
+import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 
 interface SearchResult {
   id: string;
@@ -125,6 +126,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [showDemoConfirm, setShowDemoConfirm] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [similarAnchor, setSimilarAnchor] = useState<SearchResult | null>(null);
 
   // Demo mode is active if explicitly set via props OR if user is not authenticated
   const isDemoMode = propDemoMode ?? !isAuthenticated;
@@ -422,6 +424,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                 rank={idx + 1}
                 isSelected={selectedResults.has(result.id)}
                 onToggleSelect={toggleSelect}
+                onFindSimilar={setSimilarAnchor}
               />
             ))}
 
@@ -450,6 +453,17 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
           open={showDemoConfirm} 
           onOpenChange={setShowDemoConfirm}
           selectedCount={selectedResults.size}
+        />
+
+        {/* Similar Counterparties Sheet */}
+        <SimilarCounterpartiesSheet
+          open={!!similarAnchor}
+          onOpenChange={(open) => { if (!open) setSimilarAnchor(null); }}
+          anchor={similarAnchor}
+          allResults={results}
+          onSelect={(id) => {
+            toggleSelect(id);
+          }}
         />
       </div>
     </TooltipProvider>
