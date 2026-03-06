@@ -325,7 +325,6 @@ export default function MatchDetails() {
 
         <TabsContent value="documents" className="mt-4 space-y-4">
           <MatchDocuments matchId={match.id} orgId={match.org_id} />
-          )}
         </TabsContent>
 
         <TabsContent value="terms" className="mt-4">
