@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Loader2, ArrowLeft, CheckCircle2, FileText, Activity, Clock, Hash, Eye, ChevronRight, TrendingUp, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, Activity, Clock, Hash, Eye, ChevronRight, TrendingUp, AlertCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import type { User, Session } from "@supabase/supabase-js";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Match = Tables<"matches">;
@@ -25,31 +24,8 @@ type AuditLogItem = {
 };
 
 export default function MyActivity() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, session, isLoading: loading, isAdmin } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
 
   // Fetch matches
   const { data: matches, isLoading: matchesLoading } = useQuery({
@@ -126,38 +102,20 @@ export default function MyActivity() {
     totalSignals: signals?.length || 0,
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <nav className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm">Dashboard</span>
-            </Link>
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center">
-                <span className="text-background font-bold text-[10px]">CM</span>
-              </div>
-              <span className="font-medium text-sm">My Activity</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{user?.email}</span>
-          </div>
-        </div>
-      </nav>
+  if (!session) {
+    navigate("/auth");
+    return null;
+  }
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">My Activity</h1>
+  return (
+    <DashboardLayout isAdmin={isAdmin}>
+      <div className="space-y-6">
+        <header>
+          <h1 className="font-bold tracking-tight">My Activity</h1>
           <p className="text-muted-foreground">
             View your matches, intent confirmations, and activity history
           </p>
-        </div>
+        </header>
 
         {/* Stats Overview */}
         <div className="grid gap-4 md:grid-cols-4 mb-8">
@@ -404,7 +362,7 @@ export default function MyActivity() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
 

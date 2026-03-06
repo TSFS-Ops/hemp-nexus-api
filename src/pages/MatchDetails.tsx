@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, Info, FileText, Shield, Clock, CheckCircle2, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
+import { Loader2, Info, FileText, Shield, Clock, CheckCircle2, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
@@ -107,12 +108,10 @@ export default function MatchDetails() {
         throw new Error(errorMessage);
       }
 
-      toast.success("Intent confirmed successfully! Redirecting to logs...");
+      toast.success("Intent confirmed successfully!");
       
-      // Navigate to logs page to show proof
-      setTimeout(() => {
-        navigate("/dashboard?section=logs");
-      }, 1000);
+      // Refresh match data to show updated status — stay on this page
+      fetchMatch();
     } catch (error: any) {
       console.error("Error confirming intent:", error);
       toast.error(error.message || "Failed to confirm intent");
@@ -138,10 +137,7 @@ export default function MatchDetails() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
-        </Button>
+        <BackButton fallback="/dashboard/matches" label="Back" />
       </div>
 
       <Card>

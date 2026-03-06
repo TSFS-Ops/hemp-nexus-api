@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PublicHeader } from "@/components/PublicHeader";
+import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { Download, Printer } from "lucide-react";
 
 const phases = [
@@ -64,8 +64,7 @@ export default function WalkthroughReport() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <PublicHeader />
+    <PublicPageLayout>
 
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 print:max-w-none print:px-0 print:py-0">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4 print:hidden">
@@ -143,6 +142,6 @@ export default function WalkthroughReport() {
           </ul>
         </section>
       </main>
-    </div>
+    </PublicPageLayout>
   );
 }

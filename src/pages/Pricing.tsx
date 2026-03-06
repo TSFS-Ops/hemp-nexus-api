@@ -2,9 +2,8 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
 import { getConsoleUrl } from "@/lib/hostname";
-import { PublicHeader } from "@/components/PublicHeader";
+import { PublicPageLayout } from "@/components/PublicPageLayout";
 
 const packages = [
   {
@@ -59,8 +58,7 @@ export default function Pricing() {
   const consoleBillingUrl = getConsoleUrl("/billing");
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
+    <PublicPageLayout>
 
       {/* Hero */}
       <section className="py-16 md:py-24">
@@ -141,23 +139,6 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Starfair162 (Pty) Ltd t/a Izenzo. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link to="/docs" className="hover:text-foreground transition-colors">Documentation</Link>
-              <a href="mailto:support@izenzo.co.za" className="hover:text-foreground transition-colors">Support</a>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            No VAT charged — supplier not VAT registered in South Africa.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PublicPageLayout>
   );
 }
