@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { 
   Lock, 
   Users, 
@@ -58,28 +58,10 @@ export function DocumentSharingDialog({
     try {
       setSaving(true);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("You must be logged in to change visibility");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-share/${document.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ visibility }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update visibility");
-      }
+      await apiFetch(`document-share/${document.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ visibility }),
+      });
 
       toast.success("Document visibility updated");
       onVisibilityChanged();
@@ -96,31 +78,13 @@ export function DocumentSharingDialog({
     try {
       setRevoking(true);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("You must be logged in to revoke access");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-revoke/${document.id}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ 
-            action: "revoke_document",
-            reason: revokeReason || undefined,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to revoke access");
-      }
+      await apiFetch(`document-revoke/${document.id}`, {
+        method: "POST",
+        body: JSON.stringify({ 
+          action: "revoke_document",
+          reason: revokeReason || undefined,
+        }),
+      });
 
       toast.success("Document access has been revoked");
       onVisibilityChanged();

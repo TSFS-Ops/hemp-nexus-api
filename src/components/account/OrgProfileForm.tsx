@@ -64,22 +64,41 @@ export function OrgProfileForm() {
 
   const handleSave = async () => {
     if (!profile) return;
+
+    // Input validation before save
+    if (!profile.name.trim()) {
+      toast.error("Display name is required");
+      return;
+    }
+    if (profile.name.length > 200) {
+      toast.error("Display name must be under 200 characters");
+      return;
+    }
+    // Validate website URL to prevent javascript: injection
+    if (profile.website) {
+      const w = profile.website.trim();
+      if (w && !/^https?:\/\//i.test(w)) {
+        toast.error("Website must start with https:// or http://");
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
         .from("organizations")
         .update({
-          name: profile.name,
-          legal_name: profile.legal_name,
-          trading_name: profile.trading_name,
-          registration_number: profile.registration_number,
+          name: profile.name.trim().slice(0, 200),
+          legal_name: profile.legal_name?.slice(0, 300) || null,
+          trading_name: profile.trading_name?.slice(0, 300) || null,
+          registration_number: profile.registration_number?.slice(0, 50) || null,
           address: profile.address as any,
-          jurisdictions: profile.jurisdictions,
-          tax_number: profile.tax_number,
-          vat_number: profile.vat_number,
-          authorised_signatory: profile.authorised_signatory,
-          website: profile.website,
-          industry: profile.industry,
+          jurisdictions: profile.jurisdictions.slice(0, 20),
+          tax_number: profile.tax_number?.slice(0, 50) || null,
+          vat_number: profile.vat_number?.slice(0, 50) || null,
+          authorised_signatory: profile.authorised_signatory?.slice(0, 200) || null,
+          website: profile.website?.slice(0, 500) || null,
+          industry: profile.industry?.slice(0, 100) || null,
         })
         .eq("id", profile.id);
 
@@ -128,11 +147,11 @@ export function OrgProfileForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="org-name">Display Name</Label>
-              <Input id="org-name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} aria-label="Display name" />
+              <Input id="org-name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} aria-label="Display name" maxLength={200} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="legal-name">Legal Name</Label>
-              <Input id="legal-name" value={profile.legal_name ?? ""} onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })} placeholder="Registered legal entity name" aria-label="Legal name" />
+              <Input id="legal-name" value={profile.legal_name ?? ""} onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })} placeholder="Registered legal entity name" aria-label="Legal name" maxLength={300} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="trading-name">Trading Name</Label>
@@ -140,11 +159,11 @@ export function OrgProfileForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="reg-number">Registration Number</Label>
-              <Input id="reg-number" value={profile.registration_number ?? ""} onChange={(e) => setProfile({ ...profile, registration_number: e.target.value })} placeholder="Company reg number" aria-label="Registration number" />
+              <Input id="reg-number" value={profile.registration_number ?? ""} onChange={(e) => setProfile({ ...profile, registration_number: e.target.value })} placeholder="Company reg number" aria-label="Registration number" maxLength={50} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tax-number">Tax Number</Label>
-              <Input id="tax-number" value={profile.tax_number ?? ""} onChange={(e) => setProfile({ ...profile, tax_number: e.target.value })} placeholder="Tax identification number" aria-label="Tax number" />
+              <Input id="tax-number" value={profile.tax_number ?? ""} onChange={(e) => setProfile({ ...profile, tax_number: e.target.value })} placeholder="Tax identification number" aria-label="Tax number" maxLength={50} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vat-number">VAT Number</Label>
@@ -160,7 +179,7 @@ export function OrgProfileForm() {
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="website">Website</Label>
-              <Input id="website" value={profile.website ?? ""} onChange={(e) => setProfile({ ...profile, website: e.target.value })} placeholder="https://..." aria-label="Website" />
+              <Input id="website" value={profile.website ?? ""} onChange={(e) => setProfile({ ...profile, website: e.target.value })} placeholder="https://..." aria-label="Website" maxLength={500} />
             </div>
           </div>
         </CardContent>
