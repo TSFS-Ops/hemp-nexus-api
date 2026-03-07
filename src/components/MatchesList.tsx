@@ -22,6 +22,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { downloadCSV } from "@/lib/download-utils";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useUrlListParams } from "@/hooks/use-url-search-params";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,21 +47,22 @@ const PAGE_SIZE = 25;
 // Columns actually needed for the list view — avoids SELECT *
 const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, created_at, settled_at, hash, org_id" as const;
 
+const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
+
 export function MatchesList() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [commoditySearch, setCommoditySearch] = useState("");
-  const [sortBy, setSortBy] = useState<"created_at" | "commodity">("created_at");
+  const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
+  const statusFilter = params.status;
+  const commoditySearch = params.q;
+  const sortBy = params.sort as "created_at" | "commodity";
+  const page = parseInt(params.page, 10) || 0;
+
   const [selectedMatches, setSelectedMatches] = useState<Set<string>>(new Set());
   const [isSettling, setIsSettling] = useState(false);
   const [showSettleDialog, setShowSettleDialog] = useState(false);
-  const [page, setPage] = useState(0);
 
   // Debounce search to avoid firing a query on every keystroke
   const debouncedSearch = useDebounce(commoditySearch, 300);
-
-  // Reset page when filters change
-  useEffect(() => { setPage(0); }, [statusFilter, debouncedSearch, sortBy]);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["matches", statusFilter, debouncedSearch, sortBy, page],
@@ -336,12 +338,12 @@ export function MatchesList() {
             <Input
               placeholder="Search by commodity..."
               value={commoditySearch}
-              onChange={(e) => setCommoditySearch(e.target.value)}
+              onChange={(e) => setParam("q", e.target.value)}
               className="pl-10"
               aria-label="Search matches by commodity"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(v) => setParam("status", v)}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -351,7 +353,7 @@ export function MatchesList() {
               <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+          <Select value={sortBy} onValueChange={(v) => setParam("sort", v)}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -531,7 +533,7 @@ export function MatchesList() {
                     variant="outline"
                     size="sm"
                     disabled={page === 0}
-                    onClick={() => setPage(p => p - 1)}
+                    onClick={() => setParam("page", String(page - 1))}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
@@ -543,7 +545,7 @@ export function MatchesList() {
                     variant="outline"
                     size="sm"
                     disabled={page >= totalPages - 1}
-                    onClick={() => setPage(p => p + 1)}
+                    onClick={() => setParam("page", String(page + 1))}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -557,7 +559,7 @@ export function MatchesList() {
             title="No matches found"
             message="Try adjusting your search or filters."
             icon={<Search className="h-10 w-10" />}
-            action={{ label: "Clear filters", onClick: () => { setStatusFilter("all"); setCommoditySearch(""); } }}
+            action={{ label: "Clear filters", onClick: () => { setParam("status", "all"); setParam("q", ""); } }}
           />
         ) : (
           <div className="text-center py-16 px-4">

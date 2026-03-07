@@ -3,11 +3,15 @@ import { ApiKeysSection } from "@/components/dashboard/sections/ApiKeysSection";
 import { WebhooksSection } from "@/components/dashboard/sections/WebhooksSection";
 import { UsageBillingSection } from "@/components/dashboard/sections/UsageBillingSection";
 import { BillingCheckout } from "@/components/dashboard/sections/BillingCheckout";
+import { useUrlTab } from "@/hooks/use-url-tab";
 
 /**
  * Unified settings page: API Keys, Webhooks, Usage & Billing, and Credit Purchase in tabs.
+ * Tab state synced to ?tab= query param for deep-linking.
  */
 export function DashboardSettings() {
+  const [tab, setTab] = useUrlTab("tab", "keys", ["keys", "webhooks", "billing", "purchase"]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -15,7 +19,7 @@ export function DashboardSettings() {
         <p className="text-muted-foreground mt-1">Manage your API keys, webhooks, billing, and purchase credits.</p>
       </div>
 
-      <Tabs defaultValue="keys" className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList>
           <TabsTrigger value="keys">API Keys</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
