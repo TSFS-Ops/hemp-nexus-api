@@ -149,6 +149,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     }
   }, [initialQuery, hasAutoSearched, authLoading]);
 
+  const handleSearch = async () => {
     if (!query.trim()) {
       toast.error("Please enter a search query");
       return;
