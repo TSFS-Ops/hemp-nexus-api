@@ -178,23 +178,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
                   {getExamplesByType("create_signal")
                     .filter(ex => ex.language === "curl")
                     .map((example) => (
-                      <div key={example.id} className="relative">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute right-2 top-2 z-10"
-                          onClick={() => copyToClipboard(example.code_snippet)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <SyntaxHighlighter
-                          language="bash"
-                          style={vscDarkPlus}
-                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                        >
-                          {example.code_snippet}
-                        </SyntaxHighlighter>
-                      </div>
+                      <CodeBlock key={example.id} code={example.code_snippet} language="bash" />
                     ))}
                   <Button 
                     onClick={() => markStepComplete(2)}
@@ -212,23 +196,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
               <div className="space-y-4">
                 <div>
                   <h4 className="font-semibold mb-2">Install the SDK</h4>
-                  <div className="relative">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="absolute right-2 top-2 z-10"
-                      onClick={() => copyToClipboard("npm install @compliance-matching/sdk")}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <SyntaxHighlighter
-                      language="bash"
-                      style={vscDarkPlus}
-                      customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                    >
-                      npm install @compliance-matching/sdk
-                    </SyntaxHighlighter>
-                  </div>
+                  <CodeBlock code="npm install @compliance-matching/sdk" language="bash" />
                 </div>
 
                 <div>
@@ -236,23 +204,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
                   {getExamplesByType("create_signal")
                     .filter(ex => ex.language === "typescript")
                     .map((example) => (
-                      <div key={example.id} className="relative">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute right-2 top-2 z-10"
-                          onClick={() => copyToClipboard(example.code_snippet)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <SyntaxHighlighter
-                          language="typescript"
-                          style={vscDarkPlus}
-                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                        >
-                          {example.code_snippet}
-                        </SyntaxHighlighter>
-                      </div>
+                      <CodeBlock key={example.id} code={example.code_snippet} language="typescript" />
                     ))}
                 </div>
 
@@ -261,23 +213,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
                   {getExamplesByType("create_match")
                     .filter(ex => ex.language === "typescript")
                     .map((example) => (
-                      <div key={example.id} className="relative">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute right-2 top-2 z-10"
-                          onClick={() => copyToClipboard(example.code_snippet)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <SyntaxHighlighter
-                          language="typescript"
-                          style={vscDarkPlus}
-                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                        >
-                          {example.code_snippet}
-                        </SyntaxHighlighter>
-                      </div>
+                      <CodeBlock key={example.id} code={example.code_snippet} language="typescript" />
                     ))}
                   <Button 
                     onClick={() => markStepComplete(2)}
@@ -295,23 +231,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
               <div className="space-y-4">
                 <div>
                   <h4 className="font-semibold mb-2">Install the SDK</h4>
-                  <div className="relative">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="absolute right-2 top-2 z-10"
-                      onClick={() => copyToClipboard("pip install compliance-matching")}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <SyntaxHighlighter
-                      language="bash"
-                      style={vscDarkPlus}
-                      customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                    >
-                      pip install compliance-matching
-                    </SyntaxHighlighter>
-                  </div>
+                  <CodeBlock code="pip install compliance-matching" language="bash" />
                 </div>
 
                 <div>
@@ -319,23 +239,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
                   {getExamplesByType("create_signal")
                     .filter(ex => ex.language === "python")
                     .map((example) => (
-                      <div key={example.id} className="relative">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute right-2 top-2 z-10"
-                          onClick={() => copyToClipboard(example.code_snippet)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <SyntaxHighlighter
-                          language="python"
-                          style={vscDarkPlus}
-                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                        >
-                          {example.code_snippet}
-                        </SyntaxHighlighter>
-                      </div>
+                      <CodeBlock key={example.id} code={example.code_snippet} language="python" />
                     ))}
                 </div>
 
@@ -344,23 +248,7 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
                   {getExamplesByType("create_match")
                     .filter(ex => ex.language === "python")
                     .map((example) => (
-                      <div key={example.id} className="relative">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute right-2 top-2 z-10"
-                          onClick={() => copyToClipboard(example.code_snippet)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <SyntaxHighlighter
-                          language="python"
-                          style={vscDarkPlus}
-                          customStyle={{ borderRadius: "0.5rem", padding: "1rem" }}
-                        >
-                          {example.code_snippet}
-                        </SyntaxHighlighter>
-                      </div>
+                      <CodeBlock key={example.id} code={example.code_snippet} language="python" />
                     ))}
                   <Button 
                     onClick={() => markStepComplete(2)}
