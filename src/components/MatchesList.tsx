@@ -533,7 +533,7 @@ export function MatchesList() {
                     variant="outline"
                     size="sm"
                     disabled={page === 0}
-                    onClick={() => setPage(p => p - 1)}
+                    onClick={() => setParam("page", String(page - 1))}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
