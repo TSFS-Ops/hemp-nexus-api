@@ -214,6 +214,15 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     }
   };
 
+  // Auto-trigger search if URL contains ?q= on mount (deep-link restore)
+  useEffect(() => {
+    if (initialQuery && !hasAutoSearched && !authLoading) {
+      setHasAutoSearched(true);
+      handleSearch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading]);
+
   const toggleSelect = (id: string) => {
     setSelectedResults(prev => {
       const next = new Set(prev);
