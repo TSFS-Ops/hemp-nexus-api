@@ -130,6 +130,7 @@ Deno.serve(async (req) => {
       // Enforce licence for billable action
       await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
+      // --- Fetch match (read-only, for eligibility check & audit metadata) ---
       const { data: match, error: fetchError } = await supabase
         .from("matches")
         .select("*")
@@ -141,15 +142,13 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
-      // Verify match belongs to authenticated user's organization
       if (match.org_id !== authCtx.orgId) {
         throw new ApiException("FORBIDDEN", "You do not have permission to confirm intent for this match", 403);
       }
 
-      // Check state machine — must be in 'discovery'
       const currentState = match.state || 'discovery';
       
-      // If already confirmed, return idempotently
+      // Idempotent return if already confirmed
       if (currentState === 'intent_declared' || match.status === 'settled') {
         console.log(`[${requestId}] Intent already confirmed — returning idempotently`);
         await logApiRequest({
@@ -197,19 +196,28 @@ Deno.serve(async (req) => {
         'declare_intent', requestId, matchId
       );
 
-      // Update state: discovery → intent_declared
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({
-          status: "settled",
-          state: "intent_declared",
-          settled_at: new Date().toISOString(),
-        })
-        .eq("id", matchId)
-        .select()
-        .single();
+      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      const now = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'discovery',
+          p_new_state: 'intent_declared',
+          p_update_fields: { status: 'settled', settled_at: now },
+        }
+      );
 
-      if (updateError) handleDatabaseError(updateError, requestId);
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const errMsg = transitionResult?.message || 'State transition failed';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
+        throw new ApiException(errCode, errMsg, status);
+      }
+
+      const updated = transitionResult.match;
 
       // Audit log — immutable proof-of-intent
       try {
@@ -222,7 +230,7 @@ Deno.serve(async (req) => {
           entity_id: matchId,
           metadata: {
             request_id: requestId,
-            confirmed_at: updated.settled_at,
+            confirmed_at: now,
             hash: match.hash,
             buyer_id: match.buyer_id,
             seller_id: match.seller_id,
@@ -241,7 +249,7 @@ Deno.serve(async (req) => {
         await recordMatchEvent(
           supabase, matchId, match.org_id, "intent.confirmed",
           {
-            confirmedAt: updated.settled_at,
+            confirmedAt: now,
             hash: match.hash,
             commodity: match.commodity,
             tokensCharged: ACTION_TOKEN_COSTS.declare_intent,
@@ -259,7 +267,7 @@ Deno.serve(async (req) => {
 
       // Trigger webhooks
       triggerWebhooks(supabase, match.org_id, "intent.confirmed", {
-        matchId, hash: match.hash, confirmedAt: updated.settled_at,
+        matchId, hash: match.hash, confirmedAt: now,
         commodity: match.commodity, quantity: match.quantity_amount,
         note: "Intent confirmation signals interest only - no payment or legal obligation"
       }).catch(err => console.error(`Webhook error:`, err));
@@ -301,48 +309,37 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
-      if (!match) {
-        throw new ApiException("NOT_FOUND", "Match not found", 404);
-      }
+      if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
+      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
-      if (match.org_id !== authCtx.orgId) {
-        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
-      }
+      // Burn tokens BEFORE the atomic lock (token burn is itself atomic via atomic_token_burn)
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'counterparty_sighting', requestId, matchId);
 
-      const currentState = match.state || 'discovery';
-      if (currentState !== 'intent_declared') {
-        throw new ApiException(
-          "INVALID_STATE", 
-          `Cannot reveal counterparty from state '${currentState}'. Must declare intent first.`, 
-          400
-        );
-      }
-
-      // Burn tokens for counterparty sighting
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'counterparty_sighting',
-        requestId,
-        matchId
+      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      const sightedAt = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'intent_declared',
+          p_new_state: 'counterparty_sighted',
+          p_update_fields: {
+            counterparty_sighted_at: sightedAt,
+            sighting_tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
+          },
+        }
       );
 
-      // Update state
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({ 
-          state: 'counterparty_sighted',
-          counterparty_sighted_at: new Date().toISOString(),
-          sighting_tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
-        })
-        .eq("id", matchId)
-        .select()
-        .single();
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+      }
 
-      if (updateError) handleDatabaseError(updateError, requestId);
+      const updated = transitionResult.match;
 
-      // Audit log
       await supabase.from("audit_logs").insert({
         org_id: match.org_id,
         actor_user_id: actorUserId,
@@ -353,7 +350,7 @@ Deno.serve(async (req) => {
         metadata: {
           request_id: requestId,
           tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
-          previous_state: currentState,
+          previous_state: 'intent_declared',
           new_state: 'counterparty_sighted',
           fields_revealed: ['seller_id', 'seller_name', 'buyer_id', 'buyer_name'],
         }
@@ -404,22 +401,8 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
-      if (!match) {
-        throw new ApiException("NOT_FOUND", "Match not found", 404);
-      }
-
-      if (match.org_id !== authCtx.orgId) {
-        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
-      }
-
-      const currentState = match.state || 'discovery';
-      if (currentState !== 'counterparty_sighted') {
-        throw new ApiException(
-          "INVALID_STATE", 
-          `Cannot commit from state '${currentState}'. Must reveal counterparty first.`, 
-          400
-        );
-      }
+      if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
+      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // Calculate transaction value for finality burn
       const transactionValueUsd = (match.declared_value_usd || 
@@ -428,47 +411,37 @@ Deno.serve(async (req) => {
       const commitCost = ACTION_TOKEN_COSTS.buyer_commit;
       const totalCost = commitCost + finalityBurn;
 
-      // Ensure sufficient tokens for full commit cost
+      // Ensure sufficient tokens and burn (atomic via atomic_token_burn)
       await ensureSufficientTokens(supabase, authCtx.orgId, totalCost);
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId);
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId, finalityBurn, { type: 'finality_burn', transactionValue: transactionValueUsd });
 
-      // Burn commit tokens
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'buyer_commit',
-        requestId,
-        matchId
+      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      const committedAt = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'counterparty_sighted',
+          p_new_state: 'committed',
+          p_update_fields: {
+            buyer_committed_at: committedAt,
+            finality_tokens_burned: finalityBurn,
+            declared_value_usd: transactionValueUsd,
+          },
+        }
       );
 
-      // Burn finality tokens
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'buyer_commit', // Using buyer_commit as action type for finality burn
-        requestId,
-        matchId,
-        finalityBurn,
-        { type: 'finality_burn', transactionValue: transactionValueUsd }
-      );
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+      }
 
-      // Update state
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({ 
-          state: 'committed',
-          buyer_committed_at: new Date().toISOString(),
-          finality_tokens_burned: finalityBurn,
-          declared_value_usd: transactionValueUsd,
-        })
-        .eq("id", matchId)
-        .select()
-        .single();
+      const updated = transitionResult.match;
 
-      if (updateError) handleDatabaseError(updateError, requestId);
-
-      // Audit log
       await supabase.from("audit_logs").insert({
         org_id: match.org_id,
         actor_user_id: actorUserId,
@@ -482,29 +455,19 @@ Deno.serve(async (req) => {
           finality_tokens_burned: finalityBurn,
           total_tokens_burned: totalCost,
           transaction_value_usd: transactionValueUsd,
-          previous_state: currentState,
+          previous_state: 'counterparty_sighted',
           new_state: 'committed',
         }
       });
 
       await recordMatchEvent(
         supabase, matchId, match.org_id, "transaction.committed",
-        { 
-          commitCost, 
-          finalityBurn, 
-          totalCost, 
-          transactionValueUsd,
-          state: 'committed' 
-        },
+        { commitCost, finalityBurn, totalCost, transactionValueUsd, state: 'committed' },
         actorUserId, actorApiKeyId
       );
 
       triggerWebhooks(supabase, match.org_id, "transaction.committed", {
-        matchId, 
-        state: 'committed', 
-        commitTokens: commitCost,
-        finalityTokens: finalityBurn,
-        transactionValueUsd,
+        matchId, state: 'committed', commitTokens: commitCost, finalityTokens: finalityBurn, transactionValueUsd,
       }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
