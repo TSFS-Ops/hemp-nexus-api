@@ -280,3 +280,8 @@
     z-index: 0;
   }
 }
+
+/* Safe area inset for iOS bottom bar */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
