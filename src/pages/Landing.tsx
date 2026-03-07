@@ -160,13 +160,13 @@ export default function Landing() {
                   {results.map((result) => (
                     <div
                       key={result.id}
-                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all
+                      className={`w-full text-left px-3 sm:px-4 py-3 rounded-lg border transition-all
                                 ${selectedResults.has(result.id)
                           ? "bg-primary/5 border-primary/30"
                           : "border-border hover:bg-muted/50"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start xs:items-center justify-between gap-2 sm:gap-3">
                         <button
                           onClick={() => toggleSelect(result.id)}
                           aria-pressed={selectedResults.has(result.id)}
@@ -175,10 +175,9 @@ export default function Landing() {
                           <span className="font-medium text-foreground text-sm">{result.title}</span>
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">{result.description}</p>
                         </button>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                           <button
                             onClick={() => {
-                              // Select this result and trigger intent
                               if (!selectedResults.has(result.id)) {
                                 const newSelected = new Set(selectedResults);
                                 newSelected.add(result.id);
@@ -186,13 +185,14 @@ export default function Landing() {
                               }
                               handleConfirmIntent();
                             }}
-                            className="text-xs font-medium px-3 py-1.5 rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors min-h-[32px]"
+                            className="text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors min-h-[44px] min-w-[44px]"
                           >
-                            I'm interested
+                            <span className="hidden xs:inline">I'm interested</span>
+                            <span className="xs:hidden">Interest</span>
                           </button>
                           <div
                             onClick={() => toggleSelect(result.id)}
-                            className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-colors ${
+                            className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 cursor-pointer transition-colors flex-shrink-0 ${
                               selectedResults.has(result.id)
                                 ? "bg-primary border-primary"
                                 : "border-muted-foreground/30"
