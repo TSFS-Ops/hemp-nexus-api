@@ -1,9 +1,93 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Key, Activity, FileText, BarChart3, Clock } from "lucide-react";
+import { Key, Activity, FileText, BarChart3, Clock, Search, ArrowRight, BookOpen, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/format";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "@/lib/constants";
+
+function GettingStartedEmpty() {
+  const navigate = useNavigate();
+
+  const steps = [
+    {
+      number: "1",
+      title: "Search for a counterparty",
+      description: "Use the Discovery Engine to find verified buyers or sellers by commodity, region, or company name.",
+      icon: Search,
+    },
+    {
+      number: "2",
+      title: "Review match results",
+      description: "Examine match details, compliance signals, and risk scores before proceeding.",
+      icon: FileText,
+    },
+    {
+      number: "3",
+      title: "Confirm intent",
+      description: "Record proof-of-intent — no contract, no payment, just a tamper-evident audit record.",
+      icon: Zap,
+    },
+    {
+      number: "4",
+      title: "Download evidence pack",
+      description: "Get a SHA-256 hashed, chain-linked evidence pack for your compliance records.",
+      icon: Key,
+    },
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* Hero */}
+      <div className="text-center py-8 px-4">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <Zap className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-semibold text-foreground mb-2">
+          Welcome to your Console
+        </h2>
+        <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+          You're all set up. Run your first counterparty search to see activity appear here.
+        </p>
+      </div>
+
+      {/* Steps */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {steps.map((step) => (
+          <div
+            key={step.number}
+            className="relative p-5 rounded-lg border border-border bg-background hover:border-primary/40 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {step.number}
+              </span>
+              <div className="space-y-1">
+                <h3 className="font-medium text-sm text-foreground">{step.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{step.description}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* CTAs */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+          <Search className="h-4 w-4" />
+          Run your first search
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" onClick={() => navigate(ROUTES.DOCS)} className="gap-2">
+          <BookOpen className="h-4 w-4" />
+          Read the docs
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export function ConsoleOverview() {
   const { session } = useAuth();
@@ -34,14 +118,19 @@ export function ConsoleOverview() {
     enabled: !!session,
   });
 
-  // Use centralized formatter — see src/lib/format.ts
-
   const statCards = [
     { label: "Active API Keys", value: stats?.activeApiKeys ?? 0, icon: Key },
     { label: "Calls (24h)", value: stats?.callsLast24h ?? 0, icon: Activity },
     { label: "Calls (7d)", value: stats?.callsLast7d ?? 0, icon: BarChart3 },
     { label: "Confirmed Intents", value: stats?.confirmedIntents ?? 0, icon: FileText },
   ];
+
+  const hasZeroActivity = !isLoading && stats &&
+    stats.activeApiKeys === 0 &&
+    stats.callsLast24h === 0 &&
+    stats.callsLast7d === 0 &&
+    stats.confirmedIntents === 0 &&
+    !stats.lastActivity;
 
   return (
     <div className="space-y-6">
@@ -75,33 +164,39 @@ export function ConsoleOverview() {
       </div>
 
       {/* Last Activity */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Clock className="h-4 w-4" />
-        <span>Last activity: {formatRelativeTime(stats?.lastActivity)}</span>
-      </div>
-
-      {/* Quick Info */}
-      <div className="p-4 border border-border rounded-lg bg-muted/30">
-        <h3 className="font-medium text-foreground mb-2">What is Compliance Match API?</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-          Search for counterparties, record proof-of-intent, and generate tamper-evident audit trails. 
-          Confirm Intent creates an information-only record — no payment, no contract, no legal obligation.
-        </p>
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-            SHA-256 hashed evidence
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-            Chain-linked audit logs
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-            Discovery Engine (+12% results)
-          </span>
+      {!hasZeroActivity && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <span>Last activity: {formatRelativeTime(stats?.lastActivity)}</span>
         </div>
-      </div>
+      )}
+
+      {/* Empty state or info block */}
+      {hasZeroActivity ? (
+        <GettingStartedEmpty />
+      ) : (
+        <div className="p-4 border border-border rounded-lg bg-muted/30">
+          <h3 className="font-medium text-foreground mb-2">What is Compliance Match API?</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+            Search for counterparties, record proof-of-intent, and generate tamper-evident audit trails. 
+            Confirm Intent creates an information-only record — no payment, no contract, no legal obligation.
+          </p>
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+              SHA-256 hashed evidence
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+              Chain-linked audit logs
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+              Discovery Engine (+12% results)
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
