@@ -5053,6 +5053,25 @@ export type Database = {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
       }
+      safe_transition_match_state: {
+        Args: {
+          p_expected_state: string
+          p_match_id: string
+          p_new_state: string
+          p_org_id: string
+          p_update_fields?: Json
+        }
+        Returns: Json
+      }
+      safe_update_deal_terms: {
+        Args: {
+          p_deal_term_id: string
+          p_expected_version: number
+          p_org_id: string
+          p_updates: Json
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
