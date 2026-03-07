@@ -318,93 +318,23 @@ export function SdkDocumentation() {
             </TabsList>
             
             <TabsContent value="typescript" className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 z-10"
-                onClick={() => copyToClipboard(typescriptExample)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <SyntaxHighlighter
-                language="typescript"
-                style={atomOneDark}
-                customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
-              >
-                {typescriptExample}
-              </SyntaxHighlighter>
+              <CodeBlock code={typescriptExample} language="typescript" />
             </TabsContent>
 
             <TabsContent value="v3-pipeline" className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 z-10"
-                onClick={() => copyToClipboard(v3DealPipelineExample)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <SyntaxHighlighter
-                language="typescript"
-                style={atomOneDark}
-                customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
-              >
-                {v3DealPipelineExample}
-              </SyntaxHighlighter>
+              <CodeBlock code={v3DealPipelineExample} language="typescript" />
             </TabsContent>
             
             <TabsContent value="python" className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 z-10"
-                onClick={() => copyToClipboard(pythonExample)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <SyntaxHighlighter
-                language="python"
-                style={atomOneDark}
-                customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
-              >
-                {pythonExample}
-              </SyntaxHighlighter>
+              <CodeBlock code={pythonExample} language="python" />
             </TabsContent>
             
             <TabsContent value="curl" className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 z-10"
-                onClick={() => copyToClipboard(curlExample)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <SyntaxHighlighter
-                language="bash"
-                style={atomOneDark}
-                customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
-              >
-                {curlExample}
-              </SyntaxHighlighter>
+              <CodeBlock code={curlExample} language="bash" />
             </TabsContent>
             
             <TabsContent value="errors" className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 z-10"
-                onClick={() => copyToClipboard(errorHandlingExample)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <SyntaxHighlighter
-                language="typescript"
-                style={atomOneDark}
-                customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
-              >
-                {errorHandlingExample}
-              </SyntaxHighlighter>
+              <CodeBlock code={errorHandlingExample} language="typescript" />
             </TabsContent>
           </Tabs>
         </CardContent>
