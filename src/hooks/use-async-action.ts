@@ -28,6 +28,12 @@ export interface UseAsyncActionOptions extends ApiErrorOptions {
   successMessage?: string | false;
   /** Callback after successful execution */
   onSuccess?: () => void;
+  /**
+   * When true, generates a fresh idempotency key per invocation and
+   * passes it as the first element of the args tuple so the caller
+   * can forward it to `apiFetch`.
+   */
+  idempotent?: boolean;
 }
 
 export function useAsyncAction<TArgs extends unknown[] = []>(
@@ -39,7 +45,7 @@ export function useAsyncAction<TArgs extends unknown[] = []>(
 
   const run = useCallback(
     async (...args: TArgs) => {
-      // Double-click guard
+      // Double-click guard (ref-based, survives re-renders)
       if (guardRef.current) return;
       guardRef.current = true;
       setLoading(true);
