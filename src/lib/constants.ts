@@ -33,7 +33,6 @@ export const CHECKPOINT_DEMO_ROLES: readonly string[] = [
 export const ROUTES = {
   ROOT: '/',
   AUTH: '/auth',
-  LANDING: '/landing',
   DEMO: '/demo',
   DASHBOARD: '/dashboard',
   DASHBOARD_SEARCH: '/dashboard/search',
@@ -49,16 +48,9 @@ export const ROUTES = {
   ADMIN_API_KEYS: '/admin/api-keys',
   ADMIN_OVERRIDES: '/admin/overrides',
   ADMIN_SETTINGS: '/admin/settings',
-  ACTIVITY: '/activity',
-  ANALYTICS: '/analytics',
-  MARKETPLACE: '/marketplace',
-  INVITES: '/invites',
   PRICING: '/pricing',
   DOCS: '/docs',
-  EXPLORE: '/explore',
-  DUE_DILIGENCE: '/due-diligence',
   WALKTHROUGH: '/walkthrough',
-  BILLING: '/billing',
 } as const;
 
 // ─── Match statuses ─────────────────────────────────────────────────
