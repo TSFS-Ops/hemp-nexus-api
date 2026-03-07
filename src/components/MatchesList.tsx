@@ -343,7 +343,7 @@ export function MatchesList() {
               aria-label="Search matches by commodity"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(v) => setParam("status", v)}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
