@@ -141,6 +141,7 @@ function AdminContent() {
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
               <Route path="/settings" element={<AdminSettings />} />
+              <Route path="*" element={<AdminNotFound />} />
             </Routes>
           </main>
         </div>

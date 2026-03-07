@@ -214,9 +214,9 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     }
   };
 
-  // Auto-trigger search if URL contains ?q= on mount (deep-link restore)
+  // Auto-trigger search if URL contains non-empty ?q= on mount (deep-link restore)
   useEffect(() => {
-    if (initialQuery && !hasAutoSearched && !authLoading) {
+    if (initialQuery && initialQuery.trim() && !hasAutoSearched && !authLoading && !isSearching) {
       setHasAutoSearched(true);
       handleSearch();
     }
