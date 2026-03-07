@@ -141,6 +141,13 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       return;
     }
 
+    // Persist query to URL for shareability and refresh resilience
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      updated.set("q", query.trim());
+      return updated;
+    }, { replace: true });
+
     setIsSearching(true);
     setResults([]);
     setMetrics(null);
