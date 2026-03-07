@@ -54,8 +54,14 @@ export function MatchesList() {
   const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
   const statusFilter = params.status;
   const commoditySearch = params.q;
-  const sortBy = params.sort as "created_at" | "commodity";
-  const page = parseInt(params.page, 10) || 0;
+  // Validate sort — only allow known columns to prevent query errors
+  const VALID_SORTS = ["created_at", "commodity"] as const;
+  const sortBy = (VALID_SORTS as readonly string[]).includes(params.sort)
+    ? (params.sort as "created_at" | "commodity")
+    : "created_at";
+  // Validate page — clamp to non-negative integer
+  const rawPage = parseInt(params.page, 10);
+  const page = Number.isFinite(rawPage) && rawPage >= 0 ? rawPage : 0;
 
   const [selectedMatches, setSelectedMatches] = useState<Set<string>>(new Set());
   const [isSettling, setIsSettling] = useState(false);

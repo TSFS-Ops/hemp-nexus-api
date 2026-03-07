@@ -16,6 +16,7 @@ import Docs from "@/pages/Docs";
 import Pricing from "@/pages/Pricing";
 import WalkthroughReport from "@/pages/WalkthroughReport";
 import ResetPassword from "@/pages/ResetPassword";
+import NotFound from "@/pages/NotFound";
 
 /**
  * Root element that renders based on host type:

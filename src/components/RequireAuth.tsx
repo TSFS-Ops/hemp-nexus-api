@@ -18,6 +18,7 @@ import { ReactNode, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { ROUTES } from "@/lib/constants";
+import { getSafeReturnTo } from "@/lib/safe-redirect";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { AppRole } from "@/lib/constants";
 

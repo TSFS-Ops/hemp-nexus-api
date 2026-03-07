@@ -285,3 +285,14 @@
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* Prevent mobile bottom nav from overlapping keyboard */
+@media (max-width: 767px) {
+  /* When the virtual keyboard is open, the bottom nav should hide */
+  @supports (height: 1dvh) {
+    .mobile-bottom-nav-wrapper {
+      position: fixed;
+      bottom: 0;
+    }
+  }
+}
