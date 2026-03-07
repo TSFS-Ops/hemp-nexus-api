@@ -401,22 +401,8 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
-      if (!match) {
-        throw new ApiException("NOT_FOUND", "Match not found", 404);
-      }
-
-      if (match.org_id !== authCtx.orgId) {
-        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
-      }
-
-      const currentState = match.state || 'discovery';
-      if (currentState !== 'counterparty_sighted') {
-        throw new ApiException(
-          "INVALID_STATE", 
-          `Cannot commit from state '${currentState}'. Must reveal counterparty first.`, 
-          400
-        );
-      }
+      if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
+      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // Calculate transaction value for finality burn
       const transactionValueUsd = (match.declared_value_usd || 
@@ -425,47 +411,37 @@ Deno.serve(async (req) => {
       const commitCost = ACTION_TOKEN_COSTS.buyer_commit;
       const totalCost = commitCost + finalityBurn;
 
-      // Ensure sufficient tokens for full commit cost
+      // Ensure sufficient tokens and burn (atomic via atomic_token_burn)
       await ensureSufficientTokens(supabase, authCtx.orgId, totalCost);
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId);
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId, finalityBurn, { type: 'finality_burn', transactionValue: transactionValueUsd });
 
-      // Burn commit tokens
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'buyer_commit',
-        requestId,
-        matchId
+      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      const committedAt = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'counterparty_sighted',
+          p_new_state: 'committed',
+          p_update_fields: {
+            buyer_committed_at: committedAt,
+            finality_tokens_burned: finalityBurn,
+            declared_value_usd: transactionValueUsd,
+          },
+        }
       );
 
-      // Burn finality tokens
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'buyer_commit', // Using buyer_commit as action type for finality burn
-        requestId,
-        matchId,
-        finalityBurn,
-        { type: 'finality_burn', transactionValue: transactionValueUsd }
-      );
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+      }
 
-      // Update state
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({ 
-          state: 'committed',
-          buyer_committed_at: new Date().toISOString(),
-          finality_tokens_burned: finalityBurn,
-          declared_value_usd: transactionValueUsd,
-        })
-        .eq("id", matchId)
-        .select()
-        .single();
+      const updated = transitionResult.match;
 
-      if (updateError) handleDatabaseError(updateError, requestId);
-
-      // Audit log
       await supabase.from("audit_logs").insert({
         org_id: match.org_id,
         actor_user_id: actorUserId,
@@ -479,29 +455,19 @@ Deno.serve(async (req) => {
           finality_tokens_burned: finalityBurn,
           total_tokens_burned: totalCost,
           transaction_value_usd: transactionValueUsd,
-          previous_state: currentState,
+          previous_state: 'counterparty_sighted',
           new_state: 'committed',
         }
       });
 
       await recordMatchEvent(
         supabase, matchId, match.org_id, "transaction.committed",
-        { 
-          commitCost, 
-          finalityBurn, 
-          totalCost, 
-          transactionValueUsd,
-          state: 'committed' 
-        },
+        { commitCost, finalityBurn, totalCost, transactionValueUsd, state: 'committed' },
         actorUserId, actorApiKeyId
       );
 
       triggerWebhooks(supabase, match.org_id, "transaction.committed", {
-        matchId, 
-        state: 'committed', 
-        commitTokens: commitCost,
-        finalityTokens: finalityBurn,
-        transactionValueUsd,
+        matchId, state: 'committed', commitTokens: commitCost, finalityTokens: finalityBurn, transactionValueUsd,
       }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
