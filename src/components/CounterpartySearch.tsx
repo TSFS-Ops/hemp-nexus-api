@@ -135,7 +135,20 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   // Demo mode is active if explicitly set via props OR if user is not authenticated
   const isDemoMode = propDemoMode ?? !isAuthenticated;
 
-  const handleSearch = async () => {
+  // Auto-trigger search if URL contains ?q= on mount (deep-link restore)
+  const [hasAutoSearched, setHasAutoSearched] = useState(false);
+  useEffect(() => {
+    if (initialQuery && !hasAutoSearched && !authLoading) {
+      setHasAutoSearched(true);
+      // Defer to next tick so component is fully mounted
+      const timer = setTimeout(() => {
+        const searchBtn = document.querySelector<HTMLButtonElement>('[data-search-trigger]');
+        searchBtn?.click();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [initialQuery, hasAutoSearched, authLoading]);
+
     if (!query.trim()) {
       toast.error("Please enter a search query");
       return;
