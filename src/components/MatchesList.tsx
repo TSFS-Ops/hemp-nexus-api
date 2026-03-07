@@ -559,7 +559,7 @@ export function MatchesList() {
             title="No matches found"
             message="Try adjusting your search or filters."
             icon={<Search className="h-10 w-10" />}
-            action={{ label: "Clear filters", onClick: () => { setStatusFilter("all"); setCommoditySearch(""); } }}
+            action={{ label: "Clear filters", onClick: () => { setParam("status", "all"); setParam("q", ""); } }}
           />
         ) : (
           <div className="text-center py-16 px-4">
