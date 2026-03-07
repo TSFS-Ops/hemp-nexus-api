@@ -105,7 +105,11 @@ export function useMatchDetails(matchId: string | undefined) {
         return;
       }
 
-      const updated = await apiFetch<Match>(`match/${match.id}/settle`, { method: "POST" });
+      const idempotencyKey = generateIdempotencyKey("settle");
+      const updated = await apiFetch<Match>(`match/${match.id}/settle`, {
+        method: "POST",
+        idempotencyKey,
+      });
 
       if (!updated || !updated.id || !updated.status) {
         throw new Error("Server returned an invalid confirmation response.");
