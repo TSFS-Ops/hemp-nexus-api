@@ -197,6 +197,20 @@ export default function MatchDetails() {
     );
   }
 
+  if (!match) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton fallback="/dashboard/matches" label="Back" />
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="font-medium">Match not found</p>
+          <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
+        </div>
+      </div>
+    );
+  }
+
   const isSettled = MatchState.isSettled(match.status);
   const canConfirm = MatchState.canDo(match.status, "confirm_intent");
 
