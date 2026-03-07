@@ -166,15 +166,32 @@ export default function MatchDetails() {
     );
   }
 
-  if (!match) {
+  // SCENARIO 2 + 1: Show error state with retry for invalid ID, network, or timeout errors
+  if (fetchError || !isValidMatchId) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <BackButton fallback="/dashboard/matches" label="Back" />
         </div>
         <div className="text-center py-16 text-muted-foreground">
-          <p className="font-medium">Match not found</p>
-          <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
+          <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-destructive" />
+          <p className="font-medium">{fetchError || "Invalid match ID"}</p>
+          <p className="text-sm mt-1">
+            {!isValidMatchId
+              ? "The match ID in the URL is not valid."
+              : "Something went wrong loading this match."}
+          </p>
+          {isValidMatchId && (
+            <LoadingButton
+              onClick={fetchMatch}
+              loading={loading}
+              variant="outline"
+              className="mt-4"
+              loadingText="Retrying…"
+            >
+              Retry
+            </LoadingButton>
+          )}
         </div>
       </div>
     );
