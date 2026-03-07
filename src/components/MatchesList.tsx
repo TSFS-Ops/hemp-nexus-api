@@ -545,7 +545,7 @@ export function MatchesList() {
                     variant="outline"
                     size="sm"
                     disabled={page >= totalPages - 1}
-                    onClick={() => setPage(p => p + 1)}
+                    onClick={() => setParam("page", String(page + 1))}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
