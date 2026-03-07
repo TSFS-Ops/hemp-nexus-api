@@ -25,7 +25,24 @@ import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
+
+/** Admin-level catch-all for unknown sub-routes */
+function AdminNotFound() {
+  return (
+    <div className="p-6 text-center py-16">
+      <p className="text-4xl font-bold text-muted-foreground/30 mb-3">404</p>
+      <h2 className="text-lg font-semibold text-foreground mb-1">Admin page not found</h2>
+      <p className="text-sm text-muted-foreground mb-4">This admin section doesn't exist.</p>
+      <Button variant="outline" size="sm" asChild>
+        <Link to={ROUTES.ADMIN}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Admin Overview
+        </Link>
+      </Button>
+    </div>
+  );
+}
 
 /** Deals: Pipeline + Matches + Approvals */
 function DealsSection() {
@@ -141,6 +158,7 @@ function AdminContent() {
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
               <Route path="/settings" element={<AdminSettings />} />
+              <Route path="*" element={<AdminNotFound />} />
             </Routes>
           </main>
         </div>
