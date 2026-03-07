@@ -353,7 +353,7 @@ export function MatchesList() {
               <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+          <Select value={sortBy} onValueChange={(v) => setParam("sort", v)}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
