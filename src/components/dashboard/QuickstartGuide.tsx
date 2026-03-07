@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, Copy, Play, Rocket } from "lucide-react";
 import { toast } from "sonner";
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodeBlock } from "@/components/ui/code-block";
 import { useNavigate } from "react-router-dom";
 
 interface SDKExample {

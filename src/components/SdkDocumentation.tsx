@@ -4,8 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { CodeBlock } from "@/components/ui/code-block";
 
 const typescriptExample = `import { IzenzoClient } from '@/lib/izenzo-sdk';
 
