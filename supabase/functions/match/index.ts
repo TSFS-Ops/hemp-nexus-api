@@ -309,48 +309,37 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
-      if (!match) {
-        throw new ApiException("NOT_FOUND", "Match not found", 404);
-      }
+      if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
+      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
-      if (match.org_id !== authCtx.orgId) {
-        throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
-      }
+      // Burn tokens BEFORE the atomic lock (token burn is itself atomic via atomic_token_burn)
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'counterparty_sighting', requestId, matchId);
 
-      const currentState = match.state || 'discovery';
-      if (currentState !== 'intent_declared') {
-        throw new ApiException(
-          "INVALID_STATE", 
-          `Cannot reveal counterparty from state '${currentState}'. Must declare intent first.`, 
-          400
-        );
-      }
-
-      // Burn tokens for counterparty sighting
-      await burnTokensForAction(
-        supabase,
-        authCtx.orgId,
-        actorApiKeyId,
-        'counterparty_sighting',
-        requestId,
-        matchId
+      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      const sightedAt = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'intent_declared',
+          p_new_state: 'counterparty_sighted',
+          p_update_fields: {
+            counterparty_sighted_at: sightedAt,
+            sighting_tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
+          },
+        }
       );
 
-      // Update state
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({ 
-          state: 'counterparty_sighted',
-          counterparty_sighted_at: new Date().toISOString(),
-          sighting_tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
-        })
-        .eq("id", matchId)
-        .select()
-        .single();
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+      }
 
-      if (updateError) handleDatabaseError(updateError, requestId);
+      const updated = transitionResult.match;
 
-      // Audit log
       await supabase.from("audit_logs").insert({
         org_id: match.org_id,
         actor_user_id: actorUserId,
@@ -361,7 +350,7 @@ Deno.serve(async (req) => {
         metadata: {
           request_id: requestId,
           tokens_burned: ACTION_TOKEN_COSTS.counterparty_sighting,
-          previous_state: currentState,
+          previous_state: 'intent_declared',
           new_state: 'counterparty_sighted',
           fields_revealed: ['seller_id', 'seller_name', 'buyer_id', 'buyer_name'],
         }
