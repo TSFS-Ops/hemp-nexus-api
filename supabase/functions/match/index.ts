@@ -130,6 +130,7 @@ Deno.serve(async (req) => {
       // Enforce licence for billable action
       await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
+      // --- Fetch match (read-only, for eligibility check & audit metadata) ---
       const { data: match, error: fetchError } = await supabase
         .from("matches")
         .select("*")
@@ -141,15 +142,13 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
-      // Verify match belongs to authenticated user's organization
       if (match.org_id !== authCtx.orgId) {
         throw new ApiException("FORBIDDEN", "You do not have permission to confirm intent for this match", 403);
       }
 
-      // Check state machine — must be in 'discovery'
       const currentState = match.state || 'discovery';
       
-      // If already confirmed, return idempotently
+      // Idempotent return if already confirmed
       if (currentState === 'intent_declared' || match.status === 'settled') {
         console.log(`[${requestId}] Intent already confirmed — returning idempotently`);
         await logApiRequest({
@@ -197,19 +196,28 @@ Deno.serve(async (req) => {
         'declare_intent', requestId, matchId
       );
 
-      // Update state: discovery → intent_declared
-      const { data: updated, error: updateError } = await supabase
-        .from("matches")
-        .update({
-          status: "settled",
-          state: "intent_declared",
-          settled_at: new Date().toISOString(),
-        })
-        .eq("id", matchId)
-        .select()
-        .single();
+      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      const now = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'discovery',
+          p_new_state: 'intent_declared',
+          p_update_fields: { status: 'settled', settled_at: now },
+        }
+      );
 
-      if (updateError) handleDatabaseError(updateError, requestId);
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const errMsg = transitionResult?.message || 'State transition failed';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
+        throw new ApiException(errCode, errMsg, status);
+      }
+
+      const updated = transitionResult.match;
 
       // Audit log — immutable proof-of-intent
       try {
@@ -222,7 +230,7 @@ Deno.serve(async (req) => {
           entity_id: matchId,
           metadata: {
             request_id: requestId,
-            confirmed_at: updated.settled_at,
+            confirmed_at: now,
             hash: match.hash,
             buyer_id: match.buyer_id,
             seller_id: match.seller_id,
@@ -241,7 +249,7 @@ Deno.serve(async (req) => {
         await recordMatchEvent(
           supabase, matchId, match.org_id, "intent.confirmed",
           {
-            confirmedAt: updated.settled_at,
+            confirmedAt: now,
             hash: match.hash,
             commodity: match.commodity,
             tokensCharged: ACTION_TOKEN_COSTS.declare_intent,
@@ -259,7 +267,7 @@ Deno.serve(async (req) => {
 
       // Trigger webhooks
       triggerWebhooks(supabase, match.org_id, "intent.confirmed", {
-        matchId, hash: match.hash, confirmedAt: updated.settled_at,
+        matchId, hash: match.hash, confirmedAt: now,
         commodity: match.commodity, quantity: match.quantity_amount,
         note: "Intent confirmation signals interest only - no payment or legal obligation"
       }).catch(err => console.error(`Webhook error:`, err));
