@@ -52,8 +52,8 @@ function App() {
                 <Route path={ROUTES.DOCS} element={<Docs />} />
                 <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                 <Route path={ROUTES.PRICING} element={<Pricing />} />
-                {/* Catch-all: redirect unknown routes to root */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* 404 for unknown routes — visible to users and developers */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
               <Sonner />
             </HostnameRouter>
