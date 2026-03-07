@@ -75,11 +75,14 @@ export default function MatchDetails() {
   const { run: handleSettle, loading: confirming } = useAsyncAction(
     async () => {
       if (!match) return;
-      await apiFetch(`match/${match.id}/settle`, { method: "POST" });
-      toast.success("Status updated to Confirmed. 500 tokens deducted.");
-      fetchMatch();
+      const updated = await apiFetch<Match>(`match/${match.id}/settle`, { method: "POST" });
+      setMatch(updated);
+      toast.success("Status updated to Confirmed. 500 credits deducted.");
     },
-    { successMessage: undefined }
+    {
+      successMessage: undefined,
+      errorMessage: "Failed to confirm intent. Please try again.",
+    }
   );
 
   if (loading) {
