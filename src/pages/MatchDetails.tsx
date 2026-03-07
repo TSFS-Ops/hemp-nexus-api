@@ -33,28 +33,56 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Match = Tables<"matches">;
 
+// UUID v4 regex — blocks path-traversal and injection via URL param
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function MatchDetails() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
+  const mountedRef = useRef(true);
 
+  // SCENARIO 4: Unmount race — track mount state to prevent setState on unmounted component
   useEffect(() => {
-    if (matchId) {
-      fetchMatch();
-    }
-  }, [matchId]);
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
-  const fetchMatch = async () => {
+  // SCENARIO 2: Malicious matchId — validate UUID format before any DB call
+  const isValidMatchId = matchId ? UUID_RE.test(matchId) : false;
+
+  const fetchMatch = useCallback(async () => {
+    if (!matchId || !UUID_RE.test(matchId)) {
+      // SCENARIO 2: Non-UUID matchId — reject immediately, never hits DB
+      if (mountedRef.current) {
+        setFetchError("Invalid match ID format.");
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       setLoading(true);
+      setFetchError(null);
+
+      // SCENARIO 1: Network timeout — AbortController with 15s deadline
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+
       const { data, error } = await supabase
         .from("matches")
         .select("*")
         .eq("id", matchId)
+        .abortSignal(controller.signal)
         .maybeSingle();
+
+      clearTimeout(timeout);
+
+      if (!mountedRef.current) return; // SCENARIO 4: component unmounted during fetch
 
       if (error) throw error;
       if (!data) {
@@ -63,21 +91,63 @@ export default function MatchDetails() {
         return;
       }
 
+      // SCENARIO 5: Corrupt response — verify critical fields exist before storing
+      if (!data.id || !data.commodity || typeof data.price_amount !== "number") {
+        throw new Error("Received malformed match data from the server.");
+      }
+
       setMatch(data);
-    } catch (error) {
+    } catch (error: unknown) {
+      if (!mountedRef.current) return; // SCENARIO 4
+
       console.error("Error fetching match:", error);
-      toast.error("Failed to load match");
+
+      // SCENARIO 1: Network / timeout detection
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setFetchError("Request timed out. Please check your connection and try again.");
+        toast.error("Request timed out.");
+      } else if (error instanceof TypeError && error.message.includes("fetch")) {
+        setFetchError("Network error. You may be offline.");
+        toast.error("Network error. Please check your connection.");
+      } else {
+        const msg = error instanceof Error ? error.message : "Failed to load match";
+        setFetchError(msg);
+        toast.error(msg);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
-  };
+  }, [matchId, navigate]);
+
+  useEffect(() => {
+    if (matchId) {
+      fetchMatch();
+    }
+  }, [matchId, fetchMatch]);
 
   const { run: handleSettle, loading: confirming } = useAsyncAction(
     async () => {
       if (!match) return;
+
+      // SCENARIO 3: Pre-check session before expensive API call
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Your session has expired. Please sign in again.");
+        navigate("/auth");
+        return;
+      }
+
       const updated = await apiFetch<Match>(`match/${match.id}/settle`, { method: "POST" });
-      setMatch(updated);
-      toast.success("Status updated to Confirmed. 500 credits deducted.");
+
+      // SCENARIO 5: Validate response shape before storing
+      if (!updated || !updated.id || !updated.status) {
+        throw new Error("Server returned an invalid confirmation response.");
+      }
+
+      if (mountedRef.current) {
+        setMatch(updated);
+        toast.success("Status updated to Confirmed. 500 credits deducted.");
+      }
     },
     {
       successMessage: undefined,
