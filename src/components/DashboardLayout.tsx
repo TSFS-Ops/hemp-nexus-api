@@ -26,8 +26,8 @@ export function DashboardLayout({ children, isAdmin, isDemoMode }: DashboardLayo
               </div>
             </div>
           </header>
-          <div className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
-            <PageContainer padY={false}>
+          <div className="flex-1 py-4 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8">
+            <PageContainer padY={false} size="wide">
               {children}
             </PageContainer>
           </div>

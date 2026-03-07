@@ -21,6 +21,7 @@ const sizes = {
   narrow: "max-w-4xl",
   default: "max-w-5xl",
   wide: "max-w-6xl",
+  ultra: "max-w-7xl",
 } as const;
 
 interface PageContainerProps {
@@ -40,9 +41,9 @@ export function PageContainer({
   return (
     <div
       className={cn(
-        "mx-auto w-full px-4 sm:px-6",
+        "mx-auto w-full px-3 xs:px-4 sm:px-6",
         sizes[size],
-        padY && "py-6 sm:py-8",
+        padY && "py-4 sm:py-6 lg:py-8",
         className
       )}
     >
