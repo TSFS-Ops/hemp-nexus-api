@@ -118,7 +118,11 @@ interface CounterpartySearchProps {
 export default function CounterpartySearch({ isDemoMode: propDemoMode }: CounterpartySearchProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialise query from URL if present
+  const initialQuery = searchParams.get("q") || "";
+  const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [metrics, setMetrics] = useState<SearchMetrics | null>(null);
