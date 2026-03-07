@@ -381,23 +381,7 @@ export function SdkDocumentation() {
             </div>
           </div>
           
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute top-2 right-2 z-10"
-              onClick={() => copyToClipboard(webhookExample)}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            <SyntaxHighlighter
-              language="typescript"
-              style={atomOneDark}
-              customStyle={{ borderRadius: '0.5rem', padding: '1rem' }}
-            >
-              {webhookExample}
-            </SyntaxHighlighter>
-          </div>
+          <CodeBlock code={webhookExample} language="typescript" />
         </CardContent>
       </Card>
 
