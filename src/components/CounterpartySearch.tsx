@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -118,7 +118,11 @@ interface CounterpartySearchProps {
 export default function CounterpartySearch({ isDemoMode: propDemoMode }: CounterpartySearchProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialise query from URL if present
+  const initialQuery = searchParams.get("q") || "";
+  const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [metrics, setMetrics] = useState<SearchMetrics | null>(null);
@@ -131,11 +135,21 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   // Demo mode is active if explicitly set via props OR if user is not authenticated
   const isDemoMode = propDemoMode ?? !isAuthenticated;
 
+  // Track whether auto-search from URL has fired
+  const [hasAutoSearched, setHasAutoSearched] = useState(false);
+
   const handleSearch = async () => {
     if (!query.trim()) {
       toast.error("Please enter a search query");
       return;
     }
+
+    // Persist query to URL for shareability and refresh resilience
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      updated.set("q", query.trim());
+      return updated;
+    }, { replace: true });
 
     setIsSearching(true);
     setResults([]);
@@ -199,6 +213,15 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       setIsSearching(false);
     }
   };
+
+  // Auto-trigger search if URL contains ?q= on mount (deep-link restore)
+  useEffect(() => {
+    if (initialQuery && !hasAutoSearched && !authLoading) {
+      setHasAutoSearched(true);
+      handleSearch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading]);
 
   const toggleSelect = (id: string) => {
     setSelectedResults(prev => {

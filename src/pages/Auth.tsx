@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { hasPreAuthState } from "@/lib/pre-auth-state";
+import { getSafeReturnTo } from "@/lib/safe-redirect";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,9 @@ export default function Auth() {
 
     const getPostAuthRedirect = () => {
       const returnTo = searchParams.get("returnTo");
-      if (returnTo) return `${returnTo}?resume=1`;
+      const safe = getSafeReturnTo(returnTo);
+      // If returnTo was valid and not the default, use it (with resume flag)
+      if (returnTo && safe !== "/dashboard") return `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
       if (hasPreAuthState()) return "/?resume=1";
       return "/dashboard";
     };

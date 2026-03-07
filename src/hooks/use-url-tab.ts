@@ -19,7 +19,8 @@ export function useUrlTab(
   const [searchParams, setSearchParams] = useSearchParams();
 
   const rawValue = searchParams.get(paramName);
-  const isValid = rawValue != null && (!allowedValues || allowedValues.includes(rawValue));
+  // Strict validation: must be in allowedValues if provided, otherwise any non-null value
+  const isValid = rawValue != null && rawValue !== "" && (!allowedValues || allowedValues.includes(rawValue));
   const value = isValid ? rawValue! : defaultValue;
 
   const setValue = useCallback(
