@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -11,6 +11,24 @@ import { DashboardSettings } from "@/components/dashboard/DashboardSettings";
 import { AccountSection } from "@/components/dashboard/AccountSection";
 import { ComplianceSection } from "@/components/dashboard/sections/ComplianceSection";
 import MatchDetails from "@/pages/MatchDetails";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+
+function DashboardNotFound() {
+  return (
+    <div className="text-center py-16">
+      <p className="text-4xl font-bold text-muted-foreground/30 mb-3">404</p>
+      <h2 className="text-lg font-semibold text-foreground mb-1">Page not found</h2>
+      <p className="text-sm text-muted-foreground mb-4">This console page doesn't exist.</p>
+      <Button variant="outline" size="sm" asChild>
+        <Link to={ROUTES.DASHBOARD}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Overview
+        </Link>
+      </Button>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { isAdmin } = useAuth();
@@ -27,7 +45,7 @@ export default function Dashboard() {
             <Route path="/settings" element={<DashboardSettings />} />
             <Route path="/account" element={<AccountSection />} />
             <Route path="/compliance" element={<ComplianceSection />} />
-            <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+            <Route path="*" element={<DashboardNotFound />} />
           </Routes>
         </ErrorBoundary>
       </DashboardLayout>
