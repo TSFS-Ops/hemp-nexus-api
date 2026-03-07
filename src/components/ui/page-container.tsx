@@ -21,6 +21,7 @@ const sizes = {
   narrow: "max-w-4xl",
   default: "max-w-5xl",
   wide: "max-w-6xl",
+  ultra: "max-w-7xl",
 } as const;
 
 interface PageContainerProps {
