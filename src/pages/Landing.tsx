@@ -103,17 +103,17 @@ export default function Landing() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-background">
       <PublicHeader />
 
       {/* Single screen — search is the product */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6">
-        <div className="w-full max-w-xl mx-auto text-center">
+      <main className="flex-1 flex flex-col items-center justify-center px-3 xs:px-4 sm:px-6">
+        <div className="w-full max-w-[min(36rem,100%)] sm:max-w-xl lg:max-w-2xl mx-auto text-center">
           {/* Headline */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-tight mb-3">
+          <h1 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground leading-tight mb-2 sm:mb-3">
             Find a verified counterparty
           </h1>
-          <p className="text-base text-muted-foreground mb-8">
+          <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
             Search, match, and verify counterparties compliantly — with tamper-evident proof at every step.
           </p>
 
@@ -126,16 +126,16 @@ export default function Landing() {
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder="Search counterparties, e.g. copper cathode suppliers in Zambia"
               aria-label="Search for verified counterparties"
-              className="w-full h-14 pl-5 pr-28 text-base bg-background border border-border rounded-xl 
+              className="w-full h-12 sm:h-14 pl-4 sm:pl-5 pr-[5.5rem] sm:pr-28 text-sm sm:text-base bg-background border border-border rounded-xl 
                        placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 
                        focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
             <button
               onClick={handleSearch}
               disabled={isSearching || !query.trim()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-5 bg-foreground text-background 
+              className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 h-9 sm:h-10 px-4 sm:px-5 bg-foreground text-background 
                        rounded-lg text-sm font-medium transition-colors hover:bg-foreground/90
-                       disabled:opacity-40 disabled:cursor-not-allowed"
+                       disabled:opacity-40 disabled:cursor-not-allowed touch-target"
             >
               {isSearching ? (
                 <span className="inline-flex items-center gap-1.5">
@@ -148,7 +148,7 @@ export default function Landing() {
 
           {/* Results — appear below search */}
           {hasSearched && (
-            <div className="mt-4 text-left max-h-[45vh] overflow-y-auto">
+            <div className="mt-4 text-left max-h-[50vh] sm:max-h-[45vh] overflow-y-auto -mx-1 px-1">
               {isSearching ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
