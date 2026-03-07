@@ -63,17 +63,31 @@ export class ApiError extends Error {
 }
 
 /**
+ * Generate a unique idempotency key for a given action.
+ * Combines a prefix with a crypto-random UUID so every user click
+ * produces a key that is unique but also human-debuggable.
+ */
+export function generateIdempotencyKey(prefix = "ik"): string {
+  return `${prefix}_${crypto.randomUUID()}`;
+}
+
+export interface ApiFetchOptions extends RequestInit {
+  /** When set, sent as the Idempotency-Key header. */
+  idempotencyKey?: string;
+}
+
+/**
  * Fetch an Edge Function with automatic session injection and error parsing.
  *
  * @param path  - Function path (e.g. "match/123/settle")
- * @param init  - Standard RequestInit overrides (method, body, etc.)
+ * @param init  - Standard RequestInit overrides + optional idempotencyKey
  * @returns Parsed JSON response body of type T
  * @throws AuthRequiredError if no session exists
  * @throws ApiError if response is non-2xx
  */
 export async function apiFetch<T = unknown>(
   path: string,
-  init?: RequestInit
+  init?: ApiFetchOptions
 ): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new AuthRequiredError();
@@ -81,13 +95,21 @@ export async function apiFetch<T = unknown>(
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   const url = `${baseUrl}/functions/v1/${path}`;
 
+  const { idempotencyKey, headers: initHeaders, ...restInit } = init ?? {};
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
+    ...(initHeaders as Record<string, string> ?? {}),
+  };
+
+  if (idempotencyKey) {
+    headers["Idempotency-Key"] = idempotencyKey;
+  }
+
   const res = await fetch(url, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-      ...(init?.headers ?? {}),
-    },
+    ...restInit,
+    headers,
   });
 
   if (!res.ok) {

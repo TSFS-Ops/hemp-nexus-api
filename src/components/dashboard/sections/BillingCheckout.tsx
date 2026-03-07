@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Coins, Zap, Crown, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Coins, CheckCircle2, AlertTriangle } from "lucide-react";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { useAsyncAction } from "@/hooks/use-async-action";
+import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface CreditPackage {
@@ -48,28 +49,27 @@ const PACKAGES: CreditPackage[] = [
 
 export function BillingCheckout() {
   const { session } = useAuth();
-  const [purchasing, setPurchasing] = useState<string | null>(null);
 
-  const handlePurchase = async (pkg: CreditPackage) => {
-    if (!session) {
-      toast.error("Please sign in to purchase credits");
-      return;
-    }
+  const purchaseAction = useCallback(
+    async (pkg: CreditPackage) => {
+      if (!session) throw new Error("Please sign in to purchase credits");
 
-    setPurchasing(pkg.id);
-    try {
-      const { data, error } = await supabase.functions.invoke("token-purchase", {
+      const idempotencyKey = generateIdempotencyKey("purchase");
+
+      const data = await apiFetch<{
+        authorization_url?: string;
+        reference?: string;
+      }>("token-purchase", {
         method: "POST",
-        body: {
+        idempotencyKey,
+        body: JSON.stringify({
           action: "initialize",
           package_id: pkg.id,
           amount: pkg.price,
           credits: pkg.credits,
           currency: pkg.currency,
-        },
+        }),
       });
-
-      if (error) throw error;
 
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
@@ -78,13 +78,14 @@ export function BillingCheckout() {
       } else {
         toast.info("Purchase request submitted. Check your billing history for status.");
       }
-    } catch (err: any) {
-      console.error("Purchase error:", err);
-      toast.error("Failed to initiate purchase", { description: err.message });
-    } finally {
-      setPurchasing(null);
-    }
-  };
+    },
+    [session]
+  );
+
+  const { run: handlePurchase, loading: purchasing } = useAsyncAction<[CreditPackage]>(
+    purchaseAction,
+    { errorMessage: "Failed to initiate purchase" }
+  );
 
   const formatPrice = (amount: number) => {
     return `R ${(amount / 100).toLocaleString("en-ZA", { minimumFractionDigits: 0 })}`;
@@ -123,18 +124,15 @@ export function BillingCheckout() {
                   </li>
                 ))}
               </ul>
-              <Button
+              <LoadingButton
                 className="w-full"
                 variant={pkg.popular ? "default" : "outline"}
                 onClick={() => handlePurchase(pkg)}
-                disabled={purchasing !== null}
+                loading={purchasing}
+                loadingText="Processing…"
               >
-                {purchasing === pkg.id ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processing…</>
-                ) : (
-                  <><Coins className="h-4 w-4 mr-2" />Buy {pkg.credits} Credits</>
-                )}
-              </Button>
+                <Coins className="h-4 w-4 mr-2" />Buy {pkg.credits} Credits
+              </LoadingButton>
             </CardContent>
           </Card>
         ))}
