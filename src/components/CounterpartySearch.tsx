@@ -120,8 +120,8 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialise query from URL if present
-  const initialQuery = searchParams.get("q") || "";
+  // Initialise query from URL if present (trim whitespace for safety)
+  const initialQuery = (searchParams.get("q") || "").trim();
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
