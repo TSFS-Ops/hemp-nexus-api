@@ -1,10 +1,8 @@
 /**
  * MatchDetailsTabs — Tabbed navigation for match sub-sections.
- *
- * Single Responsibility: tab layout + routing to child panels.
+ * Tab state synced to ?tab= query param for deep-linking.
  */
 
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
@@ -17,7 +15,10 @@ import { MatchNotes } from "@/components/match/MatchNotes";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
 import { ConfirmIntentCard } from "@/components/match/ConfirmIntentCard";
+import { useUrlTab } from "@/hooks/use-url-tab";
 import type { Match } from "@/hooks/use-match-details";
+
+const ALLOWED_TABS = ["details", "documents", "terms", "notes", "evidence", "wad", "disputes", "timeline"];
 
 interface MatchDetailsTabsProps {
   match: Match;
@@ -28,7 +29,7 @@ interface MatchDetailsTabsProps {
 }
 
 export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onRefresh }: MatchDetailsTabsProps) {
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useUrlTab("tab", "details", ALLOWED_TABS);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>

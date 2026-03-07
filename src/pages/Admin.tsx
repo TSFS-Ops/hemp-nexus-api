@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Routes, Route, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Routes, Route, Link } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { RequireAuth } from "@/components/RequireAuth";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AdminApiKeys } from "@/components/admin/AdminApiKeys";
@@ -25,13 +22,19 @@ import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
 import { CollapseLedgerViewer } from "@/components/admin/CollapseLedgerViewer";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUrlTab } from "@/hooks/use-url-tab";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useLocation } from "react-router-dom";
 
 /** Deals: Pipeline + Matches + Approvals */
 function DealsSection() {
+  const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Deals" }]} />
       <h2 className="text-2xl font-bold tracking-tight">Deals</h2>
-      <Tabs defaultValue="pipeline">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="matches">Matches</TabsTrigger>
@@ -47,10 +50,12 @@ function DealsSection() {
 
 /** Users & Orgs: Users + Orgs + Entities */
 function UsersOrgsSection() {
+  const [tab, setTab] = useUrlTab("tab", "users", ["users", "orgs", "entities", "tokens"]);
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Users & Orgs" }]} />
       <h2 className="text-2xl font-bold tracking-tight">Users & Organisations</h2>
-      <Tabs defaultValue="users">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="orgs">Organisations</TabsTrigger>
@@ -67,11 +72,13 @@ function UsersOrgsSection() {
 }
 
 /** Compliance: Cases + Risk */
-function ComplianceSection() {
+function AdminComplianceSection() {
+  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "risk"]);
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Compliance" }]} />
       <h2 className="text-2xl font-bold tracking-tight">Compliance</h2>
-      <Tabs defaultValue="cases">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="cases">Cases</TabsTrigger>
           <TabsTrigger value="risk">Risk Register</TabsTrigger>
@@ -85,10 +92,12 @@ function ComplianceSection() {
 
 /** Audit: Logs + POI History + Collapse Ledger + API Logs */
 function AuditSection() {
+  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi", "ledger", "api"]);
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Audit" }]} />
       <h2 className="text-2xl font-bold tracking-tight">Audit Trail</h2>
-      <Tabs defaultValue="audit">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
           <TabsTrigger value="poi">POI History</TabsTrigger>
@@ -104,54 +113,7 @@ function AuditSection() {
   );
 }
 
-export default function Admin() {
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    let cancelled = false;
-    const checkAdminAccess = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (cancelled) return;
-        if (!session) { navigate(ROUTES.AUTH, { replace: true }); return; }
-
-        // Use the SECURITY DEFINER RPC — this is the server-side check.
-        // Even if someone bypasses the UI gate, every admin panel's data
-        // queries are scoped by RLS + is_admin checks on the backend.
-        const { data, error } = await supabase.rpc('is_admin', { user_id: session.user.id });
-        if (cancelled) return;
-        if (error) throw error;
-        if (!data) {
-          toast.error("Access denied", { description: "You do not have admin privileges." });
-          navigate(ROUTES.DASHBOARD, { replace: true });
-          return;
-        }
-        setIsAdmin(true);
-      } catch (error) {
-        if (cancelled) return;
-        console.error("Admin check error:", error);
-        toast.error("Failed to verify admin access");
-        navigate(ROUTES.DASHBOARD, { replace: true });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    checkAdminAccess();
-    return () => { cancelled = true; };
-  }, [navigate]);
-
-  // SECURITY: Never render admin content while checking — prevents flash of admin UI
-  if (loading || !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Shield className="h-12 w-12 animate-pulse mx-auto text-primary" />
-        <p className="text-muted-foreground ml-3">Verifying access…</p>
-      </div>
-    );
-  }
-
+function AdminContent() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -174,7 +136,7 @@ export default function Admin() {
               <Route path="/" element={<AdminOverview />} />
               <Route path="/deals" element={<DealsSection />} />
               <Route path="/users-orgs" element={<UsersOrgsSection />} />
-              <Route path="/compliance" element={<ComplianceSection />} />
+              <Route path="/compliance" element={<AdminComplianceSection />} />
               <Route path="/audit" element={<AuditSection />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
@@ -184,5 +146,13 @@ export default function Admin() {
         </div>
       </div>
     </SidebarProvider>
+  );
+}
+
+export default function Admin() {
+  return (
+    <RequireAuth role={["platform_admin", "admin"]}>
+      <AdminContent />
+    </RequireAuth>
   );
 }
