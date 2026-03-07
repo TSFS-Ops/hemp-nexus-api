@@ -338,7 +338,7 @@ export function MatchesList() {
             <Input
               placeholder="Search by commodity..."
               value={commoditySearch}
-              onChange={(e) => setCommoditySearch(e.target.value)}
+              onChange={(e) => setParam("q", e.target.value)}
               className="pl-10"
               aria-label="Search matches by commodity"
             />
