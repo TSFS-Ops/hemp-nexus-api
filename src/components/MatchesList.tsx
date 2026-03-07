@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, Shield, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, Shield, ShieldCheck, ShieldAlert, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -552,8 +552,32 @@ export function MatchesList() {
               )}
             </div>
           </>
+        ) : statusFilter !== "all" || debouncedSearch ? (
+          <EmptyState
+            title="No matches found"
+            message="Try adjusting your search or filters."
+            icon={<Search className="h-10 w-10" />}
+            action={{ label: "Clear filters", onClick: () => { setStatusFilter("all"); setCommoditySearch(""); } }}
+          />
         ) : (
-          <EmptyState title="No matches found" message="Try adjusting your filters." />
+          <div className="text-center py-16 px-4">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <FileText className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="font-semibold text-lg text-foreground mb-2">No matches yet</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+              Matches appear here after the Discovery Engine pairs a buyer interest with a seller offering. Start by searching for a counterparty.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+                <Search className="h-4 w-4" />
+                Search counterparties
+              </Button>
+              <Button variant="outline" onClick={() => navigate(ROUTES.DOCS)} className="gap-2">
+                Learn how matching works
+              </Button>
+            </div>
+          </div>
         )}
         </div>
         </CardContent>
