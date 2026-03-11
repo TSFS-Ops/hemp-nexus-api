@@ -88,7 +88,7 @@ export function UsageBillingSection() {
 
       if (error) throw error;
       
-      const mappedData: TokenLedgerEntry[] = (data || []).map((entry) => ({
+      const mappedData: CreditLedgerEntry[] = (data || []).map((entry) => ({
         id: entry.id,
         endpoint: entry.endpoint,
         tokens_burned: entry.tokens_burned,
