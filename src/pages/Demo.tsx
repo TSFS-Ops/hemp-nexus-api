@@ -86,11 +86,11 @@ export default function Demo() {
       <PublicPageLayout>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          {/* Demo Notice */}
+          {/* Preview Notice */}
           <div className="mb-8 p-4 border border-border rounded-lg bg-muted/30">
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Demo mode</span> — Results are simulated. No real evidence records are created.{" "}
-              <AuthLink className="text-primary hover:underline">Sign up</AuthLink> to generate real proofs.
+              <span className="font-medium text-foreground">Preview mode</span> — Results are illustrative. No real evidence records are created.{" "}
+              <AuthLink className="text-primary hover:underline">Create an account</AuthLink> to generate real records.
             </p>
           </div>
 
@@ -277,16 +277,16 @@ export default function Demo() {
         <Dialog open={showIntentDialog} onOpenChange={setShowIntentDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Demo: Intent Confirmation Preview</DialogTitle>
-              <DialogDescription>
-                This shows what a real confirmation would produce
-              </DialogDescription>
+            <DialogTitle>Preview: Intent Confirmation</DialogTitle>
+            <DialogDescription>
+              This shows what a real confirmation record would contain
+            </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="p-4 border border-border rounded-lg bg-muted/30">
                 <p className="text-sm font-medium text-foreground mb-3">
-                  In production, Confirm Intent would:
+                  With a real account, Confirm Intent would:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
@@ -349,7 +349,7 @@ export default function Demo() {
                 </Button>
                 <AuthLink className="flex-1">
                   <Button className="w-full bg-foreground text-background hover:bg-foreground/90">
-                    Sign up for real proofs
+                    Create account
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </AuthLink>

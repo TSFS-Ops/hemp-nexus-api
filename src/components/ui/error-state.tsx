@@ -34,11 +34,11 @@ export function ErrorState({
     },
     network: {
       title: "Connection error",
-      message: "Unable to connect. Please check your internet connection.",
+      message: "Unable to connect. Please check your internet connection and try again.",
     },
     server: {
       title: "Server error",
-      message: "Our servers are having trouble. Please try again later.",
+      message: "Our servers are having trouble. Please try again in a moment. If this persists, contact support@izenzo.co.za.",
     },
     empty: {
       title: "No data found",

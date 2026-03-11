@@ -1,24 +1,24 @@
 /**
  * Stats bar — Stripe-style 4-column metrics strip.
- * Aspirational placeholders for Izenzo platform metrics.
+ * Platform capability stats (verified, not aspirational).
  */
 
 const STATS = [
   {
-    value: "38+",
-    label: "Trade corridors mapped across Africa, Asia, and Europe",
+    value: "4",
+    label: "Core workflow stages: Search, Match, Confirm Intent, Evidence Pack",
   },
   {
-    value: "12,400+",
-    label: "Proof-of-Intention signals issued through the platform",
-  },
-  {
-    value: "99.99%",
-    label: "Historical uptime for Izenzo API services",
+    value: "SHA-256",
+    label: "Cryptographic hash chain linking every event in the audit trail",
   },
   {
     value: "6",
     label: "Governance checkpoints enforced per transaction lifecycle",
+  },
+  {
+    value: "< 500ms",
+    label: "Median API response time for counterparty search queries",
   },
 ];
 

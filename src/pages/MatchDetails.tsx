@@ -53,10 +53,10 @@ export default function MatchDetails() {
         <div className="text-center py-16 text-muted-foreground">
           <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-destructive" />
           <p className="font-medium">{fetchError || "Invalid match ID"}</p>
-          <p className="text-sm mt-1">
+          <p className="text-sm mt-1 max-w-md mx-auto">
             {!isValidMatchId
-              ? "The match ID in the URL is not valid."
-              : "Something went wrong loading this match."}
+              ? "The match ID in the URL is not valid. Check the link and try again."
+              : "Something went wrong loading this match. Please retry, or contact support@izenzo.co.za if the problem persists."}
           </p>
           {isValidMatchId && (
             <LoadingButton

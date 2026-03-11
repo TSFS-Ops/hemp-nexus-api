@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -181,7 +181,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       });
 
       setIsSearching(false);
-      toast.success(`Demo: Found ${DEMO_RESULTS.length} example counterparties`);
+      toast.success(`Found ${DEMO_RESULTS.length} example counterparties (preview mode)`);
       return;
     }
 
@@ -464,7 +464,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
             </Badge>
             {isDemoMode && (
               <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs">
-                Demo
+                Preview
               </Badge>
             )}
           </div>
@@ -499,7 +499,8 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
             {/* Results header with selection actions */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-semibold text-sm sm:text-base">
-                {results.length} {isDemoMode ? "Example" : ""} Counterparties
+                {results.length} Counterpart{results.length !== 1 ? "ies" : "y"}
+                {isDemoMode && <span className="text-muted-foreground font-normal ml-1">(preview)</span>}
               </h3>
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
@@ -540,7 +541,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                 <AlertDescription className="text-xs sm:text-sm">
                   {isDemoMode ? (
                     <>
-                      <strong>Demo Mode:</strong> Sign in to see real results.
+                      These are example results. <Link to="/auth" className="text-primary hover:underline font-medium">Sign in</Link> to search real counterparties.
                     </>
                   ) : (
                     <>

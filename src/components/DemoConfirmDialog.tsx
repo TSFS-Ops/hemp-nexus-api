@@ -29,25 +29,25 @@ export function DemoConfirmDialog({ open, onOpenChange, selectedCount, queryCont
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Demo Mode - Preview Only
+            Preview Only
           </DialogTitle>
           <DialogDescription>
             This is a preview of what a real proof-of-intent record would look like.
-            No actual data has been written to the compliance ledger.
+            Sign in to create real matches and evidence records.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Demo Notice Banner */}
+          {/* Preview Notice Banner */}
           <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
             <div className="flex items-start gap-3">
               <Lock className="h-5 w-5 text-amber-600 mt-0.5" />
               <div>
                 <p className="font-medium text-amber-800 dark:text-amber-200">
-                  You are in Demo Mode
+                  No record created
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                  This does not create a real proof-of-intent record. Sign up or log in to generate real evidence that is cryptographically signed and stored on the compliance ledger.
+                  This is a preview. Create an account to generate real proof-of-intent records that are cryptographically signed and stored on the compliance ledger.
                 </p>
               </div>
             </div>
@@ -126,12 +126,12 @@ export function DemoConfirmDialog({ open, onOpenChange, selectedCount, queryCont
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Continue Exploring
+            Back to search
           </Button>
           <Link to="/auth" className="w-full sm:w-auto">
             <Button className="w-full">
               <Shield className="h-4 w-4 mr-2" />
-              Sign Up for Real Proofs
+              Create Account
             </Button>
           </Link>
         </DialogFooter>
