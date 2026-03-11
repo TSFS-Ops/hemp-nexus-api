@@ -35,8 +35,29 @@ export function HeroSection({
   const { isAuthenticated } = useAuth();
 
   return (
-    <section className="pt-16 sm:pt-20 lg:pt-28 pb-8 sm:pb-12 px-4 sm:px-6">
-      <div className="max-w-[1280px] mx-auto">
+    <section className="relative pt-16 sm:pt-20 lg:pt-28 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden">
+      {/* Architectural grid background */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        {/* Subtle dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
+          style={{
+            backgroundImage: `radial-gradient(circle, hsl(var(--foreground)) 0.5px, transparent 0.5px)`,
+            backgroundSize: "24px 24px",
+          }}
+        />
+        {/* Warm gradient wash from top-left */}
+        <div
+          className="absolute -top-1/3 -left-1/4 w-[80%] h-[80%] rounded-full blur-[120px] opacity-[0.06]"
+          style={{ background: `hsl(var(--primary))` }}
+        />
+        {/* Cool gradient wash from bottom-right */}
+        <div
+          className="absolute -bottom-1/4 -right-1/4 w-[60%] h-[60%] rounded-full blur-[100px] opacity-[0.03]"
+          style={{ background: `hsl(var(--earth-slate))` }}
+        />
+      </div>
+      <div className="max-w-[1280px] mx-auto relative z-10">
         {/* Leading stat — Stripe-style GDP equivalent */}
         <div className="mb-8 sm:mb-10 animate-fade-up">
           <p className="text-[11px] font-mono uppercase tracking-widest text-primary mb-6">
