@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowRight, FileText, LogIn } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { type DemoSearchResult } from "@/lib/demo-data";
 
 type NeverZeroPhase = "scanning" | "pivot" | "ready";
@@ -113,7 +114,7 @@ export function SearchOutcomes({
                      transition-all hover:opacity-90 active:scale-[0.998]
                      flex items-center justify-center gap-2.5 animate-fade-up"
           >
-            Confirm Intent ({selectedResults.size})
+            Continue in Console ({selectedResults.size})
             <ArrowRight className="h-3 w-3" />
           </button>
         )}

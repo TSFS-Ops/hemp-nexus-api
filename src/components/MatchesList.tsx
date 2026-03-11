@@ -198,58 +198,92 @@ export function MatchesList() {
   };
 
   const handleBulkSettle = async () => {
+    if (isSettling) return; // double-click guard
     setIsSettling(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("You must be logged in");
+        toast.error("You must be signed in");
+        return;
+      }
+
+      // Filter: only attempt settle on matches still in 'matched' status
+      // This prevents re-settling already-confirmed matches on retry
+      const eligibleIds = Array.from(selectedMatches).filter(id => {
+        const m = matches?.find(match => match.id === id);
+        return m && MatchState.canDo(m.status, "select_for_bulk");
+      });
+
+      if (eligibleIds.length === 0) {
+        toast.info("All selected matches have already been confirmed. No action needed.");
+        setSelectedMatches(new Set());
+        setShowSettleDialog(false);
         return;
       }
 
       let succeeded = 0;
+      let alreadyDone = 0;
       let failed = 0;
+      const failedIds: string[] = [];
       const errors: string[] = [];
 
-      const settlePromises = Array.from(selectedMatches).map(async (matchId) => {
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
+      // Sequential to avoid race conditions on balance
+      for (const matchId of eligibleIds) {
+        try {
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          });
 
-        if (res.ok) {
-          succeeded++;
-        } else {
-          failed++;
-          try {
+          if (res.ok) {
+            // Check if this was an idempotent replay (already settled)
             const body = await res.json();
-            const msg = body?.error || body?.message || `HTTP ${res.status}`;
-            if (!errors.includes(msg)) errors.push(msg);
-          } catch {
-            errors.push(`HTTP ${res.status}`);
+            const state = body?.state || body?.status;
+            if (state === "intent_declared" || state === "settled") {
+              // Could be genuinely new or idempotent — either way, success
+              succeeded++;
+            } else {
+              succeeded++;
+            }
+          } else {
+            failed++;
+            failedIds.push(matchId);
+            try {
+              const body = await res.json();
+              const msg = body?.error || body?.message || `HTTP ${res.status}`;
+              if (!errors.includes(msg)) errors.push(msg);
+            } catch {
+              errors.push(`HTTP ${res.status}`);
+            }
           }
+        } catch {
+          failed++;
+          failedIds.push(matchId);
+          errors.push("Network error");
         }
-      });
-
-      await Promise.allSettled(settlePromises);
-
-      if (succeeded > 0) {
-        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. 500 credits deducted per match.`);
-      }
-      if (failed > 0) {
-        toast.error(`Failed for ${failed} match${failed > 1 ? "es" : ""}: ${errors[0] || "Unknown error"}`);
       }
 
-      // Only clear succeeded matches from selection; keep failed ones for retry
-      if (failed > 0) {
-        // Keep all selections — user can retry the failed ones
-        setShowSettleDialog(false);
+      // Precise messaging
+      if (succeeded > 0 && failed === 0) {
+        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. ${(succeeded * 500).toLocaleString()} credits deducted.`);
+      } else if (succeeded > 0 && failed > 0) {
+        toast.warning(
+          `${succeeded} of ${eligibleIds.length} confirmed. ${failed} failed: ${errors[0] || "Unknown error"}. Failed matches remain selected for retry.`
+        );
+      } else {
+        toast.error(`All ${failed} confirmations failed: ${errors[0] || "Unknown error"}`);
+      }
+
+      // Keep only failed IDs selected for retry
+      if (failedIds.length > 0) {
+        setSelectedMatches(new Set(failedIds));
       } else {
         setSelectedMatches(new Set());
-        setShowSettleDialog(false);
       }
+      setShowSettleDialog(false);
       refetch();
     } catch (error: any) {
       console.error("Error confirming intent:", error);

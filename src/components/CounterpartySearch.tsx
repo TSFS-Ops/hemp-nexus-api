@@ -247,6 +247,9 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       return;
     }
 
+    // Double-click guard
+    if (isConfirming) return;
+
     setIsConfirming(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -264,7 +267,6 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .then(r => r.data);
 
       if (!profile) {
-        // Attempt self-repair via ensure_user_profile
         const { error: repairError } = await supabase.rpc("ensure_user_profile", {
           p_user_id: session.user.id,
           p_email: session.user.email ?? "",
@@ -273,7 +275,6 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
           toast.error("Your account setup is incomplete. Please sign out and sign in again, or contact support.");
           return;
         }
-        // Re-fetch after repair
         profile = await supabase
           .from("profiles")
           .select("org_id, full_name")
@@ -286,14 +287,12 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         }
       }
 
-      // Get org name
       const { data: org } = await supabase
         .from("organizations")
         .select("name")
         .eq("id", profile.org_id)
         .maybeSingle();
 
-      // Process ALL selected results, not just the first one
       const selectedIds = Array.from(selectedResults);
       const selectedItems = selectedIds
         .map(id => results.find(r => r.id === id))
@@ -304,63 +303,108 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         return;
       }
 
-      let succeeded = 0;
+      let created = 0;
+      let duplicates = 0;
       let failed = 0;
       let lastMatchId: string | null = null;
+      const failedNames: string[] = [];
 
       for (const selectedResult of selectedItems) {
         try {
-          const { data: matchData, error: matchError } = await supabase.functions.invoke("match", {
-            body: {
-              buyer: { 
-                id: profile.org_id, 
-                name: org?.name || profile.full_name || "Your Organisation" 
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+                "Content-Type": "application/json",
               },
-              seller: { 
-                id: selectedResult.id, 
-                name: selectedResult.title 
-              },
-              commodity: parsedQuery?.product || query,
-              quantity: { amount: 1, unit: "lot" },
-              price: { amount: 1, currency: "USD" },
-              terms: "POI draft — upload documents before confirming intent",
-              metadata: { 
-                searchQuery: query, 
-                parsedQuery,
-                source: selectedResult.source,
-                coherenceScore: selectedResult.coherence?.score
-              }
+              body: JSON.stringify({
+                buyer: { 
+                  id: profile.org_id, 
+                  name: org?.name || profile.full_name || "Your Organisation" 
+                },
+                seller: { 
+                  id: selectedResult.id, 
+                  name: selectedResult.title 
+                },
+                commodity: parsedQuery?.product || query,
+                quantity: { amount: 1, unit: "lot" },
+                price: { amount: 1, currency: "USD" },
+                terms: "POI draft — upload documents before confirming intent",
+                metadata: { 
+                  searchQuery: query, 
+                  parsedQuery,
+                  source: selectedResult.source,
+                  coherenceScore: selectedResult.coherence?.score
+                }
+              }),
             }
-          });
+          );
 
-          if (matchError) throw matchError;
-          if (!matchData?.id) throw new Error("Match ID not returned");
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
 
-          succeeded++;
-          lastMatchId = matchData.id;
+          const matchData = await response.json();
+          const isDuplicate = response.headers.get("X-Match-Duplicate") === "true";
+
+          if (isDuplicate) {
+            duplicates++;
+            lastMatchId = matchData.id;
+          } else {
+            created++;
+            lastMatchId = matchData.id;
+          }
         } catch (err) {
-          console.error(`Failed to create POI for ${selectedResult.title}:`, err);
+          console.error(`Failed to create match for ${selectedResult.title}:`, err);
           failed++;
+          failedNames.push(selectedResult.title);
         }
       }
 
-      if (succeeded > 0 && failed === 0) {
-        if (succeeded === 1 && lastMatchId) {
-          toast.success("POI created — upload documents, then confirm intent.");
+      // Clear only succeeded/duplicate selections, keep failed for retry
+      if (failed > 0) {
+        const failedIds = selectedItems
+          .filter(item => failedNames.includes(item.title))
+          .map(item => item.id);
+        setSelectedResults(new Set(failedIds));
+      } else {
+        setSelectedResults(new Set());
+      }
+
+      // Build precise user messaging
+      const total = created + duplicates + failed;
+      if (failed === 0 && duplicates === 0) {
+        // All new
+        if (created === 1 && lastMatchId) {
+          toast.success("Match created — upload documents, then confirm intent.");
           navigate(`/dashboard/matches/${lastMatchId}`);
         } else {
-          toast.success(`${succeeded} POIs created. View them in your matches.`);
+          toast.success(`${created} matches created. View them in your matches.`);
           navigate("/dashboard/matches");
         }
-      } else if (succeeded > 0 && failed > 0) {
-        toast.warning(`${succeeded} of ${selectedItems.length} POIs created. ${failed} failed — please retry.`);
+      } else if (failed === 0) {
+        // Some or all duplicates, no failures
+        if (created > 0) {
+          toast.success(`${created} new match${created > 1 ? "es" : ""} created. ${duplicates} already existed and were skipped.`);
+        } else {
+          toast.info(`All ${duplicates} match${duplicates > 1 ? "es" : ""} already exist — no duplicates created. View them in your matches.`);
+        }
+        navigate("/dashboard/matches");
+      } else if (created > 0 || duplicates > 0) {
+        // Partial failure
+        const ok = created + duplicates;
+        toast.warning(
+          `${ok} of ${total} processed (${created} new, ${duplicates} already existed). ${failed} failed: ${failedNames.slice(0, 2).join(", ")}${failedNames.length > 2 ? "…" : ""}. You can retry the failed items.`
+        );
         navigate("/dashboard/matches");
       } else {
-        toast.error("Failed to create POIs. Please try again.");
+        toast.error("All match creation attempts failed. Please try again.");
       }
     } catch (error) {
       console.error("Start POI error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to start POI");
+      toast.error(error instanceof Error ? error.message : "Failed to create matches");
     } finally {
       setIsConfirming(false);
     }
