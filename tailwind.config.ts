@@ -69,6 +69,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        earth: {
+          warm: "hsl(var(--earth-warm))",
+          copper: "hsl(var(--earth-copper))",
+          sage: "hsl(var(--earth-sage))",
+          sand: "hsl(var(--earth-sand))",
+          slate: "hsl(var(--earth-slate))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -117,6 +124,14 @@ export default {
             transform: "translateX(100%)",
           },
         },
+        ticker: {
+          "0%": {
+            transform: "translateX(0)",
+          },
+          "100%": {
+            transform: "translateX(-50%)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -124,6 +139,7 @@ export default {
         "slide-in-left": "slide-in-left 0.2s ease-out",
         "slide-in-right": "slide-in-right 0.2s ease-out",
         shimmer: "shimmer 1.5s infinite",
+        ticker: "ticker 40s linear infinite",
       },
     },
   },
