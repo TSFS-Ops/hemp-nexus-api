@@ -176,9 +176,9 @@ export function AdminTokenManagement() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Token Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Credit Management</h2>
         <p className="text-muted-foreground mt-2">
-          Manage organization token balances and top-ups
+          Manage organization credit balances and top-ups
         </p>
       </div>
 
