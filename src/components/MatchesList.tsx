@@ -236,7 +236,7 @@ export function MatchesList() {
       await Promise.allSettled(settlePromises);
 
       if (succeeded > 0) {
-        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. 500 tokens deducted per match.`);
+        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. 500 credits deducted per match.`);
       }
       if (failed > 0) {
         toast.error(`Failed for ${failed} match${failed > 1 ? "es" : ""}: ${errors[0] || "Unknown error"}`);
