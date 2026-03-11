@@ -92,7 +92,7 @@ function GettingStartedEmpty() {
 export function ConsoleOverview() {
   const { session } = useAuth();
 
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["console-overview-stats"],
     queryFn: async () => {
       const now = new Date();
