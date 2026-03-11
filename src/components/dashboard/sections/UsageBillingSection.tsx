@@ -178,7 +178,7 @@ export function UsageBillingSection() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `token-usage-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `credit-usage-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -191,7 +191,7 @@ export function AdminTokenManagement() {
                 Organization Balances
               </CardTitle>
               <CardDescription>
-                View and manage token balances for all organizations
+                View and manage credit balances for all organizations
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
