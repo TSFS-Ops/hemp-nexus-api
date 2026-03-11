@@ -188,7 +188,7 @@ export default function Explore() {
 
   if (!session) {
     return (
-      <DashboardLayout isDemoMode>
+      <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="max-w-md">
             <CardContent className="pt-6 text-center space-y-3">
