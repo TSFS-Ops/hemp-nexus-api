@@ -1,89 +1,96 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Mineral-Institutional Design System */
+/* Swiss-Terminal / Mineral-Institutional Design System */
 
 @layer base {
   :root {
-    /* Quartz off-white — high-grade paper */
-    --background: 40 12% 96%;
-    --foreground: 220 15% 12%;
+    /* Quartz / Obsidian Paper — cold, crisp off-white */
+    --background: 0 0% 98.4%;
+    --foreground: 0 0% 3.9%;
 
-    --card: 40 8% 98%;
-    --card-foreground: 220 15% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 12%;
+    --popover-foreground: 0 0% 3.9%;
 
-    /* Copper — muted metallic primary action */
-    --primary: 18 45% 42%;
-    --primary-foreground: 40 20% 98%;
+    /* Anodized Copper — raw industrial action */
+    --primary: 24 100% 41%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 220 8% 93%;
-    --secondary-foreground: 220 12% 25%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 25%;
 
-    --muted: 220 8% 94%;
-    --muted-foreground: 220 8% 46%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 220 8% 91%;
-    --accent-foreground: 220 15% 12%;
+    --accent: 0 0% 93%;
+    --accent-foreground: 0 0% 3.9%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Sandstone — warm grey structural borders */
-    --border: 30 8% 85%;
-    --input: 30 8% 85%;
-    --ring: 18 45% 42%;
+    /* Sandstone structural borders */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 24 100% 41%;
 
-    /* Sharp corners — max 2-4px */
+    /* Zero radius — architectural precision */
     --radius: 0.125rem;
 
-    --sidebar-background: 220 10% 95%;
-    --sidebar-foreground: 220 15% 12%;
-    --sidebar-primary: 18 45% 42%;
-    --sidebar-primary-foreground: 40 20% 98%;
-    --sidebar-accent: 220 8% 91%;
-    --sidebar-accent-foreground: 220 15% 12%;
-    --sidebar-border: 30 8% 85%;
-    --sidebar-ring: 18 45% 42%;
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 0 0% 3.9%;
+    --sidebar-primary: 24 100% 41%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 3.9%;
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: 24 100% 41%;
 
     /* Semantic surface tokens */
     --surface-elevated: 0 0% 100%;
-    --surface-sunken: 220 8% 94%;
-    --text-tertiary: 220 6% 55%;
-    --success: 142 70% 40%;
+    --surface-sunken: 0 0% 95%;
+    --text-tertiary: 0 0% 55%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 0 0% 0%;
+
+    /* Signal colors */
+    --signal-verified: 160 84% 39%;
+    --signal-pending: 43 96% 56%;
 
     /* Mineral palette */
     --earth-warm: 28 35% 42%;
-    --earth-copper: 18 45% 42%;
+    --earth-copper: 24 100% 41%;
     --earth-sage: 160 12% 42%;
     --earth-sand: 30 12% 78%;
     --earth-slate: 220 12% 22%;
 
     /* Basalt — deep charcoal for dark panels */
-    --basalt: 220 15% 10%;
+    --basalt: 225 20% 7%;
     --basalt-foreground: 220 8% 82%;
-    --sandstone: 30 8% 85%;
+    --sandstone: 0 0% 89.8%;
+
+    /* Graphite — dark mode borders */
+    --graphite: 0 0% 13.3%;
   }
 
   .dark {
-    --background: 220 15% 7%;
+    --background: 225 20% 4%;
     --foreground: 220 8% 88%;
 
-    --card: 220 15% 9%;
+    --card: 225 20% 6%;
     --card-foreground: 220 8% 88%;
 
-    --popover: 220 15% 9%;
+    --popover: 225 20% 6%;
     --popover-foreground: 220 8% 88%;
 
-    --primary: 18 50% 52%;
+    --primary: 24 100% 46%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 15%;
@@ -98,36 +105,40 @@
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 18%;
-    --input: 220 12% 18%;
-    --ring: 18 50% 52%;
+    --border: 0 0% 13.3%;
+    --input: 0 0% 13.3%;
+    --ring: 24 100% 46%;
 
-    --sidebar-background: 220 15% 8%;
+    --sidebar-background: 225 20% 5%;
     --sidebar-foreground: 220 8% 88%;
-    --sidebar-primary: 18 50% 52%;
+    --sidebar-primary: 24 100% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 15%;
     --sidebar-accent-foreground: 220 8% 88%;
-    --sidebar-border: 220 12% 18%;
-    --sidebar-ring: 18 50% 52%;
+    --sidebar-border: 0 0% 13.3%;
+    --sidebar-ring: 24 100% 46%;
 
-    --surface-elevated: 220 15% 11%;
-    --surface-sunken: 220 15% 6%;
+    --surface-elevated: 225 20% 8%;
+    --surface-sunken: 225 20% 3%;
     --text-tertiary: 220 8% 48%;
-    --success: 142 70% 45%;
+    --success: 160 84% 44%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
+    --warning: 43 96% 56%;
     --warning-foreground: 0 0% 0%;
 
+    --signal-verified: 160 84% 44%;
+    --signal-pending: 43 96% 56%;
+
     --earth-warm: 28 35% 50%;
-    --earth-copper: 18 45% 52%;
+    --earth-copper: 24 100% 46%;
     --earth-sage: 160 12% 48%;
     --earth-sand: 30 12% 28%;
     --earth-slate: 220 10% 50%;
 
-    --basalt: 220 15% 6%;
+    --basalt: 225 20% 4%;
     --basalt-foreground: 220 8% 75%;
-    --sandstone: 220 12% 22%;
+    --sandstone: 0 0% 13.3%;
+    --graphite: 0 0% 13.3%;
   }
 }
 
@@ -149,46 +160,46 @@
     line-height: 1.5;
   }
 
-  /* Typography Scale — Neo-Grotesque, engineered feel */
+  /* Typography Scale — Swiss-Terminal precision */
   h1 {
     @apply font-sans font-bold;
-    letter-spacing: -0.025em;
-    font-size: 1.375rem;
-    line-height: 1.15;
+    letter-spacing: -0.03em;
+    font-size: 1.5rem;
+    line-height: 1.05;
   }
 
   h2 {
     @apply font-sans font-semibold;
     letter-spacing: -0.02em;
     font-size: 1.125rem;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   h3 {
     @apply font-sans font-semibold;
     letter-spacing: -0.015em;
     font-size: 1rem;
-    line-height: 1.3;
+    line-height: 1.25;
   }
 
   h4 {
     @apply font-sans font-medium;
     font-size: 0.9375rem;
-    line-height: 1.35;
+    line-height: 1.3;
   }
 
   @media (min-width: 640px) {
-    h1 { font-size: 1.75rem; line-height: 1.12; }
-    h2 { font-size: 1.375rem; line-height: 1.18; }
-    h3 { font-size: 1.125rem; line-height: 1.25; }
-    h4 { font-size: 1rem; line-height: 1.3; }
+    h1 { font-size: 2rem; line-height: 1.05; }
+    h2 { font-size: 1.375rem; line-height: 1.12; }
+    h3 { font-size: 1.125rem; line-height: 1.2; }
+    h4 { font-size: 1rem; line-height: 1.25; }
   }
 
   @media (min-width: 1024px) {
-    h1 { font-size: 2.125rem; line-height: 1.1; }
-    h2 { font-size: 1.5rem; line-height: 1.15; }
-    h3 { font-size: 1.25rem; line-height: 1.2; }
-    h4 { font-size: 1.125rem; line-height: 1.25; }
+    h1 { font-size: 2.75rem; line-height: 1.05; letter-spacing: -0.03em; }
+    h2 { font-size: 1.5rem; line-height: 1.1; }
+    h3 { font-size: 1.25rem; line-height: 1.15; }
+    h4 { font-size: 1.125rem; line-height: 1.2; }
   }
 
   code, pre {
@@ -239,6 +250,11 @@
   @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  /* Machined metal button */
+  .shadow-inner-metallic {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 0 rgba(0, 0, 0, 0.1);
   }
 }
 

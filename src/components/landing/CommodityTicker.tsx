@@ -1,7 +1,6 @@
 /**
- * Edge-to-edge market signal ticker — Bloomberg-style horizontal strip.
- * Non-clickable. Indicative signals only. No sparklines.
- * Shows: Asset, Signal type, Quantity, Corridor, Status.
+ * Edge-to-edge market signal ticker — Swiss-Terminal trading cards.
+ * Non-clickable. Indicative signals only. Monospace quantities.
  */
 
 const TICKER_DATA = [
@@ -15,28 +14,44 @@ const TICKER_DATA = [
   { asset: "Cobalt", signal: "Seller signal", qty: "800 MT", corridor: "DRC → Japan", status: "Verified" },
 ];
 
+function StatusLabel({ status }: { status: string }) {
+  const color =
+    status === "Verified"
+      ? "text-signal-verified"
+      : status === "Pending"
+      ? "text-signal-pending"
+      : "text-primary";
+
+  return (
+    <span className={`text-[9px] font-mono uppercase tracking-widest ${color}`}>
+      {status}
+    </span>
+  );
+}
+
 export function CommodityTicker() {
   return (
     <div
       id="signals"
-      className="border-t border-b border-border bg-card/60 overflow-hidden select-none"
+      className="border-t border-b border-border bg-background overflow-hidden select-none"
     >
-      <div className="flex items-center h-9 animate-ticker">
-        <div className="flex items-center gap-10 px-4 whitespace-nowrap">
-          {[...TICKER_DATA, ...TICKER_DATA].map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 text-[11px]">
-              <span className="font-semibold text-foreground">{item.asset}</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-muted-foreground">{item.signal}</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="font-mono text-foreground/70">{item.qty}</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-muted-foreground/70">{item.corridor}</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="font-mono text-primary/80 text-[10px]">{item.status}</span>
-            </span>
-          ))}
-        </div>
+      <div className="flex items-stretch animate-ticker">
+        {[...TICKER_DATA, ...TICKER_DATA].map((item, i) => (
+          <div
+            key={i}
+            className="flex-shrink-0 border-r border-border px-4 py-2.5 min-w-[200px]"
+          >
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-[11px] font-semibold text-foreground">{item.asset}</span>
+              <StatusLabel status={item.status} />
+            </div>
+            <div className="text-[10px] text-muted-foreground">{item.signal}</div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[10px] font-mono text-foreground/70">{item.qty}</span>
+              <span className="text-[9px] font-mono text-muted-foreground/50">{item.corridor}</span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

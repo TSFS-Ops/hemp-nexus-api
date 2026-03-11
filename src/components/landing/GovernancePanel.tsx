@@ -1,51 +1,125 @@
 /**
- * Right-hand governance / institutional activity panel.
- * Designed as system-log entries with timestamps — not consumer cards.
+ * Right-hand governance panel — immutable system log aesthetic.
+ * Dense data rows with status indicators and monospaced timestamps.
  */
 
-import { Shield, CheckCircle, Search, FileText, Scale, Bell, GitCommit } from "lucide-react";
-
-const GOVERNANCE_ITEMS = [
-  { icon: FileText, label: "POI issued", detail: "Copper cathode — Zambia corridor", time: "2m ago" },
-  { icon: CheckCircle, label: "Eligibility check initiated", detail: "Entity verification — West Africa", time: "8m ago" },
-  { icon: Shield, label: "Counterparty verification", detail: "KYC documentation in progress", time: "14m ago" },
-  { icon: Search, label: "Discovery signal recorded", detail: "Lithium buyer intent — DRC", time: "22m ago" },
-  { icon: Scale, label: "Compliance workflow triggered", detail: "Cross-border trade review", time: "31m ago" },
-  { icon: GitCommit, label: "WaD progression confirmed", detail: "Settlement milestone reached", time: "45m ago" },
-  { icon: Bell, label: "Jurisdiction notice", detail: "Updated SADC trade requirements", time: "1h ago" },
+const ACTIVITY_LOG = [
+  {
+    event_id: "evt_9f8a72bc",
+    title: "POI Issued",
+    detail: "Copper cathode — Zambia to China corridor",
+    status: "verified" as const,
+    hash: "0x4a2b...9f1e",
+    time: "2m ago",
+  },
+  {
+    event_id: "evt_3c1d4e5f",
+    title: "Eligibility Check Initiated",
+    detail: "Entity verification — West Africa mining consortium",
+    status: "pending" as const,
+    hash: "0x7c8d...2a4b",
+    time: "8m ago",
+  },
+  {
+    event_id: "evt_6b5a9c2d",
+    title: "Counterparty Verification",
+    detail: "KYC/AML documentation in progress",
+    status: "pending" as const,
+    hash: "0x1e3f...8c9a",
+    time: "14m ago",
+  },
+  {
+    event_id: "evt_8d2e1f4a",
+    title: "Discovery Signal Recorded",
+    detail: "Lithium buyer intent — DRC to Europe",
+    status: "verified" as const,
+    hash: "0x9a1b...4c2d",
+    time: "22m ago",
+  },
+  {
+    event_id: "evt_5f4e3d2c",
+    title: "Compliance Workflow Triggered",
+    detail: "Cross-border trade review (Sanctions screen pass)",
+    status: "verified" as const,
+    hash: "0x3d2c...1b0a",
+    time: "31m ago",
+  },
+  {
+    event_id: "evt_1a2b3c4d",
+    title: "WaD Progression Confirmed",
+    detail: "Settlement milestone reached — Escrow locked",
+    status: "verified" as const,
+    hash: "0x5e6f...7a8b",
+    time: "45m ago",
+  },
+  {
+    event_id: "evt_0f9e8d7c",
+    title: "Jurisdiction Notice",
+    detail: "Updated SADC trade requirements enforced",
+    status: "system" as const,
+    hash: "sys_update_v2.4",
+    time: "1h ago",
+  },
 ];
+
+function StatusDot({ status }: { status: "verified" | "pending" | "system" }) {
+  const colorClass =
+    status === "verified"
+      ? "bg-signal-verified"
+      : status === "pending"
+      ? "bg-signal-pending"
+      : "bg-foreground/30";
+
+  return (
+    <span className={`inline-block h-1.5 w-1.5 rounded-full ${colorClass} flex-shrink-0`} />
+  );
+}
 
 export function GovernancePanel() {
   return (
-    <div className="border border-border rounded-sm bg-card h-full">
-      <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+    <div className="border border-border h-full flex flex-col">
+      {/* Header */}
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+        <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-muted-foreground">
           Platform Activity
         </span>
+        <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest">
+          Live
+        </span>
       </div>
-      <div className="p-3 space-y-0">
-        {GOVERNANCE_ITEMS.map((item, i) => (
+
+      {/* Log entries */}
+      <div className="flex-1 overflow-hidden">
+        {ACTIVITY_LOG.map((item) => (
           <div
-            key={i}
-            className="flex items-start gap-2.5 py-2.5 border-b border-border/50 last:border-0"
+            key={item.event_id}
+            className="flex items-start gap-2 px-3 py-2 border-b border-border last:border-0"
           >
-            <div className="mt-0.5 flex-shrink-0">
-              <item.icon className="h-3 w-3 text-muted-foreground/70" />
+            <div className="mt-1.5 flex-shrink-0">
+              <StatusDot status={item.status} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium text-foreground leading-tight">{item.label}</p>
-              <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{item.detail}</p>
+              <p className="text-[11px] font-medium text-foreground leading-tight">
+                {item.title}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                {item.detail}
+              </p>
+              <p className="text-[9px] font-mono text-muted-foreground/40 mt-0.5 truncate">
+                {item.hash}
+              </p>
             </div>
-            <span className="text-[10px] text-muted-foreground/50 flex-shrink-0 mt-0.5 font-mono">
+            <span className="text-[9px] font-mono text-muted-foreground/50 flex-shrink-0 mt-0.5 whitespace-nowrap">
               {item.time}
             </span>
           </div>
         ))}
       </div>
-      <div className="px-4 py-2 border-t border-border">
-        <p className="text-[9px] text-muted-foreground/40 leading-relaxed">
-          Indicative governance signals. Representative of platform activity patterns.
+
+      {/* Footer */}
+      <div className="px-3 py-1.5 border-t border-border">
+        <p className="text-[8px] font-mono text-muted-foreground/30 uppercase tracking-widest">
+          Indicative governance signals · Production environment
         </p>
       </div>
     </div>
