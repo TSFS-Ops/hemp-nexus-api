@@ -106,9 +106,9 @@ export default function Billing() {
               toast.success(`${data.credits} credits added to your account!`);
             }
             // Refresh balance queries
-            queryClient.invalidateQueries({ queryKey: ["token-balance-billing"] });
-            queryClient.invalidateQueries({ queryKey: ["recent-token-transactions"] });
-            queryClient.invalidateQueries({ queryKey: ["token-usage-stats"] });
+            queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
+            queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
           } else {
             toast.info("Payment is still being processed. Credits will appear shortly.");
           }

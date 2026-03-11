@@ -69,8 +69,7 @@ export function HeroSection({
             confirm intent, and build audit-ready evidence.
           </h1>
           <p className="text-[13px] text-muted-foreground max-w-lg leading-relaxed mb-8 animate-fade-up delay-75">
-            Izenzo brings structured search, intent confirmation, and compliance workflows
-            into one platform — from first discovery to settlement-ready evidence packs.
+            Search for counterparties. Signal your interest. Download audit-ready evidence — all in one workflow.
           </p>
 
           {/* CTA buttons — Stripe-style dual action */}
