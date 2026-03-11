@@ -263,8 +263,29 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .maybeSingle();
 
       if (!profile) {
-        toast.error("Profile not found. Please contact support.");
-        return;
+        // Attempt self-repair via ensure_user_profile
+        const { error: repairError } = await supabase.rpc("ensure_user_profile", {
+          p_user_id: session.user.id,
+          p_email: session.user.email ?? "",
+        });
+        if (repairError) {
+          toast.error("Your account setup is incomplete. Please sign out and sign in again, or contact support.");
+          return;
+        }
+        // Re-fetch profile after repair
+        const { data: repairedProfile } = await supabase
+          .from("profiles")
+          .select("org_id, full_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        if (!repairedProfile) {
+          toast.error("Account setup failed. Please contact support.");
+          return;
+        }
+        // Use repaired profile for the rest of the flow
+        Object.assign(profile ?? {}, repairedProfile);
+        // Re-assign to continue below
+        var profileData = repairedProfile;
       }
 
       // Get org name
