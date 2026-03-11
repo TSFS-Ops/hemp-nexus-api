@@ -33,7 +33,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
 ];
 
-export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
+export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
