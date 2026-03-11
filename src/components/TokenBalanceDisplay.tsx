@@ -54,7 +54,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
         <Tooltip>
           <TooltipTrigger asChild>
             <Link 
-              to="/dashboard/billing"
+              to="/billing"
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors",
                 isBlocked 
