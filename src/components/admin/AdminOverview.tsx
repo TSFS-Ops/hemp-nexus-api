@@ -95,7 +95,7 @@ export function AdminOverview() {
     { to: "/admin/matches", icon: GitCompare, label: "Matches" },
     { to: "/admin/signals", icon: Radio, label: "Signals" },
     { to: "/admin/coherence", icon: TrendingUp, label: "Coherence Engine" },
-    { to: "/admin/behavioral", icon: Activity, label: "Behavioral Analytics" },
+    { to: "/admin/behavioral", icon: Activity, label: "Behavioural Analytics" },
     { to: "/admin/audit", icon: FileText, label: "Audit Logs" },
     { to: "/admin/api-keys", icon: Key, label: "API Keys" },
     { to: "/admin/users-orgs", icon: Users, label: "Users & Orgs" },
