@@ -33,8 +33,17 @@ const TRUST_SIGNALS = [
 
 export function SocialProof() {
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-border">
-      <div className="max-w-[1280px] mx-auto">
+    <section className="relative py-20 sm:py-28 px-4 sm:px-6 border-t border-border overflow-hidden">
+      {/* Subtle diagonal lines */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.035]"
+        aria-hidden="true"
+        style={{
+          backgroundImage: `repeating-linear-gradient(45deg, hsl(var(--foreground)) 0, hsl(var(--foreground)) 1px, transparent 0, transparent 50%)`,
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="max-w-[1280px] mx-auto relative z-10">
         <div className="max-w-xl mb-14 animate-fade-up">
           <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
             Trusted Across Industries
