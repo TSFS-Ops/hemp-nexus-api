@@ -8,7 +8,7 @@ const KEY = "cm_pre_auth_state";
 export interface PreAuthState {
   query: string;
   selectedIds: string[];
-  pendingAction: "interested";
+  pendingAction: "interested" | "publish_poi";
   returnTo: string;
 }
 
