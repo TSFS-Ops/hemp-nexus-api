@@ -286,7 +286,7 @@ export default function Demo() {
             <div className="space-y-4 py-4">
               <div className="p-4 border border-border rounded-lg bg-muted/30">
                 <p className="text-sm font-medium text-foreground mb-3">
-                  In production, Confirm Intent would:
+                  With a real account, Confirm Intent would:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
