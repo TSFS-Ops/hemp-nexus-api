@@ -1,45 +1,27 @@
 /**
- * Never Zero search outcomes — 4-phase state machine.
- * Refined with entrance animations and sharper transitions.
+ * Landing page search outcomes — sign-in gated.
+ * Unauthenticated users see a scanning animation then a prompt to sign in.
+ * Authenticated users are redirected to the console search (handled by parent).
  */
 
-import { useState, useEffect } from "react";
-import { ArrowRight, FileText, LogIn } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { type DemoSearchResult } from "@/lib/demo-data";
-
-type NeverZeroPhase = "scanning" | "pivot" | "ready";
+import { ArrowRight, LogIn } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
 interface SearchOutcomesProps {
-  results: DemoSearchResult[];
   isSearching: boolean;
   hasSearched: boolean;
-  selectedResults: Set<string>;
-  onToggleSelect: (id: string) => void;
-  onConfirmIntent: () => void;
-  onPublishPoi: () => void;
   onSignIn: () => void;
 }
 
 export function SearchOutcomes({
-  results, isSearching, hasSearched, selectedResults,
-  onToggleSelect, onConfirmIntent, onPublishPoi, onSignIn,
+  isSearching, hasSearched, onSignIn,
 }: SearchOutcomesProps) {
-  const [neverZeroPhase, setNeverZeroPhase] = useState<NeverZeroPhase>("scanning");
-
-  useEffect(() => {
-    if (!hasSearched || isSearching || results.length > 0) {
-      setNeverZeroPhase("scanning");
-      return;
-    }
-    setNeverZeroPhase("pivot");
-    const t = setTimeout(() => setNeverZeroPhase("ready"), 300);
-    return () => clearTimeout(t);
-  }, [hasSearched, isSearching, results.length]);
+  const { getAuthUrl, isPreview } = useCrossDomainUrls();
 
   if (!hasSearched) return null;
 
-  // Phase 1: Cryptographic scan
+  // Scanning animation
   if (isSearching) {
     return (
       <div className="mt-0 border-t border-border">
@@ -55,105 +37,32 @@ export function SearchOutcomes({
     );
   }
 
-  // Results found
-  if (results.length > 0) {
-    return (
-      <div className="mt-0">
-        <div className="px-3 py-2 border-t border-border bg-accent/20">
-          <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-            {results.length} counterpart{results.length > 1 ? "ies" : "y"} matched
-          </span>
-        </div>
+  // Search complete — prompt sign-in to view results
+  const authHref = isPreview ? "/auth" : getAuthUrl();
 
-        {results.map((result, i) => (
-          <button
-            key={result.id}
-            onClick={() => onToggleSelect(result.id)}
-            aria-pressed={selectedResults.has(result.id)}
-            className={`w-full text-left px-3 py-3 border-b border-border transition-all duration-200
-                      focus:outline-none animate-fade-up group/row ${
-              selectedResults.has(result.id)
-                ? "bg-primary/[0.04]"
-                : "hover:bg-accent/30"
-            }`}
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div
-                  className={`w-4 h-4 border flex-shrink-0 flex items-center justify-center transition-all duration-200 ${
-                    selectedResults.has(result.id)
-                      ? "bg-primary border-primary scale-100"
-                      : "border-muted-foreground/20 group-hover/row:border-muted-foreground/40"
-                  }`}
-                  aria-hidden="true"
-                >
-                  {selectedResults.has(result.id) && (
-                    <svg className="w-2.5 h-2.5 text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[12px] font-medium text-foreground">{result.title}</span>
-                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{result.description}</p>
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-muted-foreground/30 flex-shrink-0 group-hover/row:text-muted-foreground/50 transition-colors">
-                {result.id.slice(0, 8)}
-              </span>
-            </div>
-          </button>
-        ))}
-
-        {selectedResults.size > 0 && (
-          <button
-            onClick={onConfirmIntent}
-            className="w-full h-11 bg-primary text-primary-foreground shadow-inner-metallic
-                     font-mono text-[11px] uppercase tracking-widest font-medium
-                     transition-all hover:opacity-90 active:scale-[0.998]
-                     flex items-center justify-center gap-2.5 animate-fade-up"
-          >
-            Continue in Console ({selectedResults.size})
-            <ArrowRight className="h-3 w-3" />
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // ─── NEVER ZERO: Phases 2 & 3 ─────────────────────────────────
   return (
-    <div
-      className={`mt-0 border-t border-border transition-all duration-600 overflow-hidden ${
-        neverZeroPhase === "scanning" ? "max-h-0 opacity-0" : "max-h-[700px] opacity-100"
-      }`}
-    >
-      {/* No results — honest empty state */}
-      <div className="px-4 py-4 border-b border-border">
-        <h3 className="text-[15px] font-semibold text-foreground tracking-tighter leading-tight">
-          No matching counterparties found
-        </h3>
-      </div>
-
+    <div className="mt-0 border-t border-border animate-fade-up">
       <div className="p-4 sm:p-5">
-        <p className="text-[12px] text-muted-foreground leading-relaxed mb-6 max-w-md">
-          No verified counterparties matched your search criteria. Try broadening your query — for example, use a different product term or remove the location filter.
+        <h3 className="text-[15px] font-semibold text-foreground tracking-tighter leading-tight mb-2">
+          Sign in to view results
+        </h3>
+        <p className="text-[12px] text-muted-foreground leading-relaxed mb-5 max-w-md">
+          Counterparty search results are available to registered users.
+          Create a free account to search verified counterparties, create matches, and confirm intent.
         </p>
 
-        {/* Register interest CTA */}
-        <button
-          onClick={onPublishPoi}
+        <a
+          href={authHref}
           className="w-full h-11 bg-primary text-primary-foreground shadow-inner-metallic
                    font-mono text-[11px] uppercase tracking-widest font-medium
                    transition-all hover:opacity-90 active:scale-[0.998]
-                   flex items-center justify-center gap-2.5 animate-fade-up delay-300"
+                   flex items-center justify-center gap-2.5"
         >
-          <FileText className="h-3.5 w-3.5" />
-          Register Your Interest
-        </button>
-        <p className="text-[10px] font-mono text-muted-foreground/40 mt-2.5 text-center tracking-wide animate-fade-in delay-400">
-          Sign in to publish a governed intent signal so counterparties can find you.
+          <LogIn className="h-3.5 w-3.5" />
+          Sign in to search
+        </a>
+        <p className="text-[10px] font-mono text-muted-foreground/40 mt-2.5 text-center tracking-wide">
+          No obligation. Free to create an account.
         </p>
       </div>
     </div>

@@ -108,12 +108,6 @@ export const RISK_BAND = {
 } as const;
 
 // ─── Timing constants ───────────────────────────────────────────────
-/** Simulated delay for demo searches (ms) */
-export const DEMO_SEARCH_DELAY_MS = 800;
-
-/** Longer simulated delay for counterparty search demo (ms) */
-export const DEMO_COUNTERPARTY_SEARCH_DELAY_MS = 1200;
-
 /** Delay between checkpoint demo steps (ms) */
 export const CHECKPOINT_STEP_DELAY_MS = 500;
 

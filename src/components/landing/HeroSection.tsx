@@ -10,25 +10,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GovernancePanel } from "./GovernancePanel";
 import { BidOfferForm, type BidOfferData } from "./BidOfferForm";
 import { SearchOutcomes } from "./SearchOutcomes";
-import { type DemoSearchResult } from "@/lib/demo-data";
 
 interface HeroSectionProps {
   isSearching: boolean;
   isFormLocked: boolean;
-  results: DemoSearchResult[];
   hasSearched: boolean;
-  selectedResults: Set<string>;
   onSearch: (data: BidOfferData) => void;
-  onToggleSelect: (id: string) => void;
   onConfirmIntent: () => void;
   onPublishPoi: () => void;
   onSignIn: () => void;
 }
 
 export function HeroSection({
-  isSearching, isFormLocked, results, hasSearched,
-  selectedResults, onSearch, onToggleSelect, onConfirmIntent,
-  onPublishPoi, onSignIn,
+  isSearching, isFormLocked, hasSearched,
+  onSearch, onConfirmIntent, onPublishPoi, onSignIn,
 }: HeroSectionProps) {
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
@@ -38,7 +33,6 @@ export function HeroSection({
     <section className="relative pt-16 sm:pt-20 lg:pt-28 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden">
       {/* Architectural grid background */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        {/* Subtle dot grid */}
         <div
           className="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
           style={{
@@ -46,19 +40,17 @@ export function HeroSection({
             backgroundSize: "24px 24px",
           }}
         />
-        {/* Warm gradient wash from top-left */}
         <div
           className="absolute -top-1/3 -left-1/4 w-[80%] h-[80%] rounded-full blur-[120px] opacity-[0.06]"
           style={{ background: `hsl(var(--primary))` }}
         />
-        {/* Cool gradient wash from bottom-right */}
         <div
           className="absolute -bottom-1/4 -right-1/4 w-[60%] h-[60%] rounded-full blur-[100px] opacity-[0.03]"
           style={{ background: `hsl(var(--earth-slate))` }}
         />
       </div>
       <div className="max-w-[1280px] mx-auto relative z-10">
-        {/* Leading stat — Stripe-style GDP equivalent */}
+        {/* Leading stat */}
         <div className="mb-8 sm:mb-10 animate-fade-up">
           <p className="text-[11px] font-mono uppercase tracking-widest text-primary mb-6">
             Closing the $2.5 trillion global trade-finance gap
@@ -73,7 +65,7 @@ export function HeroSection({
             It enables counterparties to discover each other, signal intent, and progress toward compliant transactions across industries and jurisdictions. By combining structured search with Proof-of-Intention (POI), it turns early-stage interest into governed, verifiable pathways to trade.
           </p>
 
-          {/* CTA buttons — Stripe-style dual action */}
+          {/* CTA buttons */}
           <div className="flex flex-wrap items-center gap-3 animate-fade-up delay-150">
             {isAuthenticated ? (
               <Link
@@ -119,9 +111,9 @@ export function HeroSection({
             </div>
             <BidOfferForm onSearch={onSearch} isSearching={isSearching} isLocked={isFormLocked} />
             <SearchOutcomes
-              results={results} isSearching={isSearching} hasSearched={hasSearched}
-              selectedResults={selectedResults} onToggleSelect={onToggleSelect}
-              onConfirmIntent={onConfirmIntent} onPublishPoi={onPublishPoi} onSignIn={onSignIn}
+              isSearching={isSearching}
+              hasSearched={hasSearched}
+              onSignIn={onSignIn}
             />
           </div>
 
