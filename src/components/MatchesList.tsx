@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { EmptyState } from "@/components/ui/error-state";
+import { BulkConfirmDialog } from "@/components/match/BulkConfirmDialog";
 import { MATCH_STATUS, ROUTES } from "@/lib/constants";
 import * as MatchState from "@/lib/match-state";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
@@ -591,32 +592,13 @@ export function MatchesList() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={showSettleDialog} onOpenChange={setShowSettleDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm intent for multiple matches</AlertDialogTitle>
-            <AlertDialogDescription>
-              Confirm intent for {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}?
-              <span className="block mt-3 text-foreground font-medium">
-                This does not create a contract, payment, or legal obligation. It only records interest so the seller can prepare final terms.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSettling}>Maybe later</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkSettle} disabled={isSettling}>
-              {isSettling ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Confirming...
-                </>
-              ) : (
-                'Confirm intent'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BulkConfirmDialog
+        open={showSettleDialog}
+        onOpenChange={setShowSettleDialog}
+        matchCount={selectedMatches.size}
+        isSettling={isSettling}
+        onConfirm={handleBulkSettle}
+      />
     </>
   );
 }

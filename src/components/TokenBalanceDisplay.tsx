@@ -85,12 +85,12 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
               </p>
               {isBlocked && (
                 <p className="text-xs text-destructive font-medium">
-                  API calls blocked. Top up to continue.
+                  API calls blocked. Purchase credits to continue.
                 </p>
               )}
               {isCritical && !isBlocked && (
                 <p className="text-xs text-amber-600 font-medium">
-                  Balance critically low. Top up soon.
+                  Balance critically low. Purchase credits soon.
                 </p>
               )}
             </div>
@@ -144,14 +144,14 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
           to="/dashboard/billing" 
           className="text-primary hover:underline"
         >
-          Buy Tokens →
+          Purchase Credits →
         </Link>
       </div>
 
       {isBlocked && (
         <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-md text-destructive text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>API calls blocked. Top up immediately to restore access.</span>
+          <span>API calls blocked. <a href="/billing" className="underline">Purchase credits</a> to restore access.</span>
         </div>
       )}
     </div>

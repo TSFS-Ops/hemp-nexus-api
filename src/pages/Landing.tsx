@@ -86,7 +86,11 @@ export default function Landing() {
 
   const handleConfirmIntent = useCallback(() => {
     if (isAuthenticated) {
-      toast.success(`Interest confirmed for ${selectedResults.size} counterpart${selectedResults.size > 1 ? "ies" : "y"}.`);
+      // Redirect to console search with query pre-filled — landing page uses demo data,
+      // so we cannot create real matches here.
+      const params = new URLSearchParams({ q: lastQuery });
+      toast.info("Redirecting to your console to confirm intent…");
+      window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
     savePreAuthState({ query: lastQuery, selectedIds: Array.from(selectedResults), pendingAction: "interested", returnTo: "/" });
@@ -98,7 +102,10 @@ export default function Landing() {
 
   const handlePublishPoi = useCallback(() => {
     if (isAuthenticated) {
-      toast.success("Your intent has been published as a draft POI.");
+      // Redirect to console search — POI creation requires real backend data
+      const params = new URLSearchParams({ q: lastQuery });
+      toast.info("Redirecting to your console to publish your POI…");
+      window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
     savePreAuthState({ query: lastQuery, selectedIds: [], pendingAction: "publish_poi", returnTo: "/" });

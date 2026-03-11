@@ -263,7 +263,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .maybeSingle();
 
       if (!profile) {
-        toast.error("Profile not found");
+        toast.error("Profile not found. Please contact support.");
         return;
       }
 
@@ -274,57 +274,71 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
         .eq("id", profile.org_id)
         .maybeSingle();
 
-      // Create match for first selected result
-      const selectedResultId = Array.from(selectedResults)[0];
-      const selectedResult = results.find(r => r.id === selectedResultId);
-      
-      if (!selectedResult) {
-        toast.error("No valid counterparty selected");
+      // Process ALL selected results, not just the first one
+      const selectedIds = Array.from(selectedResults);
+      const selectedItems = selectedIds
+        .map(id => results.find(r => r.id === id))
+        .filter(Boolean) as SearchResult[];
+
+      if (selectedItems.length === 0) {
+        toast.error("No valid counterparties selected");
         return;
       }
 
-      // Create match via edge function - match is created in "discovery" state by default
-      // This is FREE - no credits are burned until "Confirm Intent" is clicked
-      const { data: matchData, error: matchError } = await supabase.functions.invoke("match", {
-        body: {
-          buyer: { 
-            id: profile.org_id, 
-            name: org?.name || profile.full_name || "Your Organisation" 
-          },
-          seller: { 
-            id: selectedResult.id, 
-            name: selectedResult.title 
-          },
-          commodity: parsedQuery?.product || query,
-          quantity: { amount: 1, unit: "lot" },
-          price: { amount: 1, currency: "USD" },
-          terms: "POI draft - upload documents before confirming intent",
-          metadata: { 
-            searchQuery: query, 
-            parsedQuery,
-            source: selectedResult.source,
-            coherenceScore: selectedResult.coherence?.score
-          }
+      let succeeded = 0;
+      let failed = 0;
+      let lastMatchId: string | null = null;
+
+      for (const selectedResult of selectedItems) {
+        try {
+          const { data: matchData, error: matchError } = await supabase.functions.invoke("match", {
+            body: {
+              buyer: { 
+                id: profile.org_id, 
+                name: org?.name || profile.full_name || "Your Organisation" 
+              },
+              seller: { 
+                id: selectedResult.id, 
+                name: selectedResult.title 
+              },
+              commodity: parsedQuery?.product || query,
+              quantity: { amount: 1, unit: "lot" },
+              price: { amount: 1, currency: "USD" },
+              terms: "POI draft — upload documents before confirming intent",
+              metadata: { 
+                searchQuery: query, 
+                parsedQuery,
+                source: selectedResult.source,
+                coherenceScore: selectedResult.coherence?.score
+              }
+            }
+          });
+
+          if (matchError) throw matchError;
+          if (!matchData?.id) throw new Error("Match ID not returned");
+
+          succeeded++;
+          lastMatchId = matchData.id;
+        } catch (err) {
+          console.error(`Failed to create POI for ${selectedResult.title}:`, err);
+          failed++;
         }
-      });
-
-      if (matchError) throw matchError;
-
-      const matchId = matchData?.id;
-      if (!matchId) {
-        throw new Error("Match ID not returned");
       }
 
-      // Navigate to match detail page where user can upload documents
-      // User will click "Confirm Intent" there after uploading documents
-      toast.success("POI created - upload documents, then confirm intent", {
-        action: {
-          label: "Open",
-          onClick: () => navigate(`/dashboard/matches/${matchId}`)
+      if (succeeded > 0 && failed === 0) {
+        if (succeeded === 1 && lastMatchId) {
+          toast.success("POI created — upload documents, then confirm intent.");
+          navigate(`/dashboard/matches/${lastMatchId}`);
+        } else {
+          toast.success(`${succeeded} POIs created. View them in your matches.`);
+          navigate("/dashboard/matches");
         }
-      });
-      
-      navigate(`/dashboard/matches/${matchId}`);
+      } else if (succeeded > 0 && failed > 0) {
+        toast.warning(`${succeeded} of ${selectedItems.length} POIs created. ${failed} failed — please retry.`);
+        navigate("/dashboard/matches");
+      } else {
+        toast.error("Failed to create POIs. Please try again.");
+      }
     } catch (error) {
       console.error("Start POI error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to start POI");
