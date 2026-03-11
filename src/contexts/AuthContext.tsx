@@ -87,24 +87,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => fetchRoles(session.user.id), 0);
+        // Ensure profile exists before fetching roles (self-repair if trigger failed)
+        setTimeout(async () => {
+          await ensureProfile(session.user.id, session.user.email ?? "");
+          fetchRoles(session.user.id);
+        }, 0);
       } else {
         setRoles([]);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
       
       if (session?.user) {
-        setTimeout(() => fetchRoles(session.user.id), 0);
+        await ensureProfile(session.user.id, session.user.email ?? "");
+        fetchRoles(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchRoles]);
+  }, [fetchRoles, ensureProfile]);
 
   const isPlatformAdmin = roles.some(r => (PLATFORM_ADMIN_ROLES as readonly string[]).includes(r));
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
