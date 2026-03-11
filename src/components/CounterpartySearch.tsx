@@ -307,10 +307,12 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       let duplicates = 0;
       let failed = 0;
       let lastMatchId: string | null = null;
+      const failedIds: Set<string> = new Set();
       const failedNames: string[] = [];
 
       for (const selectedResult of selectedItems) {
         try {
+          const requestStartedAt = Date.now();
           const response = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
             {
@@ -347,28 +349,31 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
           }
 
           const matchData = await response.json();
-          const isDuplicate = response.headers.get("X-Match-Duplicate") === "true";
+
+          // Primary: check X-Match-Duplicate header (exposed via CORS Access-Control-Expose-Headers)
+          // Fallback: if header is stripped by a proxy/CDN, detect via created_at timestamp
+          const headerDuplicate = response.headers.get("X-Match-Duplicate") === "true";
+          const createdAt = matchData.created_at ? new Date(matchData.created_at).getTime() : Date.now();
+          const fallbackDuplicate = !headerDuplicate && createdAt < (requestStartedAt - 2000);
+          const isDuplicate = headerDuplicate || fallbackDuplicate;
 
           if (isDuplicate) {
             duplicates++;
-            lastMatchId = matchData.id;
           } else {
             created++;
-            lastMatchId = matchData.id;
           }
+          lastMatchId = matchData.id;
         } catch (err) {
           console.error(`Failed to create match for ${selectedResult.title}:`, err);
           failed++;
+          failedIds.add(selectedResult.id);
           failedNames.push(selectedResult.title);
         }
       }
 
-      // Clear only succeeded/duplicate selections, keep failed for retry
-      if (failed > 0) {
-        const failedIds = selectedItems
-          .filter(item => failedNames.includes(item.title))
-          .map(item => item.id);
-        setSelectedResults(new Set(failedIds));
+      // Keep only failed IDs selected for retry (by ID, not name — handles duplicate titles)
+      if (failedIds.size > 0) {
+        setSelectedResults(failedIds);
       } else {
         setSelectedResults(new Set());
       }

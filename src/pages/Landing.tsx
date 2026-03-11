@@ -31,28 +31,21 @@ export default function Landing() {
   const { isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
 
+  // Restore pre-auth search state after sign-in (single consolidated effect)
   useEffect(() => {
     if (!isAuthenticated) return;
+    // Only restore if there's saved state — consumePreAuthState is destructive (removes from sessionStorage)
     const restored = consumePreAuthState();
     if (!restored) return;
+    // Guard: don't restore stale state if user already has results on screen
+    if (hasSearched && results.length > 0) return;
     setLastQuery(restored.query);
     setHasSearched(true);
     setResults(getDemoResultsForQuery(restored.query));
     setSelectedResults(new Set(restored.selectedIds));
     toast.success("Welcome back — your search has been restored.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (searchParams.get("resume") === "1" && isAuthenticated) {
-      const restored = consumePreAuthState();
-      if (!restored) return;
-      setLastQuery(restored.query);
-      setHasSearched(true);
-      setResults(getDemoResultsForQuery(restored.query));
-      setSelectedResults(new Set(restored.selectedIds));
-      toast.success("Welcome back — your search has been restored.");
-    }
-  }, [searchParams, isAuthenticated]);
 
   const handleSearch = useCallback(async (data: BidOfferData) => {
     setIsSearching(true);
