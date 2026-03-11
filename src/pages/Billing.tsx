@@ -120,9 +120,9 @@ export default function Billing() {
     }
   }, [session, queryClient]);
 
-  // Fetch token balance
+  // Fetch credit balance
   const { data: balance } = useQuery({
-    queryKey: ["token-balance-billing"],
+    queryKey: ["credit-balance-billing"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("token_balances")
