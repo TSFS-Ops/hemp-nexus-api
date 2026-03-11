@@ -202,7 +202,7 @@ export function AdminBehavioralAnalytics() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest behavioral signals (non-binding)</CardDescription>
+          <CardDescription>Latest behavioural signals (non-binding)</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
