@@ -312,6 +312,71 @@
   .focus-copper-line:focus-within::after {
     transform: scaleX(1);
   }
+  /* Animated background keyframes */
+  @keyframes grid-drift {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(-16px, -16px); }
+    100% { transform: translate(0, 0); }
+  }
+
+  @keyframes orb-float-1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(60px, 40px) scale(1.05); }
+    50% { transform: translate(30px, 80px) scale(0.95); }
+    75% { transform: translate(-40px, 30px) scale(1.02); }
+  }
+
+  @keyframes orb-float-2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    30% { transform: translate(-50px, 60px) scale(1.08); }
+    60% { transform: translate(-80px, -20px) scale(0.96); }
+    80% { transform: translate(20px, -50px) scale(1.03); }
+  }
+
+  @keyframes orb-float-3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(40px, -30px) scale(0.97); }
+    50% { transform: translate(70px, 40px) scale(1.06); }
+    70% { transform: translate(-20px, 60px) scale(1); }
+  }
+
+  @keyframes orb-float-4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    35% { transform: translate(-60px, -40px) scale(1.04); }
+    65% { transform: translate(30px, -60px) scale(0.98); }
+    85% { transform: translate(-30px, 20px) scale(1.02); }
+  }
+
+  @keyframes scan-line {
+    0% { top: -2%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 102%; opacity: 0; }
+  }
+
+  .animate-grid-drift {
+    animation: grid-drift 30s ease-in-out infinite;
+  }
+
+  .animate-orb-1 {
+    animation: orb-float-1 25s ease-in-out infinite;
+  }
+
+  .animate-orb-2 {
+    animation: orb-float-2 30s ease-in-out infinite;
+  }
+
+  .animate-orb-3 {
+    animation: orb-float-3 28s ease-in-out infinite;
+  }
+
+  .animate-orb-4 {
+    animation: orb-float-4 32s ease-in-out infinite;
+  }
+
+  .animate-scan-line {
+    animation: scan-line 12s linear infinite;
+  }
 }
 
 /* Safe area inset for iOS bottom bar */
