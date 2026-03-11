@@ -1,7 +1,6 @@
 /**
- * Structured bid/offer entry form — the primary first action.
+ * Terminal-like compact bid/offer entry — the primary first action.
  * Fields: Product, Volume, Price, Location, Additional information.
- * Runs search for all visitors (logged out users see preview outcomes).
  */
 
 import { useState } from "react";
@@ -19,6 +18,11 @@ interface BidOfferFormProps {
   onSearch: (data: BidOfferData) => void;
   isSearching: boolean;
 }
+
+const fieldClass =
+  "w-full h-9 px-3 text-[13px] bg-background border border-border rounded-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring/40 focus:border-ring/50 transition-all font-sans";
+
+const labelClass = "block text-[11px] font-medium text-muted-foreground mb-1 uppercase tracking-wider";
 
 export function BidOfferForm({ onSearch, isSearching }: BidOfferFormProps) {
   const [form, setForm] = useState<BidOfferData>({
@@ -43,98 +47,78 @@ export function BidOfferForm({ onSearch, isSearching }: BidOfferFormProps) {
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="product" className="block text-xs font-medium text-muted-foreground mb-1">
-            Product / Commodity *
-          </label>
+          <label htmlFor="product" className={labelClass}>Product *</label>
           <input
             id="product"
             type="text"
-            placeholder="e.g. Copper cathode, Soybeans"
+            placeholder="e.g. Copper cathode"
             value={form.product}
             onChange={(e) => update("product", e.target.value)}
-            className="w-full h-10 px-3 text-sm bg-background border border-input rounded-md
-                     placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2
-                     focus:ring-ring/30 focus:border-ring/40 transition-all"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label htmlFor="volume" className="block text-xs font-medium text-muted-foreground mb-1">
-            Volume
-          </label>
+          <label htmlFor="volume" className={labelClass}>Volume</label>
           <input
             id="volume"
             type="text"
             placeholder="e.g. 2,500 MT"
             value={form.volume}
             onChange={(e) => update("volume", e.target.value)}
-            className="w-full h-10 px-3 text-sm bg-background border border-input rounded-md
-                     placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2
-                     focus:ring-ring/30 focus:border-ring/40 transition-all"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label htmlFor="price" className="block text-xs font-medium text-muted-foreground mb-1">
-            Price
-          </label>
+          <label htmlFor="price" className={labelClass}>Price</label>
           <input
             id="price"
             type="text"
             placeholder="e.g. USD 8,500/MT"
             value={form.price}
             onChange={(e) => update("price", e.target.value)}
-            className="w-full h-10 px-3 text-sm bg-background border border-input rounded-md
-                     placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2
-                     focus:ring-ring/30 focus:border-ring/40 transition-all"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label htmlFor="location" className="block text-xs font-medium text-muted-foreground mb-1">
-            Location / Corridor
-          </label>
+          <label htmlFor="location" className={labelClass}>Location</label>
           <input
             id="location"
             type="text"
-            placeholder="e.g. Zambia, South Africa → India"
+            placeholder="e.g. Zambia → India"
             value={form.location}
             onChange={(e) => update("location", e.target.value)}
-            className="w-full h-10 px-3 text-sm bg-background border border-input rounded-md
-                     placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2
-                     focus:ring-ring/30 focus:border-ring/40 transition-all"
+            className={fieldClass}
           />
         </div>
       </div>
       <div>
-        <label htmlFor="additionalInfo" className="block text-xs font-medium text-muted-foreground mb-1">
-          Additional information
-        </label>
+        <label htmlFor="additionalInfo" className={labelClass}>Additional information</label>
         <input
           id="additionalInfo"
           type="text"
-          placeholder="e.g. Grade A, minimum lot size, delivery requirements"
+          placeholder="e.g. Grade A, delivery requirements"
           value={form.additionalInfo}
           onChange={(e) => update("additionalInfo", e.target.value)}
-          className="w-full h-10 px-3 text-sm bg-background border border-input rounded-md
-                   placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2
-                   focus:ring-ring/30 focus:border-ring/40 transition-all"
+          className={fieldClass}
         />
       </div>
       <button
         type="submit"
         disabled={!canSearch || isSearching}
-        className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground
-                 rounded-md font-medium text-sm transition-colors disabled:opacity-50
+        className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground
+                 rounded-sm font-medium text-[13px] transition-colors disabled:opacity-40
                  disabled:cursor-not-allowed flex items-center justify-center gap-2
-                 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         {isSearching ? (
           <>
-            <span className="h-4 w-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+            <span className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
             Searching…
           </>
         ) : (
           <>
-            <Search className="h-4 w-4" />
-            Search Counterparties
+            <Search className="h-3.5 w-3.5" />
+            Search
           </>
         )}
       </button>
