@@ -165,7 +165,7 @@ export function AdminOverview() {
               <h4 className="font-semibold">Non-Binding Actions</h4>
               <p className="text-sm text-muted-foreground mt-1">
                 Skip, Maybe Later, Not Now, Browse, View - No records created.
-                Purely behavioral signals for UX improvement.
+                Purely behavioural signals for UX improvement.
               </p>
             </div>
           </div>

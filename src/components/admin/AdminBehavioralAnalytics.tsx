@@ -231,7 +231,7 @@ export function AdminBehavioralAnalytics() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              No behavioral signals recorded yet.
+              No behavioural signals recorded yet.
             </div>
           )}
         </CardContent>
