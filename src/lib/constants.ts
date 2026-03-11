@@ -49,6 +49,7 @@ export const ROUTES = {
   ADMIN_OVERRIDES: '/admin/overrides',
   ADMIN_SETTINGS: '/admin/settings',
   PRICING: '/pricing',
+  BILLING: '/billing',
   DOCS: '/docs',
   WALKTHROUGH: '/walkthrough',
 } as const;

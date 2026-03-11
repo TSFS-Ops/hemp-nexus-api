@@ -107,6 +107,12 @@ export function ConsoleOverview() {
         supabase.from("api_request_logs").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
+      // Check for individual query errors — a partial failure must not look like zero activity
+      const anyError = [apiKeys, logs24h, logs7d, matches, lastLog].find(r => r.error);
+      if (anyError?.error) {
+        throw new Error(anyError.error.message || "Failed to load console data");
+      }
+
       return {
         activeApiKeys: apiKeys.count || 0,
         callsLast24h: logs24h.count || 0,
