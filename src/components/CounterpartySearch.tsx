@@ -181,7 +181,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       });
 
       setIsSearching(false);
-      toast.success(`Demo: Found ${DEMO_RESULTS.length} example counterparties`);
+      toast.success(`Found ${DEMO_RESULTS.length} example counterparties (preview mode)`);
       return;
     }
 
