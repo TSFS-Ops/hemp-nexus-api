@@ -361,7 +361,7 @@ export default function Auth() {
           </Link>
           <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome</h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to access API keys and manage your account
+            Sign in to manage counterparty searches, matches, and compliance records
           </p>
         </div>
 
