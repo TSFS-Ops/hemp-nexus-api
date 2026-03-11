@@ -1,20 +1,25 @@
 import { useState, useEffect } from "react";
-import { DEMO_SEARCH_DELAY_MS } from "@/lib/constants";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { DEMO_SEARCH_DELAY_MS } from "@/lib/constants";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
+import { PageFooter } from "@/components/PageFooter";
+import { CommodityTicker } from "@/components/landing/CommodityTicker";
+import { GovernancePanel } from "@/components/landing/GovernancePanel";
+import { BidOfferForm, type BidOfferData } from "@/components/landing/BidOfferForm";
+import { SearchOutcomes } from "@/components/landing/SearchOutcomes";
 import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Landing() {
-  const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<DemoSearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [hasSearched, setHasSearched] = useState(false);
+  const [lastQuery, setLastQuery] = useState("");
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
   const { isAuthenticated } = useAuth();
@@ -25,22 +30,18 @@ export default function Landing() {
     if (!isAuthenticated) return;
     const restored = consumePreAuthState();
     if (!restored) return;
-
-    setQuery(restored.query);
+    setLastQuery(restored.query);
     setHasSearched(true);
-    // Re-run the search to populate results, then re-select
-    const matched = getDemoResultsForQuery(restored.query);
-    setResults(matched);
+    setResults(getDemoResultsForQuery(restored.query));
     setSelectedResults(new Set(restored.selectedIds));
     toast.success("Welcome back — your search has been restored.");
   }, [isAuthenticated]);
 
-  // Also restore if returning via ?resume=1 while already authed
   useEffect(() => {
     if (searchParams.get("resume") === "1" && isAuthenticated) {
       const restored = consumePreAuthState();
       if (!restored) return;
-      setQuery(restored.query);
+      setLastQuery(restored.query);
       setHasSearched(true);
       setResults(getDemoResultsForQuery(restored.query));
       setSelectedResults(new Set(restored.selectedIds));
@@ -48,198 +49,254 @@ export default function Landing() {
     }
   }, [searchParams, isAuthenticated]);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const handleSearch = async (data: BidOfferData) => {
     setIsSearching(true);
     setHasSearched(true);
-    await new Promise(resolve => setTimeout(resolve, DEMO_SEARCH_DELAY_MS));
-    setResults(getDemoResultsForQuery(query));
+    const queryString = [data.product, data.location].filter(Boolean).join(" ");
+    setLastQuery(queryString);
+    await new Promise((r) => setTimeout(r, DEMO_SEARCH_DELAY_MS));
+    setResults(getDemoResultsForQuery(queryString));
     setIsSearching(false);
   };
 
   const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedResults);
-    if (newSelected.has(id)) newSelected.delete(id);
-    else newSelected.add(id);
-    setSelectedResults(newSelected);
+    const next = new Set(selectedResults);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedResults(next);
+  };
+
+  const navigateToAuth = () => {
+    if (isPreview) {
+      window.location.assign("/auth?returnTo=/");
+    } else {
+      window.location.href = authUrl;
+    }
   };
 
   const handleConfirmIntent = () => {
     if (isAuthenticated) {
-      // Already signed in — proceed with the action
       toast.success(`Interest confirmed for ${selectedResults.size} counterpart${selectedResults.size > 1 ? "ies" : "y"}.`);
       return;
     }
-
-    // Save state before redirecting to auth
     savePreAuthState({
-      query,
+      query: lastQuery,
       selectedIds: Array.from(selectedResults),
       pendingAction: "interested",
       returnTo: "/",
     });
-
     toast.info("Sign in to continue", {
-      description: "Create an account to confirm your interest and begin the process.",
-      action: {
-        label: "Sign in",
-        onClick: () => {
-          if (isPreview) {
-            window.location.assign("/auth?returnTo=/");
-          } else {
-            window.location.href = authUrl;
-          }
-        },
-      },
+      description: "Create an account to confirm your interest and generate a verified POI.",
+      action: { label: "Sign in", onClick: navigateToAuth },
     });
   };
 
-  const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-    const authUrl = getAuthUrl();
-    if (isPreview) {
-      return <Link to="/auth" className={className}>{children}</Link>;
+  const handlePublishPoi = () => {
+    if (isAuthenticated) {
+      toast.success("Your intent has been published as a draft POI.");
+      return;
     }
-    return <a href={authUrl} className={className}>{children}</a>;
+    savePreAuthState({
+      query: lastQuery,
+      selectedIds: [],
+      pendingAction: "publish_poi",
+      returnTo: "/",
+    });
+    toast.info("Sign in to publish intent", {
+      description: "Create an account to generate a Proof-of-Intention and attract counterparties.",
+      action: { label: "Create Account", onClick: navigateToAuth },
+    });
   };
 
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col bg-background">
       <PublicHeader />
 
-      {/* Single screen — search is the product */}
-      <main className="flex-1 flex flex-col items-center justify-center px-3 xs:px-4 sm:px-6">
-        <div className="w-full max-w-[min(36rem,100%)] sm:max-w-xl lg:max-w-2xl mx-auto text-center">
-          {/* Headline */}
-          <h1 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground leading-tight mb-2 sm:mb-3">
-            Find a verified counterparty
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
-            Search, match, and verify counterparties compliantly — with tamper-evident proof at every step.
-          </p>
+      {/* ─── Panel 1: Hero / Entry ─── */}
+      <section className="pt-12 sm:pt-16 lg:pt-20 pb-8 sm:pb-12 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Left column: Hero + Search */}
+            <div className="lg:col-span-8">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground leading-tight mb-3">
+                Discover counterparties. Signal intent.<br className="hidden sm:inline" /> Execute with confidence.
+              </h1>
+              <p className="text-sm sm:text-base font-medium text-foreground/80 mb-2">
+                Izenzo API is a next-generation search and governance infrastructure for trade.
+              </p>
+              <p className="text-sm text-muted-foreground mb-8 max-w-2xl leading-relaxed">
+                It enables counterparties to discover each other, signal intent, and progress toward
+                compliant transactions across industries and jurisdictions. By combining structured
+                search with Proof-of-Intention (POI), it turns early-stage interest into governed,
+                verifiable pathways to trade.
+              </p>
 
-          {/* Search */}
-          <div className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="Search counterparties, e.g. copper cathode suppliers in Zambia"
-              aria-label="Search for verified counterparties"
-              className="w-full h-12 sm:h-14 pl-4 sm:pl-5 pr-[5.5rem] sm:pr-28 text-sm sm:text-base bg-background border border-border rounded-xl 
-                       placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 
-                       focus:ring-primary/30 focus:border-primary/40 transition-all"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={isSearching || !query.trim()}
-              className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 h-9 sm:h-10 px-4 sm:px-5 bg-foreground text-background 
-                       rounded-lg text-sm font-medium transition-colors hover:bg-foreground/90
-                       disabled:opacity-40 disabled:cursor-not-allowed touch-target"
-            >
-              {isSearching ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-3.5 w-3.5 border-2 border-background/40 border-t-background rounded-full animate-spin" />
-                  <span className="sr-only">Searching</span>
-                </span>
-              ) : "Search"}
-            </button>
-          </div>
+              {/* Bid/Offer form */}
+              <div className="border border-border rounded-lg p-4 sm:p-6 bg-card">
+                <BidOfferForm onSearch={handleSearch} isSearching={isSearching} />
 
-          {/* Results — appear below search */}
-          {hasSearched && (
-            <div className="mt-4 text-left max-h-[50vh] sm:max-h-[45vh] overflow-y-auto -mx-1 px-1">
-              {isSearching ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 rounded-lg shimmer" />
-                  ))}
-                </div>
-              ) : results.length > 0 ? (
-                <div className="space-y-2">
-                  {results.map((result) => (
-                    <div
-                      key={result.id}
-                      className={`w-full text-left px-3 sm:px-4 py-3 rounded-lg border transition-all
-                                ${selectedResults.has(result.id)
-                          ? "bg-primary/5 border-primary/30"
-                          : "border-border hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-start xs:items-center justify-between gap-2 sm:gap-3">
-                        <button
-                          onClick={() => toggleSelect(result.id)}
-                          aria-pressed={selectedResults.has(result.id)}
-                          className="flex-1 min-w-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
-                        >
-                          <span className="font-medium text-foreground text-sm">{result.title}</span>
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{result.description}</p>
-                        </button>
-                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                          <button
-                            onClick={() => {
-                              if (!selectedResults.has(result.id)) {
-                                const newSelected = new Set(selectedResults);
-                                newSelected.add(result.id);
-                                setSelectedResults(newSelected);
-                              }
-                              handleConfirmIntent();
-                            }}
-                            className="text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors min-h-[44px] min-w-[44px]"
-                          >
-                            <span className="hidden xs:inline">I'm interested</span>
-                            <span className="xs:hidden">Interest</span>
-                          </button>
-                          <div
-                            onClick={() => toggleSelect(result.id)}
-                            className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 cursor-pointer transition-colors flex-shrink-0 ${
-                              selectedResults.has(result.id)
-                                ? "bg-primary border-primary"
-                                : "border-muted-foreground/30"
-                            }`}
-                            aria-hidden="true"
-                          >
-                            {selectedResults.has(result.id) && (
-                              <svg className="w-full h-full text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {selectedResults.size > 0 && (
-                    <button
-                      onClick={handleConfirmIntent}
-                      className="w-full h-11 min-h-[44px] bg-foreground hover:bg-foreground/90 text-background 
-                               rounded-lg font-medium text-sm transition-colors mt-2"
-                    >
-                      I'm interested ({selectedResults.size})
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-center text-sm text-muted-foreground py-6">
-                  No results found. Try a different search.
-                </p>
-              )}
+                <SearchOutcomes
+                  results={results}
+                  isSearching={isSearching}
+                  hasSearched={hasSearched}
+                  selectedResults={selectedResults}
+                  onToggleSelect={toggleSelect}
+                  onConfirmIntent={handleConfirmIntent}
+                  onPublishPoi={handlePublishPoi}
+                  onSignIn={navigateToAuth}
+                />
+              </div>
             </div>
-          )}
 
-          {/* Subtle sign-in prompt */}
-          {!hasSearched && (
-            <p className="mt-6 text-xs text-muted-foreground">
-              No login needed to search.{" "}
-              <AuthLink className="underline hover:text-foreground transition-colors">
-                Sign in
-              </AuthLink>{" "}
-              to save matches and confirm intent.
-            </p>
-          )}
+            {/* Right column: Governance panel (Bloomberg RHS) */}
+            <aside className="lg:col-span-4">
+              <GovernancePanel />
+            </aside>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* ─── Bloomberg bottom ticker ─── */}
+      <CommodityTicker />
+
+      {/* ─── Panel 2: System Purpose ─── */}
+      <section id="how-it-works" className="py-16 sm:py-20 px-4 sm:px-6 border-t border-border">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-6">How it works</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              {
+                step: "01",
+                title: "Search",
+                desc: "Enter a bid or offer with product, volume, price, and location. The platform searches for verified counterparties across registered data sources.",
+              },
+              {
+                step: "02",
+                title: "Signal Intent",
+                desc: "Select a counterparty or publish a Proof-of-Intention (POI) to attract interest. Your intent becomes a governed, verifiable signal — not a dead end.",
+              },
+              {
+                step: "03",
+                title: "Execute",
+                desc: "Progress through eligibility, compliance workflows, and governance checkpoints toward a compliant transaction with tamper-evident proof at every step.",
+              },
+            ].map((item) => (
+              <div key={item.step} className="space-y-2">
+                <span className="text-xs font-mono font-semibold text-primary">{item.step}</span>
+                <h3 className="text-base font-semibold text-foreground">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Panel 3: How to Use the API ─── */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6 bg-muted/30 border-t border-border">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">Developer Access</h2>
+          <p className="text-sm text-muted-foreground mb-6 max-w-2xl leading-relaxed">
+            Integrate counterparty discovery, intent signalling, and governance workflows
+            directly into your systems via the Izenzo API.
+          </p>
+          <div className="border border-border rounded-lg bg-card p-5 font-mono text-sm">
+            <p className="text-muted-foreground mb-1"># Search for counterparties</p>
+            <p className="text-foreground">
+              <span className="text-primary">curl</span> -X POST https://api.trade.izenzo.co.za/v1/search \
+            </p>
+            <p className="text-foreground pl-4">
+              -H "Authorization: Bearer {'<'}api_key{'>'}" \
+            </p>
+            <p className="text-foreground pl-4">
+              -d '{`{"product":"copper","location":"zambia","role":"buyer"}`}'
+            </p>
+          </div>
+          <Link
+            to="/docs"
+            className="inline-flex items-center gap-1.5 mt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            View full API documentation
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </section>
+
+      {/* ─── Panel 4: Signals & Governance (anchor for nav) ─── */}
+      <section id="signals" className="py-16 sm:py-20 px-4 sm:px-6 border-t border-border">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">Indicative Market Signals</h2>
+          <p className="text-sm text-muted-foreground mb-6 max-w-2xl leading-relaxed">
+            Platform signals across infrastructure and sustainable development commodities.
+            Indicative data — representative of intent activity patterns on the platform.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { asset: "Soybeans", signal: "Buyer interest", corridor: "Brazil → East Africa" },
+              { asset: "Carbon Credits", signal: "Seller signal", corridor: "Kenya" },
+              { asset: "CDRs", signal: "Buyer intent", corridor: "Global" },
+              { asset: "Copper", signal: "Seller signal", corridor: "Zambia → China" },
+              { asset: "Lithium", signal: "Buyer interest", corridor: "DRC → Europe" },
+              { asset: "Nickel", signal: "Seller signal", corridor: "Indonesia" },
+              { asset: "Manganese", signal: "Buyer intent", corridor: "SA → India" },
+              { asset: "Cobalt", signal: "Seller signal", corridor: "DRC → Japan" },
+            ].map((s) => (
+              <div key={s.asset} className="border border-border rounded-md p-3 bg-card">
+                <p className="text-sm font-semibold text-foreground">{s.asset}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{s.signal}</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">{s.corridor}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 mt-3">
+            Indicative signals. Not live exchange data. Updated periodically.
+          </p>
+        </div>
+      </section>
+
+      {/* ─── Panel 5: Conversion / Access ─── */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6 bg-muted/30 border-t border-border">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
+            Ready to discover counterparties?
+          </h2>
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Create an account to generate verified Proof-of-Intentions, access eligibility
+            workflows, and progress toward compliant transactions.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {isAuthenticated ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 px-6 h-11 bg-primary text-primary-foreground
+                         rounded-md font-medium text-sm hover:bg-primary/90 transition-colors"
+              >
+                Go to Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <a
+                  href={isPreview ? "/auth" : authUrl}
+                  className="inline-flex items-center gap-2 px-6 h-11 bg-primary text-primary-foreground
+                           rounded-md font-medium text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Create Account
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+                <Link
+                  to="/docs"
+                  className="inline-flex items-center gap-2 px-6 h-11 border border-input bg-background
+                           rounded-md font-medium text-sm text-foreground hover:bg-muted transition-colors"
+                >
+                  Developer Access
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <PageFooter />
     </div>
   );
 }
