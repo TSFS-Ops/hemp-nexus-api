@@ -277,10 +277,10 @@ export default function Demo() {
         <Dialog open={showIntentDialog} onOpenChange={setShowIntentDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Demo: Intent Confirmation Preview</DialogTitle>
-              <DialogDescription>
-                This shows what a real confirmation would produce
-              </DialogDescription>
+            <DialogTitle>Preview: Intent Confirmation</DialogTitle>
+            <DialogDescription>
+              This shows what a real confirmation record would contain
+            </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
