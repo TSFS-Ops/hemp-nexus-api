@@ -168,7 +168,7 @@ export function AdminTokenManagement() {
   if (isError) {
     return (
       <div className="p-6">
-        <ErrorState title="Failed to load token balances" onRetry={() => refetch()} type="server" />
+        <ErrorState title="Failed to load credit balances" onRetry={() => refetch()} type="server" />
       </div>
     );
   }
