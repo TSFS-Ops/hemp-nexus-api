@@ -91,6 +91,7 @@ function GettingStartedEmpty() {
 
 export function ConsoleOverview() {
   const { session } = useAuth();
+  const navigate = useNavigate();
 
   const { data: stats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["console-overview-stats"],
