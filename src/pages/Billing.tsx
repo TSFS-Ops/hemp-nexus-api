@@ -106,9 +106,9 @@ export default function Billing() {
               toast.success(`${data.credits} credits added to your account!`);
             }
             // Refresh balance queries
-            queryClient.invalidateQueries({ queryKey: ["token-balance-billing"] });
-            queryClient.invalidateQueries({ queryKey: ["recent-token-transactions"] });
-            queryClient.invalidateQueries({ queryKey: ["token-usage-stats"] });
+            queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
+            queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
           } else {
             toast.info("Payment is still being processed. Credits will appear shortly.");
           }
@@ -120,9 +120,9 @@ export default function Billing() {
     }
   }, [session, queryClient]);
 
-  // Fetch token balance
+  // Fetch credit balance
   const { data: balance } = useQuery({
-    queryKey: ["token-balance-billing"],
+    queryKey: ["credit-balance-billing"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("token_balances")
@@ -134,9 +134,9 @@ export default function Billing() {
     enabled: !!session,
   });
 
-  // Fetch token usage stats
+  // Fetch credit usage stats
   const { data: usageStats } = useQuery({
-    queryKey: ["token-usage-stats"],
+    queryKey: ["credit-usage-stats"],
     queryFn: async () => {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -163,7 +163,7 @@ export default function Billing() {
 
   // Fetch recent transactions
   const { data: recentTransactions } = useQuery({
-    queryKey: ["recent-token-transactions"],
+    queryKey: ["recent-credit-transactions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("token_ledger")

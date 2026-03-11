@@ -254,7 +254,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Please sign in to start a POI");
+        toast.error("Please sign in to create a match");
         return;
       }
 

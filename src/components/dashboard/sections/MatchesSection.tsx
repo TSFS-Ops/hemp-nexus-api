@@ -39,8 +39,8 @@ export function MatchesSection({ isDemoMode }: MatchesSectionProps) {
   return (
     <div className="space-y-5 sm:space-y-6">
       <SectionHeader
-        title="Matches"
-        description="Your active and confirmed matches — confirm intent, upload documents, and download evidence packs"
+        title="Your Matches"
+        description="Review matches, confirm intent, and download evidence packs"
       />
       <MatchesList />
     </div>
