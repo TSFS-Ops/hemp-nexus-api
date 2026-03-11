@@ -302,8 +302,8 @@ export function UsageBillingSection() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Token Ledger</CardTitle>
-              <CardDescription>Complete history of API token usage</CardDescription>
+              <CardTitle>Credit Ledger</CardTitle>
+              <CardDescription>Complete history of credit usage</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
