@@ -1,7 +1,9 @@
 /**
  * Right-hand governance panel — immutable system log aesthetic.
- * Dense data rows with status indicators and monospaced timestamps.
+ * Supports temporary "scanning" overlay entry during search.
  */
+
+import { useState, useEffect } from "react";
 
 const ACTIVITY_LOG = [
   {
@@ -62,12 +64,14 @@ const ACTIVITY_LOG = [
   },
 ];
 
-function StatusDot({ status }: { status: "verified" | "pending" | "system" }) {
+function StatusDot({ status }: { status: "verified" | "pending" | "system" | "scanning" }) {
   const colorClass =
     status === "verified"
       ? "bg-signal-verified"
       : status === "pending"
       ? "bg-signal-pending"
+      : status === "scanning"
+      ? "bg-primary animate-pulse"
       : "bg-foreground/30";
 
   return (
@@ -75,25 +79,53 @@ function StatusDot({ status }: { status: "verified" | "pending" | "system" }) {
   );
 }
 
-export function GovernancePanel() {
+interface GovernancePanelProps {
+  isScanning?: boolean;
+}
+
+export function GovernancePanel({ isScanning = false }: GovernancePanelProps) {
   return (
-    <div className="border border-border h-full flex flex-col">
+    <div className="border border-border h-full flex flex-col lg:border-0">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border flex items-center justify-between">
         <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-muted-foreground">
           Platform Activity
         </span>
-        <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest">
-          Live
+        <span className={`text-[9px] font-mono uppercase tracking-widest ${
+          isScanning ? "text-primary animate-pulse" : "text-muted-foreground/50"
+        }`}>
+          {isScanning ? "Scanning" : "Live"}
         </span>
       </div>
 
       {/* Log entries */}
       <div className="flex-1 overflow-hidden">
+        {/* Scanning entry — injected at top when active */}
+        {isScanning && (
+          <div className="flex items-start gap-2 px-3 py-2 border-b border-border bg-primary/5">
+            <div className="mt-1.5 flex-shrink-0">
+              <StatusDot status="scanning" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-mono font-medium text-muted-foreground leading-tight">
+                Scanning verified counterparties...
+              </p>
+              <p className="text-[9px] font-mono text-muted-foreground/40 mt-0.5">
+                Querying registered data sources
+              </p>
+            </div>
+            <span className="text-[9px] font-mono text-primary flex-shrink-0 mt-0.5 whitespace-nowrap animate-pulse">
+              now
+            </span>
+          </div>
+        )}
+
         {ACTIVITY_LOG.map((item) => (
           <div
             key={item.event_id}
-            className="flex items-start gap-2 px-3 py-2 border-b border-border last:border-0"
+            className={`flex items-start gap-2 px-3 py-2 border-b border-border last:border-0 transition-opacity duration-300 ${
+              isScanning ? "opacity-40" : "opacity-100"
+            }`}
           >
             <div className="mt-1.5 flex-shrink-0">
               <StatusDot status={item.status} />

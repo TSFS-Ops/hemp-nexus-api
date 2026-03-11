@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -14,12 +14,16 @@ import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
+/** Scan duration for the cryptographic scan phase (Phase 1) */
+const SCAN_DURATION_MS = 1200;
+
 export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<DemoSearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [hasSearched, setHasSearched] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
+  const [isFormLocked, setIsFormLocked] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
   const { isAuthenticated } = useAuth();
@@ -48,15 +52,24 @@ export default function Landing() {
     }
   }, [searchParams, isAuthenticated]);
 
-  const handleSearch = async (data: BidOfferData) => {
+  const handleSearch = useCallback(async (data: BidOfferData) => {
+    // Phase 1: Lock inputs, start cryptographic scan
     setIsSearching(true);
+    setIsFormLocked(true);
     setHasSearched(true);
+    setResults([]);
+    setSelectedResults(new Set());
     const queryString = [data.product, data.location].filter(Boolean).join(" ");
     setLastQuery(queryString);
-    await new Promise((r) => setTimeout(r, DEMO_SEARCH_DELAY_MS));
-    setResults(getDemoResultsForQuery(queryString));
+
+    // Simulate scan duration (1.2s)
+    await new Promise((r) => setTimeout(r, SCAN_DURATION_MS));
+
+    const searchResults = getDemoResultsForQuery(queryString);
+    setResults(searchResults);
     setIsSearching(false);
-  };
+    setIsFormLocked(false);
+  }, []);
 
   const toggleSelect = (id: string) => {
     const next = new Set(selectedResults);
@@ -65,15 +78,15 @@ export default function Landing() {
     setSelectedResults(next);
   };
 
-  const navigateToAuth = () => {
+  const navigateToAuth = useCallback(() => {
     if (isPreview) {
       window.location.assign("/auth?returnTo=/");
     } else {
       window.location.href = authUrl;
     }
-  };
+  }, [isPreview, authUrl]);
 
-  const handleConfirmIntent = () => {
+  const handleConfirmIntent = useCallback(() => {
     if (isAuthenticated) {
       toast.success(`Interest confirmed for ${selectedResults.size} counterpart${selectedResults.size > 1 ? "ies" : "y"}.`);
       return;
@@ -88,9 +101,9 @@ export default function Landing() {
       description: "Create an account to confirm your interest and generate a verified POI.",
       action: { label: "Sign in", onClick: navigateToAuth },
     });
-  };
+  }, [isAuthenticated, selectedResults, lastQuery, navigateToAuth]);
 
-  const handlePublishPoi = () => {
+  const handlePublishPoi = useCallback(() => {
     if (isAuthenticated) {
       toast.success("Your intent has been published as a draft POI.");
       return;
@@ -105,11 +118,10 @@ export default function Landing() {
       description: "Create an account to generate a Proof-of-Intention and attract counterparties.",
       action: { label: "Create Account", onClick: navigateToAuth },
     });
-  };
+  }, [isAuthenticated, lastQuery, navigateToAuth]);
 
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col bg-background">
-      {/* Panel 1: Navigation */}
       <PublicHeader />
 
       {/* Panel 2: Hero Command Center + Governance Panel */}
@@ -137,7 +149,11 @@ export default function Landing() {
 
               {/* Search form — ledger block */}
               <div className="border-t border-border">
-                <BidOfferForm onSearch={handleSearch} isSearching={isSearching} />
+                <BidOfferForm
+                  onSearch={handleSearch}
+                  isSearching={isSearching}
+                  isLocked={isFormLocked}
+                />
                 <SearchOutcomes
                   results={results}
                   isSearching={isSearching}
@@ -153,13 +169,13 @@ export default function Landing() {
 
             {/* Right: Governance Panel */}
             <aside className="lg:col-span-4 hidden lg:block">
-              <GovernancePanel />
+              <GovernancePanel isScanning={isSearching} />
             </aside>
           </div>
 
           {/* Mobile governance strip */}
           <div className="mt-4 lg:hidden">
-            <GovernancePanel />
+            <GovernancePanel isScanning={isSearching} />
           </div>
         </div>
       </section>
@@ -255,7 +271,7 @@ export default function Landing() {
   );
 }
 
-/** Dark obsidian developer panel */
+/** Dark obsidian developer panel with full structured cURL */
 function DeveloperAccessPanel() {
   return (
     <section className="py-16 sm:py-20 px-4 sm:px-6 bg-basalt text-basalt-foreground">
@@ -266,19 +282,130 @@ function DeveloperAccessPanel() {
           directly into your systems via the Izenzo API.
         </p>
 
-        {/* Code block — premium IDE */}
-        <div className="border border-graphite bg-[hsl(225,20%,5%)] p-5 font-mono text-[12px] leading-relaxed overflow-x-auto">
-          <p className="text-basalt-foreground/30"># Search for counterparties</p>
-          <p className="mt-2">
-            <span className="text-primary">curl</span>
-            <span className="text-basalt-foreground"> -X POST https://api.trade.izenzo.co.za/v1/search \</span>
-          </p>
-          <p className="pl-4 text-basalt-foreground">
-            -H <span className="text-signal-verified">"Authorization: Bearer {'<'}api_key{'>'}"</span> \
-          </p>
-          <p className="pl-4 text-basalt-foreground">
-            -d <span className="text-signal-pending">'{`{"product":"copper","location":"zambia","role":"buyer"}`}'</span>
-          </p>
+        {/* Premium IDE code block */}
+        <div className="border border-graphite bg-[hsl(225,20%,4%)] overflow-x-auto">
+          {/* Tab bar */}
+          <div className="flex items-center gap-0 border-b border-graphite">
+            <div className="px-4 py-2 border-r border-graphite bg-basalt">
+              <span className="text-[10px] font-mono text-basalt-foreground/60">intent-discover.sh</span>
+            </div>
+            <div className="px-4 py-2">
+              <span className="text-[10px] font-mono text-basalt-foreground/30">response.json</span>
+            </div>
+          </div>
+
+          {/* Code content */}
+          <pre className="p-5 font-mono text-[12px] leading-[1.8] whitespace-pre overflow-x-auto">
+            <code>
+              {/* Comments */}
+              <span className="text-muted-foreground">{"# Initialize governed counterparty discovery"}</span>{"\n"}
+              <span className="text-muted-foreground">{"# Requires active API key and valid compliance workspace ID"}</span>{"\n"}
+              {"\n"}
+              {/* Command */}
+              <span className="text-primary">curl</span>
+              <span className="text-basalt-foreground">{" -X "}</span>
+              <span className="text-primary">POST</span>
+              <span className="text-basalt-foreground"> https://api.trade.izenzo.co.za/v1/intent/discover</span>
+              <span className="text-basalt-foreground/40">{" \\"}</span>{"\n"}
+
+              {/* Headers */}
+              <span className="text-basalt-foreground">{"  -H "}</span>
+              <span className="text-signal-verified">{'"Authorization: Bearer sk_live_iz_9a8b7c6d5e4f"'}</span>
+              <span className="text-basalt-foreground/40">{" \\"}</span>{"\n"}
+
+              <span className="text-basalt-foreground">{"  -H "}</span>
+              <span className="text-signal-verified">{'"Content-Type: application/json"'}</span>
+              <span className="text-basalt-foreground/40">{" \\"}</span>{"\n"}
+
+              <span className="text-basalt-foreground">{"  -H "}</span>
+              <span className="text-signal-verified">{'"Idempotency-Key: req_01H8X7B2"'}</span>
+              <span className="text-basalt-foreground/40">{" \\"}</span>{"\n"}
+
+              {/* JSON payload */}
+              <span className="text-basalt-foreground">{"  -d '"}</span>
+              <span className="text-basalt-foreground">{"{"}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"    "}</span>
+              <span className="text-border">{'"instrument"'}</span>
+              <span className="text-basalt-foreground">{": {"}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"product"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"copper_cathode"'}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"volume"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"2500"'}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"unit"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"MT"'}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"target_price"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"USD 8500/MT"'}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"    "}</span>
+              <span className="text-basalt-foreground">{"}"}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"    "}</span>
+              <span className="text-border">{'"routing"'}</span>
+              <span className="text-basalt-foreground">{": {"}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"origin"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"Zambia"'}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"destination_corridor"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"China"'}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"    "}</span>
+              <span className="text-basalt-foreground">{"}"}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"    "}</span>
+              <span className="text-border">{'"governance"'}</span>
+              <span className="text-basalt-foreground">{": {"}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"intent_type"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"buy"'}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"require_kyc_cleared"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-pending">{"true"}</span>
+              <span className="text-basalt-foreground">{","}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"      "}</span>
+              <span className="text-border">{'"additional_info"'}</span>
+              <span className="text-basalt-foreground">{": "}</span>
+              <span className="text-signal-verified">{'"Grade A, minimum lot size applies"'}</span>{"\n"}
+
+              <span className="text-basalt-foreground/60">{"    "}</span>
+              <span className="text-basalt-foreground">{"}"}</span>{"\n"}
+
+              <span className="text-basalt-foreground">{"  }'"}</span>{"\n"}
+              {"\n"}
+              {/* Response comment */}
+              <span className="text-muted-foreground">{"# Expected Response: 201 Created"}</span>{"\n"}
+              <span className="text-muted-foreground">{'# { "status": "liquidity_gap_detected", "poi_eligible": true, "market_hash": "0x4a2b..." }'}</span>
+            </code>
+          </pre>
         </div>
 
         <Link
