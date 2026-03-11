@@ -11,12 +11,12 @@ import { Coins, TrendingUp, AlertTriangle, Clock, Filter, Download, RefreshCw } 
 import { format, subDays } from "date-fns";
 import { toast } from "sonner";
 
-interface TokenBalance {
+interface CreditBalance {
   balance: number;
   minimum_required: number;
 }
 
-interface TokenLedgerEntry {
+interface CreditLedgerEntry {
   id: string;
   endpoint: string;
   tokens_burned: number;
@@ -36,8 +36,8 @@ interface UsageStats {
 }
 
 export function UsageBillingSection() {
-  const [balance, setBalance] = useState<TokenBalance | null>(null);
-  const [ledgerEntries, setLedgerEntries] = useState<TokenLedgerEntry[]>([]);
+  const [balance, setBalance] = useState<CreditBalance | null>(null);
+  const [ledgerEntries, setLedgerEntries] = useState<CreditLedgerEntry[]>([]);
   const [allEndpoints, setAllEndpoints] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [ledgerLoading, setLedgerLoading] = useState(true);
@@ -88,7 +88,7 @@ export function UsageBillingSection() {
 
       if (error) throw error;
       
-      const mappedData: TokenLedgerEntry[] = (data || []).map((entry) => ({
+      const mappedData: CreditLedgerEntry[] = (data || []).map((entry) => ({
         id: entry.id,
         endpoint: entry.endpoint,
         tokens_burned: entry.tokens_burned,
@@ -124,7 +124,7 @@ export function UsageBillingSection() {
         totalBurnedThisMonth: totalBurned,
       });
     } catch (error) {
-      console.error("Error fetching token ledger:", error);
+      console.error("Error fetching credit ledger:", error);
       toast.error("Failed to fetch usage data");
     } finally {
       setLedgerLoading(false);
@@ -157,7 +157,7 @@ export function UsageBillingSection() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Date", "Endpoint", "Tokens Burned", "Outcome", "Remaining Balance", "Request ID"];
+    const headers = ["Date", "Endpoint", "Credits Burned", "Outcome", "Remaining Balance", "Request ID"];
     const escapeCell = (val: string) => {
       if (val.includes(",") || val.includes('"') || val.includes("\n")) {
         return `"${val.replace(/"/g, '""')}"`;
@@ -178,7 +178,7 @@ export function UsageBillingSection() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `token-usage-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `credit-usage-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

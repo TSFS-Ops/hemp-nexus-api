@@ -153,7 +153,7 @@ export function AdminTokenManagement() {
       queryClient.invalidateQueries({ queryKey: ["token-balance"] });
     } catch (error) {
       console.error("[AdminTokenManagement] top-up failed:", error);
-      toast.error("Failed to add tokens");
+      toast.error("Failed to add credits");
     } finally {
       setSubmitting(false);
     }
@@ -168,7 +168,7 @@ export function AdminTokenManagement() {
   if (isError) {
     return (
       <div className="p-6">
-        <ErrorState title="Failed to load token balances" onRetry={() => refetch()} type="server" />
+        <ErrorState title="Failed to load credit balances" onRetry={() => refetch()} type="server" />
       </div>
     );
   }
@@ -176,9 +176,9 @@ export function AdminTokenManagement() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Token Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Credit Management</h2>
         <p className="text-muted-foreground mt-2">
-          Manage organization token balances and top-ups
+          Manage organization credit balances and top-ups
         </p>
       </div>
 
@@ -191,7 +191,7 @@ export function AdminTokenManagement() {
                 Organization Balances
               </CardTitle>
               <CardDescription>
-                View and manage token balances for all organizations
+                View and manage credit balances for all organizations
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
