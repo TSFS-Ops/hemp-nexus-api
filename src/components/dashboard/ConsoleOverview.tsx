@@ -197,24 +197,20 @@ export function ConsoleOverview() {
         <GettingStartedEmpty />
       ) : !isError && !hasZeroActivity && !isLoading ? (
         <div className="p-4 border border-border rounded-lg bg-muted/30">
-          <h3 className="font-medium text-foreground mb-2">What is Compliance Match API?</h3>
+          <h3 className="font-medium text-foreground mb-2">Your workflow</h3>
           <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-            Search for counterparties, record proof-of-intent, and generate tamper-evident audit trails. 
-            Confirm Intent creates an information-only record — no payment, no contract, no legal obligation.
+            Search → Create Match → Confirm Intent → Download Evidence Pack. 
+            Confirming intent records your interest — no contract, no payment, no legal obligation.
           </p>
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-              SHA-256 hashed evidence
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-              Chain-linked audit logs
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-              Discovery Engine (+12% results)
-            </span>
+          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+            <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+              <Search className="h-3.5 w-3.5" />
+              Search counterparties
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)} className="gap-2">
+              <FileText className="h-3.5 w-3.5" />
+              View matches
+            </Button>
           </div>
         </div>
       ) : null}
