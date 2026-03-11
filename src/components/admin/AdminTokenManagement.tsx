@@ -153,7 +153,7 @@ export function AdminTokenManagement() {
       queryClient.invalidateQueries({ queryKey: ["token-balance"] });
     } catch (error) {
       console.error("[AdminTokenManagement] top-up failed:", error);
-      toast.error("Failed to add tokens");
+      toast.error("Failed to add credits");
     } finally {
       setSubmitting(false);
     }
