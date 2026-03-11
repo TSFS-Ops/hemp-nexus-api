@@ -5011,6 +5011,10 @@ export type Database = {
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
       cleanup_old_auth_rate_limits: { Args: never; Returns: number }
+      ensure_user_profile: {
+        Args: { p_email: string; p_user_id: string }
+        Returns: Json
+      }
       generate_event_hash: {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
