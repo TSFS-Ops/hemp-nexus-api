@@ -464,7 +464,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
             </Badge>
             {isDemoMode && (
               <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs">
-                Demo
+                Preview
               </Badge>
             )}
           </div>
