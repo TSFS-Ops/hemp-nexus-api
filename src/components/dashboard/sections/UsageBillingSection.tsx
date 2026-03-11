@@ -11,12 +11,12 @@ import { Coins, TrendingUp, AlertTriangle, Clock, Filter, Download, RefreshCw } 
 import { format, subDays } from "date-fns";
 import { toast } from "sonner";
 
-interface TokenBalance {
+interface CreditBalance {
   balance: number;
   minimum_required: number;
 }
 
-interface TokenLedgerEntry {
+interface CreditLedgerEntry {
   id: string;
   endpoint: string;
   tokens_burned: number;
