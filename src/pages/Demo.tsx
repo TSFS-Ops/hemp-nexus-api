@@ -86,11 +86,11 @@ export default function Demo() {
       <PublicPageLayout>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          {/* Demo Notice */}
+          {/* Preview Notice */}
           <div className="mb-8 p-4 border border-border rounded-lg bg-muted/30">
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Demo mode</span> — Results are simulated. No real evidence records are created.{" "}
-              <AuthLink className="text-primary hover:underline">Sign up</AuthLink> to generate real proofs.
+              <span className="font-medium text-foreground">Preview mode</span> — Results are illustrative. No real evidence records are created.{" "}
+              <AuthLink className="text-primary hover:underline">Create an account</AuthLink> to generate real records.
             </p>
           </div>
 
