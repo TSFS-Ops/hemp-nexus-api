@@ -29,11 +29,11 @@ export function DemoConfirmDialog({ open, onOpenChange, selectedCount, queryCont
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Demo Mode - Preview Only
+            Preview Only
           </DialogTitle>
           <DialogDescription>
             This is a preview of what a real proof-of-intent record would look like.
-            No actual data has been written to the compliance ledger.
+            Sign in to create real matches and evidence records.
           </DialogDescription>
         </DialogHeader>
 
