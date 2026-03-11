@@ -134,9 +134,9 @@ export default function Billing() {
     enabled: !!session,
   });
 
-  // Fetch token usage stats
+  // Fetch credit usage stats
   const { data: usageStats } = useQuery({
-    queryKey: ["token-usage-stats"],
+    queryKey: ["credit-usage-stats"],
     queryFn: async () => {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
