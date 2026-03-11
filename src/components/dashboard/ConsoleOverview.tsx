@@ -141,40 +141,55 @@ export function ConsoleOverview() {
         </p>
       </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="p-4 border border-border rounded-lg bg-background"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">{stat.label}</span>
+      {/* Error state — distinct from zero-activity onboarding */}
+      {isError && (
+        <div className="p-6 border border-destructive/30 rounded-lg bg-destructive/5 text-center">
+          <p className="font-medium text-foreground mb-1">Couldn't load your activity</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            We had trouble fetching your console data. This is usually temporary.
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Stats Grid — only render when we have data or are loading (not on error) */}
+      {!isError && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {statCards.map((stat) => (
+            <div
+              key={stat.label}
+              className="p-4 border border-border rounded-lg bg-background"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+              </div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl font-semibold text-foreground">
+                  {stat.value.toLocaleString()}
+                </p>
+              )}
             </div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl font-semibold text-foreground">
-                {stat.value.toLocaleString()}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Last Activity */}
-      {!hasZeroActivity && (
+      {!isError && !hasZeroActivity && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
           <span>Last activity: {formatRelativeTime(stats?.lastActivity)}</span>
         </div>
       )}
 
-      {/* Empty state or info block */}
-      {hasZeroActivity ? (
+      {/* Empty state or info block — only show onboarding when query SUCCEEDED with zero data */}
+      {!isError && hasZeroActivity ? (
         <GettingStartedEmpty />
-      ) : (
+      ) : !isError && !hasZeroActivity && !isLoading ? (
         <div className="p-4 border border-border rounded-lg bg-muted/30">
           <h3 className="font-medium text-foreground mb-2">What is Compliance Match API?</h3>
           <p className="text-sm text-muted-foreground leading-relaxed mb-3">
@@ -196,7 +211,7 @@ export function ConsoleOverview() {
             </span>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
