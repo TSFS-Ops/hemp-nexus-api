@@ -52,6 +52,7 @@ export function CapabilitiesGrid() {
           backgroundSize: "80px 80px",
         }}
       />
+      <div className="max-w-[1280px] mx-auto relative z-10">
         <div className="max-w-xl mb-14 animate-fade-up">
           <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
             Platform Capabilities
