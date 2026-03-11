@@ -626,7 +626,7 @@ def webhook():
                     <div className="flex items-start gap-3">
                       <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">401</Badge>
                       <div className="flex-1">
-                        <p className="font-medium text-sm">Unauthorized</p>
+                        <p className="font-medium text-sm">Unauthorised</p>
                         <p className="text-xs text-muted-foreground">Invalid or missing API key</p>
                       </div>
                     </div>
