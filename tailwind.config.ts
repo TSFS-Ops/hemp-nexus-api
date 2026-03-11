@@ -139,6 +139,7 @@ export default {
         "slide-in-left": "slide-in-left 0.2s ease-out",
         "slide-in-right": "slide-in-right 0.2s ease-out",
         shimmer: "shimmer 1.5s infinite",
+        ticker: "ticker 40s linear infinite",
       },
     },
   },
