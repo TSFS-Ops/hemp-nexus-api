@@ -57,8 +57,8 @@ export function UsageBillingSection() {
       if (error) throw error;
       setBalance(data);
     } catch (error) {
-      console.error("Error fetching token balance:", error);
-      toast.error("Failed to fetch token balance");
+      console.error("Error fetching credit balance:", error);
+      toast.error("Failed to fetch credit balance");
     } finally {
       setLoading(false);
     }
@@ -189,7 +189,7 @@ export function UsageBillingSection() {
         <header className="space-y-1">
           <h1 className="font-bold tracking-tight">Usage & Billing</h1>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-            Monitor your API token usage and billing
+            Your credit usage and transaction history
           </p>
         </header>
         <div className="grid gap-4 md:grid-cols-4">
@@ -207,7 +207,7 @@ export function UsageBillingSection() {
         <div className="space-y-1">
           <h1 className="font-bold tracking-tight">Usage & Billing</h1>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-            Monitor your API token usage and billing
+            Your credit usage and transaction history. <a href="/billing" className="text-primary hover:underline">Purchase credits →</a>
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={handleRefresh}>
@@ -222,7 +222,7 @@ export function UsageBillingSection() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <div>
-                <p className="font-medium text-destructive">Critical: Token Balance Below Minimum</p>
+                <p className="font-medium text-destructive">Critical: Credit Balance Below Minimum</p>
                 <p className="text-sm text-muted-foreground">
                   Your balance ({balance?.balance.toLocaleString()}) is below the required minimum ({balance?.minimum_required.toLocaleString()}).
                   API calls will be blocked.{" "}
@@ -264,7 +264,7 @@ export function UsageBillingSection() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.callsThisMonth.toLocaleString() || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Tokens burned: {stats?.totalBurnedThisMonth.toLocaleString() || 0}
+              Credits burned: {stats?.totalBurnedThisMonth.toLocaleString() || 0}
             </p>
           </CardContent>
         </Card>
@@ -302,8 +302,8 @@ export function UsageBillingSection() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Token Ledger</CardTitle>
-              <CardDescription>Complete history of API token usage</CardDescription>
+              <CardTitle>Credit Ledger</CardTitle>
+              <CardDescription>Complete history of credit usage</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
@@ -362,7 +362,7 @@ export function UsageBillingSection() {
             </div>
           ) : ledgerEntries.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No token usage recorded yet
+              No credit usage recorded yet
             </div>
           ) : (
             <div className="rounded-md border">
@@ -371,7 +371,7 @@ export function UsageBillingSection() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Endpoint</TableHead>
-                    <TableHead className="text-center">Tokens</TableHead>
+                    <TableHead className="text-center">Credits</TableHead>
                     <TableHead className="text-center">Outcome</TableHead>
                     <TableHead className="text-right">Remaining Balance</TableHead>
                   </TableRow>

@@ -143,9 +143,9 @@ export default function Landing() {
           <h2 className="text-foreground mb-12 tracking-tighter animate-fade-up delay-75">How it works</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border">
             {[
-              { step: "01", title: "Search", desc: "Enter a bid or offer with product, volume, price, and location. The platform searches for verified counterparties across registered data sources." },
-              { step: "02", title: "Signal Intent", desc: "Select a counterparty or publish a Proof-of-Intention (POI) to attract interest. Your intent becomes a governed, verifiable signal — not a dead end." },
-              { step: "03", title: "Execute", desc: "Progress through eligibility, compliance workflows, and governance checkpoints toward a compliant transaction with tamper-evident proof at every step." },
+              { step: "01", title: "Search", desc: "Describe what you're looking for — product, volume, price, and location. Izenzo searches verified counterparty sources and returns ranked results." },
+              { step: "02", title: "Match & Signal", desc: "Select a counterparty and create a match. When you're ready, confirm your intent — a verifiable, auditable record that signals serious interest." },
+              { step: "03", title: "Evidence & Compliance", desc: "Upload documents, complete compliance checks, and download a tamper-evident evidence pack for your records. Every step is hashed and chain-linked." },
             ].map((item, i) => (
               <div
                 key={item.step}
@@ -176,11 +176,11 @@ export default function Landing() {
         />
         <div className="max-w-xl mx-auto text-center relative z-10">
           <h2 className="text-foreground mb-4 tracking-tighter">
-            Ready to discover counterparties?
+            Ready to find your next counterparty?
           </h2>
           <p className="text-[13px] text-muted-foreground mb-8 leading-relaxed">
-            Create an account to generate verified Proof-of-Intentions, access eligibility
-            workflows, and progress toward compliant transactions.
+            Create an account to search for verified counterparties, confirm intent,
+            and build compliance-ready evidence packs — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {isAuthenticated ? (

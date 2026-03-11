@@ -64,13 +64,13 @@ export function HeroSection({
             Closing the $2.5 trillion global trade-finance gap
           </p>
           <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-5 leading-[1.02]">
-            Trade infrastructure to discover counterparties,{" "}
+            Find verified counterparties,{" "}
             <br className="hidden lg:inline" />
-            signal intent, and execute with confidence.
+            confirm intent, and build audit-ready evidence.
           </h1>
           <p className="text-[13px] text-muted-foreground max-w-lg leading-relaxed mb-8 animate-fade-up delay-75">
-            Izenzo combines structured search, Proof-of-Intention, and compliance workflows
-            into a single API — from first discovery to settlement-ready evidence.
+            Izenzo brings structured search, intent confirmation, and compliance workflows
+            into one platform — from first discovery to settlement-ready evidence packs.
           </p>
 
           {/* CTA buttons — Stripe-style dual action */}
