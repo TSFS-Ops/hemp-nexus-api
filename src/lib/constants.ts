@@ -33,7 +33,7 @@ export const CHECKPOINT_DEMO_ROLES: readonly string[] = [
 export const ROUTES = {
   ROOT: '/',
   AUTH: '/auth',
-  DEMO: '/demo',
+  
   DASHBOARD: '/dashboard',
   DASHBOARD_SEARCH: '/dashboard/search',
   DASHBOARD_MATCHES: '/dashboard/matches',
