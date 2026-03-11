@@ -9,17 +9,17 @@ const SECTORS = [
   {
     name: "Mining & Metals",
     description: "Copper, lithium, cobalt, and manganese corridors across Sub-Saharan Africa.",
-    stat: "14 active corridors",
+    stat: "Supported sector",
   },
   {
     name: "Agriculture & Soft Commodities",
     description: "Soybean, maize, and cashew supply chains from East and Southern Africa.",
-    stat: "8 verified data sources",
+    stat: "Supported sector",
   },
   {
     name: "Carbon & Environmental Markets",
     description: "Voluntary carbon credits, CDRs, and renewable energy certificates.",
-    stat: "3,200+ POIs issued",
+    stat: "Supported sector",
   },
 ];
 

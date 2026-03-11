@@ -129,68 +129,19 @@ export function SearchOutcomes({
         neverZeroPhase === "scanning" ? "max-h-0 opacity-0" : "max-h-[700px] opacity-100"
       }`}
     >
-      {/* Phase 2: "Liquidity Gap Detected" */}
+      {/* No results — honest empty state */}
       <div className="px-4 py-4 border-b border-border">
         <h3 className="text-[15px] font-semibold text-foreground tracking-tighter leading-tight">
-          0 Direct Matches. Liquidity Gap Detected.
+          No matching counterparties found
         </h3>
       </div>
 
-      {/* Phase 3: Market-maker invitation */}
       <div className="p-4 sm:p-5">
         <p className="text-[12px] text-muted-foreground leading-relaxed mb-6 max-w-md">
-          No verified counterparties currently hold an active opposing position.
-          You are positioned to make the market.
+          No verified counterparties matched your search criteria. Try broadening your query — for example, use a different product term or remove the location filter.
         </p>
 
-        {/* Shadow Order Book */}
-        <div className="border border-border mb-6 animate-fade-up delay-150">
-          <div className="px-3 py-2 border-b border-border bg-accent/15">
-            <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-              Network Activity
-            </span>
-          </div>
-          <div className="grid grid-cols-2 divide-x divide-border">
-            <div className="px-4 py-3">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 block mb-1.5">
-                Active buyers in region
-              </span>
-              <span className="text-[20px] font-mono font-bold text-foreground tracking-tighter">
-                14
-              </span>
-            </div>
-            <div className="px-4 py-3">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 block mb-1.5">
-                Related commodity intent
-              </span>
-              <span className="text-[20px] font-mono font-bold text-primary tracking-tighter">
-                High
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
-            <div className="px-3 py-2.5">
-              <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/40 block mb-0.5">
-                Corridor signals
-              </span>
-              <span className="text-[14px] font-mono font-medium text-foreground">7</span>
-            </div>
-            <div className="px-3 py-2.5">
-              <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/40 block mb-0.5">
-                POI eligible
-              </span>
-              <span className="text-[14px] font-mono font-medium text-signal-verified">Yes</span>
-            </div>
-            <div className="px-3 py-2.5">
-              <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/40 block mb-0.5">
-                Market hash
-              </span>
-              <span className="text-[10px] font-mono text-muted-foreground/40">0x4a2b...</span>
-            </div>
-          </div>
-        </div>
-
-        {/* POI Gateway */}
+        {/* Register interest CTA */}
         <button
           onClick={onPublishPoi}
           className="w-full h-11 bg-primary text-primary-foreground shadow-inner-metallic
@@ -199,10 +150,10 @@ export function SearchOutcomes({
                    flex items-center justify-center gap-2.5 animate-fade-up delay-300"
         >
           <FileText className="h-3.5 w-3.5" />
-          Signal Your Intent
+          Register Your Interest
         </button>
         <p className="text-[10px] font-mono text-muted-foreground/40 mt-2.5 text-center tracking-wide animate-fade-in delay-400">
-          Sign in to publish a governed intent signal. Uses 1 credit.
+          Sign in to publish a governed intent signal so counterparties can find you.
         </p>
       </div>
     </div>

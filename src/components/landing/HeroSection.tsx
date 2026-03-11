@@ -114,7 +114,7 @@ export function HeroSection({
             <div className="px-4 py-3 border-b border-border lg:border-t-0 border-t flex items-center gap-2">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-verified" />
               <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                Live Counterparty Search
+                Counterparty Search
               </span>
             </div>
             <BidOfferForm onSearch={onSearch} isSearching={isSearching} isLocked={isFormLocked} />

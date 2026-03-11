@@ -126,12 +126,12 @@ export function DemoConfirmDialog({ open, onOpenChange, selectedCount, queryCont
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Continue Exploring
+            Back to search
           </Button>
           <Link to="/auth" className="w-full sm:w-auto">
             <Button className="w-full">
               <Shield className="h-4 w-4 mr-2" />
-              Sign Up for Real Proofs
+              Create Account
             </Button>
           </Link>
         </DialogFooter>

@@ -541,7 +541,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                 <AlertDescription className="text-xs sm:text-sm">
                   {isDemoMode ? (
                     <>
-                      <strong>Demo Mode:</strong> Sign in to see real results.
+                      These are example results. <Link to="/auth" className="text-primary hover:underline font-medium">Sign in</Link> to search real counterparties.
                     </>
                   ) : (
                     <>

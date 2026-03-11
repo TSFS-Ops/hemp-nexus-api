@@ -441,7 +441,7 @@ export default function Auth() {
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="p-3 bg-muted/40 border border-border rounded-md mb-4">
                 <p className="text-xs text-muted-foreground">
-                  Create an account to access API keys and test endpoints.
+                  Create an account to search for counterparties, confirm intent, and manage your compliance records.
                 </p>
               </div>
               <div className="space-y-2">

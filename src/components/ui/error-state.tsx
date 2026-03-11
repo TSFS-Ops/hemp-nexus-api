@@ -34,7 +34,7 @@ export function ErrorState({
     },
     network: {
       title: "Connection error",
-      message: "Unable to connect. Please check your internet connection.",
+      message: "Unable to connect. Please check your internet connection and try again.",
     },
     server: {
       title: "Server error",

@@ -153,11 +153,16 @@ export function ConsoleOverview() {
         <div className="p-6 border border-destructive/30 rounded-lg bg-destructive/5 text-center">
           <p className="font-medium text-foreground mb-1">Couldn't load your activity</p>
           <p className="text-sm text-muted-foreground mb-4">
-            We had trouble fetching your console data. This is usually temporary.
+            We had trouble fetching your console data. This is usually temporary — try refreshing.
           </p>
-          <Button variant="outline" onClick={() => refetch()}>
-            Retry
-          </Button>
+          <div className="flex items-center justify-center gap-3">
+            <Button variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+            <a href="mailto:support@izenzo.co.za" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Contact support
+            </a>
+          </div>
         </div>
       )}
 
