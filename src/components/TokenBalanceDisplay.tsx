@@ -106,7 +106,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Coins className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm font-medium">Token Balance</span>
+          <span className="text-sm font-medium">Credit Balance</span>
         </div>
         <Badge 
           variant={isBlocked ? "destructive" : isCritical ? "outline" : "secondary"}
@@ -115,7 +115,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
             isLow && !isCritical && "border-yellow-500 text-yellow-600"
           )}
         >
-          {currentBalance.toLocaleString()} tokens
+          {currentBalance.toLocaleString()} credits
         </Badge>
       </div>
       
