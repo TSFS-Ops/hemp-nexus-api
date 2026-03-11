@@ -69,6 +69,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        earth: {
+          warm: "hsl(var(--earth-warm))",
+          copper: "hsl(var(--earth-copper))",
+          sage: "hsl(var(--earth-sage))",
+          sand: "hsl(var(--earth-sand))",
+          slate: "hsl(var(--earth-slate))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
