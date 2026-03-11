@@ -19,7 +19,6 @@ import { toast } from "sonner";
 
 interface AppSidebarProps {
   isAdmin?: boolean;
-  isDemoMode?: boolean;
 }
 
 const mainNavItems = [
