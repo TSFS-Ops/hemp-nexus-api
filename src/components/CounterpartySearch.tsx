@@ -256,11 +256,12 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       }
 
       // Get user's profile for org info
-      const { data: profile } = await supabase
+      let profile = await supabase
         .from("profiles")
         .select("org_id, full_name")
         .eq("id", session.user.id)
-        .maybeSingle();
+        .maybeSingle()
+        .then(r => r.data);
 
       if (!profile) {
         // Attempt self-repair via ensure_user_profile
@@ -272,20 +273,17 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
           toast.error("Your account setup is incomplete. Please sign out and sign in again, or contact support.");
           return;
         }
-        // Re-fetch profile after repair
-        const { data: repairedProfile } = await supabase
+        // Re-fetch after repair
+        profile = await supabase
           .from("profiles")
           .select("org_id, full_name")
           .eq("id", session.user.id)
-          .maybeSingle();
-        if (!repairedProfile) {
+          .maybeSingle()
+          .then(r => r.data);
+        if (!profile) {
           toast.error("Account setup failed. Please contact support.");
           return;
         }
-        // Use repaired profile for the rest of the flow
-        Object.assign(profile ?? {}, repairedProfile);
-        // Re-assign to continue below
-        var profileData = repairedProfile;
       }
 
       // Get org name
