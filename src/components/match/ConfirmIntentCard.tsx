@@ -1,11 +1,11 @@
 /**
  * ConfirmIntentCard — CTA card for declaring intent on a match.
  *
- * Now includes a confirmation dialog showing credit cost and current balance
- * before the irreversible action fires.
+ * Includes a confirmation dialog showing credit cost and current balance
+ * before the irreversible action fires. Refetches balance when dialog opens.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,7 +41,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
   const [showDialog, setShowDialog] = useState(false);
   const { session } = useAuth();
 
-  const { data: balance, isLoading: balanceLoading } = useQuery({
+  const { data: balance, isLoading: balanceLoading, refetch } = useQuery({
     queryKey: ["token-balance-confirm-single"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,7 +52,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
       return data?.balance ?? 0;
     },
     enabled: !!session,
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 
   const currentBalance = balance ?? 0;
@@ -60,6 +60,8 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
   const remaining = currentBalance - CREDITS_REQUIRED;
 
   const handleConfirmClick = () => {
+    // Refetch balance right before showing the dialog to ensure freshness
+    refetch();
     setShowDialog(true);
   };
 

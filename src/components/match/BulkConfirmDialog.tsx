@@ -1,8 +1,11 @@
 /**
  * BulkConfirmDialog — Shows credit cost, current balance, and remaining
  * balance before a bulk Confirm Intent action.
+ *
+ * Refetches balance every time the dialog opens to prevent stale data.
  */
 
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,7 +41,7 @@ export function BulkConfirmDialog({
 }: BulkConfirmDialogProps) {
   const { session } = useAuth();
 
-  const { data: balance, isLoading: balanceLoading } = useQuery({
+  const { data: balance, isLoading: balanceLoading, refetch } = useQuery({
     queryKey: ["token-balance-confirm"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,8 +52,15 @@ export function BulkConfirmDialog({
       return data?.balance ?? 0;
     },
     enabled: !!session && open,
-    staleTime: 10_000,
+    staleTime: 5_000,
   });
+
+  // Refetch balance every time dialog opens to prevent stale display
+  useEffect(() => {
+    if (open && session) {
+      refetch();
+    }
+  }, [open, session, refetch]);
 
   const totalCost = matchCount * CREDITS_PER_MATCH;
   const currentBalance = balance ?? 0;
@@ -98,7 +108,7 @@ export function BulkConfirmDialog({
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">After confirmation</span>
                     <span className={`font-medium ${hasEnough ? "text-foreground" : "text-destructive"}`}>
-                      {hasEnough ? remainingBalance.toLocaleString() : remainingBalance.toLocaleString()} credits
+                      {remainingBalance.toLocaleString()} credits
                     </span>
                   </div>
                 </div>

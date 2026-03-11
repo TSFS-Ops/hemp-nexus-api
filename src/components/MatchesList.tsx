@@ -242,9 +242,14 @@ export function MatchesList() {
         toast.error(`Failed for ${failed} match${failed > 1 ? "es" : ""}: ${errors[0] || "Unknown error"}`);
       }
 
-      setSelectedMatches(new Set());
-      setShowSettleDialog(false);
-      refetch();
+      // Only clear succeeded matches from selection; keep failed ones for retry
+      if (failed > 0) {
+        // Keep all selections — user can retry
+        setShowSettleDialog(false);
+      } else {
+        setSelectedMatches(new Set());
+        setShowSettleDialog(false);
+      }
     } catch (error: any) {
       console.error("Error confirming intent:", error);
       toast.error("Failed to confirm intent");

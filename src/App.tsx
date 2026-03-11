@@ -14,6 +14,7 @@ import Dashboard from "@/pages/Dashboard";
 import Admin from "@/pages/Admin";
 import Docs from "@/pages/Docs";
 import Pricing from "@/pages/Pricing";
+import Billing from "@/pages/Billing";
 import WalkthroughReport from "@/pages/WalkthroughReport";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
@@ -48,6 +49,7 @@ function App() {
                 <Route path={ROUTES.DEMO} element={<Demo />} />
                 <Route path={ROUTES.AUTH} element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path={ROUTES.BILLING} element={<Billing />} />
                 <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
                 <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
                 <Route path={ROUTES.DOCS} element={<Docs />} />
