@@ -15,25 +15,25 @@ function GettingStartedEmpty() {
     {
       number: "1",
       title: "Search for a counterparty",
-      description: "Use the Discovery Engine to find verified buyers or sellers by commodity, region, or company name.",
+      description: "Find verified buyers or sellers by commodity, region, or company name.",
       icon: Search,
     },
     {
       number: "2",
-      title: "Review match results",
-      description: "Examine match details, compliance signals, and risk scores before proceeding.",
-      icon: FileText,
+      title: "Create a match",
+      description: "Select one or more counterparties and create a match to begin the workflow.",
+      icon: Handshake,
     },
     {
       number: "3",
       title: "Confirm intent",
-      description: "Record proof-of-intent — no contract, no payment, just a tamper-evident audit record.",
+      description: "Signal your serious interest — no contract, no payment, just a verifiable audit record.",
       icon: Zap,
     },
     {
       number: "4",
       title: "Download evidence pack",
-      description: "Get a SHA-256 hashed, chain-linked evidence pack for your compliance records.",
+      description: "Get a tamper-evident evidence pack for your compliance records.",
       icon: Key,
     },
   ];

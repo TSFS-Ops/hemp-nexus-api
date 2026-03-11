@@ -371,7 +371,7 @@ export function UsageBillingSection() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Endpoint</TableHead>
-                    <TableHead className="text-center">Tokens</TableHead>
+                    <TableHead className="text-center">Credits</TableHead>
                     <TableHead className="text-center">Outcome</TableHead>
                     <TableHead className="text-right">Remaining Balance</TableHead>
                   </TableRow>
