@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { EmptyState } from "@/components/ui/error-state";
+import { BulkConfirmDialog } from "@/components/match/BulkConfirmDialog";
 import { MATCH_STATUS, ROUTES } from "@/lib/constants";
 import * as MatchState from "@/lib/match-state";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";

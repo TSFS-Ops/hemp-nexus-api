@@ -225,7 +225,10 @@ export function UsageBillingSection() {
                 <p className="font-medium text-destructive">Critical: Token Balance Below Minimum</p>
                 <p className="text-sm text-muted-foreground">
                   Your balance ({balance?.balance.toLocaleString()}) is below the required minimum ({balance?.minimum_required.toLocaleString()}).
-                  API calls will be blocked. Please top up to continue.
+                  API calls will be blocked.{" "}
+                  <a href="/billing" className="text-primary underline hover:no-underline">
+                    Purchase credits to continue
+                  </a>.
                 </p>
               </div>
             </div>

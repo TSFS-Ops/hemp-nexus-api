@@ -144,7 +144,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
           to="/dashboard/billing" 
           className="text-primary hover:underline"
         >
-          Buy Tokens →
+          Purchase Credits →
         </Link>
       </div>
 
