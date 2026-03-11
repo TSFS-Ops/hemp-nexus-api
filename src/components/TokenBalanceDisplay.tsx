@@ -85,12 +85,12 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
               </p>
               {isBlocked && (
                 <p className="text-xs text-destructive font-medium">
-                  API calls blocked. Top up to continue.
+                  API calls blocked. Purchase credits to continue.
                 </p>
               )}
               {isCritical && !isBlocked && (
                 <p className="text-xs text-amber-600 font-medium">
-                  Balance critically low. Top up soon.
+                  Balance critically low. Purchase credits soon.
                 </p>
               )}
             </div>
