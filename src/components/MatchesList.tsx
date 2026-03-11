@@ -244,12 +244,13 @@ export function MatchesList() {
 
       // Only clear succeeded matches from selection; keep failed ones for retry
       if (failed > 0) {
-        // Keep all selections — user can retry
+        // Keep all selections — user can retry the failed ones
         setShowSettleDialog(false);
       } else {
         setSelectedMatches(new Set());
         setShowSettleDialog(false);
       }
+      refetch();
     } catch (error: any) {
       console.error("Error confirming intent:", error);
       toast.error("Failed to confirm intent");
