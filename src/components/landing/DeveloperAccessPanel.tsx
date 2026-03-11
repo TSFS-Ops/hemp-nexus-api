@@ -34,7 +34,7 @@ export function DeveloperAccessPanel() {
           {/* Code content */}
           <pre className="p-5 sm:p-6 font-mono text-[12px] leading-[1.85] whitespace-pre overflow-x-auto">
             <code>
-              <span className="text-muted-foreground">{"# Initialize governed counterparty discovery"}</span>{"\n"}
+              <span className="text-muted-foreground">{"# Initialise governed counterparty discovery"}</span>{"\n"}
               <span className="text-muted-foreground">{"# Requires active API key and valid compliance workspace ID"}</span>{"\n"}
               {"\n"}
               <span className="text-primary">curl</span>

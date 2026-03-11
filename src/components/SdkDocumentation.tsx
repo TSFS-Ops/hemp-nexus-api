@@ -8,7 +8,7 @@ import { CodeBlock } from "@/components/ui/code-block";
 
 const typescriptExample = `import { IzenzoClient } from '@/lib/izenzo-sdk';
 
-// Initialize the client
+// Initialise the client
 const client = new IzenzoClient('sk_your_api_key');
 
 // Create a match
