@@ -141,7 +141,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Min: {minimumRequired.toLocaleString()}</span>
         <Link 
-          to="/dashboard/billing" 
+          to="/billing" 
           className="text-primary hover:underline"
         >
           Purchase Credits →
