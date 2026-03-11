@@ -38,7 +38,7 @@ export function ErrorState({
     },
     server: {
       title: "Server error",
-      message: "Our servers are having trouble. Please try again later.",
+      message: "Our servers are having trouble. Please try again in a moment. If this persists, contact support@izenzo.co.za.",
     },
     empty: {
       title: "No data found",
