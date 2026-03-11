@@ -463,7 +463,7 @@ console.log('Intent confirmed at:', result.settled_at);`}
                     <Badge variant="outline">match.created</Badge>
                     <Badge variant="outline">intent.confirmed</Badge>
                     <Badge variant="outline">intent.received</Badge>
-                    <Badge variant="outline">token.low_balance</Badge>
+                    <Badge variant="outline">credit.low_balance</Badge>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-2">
                     <p>
@@ -471,8 +471,8 @@ console.log('Intent confirmed at:', result.settled_at);`}
                       is triggered when a user confirms intent. This is the only event that creates audit/evidence records.
                     </p>
                     <p>
-                      <code>token.low_balance</code> is triggered when your organization's token balance crosses 
-                      warning thresholds (6,000, 5,500, or 5,001 tokens). Use this to set up automated top-up alerts.
+                      <code>credit.low_balance</code> is triggered when your organization's credit balance crosses 
+                      warning thresholds (6,000, 5,500, or 5,001 credits). Use this to set up automated top-up alerts.
                     </p>
                   </div>
                 </div>

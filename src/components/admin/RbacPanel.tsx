@@ -25,7 +25,7 @@ const GOVERNANCE_ROLES = [
   { value: "platform_admin", label: "Platform Admin", description: "Full system access" },
   { value: "org_admin", label: "Org Admin", description: "Full org-level control" },
   { value: "api_admin", label: "API Admin", description: "API key management" },
-  { value: "billing_admin", label: "Billing Admin", description: "Token and billing management" },
+  { value: "billing_admin", label: "Billing Admin", description: "Credit and billing management" },
   { value: "compliance_analyst", label: "Compliance Analyst", description: "Due diligence reviews" },
   { value: "legal_reviewer", label: "Legal Reviewer", description: "Legal document review" },
   { value: "director", label: "Director", description: "Break-glass and BRD changes" },
