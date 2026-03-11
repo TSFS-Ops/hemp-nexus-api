@@ -176,11 +176,11 @@ export default function Landing() {
         />
         <div className="max-w-xl mx-auto text-center relative z-10">
           <h2 className="text-foreground mb-4 tracking-tighter">
-            Ready to discover counterparties?
+            Ready to find your next counterparty?
           </h2>
           <p className="text-[13px] text-muted-foreground mb-8 leading-relaxed">
-            Create an account to generate verified Proof-of-Intentions, access eligibility
-            workflows, and progress toward compliant transactions.
+            Create an account to search for verified counterparties, confirm intent,
+            and build compliance-ready evidence packs — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {isAuthenticated ? (
