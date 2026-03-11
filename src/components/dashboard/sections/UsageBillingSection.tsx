@@ -189,7 +189,7 @@ export function UsageBillingSection() {
         <header className="space-y-1">
           <h1 className="font-bold tracking-tight">Usage & Billing</h1>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-            Monitor your API token usage and billing
+            Your credit usage and transaction history
           </p>
         </header>
         <div className="grid gap-4 md:grid-cols-4">
