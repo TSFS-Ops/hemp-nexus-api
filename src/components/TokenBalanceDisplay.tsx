@@ -79,7 +79,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <div className="space-y-1">
-              <p className="font-medium">Token Balance: {currentBalance.toLocaleString()}</p>
+              <p className="font-medium">Credit Balance: {currentBalance.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">
                 Minimum required: {minimumRequired.toLocaleString()}
               </p>
