@@ -33,9 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         p_user_id: userId,
         p_email: email,
       });
+      const result = data as Record<string, unknown> | null;
       if (error) {
         console.error("[AuthContext] ensure_user_profile failed:", error.message);
-      } else if (data?.status === "created") {
+      } else if (result?.status === "created") {
         console.info("[AuthContext] Profile auto-repaired for", userId);
       }
     } catch (err) {
