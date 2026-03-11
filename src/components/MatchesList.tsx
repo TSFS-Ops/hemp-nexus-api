@@ -356,7 +356,7 @@ export function MatchesList() {
                     ) : (
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                     )}
-                    Confirm intent for {selectedMatches.size} match{selectedMatches.size > 1 ? 'es' : ''}
+                    Confirm Intent ({selectedMatches.size})
                   </Button>
                   <TooltipProvider>
                     <Tooltip>

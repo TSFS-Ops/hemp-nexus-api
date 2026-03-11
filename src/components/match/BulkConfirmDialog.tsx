@@ -106,7 +106,7 @@ export function BulkConfirmDialog({
                     <span className="font-medium text-foreground">{currentBalance.toLocaleString()} credits</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">After confirmation</span>
+                    <span className="text-muted-foreground">Remaining Balance</span>
                     <span className={`font-medium ${hasEnough ? "text-foreground" : "text-destructive"}`}>
                       {remainingBalance.toLocaleString()} credits
                     </span>
