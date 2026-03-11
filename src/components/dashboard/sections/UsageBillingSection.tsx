@@ -207,7 +207,7 @@ export function UsageBillingSection() {
         <div className="space-y-1">
           <h1 className="font-bold tracking-tight">Usage & Billing</h1>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl">
-            Monitor your API token usage and billing
+            Your credit usage and transaction history. <a href="/billing" className="text-primary hover:underline">Purchase credits →</a>
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={handleRefresh}>
