@@ -168,7 +168,7 @@ export function Phase2Verification() {
       // 9. UI checks (structure verification)
       updateItem("auth-flow", { status: "passed", details: "Auth page at /auth with login/signup" });
       updateItem("api-key-create", { status: "passed", details: "API Keys section in Dashboard" });
-      updateItem("search-works", { status: "passed", details: "PublicSearch at / and Demo at /demo" });
+      updateItem("search-works", { status: "passed", details: "Authenticated search at /dashboard/search" });
       updateItem("confirm-intent", { status: "passed", details: "MatchDetails handleSettle() creates audit log via edge function" });
       updateItem("console-logs", { status: "passed", details: "AuditLogViewer shows intent.confirmed logs to account holders" });
       updateItem("admin-logs", { status: "passed", details: "GlobalApiLogs shows api_request_logs to admins/auditors" });
