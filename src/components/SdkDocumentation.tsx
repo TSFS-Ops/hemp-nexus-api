@@ -8,7 +8,7 @@ import { CodeBlock } from "@/components/ui/code-block";
 
 const typescriptExample = `import { IzenzoClient } from '@/lib/izenzo-sdk';
 
-// Initialize the client
+// Initialise the client
 const client = new IzenzoClient('sk_your_api_key');
 
 // Create a match
@@ -403,7 +403,7 @@ export function SdkDocumentation() {
               <h4 className="font-medium mb-2 text-destructive">Error Codes</h4>
               <ul className="space-y-1 text-sm">
                 <li><code className="bg-muted px-1 rounded">400</code> - Validation Error</li>
-                <li><code className="bg-muted px-1 rounded">401</code> - Unauthorized</li>
+                <li><code className="bg-muted px-1 rounded">401</code> - Unauthorised</li>
                 <li><code className="bg-muted px-1 rounded">403</code> - Forbidden</li>
                 <li><code className="bg-muted px-1 rounded">404</code> - Not Found</li>
                 <li><code className="bg-muted px-1 rounded">429</code> - Rate Limited</li>

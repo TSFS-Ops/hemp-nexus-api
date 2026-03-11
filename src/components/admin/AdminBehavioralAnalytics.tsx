@@ -58,7 +58,7 @@ export function AdminBehavioralAnalytics() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Behavioral Analytics</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Behavioural Analytics</h2>
           <p className="text-muted-foreground mt-2">
             Non-binding user interactions. These do NOT create audit/evidence records.
           </p>
@@ -202,7 +202,7 @@ export function AdminBehavioralAnalytics() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest behavioral signals (non-binding)</CardDescription>
+          <CardDescription>Latest behavioural signals (non-binding)</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -231,7 +231,7 @@ export function AdminBehavioralAnalytics() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              No behavioral signals recorded yet.
+              No behavioural signals recorded yet.
             </div>
           )}
         </CardContent>

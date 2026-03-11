@@ -193,7 +193,7 @@ export function AdminSettings() {
           <Card>
             <CardHeader>
               <CardTitle>API Settings</CardTitle>
-              <CardDescription>Configure API behavior and limits</CardDescription>
+              <CardDescription>Configure API behaviour and limits</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">

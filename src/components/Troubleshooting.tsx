@@ -46,7 +46,7 @@ export default function Troubleshooting() {
     {
       code: "AUTH_001",
       status: 401,
-      title: "Unauthorized - Invalid API Key",
+      title: "Unauthorised - Invalid API Key",
       description: "The API key provided is invalid or has been revoked.",
       causes: [
         "API key was typed incorrectly",
@@ -204,7 +204,7 @@ export default function Troubleshooting() {
     },
     {
       category: "Errors",
-      question: "I'm getting 'Unauthorized' errors. What's wrong?",
+      question: "I'm getting 'Unauthorised' errors. What's wrong?",
       answer: "This usually means your API key is invalid, expired, or copied incorrectly. Check: 1) The key has no extra spaces or characters, 2) The key status is 'active' in your dashboard, 3) You're using the correct key for your environment."
     },
     {

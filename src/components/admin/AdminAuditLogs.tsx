@@ -145,7 +145,7 @@ export function AdminAuditLogs() {
               <p className="text-sm text-green-700 dark:text-green-300 mt-1">
                 This log contains only <strong>binding actions</strong> that create legal intent records.
                 "Confirm Intent" actions appear here. Soft actions (skip, maybe later) are tracked 
-                separately in Behavioral Analytics and do NOT appear in this audit trail.
+                separately in Behavioural Analytics and do NOT appear in this audit trail.
               </p>
             </div>
           </div>

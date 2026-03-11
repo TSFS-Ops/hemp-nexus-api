@@ -95,7 +95,7 @@ export function AdminOverview() {
     { to: "/admin/matches", icon: GitCompare, label: "Matches" },
     { to: "/admin/signals", icon: Radio, label: "Signals" },
     { to: "/admin/coherence", icon: TrendingUp, label: "Coherence Engine" },
-    { to: "/admin/behavioral", icon: Activity, label: "Behavioral Analytics" },
+    { to: "/admin/behavioral", icon: Activity, label: "Behavioural Analytics" },
     { to: "/admin/audit", icon: FileText, label: "Audit Logs" },
     { to: "/admin/api-keys", icon: Key, label: "API Keys" },
     { to: "/admin/users-orgs", icon: Users, label: "Users & Orgs" },
@@ -165,7 +165,7 @@ export function AdminOverview() {
               <h4 className="font-semibold">Non-Binding Actions</h4>
               <p className="text-sm text-muted-foreground mt-1">
                 Skip, Maybe Later, Not Now, Browse, View - No records created.
-                Purely behavioral signals for UX improvement.
+                Purely behavioural signals for UX improvement.
               </p>
             </div>
           </div>
