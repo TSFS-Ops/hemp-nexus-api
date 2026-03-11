@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowRight, FileText, LogIn } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { type DemoSearchResult } from "@/lib/demo-data";
 
 type NeverZeroPhase = "scanning" | "pivot" | "ready";
