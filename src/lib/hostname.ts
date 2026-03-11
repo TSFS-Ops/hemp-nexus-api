@@ -122,7 +122,7 @@ export function isRouteAllowed(pathname: string): boolean {
     // Allow public routes, auth, and shared routes like pricing
     return (
       pathname === ROUTES.ROOT ||
-      pathname === ROUTES.DEMO ||
+      pathname === ROUTES.DOCS ||
       pathname === ROUTES.DOCS ||
       pathname === ROUTES.PRICING ||
       pathname === ROUTES.AUTH
