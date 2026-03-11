@@ -1,5 +1,5 @@
 /**
- * Terminal-like compact bid/offer entry — the primary first action.
+ * Swiss-Terminal bid/offer entry — ledger-line input cells.
  * Fields: Product, Volume, Price, Location, Additional information.
  */
 
@@ -18,11 +18,6 @@ interface BidOfferFormProps {
   onSearch: (data: BidOfferData) => void;
   isSearching: boolean;
 }
-
-const fieldClass =
-  "w-full h-9 px-3 text-[13px] bg-background border border-border rounded-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring/40 focus:border-ring/50 transition-all font-sans";
-
-const labelClass = "block text-[11px] font-medium text-muted-foreground mb-1 uppercase tracking-wider";
 
 export function BidOfferForm({ onSearch, isSearching }: BidOfferFormProps) {
   const [form, setForm] = useState<BidOfferData>({
@@ -44,75 +39,63 @@ export function BidOfferForm({ onSearch, isSearching }: BidOfferFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="product" className={labelClass}>Product *</label>
-          <input
-            id="product"
-            type="text"
-            placeholder="e.g. Copper cathode"
-            value={form.product}
-            onChange={(e) => update("product", e.target.value)}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="volume" className={labelClass}>Volume</label>
-          <input
-            id="volume"
-            type="text"
-            placeholder="e.g. 2,500 MT"
-            value={form.volume}
-            onChange={(e) => update("volume", e.target.value)}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="price" className={labelClass}>Price</label>
-          <input
-            id="price"
-            type="text"
-            placeholder="e.g. USD 8,500/MT"
-            value={form.price}
-            onChange={(e) => update("price", e.target.value)}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="location" className={labelClass}>Location</label>
-          <input
-            id="location"
-            type="text"
-            placeholder="e.g. Zambia → India"
-            value={form.location}
-            onChange={(e) => update("location", e.target.value)}
-            className={fieldClass}
-          />
-        </div>
-      </div>
-      <div>
-        <label htmlFor="additionalInfo" className={labelClass}>Additional information</label>
-        <input
-          id="additionalInfo"
-          type="text"
-          placeholder="e.g. Grade A, delivery requirements"
-          value={form.additionalInfo}
-          onChange={(e) => update("additionalInfo", e.target.value)}
-          className={fieldClass}
+    <form onSubmit={handleSubmit}>
+      {/* Ledger-line grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2">
+        <LedgerField
+          id="product"
+          label="Product"
+          required
+          placeholder="Copper cathode"
+          value={form.product}
+          onChange={(v) => update("product", v)}
+        />
+        <LedgerField
+          id="volume"
+          label="Volume"
+          placeholder="2,500 MT"
+          value={form.volume}
+          onChange={(v) => update("volume", v)}
+          className="sm:border-l border-border"
+        />
+        <LedgerField
+          id="price"
+          label="Price"
+          placeholder="USD 8,500/MT"
+          value={form.price}
+          onChange={(v) => update("price", v)}
+        />
+        <LedgerField
+          id="location"
+          label="Location"
+          placeholder="Zambia → India"
+          value={form.location}
+          onChange={(v) => update("location", v)}
+          className="sm:border-l border-border"
         />
       </div>
+      <LedgerField
+        id="additionalInfo"
+        label="Additional information"
+        placeholder="Grade A, delivery requirements"
+        value={form.additionalInfo}
+        onChange={(v) => update("additionalInfo", v)}
+        full
+      />
+
+      {/* Search — machined copper button */}
       <button
         type="submit"
         disabled={!canSearch || isSearching}
-        className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground
-                 rounded-sm font-medium text-[13px] transition-colors disabled:opacity-40
-                 disabled:cursor-not-allowed flex items-center justify-center gap-2
+        className="w-full h-10 mt-0 bg-primary text-primary-foreground shadow-inner-metallic
+                 font-mono text-[12px] uppercase tracking-widest font-medium
+                 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed
+                 hover:opacity-90 flex items-center justify-center gap-2
                  focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         {isSearching ? (
           <>
-            <span className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+            <span className="h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
             Searching…
           </>
         ) : (
@@ -123,5 +106,48 @@ export function BidOfferForm({ onSearch, isSearching }: BidOfferFormProps) {
         )}
       </button>
     </form>
+  );
+}
+
+function LedgerField({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  required,
+  className = "",
+  full,
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  className?: string;
+  full?: boolean;
+}) {
+  return (
+    <div className={`border-b border-border ${full ? "" : ""} ${className}`}>
+      <label
+        htmlFor={id}
+        className="block px-3 pt-2 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60"
+      >
+        {label}
+        {required && <span className="text-primary ml-0.5">*</span>}
+      </label>
+      <input
+        id={id}
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-8 px-3 pb-1.5 text-[13px] font-mono bg-transparent
+                   placeholder:text-muted-foreground/25 text-foreground
+                   focus:outline-none border-none
+                   focus:bg-accent/30 transition-colors"
+      />
+    </div>
   );
 }

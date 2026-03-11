@@ -22,8 +22,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Consolas', 'Monaco', 'monospace'],
+        sans: ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Roboto Mono', 'Menlo', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -80,11 +80,27 @@ export default {
           DEFAULT: "hsl(var(--basalt))",
           foreground: "hsl(var(--basalt-foreground))",
         },
+        signal: {
+          verified: "hsl(var(--signal-verified))",
+          pending: "hsl(var(--signal-pending))",
+        },
+        graphite: "hsl(var(--graphite))",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius))",
-        sm: "calc(var(--radius))",
+        lg: "2px",
+        md: "2px",
+        sm: "1px",
+        DEFAULT: "2px",
+        none: "0px",
+      },
+      letterSpacing: {
+        tighter: "-0.03em",
+        widest: "0.05em",
+      },
+      boxShadow: {
+        sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        "inner-metallic": "inset 0 1px 0 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 0 rgba(0, 0, 0, 0.1)",
+        none: "0 0 #0000",
       },
       keyframes: {
         "accordion-down": {
@@ -117,7 +133,7 @@ export default {
         "slide-in-left": "slide-in-left 0.2s ease-out",
         "slide-in-right": "slide-in-right 0.2s ease-out",
         shimmer: "shimmer 1.5s infinite",
-        ticker: "ticker 45s linear infinite",
+        ticker: "ticker 60s linear infinite",
       },
     },
   },
