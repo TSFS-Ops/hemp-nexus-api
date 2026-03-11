@@ -24,8 +24,14 @@ const STATS = [
 
 export function StatsBar() {
   return (
-    <section className="py-16 sm:py-20 px-4 sm:px-6 border-t border-border bg-accent/20">
-      <div className="max-w-[1280px] mx-auto">
+    <section className="relative py-16 sm:py-20 px-4 sm:px-6 border-t border-border bg-accent/20 overflow-hidden">
+      {/* Gradient accent */}
+      <div
+        className="absolute top-0 right-0 w-1/2 h-full pointer-events-none opacity-[0.04]"
+        aria-hidden="true"
+        style={{ background: `linear-gradient(135deg, transparent 0%, hsl(var(--primary)) 100%)` }}
+      />
+      <div className="max-w-[1280px] mx-auto relative z-10">
         <div className="mb-10 animate-fade-up">
           <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
             Platform at Scale

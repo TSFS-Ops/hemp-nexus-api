@@ -170,8 +170,14 @@ export default function Landing() {
       <DeveloperAccessPanel />
 
       {/* Panel 8: Bottom CTA */}
-      <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-border">
-        <div className="max-w-xl mx-auto text-center">
+      <section className="relative py-20 sm:py-28 px-4 sm:px-6 border-t border-border overflow-hidden">
+        {/* Radial glow */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[150px] opacity-[0.05] pointer-events-none"
+          aria-hidden="true"
+          style={{ background: `hsl(var(--primary))` }}
+        />
+        <div className="max-w-xl mx-auto text-center relative z-10">
           <h2 className="text-foreground mb-4 tracking-tighter">
             Ready to discover counterparties?
           </h2>

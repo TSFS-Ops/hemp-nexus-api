@@ -42,8 +42,17 @@ const CAPABILITIES = [
 
 export function CapabilitiesGrid() {
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-border">
-      <div className="max-w-[1280px] mx-auto">
+    <section className="relative py-20 sm:py-28 px-4 sm:px-6 border-t border-border overflow-hidden">
+      {/* Subtle cross-hatch */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.025] dark:opacity-[0.04]"
+        aria-hidden="true"
+        style={{
+          backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
+          backgroundSize: "80px 80px",
+        }}
+      />
+      <div className="max-w-[1280px] mx-auto relative z-10">
         <div className="max-w-xl mb-14 animate-fade-up">
           <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
             Platform Capabilities
