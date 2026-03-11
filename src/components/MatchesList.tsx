@@ -222,7 +222,7 @@ export function MatchesList() {
       }
 
       let succeeded = 0;
-      let alreadyDone = 0;
+      let failed = 0;
       let failed = 0;
       const failedIds: string[] = [];
       const errors: string[] = [];
