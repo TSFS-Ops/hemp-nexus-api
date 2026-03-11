@@ -1,28 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  FlaskConical,
-  Sparkles,
-  CheckCircle2,
-  Loader2,
-  Database,
-  Signal,
-  Handshake,
-} from "lucide-react";
-import { toast } from "sonner";
+import { FlaskConical } from "lucide-react";
 
 // ── Preview Banner (for unauthenticated / public search) ──────────────
 
