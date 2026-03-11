@@ -166,7 +166,7 @@ function LedgerField({
     >
       <label
         htmlFor={id}
-        className="block px-3 pt-2 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60"
+        className="block px-3 pt-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
       >
         {label}
         {required && <span className="text-primary ml-0.5">*</span>}
