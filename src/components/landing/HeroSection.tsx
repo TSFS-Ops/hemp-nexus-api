@@ -64,12 +64,13 @@ export function HeroSection({
             Closing the $2.5 trillion global trade-finance gap
           </p>
           <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-5 leading-[1.02]">
-            Find verified counterparties,{" "}
-            <br className="hidden lg:inline" />
-            confirm intent, and build audit-ready evidence.
+            Discover counterparties. Signal intent. Execute with confidence.
           </h1>
-          <p className="text-[13px] text-muted-foreground max-w-lg leading-relaxed mb-8 animate-fade-up delay-75">
-            Search for counterparties. Signal your interest. Download audit-ready evidence — all in one workflow.
+          <p className="text-[13px] text-muted-foreground max-w-lg leading-relaxed mb-2 animate-fade-up delay-75">
+            Izenzo API is a next-generation search and governance infrastructure for trade.
+          </p>
+          <p className="text-[13px] text-muted-foreground max-w-lg leading-relaxed mb-8 animate-fade-up delay-100">
+            It enables counterparties to discover each other, signal intent, and progress toward compliant transactions across industries and jurisdictions. By combining structured search with Proof-of-Intention (POI), it turns early-stage interest into governed, verifiable pathways to trade.
           </p>
 
           {/* CTA buttons — Stripe-style dual action */}
