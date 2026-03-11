@@ -6,53 +6,60 @@
 
 @layer base {
   :root {
-    --background: 0 0% 99%;
-    --foreground: 220 20% 10%;
+    --background: 40 20% 98%;
+    --foreground: 30 15% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card: 40 15% 99%;
+    --card-foreground: 30 15% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover: 40 15% 99%;
+    --popover-foreground: 30 15% 12%;
 
-    --primary: 220 65% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 150 35% 30%;
+    --primary-foreground: 40 20% 98%;
 
-    --secondary: 220 10% 94%;
-    --secondary-foreground: 220 20% 25%;
+    --secondary: 35 15% 93%;
+    --secondary-foreground: 30 15% 25%;
 
-    --muted: 220 10% 96%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 35 12% 95%;
+    --muted-foreground: 30 10% 45%;
 
-    --accent: 220 10% 92%;
-    --accent-foreground: 220 20% 15%;
+    --accent: 35 12% 91%;
+    --accent-foreground: 30 15% 15%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 10% 90%;
-    --input: 220 10% 90%;
-    --ring: 220 65% 45%;
+    --border: 35 12% 88%;
+    --input: 35 12% 88%;
+    --ring: 150 35% 30%;
 
     --radius: 0.375rem;
 
-    --sidebar-background: 220 15% 97%;
-    --sidebar-foreground: 220 20% 15%;
-    --sidebar-primary: 220 65% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 10% 92%;
-    --sidebar-accent-foreground: 220 20% 15%;
-    --sidebar-border: 220 10% 90%;
-    --sidebar-ring: 220 65% 45%;
+    --sidebar-background: 35 15% 96%;
+    --sidebar-foreground: 30 15% 15%;
+    --sidebar-primary: 150 35% 30%;
+    --sidebar-primary-foreground: 40 20% 98%;
+    --sidebar-accent: 35 12% 91%;
+    --sidebar-accent-foreground: 30 15% 15%;
+    --sidebar-border: 35 12% 88%;
+    --sidebar-ring: 150 35% 30%;
 
     /* Custom tokens */
-    --surface-elevated: 0 0% 100%;
-    --surface-sunken: 220 10% 97%;
-    --text-tertiary: 220 10% 55%;
+    --surface-elevated: 40 15% 99%;
+    --surface-sunken: 35 12% 96%;
+    --text-tertiary: 30 10% 55%;
     --success: 142 70% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+
+    /* Earthy accent tokens */
+    --earth-warm: 28 60% 42%;
+    --earth-copper: 18 55% 48%;
+    --earth-sage: 150 25% 42%;
+    --earth-sand: 38 30% 82%;
+    --earth-slate: 200 12% 35%;
   }
 
   .dark {
