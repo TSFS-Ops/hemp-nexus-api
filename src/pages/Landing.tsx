@@ -86,16 +86,13 @@ export default function Landing() {
 
   const handleConfirmIntent = useCallback(() => {
     if (isAuthenticated) {
-      // Redirect to console search with query pre-filled — landing page uses demo data,
-      // so we cannot create real matches here.
       const params = new URLSearchParams({ q: lastQuery });
-      toast.info("Redirecting to your console to confirm intent…");
       window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
     savePreAuthState({ query: lastQuery, selectedIds: Array.from(selectedResults), pendingAction: "interested", returnTo: "/" });
     toast.info("Sign in to continue", {
-      description: "Create an account to confirm your interest and generate a verified POI.",
+      description: "Create an account to search for real counterparties and confirm intent.",
       action: { label: "Sign in", onClick: navigateToAuth },
     });
   }, [isAuthenticated, selectedResults, lastQuery, navigateToAuth]);
