@@ -20,31 +20,41 @@ export function PublicHeader() {
   };
 
   return (
-    <nav className="border-b border-border bg-background sticky top-0 z-50">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-11 flex items-center justify-between">
+    <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-1.5">
-          <span className="text-[14px] font-bold tracking-tighter text-foreground">IZENZO</span>
-          <span className="text-[10px] font-mono font-medium text-muted-foreground tracking-widest uppercase">API</span>
+        <Link to="/" className="flex items-center gap-2 group">
+          <span className="text-[14px] font-bold tracking-tighter text-foreground transition-colors">IZENZO</span>
+          <span className="text-[9px] font-mono font-medium text-muted-foreground tracking-widest uppercase border border-border px-1.5 py-0.5 group-hover:border-primary/30 transition-colors">
+            API
+          </span>
         </Link>
 
-        {/* Center nav */}
-        <div className="hidden md:flex items-center gap-6">
-          <button
-            onClick={() => scrollTo("how-it-works")}
-            className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-          >
-            How it Works
-          </button>
-          <button
-            onClick={() => scrollTo("signals")}
-            className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Signals
-          </button>
+        {/* Center nav — with subtle hover underlines */}
+        <div className="hidden md:flex items-center gap-8">
+          {[
+            { label: "How it Works", id: "how-it-works" },
+            { label: "Signals", id: "signals" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => scrollTo(item.id)}
+              className="relative text-[11px] font-mono uppercase tracking-widest text-muted-foreground
+                       hover:text-foreground transition-colors py-1
+                       after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px
+                       after:bg-primary after:scale-x-0 after:transition-transform after:duration-300
+                       hover:after:scale-x-100 after:origin-left"
+            >
+              {item.label}
+            </button>
+          ))}
           <Link
             to="/docs"
-            className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+            className="relative text-[11px] font-mono uppercase tracking-widest text-muted-foreground
+                     hover:text-foreground transition-colors py-1
+                     after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px
+                     after:bg-primary after:scale-x-0 after:transition-transform after:duration-300
+                     hover:after:scale-x-100 after:origin-left"
           >
             Developer Access
           </Link>
@@ -55,7 +65,9 @@ export function PublicHeader() {
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 h-7 text-[11px] font-mono uppercase tracking-widest font-medium bg-primary text-primary-foreground shadow-inner-metallic hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 px-3.5 h-8 text-[11px] font-mono uppercase tracking-widest font-medium
+                       bg-primary text-primary-foreground shadow-inner-metallic
+                       hover:opacity-90 transition-all active:scale-[0.98]"
             >
               Dashboard
               <ArrowRight className="h-3 w-3" />
@@ -65,7 +77,8 @@ export function PublicHeader() {
               <AuthLink className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex">
                 Sign In
               </AuthLink>
-              <AuthLink className="inline-flex items-center gap-1 px-3 h-7 text-[11px] font-mono uppercase tracking-widest font-medium border border-border text-foreground hover:bg-accent transition-colors">
+              <AuthLink className="inline-flex items-center gap-1.5 px-3.5 h-8 text-[11px] font-mono uppercase tracking-widest font-medium
+                                 border border-border text-foreground hover:bg-accent hover:border-foreground/15 transition-all active:scale-[0.98]">
                 Create Account
               </AuthLink>
             </>
