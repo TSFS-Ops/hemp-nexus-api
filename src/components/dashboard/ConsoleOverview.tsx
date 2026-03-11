@@ -142,9 +142,9 @@ export function ConsoleOverview() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-foreground mb-1">Overview</h1>
+        <h1 className="text-2xl font-semibold text-foreground mb-1">Console</h1>
         <p className="text-muted-foreground">
-          Your organisation's API activity at a glance
+          Your activity at a glance — search, match, and confirm intent
         </p>
       </header>
 
