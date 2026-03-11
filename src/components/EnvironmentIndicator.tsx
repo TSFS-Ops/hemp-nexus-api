@@ -1,42 +1,6 @@
-import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FlaskConical } from "lucide-react";
-
-// ── Preview Banner (for unauthenticated / public search) ──────────────
-
-interface DemoModeBannerProps {
-  variant?: "compact" | "full";
-}
-
-export function DemoModeBanner({ variant = "full" }: DemoModeBannerProps) {
-  if (variant === "compact") {
-    return (
-      <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/50 border border-border rounded-lg mb-6">
-        <span className="text-xs font-medium text-muted-foreground">Preview</span>
-        <span className="text-xs text-muted-foreground">— Sign in to search real counterparties and create matches.</span>
-        <Link to="/auth" className="ml-auto">
-          <button className="px-3 py-1 text-xs font-medium rounded border border-border bg-background hover:bg-accent transition-colors">
-            Sign in
-          </button>
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-start gap-3 p-4 bg-muted/30 border border-border rounded-lg mb-6">
-      <div className="flex-1">
-        <p className="text-sm font-medium text-foreground mb-1">Preview mode</p>
-        <p className="text-sm text-muted-foreground">
-          You are viewing sample results.{" "}
-          <Link to="/auth" className="text-primary hover:underline">Sign in</Link> or{" "}
-          <Link to="/auth" className="text-primary hover:underline">create an account</Link> to search real counterparties and create matches.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ── Sandbox Indicator (for authenticated console) ───────────────────────
 

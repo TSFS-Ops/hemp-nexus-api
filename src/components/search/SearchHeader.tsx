@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,6 @@ interface SearchHeaderProps {
   setQuery: (query: string) => void;
   onSearch: () => void;
   isSearching: boolean;
-  isDemoMode: boolean;
 }
 
 const EXAMPLE_QUERIES = [
@@ -23,7 +21,6 @@ export function SearchHeader({
   setQuery, 
   onSearch, 
   isSearching, 
-  isDemoMode 
 }: SearchHeaderProps) {
   return (
     <Card>
@@ -31,11 +28,6 @@ export function SearchHeader({
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Search className="h-4 w-4 sm:h-5 sm:w-5" />
           Find Counterparties
-          {isDemoMode && (
-            <Badge variant="outline" className="ml-auto text-[10px] sm:text-xs">
-              Demo
-            </Badge>
-          )}
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
           Enter a natural language query to discover trading partners
@@ -73,7 +65,7 @@ export function SearchHeader({
           </Button>
         </div>
 
-        {/* Example queries - scrollable on mobile */}
+        {/* Example queries */}
         <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
             Try:

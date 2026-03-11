@@ -8,7 +8,6 @@ import { HostnameRouter } from "@/components/HostnameRouter";
 import { getHostType } from "@/lib/hostname";
 import { ROUTES } from "@/lib/constants";
 import Landing from "@/pages/Landing";
-import Demo from "@/pages/Demo";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Admin from "@/pages/Admin";
@@ -21,7 +20,7 @@ import NotFound from "@/pages/NotFound";
 
 /**
  * Root element that renders based on host type:
- * - Public domain: Landing page with embedded demo search
+ * - Public domain: Landing page
  * - Console domain: Redirect to Dashboard
  * - Preview: Landing page (for testing)
  */
@@ -46,7 +45,6 @@ function App() {
                 <Route path={ROUTES.ROOT} element={<RootElement />} />
                 {/* Canonical redirect: /landing → / */}
                 <Route path="/landing" element={<Navigate to="/" replace />} />
-                <Route path={ROUTES.DEMO} element={<Demo />} />
                 <Route path={ROUTES.AUTH} element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path={ROUTES.BILLING} element={<Billing />} />
@@ -55,7 +53,7 @@ function App() {
                 <Route path={ROUTES.DOCS} element={<Docs />} />
                 <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                 <Route path={ROUTES.PRICING} element={<Pricing />} />
-                {/* 404 for unknown routes — visible to users and developers */}
+                {/* 404 for unknown routes */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Sonner />

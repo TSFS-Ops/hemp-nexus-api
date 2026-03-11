@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
@@ -13,61 +13,19 @@ import { SocialProof } from "@/components/landing/SocialProof";
 import { DeveloperAccessPanel } from "@/components/landing/DeveloperAccessPanel";
 import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
 import { type BidOfferData } from "@/components/landing/BidOfferForm";
-import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
-import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
+import { savePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SCAN_DURATION_MS = 1200;
 
 export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<DemoSearchResult[]>([]);
-  const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [hasSearched, setHasSearched] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
   const [isFormLocked, setIsFormLocked] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
   const { isAuthenticated } = useAuth();
-  const [searchParams] = useSearchParams();
-
-  // Restore pre-auth search state after sign-in (single consolidated effect)
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    // Only restore if there's saved state — consumePreAuthState is destructive (removes from sessionStorage)
-    const restored = consumePreAuthState();
-    if (!restored) return;
-    // Guard: don't restore stale state if user already has results on screen
-    if (hasSearched && results.length > 0) return;
-    setLastQuery(restored.query);
-    setHasSearched(true);
-    setResults(getDemoResultsForQuery(restored.query));
-    setSelectedResults(new Set(restored.selectedIds));
-    toast.success("Welcome back — your search has been restored.");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
-
-  const handleSearch = useCallback(async (data: BidOfferData) => {
-    setIsSearching(true);
-    setIsFormLocked(true);
-    setHasSearched(true);
-    setResults([]);
-    setSelectedResults(new Set());
-    const queryString = [data.product, data.location].filter(Boolean).join(" ");
-    setLastQuery(queryString);
-    await new Promise((r) => setTimeout(r, SCAN_DURATION_MS));
-    const searchResults = getDemoResultsForQuery(queryString);
-    setResults(searchResults);
-    setIsSearching(false);
-    setIsFormLocked(false);
-  }, []);
-
-  const toggleSelect = (id: string) => {
-    const next = new Set(selectedResults);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedResults(next);
-  };
 
   const navigateToAuth = useCallback(() => {
     if (isPreview) {
@@ -77,18 +35,38 @@ export default function Landing() {
     }
   }, [isPreview, authUrl]);
 
+  const handleSearch = useCallback(async (data: BidOfferData) => {
+    const queryString = [data.product, data.location].filter(Boolean).join(" ");
+    setLastQuery(queryString);
+
+    // If authenticated, redirect to real search in the console
+    if (isAuthenticated) {
+      const params = new URLSearchParams({ q: queryString });
+      window.location.assign(`/dashboard/search?${params.toString()}`);
+      return;
+    }
+
+    // Unauthenticated: show scanning animation then gate behind sign-in
+    setIsSearching(true);
+    setIsFormLocked(true);
+    setHasSearched(true);
+    await new Promise((r) => setTimeout(r, SCAN_DURATION_MS));
+    setIsSearching(false);
+    setIsFormLocked(false);
+  }, [isAuthenticated]);
+
   const handleConfirmIntent = useCallback(() => {
     if (isAuthenticated) {
       const params = new URLSearchParams({ q: lastQuery });
       window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
-    savePreAuthState({ query: lastQuery, selectedIds: Array.from(selectedResults), pendingAction: "interested", returnTo: "/" });
+    savePreAuthState({ query: lastQuery, selectedIds: [], pendingAction: "interested", returnTo: "/" });
     toast.info("Sign in to continue", {
       description: "Create an account to search for real counterparties and confirm intent.",
       action: { label: "Sign in", onClick: navigateToAuth },
     });
-  }, [isAuthenticated, selectedResults, lastQuery, navigateToAuth]);
+  }, [isAuthenticated, lastQuery, navigateToAuth]);
 
   const handlePublishPoi = useCallback(() => {
     if (isAuthenticated) {
@@ -112,11 +90,8 @@ export default function Landing() {
       <HeroSection
         isSearching={isSearching}
         isFormLocked={isFormLocked}
-        results={results}
         hasSearched={hasSearched}
-        selectedResults={selectedResults}
         onSearch={handleSearch}
-        onToggleSelect={toggleSelect}
         onConfirmIntent={handleConfirmIntent}
         onPublishPoi={handlePublishPoi}
         onSignIn={navigateToAuth}
@@ -168,7 +143,6 @@ export default function Landing() {
 
       {/* Panel 8: Bottom CTA */}
       <section className="relative py-20 sm:py-28 px-4 sm:px-6 border-t border-border overflow-hidden">
-        {/* Radial glow */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[150px] opacity-[0.05] pointer-events-none"
           aria-hidden="true"

@@ -35,12 +35,12 @@ export default function Dashboard() {
 
   return (
     <RequireAuth>
-      <DashboardLayout isAdmin={isAdmin} isDemoMode={false}>
+      <DashboardLayout isAdmin={isAdmin}>
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<ConsoleOverview />} />
             <Route path="/search" element={<SearchSection />} />
-            <Route path="/matches" element={<MatchesSection isDemoMode={false} />} />
+            <Route path="/matches" element={<MatchesSection />} />
             <Route path="/matches/:matchId" element={<MatchDetails />} />
             <Route path="/settings" element={<DashboardSettings />} />
             <Route path="/account" element={<AccountSection />} />

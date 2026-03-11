@@ -1,4 +1,4 @@
-import { Search, Handshake, Settings, LogIn, ShieldCheck, Building2, LayoutDashboard } from "lucide-react";
+import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -19,7 +19,6 @@ import { toast } from "sonner";
 
 interface AppSidebarProps {
   isAdmin?: boolean;
-  isDemoMode?: boolean;
 }
 
 const mainNavItems = [
@@ -34,7 +33,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
 ];
 
-export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
+export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -131,26 +130,14 @@ export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border px-2 py-3">
-        {isDemoMode ? (
-          <Link to={ROUTES.AUTH} className="w-full">
-            <Button
-              size="sm"
-              className="w-full justify-start text-sm bg-foreground text-background hover:bg-foreground/90"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign in
-            </Button>
-          </Link>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+          onClick={handleSignOut}
+        >
+          Sign out
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

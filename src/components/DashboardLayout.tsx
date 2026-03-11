@@ -9,16 +9,14 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 export interface DashboardLayoutProps {
   children: ReactNode;
   isAdmin?: boolean;
-  isDemoMode?: boolean;
 }
 
-export function DashboardLayout({ children, isAdmin, isDemoMode }: DashboardLayoutProps) {
+export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Sidebar hidden on mobile — bottom nav takes over */}
         <div className="hidden md:block">
-          <AppSidebar isAdmin={isAdmin} isDemoMode={isDemoMode} />
+          <AppSidebar isAdmin={isAdmin} />
         </div>
         <main className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
@@ -30,7 +28,7 @@ export function DashboardLayout({ children, isAdmin, isDemoMode }: DashboardLayo
                 Compliance Match
               </div>
               <div className="flex items-center gap-2">
-                {!isDemoMode && <NotificationBell />}
+                <NotificationBell />
                 <ThemeToggle />
               </div>
             </div>
@@ -41,7 +39,6 @@ export function DashboardLayout({ children, isAdmin, isDemoMode }: DashboardLayo
             </PageContainer>
           </div>
         </main>
-        {/* Mobile bottom navigation */}
         <MobileBottomNav />
       </div>
     </SidebarProvider>
