@@ -264,7 +264,7 @@ export function UsageBillingSection() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.callsThisMonth.toLocaleString() || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Tokens burned: {stats?.totalBurnedThisMonth.toLocaleString() || 0}
+              Credits burned: {stats?.totalBurnedThisMonth.toLocaleString() || 0}
             </p>
           </CardContent>
         </Card>
