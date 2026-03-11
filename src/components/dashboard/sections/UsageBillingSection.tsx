@@ -222,7 +222,7 @@ export function UsageBillingSection() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <div>
-                <p className="font-medium text-destructive">Critical: Token Balance Below Minimum</p>
+                <p className="font-medium text-destructive">Critical: Credit Balance Below Minimum</p>
                 <p className="text-sm text-muted-foreground">
                   Your balance ({balance?.balance.toLocaleString()}) is below the required minimum ({balance?.minimum_required.toLocaleString()}).
                   API calls will be blocked.{" "}
