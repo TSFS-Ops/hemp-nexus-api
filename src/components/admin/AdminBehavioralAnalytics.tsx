@@ -58,7 +58,7 @@ export function AdminBehavioralAnalytics() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Behavioral Analytics</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Behavioural Analytics</h2>
           <p className="text-muted-foreground mt-2">
             Non-binding user interactions. These do NOT create audit/evidence records.
           </p>
