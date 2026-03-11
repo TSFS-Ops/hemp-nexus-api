@@ -46,7 +46,7 @@ export default function Troubleshooting() {
     {
       code: "AUTH_001",
       status: 401,
-      title: "Unauthorized - Invalid API Key",
+      title: "Unauthorised - Invalid API Key",
       description: "The API key provided is invalid or has been revoked.",
       causes: [
         "API key was typed incorrectly",
