@@ -124,7 +124,7 @@ export function UsageBillingSection() {
         totalBurnedThisMonth: totalBurned,
       });
     } catch (error) {
-      console.error("Error fetching token ledger:", error);
+      console.error("Error fetching credit ledger:", error);
       toast.error("Failed to fetch usage data");
     } finally {
       setLedgerLoading(false);
