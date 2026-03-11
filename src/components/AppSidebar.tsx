@@ -26,12 +26,12 @@ const mainNavItems = [
   { path: ROUTES.DASHBOARD, title: "Overview", icon: LayoutDashboard },
   { path: ROUTES.DASHBOARD_SEARCH, title: "Search", icon: Search },
   { path: ROUTES.DASHBOARD_MATCHES, title: "Matches", icon: Handshake },
-  { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
 ];
 
 const settingsNavItems = [
   { path: ROUTES.DASHBOARD_SETTINGS, title: "Settings", icon: Settings },
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
+  { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
 ];
 
 export function AppSidebar({ isAdmin, isDemoMode }: AppSidebarProps) {

@@ -199,10 +199,10 @@ export function SearchOutcomes({
                    flex items-center justify-center gap-2.5 animate-fade-up delay-300"
         >
           <FileText className="h-3.5 w-3.5" />
-          Publish Proof-of-Intent (POI)
+          Signal Your Intent
         </button>
         <p className="text-[10px] font-mono text-muted-foreground/40 mt-2.5 text-center tracking-wide animate-fade-in delay-400">
-          Requires Account Sign-In. Publishing a governed signal burns 1 POI credit.
+          Sign in to publish a governed intent signal. Uses 1 credit.
         </p>
       </div>
     </div>

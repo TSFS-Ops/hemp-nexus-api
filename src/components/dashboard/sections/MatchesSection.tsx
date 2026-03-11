@@ -40,7 +40,7 @@ export function MatchesSection({ isDemoMode }: MatchesSectionProps) {
     <div className="space-y-5 sm:space-y-6">
       <SectionHeader
         title="Matches"
-        description="View and manage trade matches with full audit trails"
+        description="Your active and confirmed matches — confirm intent, upload documents, and download evidence packs"
       />
       <MatchesList />
     </div>

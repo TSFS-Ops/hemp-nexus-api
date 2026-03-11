@@ -503,7 +503,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
               </h3>
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
-                  {/* Start POI - creates match in discovery state for document upload */}
+                  {/* Create Match — starts the POI workflow for selected counterparties */}
                   <Button 
                     onClick={handleStartPOI}
                     disabled={isConfirming}
@@ -515,7 +515,7 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
                     ) : (
                       <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                     )}
-                    Start POI ({selectedResults.size})
+                    Create Match ({selectedResults.size})
                   </Button>
                 </div>
               )}
