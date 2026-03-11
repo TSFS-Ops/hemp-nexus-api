@@ -11,6 +11,7 @@ import { CapabilitiesGrid } from "@/components/landing/CapabilitiesGrid";
 import { StatsBar } from "@/components/landing/StatsBar";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { DeveloperAccessPanel } from "@/components/landing/DeveloperAccessPanel";
+import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
 import { type BidOfferData } from "@/components/landing/BidOfferForm";
 import { type DemoSearchResult, getDemoResultsForQuery } from "@/lib/demo-data";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
