@@ -256,15 +256,34 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
       }
 
       // Get user's profile for org info
-      const { data: profile } = await supabase
+      let profile = await supabase
         .from("profiles")
         .select("org_id, full_name")
         .eq("id", session.user.id)
-        .maybeSingle();
+        .maybeSingle()
+        .then(r => r.data);
 
       if (!profile) {
-        toast.error("Profile not found. Please contact support.");
-        return;
+        // Attempt self-repair via ensure_user_profile
+        const { error: repairError } = await supabase.rpc("ensure_user_profile", {
+          p_user_id: session.user.id,
+          p_email: session.user.email ?? "",
+        });
+        if (repairError) {
+          toast.error("Your account setup is incomplete. Please sign out and sign in again, or contact support.");
+          return;
+        }
+        // Re-fetch after repair
+        profile = await supabase
+          .from("profiles")
+          .select("org_id, full_name")
+          .eq("id", session.user.id)
+          .maybeSingle()
+          .then(r => r.data);
+        if (!profile) {
+          toast.error("Account setup failed. Please contact support.");
+          return;
+        }
       }
 
       // Get org name
