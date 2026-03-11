@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Key, Activity, FileText, BarChart3, Clock, Search, ArrowRight, BookOpen, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
