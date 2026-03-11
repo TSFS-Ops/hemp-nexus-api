@@ -499,7 +499,8 @@ export default function CounterpartySearch({ isDemoMode: propDemoMode }: Counter
             {/* Results header with selection actions */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-semibold text-sm sm:text-base">
-                {results.length} {isDemoMode ? "Example" : ""} Counterparties
+                {results.length} Counterpart{results.length !== 1 ? "ies" : "y"}
+                {isDemoMode && <span className="text-muted-foreground font-normal ml-1">(preview)</span>}
               </h3>
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
