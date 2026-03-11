@@ -1,6 +1,6 @@
 /**
  * Edge-to-edge market signal ticker — Swiss-Terminal trading cards.
- * Non-clickable. Indicative signals only. Monospace quantities.
+ * Refined with subtle hover pause and sharper card styling.
  */
 
 const TICKER_DATA = [
@@ -16,11 +16,9 @@ const TICKER_DATA = [
 
 function StatusLabel({ status }: { status: string }) {
   const color =
-    status === "Verified"
-      ? "text-signal-verified"
-      : status === "Pending"
-      ? "text-signal-pending"
-      : "text-primary";
+    status === "Verified" ? "text-signal-verified"
+    : status === "Pending" ? "text-signal-pending"
+    : "text-primary";
 
   return (
     <span className={`text-[9px] font-mono uppercase tracking-widest ${color}`}>
@@ -33,22 +31,23 @@ export function CommodityTicker() {
   return (
     <div
       id="signals"
-      className="border-t border-b border-border bg-background overflow-hidden select-none"
+      className="border-t border-b border-border bg-background overflow-hidden select-none group/ticker"
     >
-      <div className="flex items-stretch animate-ticker">
+      <div className="flex items-stretch animate-ticker group-hover/ticker:[animation-play-state:paused]">
         {[...TICKER_DATA, ...TICKER_DATA].map((item, i) => (
           <div
             key={i}
-            className="flex-shrink-0 border-r border-border px-4 py-2.5 min-w-[200px]"
+            className="flex-shrink-0 border-r border-border px-4 py-3 min-w-[210px]
+                       hover:bg-accent/20 transition-colors duration-200"
           >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[11px] font-semibold text-foreground">{item.asset}</span>
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <span className="text-[11px] font-semibold text-foreground tracking-tight">{item.asset}</span>
               <StatusLabel status={item.status} />
             </div>
-            <div className="text-[10px] text-muted-foreground">{item.signal}</div>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-[10px] font-mono text-foreground/70">{item.qty}</span>
-              <span className="text-[9px] font-mono text-muted-foreground/50">{item.corridor}</span>
+            <div className="text-[10px] text-muted-foreground mb-1">{item.signal}</div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono font-medium text-foreground/80">{item.qty}</span>
+              <span className="text-[9px] font-mono text-muted-foreground/40">{item.corridor}</span>
             </div>
           </div>
         ))}
