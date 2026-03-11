@@ -57,8 +57,8 @@ export function UsageBillingSection() {
       if (error) throw error;
       setBalance(data);
     } catch (error) {
-      console.error("Error fetching token balance:", error);
-      toast.error("Failed to fetch token balance");
+      console.error("Error fetching credit balance:", error);
+      toast.error("Failed to fetch credit balance");
     } finally {
       setLoading(false);
     }
