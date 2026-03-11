@@ -151,7 +151,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
       {isBlocked && (
         <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-md text-destructive text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>API calls blocked. Top up immediately to restore access.</span>
+          <span>API calls blocked. <a href="/billing" className="underline">Purchase credits</a> to restore access.</span>
         </div>
       )}
     </div>
