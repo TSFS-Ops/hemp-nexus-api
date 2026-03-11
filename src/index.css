@@ -90,7 +90,8 @@
     --popover: 225 20% 6%;
     --popover-foreground: 220 8% 88%;
 
-    --primary: 24 100% 46%;
+    /* Forest green — slightly lifted for dark mode readability */
+    --primary: 155 42% 28%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 15%;
@@ -107,16 +108,16 @@
 
     --border: 0 0% 13.3%;
     --input: 0 0% 13.3%;
-    --ring: 24 100% 46%;
+    --ring: 155 42% 28%;
 
     --sidebar-background: 225 20% 5%;
     --sidebar-foreground: 220 8% 88%;
-    --sidebar-primary: 24 100% 46%;
+    --sidebar-primary: 155 42% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 15%;
     --sidebar-accent-foreground: 220 8% 88%;
     --sidebar-border: 0 0% 13.3%;
-    --sidebar-ring: 24 100% 46%;
+    --sidebar-ring: 155 42% 28%;
 
     --surface-elevated: 225 20% 8%;
     --surface-sunken: 225 20% 3%;
@@ -130,8 +131,8 @@
     --signal-pending: 43 96% 56%;
 
     --earth-warm: 28 35% 50%;
-    --earth-copper: 24 100% 46%;
-    --earth-sage: 160 12% 48%;
+    --earth-copper: 29 57% 52%;
+    --earth-sage: 155 12% 48%;
     --earth-sand: 30 12% 28%;
     --earth-slate: 220 10% 50%;
 
