@@ -27,6 +27,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
 
+  const ensureProfile = useCallback(async (userId: string, email: string) => {
+    try {
+      const { data, error } = await supabase.rpc("ensure_user_profile", {
+        p_user_id: userId,
+        p_email: email,
+      });
+      if (error) {
+        console.error("[AuthContext] ensure_user_profile failed:", error.message);
+      } else if (data?.status === "created") {
+        console.info("[AuthContext] Profile auto-repaired for", userId);
+      }
+    } catch (err) {
+      console.error("[AuthContext] Unexpected error ensuring profile:", err);
+    }
+  }, []);
+
   const fetchRoles = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
