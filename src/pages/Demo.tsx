@@ -349,7 +349,7 @@ export default function Demo() {
                 </Button>
                 <AuthLink className="flex-1">
                   <Button className="w-full bg-foreground text-background hover:bg-foreground/90">
-                    Sign up for real proofs
+                    Create account
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </AuthLink>
