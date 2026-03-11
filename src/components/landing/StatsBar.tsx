@@ -31,6 +31,7 @@ export function StatsBar() {
         aria-hidden="true"
         style={{ background: `linear-gradient(135deg, transparent 0%, hsl(var(--primary)) 100%)` }}
       />
+      <div className="max-w-[1280px] mx-auto relative z-10">
         <div className="mb-10 animate-fade-up">
           <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
             Platform at Scale
