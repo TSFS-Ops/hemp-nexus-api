@@ -203,7 +203,7 @@ export default function Explore() {
   }
 
   return (
-    <DashboardLayout isAdmin={isAdmin} isDemoMode={false}>
+    <DashboardLayout isAdmin={isAdmin}>
       <div className="space-y-6 max-w-3xl">
         <SectionHeader
           title="Exploration Layer"

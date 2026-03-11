@@ -130,26 +130,14 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border px-2 py-3">
-        {isDemoMode ? (
-          <Link to={ROUTES.AUTH} className="w-full">
-            <Button
-              size="sm"
-              className="w-full justify-start text-sm bg-foreground text-background hover:bg-foreground/90"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign in
-            </Button>
-          </Link>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+          onClick={handleSignOut}
+        >
+          Sign out
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
