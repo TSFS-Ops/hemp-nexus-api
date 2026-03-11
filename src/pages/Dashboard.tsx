@@ -35,7 +35,7 @@ export default function Dashboard() {
 
   return (
     <RequireAuth>
-      <DashboardLayout isAdmin={isAdmin} isDemoMode={false}>
+      <DashboardLayout isAdmin={isAdmin}>
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<ConsoleOverview />} />
