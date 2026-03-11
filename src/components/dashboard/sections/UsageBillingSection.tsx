@@ -362,7 +362,7 @@ export function UsageBillingSection() {
             </div>
           ) : ledgerEntries.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No token usage recorded yet
+              No credit usage recorded yet
             </div>
           ) : (
             <div className="rounded-md border">
