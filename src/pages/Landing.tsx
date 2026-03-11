@@ -109,7 +109,8 @@ export default function Landing() {
   }, [isAuthenticated, lastQuery, navigateToAuth]);
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-background">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-background relative">
+      <AnimatedBackground />
       <PublicHeader />
 
       {/* Panel 1: Hero — Stat + Headline + Search */}
