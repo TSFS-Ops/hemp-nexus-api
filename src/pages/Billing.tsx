@@ -163,7 +163,7 @@ export default function Billing() {
 
   // Fetch recent transactions
   const { data: recentTransactions } = useQuery({
-    queryKey: ["recent-token-transactions"],
+    queryKey: ["recent-credit-transactions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("token_ledger")
