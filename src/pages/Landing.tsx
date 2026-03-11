@@ -99,15 +99,13 @@ export default function Landing() {
 
   const handlePublishPoi = useCallback(() => {
     if (isAuthenticated) {
-      // Redirect to console search — POI creation requires real backend data
       const params = new URLSearchParams({ q: lastQuery });
-      toast.info("Redirecting to your console to publish your POI…");
       window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
     savePreAuthState({ query: lastQuery, selectedIds: [], pendingAction: "publish_poi", returnTo: "/" });
     toast.info("Sign in to publish intent", {
-      description: "Create an account to generate a Proof-of-Intention and attract counterparties.",
+      description: "Create an account to search for real counterparties and publish a Proof-of-Intent.",
       action: { label: "Create Account", onClick: navigateToAuth },
     });
   }, [isAuthenticated, lastQuery, navigateToAuth]);
