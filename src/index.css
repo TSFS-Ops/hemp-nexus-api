@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,53 +8,54 @@
 
 @layer base {
   :root {
-    /* Quartz / Obsidian Paper — cold, crisp off-white */
-    --background: 0 0% 98.4%;
-    --foreground: 0 0% 3.9%;
+    /* #FFFFFF — clean white */
+    --background: 0 0% 100%;
+    /* #1F2933 — deep blue-charcoal */
+    --foreground: 210 24% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 210 24% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 210 24% 16%;
 
-    /* Anodized Copper — raw industrial action */
-    --primary: 24 100% 41%;
-    --primary-foreground: 0 0% 98%;
+    /* #1F4D3A — deep forest green (governance / signals) */
+    --primary: 155 42% 21%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 25%;
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 210 24% 20%;
 
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 220 13% 95%;
+    /* #6B7280 — neutral grey */
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 0 0% 93%;
-    --accent-foreground: 0 0% 3.9%;
+    --accent: 220 13% 93%;
+    --accent-foreground: 210 24% 16%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Sandstone structural borders */
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 24 100% 41%;
+    /* #E5E7EB — soft grey dividers */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 155 42% 21%;
 
-    /* Zero radius — architectural precision */
     --radius: 0.125rem;
 
-    --sidebar-background: 0 0% 96%;
-    --sidebar-foreground: 0 0% 3.9%;
-    --sidebar-primary: 24 100% 41%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 93%;
-    --sidebar-accent-foreground: 0 0% 3.9%;
-    --sidebar-border: 0 0% 89.8%;
-    --sidebar-ring: 24 100% 41%;
+    --sidebar-background: 220 13% 97%;
+    --sidebar-foreground: 210 24% 16%;
+    --sidebar-primary: 155 42% 21%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 93%;
+    --sidebar-accent-foreground: 210 24% 16%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 155 42% 21%;
 
     /* Semantic surface tokens */
     --surface-elevated: 0 0% 100%;
-    --surface-sunken: 0 0% 95%;
-    --text-tertiary: 0 0% 55%;
+    --surface-sunken: 220 13% 96%;
+    --text-tertiary: 220 9% 55%;
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
     --warning: 43 96% 56%;
@@ -64,19 +65,18 @@
     --signal-verified: 160 84% 39%;
     --signal-pending: 43 96% 56%;
 
-    /* Mineral palette */
+    /* Material palette — copper is now secondary accent */
     --earth-warm: 28 35% 42%;
-    --earth-copper: 24 100% 41%;
-    --earth-sage: 160 12% 42%;
+    /* #B87333 — muted copper (secondary accent) */
+    --earth-copper: 29 57% 46%;
+    --earth-sage: 155 12% 42%;
     --earth-sand: 30 12% 78%;
     --earth-slate: 220 12% 22%;
 
-    /* Basalt — deep charcoal for dark panels */
     --basalt: 225 20% 7%;
     --basalt-foreground: 220 8% 82%;
-    --sandstone: 0 0% 89.8%;
+    --sandstone: 220 13% 91%;
 
-    /* Graphite — dark mode borders */
     --graphite: 0 0% 13.3%;
   }
 
@@ -90,7 +90,8 @@
     --popover: 225 20% 6%;
     --popover-foreground: 220 8% 88%;
 
-    --primary: 24 100% 46%;
+    /* Forest green — slightly lifted for dark mode readability */
+    --primary: 155 42% 28%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 15%;
@@ -107,16 +108,16 @@
 
     --border: 0 0% 13.3%;
     --input: 0 0% 13.3%;
-    --ring: 24 100% 46%;
+    --ring: 155 42% 28%;
 
     --sidebar-background: 225 20% 5%;
     --sidebar-foreground: 220 8% 88%;
-    --sidebar-primary: 24 100% 46%;
+    --sidebar-primary: 155 42% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 15%;
     --sidebar-accent-foreground: 220 8% 88%;
     --sidebar-border: 0 0% 13.3%;
-    --sidebar-ring: 24 100% 46%;
+    --sidebar-ring: 155 42% 28%;
 
     --surface-elevated: 225 20% 8%;
     --surface-sunken: 225 20% 3%;
@@ -130,8 +131,8 @@
     --signal-pending: 43 96% 56%;
 
     --earth-warm: 28 35% 50%;
-    --earth-copper: 24 100% 46%;
-    --earth-sage: 160 12% 48%;
+    --earth-copper: 29 57% 52%;
+    --earth-sage: 155 12% 48%;
     --earth-sand: 30 12% 28%;
     --earth-slate: 220 10% 50%;
 
