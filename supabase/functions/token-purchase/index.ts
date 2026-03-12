@@ -293,6 +293,7 @@ Deno.serve(async (req) => {
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
     // Create Paystack transaction (ZAR currency)
+    const callbackBase = callbackUrl?.replace(/\?.*$/, '') || `${req.headers.get("origin")}/billing`;
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -303,7 +304,7 @@ Deno.serve(async (req) => {
         email: profile.email || userData.user.email,
         amount: pkg.price_cents, // Paystack uses cents
         currency: "ZAR",
-        callback_url: callbackUrl || `${req.headers.get("origin")}/billing?status=success`,
+        callback_url: `${callbackBase}?status=success`,
         metadata: {
           org_id: profile.org_id,
           user_id: userData.user.id,
