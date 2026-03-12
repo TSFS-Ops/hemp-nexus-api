@@ -106,23 +106,47 @@ export function useMatchDetails(matchId: string | undefined) {
       }
 
       const idempotencyKey = generateIdempotencyKey("settle");
-      const updated = await apiFetch<Match>(`match/${match.id}/settle`, {
-        method: "POST",
-        idempotencyKey,
-      });
+
+      let updated: Match;
+      try {
+        updated = await apiFetch<Match>(`match/${match.id}/settle`, {
+          method: "POST",
+          idempotencyKey,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
+          throw new Error("Insufficient credits. Purchase more credits from the Billing page before confirming intent.");
+        }
+        if (msg.includes("STATE_CONFLICT") || msg.includes("already")) {
+          throw new Error("This match has already been confirmed. Refresh the page to see the latest status.");
+        }
+        if (msg.includes("FORBIDDEN") || msg.includes("permission")) {
+          throw new Error("You do not have permission to confirm this match. It may belong to a different organisation.");
+        }
+        throw new Error(`Intent confirmation failed: ${msg}. If this persists, contact support@izenzo.co.za.`);
+      }
 
       if (!updated || !updated.id || !updated.status) {
-        throw new Error("Server returned an invalid confirmation response.");
+        throw new Error("Server returned an invalid confirmation response. Contact support@izenzo.co.za if credits were deducted.");
       }
 
       if (mountedRef.current) {
         setMatch(updated);
-        toast.success("Status updated to Confirmed. 500 credits deducted.");
+        // Invalidate balance caches so sidebar and confirm dialog show updated balance
+        const { QueryClient } = await import("@tanstack/react-query");
+        // Use the global query client via dynamic import to avoid circular deps
+        const queryClient = (window as any).__REACT_QUERY_GLOBAL_CACHE__;
+        if (queryClient) {
+          queryClient.invalidateQueries({ queryKey: ["token-balance"] });
+          queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
+        }
+        toast.success("Intent confirmed. 500 credits deducted. View the Proof tab for your evidence record.");
       }
     },
     {
       successMessage: undefined,
-      errorMessage: "Failed to confirm intent. Please try again.",
+      errorMessage: "Failed to confirm intent. Please try again or contact support@izenzo.co.za.",
     }
   );
 
