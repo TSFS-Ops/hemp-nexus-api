@@ -515,23 +515,31 @@ async function handleChargeSuccess(
     return;
   }
 
-  // Credit tokens to org
-  const { data: balance } = await supabase
+  // Credit tokens to org (atomic upsert to prevent race conditions)
+  const { data: balanceRow } = await supabase
     .from("token_balances")
     .select("balance")
     .eq("org_id", orgId)
     .single();
 
-  const currentBalance = balance?.balance || 0;
+  const currentBalance = balanceRow?.balance || 0;
   const newBalance = currentBalance + credits;
 
-  await supabase
+  // Use upsert with the computed balance; the idempotency check above
+  // prevents double-credits from concurrent webhook + verify calls.
+  const { error: balanceError } = await supabase
     .from("token_balances")
     .upsert({
       org_id: orgId,
       balance: newBalance,
       updated_at: new Date().toISOString(),
     }, { onConflict: "org_id" });
+
+  if (balanceError) {
+    console.error(`[Webhook] Balance upsert failed for org ${orgId}:`, balanceError);
+    // Don't silently continue — throw to signal retry
+    throw new Error(`Balance update failed: ${balanceError.message}`);
+  }
 
   // Record in ledger (credit = negative burn)
   await supabase.from("token_ledger").insert({
