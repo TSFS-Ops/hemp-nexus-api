@@ -689,21 +689,28 @@ async function handleRefundProcessed(
   const orgId = data.metadata.org_id;
   const creditsToDeduct = data.metadata.credits;
 
-  // Get current balance
-  const { data: balance } = await supabase
-    .from("token_balances")
-    .select("balance")
-    .eq("org_id", orgId)
-    .single();
+  // Atomic balance deduction (negative credit)
+  const { data: debitResult, error: debitError } = await supabase.rpc("atomic_token_credit", {
+    p_org_id: orgId,
+    p_amount: -creditsToDeduct,
+    p_reason: "credit_refund",
+    p_reference_id: data.reference,
+  });
 
-  const currentBalance = balance?.balance || 0;
-  const newBalance = Math.max(0, currentBalance - creditsToDeduct);
+  if (debitError) {
+    console.error(`[Webhook] Refund debit failed for org ${orgId}:`, debitError);
+    throw new Error(`Refund balance update failed: ${debitError.message}`);
+  }
 
-  // Update balance
-  await supabase
-    .from("token_balances")
-    .update({ balance: newBalance, updated_at: new Date().toISOString() })
-    .eq("org_id", orgId);
+  const newBalance = Math.max(0, debitResult?.new_balance ?? 0);
+
+  // If balance went negative, clamp to 0
+  if ((debitResult?.new_balance ?? 0) < 0) {
+    await supabase
+      .from("token_balances")
+      .update({ balance: 0, updated_at: new Date().toISOString() })
+      .eq("org_id", orgId);
+  }
 
   // Record in ledger
   await supabase.from("token_ledger").insert({
@@ -729,7 +736,7 @@ async function handleRefundProcessed(
     },
   });
 
-  console.log(`[Webhook] Deducted ${creditsToDeduct} credits for refund`);
+  console.log(`[Webhook] Deducted ${creditsToDeduct} credits for refund (atomic). New balance: ${newBalance}`);
 }
 
 // ==============================================
