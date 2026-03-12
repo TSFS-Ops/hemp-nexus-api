@@ -1,3 +1,25 @@
+/**
+ * token-purchase — Edge function for credit purchasing via Paystack.
+ *
+ * ROUTES:
+ *   POST /token-purchase         — Initiate a Paystack checkout (authenticated)
+ *   POST /token-purchase/verify  — Client-side verify + credit fallback (authenticated)
+ *   POST /token-purchase/webhook — Paystack webhook receiver (signature-verified, no auth)
+ *   GET  /token-purchase/packages — List available credit packages (public)
+ *   GET  /token-purchase/entity   — Billing entity info (public)
+ *
+ * PAYSTACK WEBHOOK CONFIGURATION:
+ *   URL: https://<project-ref>.supabase.co/functions/v1/token-purchase/webhook
+ *   Events: charge.success, charge.failed, refund.processed, dispute.create
+ *   The webhook must be registered in the Paystack dashboard under Settings → API Keys & Webhooks.
+ *
+ * BALANCE MUTATION:
+ *   All balance changes use the atomic_token_credit() RPC (UPDATE balance = balance + amount).
+ *   No read-then-write patterns remain. Idempotency is enforced by:
+ *   1. Soft check: SELECT on token_ledger WHERE request_id = reference
+ *   2. Hard check: UNIQUE INDEX on token_ledger(request_id) — catches TOCTOU races
+ *   If both webhook and verify race, the loser's INSERT fails, and its atomic credit is reversed.
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
