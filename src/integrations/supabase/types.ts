@@ -4954,6 +4954,15 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_token_credit: {
+        Args: {
+          p_amount: number
+          p_org_id: string
+          p_reason?: string
+          p_reference_id?: string
+        }
+        Returns: Json
+      }
       check_and_increment_auth_failure: {
         Args: {
           p_base_lockout_seconds?: number
