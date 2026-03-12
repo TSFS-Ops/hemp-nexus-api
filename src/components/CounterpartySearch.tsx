@@ -97,11 +97,18 @@ export default function CounterpartySearch() {
           toast.success(`Found ${data.results.length} potential counterparties`);
         }
       } else {
-        throw new Error(data.error || "Search failed");
+      throw new Error(data.error || "Search failed");
       }
     } catch (error) {
       console.error("Search error:", error);
-      toast.error(error instanceof Error ? error.message : "Search failed. Please try again or contact support.");
+      const msg = error instanceof Error ? error.message : "Search failed";
+      if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed to fetch")) {
+        toast.error("Network error. Check your connection and try again.");
+      } else if (msg.includes("rate") || msg.includes("429")) {
+        toast.error("Too many requests. Please wait a moment before searching again.");
+      } else {
+        toast.error(`${msg}. If this persists, contact support@izenzo.co.za.`);
+      }
     } finally {
       setIsSearching(false);
     }
