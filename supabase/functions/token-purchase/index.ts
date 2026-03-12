@@ -559,7 +559,7 @@ async function handleChargeSuccess(
 
   console.log(`[Webhook] Processing charge.success: org=${orgId}, credits=${credits}, ref=${reference}`);
 
-  // Check if already processed (idempotency)
+  // Soft idempotency check (fast path)
   const { data: existing } = await supabase
     .from("token_ledger")
     .select("id")
@@ -571,37 +571,26 @@ async function handleChargeSuccess(
     return;
   }
 
-  // Credit tokens to org (atomic upsert to prevent race conditions)
-  const { data: balanceRow } = await supabase
-    .from("token_balances")
-    .select("balance")
-    .eq("org_id", orgId)
-    .single();
+  // Atomic balance credit (no read-then-write race)
+  const { data: creditResult, error: creditError } = await supabase.rpc("atomic_token_credit", {
+    p_org_id: orgId,
+    p_amount: credits,
+    p_reason: "credit_purchase",
+    p_reference_id: reference,
+  });
 
-  const currentBalance = balanceRow?.balance || 0;
-  const newBalance = currentBalance + credits;
-
-  // Use upsert with the computed balance; the idempotency check above
-  // prevents double-credits from concurrent webhook + verify calls.
-  const { error: balanceError } = await supabase
-    .from("token_balances")
-    .upsert({
-      org_id: orgId,
-      balance: newBalance,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "org_id" });
-
-  if (balanceError) {
-    console.error(`[Webhook] Balance upsert failed for org ${orgId}:`, balanceError);
-    // Don't silently continue — throw to signal retry
-    throw new Error(`Balance update failed: ${balanceError.message}`);
+  if (creditError) {
+    console.error(`[Webhook] atomic_token_credit failed for org ${orgId}:`, creditError);
+    throw new Error(`Balance update failed: ${creditError.message}`);
   }
 
-  // Record in ledger (credit = negative burn)
-  await supabase.from("token_ledger").insert({
+  const newBalance = creditResult?.new_balance ?? 0;
+
+  // Hard idempotency guard: unique index on request_id catches TOCTOU race
+  const { error: ledgerError } = await supabase.from("token_ledger").insert({
     org_id: orgId,
     endpoint: "payment:paystack",
-    tokens_burned: -credits, // Negative = credit
+    tokens_burned: -credits,
     remaining_balance: newBalance,
     outcome: "allowed",
     request_id: reference,
@@ -615,6 +604,28 @@ async function handleChargeSuccess(
       client_ip: metadata.client_ip,
     },
   });
+
+  if (ledgerError) {
+    if (ledgerError.code === "23505") {
+      // Unique constraint violation = verify path already credited this reference
+      console.log(`[Webhook] Duplicate caught by unique index, reversing atomic credit: ${reference}`);
+      await supabase.rpc("atomic_token_credit", {
+        p_org_id: orgId,
+        p_amount: -credits,
+        p_reason: "duplicate_reversal",
+        p_reference_id: reference,
+      });
+      return;
+    }
+    // Ledger write failed but balance was credited — create risk item
+    console.error(`[Webhook] Ledger insert failed:`, ledgerError);
+    await supabase.from("admin_risk_items").insert({
+      title: `Webhook ledger failure: ${reference}`,
+      description: `Credits (${credits}) added to org ${orgId} but ledger entry failed. Manual reconciliation required.`,
+      severity: "high",
+      status: "open",
+    });
+  }
 
   // Audit log
   await supabase.from("audit_logs").insert({
@@ -632,7 +643,7 @@ async function handleChargeSuccess(
     },
   });
 
-  console.log(`[Webhook] Credited ${credits} credits to org ${orgId}`);
+  console.log(`[Webhook] Credited ${credits} credits to org ${orgId} (atomic). New balance: ${newBalance}`);
 }
 
 // ==============================================
