@@ -30,11 +30,11 @@ export function ErrorState({
   const defaultMessages = {
     generic: {
       title: "Something went wrong",
-      message: "An unexpected error occurred. Please try again.",
+      message: "An unexpected error occurred. Please try again. If this persists, contact support@izenzo.co.za.",
     },
     network: {
       title: "Connection error",
-      message: "Unable to connect. Please check your internet connection and try again.",
+      message: "Unable to connect. Check your internet connection and try again.",
     },
     server: {
       title: "Server error",

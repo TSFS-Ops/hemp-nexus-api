@@ -293,6 +293,7 @@ Deno.serve(async (req) => {
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
     // Create Paystack transaction (ZAR currency)
+    const callbackBase = callbackUrl?.replace(/\?.*$/, '') || `${req.headers.get("origin")}/billing`;
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -303,7 +304,7 @@ Deno.serve(async (req) => {
         email: profile.email || userData.user.email,
         amount: pkg.price_cents, // Paystack uses cents
         currency: "ZAR",
-        callback_url: callbackUrl || `${req.headers.get("origin")}/billing?status=success`,
+        callback_url: `${callbackBase}?status=success`,
         metadata: {
           org_id: profile.org_id,
           user_id: userData.user.id,
@@ -514,23 +515,31 @@ async function handleChargeSuccess(
     return;
   }
 
-  // Credit tokens to org
-  const { data: balance } = await supabase
+  // Credit tokens to org (atomic upsert to prevent race conditions)
+  const { data: balanceRow } = await supabase
     .from("token_balances")
     .select("balance")
     .eq("org_id", orgId)
     .single();
 
-  const currentBalance = balance?.balance || 0;
+  const currentBalance = balanceRow?.balance || 0;
   const newBalance = currentBalance + credits;
 
-  await supabase
+  // Use upsert with the computed balance; the idempotency check above
+  // prevents double-credits from concurrent webhook + verify calls.
+  const { error: balanceError } = await supabase
     .from("token_balances")
     .upsert({
       org_id: orgId,
       balance: newBalance,
       updated_at: new Date().toISOString(),
     }, { onConflict: "org_id" });
+
+  if (balanceError) {
+    console.error(`[Webhook] Balance upsert failed for org ${orgId}:`, balanceError);
+    // Don't silently continue — throw to signal retry
+    throw new Error(`Balance update failed: ${balanceError.message}`);
+  }
 
   // Record in ledger (credit = negative burn)
   await supabase.from("token_ledger").insert({
