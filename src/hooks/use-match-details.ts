@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
 import { useAsyncAction } from "@/hooks/use-async-action";
+import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
