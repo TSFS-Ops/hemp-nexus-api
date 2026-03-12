@@ -135,13 +135,8 @@ export function useMatchDetails(matchId: string | undefined) {
       if (mountedRef.current) {
         setMatch(updated);
         // Invalidate balance caches so sidebar and confirm dialog show updated balance
-        const { QueryClient } = await import("@tanstack/react-query");
-        // Use the global query client via dynamic import to avoid circular deps
-        const queryClient = (window as any).__REACT_QUERY_GLOBAL_CACHE__;
-        if (queryClient) {
-          queryClient.invalidateQueries({ queryKey: ["token-balance"] });
-          queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
-        }
+        queryClient.invalidateQueries({ queryKey: ["token-balance"] });
+        queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
         toast.success("Intent confirmed. 500 credits deducted. View the Proof tab for your evidence record.");
       }
     },
