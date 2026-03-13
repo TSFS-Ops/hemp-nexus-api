@@ -73,9 +73,9 @@ export function MatchesList() {
 
   const [paginationError, setPaginationError] = useState(false);
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching, isPlaceholderData } = useQuery({
     queryKey: ["matches", statusFilter, debouncedSearch, sortBy, page],
-    placeholderData: (prev) => prev, // keep previous data visible while loading next page
+    placeholderData: (prev) => prev,
     queryFn: async () => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -99,15 +99,17 @@ export function MatchesList() {
       setPaginationError(false);
       return { matches: data as Match[], totalCount: count ?? 0 };
     },
-    meta: {
-      onSettled: (_data: unknown, err: unknown) => {
-        if (err && !isLoading) {
-          setPaginationError(true);
-          toast.error("Could not load the requested page. The data shown below is from the previous page.", { duration: 6000 });
-        }
-      },
-    },
   });
+
+  // Detect pagination fetch failure when stale placeholder data is still showing
+  useEffect(() => {
+    if (isError && isPlaceholderData) {
+      setPaginationError(true);
+      toast.error("Could not load the requested page. The data shown below is from a previous page.", { duration: 6000 });
+    } else if (!isError) {
+      setPaginationError(false);
+    }
+  }, [isError, isPlaceholderData]);
 
   const matches = data?.matches;
   const totalCount = data?.totalCount ?? 0;
