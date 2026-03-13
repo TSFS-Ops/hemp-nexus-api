@@ -73,6 +73,7 @@ export function MatchesList() {
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["matches", statusFilter, debouncedSearch, sortBy, page],
+    placeholderData: (prev) => prev, // keep previous data visible while loading next page
     queryFn: async () => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
