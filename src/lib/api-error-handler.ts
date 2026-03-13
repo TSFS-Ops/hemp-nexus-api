@@ -58,8 +58,11 @@ export function handleApiError(
     return;
   }
 
-  // Generic errors
-  const message =
-    error instanceof Error ? error.message : undefined;
-  toast.error(message || options.errorMessage || "An unexpected error occurred.");
+  // Generic errors — report to Sentry
+  if (error instanceof Error) {
+    captureError(error, { handler: "handleApiError", fallback: options.errorMessage });
+    toast.error(error.message || options.errorMessage || "An unexpected error occurred.");
+    return;
+  }
+  toast.error(options.errorMessage || "An unexpected error occurred.");
 }
