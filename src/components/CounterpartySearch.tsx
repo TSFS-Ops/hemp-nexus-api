@@ -223,14 +223,15 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: { amount: 1, unit: "lot" },
-                price: { amount: 1, currency: "USD" },
-                terms: "POI draft — upload documents before confirming intent",
+                quantity: { amount: 0, unit: "TBD" },
+                price: { amount: 0, currency: "TBD" },
+                terms: "Draft — counterparty discovered via search. Quantity, price, and terms to be confirmed during negotiation.",
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
-                  coherenceScore: selectedResult.coherence?.score
+                  coherenceScore: selectedResult.coherence?.score,
+                  isDraft: true,
                 }
               }),
             }
