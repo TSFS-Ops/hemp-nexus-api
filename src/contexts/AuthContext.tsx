@@ -38,7 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Ref to track whether we had a user before (for expiry detection)
   const hadUserRef = useRef(false);
 
-  const ensureProfile = useCallback(async (userId: string, email: string) => {
+  const ensureProfileIfNeeded = useCallback(async (userId: string, email: string) => {
+    // Only call the RPC once per user per browser session
+    if (profileVerifiedRef.current.has(userId)) return;
+    profileVerifiedRef.current.add(userId);
     try {
       const { data, error } = await supabase.rpc("ensure_user_profile", {
         p_user_id: userId,
@@ -47,11 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = data as Record<string, unknown> | null;
       if (error) {
         console.error("[AuthContext] ensure_user_profile failed:", error.message);
+        // Allow retry next time
+        profileVerifiedRef.current.delete(userId);
       } else if (result?.status === "created") {
         console.info("[AuthContext] Profile auto-repaired for", userId);
       }
     } catch (err) {
       console.error("[AuthContext] Unexpected error ensuring profile:", err);
+      profileVerifiedRef.current.delete(userId);
     }
   }, []);
 
