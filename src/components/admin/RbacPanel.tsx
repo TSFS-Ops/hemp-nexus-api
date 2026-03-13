@@ -49,6 +49,7 @@ export function RbacPanel() {
   const [assigning, setAssigning] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; userId: string; role: string } | null>(null);
 
   useEffect(() => { fetchRoles(); }, []);
 
