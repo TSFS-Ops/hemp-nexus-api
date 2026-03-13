@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { cacheHeaders } from "../_shared/cache.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
@@ -145,7 +146,7 @@ Deno.serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
+        headers: { ...headers, ...cacheHeaders("private-short"), "Content-Type": "application/json" },
       }
     );
   } catch (error) {

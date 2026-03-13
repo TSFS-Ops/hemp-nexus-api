@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
 import { toast } from "sonner";
+import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 
 interface AuthContextType {
   user: User | null;
@@ -76,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const userRoles = (data || []).map(r => r.role as AppRole);
       setRoles(userRoles);
+
+      // Set Sentry user context for error attribution
+      const profile = await supabase.from("profiles").select("org_id").eq("id", userId).maybeSingle();
+      if (profile.data?.org_id) {
+        setSentryUser(userId, profile.data.org_id, userRoles);
+      }
     } catch (err) {
       console.error("[AuthContext] Unexpected error fetching roles:", err);
       setRoles([]);
@@ -94,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     explicitSignOutRef.current = true;
     profileVerifiedRef.current.clear();
+    clearSentryUser();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

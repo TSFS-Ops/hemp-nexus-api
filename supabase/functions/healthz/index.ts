@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { cacheHeaders } from "../_shared/cache.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 
@@ -81,7 +82,7 @@ Deno.serve(async (req) => {
       }),
       {
         status: overallStatus === "healthy" ? 200 : overallStatus === "degraded" ? 207 : 503,
-        headers: { "Content-Type": "application/json", ...headers }
+        headers: { "Content-Type": "application/json", ...headers, ...cacheHeaders("short") }
       }
     );
   }
@@ -329,7 +330,7 @@ Deno.serve(async (req) => {
     }, null, 2),
     {
       status: overallStatus === "healthy" ? 200 : overallStatus === "degraded" ? 207 : 503,
-      headers: { "Content-Type": "application/json", ...headers }
+      headers: { "Content-Type": "application/json", ...headers, ...cacheHeaders("short") }
     }
   );
 });
