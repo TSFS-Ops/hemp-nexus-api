@@ -4945,6 +4945,10 @@ export type Database = {
       }
     }
     Functions: {
+      _provision_user: {
+        Args: { p_email: string; p_full_name?: string; p_user_id: string }
+        Returns: Json
+      }
       atomic_token_burn: {
         Args: {
           p_amount: number
