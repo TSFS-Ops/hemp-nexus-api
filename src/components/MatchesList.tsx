@@ -116,43 +116,7 @@ export function MatchesList() {
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Batch-fetch evidence chain status for current page's matches (fixes N+1)
-  const matchIds = useMemo(() => matches?.map(m => m.id) ?? [], [matches]);
-  const { data: evidenceMap } = useQuery({
-    queryKey: ["evidence-chain-batch", matchIds],
-    queryFn: async () => {
-      if (matchIds.length === 0) return {};
-      const { data: events, error } = await supabase
-        .from("match_events")
-        .select("id, match_id, event_type, payload_hash, previous_event_hash")
-        .in("match_id", matchIds)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      // Group by match_id and compute chain status
-      const grouped = new Map<string, typeof events>();
-      for (const evt of events ?? []) {
-        if (!grouped.has(evt.match_id)) grouped.set(evt.match_id, []);
-        grouped.get(evt.match_id)!.push(evt);
-      }
-
-      const result: Record<string, { eventCount: number; chainValid: boolean; hasIntentConfirmed: boolean }> = {};
-      for (const [mid, evts] of grouped) {
-        let valid = true;
-        let hasIntent = false;
-        for (let i = 0; i < evts.length; i++) {
-          const expected = i === 0 ? null : evts[i - 1].payload_hash;
-          if (evts[i].previous_event_hash !== expected) valid = false;
-          if (evts[i].event_type === "intent.confirmed" || evts[i].event_type === "match.settled") hasIntent = true;
-        }
-        result[mid] = { eventCount: evts.length, chainValid: valid, hasIntentConfirmed: hasIntent };
-      }
-      return result;
-    },
-    enabled: matchIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Evidence chain status is now rendered per-match by EvidenceChainIndicator (hardened component)
 
   // Use ref to avoid stale closure in real-time subscription
   const refetchRef = useRef(refetch);
