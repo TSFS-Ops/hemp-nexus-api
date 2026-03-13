@@ -192,6 +192,7 @@ export default function Auth() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       emailSchema.parse({ email: resetEmail });
