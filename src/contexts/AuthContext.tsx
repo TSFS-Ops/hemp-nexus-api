@@ -31,12 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   // Track whether user explicitly clicked sign-out (not session expiry)
   const explicitSignOutRef = useRef(false);
+  // Track which user IDs have already had their profile verified this session
+  const profileVerifiedRef = useRef<Set<string>>(new Set());
   // Suppress session-expiry redirect during password change
   const suppressExpiryRef = useRef(false);
   // Ref to track whether we had a user before (for expiry detection)
   const hadUserRef = useRef(false);
 
-  const ensureProfile = useCallback(async (userId: string, email: string) => {
+  const ensureProfileIfNeeded = useCallback(async (userId: string, email: string) => {
+    // Only call the RPC once per user per browser session
+    if (profileVerifiedRef.current.has(userId)) return;
+    profileVerifiedRef.current.add(userId);
     try {
       const { data, error } = await supabase.rpc("ensure_user_profile", {
         p_user_id: userId,
@@ -45,11 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = data as Record<string, unknown> | null;
       if (error) {
         console.error("[AuthContext] ensure_user_profile failed:", error.message);
+        // Allow retry next time
+        profileVerifiedRef.current.delete(userId);
       } else if (result?.status === "created") {
         console.info("[AuthContext] Profile auto-repaired for", userId);
       }
     } catch (err) {
       console.error("[AuthContext] Unexpected error ensuring profile:", err);
+      profileVerifiedRef.current.delete(userId);
     }
   }, []);
 
@@ -85,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     explicitSignOutRef.current = true;
+    profileVerifiedRef.current.clear();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -132,8 +141,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         hadUserRef.current = true;
+        // Only verify profile on sign-in/sign-up, not every token refresh
+        const needsProfileCheck = event === "SIGNED_IN" || event === "INITIAL_SESSION";
         setTimeout(async () => {
-          await ensureProfile(session.user.id, session.user.email ?? "");
+          if (needsProfileCheck) {
+            await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
+          }
           fetchRoles(session.user.id);
         }, 0);
       } else {
@@ -148,13 +161,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       
       if (session?.user) {
-        await ensureProfile(session.user.id, session.user.email ?? "");
+        await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
         fetchRoles(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchRoles, ensureProfile]);
+  }, [fetchRoles, ensureProfileIfNeeded]);
 
   const isPlatformAdmin = roles.some(r => (PLATFORM_ADMIN_ROLES as readonly string[]).includes(r));
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
