@@ -12,6 +12,7 @@ import { AdminMatchesPanel } from "@/components/admin/AdminMatchesPanel";
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminComplianceCasesPanel } from "@/components/admin/AdminComplianceCasesPanel";
+import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminDealPipelinePanel } from "@/components/admin/AdminDealPipelinePanel";
 import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
