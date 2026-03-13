@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         hadUserRef.current = true;
         // Only verify profile on sign-in/sign-up, not every token refresh
-        const needsProfileCheck = event === "SIGNED_IN" || event === "SIGNED_UP";
+        const needsProfileCheck = event === "SIGNED_IN" || event === "INITIAL_SESSION";
         setTimeout(async () => {
           if (needsProfileCheck) {
             await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
