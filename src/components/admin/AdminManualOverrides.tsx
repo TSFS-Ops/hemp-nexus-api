@@ -86,7 +86,7 @@ export function AdminManualOverrides() {
           });
           if (error) throw error;
           await supabase.from("admin_audit_logs").insert({
-            admin_user_id: (await supabase.auth.getUser()).data.user?.id ?? "",
+            admin_user_id: adminUserId,
             action: "rerun_screening",
             target_type: "entity",
             target_id: targetId.trim(),
