@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, UserPlus, Loader2, Trash2, Info } from "lucide-react";
+import { Users, UserPlus, Loader2, Trash2, Info, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -47,6 +47,8 @@ export function TeamManagement() {
   const [inviting, setInviting] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; inviteId: string | null }>({ open: false, inviteId: null });
+  const [roleChangeDialog, setRoleChangeDialog] = useState<{ open: boolean; member: TeamMember | null; newRole: string }>({ open: false, member: null, newRole: "" });
+  const [changingRole, setChangingRole] = useState(false);
 
   useEffect(() => {
     fetchTeam();
@@ -63,13 +65,11 @@ export function TeamManagement() {
       if (!profileData?.org_id) return;
       setOrgId(profileData.org_id);
 
-      // Fetch org members
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, email, full_name")
         .eq("org_id", profileData.org_id);
 
-      // Fetch roles for each member
       const memberIds = (profiles || []).map(p => p.id);
       const { data: roles } = await supabase
         .from("user_roles")
@@ -90,7 +90,6 @@ export function TeamManagement() {
         roles: roleMap.get(p.id) || [],
       })));
 
-      // Fetch pending invitations
       const { data: invites } = await supabase
         .from("team_invitations")
         .select("id, email, role, status, created_at")
@@ -111,7 +110,6 @@ export function TeamManagement() {
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !orgId || !user) return;
 
-    // SECURITY: validate role against allowlist to prevent escalation via DOM tampering
     if (!(ALLOWED_INVITE_ROLES as readonly string[]).includes(inviteRole)) {
       toast.error("Invalid role selected");
       return;
@@ -145,7 +143,6 @@ export function TeamManagement() {
   const cancelInvite = async (id: string) => {
     if (!orgId) return;
     try {
-      // SECURITY: scope delete to current org to prevent IDOR
       const { error } = await supabase
         .from("team_invitations")
         .delete()
@@ -160,6 +157,25 @@ export function TeamManagement() {
     }
   };
 
+  const initiateRoleChange = (member: TeamMember, newRole: string) => {
+    setRoleChangeDialog({ open: true, member, newRole });
+  };
+
+  const confirmRoleChange = async () => {
+    const { member, newRole } = roleChangeDialog;
+    if (!member || !newRole) return;
+
+    setChangingRole(true);
+    try {
+      // This is a display-only change since roles are managed in user_roles table
+      // For now, show honest disclosure
+      toast.info("Role changes require backend support that is not yet automated. Please contact support@izenzo.co.za to change a team member's role.", { duration: 6000 });
+    } finally {
+      setChangingRole(false);
+      setRoleChangeDialog({ open: false, member: null, newRole: "" });
+    }
+  };
+
   const roleBadgeColour = (role: string) => {
     switch (role) {
       case "platform_admin": return "bg-red-500/10 text-red-700 border-red-200";
@@ -167,6 +183,16 @@ export function TeamManagement() {
       case "admin": return "bg-red-500/10 text-red-700 border-red-200";
       default: return "";
     }
+  };
+
+  const roleDisplayName = (role: string) => {
+    const map: Record<string, string> = {
+      org_member: "Member",
+      org_admin: "Admin",
+      platform_admin: "Platform Admin",
+      admin: "Platform Admin",
+    };
+    return map[role] || role.replace(/_/g, " ");
   };
 
   if (loading) {
@@ -187,6 +213,7 @@ export function TeamManagement() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Roles</TableHead>
+                {isOrgAdmin && <TableHead className="w-[100px]">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -197,10 +224,28 @@ export function TeamManagement() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {m.roles.map(r => (
-                        <Badge key={r} variant="outline" className={`text-xs ${roleBadgeColour(r)}`}>{r.replace("_", " ")}</Badge>
+                        <Badge key={r} variant="outline" className={`text-xs ${roleBadgeColour(r)}`}>{roleDisplayName(r)}</Badge>
                       ))}
                     </div>
                   </TableCell>
+                  {isOrgAdmin && (
+                    <TableCell>
+                      {m.id !== user?.id && (
+                        <Select
+                          value=""
+                          onValueChange={(newRole) => initiateRoleChange(m, newRole)}
+                        >
+                          <SelectTrigger className="w-[90px] h-8 text-xs">
+                            <span className="text-muted-foreground">Change</span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="org_member">Member</SelectItem>
+                            <SelectItem value="org_admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -276,7 +321,7 @@ export function TeamManagement() {
                 {invitations.map((inv) => (
                   <TableRow key={inv.id}>
                     <TableCell>{inv.email}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-xs">{inv.role}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{roleDisplayName(inv.role)}</Badge></TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => setCancelDialog({ open: true, inviteId: inv.id })}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -290,6 +335,7 @@ export function TeamManagement() {
         </Card>
       )}
 
+      {/* Cancel invitation dialog */}
       <AlertDialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog({ open, inviteId: open ? cancelDialog.inviteId : null })}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -305,6 +351,35 @@ export function TeamManagement() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Cancel Invitation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Role change confirmation dialog */}
+      <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => {
+        if (!open) setRoleChangeDialog({ open: false, member: null, newRole: "" });
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              Confirm role change
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>You are about to change the role for:</p>
+              <div className="rounded-md border border-border p-3 text-sm">
+                <p><span className="text-muted-foreground">Member:</span> <strong>{roleChangeDialog.member?.full_name || roleChangeDialog.member?.email}</strong></p>
+                <p><span className="text-muted-foreground">Current roles:</span> {roleChangeDialog.member?.roles.map(roleDisplayName).join(", ")}</p>
+                <p><span className="text-muted-foreground">New role:</span> <strong>{roleDisplayName(roleChangeDialog.newRole)}</strong></p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={changingRole}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRoleChange} disabled={changingRole}>
+              {changingRole ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Confirm Change
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
