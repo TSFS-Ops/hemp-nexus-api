@@ -19,6 +19,7 @@ interface EvidenceChainIndicatorProps {
 const FETCH_TIMEOUT_MS = 15_000;
 
 export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceChainIndicatorProps) {
+  const navigate = useNavigate();
   const { data: status, isLoading, isError, error } = useQuery({
     queryKey: ["evidence-chain", matchId],
     queryFn: async () => {
