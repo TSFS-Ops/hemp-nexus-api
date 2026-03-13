@@ -1,56 +1,44 @@
 /**
- * Edge-to-edge market signal ticker — Swiss-Terminal trading cards.
- * Refined with subtle hover pause and sharper card styling.
+ * Edge-to-edge live markets ticker — bottom of dashboard.
  */
 
 const TICKER_DATA = [
-  { asset: "Soybeans", signal: "Buyer interest", qty: "5,000 MT", corridor: "Brazil → East Africa", status: "Active" },
-  { asset: "Carbon Credits", signal: "Seller signal", qty: "12,000 VCUs", corridor: "Kenya", status: "Pending" },
-  { asset: "CDRs", signal: "Buyer intent", qty: "8,000 tCO₂", corridor: "Global", status: "Active" },
-  { asset: "Copper", signal: "Seller signal", qty: "2,500 MT", corridor: "Zambia → China", status: "Verified" },
-  { asset: "Lithium", signal: "Buyer interest", qty: "500 MT LCE", corridor: "DRC → Europe", status: "Active" },
-  { asset: "Nickel", signal: "Seller signal", qty: "1,200 MT", corridor: "Indonesia", status: "Pending" },
-  { asset: "Manganese", signal: "Buyer intent", qty: "3,000 MT", corridor: "SA → India", status: "Active" },
-  { asset: "Cobalt", signal: "Seller signal", qty: "800 MT", corridor: "DRC → Japan", status: "Verified" },
+  { asset: "Gold", price: "1,945.20", change: "0.62%", trend: "up" as const },
+  { asset: "Crude Oil", price: "81.23", change: "0.41%", trend: "down" as const },
+  { asset: "Carbon Credits", price: "73.15", change: "1.21%", trend: "up" as const },
+  { asset: "USD/ZAR", price: "18.72", change: "0.34%", trend: "down" as const },
+  { asset: "Copper", price: "8,923", change: "0.10%", trend: "up" as const },
 ];
-
-function StatusLabel({ status }: { status: string }) {
-  const color =
-    status === "Verified" ? "text-signal-verified"
-    : status === "Pending" ? "text-signal-pending"
-    : "text-primary";
-
-  return (
-    <span className={`text-[9px] font-mono uppercase tracking-widest ${color}`}>
-      {status}
-    </span>
-  );
-}
 
 export function CommodityTicker() {
   return (
-    <div
-      id="signals"
-      className="border-t border-b border-border bg-background overflow-hidden select-none group/ticker"
-    >
-      <div className="flex items-stretch animate-ticker group-hover/ticker:[animation-play-state:paused]">
-        {[...TICKER_DATA, ...TICKER_DATA].map((item, i) => (
-          <div
-            key={i}
-            className="flex-shrink-0 border-r border-border px-4 py-3 min-w-[210px]
-                       hover:bg-accent/20 transition-colors duration-200"
-          >
-            <div className="flex items-center justify-between gap-3 mb-1.5">
-              <span className="text-[11px] font-semibold text-foreground tracking-tight">{item.asset}</span>
-              <StatusLabel status={item.status} />
-            </div>
-            <div className="text-[10px] text-muted-foreground mb-1">{item.signal}</div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-medium text-foreground/80">{item.qty}</span>
-              <span className="text-[9px] font-mono text-muted-foreground/40">{item.corridor}</span>
-            </div>
+    <div className="border-t border-border bg-background select-none overflow-hidden">
+      <div className="flex items-center h-8">
+        {/* Live Markets label */}
+        <div className="flex-shrink-0 px-3 border-r border-border h-full flex items-center">
+          <span className="text-[10px] font-mono font-medium text-primary uppercase tracking-widest">
+            Live Markets
+          </span>
+        </div>
+        {/* Scrolling ticker */}
+        <div className="flex-1 overflow-hidden">
+          <div className="flex items-center animate-ticker gap-0">
+            {[...TICKER_DATA, ...TICKER_DATA].map((item, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 flex items-center gap-2 px-4 border-r border-border h-8"
+              >
+                <span className="text-[10px] font-semibold text-foreground">{item.asset}</span>
+                <span className="text-[10px] font-mono font-medium text-foreground">{item.price}</span>
+                <span className={`text-[10px] font-mono ${
+                  item.trend === "up" ? "text-signal-verified" : "text-destructive"
+                }`}>
+                  {item.trend === "up" ? "▲" : "▼"} {item.change}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
