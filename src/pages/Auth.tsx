@@ -73,6 +73,7 @@ export default function Auth() {
       if (session) {
         navigate(getPostAuthRedirect());
       }
+      setPageReady(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
