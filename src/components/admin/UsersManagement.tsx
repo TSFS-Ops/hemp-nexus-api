@@ -265,7 +265,7 @@ export default function UsersManagement() {
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {loading ? "" : `${filteredUsers.length} of ${users.length} users shown${users.length >= 1000 ? " (list may be truncated at 1,000)" : ""}`}
+            {loading ? "" : `${filteredUsers.length} of ${users.length} users shown${users.length >= 10000 ? " (list capped at 10,000)" : ""}`}
           </p>
         </div>
 
