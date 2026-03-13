@@ -70,11 +70,22 @@ export default function Auth() {
       return "/dashboard";
     };
 
+    // Timeout: if auth check takes >8s, show the form anyway
+    const timeoutId = setTimeout(() => {
+      setLoadingTimedOut(true);
+      setPageReady(true);
+    }, 8000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
       if (session) {
         navigate(getPostAuthRedirect());
       }
       setPageReady(true);
+    }).catch(() => {
+      clearTimeout(timeoutId);
+      setPageReady(true);
+      setLoadingTimedOut(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
