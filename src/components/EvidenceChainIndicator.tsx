@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, ShieldOff, Loader2, WifiOff } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -14,60 +14,106 @@ interface EvidenceChainIndicatorProps {
   compact?: boolean;
 }
 
+/** 15-second hard timeout to prevent infinite hangs on broken connections */
+const FETCH_TIMEOUT_MS = 15_000;
+
 export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceChainIndicatorProps) {
-  const { data: status, isLoading } = useQuery({
+  const { data: status, isLoading, isError, error } = useQuery({
     queryKey: ["evidence-chain", matchId],
     queryFn: async () => {
-      // Validate matchId format before making network request (defense-in-depth)
+      // 1. Input validation — reject non-UUID before any network call
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(matchId)) {
-        return { eventCount: 0, chainValid: false, hasIntentConfirmed: false };
+        return { eventCount: 0, chainValid: false, hasIntentConfirmed: false, errorType: null };
       }
 
-      // Use server-side verification via the evidence-pack edge function
+      // 2. Auth check — surface expired/missing session explicitly
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error("Authentication required for chain verification");
+        throw new ChainVerificationError("auth_expired", "Please sign in to verify evidence chain");
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // 3. Network request with hard timeout (prevents infinite spinner on broken connection)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
+      let response: Response;
+      try {
+        response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+          }
+        );
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
+          throw new ChainVerificationError("timeout", "Verification timed out — check your connection");
+        }
+        throw new ChainVerificationError("network", "Unable to reach verification service");
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      // 4. HTTP error handling with specific messages per status
       if (!response.ok) {
-        if (response.status === 403 || response.status === 404) {
-          return { eventCount: 0, chainValid: true, hasIntentConfirmed: false };
+        if (response.status === 401) {
+          throw new ChainVerificationError("auth_expired", "Session expired — please sign in again");
         }
-        throw new Error("Chain verification request failed");
+        if (response.status === 402) {
+          throw new ChainVerificationError("insufficient_tokens", "Insufficient credits for verification");
+        }
+        if (response.status === 403 || response.status === 404) {
+          return { eventCount: 0, chainValid: true, hasIntentConfirmed: false, errorType: null };
+        }
+        if (response.status === 429) {
+          throw new ChainVerificationError("rate_limited", "Too many requests — try again shortly");
+        }
+        throw new ChainVerificationError("server", `Verification failed (${response.status})`);
       }
 
-      const pack = await response.json();
-      // Secure default: treat missing verification data as invalid, not valid
-      const chainVerification = pack.chainVerification || { valid: false, eventCount: 0 };
-      const timeline = pack.canonical?.timeline || [];
+      // 5. Safe JSON parsing — protects against truncated/corrupted responses
+      let pack: Record<string, unknown>;
+      try {
+        pack = await response.json();
+      } catch {
+        throw new ChainVerificationError("parse", "Invalid response from verification service");
+      }
+
+      // Secure default: treat missing verification data as invalid
+      const chainVerification = (pack.chainVerification as { valid: boolean; eventCount: number }) || { valid: false, eventCount: 0 };
+      const canonical = pack.canonical as { timeline?: { event_type: string }[] } | undefined;
+      const timeline = canonical?.timeline || [];
 
       const hasIntent = timeline.some(
-        (e: { event_type: string }) =>
-          e.event_type === "intent.confirmed" || e.event_type === "match.settled"
+        (e) => e.event_type === "intent.confirmed" || e.event_type === "match.settled"
       );
 
       return {
         eventCount: chainVerification.eventCount,
         chainValid: chainVerification.valid,
         hasIntentConfirmed: hasIntent,
+        errorType: null,
       };
     },
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    retry: (failureCount, err) => {
+      // Don't retry auth or token errors — they won't self-resolve
+      if (err instanceof ChainVerificationError) {
+        if (["auth_expired", "insufficient_tokens", "rate_limited"].includes(err.type)) {
+          return false;
+        }
+      }
+      return failureCount < 1;
+    },
   });
 
+  // ── Loading state ──
   if (isLoading) {
     return compact ? (
       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -79,6 +125,41 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     );
   }
 
+  // ── Error state — previously missing, caused silent failures ──
+  if (isError) {
+    const errType = error instanceof ChainVerificationError ? error.type : "unknown";
+    const errMsg = error instanceof ChainVerificationError ? error.message : "Verification unavailable";
+    const Icon = errType === "network" || errType === "timeout" ? WifiOff : ShieldOff;
+
+    return compact ? (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">{errMsg}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    ) : (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className="gap-1 text-muted-foreground">
+              <Icon className="h-3 w-3" />
+              Unavailable
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">{errMsg}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // ── No events state ──
   if (!status || status.eventCount === 0) {
     return compact ? (
       <TooltipProvider>
@@ -99,10 +180,11 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     );
   }
 
-  const Icon = status.chainValid ? ShieldCheck : ShieldAlert;
+  // ── Verified / Compromised state ──
+  const VerifyIcon = status.chainValid ? ShieldCheck : ShieldAlert;
   const variant = status.chainValid ? "default" : "destructive";
-  const colorClass = status.chainValid 
-    ? "text-green-600" 
+  const colorClass = status.chainValid
+    ? "text-green-600"
     : "text-destructive";
 
   const tooltipContent = (
@@ -125,7 +207,7 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
+            <VerifyIcon className={`h-4 w-4 ${colorClass}`} />
           </TooltipTrigger>
           <TooltipContent>{tooltipContent}</TooltipContent>
         </Tooltip>
@@ -137,11 +219,11 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge 
-            variant={variant} 
+          <Badge
+            variant={variant}
             className={`gap-1 cursor-help ${status.chainValid ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >
-            <Icon className="h-3 w-3" />
+            <VerifyIcon className="h-3 w-3" />
             {status.eventCount} Event{status.eventCount !== 1 ? 's' : ''}
             {status.hasIntentConfirmed && ' ✓'}
           </Badge>
@@ -150,4 +232,12 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+/** Typed error class for specific failure categorisation */
+class ChainVerificationError extends Error {
+  constructor(public readonly type: string, message: string) {
+    super(message);
+    this.name = "ChainVerificationError";
+  }
 }
