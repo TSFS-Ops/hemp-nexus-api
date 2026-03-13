@@ -11,6 +11,7 @@ import { Loader2, Search, RefreshCw, Download, Shield } from "lucide-react";
 import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { downloadCSV } from "@/lib/download-utils";
 import {
   Dialog,
   DialogContent,
