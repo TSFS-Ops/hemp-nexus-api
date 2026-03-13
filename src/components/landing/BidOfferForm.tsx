@@ -24,16 +24,7 @@ interface BidOfferFormProps {
 }
 
 export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
-  const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
-    side: "bid" | "offer";
-    product: string;
-    volume: string;
-    price: string;
-    location: string;
-    additionalInfo: string;
-  }>("bid-offer");
-
-  const [side, setSide] = useState<"bid" | "offer">("bid");
+  const [side, setSideState] = useState<"bid" | "offer">("bid");
   const [form, setForm] = useState({
     product: "",
     volume: "",
@@ -41,6 +32,33 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     location: "",
     additionalInfo: "",
   });
+
+  // Stable ref for emergency save on session expiry
+  const sideRef = useRef(side);
+  sideRef.current = side;
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const getCurrentData = useCallback(() => {
+    const f = formRef.current;
+    const hasContent = f.product || f.volume || f.price || f.location;
+    if (!hasContent) return null;
+    return { side: sideRef.current, ...f };
+  }, []);
+
+  const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
+    side: "bid" | "offer";
+    product: string;
+    volume: string;
+    price: string;
+    location: string;
+    additionalInfo: string;
+  }>("bid-offer", getCurrentData);
+
+  // Wrapper so sideRef stays current
+  const setSide = useCallback((s: "bid" | "offer") => {
+    setSideState(s);
+  }, []);
   const [borderPulse, setBorderPulse] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const initialised = useRef(false);
