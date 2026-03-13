@@ -144,18 +144,20 @@ function AuditSection() {
 function AdminContent() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AdminSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center px-4 bg-background justify-between">
-            <div className="flex items-center">
-              <SidebarTrigger />
-              <h1 className="ml-4 text-lg font-semibold">Admin</h1>
+      <div className="min-h-screen-safe flex w-full">
+        <div className="hidden md:block">
+          <AdminSidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 sm:h-14 border-b flex items-center px-3 sm:px-4 bg-background justify-between sticky top-0 z-10 safe-area-top">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="touch-target hidden md:flex" />
+              <h1 className="text-base sm:text-lg font-semibold truncate">Admin</h1>
             </div>
             <Button variant="outline" size="sm" asChild>
               <Link to={ROUTES.DASHBOARD}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Console
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Console</span>
               </Link>
             </Button>
           </header>
