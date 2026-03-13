@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -14,15 +15,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Download, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Download, Trash2, Loader2, AlertTriangle, Mail } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 export function DataControls() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
 
   const handleExportData = async () => {
     setExporting(true);
@@ -60,18 +60,7 @@ export function DataControls() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    try {
-      // Sign out and navigate — actual deletion requires admin/backend action
-      toast.info("Account deletion request submitted. Your account will be reviewed and removed within 30 days.");
-      await signOut();
-      navigate("/");
-    } catch (err) {
-      toast.error("Failed to process deletion request");
-    } finally {
-      setDeleteDialogOpen(false);
-    }
-  };
+  const emailMatches = confirmEmail.trim().toLowerCase() === (user?.email ?? "").toLowerCase();
 
   return (
     <div className="space-y-6">
@@ -97,34 +86,20 @@ export function DataControls() {
           <Alert variant="destructive" className="mb-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Deleting your account will remove all your data, API keys, matches, and audit history. Active trades may be affected. 
+              Account deletion is not yet available as a self-service action. To request account deletion, 
+              please email <a href="mailto:support@izenzo.co.za" className="underline font-medium">support@izenzo.co.za</a> from 
+              your registered email address. We will process your request within 30 days.
               Data subject to regulatory retention (7 years) will be anonymised rather than deleted.
             </AlertDescription>
           </Alert>
-          <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Request Account Deletion
+          <Button variant="outline" asChild>
+            <a href={`mailto:support@izenzo.co.za?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20account%20associated%20with%20${encodeURIComponent(user?.email ?? "")}.`}>
+              <Mail className="h-4 w-4 mr-2" />
+              Email support to request deletion
+            </a>
           </Button>
         </CardContent>
       </Card>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will submit a request to permanently delete your account and all associated data.
-              You will be signed out immediately.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Yes, Delete My Account
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

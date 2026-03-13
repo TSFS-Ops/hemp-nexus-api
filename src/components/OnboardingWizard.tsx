@@ -19,7 +19,8 @@ import {
   Copy,
   ArrowRight,
   Sparkles,
-  Globe
+  Globe,
+  Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
@@ -123,12 +124,10 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       });
       setApiKey(data.key);
       
-      // Auto-copy to clipboard
       await navigator.clipboard.writeText(data.key);
       
       toast.success("API key created and copied to clipboard!");
       
-      // Auto-advance after a short delay (guarded by open state)
       const timer = setTimeout(() => {
         if (open) setCurrentStep(4);
       }, 1500);
@@ -174,7 +173,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         "Content-Type": "application/json",
       };
 
-      // Store request details
       setRequestDetails({
         url,
         method: "POST",
@@ -198,7 +196,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         setTestResult("success");
         toast.success("API test successful!");
         
-        // Auto-advance after a short delay (guarded by open state)
         setTimeout(() => {
           if (open) setCurrentStep(5);
         }, 1500);
@@ -233,7 +230,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   };
 
   const handleComplete = () => {
-    // Mark onboarding as complete in localStorage
     localStorage.setItem("onboarding_completed", "true");
     onClose();
     toast.success("You're all set! Happy building!");
@@ -263,7 +259,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           <Progress value={progress} className="h-2" />
         </div>
 
-        {/* Step Indicators - scrollable on mobile, flex on desktop */}
+        {/* Step Indicators */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 lg:justify-between lg:gap-0 lg:mx-0 lg:px-0 lg:overflow-visible">
           {steps.map((step, index) => {
             const Icon = step.icon;
@@ -284,7 +280,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 <span className={`text-[10px] lg:text-xs mt-1 text-center whitespace-nowrap ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
                   {step.title}
                 </span>
-                {/* Connector line - only visible on desktop */}
                 {index < steps.length - 1 && (
                   <div className="hidden lg:block absolute top-4 lg:top-5 h-0.5 bg-muted -z-10" 
                        style={{ left: '60%', width: '80%' }} />
@@ -335,9 +330,9 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Choose Your Data Region</h3>
+                <h3 className="text-xl font-bold">Data Region Preference</h3>
                 <p className="text-muted-foreground">
-                  Select where your organisation's data will be stored. This affects compliance with local data residency regulations.
+                  Indicate your preferred data region. This helps us understand your compliance requirements.
                 </p>
               </div>
 
@@ -367,9 +362,11 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               </div>
 
               <Alert>
+                <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Data residency affects where your collapse records, screening results, and audit logs are stored.
-                  This can be changed later by contacting support.
+                  <strong>Advisory only.</strong> Data region selection is recorded as a preference but is not yet enforced. 
+                  All data is currently stored in a single region. Multi-region deployment is on our roadmap. 
+                  Contact support@izenzo.co.za if you have specific data residency requirements.
                 </AlertDescription>
               </Alert>
 
@@ -377,14 +374,13 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 try {
                   const { data: { session } } = await supabase.auth.getSession();
                   if (session) {
-                    // Save region to org profile
                     const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
                     if (profile?.org_id) {
                       await supabase.from("organizations").update({ data_residency_region: selectedRegion } as any).eq("id", profile.org_id);
                     }
                   }
                 } catch (e) {
-                  console.error("Failed to save region:", e);
+                  console.error("Failed to save region preference:", e);
                 }
                 setCurrentStep(3);
               }} size="lg" className="w-full">
@@ -487,259 +483,59 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           {currentStep === 4 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Test Your API Connection</h3>
+                <h3 className="text-xl font-bold">Test Your API Key</h3>
                 <p className="text-muted-foreground">
-                  Let's make sure everything is working by creating a test signal.
+                  Let's make your first API call to the signals endpoint.
                 </p>
               </div>
 
-              {!testResult ? (
-                <div className="space-y-4">
-                  <Alert>
-                    <AlertDescription>
-                      <strong>What we'll do:</strong>
-                      <p className="text-sm mt-1">
-                        Send a POST request to /signals to create a test buyer signal for "Test Product". 
-                        This is a safe sandbox request that won't affect real data.
-                      </p>
-                    </AlertDescription>
-                  </Alert>
+              <Card className="p-4 bg-muted/30">
+                <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+{`POST /functions/v1/signals
+{
+  "product": "Test Product",
+  "quantity": 100,
+  "unit": "units",
+  "location": "Test Location"
+}`}
+                </pre>
+              </Card>
 
-                  <Card className="p-4 bg-muted">
-                    <div className="text-xs font-mono space-y-1">
-                      <div><span className="text-green-600">POST</span> /signals</div>
-                      <div className="text-muted-foreground">x-api-key: {apiKey?.substring(0, 20)}...</div>
-                      <div className="mt-2 text-muted-foreground">
-                        {`{ product: "Test Product", quantity: 100, unit: "units"... }`}
-                      </div>
-                    </div>
-                  </Card>
+              <Button
+                onClick={handleTestApi}
+                disabled={testing || !apiKey}
+                size="lg"
+                className="w-full"
+              >
+                {testing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Run API Test
+                  </>
+                )}
+              </Button>
 
-                  <Button 
-                    onClick={handleTestApi} 
-                    disabled={testing || !apiKey} 
-                    className="w-full"
-                    size="lg"
-                  >
-                    {testing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Testing...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="mr-2 h-4 w-4" />
-                        Run API Test
-                      </>
-                    )}
-                  </Button>
+              {testResult === "success" && (
+                <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <AlertDescription className="text-green-800 dark:text-green-200">
+                    <strong>API test successful!</strong> Your key is working.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-                  <Button 
-                    onClick={() => setCurrentStep(5)} 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full"
-                  >
-                    Skip Test (Not Recommended)
-                  </Button>
-                </div>
-              ) : testResult === "success" ? (
-                <div className="space-y-4">
-                  <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      <strong>API test successful! 🎉</strong>
-                      <p className="text-sm mt-1">
-                        Your signal was created successfully. Your API setup is working perfectly!
-                      </p>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Card className="p-4">
-                    <div className="text-sm space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <span className="font-medium">Status: 200 OK</span>
-                      </div>
-                      <div className="text-muted-foreground">
-                        Response: Signal created with ID and matched options returned
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Debug Toggle Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowDebugger(!showDebugger)}
-                    className="w-full"
-                  >
-                    {showDebugger ? "Hide" : "Show"} Request/Response Details
-                  </Button>
-
-                  {/* Debug Panel for Success */}
-                  {showDebugger && (
-                    <Card className="p-4 bg-muted">
-                      <div className="space-y-4">
-                        {/* Request Details */}
-                        {requestDetails && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">Request</h4>
-                            <div className="text-xs font-mono space-y-1 bg-background p-3 rounded border">
-                              <div className="text-green-600 font-bold">
-                                {requestDetails.method} {requestDetails.url}
-                              </div>
-                              <div className="text-muted-foreground mt-2">Headers:</div>
-                              {Object.entries(requestDetails.headers).map(([key, value]) => (
-                                <div key={key} className="ml-2">
-                                  <span className="text-blue-600">{key}:</span> {value}
-                                </div>
-                              ))}
-                              <div className="text-muted-foreground mt-2">Body:</div>
-                              <pre className="ml-2 text-xs overflow-x-auto">
-                                {JSON.stringify(requestDetails.body, null, 2)}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Response Details */}
-                        {responseDetails && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">Response</h4>
-                            <div className="text-xs font-mono bg-background p-3 rounded border">
-                              <div className="text-green-600 font-bold mb-2">
-                                Status: 200 OK
-                              </div>
-                              <pre className="text-xs overflow-x-auto">
-                                {JSON.stringify(responseDetails, null, 2)}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  )}
-
-                  <Button onClick={() => setCurrentStep(5)} size="lg" className="w-full">
-                    Continue
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      <strong>Test failed</strong>
-                      {errorDetails?.status && (
-                        <p className="text-sm mt-1 font-mono">
-                          Status: {errorDetails.status} {errorDetails.statusText}
-                        </p>
-                      )}
-                      <p className="text-sm mt-1">
-                        {errorDetails?.message || "The API test did not complete successfully."}
-                      </p>
-                    </AlertDescription>
-                  </Alert>
-
-                  {/* Error Details Card */}
-                  {errorDetails && (
-                    <Card className="p-4 border-destructive">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold">Error Details</h4>
-                        <div className="text-xs space-y-1">
-                          {errorDetails.status && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">HTTP Status:</span>
-                              <span className="font-mono">{errorDetails.status}</span>
-                            </div>
-                          )}
-                          {errorDetails.message && (
-                            <div className="flex flex-col gap-1">
-                              <span className="text-muted-foreground">Error Message:</span>
-                              <code className="text-xs bg-muted p-2 rounded block break-all">
-                                {errorDetails.message}
-                              </code>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Debug Toggle Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowDebugger(!showDebugger)}
-                    className="w-full"
-                  >
-                    {showDebugger ? "Hide" : "Show"} Request/Response Details
-                  </Button>
-
-                  {/* Debug Panel */}
-                  {showDebugger && (
-                    <Card className="p-4 bg-muted">
-                      <div className="space-y-4">
-                        {/* Request Details */}
-                        {requestDetails && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">Request</h4>
-                            <div className="text-xs font-mono space-y-1 bg-background p-3 rounded border">
-                              <div className="text-green-600 font-bold">
-                                {requestDetails.method} {requestDetails.url}
-                              </div>
-                              <div className="text-muted-foreground mt-2">Headers:</div>
-                              {Object.entries(requestDetails.headers).map(([key, value]) => (
-                                <div key={key} className="ml-2">
-                                  <span className="text-blue-600">{key}:</span> {value}
-                                </div>
-                              ))}
-                              <div className="text-muted-foreground mt-2">Body:</div>
-                              <pre className="ml-2 text-xs overflow-x-auto">
-                                {JSON.stringify(requestDetails.body, null, 2)}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Response Details */}
-                        {responseDetails && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">Response</h4>
-                            <div className="text-xs font-mono bg-background p-3 rounded border">
-                              {errorDetails?.status && (
-                                <div className="text-red-600 font-bold mb-2">
-                                  Status: {errorDetails.status} {errorDetails.statusText}
-                                </div>
-                              )}
-                              <pre className="text-xs overflow-x-auto">
-                                {JSON.stringify(responseDetails, null, 2)}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button onClick={handleTestApi} variant="outline" className="flex-1">
-                      Try Again
-                    </Button>
-                    <Button onClick={() => setCurrentStep(5)} variant="secondary" className="flex-1">
-                      Skip Test
-                    </Button>
-                  </div>
-
-                  <Alert>
-                    <AlertDescription className="text-xs">
-                      <strong>Need help?</strong> If the test continues to fail, you can skip it and access 
-                      the Troubleshooting page from the dashboard to diagnose the issue.
-                    </AlertDescription>
-                  </Alert>
-                </div>
+              {testResult === "error" && errorDetails && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    <strong>Test failed:</strong> {errorDetails.message}
+                    {errorDetails.status && <span className="ml-1">(HTTP {errorDetails.status})</span>}
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
           )}
@@ -748,30 +544,19 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           {currentStep === 5 && (
             <div className="space-y-6 text-center">
               <div className="flex justify-center">
-                <div className="p-4 bg-green-500/10 rounded-full">
-                  <Trophy className="h-12 w-12 text-green-500" />
+                <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-full">
+                  <Trophy className="h-12 w-12 text-green-600" />
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold">You're All Set! 🚀</h3>
+                <h3 className="text-2xl font-bold">You're Ready! 🎉</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  Congratulations! You've created your API key and made your first successful API call.
+                  You've created your API key and made your first successful API call. 
+                  You're all set to start integrating.
                 </p>
               </div>
-              <Alert className="text-left">
-                <AlertDescription>
-                  <strong>What's next?</strong>
-                  <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                    <li>Explore the API Playground to test more endpoints</li>
-                    <li>Check out the documentation for detailed guides</li>
-                    <li>Set up webhooks for real-time notifications</li>
-                    <li>Review the troubleshooting page for common issues</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
               <Button onClick={handleComplete} size="lg" className="w-full">
-                Go to Dashboard
-                <ArrowRight className="ml-2 h-4 w-4" />
+                Go to Console
               </Button>
             </div>
           )}

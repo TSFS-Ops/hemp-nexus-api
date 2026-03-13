@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -82,11 +83,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let sessionExpiryToastShown = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
+      if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" && !session) {
+        // Session expired or was invalidated
+        if (!sessionExpiryToastShown && event === "SIGNED_OUT" && user) {
+          // Only show session expiry message if user was previously signed in
+          // and didn't explicitly sign out (we detect this by checking if we had a user)
+          sessionExpiryToastShown = true;
+          toast.error("Your session has expired. Please sign in again.", {
+            duration: 8000,
+            action: {
+              label: "Sign in",
+              onClick: () => {
+                const currentPath = window.location.pathname + window.location.search;
+                const returnTo = encodeURIComponent(currentPath);
+                window.location.href = `/auth?returnTo=${returnTo}`;
+              },
+            },
+          });
+        }
+        setRoles([]);
+        return;
+      }
+
       if (session?.user) {
+        sessionExpiryToastShown = false;
         // Ensure profile exists before fetching roles (self-repair if trigger failed)
         setTimeout(async () => {
           await ensureProfile(session.user.id, session.user.email ?? "");

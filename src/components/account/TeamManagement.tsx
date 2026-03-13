@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, UserPlus, Loader2, Trash2, Mail } from "lucide-react";
+import { Users, UserPlus, Loader2, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -128,12 +129,14 @@ export function TeamManagement() {
         });
 
       if (error) throw error;
-      toast.success(`Invitation sent to ${inviteEmail}`);
+      toast.success(`Invitation recorded for ${inviteEmail}`, {
+        description: "They will appear in the pending list. Invitation emails are not yet sent automatically — please share the sign-up link with them directly.",
+      });
       setInviteEmail("");
       fetchTeam();
     } catch (err: any) {
       console.error("Invite error:", err);
-      toast.error("Failed to send invitation", { description: err.message });
+      toast.error("Failed to record invitation", { description: err.message });
     } finally {
       setInviting(false);
     }
@@ -209,9 +212,16 @@ export function TeamManagement() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" />Invite Teammate</CardTitle>
-            <CardDescription>Send an invitation to join your organisation</CardDescription>
+            <CardDescription>Record an invitation for a new team member</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Automated invitation emails are not yet enabled. After recording the invitation below, 
+                please share your organisation's sign-up link with the invitee directly.
+              </AlertDescription>
+            </Alert>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 space-y-2">
                 <Label htmlFor="invite-email">Email Address</Label>
@@ -238,8 +248,8 @@ export function TeamManagement() {
               </div>
               <div className="flex items-end">
                 <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
-                  {inviting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
-                  Invite
+                  {inviting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+                  Record Invitation
                 </Button>
               </div>
             </div>
@@ -251,6 +261,7 @@ export function TeamManagement() {
         <Card>
           <CardHeader>
             <CardTitle>Pending Invitations</CardTitle>
+            <CardDescription>These invitations have been recorded but require manual follow-up.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

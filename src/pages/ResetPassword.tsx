@@ -1,23 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
+
+const TIMEOUT_MS = 15_000; // 15 seconds to detect recovery event
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [expired, setExpired] = useState(false);
   const navigate = useNavigate();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     // Listen for the PASSWORD_RECOVERY event from the hash fragment
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setReady(true);
+        setExpired(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
       }
     });
 
@@ -25,10 +31,19 @@ export default function ResetPassword() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setReady(true);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Timeout: if no recovery event fires within 15 seconds, the link is expired or invalid
+    timeoutRef.current = setTimeout(() => {
+      setExpired(true);
+    }, TIMEOUT_MS);
+
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -50,6 +65,31 @@ export default function ResetPassword() {
     }
   };
 
+  // Expired or invalid token state
+  if (!ready && expired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <AlertTriangle className="h-8 w-8 mx-auto text-amber-500" />
+          <h1 className="text-xl font-semibold text-foreground">Reset link expired or invalid</h1>
+          <p className="text-sm text-muted-foreground">
+            This password reset link has expired or is no longer valid. Reset links are single-use and expire after a short time.
+          </p>
+          <Link
+            to="/auth"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-foreground text-background hover:bg-foreground/90 transition-colors w-full"
+          >
+            Request a new reset link
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            Go to Sign In → Forgot Password to request a new link.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Waiting for recovery event
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
