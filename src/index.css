@@ -130,8 +130,10 @@
     --warning: 43 96% 56%;
     --warning-foreground: 0 0% 0%;
 
-    --signal-verified: 160 84% 44%;
+    --signal-verified: 160 91% 35%;
     --signal-pending: 43 96% 56%;
+
+    --surface-sidebar: 225 20% 8%;
 
     --earth-warm: 28 35% 50%;
     --earth-copper: 29 57% 52%;
