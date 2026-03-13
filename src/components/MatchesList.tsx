@@ -462,7 +462,7 @@ export function MatchesList() {
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
                     <div className="flex items-center gap-2">
-                      {renderEvidence(match.id)}
+                      <EvidenceChainIndicator matchId={match.id} compact />
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(match.created_at), "MMM dd")}
                       </span>
