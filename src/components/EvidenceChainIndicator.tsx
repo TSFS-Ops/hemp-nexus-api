@@ -132,15 +132,23 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     const errType = error instanceof ChainVerificationError ? error.type : "unknown";
     const errMsg = error instanceof ChainVerificationError ? error.message : "Verification unavailable";
     const Icon = errType === "network" || errType === "timeout" ? WifiOff : ShieldOff;
+    const isActionable = errType === "auth_expired" || errType === "insufficient_tokens";
+    const actionLabel = errType === "auth_expired" ? "Sign in" : errType === "insufficient_tokens" ? "View billing" : null;
+    const handleAction = isActionable
+      ? () => navigate(errType === "auth_expired" ? "/auth" : "/billing")
+      : undefined;
 
     return compact ? (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+          <TooltipTrigger asChild>
+            <button type="button" onClick={handleAction} className={isActionable ? "cursor-pointer" : "cursor-default"}>
+              <Icon className="h-4 w-4 text-muted-foreground" />
+            </button>
           </TooltipTrigger>
           <TooltipContent>
             <p className="text-xs">{errMsg}</p>
+            {actionLabel && <p className="text-xs font-medium text-primary mt-0.5">Click to {actionLabel.toLowerCase()}</p>}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -148,13 +156,18 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="outline" className="gap-1 text-muted-foreground">
+            <Badge
+              variant="outline"
+              className={`gap-1 text-muted-foreground ${isActionable ? "cursor-pointer hover:border-primary/50" : ""}`}
+              onClick={handleAction}
+            >
               <Icon className="h-3 w-3" />
-              Unavailable
+              {actionLabel ?? "Unavailable"}
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
             <p className="text-xs">{errMsg}</p>
+            {actionLabel && <p className="text-xs font-medium text-primary mt-0.5">Click to {actionLabel.toLowerCase()}</p>}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
