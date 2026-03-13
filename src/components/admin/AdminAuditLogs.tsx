@@ -125,22 +125,22 @@ export function AdminAuditLogs() {
   const uniqueEntities = auditLogs ? [...new Set(auditLogs.map(l => l.entity_type))] : [];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Audit Logs</h2>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-xl sm:text-3xl font-bold tracking-tight">Audit Logs</h2>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm">
             Complete audit trail of all binding actions and admin operations
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button variant="outline" onClick={exportLogs}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <Button variant="outline" size="sm" onClick={exportLogs}>
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
         </div>
       </div>
