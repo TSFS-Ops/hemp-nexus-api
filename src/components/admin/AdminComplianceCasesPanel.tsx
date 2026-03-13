@@ -41,6 +41,10 @@ const STATUS_COLOURS: Record<string, "default" | "secondary" | "destructive" | "
 export function AdminComplianceCasesPanel() {
   const [cases, setCases] = useState<ComplianceCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionCase, setActionCase] = useState<ComplianceCase | null>(null);
+  const [actionType, setActionType] = useState<string>("");
+  const [decisionNotes, setDecisionNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
