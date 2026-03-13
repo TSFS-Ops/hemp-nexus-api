@@ -161,6 +161,24 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
     if (saving) return;
     setSaving(true);
     try {
+      // Dispute guard: block term edits while an open dispute exists
+      const { data: openDisputes, error: disputeErr } = await supabase
+        .from("disputes")
+        .select("id")
+        .eq("match_id", matchId)
+        .eq("status", "open")
+        .limit(1);
+
+      if (disputeErr) throw disputeErr;
+      if (openDisputes && openDisputes.length > 0) {
+        toast.error(
+          "Cannot save deal terms while an open dispute exists on this match. Resolve the dispute first.",
+          { duration: 6000 }
+        );
+        setSaving(false);
+        return;
+      }
+
       const latestVersion = terms.length > 0 ? terms[0].version : 0;
 
       // Conflict detection: re-fetch latest version before saving
