@@ -40,6 +40,9 @@ interface AuditLog {
 export function GlobalApiLogs() {
   const [activeTab, setActiveTab] = useState("requests");
   
+  const API_LOG_LIMIT = 200;
+  const BUSINESS_LOG_LIMIT = 200;
+  
   // API Logs state
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +52,13 @@ export function GlobalApiLogs() {
   const [selectedLog, setSelectedLog] = useState<ApiLog | null>(null);
   const [correlationOpen, setCorrelationOpen] = useState(false);
   const [correlationRequestId, setCorrelationRequestId] = useState<string | null>(null);
+  const [apiTotalCount, setApiTotalCount] = useState(0);
   
   // Business Events state
   const [businessLogs, setBusinessLogs] = useState<AuditLog[]>([]);
   const [businessLoading, setBusinessLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState<string>("all");
+  const [businessTotalCount, setBusinessTotalCount] = useState(0);
 
   const fetchLogs = useCallback(async () => {
     try {
