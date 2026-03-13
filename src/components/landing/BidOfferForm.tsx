@@ -3,8 +3,10 @@
  * Supports locked state during cryptographic scan phase.
  */
 
-import { useState, useEffect } from "react";
-import { Search, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Upload, Info } from "lucide-react";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface BidOfferData {
   product: string;
