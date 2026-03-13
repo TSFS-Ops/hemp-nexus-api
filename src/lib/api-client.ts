@@ -95,7 +95,7 @@ export async function apiFetch<T = unknown>(
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   const url = `${baseUrl}/functions/v1/${path}`;
 
-  const { idempotencyKey, headers: initHeaders, ...restInit } = init ?? {};
+  const { idempotencyKey, headers: initHeaders, signal: externalSignal, ...restInit } = init ?? {};
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -107,10 +107,31 @@ export async function apiFetch<T = unknown>(
     headers["Idempotency-Key"] = idempotencyKey;
   }
 
-  const res = await fetch(url, {
-    ...restInit,
-    headers,
-  });
+  // 15-second timeout guard — prevents indefinite hangs on slow/dead networks
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+  // If caller provided a signal, forward abort to our controller
+  if (externalSignal) {
+    externalSignal.addEventListener("abort", () => controller.abort());
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...restInit,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(0, "Request timed out. Please check your connection and try again.", "TIMEOUT");
+    }
+    throw new ApiError(0, "Network error. Please check your connection and try again.", "NETWORK_ERROR");
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
     // Global 401 handler: expired session → redirect to auth with returnTo
