@@ -63,7 +63,7 @@ export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | n
     if (draft) setHasRestoredDraft(true);
   }, [restoreDraft]);
 
-  // Emergency save on session expiry
+  // Emergency save on session expiry OR page unload (universal safety net)
   useEffect(() => {
     const handler = () => {
       const data = getCurrentDataRef.current?.();
@@ -72,7 +72,11 @@ export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | n
       }
     };
     window.addEventListener("izenzo:session-expiry", handler);
-    return () => window.removeEventListener("izenzo:session-expiry", handler);
+    window.addEventListener("beforeunload", handler);
+    return () => {
+      window.removeEventListener("izenzo:session-expiry", handler);
+      window.removeEventListener("beforeunload", handler);
+    };
   }, [saveDraft]);
 
   return { restoreDraft, saveDraft, clearDraft, hasRestoredDraft };
