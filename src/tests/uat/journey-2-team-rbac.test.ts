@@ -90,6 +90,10 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
     await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: PASSWORD });
 
     // New users are auto-assigned org_admin + org_member by handle_new_user trigger
+    // RLS on user_roles may restrict cross-user reads
+    // Sign in as the member to read their own roles
+    await supabase.auth.signInWithPassword({ email: MEMBER_EMAIL, password: PASSWORD });
+
     const { data: roles, error } = await supabase
       .from("user_roles")
       .select("role")
@@ -97,7 +101,6 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
 
     expect(error).toBeNull();
     const roleNames = (roles ?? []).map((r: { role: string }) => r.role);
-    // Auto-assigned by database trigger
     expect(roleNames).toContain("org_member");
     expect(roleNames).toContain("org_admin");
   });
