@@ -177,6 +177,8 @@ export default function CounterpartySearch() {
     if (isConfirming) return;
 
     setIsConfirming(true);
+    // Generate a batch idempotency key to prevent duplicate match creation on retry
+    const batchKey = crypto.randomUUID();
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
