@@ -62,7 +62,7 @@
     --warning-foreground: 0 0% 0%;
 
     /* Signal colors — #059669 for legible status text */
-    --signal-verified: 160 91% 31%;
+    --signal-verified: 160 84% 29%;
     --signal-pending: 43 96% 56%;
 
     /* Sidebar panel background — #F9FAFB */
