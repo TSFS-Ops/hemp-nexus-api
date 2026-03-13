@@ -22,15 +22,15 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-background border-t border-border safe-area-bottom">
-      <div className="flex items-stretch h-14">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border safe-area-bottom">
+      <div className="flex items-stretch" style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}>
         {navItems.map((item) => {
           const active = isActive(item.path, item.exact);
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition-colors touch-target ${
                 active
                   ? "text-primary font-medium"
                   : "text-muted-foreground"

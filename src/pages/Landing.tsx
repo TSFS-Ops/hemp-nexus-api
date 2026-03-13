@@ -99,7 +99,7 @@ export default function Landing() {
   }, [isSearching]);
 
   return (
-    <div className="h-screen h-[100dvh] flex flex-col bg-background relative overflow-hidden">
+    <div className="h-screen-safe flex flex-col bg-background relative overflow-hidden">
       <AnimatedBackground />
       <PublicHeader />
 
