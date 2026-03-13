@@ -202,6 +202,7 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
       if (error) throw error;
       toast.success("Deal terms proposed successfully");
       formDirty.current = false;
+      clearDealDraft();
       setShowForm(false);
       setForm({ ...EMPTY_FORM });
       fetchTerms();
