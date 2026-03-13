@@ -197,6 +197,11 @@ export function MatchesList() {
     }
   };
 
+  // Generate a stable batch key once when user initiates action.
+  // This persists across the sequential loop so retrying the same batch
+  // with the same match IDs produces the same per-match keys.
+  const [bulkBatchKey, setBulkBatchKey] = useState<string | null>(null);
+
   const handleBulkSettle = async () => {
     if (isSettling) return; // double-click guard
     setIsSettling(true);
@@ -208,7 +213,6 @@ export function MatchesList() {
       }
 
       // Filter: only attempt settle on matches still in 'matched' status
-      // This prevents re-settling already-confirmed matches on retry
       const eligibleIds = Array.from(selectedMatches).filter(id => {
         const m = matches?.find(match => match.id === id);
         return m && MatchState.canDo(m.status, "select_for_bulk");
@@ -221,6 +225,11 @@ export function MatchesList() {
         return;
       }
 
+      // Stable batch key: generated once per user-initiated action.
+      // If this is a retry of the same selection, reuse the existing key.
+      const batchKey = bulkBatchKey ?? crypto.randomUUID();
+      if (!bulkBatchKey) setBulkBatchKey(batchKey);
+
       let succeeded = 0;
       let failed = 0;
       const failedIds: string[] = [];
@@ -229,7 +238,8 @@ export function MatchesList() {
       // Sequential to avoid race conditions on balance
       for (const matchId of eligibleIds) {
         try {
-          const idempotencyKey = `bulk_settle_${matchId}_${Date.now()}`;
+          // Stable per-match key: same batch + same matchId = same key on retry
+          const idempotencyKey = `bulk_settle_${batchKey}_${matchId}`;
           const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
             method: "POST",
             headers: {
@@ -278,11 +288,12 @@ export function MatchesList() {
         toast.error(`All ${failed} confirmations failed: ${errors[0] || "Unknown error"}`);
       }
 
-      // Keep only failed IDs selected for retry
+      // Keep only failed IDs selected for retry (batch key persists for retry)
       if (failedIds.length > 0) {
         setSelectedMatches(new Set(failedIds));
       } else {
         setSelectedMatches(new Set());
+        setBulkBatchKey(null); // Reset batch key on full success
       }
       setShowSettleDialog(false);
       refetch();

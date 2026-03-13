@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -10,7 +10,7 @@ import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
 import { PoiCommitmentRow } from "@/components/landing/PoiCommitmentRow";
 import { TrustBadges } from "@/components/landing/TrustBadges";
 import { CommodityTicker } from "@/components/landing/CommodityTicker";
-import { savePreAuthState } from "@/lib/pre-auth-state";
+import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SCAN_DURATION_MS = 1200;
@@ -23,7 +23,25 @@ export default function Landing() {
   const [isFormLocked, setIsFormLocked] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Restore pre-auth state: when user returns to / after auth with resume=1,
+  // redirect them to the dashboard search with their original query
+  useEffect(() => {
+    if (authLoading) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("resume") !== "1") return;
+    if (!isAuthenticated) return;
+
+    const preAuth = consumePreAuthState();
+    if (preAuth?.query) {
+      const searchParams = new URLSearchParams({ q: preAuth.query, resume: "1" });
+      window.location.assign(`/dashboard/search?${searchParams.toString()}`);
+    } else {
+      // Authenticated but no state to restore — go to dashboard
+      window.location.assign("/dashboard");
+    }
+  }, [authLoading, isAuthenticated]);
 
   const navigateToAuth = useCallback(() => {
     // Save the search state before redirecting to auth

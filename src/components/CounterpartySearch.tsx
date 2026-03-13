@@ -14,6 +14,17 @@ import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
+import { consumePreAuthState } from "@/lib/pre-auth-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SearchResult {
   id: string;
@@ -59,8 +70,27 @@ export default function CounterpartySearch() {
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [isConfirming, setIsConfirming] = useState(false);
   const [similarAnchor, setSimilarAnchor] = useState<SearchResult | null>(null);
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
+
+  // Restore pre-auth state on mount (when returning from auth flow)
+  useEffect(() => {
+    if (authLoading) return;
+    const resumed = searchParams.get("resume");
+    if (resumed !== "1") return;
+    
+    const preAuth = consumePreAuthState();
+    if (preAuth?.query && !query) {
+      setQuery(preAuth.query);
+      setSearchParams((prev) => {
+        const updated = new URLSearchParams(prev);
+        updated.set("q", preAuth.query);
+        updated.delete("resume");
+        return updated;
+      }, { replace: true });
+    }
+  }, [authLoading]);
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -135,12 +165,17 @@ export default function CounterpartySearch() {
     });
   };
 
-  const handleStartPOI = async () => {
+  const handleCreateMatchClick = () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one counterparty");
       return;
     }
+    setShowDraftDialog(true);
+  };
 
+  const handleConfirmDraftCreation = async () => {
+    setShowDraftDialog(false);
+    if (selectedResults.size === 0) return;
     if (isConfirming) return;
 
     setIsConfirming(true);
@@ -223,15 +258,18 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: { amount: 0, unit: "TBD" },
-                price: { amount: 0, currency: "TBD" },
-                terms: "Draft — counterparty discovered via search. Quantity, price, and terms to be confirmed during negotiation.",
+                // No quantity or price — this is a draft match.
+                // Commercial terms will be added during negotiation.
+                quantity: null,
+                price: null,
+                terms: null,
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
                   isDraft: true,
+                  draftReason: "Created from search — commercial terms to be confirmed during negotiation.",
                 }
               }),
             }
@@ -271,15 +309,15 @@ export default function CounterpartySearch() {
       const total = created + duplicates + failed;
       if (failed === 0 && duplicates === 0) {
         if (created === 1 && lastMatchId) {
-          toast.success("Match created — upload documents, then confirm intent.");
+          toast.success("Draft match created — add commercial terms and documents, then confirm intent.");
           navigate(`/dashboard/matches/${lastMatchId}`);
         } else {
-          toast.success(`${created} matches created. View them in your matches.`);
+          toast.success(`${created} draft matches created. Add commercial terms in each match before confirming intent.`);
           navigate("/dashboard/matches");
         }
       } else if (failed === 0) {
         if (created > 0) {
-          toast.success(`${created} new match${created > 1 ? "es" : ""} created. ${duplicates} already existed and were skipped.`);
+          toast.success(`${created} new draft match${created > 1 ? "es" : ""} created. ${duplicates} already existed and were skipped.`);
         } else {
           toast.info(`All ${duplicates} match${duplicates > 1 ? "es" : ""} already exist — no duplicates created. View them in your matches.`);
         }
@@ -379,7 +417,7 @@ export default function CounterpartySearch() {
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
                   <Button 
-                    onClick={handleStartPOI}
+                    onClick={handleCreateMatchClick}
                     disabled={isConfirming}
                     size="sm" 
                     className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
@@ -389,7 +427,7 @@ export default function CounterpartySearch() {
                     ) : (
                       <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                     )}
-                    Create Match ({selectedResults.size})
+                    {isConfirming ? "Creating…" : `Create Draft Match (${selectedResults.size})`}
                   </Button>
                 </div>
               )}
@@ -416,6 +454,32 @@ export default function CounterpartySearch() {
             )}
           </div>
         )}
+
+        {/* Draft Match Confirmation Dialog */}
+        <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Create Draft Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  You are about to create {selectedResults.size} draft match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
+                </p>
+                <p>
+                  <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Creating a draft match does not create any financial obligation or deduct credits.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDraftCreation}>
+                Create Draft{selectedResults.size > 1 ? "s" : ""}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Similar Counterparties Sheet */}
         <SimilarCounterpartiesSheet

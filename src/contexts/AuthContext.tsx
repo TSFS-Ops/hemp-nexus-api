@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
@@ -27,6 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  // Track whether user explicitly clicked sign-out (not session expiry)
+  const explicitSignOutRef = useRef(false);
+  // Ref to track whether we had a user before (for expiry detection)
+  const hadUserRef = useRef(false);
 
   const ensureProfile = useCallback(async (userId: string, email: string) => {
     try {
@@ -76,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchRoles]);
 
   const signOut = useCallback(async () => {
+    explicitSignOutRef.current = true;
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -83,37 +88,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let sessionExpiryToastShown = false;
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" && !session) {
-        // Session expired or was invalidated
-        if (!sessionExpiryToastShown && event === "SIGNED_OUT" && user) {
-          // Only show session expiry message if user was previously signed in
-          // and didn't explicitly sign out (we detect this by checking if we had a user)
-          sessionExpiryToastShown = true;
-          toast.error("Your session has expired. Please sign in again.", {
-            duration: 8000,
-            action: {
-              label: "Sign in",
-              onClick: () => {
-                const currentPath = window.location.pathname + window.location.search;
-                const returnTo = encodeURIComponent(currentPath);
-                window.location.href = `/auth?returnTo=${returnTo}`;
-              },
-            },
+      if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
+        const wasExplicit = explicitSignOutRef.current;
+        explicitSignOutRef.current = false;
+
+        if (!wasExplicit && hadUserRef.current) {
+          // This is a genuine session expiry, not an explicit logout
+          const currentPath = window.location.pathname + window.location.search;
+          const returnTo = encodeURIComponent(currentPath);
+          toast.error("Your session has expired. Redirecting to sign in…", {
+            duration: 5000,
           });
+          // Force redirect after a brief delay so the toast is visible
+          setTimeout(() => {
+            window.location.href = `/auth?returnTo=${returnTo}`;
+          }, 1500);
         }
+        hadUserRef.current = false;
         setRoles([]);
         return;
       }
 
       if (session?.user) {
-        sessionExpiryToastShown = false;
-        // Ensure profile exists before fetching roles (self-repair if trigger failed)
+        hadUserRef.current = true;
         setTimeout(async () => {
           await ensureProfile(session.user.id, session.user.email ?? "");
           fetchRoles(session.user.id);
@@ -126,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      hadUserRef.current = !!session?.user;
       setIsLoading(false);
       
       if (session?.user) {
