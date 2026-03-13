@@ -244,17 +244,17 @@ export function RbacPanel() {
                   {userId.substring(0, 8)}…{userId.substring(userId.length - 4)}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {userRoles.map((ur) => (
-                    <Badge
-                      key={ur.id}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-destructive/20"
-                      onClick={() => revokeRole(ur.id, ur.user_id, ur.role)}
-                      title="Click to revoke"
-                    >
-                      {ur.role} ×
-                    </Badge>
-                  ))}
+                    {userRoles.map((ur) => (
+                      <Badge
+                        key={ur.id}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-destructive/20"
+                        onClick={() => setRevokeTarget({ id: ur.id, userId: ur.user_id, role: ur.role })}
+                        title="Click to revoke"
+                      >
+                        {ur.role} ×
+                      </Badge>
+                    ))}
                 </div>
               </div>
             ))}
