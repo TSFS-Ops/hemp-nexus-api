@@ -154,26 +154,6 @@ export function TeamManagement() {
       toast.error("Failed to cancel invitation");
     }
   };
-
-  const initiateRoleChange = (member: TeamMember, newRole: string) => {
-    setRoleChangeDialog({ open: true, member, newRole });
-  };
-
-  const confirmRoleChange = async () => {
-    const { member, newRole } = roleChangeDialog;
-    if (!member || !newRole) return;
-
-    setChangingRole(true);
-    try {
-      // This is a display-only change since roles are managed in user_roles table
-      // For now, show honest disclosure
-      toast.info("Role changes require backend support that is not yet automated. Please contact support@izenzo.co.za to change a team member's role.", { duration: 6000 });
-    } finally {
-      setChangingRole(false);
-      setRoleChangeDialog({ open: false, member: null, newRole: "" });
-    }
-  };
-
   const roleBadgeColour = (role: string) => {
     switch (role) {
       case "platform_admin": return "bg-red-500/10 text-red-700 border-red-200";
