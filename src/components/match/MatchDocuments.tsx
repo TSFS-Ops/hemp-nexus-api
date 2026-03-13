@@ -315,7 +315,14 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           visibility: visibility,
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        // Clean up orphaned storage blob since DB insert failed
+        console.error("DB insert failed after storage upload, cleaning up blob:", storagePath);
+        await supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
+          console.error("Failed to clean up orphaned storage blob:", cleanupErr);
+        });
+        throw insertError;
+      }
 
       // Audit log
       await supabase.from("audit_logs").insert({
