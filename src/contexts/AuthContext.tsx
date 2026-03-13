@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   // Track whether user explicitly clicked sign-out (not session expiry)
   const explicitSignOutRef = useRef(false);
+  // Track which user IDs have already had their profile verified this session
+  const profileVerifiedRef = useRef<Set<string>>(new Set());
   // Suppress session-expiry redirect during password change
   const suppressExpiryRef = useRef(false);
   // Ref to track whether we had a user before (for expiry detection)
