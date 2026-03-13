@@ -448,8 +448,12 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
         )}
 
         {logs.length === 0 && !loading && (
-          <div className="text-center py-8 text-muted-foreground">
-            No audit logs found. Click "Fetch Logs" to retrieve logs.
+          <div className="text-center py-12 space-y-3">
+            <FileText className="h-10 w-10 mx-auto text-muted-foreground" />
+            <p className="font-medium text-foreground">No audit logs yet</p>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Audit logs appear here as you make API calls. Click "Fetch Logs" above to check for recent activity.
+            </p>
           </div>
         )}
       </CardContent>
