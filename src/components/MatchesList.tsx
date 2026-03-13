@@ -71,7 +71,7 @@ export function MatchesList() {
   // Debounce search to avoid firing a query on every keystroke
   const debouncedSearch = useDebounce(commoditySearch, 300);
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["matches", statusFilter, debouncedSearch, sortBy, page],
     placeholderData: (prev) => prev, // keep previous data visible while loading next page
     queryFn: async () => {
