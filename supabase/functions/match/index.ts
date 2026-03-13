@@ -169,6 +169,23 @@ Deno.serve(async (req) => {
         );
       }
 
+      // DISPUTE GUARD: Block intent declaration if an open dispute exists
+      const { data: openDisputes, error: disputeErr } = await supabase
+        .from("disputes")
+        .select("id")
+        .eq("match_id", matchId)
+        .eq("status", "open")
+        .limit(1);
+
+      if (disputeErr) handleDatabaseError(disputeErr, requestId);
+      if (openDisputes && openDisputes.length > 0) {
+        throw new ApiException(
+          "DISPUTE_ACTIVE",
+          "Cannot confirm intent while an open dispute exists on this match. Resolve the dispute first.",
+          409
+        );
+      }
+
       // ELIGIBILITY CHECK
       try {
         enforceEligibility(match);
