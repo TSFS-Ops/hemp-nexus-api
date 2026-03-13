@@ -70,9 +70,9 @@ export function GlobalApiLogs() {
           *,
           api_keys (name),
           organizations (name)
-        `)
+        `, { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(API_LOG_LIMIT);
 
       if (statusFilter !== "all") {
         if (statusFilter === "success") {
