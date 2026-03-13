@@ -219,49 +219,81 @@ export function AdminAuditLogs() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : auditLogs && auditLogs.length > 0 ? (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity Type</TableHead>
-                    <TableHead>Entity ID</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead className="text-right">Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell className="font-medium">{log.entity_type}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.entity_id?.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {(log.actor_user_id || log.actor_api_key_id)?.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(log.created_at), "MMM dd HH:mm:ss")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedLog(log);
-                            setShowDetailsDialog(true);
-                          }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
+            <>
+              {/* Mobile card view */}
+              <div className="space-y-3 md:hidden">
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      {getActionBadge(log.action)}
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(log.created_at), "MMM dd HH:mm")}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Entity</span>
+                        <p className="font-medium truncate">{log.entity_type}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">ID</span>
+                        <p className="font-mono truncate">{log.entity_id?.substring(0, 8)}...</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-9 touch-target"
+                      onClick={() => { setSelectedLog(log); setShowDetailsDialog(true); }}
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="rounded-md border hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Entity Type</TableHead>
+                      <TableHead>Entity ID</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead className="text-right">Details</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {auditLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{getActionBadge(log.action)}</TableCell>
+                        <TableCell className="font-medium">{log.entity_type}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {log.entity_id?.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {(log.actor_user_id || log.actor_api_key_id)?.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(log.created_at), "MMM dd HH:mm:ss")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setSelectedLog(log); setShowDetailsDialog(true); }}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
             <EmptyState title="No audit logs found" message="Audit logs will appear here once API activity occurs." />
           )}
