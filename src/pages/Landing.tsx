@@ -14,6 +14,7 @@ import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SCAN_DURATION_MS = 1200;
+const SCAN_TIMEOUT_MS = 8000; // Safety timeout for scan state
 
 export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
