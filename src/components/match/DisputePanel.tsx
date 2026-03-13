@@ -200,7 +200,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
               <Label>Supporting Evidence (optional)</Label>
               <Textarea
                 value={evidence}
-                onChange={(e) => setEvidence(e.target.value)}
+                onChange={(e) => handleEvidenceChange(e.target.value)}
                 placeholder="Reference document IDs, communications, or specific discrepancies..."
                 aria-label="Evidence notes"
               />
