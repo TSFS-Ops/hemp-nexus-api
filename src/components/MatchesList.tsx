@@ -606,11 +606,16 @@ export function MatchesList() {
 
             {/* Pagination */}
             <div className={`flex items-center justify-between mt-4 pt-3 border-t border-border transition-opacity ${isFetching && !isLoading ? 'opacity-60' : ''}`}>
-              <p className="text-sm text-muted-foreground">
-                {totalPages > 1
-                  ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
-                  : `${totalCount} match${totalCount !== 1 ? 'es' : ''} total`}
-              </p>
+              <div className="flex items-center gap-2">
+                {isFetching && !isLoading && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {totalPages > 1
+                    ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
+                    : `${totalCount} match${totalCount !== 1 ? 'es' : ''} total`}
+                </p>
+              </div>
               {totalPages > 1 && (
                 <div className="flex items-center gap-2">
                   <Button

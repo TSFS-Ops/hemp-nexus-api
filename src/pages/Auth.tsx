@@ -392,8 +392,16 @@ export default function Auth() {
     );
   };
 
+  if (!pageReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6 animate-in fade-in duration-300">
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <BackLink />
