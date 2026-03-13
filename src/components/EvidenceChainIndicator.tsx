@@ -18,34 +18,49 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
   const { data: status, isLoading } = useQuery({
     queryKey: ["evidence-chain", matchId],
     queryFn: async () => {
-      const { data: events, error } = await supabase
-        .from("match_events")
-        .select("id, event_type, payload_hash, previous_event_hash")
-        .eq("match_id", matchId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      if (!events || events.length === 0) {
-        return { eventCount: 0, chainValid: true, hasIntentConfirmed: false };
+      // Use server-side verification via the evidence-pack edge function
+      // This ensures chain integrity is validated authoritatively, not client-side
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Authentication required for chain verification");
       }
 
-      let isValid = true;
-      let hasIntent = false;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      for (let i = 0; i < events.length; i++) {
-        const expectedPreviousHash = i === 0 ? null : events[i - 1].payload_hash;
-        if (events[i].previous_event_hash !== expectedPreviousHash) {
-          isValid = false;
+      if (!response.ok) {
+        // For non-settled matches or permission errors, fall back to no-evidence state
+        if (response.status === 403 || response.status === 404) {
+          return { eventCount: 0, chainValid: true, hasIntentConfirmed: false };
         }
-        if (events[i].event_type === "intent.confirmed" || events[i].event_type === "match.settled") {
-          hasIntent = true;
-        }
+        throw new Error("Chain verification request failed");
       }
 
-      return { eventCount: events.length, chainValid: isValid, hasIntentConfirmed: hasIntent };
+      const pack = await response.json();
+      const chainVerification = pack.chainVerification || { valid: true, eventCount: 0 };
+      const timeline = pack.canonical?.timeline || [];
+
+      const hasIntent = timeline.some(
+        (e: { event_type: string }) =>
+          e.event_type === "intent.confirmed" || e.event_type === "match.settled"
+      );
+
+      return {
+        eventCount: chainVerification.eventCount,
+        chainValid: chainVerification.valid,
+        hasIntentConfirmed: hasIntent,
+      };
     },
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   if (isLoading) {
