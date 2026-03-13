@@ -318,27 +318,7 @@ export function MatchesList() {
   const unsettledMatches = matches?.filter(m => MatchState.canDo(m.status, "select_for_bulk")) || [];
   const allUnsettledSelected = unsettledMatches.length > 0 && selectedMatches.size === unsettledMatches.length;
 
-  // Inline evidence indicator using batch data (avoids N+1)
-  const renderEvidence = (matchId: string) => {
-    const status = evidenceMap?.[matchId];
-    if (!status || status.eventCount === 0) {
-      return <Shield className="h-4 w-4 text-muted-foreground" />;
-    }
-    const Icon = status.chainValid ? ShieldCheck : ShieldAlert;
-    const colorClass = status.chainValid ? "text-green-600" : "text-destructive";
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{status.eventCount} event{status.eventCount !== 1 ? 's' : ''} — {status.chainValid ? 'Chain verified' : 'Chain compromised'}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
+  // Evidence rendering now delegated to EvidenceChainIndicator (handles timeout, auth, 402, parse errors)
 
   return (
     <>
