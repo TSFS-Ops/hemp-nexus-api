@@ -189,6 +189,46 @@ export function AdminComplianceCasesPanel() {
           </Table>
         </CardContent>
       </Card>
+      {/* Case action dialog */}
+      <Dialog open={!!actionCase} onOpenChange={(open) => { if (!open) setActionCase(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolve Compliance Case</DialogTitle>
+            <DialogDescription>
+              Case {actionCase?.id.slice(0, 8)}… — Entity {actionCase?.entity_id.slice(0, 8)}…
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Decision</Label>
+              <Select value={actionType} onValueChange={setActionType}>
+                <SelectTrigger><SelectValue placeholder="Select outcome…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cleared">Cleared — no compliance issue</SelectItem>
+                  <SelectItem value="blocked">Blocked — entity barred from trading</SelectItem>
+                  <SelectItem value="escalated">Escalated — requires senior review</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Decision Notes (mandatory)</Label>
+              <Textarea
+                value={decisionNotes}
+                onChange={(e) => setDecisionNotes(e.target.value)}
+                placeholder="Explain the rationale for this decision…"
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionCase(null)}>Cancel</Button>
+            <Button onClick={handleCaseAction} disabled={submitting || !actionType || !decisionNotes.trim()}>
+              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Confirm Decision
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

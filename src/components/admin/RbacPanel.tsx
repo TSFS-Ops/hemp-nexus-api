@@ -261,6 +261,32 @@ export function RbacPanel() {
           </div>
         </CardContent>
       </Card>
+      {/* Revoke confirmation dialog */}
+      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => { if (!open) setRevokeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke the <strong>{revokeTarget?.role}</strong> role from user <code className="bg-muted px-1 rounded text-xs">{revokeTarget?.userId.slice(0, 12)}…</code>?
+              This action will be logged in the admin audit trail.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeTarget) {
+                  revokeRole(revokeTarget.id, revokeTarget.userId, revokeTarget.role);
+                  setRevokeTarget(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Revoke Role
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
