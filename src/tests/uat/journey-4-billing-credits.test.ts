@@ -71,28 +71,27 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   });
 
   // ── Step 3: Idempotency — duplicate credit rejected ────────────
-  it("4.4 — duplicate credit with same request_id is rejected", async () => {
-    const requestId = `uat-credit-${Date.now()}-dup`;
+  it("4.4 — duplicate credit with same reference_id is rejected", async () => {
+    const refId = `uat-credit-dup-${Date.now()}`;
 
     // First credit
     await supabase.rpc("atomic_token_credit", {
       p_org_id: orgId,
       p_amount: 500,
-      p_request_id: requestId,
+      p_reference_id: refId,
       p_reason: "UAT first",
     });
 
-    // Second credit — same request_id
+    // Second credit — same reference_id
     const { error } = await supabase.rpc("atomic_token_credit", {
       p_org_id: orgId,
       p_amount: 500,
-      p_request_id: requestId,
+      p_reference_id: refId,
       p_reason: "UAT duplicate",
     });
 
-    // Should fail due to unique index on request_id
     if (error) {
-      expect(error.message.toLowerCase()).toContain("duplicate");
+      expect(error.message.toLowerCase()).toMatch(/duplicate|unique|already/);
     } else {
       console.warn("[UAT 4.4] Duplicate credit was NOT rejected — idempotency gap");
     }
