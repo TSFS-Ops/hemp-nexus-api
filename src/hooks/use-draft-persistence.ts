@@ -13,10 +13,12 @@ import { useState, useCallback, useEffect, useRef } from "react";
 
 const DRAFT_PREFIX = "izenzo_draft_";
 
-export function useDraftPersistence<T>(key: string) {
+export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | null) {
   const storageKey = `${DRAFT_PREFIX}${key}`;
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const initialised = useRef(false);
+  const getCurrentDataRef = useRef(getCurrentData);
+  getCurrentDataRef.current = getCurrentData;
 
   const restoreDraft = useCallback((): T | null => {
     try {
