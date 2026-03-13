@@ -4,8 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Scale, RefreshCw } from "lucide-react";
+import { Scale, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 interface ComplianceCase {
@@ -29,6 +41,10 @@ const STATUS_COLOURS: Record<string, "default" | "secondary" | "destructive" | "
 export function AdminComplianceCasesPanel() {
   const [cases, setCases] = useState<ComplianceCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionCase, setActionCase] = useState<ComplianceCase | null>(null);
+  const [actionType, setActionType] = useState<string>("");
+  const [decisionNotes, setDecisionNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,6 +67,42 @@ export function AdminComplianceCasesPanel() {
       </div>
     );
   }
+
+  const handleCaseAction = async () => {
+    if (!actionCase || !actionType || !decisionNotes.trim()) return;
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("compliance_cases")
+        .update({
+          status: actionType,
+          decision_notes: decisionNotes.trim(),
+          decided_at: new Date().toISOString(),
+          decided_by: user?.id ?? null,
+        })
+        .eq("id", actionCase.id);
+      if (error) throw error;
+
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: user?.id ?? "",
+        action: `compliance_case_${actionType}`,
+        target_type: "compliance_case",
+        target_id: actionCase.id,
+        details: { previous_status: actionCase.status, new_status: actionType, notes: decisionNotes.trim() } as any,
+      });
+
+      toast.success(`Case ${actionType}`);
+      setActionCase(null);
+      setActionType("");
+      setDecisionNotes("");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Failed to update case", { description: err.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const statusCounts = cases.reduce((acc, c) => {
     acc[c.status] = (acc[c.status] || 0) + 1;
@@ -99,9 +151,10 @@ export function AdminComplianceCasesPanel() {
                 <TableHead>Status</TableHead>
                 <TableHead>Decision Notes</TableHead>
                 <TableHead>Decided</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+               </TableRow>
+             </TableHeader>
             <TableBody>
               {cases.length === 0 ? (
                 <TableRow>
@@ -119,12 +172,63 @@ export function AdminComplianceCasesPanel() {
                   <TableCell className="max-w-[250px] truncate">{c.decision_notes || "—"}</TableCell>
                   <TableCell>{c.decided_at ? format(new Date(c.decided_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
                   <TableCell>{format(new Date(c.created_at), "dd MMM yyyy HH:mm")}</TableCell>
+                  <TableCell>
+                    {(c.status === "open" || c.status === "escalated") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setActionCase(c); setActionType(""); setDecisionNotes(""); }}
+                      >
+                        Resolve
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+      {/* Case action dialog */}
+      <Dialog open={!!actionCase} onOpenChange={(open) => { if (!open) setActionCase(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolve Compliance Case</DialogTitle>
+            <DialogDescription>
+              Case {actionCase?.id.slice(0, 8)}… — Entity {actionCase?.entity_id.slice(0, 8)}…
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Decision</Label>
+              <Select value={actionType} onValueChange={setActionType}>
+                <SelectTrigger><SelectValue placeholder="Select outcome…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cleared">Cleared — no compliance issue</SelectItem>
+                  <SelectItem value="blocked">Blocked — entity barred from trading</SelectItem>
+                  <SelectItem value="escalated">Escalated — requires senior review</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Decision Notes (mandatory)</Label>
+              <Textarea
+                value={decisionNotes}
+                onChange={(e) => setDecisionNotes(e.target.value)}
+                placeholder="Explain the rationale for this decision…"
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionCase(null)}>Cancel</Button>
+            <Button onClick={handleCaseAction} disabled={submitting || !actionType || !decisionNotes.trim()}>
+              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Confirm Decision
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

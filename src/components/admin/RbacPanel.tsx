@@ -5,6 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Loader2, Users, ShieldCheck, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,6 +49,7 @@ export function RbacPanel() {
   const [assigning, setAssigning] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; userId: string; role: string } | null>(null);
 
   useEffect(() => { fetchRoles(); }, []);
 
@@ -233,23 +244,49 @@ export function RbacPanel() {
                   {userId.substring(0, 8)}…{userId.substring(userId.length - 4)}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {userRoles.map((ur) => (
-                    <Badge
-                      key={ur.id}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-destructive/20"
-                      onClick={() => revokeRole(ur.id, ur.user_id, ur.role)}
-                      title="Click to revoke"
-                    >
-                      {ur.role} ×
-                    </Badge>
-                  ))}
+                    {userRoles.map((ur) => (
+                      <Badge
+                        key={ur.id}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-destructive/20"
+                        onClick={() => setRevokeTarget({ id: ur.id, userId: ur.user_id, role: ur.role })}
+                        title="Click to revoke"
+                      >
+                        {ur.role} ×
+                      </Badge>
+                    ))}
                 </div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
+      {/* Revoke confirmation dialog */}
+      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => { if (!open) setRevokeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke the <strong>{revokeTarget?.role}</strong> role from user <code className="bg-muted px-1 rounded text-xs">{revokeTarget?.userId.slice(0, 12)}…</code>?
+              This action will be logged in the admin audit trail.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeTarget) {
+                  revokeRole(revokeTarget.id, revokeTarget.userId, revokeTarget.role);
+                  setRevokeTarget(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Revoke Role
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

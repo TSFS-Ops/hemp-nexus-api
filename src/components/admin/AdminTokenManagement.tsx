@@ -95,26 +95,19 @@ export function AdminTokenManagement() {
     try {
       setSubmitting(true);
 
-      // Atomic update: SET balance = balance + amount (server-side arithmetic)
-      const { data: updated, error: updateError } = await supabase
-        .rpc("atomic_token_burn", {
+      // Atomic credit via dedicated RPC (no negative-burn hack)
+      const { data: creditResult, error: creditError } = await supabase
+        .rpc("atomic_token_credit", {
           p_org_id: selectedOrg.org_id,
-          p_amount: -amount, // negative burn = credit
+          p_amount: amount,
           p_reason: "admin_top_up",
+          p_reference_id: `admin-topup-${Date.now()}`,
         });
 
-      // Fallback: if the RPC doesn't support negative burns, use raw SQL
-      if (updateError) {
-        // Direct atomic update as fallback
-        const { error: directError } = await supabase
-          .from("token_balances")
-          .update({ 
-            balance: selectedOrg.balance + amount,
-            updated_at: new Date().toISOString()
-          })
-          .eq("org_id", selectedOrg.org_id);
-
-        if (directError) throw directError;
+      if (creditError) throw creditError;
+      const result = creditResult as Record<string, unknown> | null;
+      if (result && !result.success) {
+        throw new Error((result.error as string) || "Credit operation failed");
       }
 
       // Create a ledger entry for the top-up
