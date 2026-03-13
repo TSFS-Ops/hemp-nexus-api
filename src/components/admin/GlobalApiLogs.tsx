@@ -138,7 +138,36 @@ export function GlobalApiLogs() {
   }, [activeTab, fetchLogs, fetchBusinessLogs]);
 
   const exportLogs = async () => {
-    toast.info("Export functionality coming soon");
+    if (activeTab === "requests") {
+      if (filteredLogs.length === 0) { toast.error("No logs to export"); return; }
+      const headers = ["Timestamp", "Method", "Endpoint", "Status", "Response Time (ms)", "Organisation", "API Key", "Request ID", "Error"];
+      const rows = filteredLogs.map(l => [
+        new Date(l.created_at).toISOString(), l.method, l.endpoint, l.status_code,
+        l.response_time_ms, l.organizations?.name || "", l.api_keys?.name || "",
+        l.request_id || "", l.error_message || "",
+      ]);
+      downloadCSV(headers, rows, `api-logs-${new Date().toISOString().split('T')[0]}.csv`);
+      if (apiTotalCount > API_LOG_LIMIT) {
+        toast.success(`Exported ${filteredLogs.length} of ${apiTotalCount} total logs. Only the most recent ${API_LOG_LIMIT} are available.`, { duration: 5000 });
+      } else {
+        toast.success(`Exported ${filteredLogs.length} API logs`);
+      }
+    } else {
+      if (businessLogs.length === 0) { toast.error("No events to export"); return; }
+      const headers = ["Timestamp", "Organisation", "Action", "Entity Type", "Entity ID", "Hash", "Metadata"];
+      const rows = businessLogs.map(l => [
+        new Date(l.created_at).toISOString(), l.organizations?.name || "", l.action,
+        l.entity_type, l.entity_id || "",
+        (l.metadata && typeof l.metadata === 'object' && 'hash' in l.metadata) ? String(l.metadata.hash) : "",
+        JSON.stringify(l.metadata || {}),
+      ]);
+      downloadCSV(headers, rows, `business-events-${new Date().toISOString().split('T')[0]}.csv`);
+      if (businessTotalCount > BUSINESS_LOG_LIMIT) {
+        toast.success(`Exported ${businessLogs.length} of ${businessTotalCount} total events. Only the most recent ${BUSINESS_LOG_LIMIT} are available.`, { duration: 5000 });
+      } else {
+        toast.success(`Exported ${businessLogs.length} business events`);
+      }
+    }
   };
 
   const getStatusColor = (status: number) => {
