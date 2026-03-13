@@ -201,15 +201,35 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
                 <p className="text-sm font-medium">{d.reason}</p>
                 {d.evidence_notes && <p className="text-sm text-muted-foreground">{d.evidence_notes}</p>}
                 {d.status === "resolved" && (
-                  <div className="bg-muted rounded p-3 text-sm space-y-1">
+                  <div className="bg-muted rounded p-3 text-sm space-y-2">
                     <p className="font-medium">Resolution</p>
                     {d.resolution_outcome ? (
-                      <p>{d.resolution_outcome}</p>
+                      <>
+                        <p>{d.resolution_outcome}</p>
+                        {d.resolved_at && (
+                          <p className="text-xs text-muted-foreground">
+                            Resolved on {format(new Date(d.resolved_at), "dd MMM yyyy")}
+                          </p>
+                        )}
+                      </>
                     ) : (
-                      <p className="text-muted-foreground italic">No resolution details were provided. Contact support@izenzo.co.za for more information.</p>
-                    )}
-                    {d.resolved_at && (
-                      <p className="text-xs text-muted-foreground">Resolved on {format(new Date(d.resolved_at), "dd MMM yyyy")}</p>
+                      <div className="space-y-1.5">
+                        <p>
+                          This dispute was marked as resolved
+                          {d.resolved_at
+                            ? ` on ${format(new Date(d.resolved_at), "dd MMM yyyy")}`
+                            : ""}
+                          , but no written explanation was recorded.
+                        </p>
+                        <p className="text-muted-foreground">
+                          What this means: the dispute is closed and settlement may proceed, but we cannot confirm whether it was upheld, rejected, or withdrawn.
+                        </p>
+                        <p className="text-muted-foreground">
+                          If you need clarification, contact{" "}
+                          <a href="mailto:support@izenzo.co.za" className="text-primary hover:underline">support@izenzo.co.za</a>{" "}
+                          and reference dispute #{d.id.slice(0, 8)}.
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
