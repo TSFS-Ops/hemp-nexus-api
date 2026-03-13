@@ -605,7 +605,7 @@ export function MatchesList() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+            <div className={`flex items-center justify-between mt-4 pt-3 border-t border-border transition-opacity ${isFetching && !isLoading ? 'opacity-60' : ''}`}>
               <p className="text-sm text-muted-foreground">
                 {totalPages > 1
                   ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
