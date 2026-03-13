@@ -29,6 +29,7 @@ export default function Auth() {
 
   // ── Sign-up state (isolated) ──
   const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpEmailError, setSignUpEmailError] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
   const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
