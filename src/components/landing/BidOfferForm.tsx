@@ -1,6 +1,8 @@
 /**
  * Swiss-Terminal bid/offer entry — with BID/OFFER tabs and Upload Docs field.
  * Supports locked state during cryptographic scan phase.
+ * Mobile: single-column stacked fields, full-width search button.
+ * Desktop: 4-column grid, right-aligned search button.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -33,7 +35,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     additionalInfo: "",
   });
 
-  // Stable ref for emergency save on session expiry
   const sideRef = useRef(side);
   sideRef.current = side;
   const formRef = useRef(form);
@@ -55,7 +56,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     additionalInfo: string;
   }>("bid-offer", getCurrentData);
 
-  // Wrapper so sideRef stays current
   const setSide = useCallback((s: "bid" | "offer") => {
     setSideState(s);
   }, []);
@@ -63,7 +63,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
   const [draftRestored, setDraftRestored] = useState(false);
   const initialised = useRef(false);
 
-  // Restore draft on mount
   useEffect(() => {
     if (initialised.current) return;
     initialised.current = true;
@@ -81,7 +80,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     }
   }, [restoreDraft]);
 
-  // Save draft on every change (after initial load)
   useEffect(() => {
     if (!initialised.current) return;
     const hasContent = form.product || form.volume || form.price || form.location;
@@ -136,12 +134,13 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           </button>
         </div>
       )}
-      {/* BID / OFFER tabs */}
+
+      {/* BID / OFFER segmented control — full-width on all sizes */}
       <div className="flex border-b border-border">
         <button
           type="button"
           onClick={() => setSide("bid")}
-          className={`flex-1 h-10 text-[11px] font-mono uppercase tracking-widest font-medium transition-all duration-200
+          className={`flex-1 h-11 sm:h-10 text-[11px] font-mono uppercase tracking-widest font-medium transition-all duration-200
                      ${side === "bid"
                        ? "bg-primary text-primary-foreground"
                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
@@ -152,7 +151,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         <button
           type="button"
           onClick={() => setSide("offer")}
-          className={`flex-1 h-10 text-[11px] font-mono uppercase tracking-widest font-medium transition-all duration-200
+          className={`flex-1 h-11 sm:h-10 text-[11px] font-mono uppercase tracking-widest font-medium transition-all duration-200
                      border-l border-border
                      ${side === "offer"
                        ? "bg-primary text-primary-foreground"
@@ -163,7 +162,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </button>
       </div>
 
-      {/* Fields: Product, Price, Quantity, Upload Docs */}
+      {/* Fields: single column on mobile, 4-col on sm+ */}
       <div className="grid grid-cols-1 sm:grid-cols-4">
         <LedgerField
           id="product" label="Product" required placeholder="Select product / asset"
@@ -180,7 +179,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           value={form.volume} onChange={(v) => update("volume", v)}
           className="sm:border-l border-border" disabled={disabled} pulsingBorder={borderPulse}
         />
-        {/* Upload Docs field — disabled with honest explanation */}
+        {/* Upload Docs field — disabled */}
         <div
           className={`focus-copper-line border-b transition-colors duration-500 sm:border-l border-border ${
             borderPulse ? "border-primary" : "border-border"
@@ -212,17 +211,18 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       </div>
 
-      {/* Search button — right-aligned */}
-      <div className="flex justify-end">
+      {/* Search button — full-width on mobile, right-aligned on desktop */}
+      <div className="flex sm:justify-end">
         <button
           type="submit"
           disabled={!canSearch || disabled}
-          className={`h-10 px-8 font-mono text-[11px] uppercase tracking-widest font-medium
+          className={`h-11 sm:h-10 px-8 font-mono text-[11px] uppercase tracking-widest font-medium
                    transition-all duration-300 disabled:cursor-not-allowed
                    flex items-center justify-center gap-2.5
                    focus:outline-none active:scale-[0.995]
+                   w-full sm:w-auto
                    ${isSearching
-                     ? "bg-basalt text-basalt-foreground w-full"
+                     ? "bg-basalt text-basalt-foreground"
                      : canSearch && !disabled
                        ? "bg-primary text-primary-foreground shadow-inner-metallic hover:opacity-90"
                        : "bg-muted text-muted-foreground opacity-100"
@@ -273,7 +273,7 @@ function LedgerField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
+        className="w-full h-10 sm:h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
                    placeholder:text-muted-foreground text-foreground
                    focus:outline-none border-none rounded-[4px]
                    transition-colors
