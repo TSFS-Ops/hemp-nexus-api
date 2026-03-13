@@ -101,6 +101,10 @@ export function MatchesList() {
   const matches = data?.matches;
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const isFetchingNextPage = !isLoading && !isError && data !== undefined && 
+    (statusFilter !== "all" || debouncedSearch || page > 0) && 
+    // React Query sets isFetching when using placeholderData
+    false; // We use visual indicator via opacity instead
 
   // Batch-fetch evidence chain status for current page's matches (fixes N+1)
   const matchIds = useMemo(() => matches?.map(m => m.id) ?? [], [matches]);
