@@ -17,6 +17,7 @@ export function SecuritySettings() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   const handleChangePassword = async () => {
+    if (changingPassword) return;
     if (!currentPassword) {
       toast.error("Please enter your current password");
       return;

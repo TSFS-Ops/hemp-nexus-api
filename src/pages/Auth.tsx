@@ -219,6 +219,7 @@ export default function Auth() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       authSchema.parse({ email: "reset@placeholder.com", password: resetPassword });

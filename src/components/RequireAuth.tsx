@@ -72,10 +72,15 @@ export function RequireAuth({ children, role, fallbackRoute, loader }: RequireAu
 /** Small helper component to redirect on missing role without calling navigate during render */
 function RoleRedirect({ fallbackRoute }: { fallbackRoute: string }) {
   const navigate = useNavigate();
+  const { isPlatformAdmin } = useAuth();
 
   useEffect(() => {
+    if (!isPlatformAdmin) {
+      toast.error("You don't have permission to access this page. Contact your organisation admin if you believe this is an error.");
+    }
     navigate(fallbackRoute, { replace: true });
-  }, [navigate, fallbackRoute]);
+  }, [navigate, fallbackRoute, isPlatformAdmin]);
 
   return <FullPageLoader />;
 }
+

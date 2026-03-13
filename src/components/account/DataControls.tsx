@@ -15,8 +15,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Download, Trash2, Loader2, AlertTriangle, Mail } from "lucide-react";
+import { Download, Trash2, Loader2, AlertTriangle, Mail, Info } from "lucide-react";
 import { toast } from "sonner";
+
+const EXPORT_BATCH_SIZE = 500;
 
 export function DataControls() {
   const { user } = useAuth();
@@ -27,19 +29,65 @@ export function DataControls() {
   const handleExportData = async () => {
     setExporting(true);
     try {
-      // Gather user's data from relevant tables
-      const [profileRes, matchesRes, logsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user?.id ?? "").maybeSingle(),
-        supabase.from("matches").select("*").limit(500),
-        supabase.from("audit_logs").select("action, entity_type, entity_id, created_at, metadata").limit(500),
-      ]);
+      // Paginate through all user data
+      const allMatches: any[] = [];
+      const allLogs: any[] = [];
+
+      // Fetch profile
+      const profileRes = await supabase.from("profiles").select("*").eq("id", user?.id ?? "").maybeSingle();
+
+      // Paginate matches
+      let matchPage = 0;
+      let hasMoreMatches = true;
+      while (hasMoreMatches) {
+        const from = matchPage * EXPORT_BATCH_SIZE;
+        const to = from + EXPORT_BATCH_SIZE - 1;
+        const { data, error } = await supabase
+          .from("matches")
+          .select("*")
+          .range(from, to)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allMatches.push(...data);
+          hasMoreMatches = data.length === EXPORT_BATCH_SIZE;
+          matchPage++;
+        } else {
+          hasMoreMatches = false;
+        }
+      }
+
+      // Paginate audit logs
+      let logPage = 0;
+      let hasMoreLogs = true;
+      while (hasMoreLogs) {
+        const from = logPage * EXPORT_BATCH_SIZE;
+        const to = from + EXPORT_BATCH_SIZE - 1;
+        const { data, error } = await supabase
+          .from("audit_logs")
+          .select("action, entity_type, entity_id, created_at, metadata")
+          .range(from, to)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allLogs.push(...data);
+          hasMoreLogs = data.length === EXPORT_BATCH_SIZE;
+          logPage++;
+        } else {
+          hasMoreLogs = false;
+        }
+      }
 
       const exportData = {
         exported_at: new Date().toISOString(),
         user_email: user?.email,
+        record_counts: {
+          matches: allMatches.length,
+          audit_logs: allLogs.length,
+        },
         profile: profileRes.data,
-        matches: matchesRes.data || [],
-        audit_logs: logsRes.data || [],
+        matches: allMatches,
+        audit_logs: allLogs,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -51,10 +99,10 @@ export function DataControls() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Data exported successfully");
+      toast.success(`Data exported: ${allMatches.length} matches, ${allLogs.length} audit logs.`);
     } catch (err) {
       console.error("Export error:", err);
-      toast.error("Failed to export data");
+      toast.error("Failed to export data. Please try again or contact support@izenzo.co.za.");
     } finally {
       setExporting(false);
     }
@@ -67,12 +115,18 @@ export function DataControls() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5" />Export Your Data</CardTitle>
-          <CardDescription>Download a copy of your account data, matches, and audit history.</CardDescription>
+          <CardDescription>Download a complete copy of your account data, matches, and audit history.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              This export includes all your matches and audit logs. Large accounts may take a moment to compile.
+            </AlertDescription>
+          </Alert>
           <Button onClick={handleExportData} disabled={exporting} variant="outline">
             {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Export Data (JSON)
+            {exporting ? "Exporting all records…" : "Export Data (JSON)"}
           </Button>
         </CardContent>
       </Card>

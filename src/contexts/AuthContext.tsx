@@ -98,15 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!wasExplicit && hadUserRef.current) {
           // This is a genuine session expiry, not an explicit logout
+          // Check for unsaved changes via beforeunload simulation
+          const beforeUnloadEvent = new Event("beforeunload", { cancelable: true });
+          window.dispatchEvent(beforeUnloadEvent);
+          
           const currentPath = window.location.pathname + window.location.search;
           const returnTo = encodeURIComponent(currentPath);
           toast.error("Your session has expired. Redirecting to sign in…", {
-            duration: 5000,
+            description: "Your work-in-progress may not have been saved. You will return to this page after signing in.",
+            duration: 7000,
           });
           // Force redirect after a brief delay so the toast is visible
           setTimeout(() => {
             window.location.href = `/auth?returnTo=${returnTo}`;
-          }, 1500);
+          }, 2500);
         }
         hadUserRef.current = false;
         setRoles([]);

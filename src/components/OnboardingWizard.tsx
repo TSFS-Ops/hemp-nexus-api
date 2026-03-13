@@ -549,7 +549,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <Card className="p-4">
                     <Label className="text-sm font-medium mb-2 block">Your API Key</Label>
                     <div className="flex gap-2">
-                      <code className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all">
+                      <code data-api-key-display className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all select-all">
                         {apiKey}
                       </code>
                       <Button variant="outline" size="icon" onClick={handleCopyKey}>

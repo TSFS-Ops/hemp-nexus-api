@@ -230,19 +230,15 @@ export function TeamManagement() {
                   </TableCell>
                   {isOrgAdmin && (
                     <TableCell>
-                      {m.id !== user?.id && (
-                        <Select
-                          value=""
-                          onValueChange={(newRole) => initiateRoleChange(m, newRole)}
+                  {m.id !== user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-muted-foreground"
+                          onClick={() => toast.info("Role changes are not yet available as a self-service action. Contact support@izenzo.co.za to change a team member's role.", { duration: 6000 })}
                         >
-                          <SelectTrigger className="w-[90px] h-8 text-xs">
-                            <span className="text-muted-foreground">Change</span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="org_member">Member</SelectItem>
-                            <SelectItem value="org_admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          Change role
+                        </Button>
                       )}
                     </TableCell>
                   )}
