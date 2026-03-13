@@ -406,8 +406,9 @@ export default function Auth() {
 
   if (!pageReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Checking your session…</p>
       </div>
     );
   }
