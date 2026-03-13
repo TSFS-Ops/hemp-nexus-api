@@ -151,9 +151,10 @@ export function AdminComplianceCasesPanel() {
                 <TableHead>Status</TableHead>
                 <TableHead>Decision Notes</TableHead>
                 <TableHead>Decided</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+               </TableRow>
+             </TableHeader>
             <TableBody>
               {cases.length === 0 ? (
                 <TableRow>
