@@ -1,11 +1,10 @@
 /**
- * Swiss-Terminal bid/offer entry — ledger-line input cells.
+ * Swiss-Terminal bid/offer entry — with BID/OFFER tabs and Upload Docs field.
  * Supports locked state during cryptographic scan phase.
- * Copper focus-line animation on active fields.
  */
 
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, Upload } from "lucide-react";
 
 export interface BidOfferData {
   product: string;
@@ -13,6 +12,7 @@ export interface BidOfferData {
   price: string;
   location: string;
   additionalInfo: string;
+  side: "bid" | "offer";
 }
 
 interface BidOfferFormProps {
@@ -22,7 +22,8 @@ interface BidOfferFormProps {
 }
 
 export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
-  const [form, setForm] = useState<BidOfferData>({
+  const [side, setSide] = useState<"bid" | "offer">("bid");
+  const [form, setForm] = useState({
     product: "",
     volume: "",
     price: "",
@@ -39,72 +40,116 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     }
   }, [isLocked]);
 
-  const update = (field: keyof BidOfferData, value: string) =>
+  const update = (field: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const canSearch = form.product.trim().length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (canSearch && !isLocked) onSearch(form);
+    if (canSearch && !isLocked) onSearch({ ...form, side });
   };
 
   const disabled = isLocked || isSearching;
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="grid grid-cols-1 sm:grid-cols-2">
+      {/* BID / OFFER tabs */}
+      <div className="flex border-b border-border">
+        <button
+          type="button"
+          onClick={() => setSide("bid")}
+          className={`flex-1 h-10 text-[11px] font-mono uppercase tracking-widest font-medium transition-all duration-200
+                     ${side === "bid"
+                       ? "bg-primary text-primary-foreground"
+                       : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                     }`}
+        >
+          BID (Buyer)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSide("offer")}
+          className={`flex-1 h-10 text-[11px] font-mono uppercase tracking-widest font-medium transition-all duration-200
+                     border-l border-border
+                     ${side === "offer"
+                       ? "bg-primary text-primary-foreground"
+                       : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                     }`}
+        >
+          OFFER (Seller)
+        </button>
+      </div>
+
+      {/* Fields: Product, Price, Quantity, Upload Docs */}
+      <div className="grid grid-cols-1 sm:grid-cols-4">
         <LedgerField
-          id="product" label="Product" required placeholder="Copper cathode"
+          id="product" label="Product" required placeholder="Select product / asset"
           value={form.product} onChange={(v) => update("product", v)}
           disabled={disabled} pulsingBorder={borderPulse}
         />
         <LedgerField
-          id="volume" label="Volume" placeholder="2,500 MT"
+          id="price" label="Price" placeholder="Enter price (ZAR/USD)"
+          value={form.price} onChange={(v) => update("price", v)}
+          className="sm:border-l border-border" disabled={disabled} pulsingBorder={borderPulse}
+        />
+        <LedgerField
+          id="volume" label="Quantity" placeholder="Enter quantity"
           value={form.volume} onChange={(v) => update("volume", v)}
           className="sm:border-l border-border" disabled={disabled} pulsingBorder={borderPulse}
         />
-        <LedgerField
-          id="price" label="Price" placeholder="USD 8,500/MT"
-          value={form.price} onChange={(v) => update("price", v)}
-          disabled={disabled} pulsingBorder={borderPulse}
-        />
-        <LedgerField
-          id="location" label="Location" placeholder="Zambia → India"
-          value={form.location} onChange={(v) => update("location", v)}
-          className="sm:border-l border-border" disabled={disabled} pulsingBorder={borderPulse}
-        />
+        {/* Upload Docs field */}
+        <div
+          className={`focus-copper-line border-b transition-colors duration-500 sm:border-l border-border ${
+            borderPulse ? "border-primary" : "border-border"
+          }`}
+        >
+          <label
+            className="block px-3 pt-2.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground select-none"
+          >
+            Upload Docs
+          </label>
+          <button
+            type="button"
+            disabled={disabled}
+            className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
+                       text-muted-foreground/30 hover:text-muted-foreground/50
+                       flex items-center gap-2 transition-colors
+                       disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            <span>Add documents</span>
+          </button>
+        </div>
       </div>
-      <LedgerField
-        id="additionalInfo" label="Additional information" placeholder="Grade A, delivery requirements"
-        value={form.additionalInfo} onChange={(v) => update("additionalInfo", v)}
-        disabled={disabled} pulsingBorder={borderPulse}
-      />
 
-      <button
-        type="submit"
-        disabled={!canSearch || disabled}
-        className={`w-full h-11 mt-0 font-mono text-[11px] uppercase tracking-widest font-medium
-                 transition-all duration-300 disabled:cursor-not-allowed
-                 flex items-center justify-center gap-2.5
-                 focus:outline-none active:scale-[0.995]
-                 ${isSearching
-                   ? "bg-basalt text-basalt-foreground"
-                   : "bg-primary text-primary-foreground shadow-inner-metallic hover:opacity-90 disabled:opacity-30"
-                 }`}
-      >
-        {isSearching ? (
-          <>
-            <span className="h-3 w-3 border-2 border-basalt-foreground/30 border-t-basalt-foreground rounded-full animate-spin" />
-            Executing...
-          </>
-        ) : (
-          <>
-            <Search className="h-3.5 w-3.5" />
-            Search
-          </>
-        )}
-      </button>
+      {/* Search button — right-aligned */}
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={!canSearch || disabled}
+          className={`h-10 px-8 font-mono text-[11px] uppercase tracking-widest font-medium
+                   transition-all duration-300 disabled:cursor-not-allowed
+                   flex items-center justify-center gap-2.5
+                   focus:outline-none active:scale-[0.995]
+                   ${isSearching
+                     ? "bg-basalt text-basalt-foreground w-full"
+                     : "bg-primary text-primary-foreground shadow-inner-metallic hover:opacity-90 disabled:opacity-30"
+                   }`}
+        >
+          {isSearching ? (
+            <>
+              <span className="h-3 w-3 border-2 border-basalt-foreground/30 border-t-basalt-foreground rounded-full animate-spin" />
+              Executing...
+            </>
+          ) : (
+            <>
+              <Search className="h-3.5 w-3.5" />
+              Search
+            </>
+          )}
+        </button>
+      </div>
     </form>
   );
 }
