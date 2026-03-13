@@ -61,9 +61,12 @@ export default function Landing() {
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-[960px]">
             {/* Hero headline — LOCKED: Do not change without client approval */}
-            <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-6 leading-[1.02]">
+            <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02]">
               Discover counterparties. Signal intent. Execute with confidence.
             </h1>
+            <p className="text-[14px] text-muted-foreground mb-6">
+              Governance Infrastructure for Trade and Institutions
+            </p>
 
             {/* Search form with BID/OFFER tabs */}
             <div className="border border-border mb-4">
