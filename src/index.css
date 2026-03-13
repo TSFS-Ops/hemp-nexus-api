@@ -36,20 +36,20 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* #E5E7EB — soft grey dividers */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    /* #D1D5DB — slightly darker dividers for structural clarity */
+    --border: 220 13% 83%;
+    --input: 220 13% 83%;
     --ring: 155 42% 21%;
 
     --radius: 0.125rem;
 
-    --sidebar-background: 220 13% 97%;
+    --sidebar-background: 210 20% 98%;
     --sidebar-foreground: 210 24% 16%;
     --sidebar-primary: 155 42% 21%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 93%;
     --sidebar-accent-foreground: 210 24% 16%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 220 13% 83%;
     --sidebar-ring: 155 42% 21%;
 
     /* Semantic surface tokens */
@@ -61,9 +61,12 @@
     --warning: 43 96% 56%;
     --warning-foreground: 0 0% 0%;
 
-    /* Signal colors */
-    --signal-verified: 160 84% 39%;
+    /* Signal colors — #059669 for legible status text */
+    --signal-verified: 160 91% 31%;
     --signal-pending: 43 96% 56%;
+
+    /* Sidebar panel background — #F9FAFB */
+    --surface-sidebar: 210 20% 98%;
 
     /* Material palette — copper is now secondary accent */
     --earth-warm: 28 35% 42%;
@@ -75,7 +78,7 @@
 
     --basalt: 225 20% 7%;
     --basalt-foreground: 220 8% 82%;
-    --sandstone: 220 13% 91%;
+    --sandstone: 220 13% 83%;
 
     --graphite: 0 0% 13.3%;
   }
