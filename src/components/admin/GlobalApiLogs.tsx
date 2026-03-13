@@ -297,6 +297,11 @@ export function GlobalApiLogs() {
               </div>
             </CardHeader>
             <CardContent>
+              {apiTotalCount > API_LOG_LIMIT && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  Showing {logs.length} of {apiTotalCount} API requests. Only the most recent {API_LOG_LIMIT} are displayed.
+                </p>
+              )}
               {loading ? (
                 <div className="text-center py-8">Loading logs...</div>
               ) : filteredLogs.length === 0 ? (
