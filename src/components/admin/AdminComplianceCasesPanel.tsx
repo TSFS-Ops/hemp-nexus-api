@@ -68,6 +68,42 @@ export function AdminComplianceCasesPanel() {
     );
   }
 
+  const handleCaseAction = async () => {
+    if (!actionCase || !actionType || !decisionNotes.trim()) return;
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("compliance_cases")
+        .update({
+          status: actionType,
+          decision_notes: decisionNotes.trim(),
+          decided_at: new Date().toISOString(),
+          decided_by: user?.id ?? null,
+        })
+        .eq("id", actionCase.id);
+      if (error) throw error;
+
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: user?.id ?? "",
+        action: `compliance_case_${actionType}`,
+        target_type: "compliance_case",
+        target_id: actionCase.id,
+        details: { previous_status: actionCase.status, new_status: actionType, notes: decisionNotes.trim() } as any,
+      });
+
+      toast.success(`Case ${actionType}`);
+      setActionCase(null);
+      setActionType("");
+      setDecisionNotes("");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Failed to update case", { description: err.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const statusCounts = cases.reduce((acc, c) => {
     acc[c.status] = (acc[c.status] || 0) + 1;
     return acc;
