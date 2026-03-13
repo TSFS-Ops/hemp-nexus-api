@@ -323,7 +323,16 @@ export function MatchesList() {
     ]);
 
     downloadCSV(headers, rows, `matches-${new Date().toISOString().split('T')[0]}.csv`);
-    toast.success("CSV exported successfully");
+
+    // Explicit scope disclosure
+    if (totalPages > 1) {
+      toast.success(
+        `Exported ${matches.length} matches from the current page (page ${page + 1} of ${totalPages}). To export all ${totalCount} matches, navigate to each page and export separately.`,
+        { duration: 6000 }
+      );
+    } else {
+      toast.success(`Exported all ${matches.length} matches to CSV`);
+    }
   };
 
   const unsettledMatches = matches?.filter(m => MatchState.canDo(m.status, "select_for_bulk")) || [];
