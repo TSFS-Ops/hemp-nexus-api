@@ -15,10 +15,6 @@ export function PublicHeader() {
     return <a href={authUrl} className={className}>{children}</a>;
   };
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
