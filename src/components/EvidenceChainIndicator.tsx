@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Shield, ShieldCheck, ShieldAlert, ShieldOff, Loader2, WifiOff } from "lucide-react";
 import {
   Tooltip,
