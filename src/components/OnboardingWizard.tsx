@@ -278,10 +278,22 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     }
   };
 
-  const handleCopyKey = () => {
-    if (apiKey) {
-      navigator.clipboard.writeText(apiKey);
+  const handleCopyKey = async () => {
+    if (!apiKey) return;
+    try {
+      await navigator.clipboard.writeText(apiKey);
       toast.success("API key copied!");
+    } catch {
+      // Fallback: select the text for manual copy
+      const el = document.querySelector<HTMLElement>("[data-api-key-display]");
+      if (el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+      toast.info("Could not copy automatically. Please select and copy the key manually.");
     }
   };
 
