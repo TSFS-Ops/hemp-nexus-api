@@ -190,7 +190,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
               <Label>Reason for Dispute</Label>
               <Textarea
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e) => handleReasonChange(e.target.value)}
                 placeholder="Describe the issue in detail..."
                 className="min-h-[80px]"
                 aria-label="Dispute reason"
