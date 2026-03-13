@@ -3,7 +3,7 @@
  * Supports locked state during cryptographic scan phase.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Upload, Info } from "lucide-react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
