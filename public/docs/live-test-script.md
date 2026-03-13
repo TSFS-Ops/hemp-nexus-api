@@ -1,1269 +1,1426 @@
-# Live Test Script — Platform Readiness Verification
+# Platform Test Pack
 
-Version: 1.0
-Date: 13 March 2026
-Audience: Non-technical testers, operations staff, client reviewers
-
----
-
-## How to use this document
-
-Each test below is self-contained. Follow the steps exactly as written. Record whether the test passed or failed. If it failed, record what you saw instead of what was expected. Screenshots are always helpful.
-
-You do not need to run the tests in order, but some tests depend on earlier ones. Where that is the case, it is noted under "What you need before starting."
+Prepared: 13 March 2026
+For: Business stakeholders, operations leads, and anyone responsible for sign-off
 
 ---
 
-## TEST 1: Sign up with a new account
+## Before you begin
 
-What this is testing: That a brand-new user can create an account using their email and a password.
+This document is your testing playbook. It walks you through every important thing the platform does, and tells you exactly how to check whether it works properly.
 
-Why this matters: If sign-up does not work, nobody can use the platform. This is the first thing any new user will do.
+You do not need any technical background. You just need a computer, a web browser, and about two hours of focused time. Some tests need two people.
 
-Who should run this test: Anyone. Use a real email address you can access.
+Each test is written as a short recipe. Follow it step by step. At the end, you will know whether the test passed or failed. Write down the result. If something goes wrong, capture a screenshot and note what you saw.
 
-What you need before starting: A web browser. An email address that has never been used on this platform before.
+Some tests build on earlier ones. Where that is the case, the test will tell you. You can skip ahead, but the full journey tests at the end assume you have done the basics first.
 
-Steps to follow:
-1. Open the platform home page.
-2. Click the "Sign In" or "Get Started" button.
-3. On the sign-in page, look for a link that says "Sign up" or "Create account." Click it.
-4. Enter your email address.
-5. Enter a password. It must be at least 8 characters. You should see a strength indicator appear as you type.
+Let's begin.
+
+---
+
+## PART 1 — GETTING IN
+
+---
+
+Test name: Creating a new account
+
+What you are checking: Can a brand-new person sign up and get started?
+
+Why it matters: This is the front door. If it is locked, nothing else matters.
+
+Who should do this: Anyone. Use a real email you can check.
+
+Before you start: You need a web browser and an email address you have never used on this platform.
+
+Do this:
+1. Go to the platform home page.
+2. Click "Sign In" or "Get Started."
+3. Look for a "Sign up" or "Create account" link. Click it.
+4. Type in your email address.
+5. Choose a password. It needs to be at least 8 characters. As you type, you should see a coloured bar showing how strong your password is.
 6. Click the sign-up button.
-7. You should see a message telling you to check your email for a verification link.
+7. You should see a message telling you to check your email.
 
-What should happen if the system is working properly: You see a confirmation message on screen saying a verification email has been sent. You should NOT be logged in yet.
+What good looks like: A message appears saying a verification email is on its way. You are not signed in yet — you need to verify first.
 
-What to record if it does not work properly: Record the exact error message shown. Record whether the password strength indicator appeared. Record whether you were logged in immediately without verifying your email.
+What bad looks like: You get an error. Or you are signed straight in without verifying your email. Or the password strength bar never appears.
 
-Pass / fail rule: Pass if a confirmation message is shown and you are not logged in. Fail if you are logged in without email verification, or if the sign-up button produces an error.
+If it fails, write down: The exact error message. Whether the strength bar appeared. Whether you were signed in without verification.
+
+Pass or fail: Pass if you see the verification message and are not signed in. Fail if anything else happens.
 
 ---
 
-## TEST 2: Email verification
+Test name: Verifying your email
 
-What this is testing: That the verification email arrives and that clicking the link in it actually confirms your account.
+What you are checking: Does the verification email arrive, and does clicking the link actually work?
 
-Why this matters: Email verification proves the user owns the email address. Without it, anyone could sign up with someone else's email.
+Why it matters: Email verification proves you own the address. Without it, anyone could pretend to be you.
 
-Who should run this test: The same person who ran Test 1, using the same email.
+Who should do this: The same person who just signed up.
 
-What you need before starting: You must have completed Test 1. You need access to the email inbox you signed up with.
+Before you start: You need access to the email inbox you used.
 
-Steps to follow:
+Do this:
 1. Open your email inbox.
-2. Look for an email from the platform. Check your spam or junk folder if you do not see it within 5 minutes.
+2. Look for an email from the platform. Give it up to 5 minutes. Check spam if you do not see it.
 3. Open the email.
-4. Click the verification link in the email.
-5. You should be taken back to the platform and either signed in automatically or shown a message that your email is verified.
+4. Click the verification link.
+5. You should land back on the platform, either signed in or told your email is now confirmed.
 
-What should happen if the system is working properly: The verification link opens the platform. You are either signed in or told your email is now confirmed. You can now sign in normally.
+What good looks like: The link works. You can now sign in normally.
 
-What to record if it does not work properly: Record whether the email arrived. Record how long it took. Record what happened when you clicked the link. If the link showed an error, record the exact error message. Take a screenshot.
+What bad looks like: No email arrives. The link gives an error. The link goes to a blank page.
 
-Pass / fail rule: Pass if the email arrives within 10 minutes and the link successfully verifies your account. Fail if no email arrives, the link is broken, or the link produces an error.
+If it fails, write down: Whether the email arrived. How long it took. What happened when you clicked the link. Screenshot the error.
+
+Pass or fail: Pass if the email arrives within 10 minutes and the link works. Fail otherwise.
 
 ---
 
-## TEST 3: Sign in with verified account
+Test name: Signing in
 
-What this is testing: That a user with a verified email can sign in and see their dashboard.
+What you are checking: Can you sign in with the account you just verified?
 
-Why this matters: If sign-in does not work after verification, the user is locked out.
+Why it matters: If you verified your email but still cannot get in, you are locked out.
 
-Who should run this test: The same person who completed Tests 1 and 2.
+Who should do this: The person who completed sign-up and verification.
 
-What you need before starting: A verified account from Test 2.
+Before you start: Your account must be verified.
 
-Steps to follow:
-1. Open the platform home page.
+Do this:
+1. Go to the home page.
 2. Click "Sign In."
-3. Enter the email and password you used to sign up.
+3. Enter your email and password.
 4. Click the sign-in button.
-5. You should be taken to your dashboard.
+5. You should see your dashboard.
 
-What should happen if the system is working properly: You see a dashboard with your organisation name or a welcome message. The page loads without errors.
+What good looks like: The dashboard appears with a welcome message or your organisation name.
 
-What to record if it does not work properly: Record the exact error message. Record whether the page loaded but showed nothing. Record whether you were stuck on a loading screen.
+What bad looks like: An error message. A blank page. A spinner that never stops.
 
-Pass / fail rule: Pass if you reach the dashboard. Fail if you see an error, a blank page, or a loading screen that never finishes.
+If it fails, write down: The exact error. Whether anything loaded at all.
+
+Pass or fail: Pass if you reach the dashboard. Fail if you do not.
 
 ---
 
-## TEST 4: Sign out
+Test name: Signing out
 
-What this is testing: That clicking sign out actually ends your session and prevents access to protected pages.
+What you are checking: Does signing out actually lock the door behind you?
 
-Why this matters: If sign-out does not work, the next person who uses the same computer could access your account.
+Why it matters: If someone walks away from a computer and the next person can still get in, that is a security problem.
 
-Who should run this test: Anyone who is currently signed in.
+Who should do this: Anyone who is currently signed in.
 
-What you need before starting: You must be signed in.
+Before you start: You need to be signed in.
 
-Steps to follow:
-1. Find the sign-out option. It may be in a sidebar, a menu, or under your profile icon.
+Do this:
+1. Find the sign-out option (in the sidebar, menu, or under your profile picture).
 2. Click "Sign Out."
-3. You should be taken to the home page or the sign-in page.
-4. Now try to go directly to the dashboard by typing the dashboard address into your browser address bar.
-5. You should be redirected to the sign-in page.
+3. You should land on the home page or the sign-in page.
+4. Now type the dashboard address directly into the browser bar and press Enter.
+5. You should be sent back to the sign-in page — not the dashboard.
 
-What should happen if the system is working properly: After signing out, you cannot access the dashboard or any protected page. You are always redirected to sign in.
+What good looks like: After signing out, you cannot reach any private page. The platform always sends you to sign in.
 
-What to record if it does not work properly: Record whether you could still see the dashboard after signing out. Record whether any data was visible. Take a screenshot.
+What bad looks like: You can still see the dashboard after signing out.
 
-Pass / fail rule: Pass if you are redirected to sign-in when trying to access protected pages. Fail if you can see any protected content after signing out.
+If it fails, write down: Whether any private content was visible. Take a screenshot.
+
+Pass or fail: Pass if you are blocked from private pages. Fail if you can still see them.
 
 ---
 
-## TEST 5: Password reset request
+## PART 2 — RECOVERING YOUR ACCOUNT
 
-What this is testing: That a user who has forgotten their password can request a reset link by email.
+---
 
-Why this matters: Forgotten passwords are the most common support request. If this does not work, users are locked out.
+Test name: Requesting a password reset
 
-Who should run this test: Anyone with a registered account.
+What you are checking: If you forget your password, can you request a reset link?
 
-What you need before starting: A registered email address. Access to the email inbox.
+Why it matters: Forgotten passwords are the single most common support issue. If this does not work, people get locked out.
 
-Steps to follow:
+Who should do this: Anyone with an account.
+
+Before you start: You need your registered email and access to that inbox.
+
+Do this:
 1. Go to the sign-in page.
 2. Click "Forgot password" or "Reset password."
-3. Enter your registered email address.
-4. Click the submit or send button.
-5. You should see a confirmation message with instructions about checking your inbox and spam folder.
-6. The message should mention that the link expires in 1 hour.
+3. Enter your email.
+4. Click Submit.
+5. You should see a message telling you to check your email, including a note about checking spam and that the link expires in 1 hour.
 
-What should happen if the system is working properly: A confirmation message appears on screen. The message includes guidance about checking spam and the link expiry time. An email arrives in your inbox within a few minutes.
+What good looks like: A helpful message appears on screen. A reset email arrives within a few minutes.
 
-What to record if it does not work properly: Record what message you saw. Record whether the email arrived. Record how long it took.
+What bad looks like: No message appears. Or the message is vague. Or no email arrives.
 
-Pass / fail rule: Pass if the confirmation message appears with clear guidance and the email arrives. Fail if no email arrives within 10 minutes or the on-screen message is vague or missing.
+If it fails, write down: What message you saw. Whether the email arrived. How long you waited.
+
+Pass or fail: Pass if the message is clear and the email arrives within 10 minutes. Fail otherwise.
 
 ---
 
-## TEST 6: Password reset completion
+Test name: Completing the password reset
 
-What this is testing: That clicking the reset link lets you set a new password and sign in with it.
+What you are checking: Does the reset link actually let you set a new password?
 
-Why this matters: If the reset link does not work, users cannot recover their accounts.
+Why it matters: If the link does not work, people cannot recover their accounts.
 
-Who should run this test: The same person who ran Test 5.
+Who should do this: The person who just requested the reset.
 
-What you need before starting: The reset email from Test 5.
+Before you start: You need the reset email.
 
-Steps to follow:
+Do this:
 1. Open the reset email.
-2. Click the reset link.
-3. You should be taken to a page where you can enter a new password.
-4. Enter a new password that is at least 8 characters long.
-5. You should see a password strength indicator.
-6. Submit the new password.
-7. You should see a success message.
-8. Now sign out and sign back in using the new password.
+2. Click the link.
+3. You should see a page asking for a new password.
+4. Enter a new password (at least 8 characters). You should see a strength indicator.
+5. Submit it.
+6. You should see a success message.
+7. Sign out, then sign back in with the new password.
 
-What should happen if the system is working properly: The new password is accepted. You can sign in with it. The old password no longer works.
+What good looks like: The new password works. The old one does not.
 
-What to record if it does not work properly: Record the exact error. Record whether the strength indicator appeared. Record whether you could still sign in with the old password.
+What bad looks like: The link gives an error. You can still sign in with the old password.
 
-Pass / fail rule: Pass if the new password works and the old one does not. Fail if the reset fails, the old password still works, or you see an error.
+If it fails, write down: The error. Whether the strength indicator appeared. Whether the old password still works.
+
+Pass or fail: Pass if the new password works and the old one is rejected. Fail otherwise.
 
 ---
 
-## TEST 7: Password change from settings
+Test name: Changing your password from inside the platform
 
-What this is testing: That a signed-in user can change their password from inside the platform.
+What you are checking: Can you change your password without going through the "forgot password" flow?
 
-Why this matters: Users need to be able to change their password without going through the reset flow.
+Why it matters: Good security practice means changing passwords regularly.
 
-Who should run this test: Anyone who is currently signed in.
+Who should do this: Anyone who is signed in.
 
-What you need before starting: You must be signed in.
+Before you start: You must be signed in.
 
-Steps to follow:
-1. Go to your account settings. Look in the sidebar or under your profile icon.
-2. Find the "Security" or "Password" section.
+Do this:
+1. Go to your account or security settings (look in the sidebar or under your profile picture).
+2. Find the password section.
 3. Enter a new password.
-4. Submit the change.
+4. Save it.
 5. Sign out.
-6. Sign back in using the new password.
+6. Sign back in with the new password.
 
-What should happen if the system is working properly: The password change is confirmed. You can sign in with the new password.
+What good looks like: The new password works.
 
-What to record if it does not work properly: Record the error message. Record whether you were signed out unexpectedly during the change.
+What bad looks like: You get an error during the change. Or you are locked out. Or you get unexpectedly signed out mid-change without warning.
 
-Pass / fail rule: Pass if you can sign in with the new password. Fail if the change fails or you are locked out.
+If it fails, write down: The error. Whether you were signed out during the change.
 
----
-
-## TEST 8: Session expiry
-
-What this is testing: That the platform correctly handles an expired session by warning the user and redirecting to sign-in.
-
-Why this matters: In enterprise and compliance systems, expired sessions must not silently continue. The user must know their session ended and must sign in again.
-
-Who should run this test: A tester comfortable waiting or simulating expiry.
-
-What you need before starting: You must be signed in. You may need to wait for the session to expire naturally or ask a developer to shorten the session timeout for testing.
-
-Steps to follow:
-1. Sign in to the platform.
-2. Leave the browser open without doing anything until the session expires. This may take 1 hour or more depending on configuration.
-3. After the session expires, try to click on something or navigate to a different page.
-4. You should see a warning message that says your session has expired.
-5. You should be redirected to the sign-in page.
-
-What should happen if the system is working properly: A toast or alert message appears saying your session has expired and you are being redirected. You are taken to the sign-in page. After signing in, you are returned to the page you were on before expiry.
-
-What to record if it does not work properly: Record whether the expiry message appeared. Record whether you were redirected. Record whether you lost your place after signing back in.
-
-Pass / fail rule: Pass if the expiry message appears and you are redirected with return-to-page preserved. Fail if the session silently continues, if you see a blank page, or if you lose your place.
+Pass or fail: Pass if you can sign in with the new password. Fail if the change fails or locks you out.
 
 ---
 
-## TEST 9: Onboarding after first sign-in
+Test name: Session expiry
 
-What this is testing: That a new user sees an onboarding guide or wizard after their first sign-in.
+What you are checking: When your session runs out (like being away for too long), does the platform warn you and redirect you to sign in?
 
-Why this matters: New users need to know how to get started. Without onboarding, they may not understand how to use the platform.
+Why it matters: In a compliance system, an expired session must not silently stay open. The platform must force you to sign in again.
 
-Who should run this test: A new user who has just completed sign-up and email verification.
+Who should do this: Someone who can leave the browser open for a while, or who has help from a developer to shorten the timeout.
 
-What you need before starting: A freshly verified account that has never signed in before.
+Before you start: Sign in and leave the browser open.
 
-Steps to follow:
-1. Sign in with your new account.
-2. You should see a welcome screen, onboarding wizard, or quickstart guide.
-3. Read through the steps. They should explain the key actions: creating an API key, searching for counterparties, and creating a match.
-4. If there is a "dismiss" or "skip" button, click it.
+Do this:
+1. Sign in.
+2. Walk away and let the session expire (this may take an hour or more).
+3. Come back and click on something.
+4. You should see a message saying "Your session has expired."
+5. You should be sent to the sign-in page.
+6. After signing back in, you should return to the page you were on before.
+
+What good looks like: A clear expiry message. Redirect to sign-in. Return to the same page after signing back in.
+
+What bad looks like: The session quietly continues. Or you get a blank page. Or you lose your place.
+
+If it fails, write down: Whether the message appeared. Whether you were redirected. Whether you returned to the right page.
+
+Pass or fail: Pass if you are warned, redirected, and returned to the right page. Fail otherwise.
+
+---
+
+## PART 3 — GETTING STARTED
+
+---
+
+Test name: Onboarding for first-time users
+
+What you are checking: Does the platform show a welcome guide the first time you sign in?
+
+Why it matters: New users need to know how the platform works. Without a guide, they will be lost.
+
+Who should do this: Someone with a brand-new account that has never signed in before.
+
+Before you start: A freshly verified account.
+
+Do this:
+1. Sign in for the first time.
+2. You should see a welcome screen or quickstart guide.
+3. Read through it. It should explain the main things you can do: search for counterparties, create a match, confirm your intent.
+4. Click "Skip" or "Dismiss" if available.
 5. You should now see the main dashboard.
 
-What should happen if the system is working properly: A clear onboarding guide appears on first sign-in. It explains the key steps. It can be dismissed. After dismissal, you see the dashboard.
+What good looks like: A clear, friendly guide appears. It can be skipped. The dashboard loads after dismissal.
 
-What to record if it does not work properly: Record whether the onboarding appeared. Record whether it was confusing or incomplete. Record whether dismissing it caused any issues.
+What bad looks like: No guide appears. Or it cannot be dismissed. Or the dashboard is blank after dismissal.
 
-Pass / fail rule: Pass if onboarding appears and is clear. Fail if no onboarding appears or if it cannot be dismissed.
+If it fails, write down: Whether the guide appeared. Whether it could be dismissed. Any issues after dismissal.
+
+Pass or fail: Pass if the guide appears and is easy to follow. Fail if nothing appears or it gets stuck.
 
 ---
 
-## TEST 10: API key creation
+Test name: Creating an API key
 
-What this is testing: That a user can create an API key and copy it.
+What you are checking: Can you create a key that lets other software connect to the platform on your behalf?
 
-Why this matters: API keys are required to use the platform programmatically. If they cannot be created or copied, the platform cannot be integrated.
+Why it matters: Many organisations use their own tools alongside this platform. API keys are how they connect.
 
-Who should run this test: Any signed-in user with admin or member permissions.
+Who should do this: Any signed-in user.
 
-What you need before starting: You must be signed in.
+Before you start: You must be signed in.
 
-Steps to follow:
-1. Navigate to the API Keys section in your dashboard.
+Do this:
+1. Go to the API Keys section in your dashboard.
 2. Click "Create API Key" or similar.
-3. Enter a name for the key, such as "Test Key."
-4. Select scopes if prompted. Choose at least "search" and "match."
+3. Give it a name like "Test Key."
+4. Choose permissions if asked (pick at least "search" and "match").
 5. Click Create.
-6. You should see the key displayed. This is the only time the full key will be shown.
-7. Click the "Copy" button next to the key.
-8. Paste the key into a text editor to confirm it was copied correctly.
+6. You should see the key displayed. This is the only time you will ever see the full key.
+7. Click the Copy button.
+8. Paste it into a text document to make sure it copied correctly.
 
-What should happen if the system is working properly: The key is created and displayed once. The copy button works. After closing the dialog or navigating away, the full key is no longer visible.
+What good looks like: The key appears once. Copy works. After you leave the page, the full key is hidden forever.
 
-What to record if it does not work properly: Record whether the key was shown. Record whether the copy button worked. Record whether the key was still visible after navigating away.
+What bad looks like: The key does not appear. Copy does not work. The key is still visible after navigating away.
 
-Pass / fail rule: Pass if the key is shown once, can be copied, and is hidden after navigating away. Fail if the key cannot be created, cannot be copied, or remains visible permanently.
+If it fails, write down: Whether the key was shown. Whether copy worked. Whether it stayed visible after leaving.
+
+Pass or fail: Pass if the key is shown once and copies correctly. Fail otherwise.
 
 ---
 
-## TEST 11: Counterparty search
+## PART 4 — FINDING COUNTERPARTIES
 
-What this is testing: That a user can search for potential trading partners and see results.
+---
 
-Why this matters: Search is the first step in the commercial workflow. If search does not work, no matches can be created.
+Test name: Running a search
 
-Who should run this test: Any signed-in user.
+What you are checking: Can you search for potential trading partners and get meaningful results?
 
-What you need before starting: You must be signed in and on the dashboard.
+Why it matters: Search is the starting point of every deal. No search, no deals.
 
-Steps to follow:
-1. Navigate to the Search section.
-2. Enter a search term such as "maize exporter south africa."
+Who should do this: Any signed-in user.
+
+Before you start: You must be signed in.
+
+Do this:
+1. Go to the Search section.
+2. Type something like "maize exporter south africa."
 3. Click Search or press Enter.
-4. Wait for results to appear. This may take up to 30 seconds because the system checks external data sources.
-5. You should see a list of results, or a clear message saying no results were found.
+4. Wait for results. This can take up to 30 seconds because the platform checks several sources.
+5. You should see a list of results, or a clear message saying nothing was found.
 
-What should happen if the system is working properly: Results appear within 30 seconds, or a clear "no results" message is shown. The search area does not freeze or show a permanent loading spinner.
+What good looks like: Results appear within 30 seconds. Or a clear "no results found" message appears.
 
-What to record if it does not work properly: Record the search term you used. Record whether a loading indicator appeared. Record whether the spinner never stopped. Record any error message.
+What bad looks like: The spinner never stops. The page freezes. An unhelpful error appears.
 
-Pass / fail rule: Pass if results appear or a clear "no results" message is shown within 30 seconds. Fail if the page freezes, shows a permanent spinner, or shows an unhelpful error.
+If it fails, write down: What you searched for. Whether a spinner appeared. Whether it got stuck. The error message.
+
+Pass or fail: Pass if results or a clear "no results" message appear within 30 seconds. Fail otherwise.
 
 ---
 
-## TEST 12: Search interruption and recovery
+Test name: Interrupting a search
 
-What this is testing: That if a user starts a search and then navigates away before it finishes, the platform does not break.
+What you are checking: If you click away while a search is still running, does the platform handle it cleanly?
 
-Why this matters: Users frequently click away before a slow search completes. The platform must handle this gracefully.
+Why it matters: People click away from slow-loading pages all the time. The platform should not break when they do.
 
-Who should run this test: Any signed-in user.
+Who should do this: Any signed-in user.
 
-What you need before starting: You must be signed in.
+Before you start: You must be signed in.
 
-Steps to follow:
-1. Start a search with any term.
-2. While the loading spinner is still showing, click on a different section in the sidebar (e.g., Matches or Settings).
-3. Wait a few seconds.
-4. Navigate back to the Search section.
+Do this:
+1. Start a search.
+2. While the spinner is still going, click on something else in the sidebar (like Matches or Settings).
+3. Wait a moment.
+4. Go back to Search.
 5. Try a new search.
 
-What should happen if the system is working properly: Navigating away does not cause an error. When you return to Search, it is in a clean state. A new search works normally.
+What good looks like: No errors when you navigate away. Search works normally when you come back.
 
-What to record if it does not work properly: Record whether an error appeared when you navigated away. Record whether the search section was broken when you returned.
+What bad looks like: An error pops up. Or the search section is stuck when you return.
 
-Pass / fail rule: Pass if navigation away is clean and a new search works. Fail if errors appear or the search section is broken.
+If it fails, write down: What error appeared. Whether search still worked when you came back.
+
+Pass or fail: Pass if you can navigate away and return without problems. Fail if anything breaks.
 
 ---
 
-## TEST 13: Match creation
+## PART 5 — MATCHES
 
-What this is testing: That a user can create a new match between a buyer and a seller.
+---
 
-Why this matters: Matches are the core commercial record of the platform. If they cannot be created, the platform has no value.
+Test name: Creating a match
 
-Who should run this test: Any signed-in user with an API key.
+What you are checking: Can you create a record linking a buyer and a seller for a specific deal?
 
-What you need before starting: You must be signed in. You should have an API key (from Test 10). If the match can be created through the user interface rather than the API, follow the UI flow.
+Why it matters: Matches are the heart of the platform. Every deal starts here.
 
-Steps to follow:
-1. Navigate to the Matches section or find the "Create Match" option.
-2. Fill in the required fields: buyer, seller, commodity, quantity, price.
+Who should do this: Any signed-in user.
+
+Before you start: You must be signed in.
+
+Do this:
+1. Go to the Matches section or find "Create Match."
+2. Fill in the details: buyer name, seller name, what is being traded, how much, and the price.
 3. Click Create or Submit.
-4. You should see a confirmation that the match was created.
+4. You should see a confirmation.
 5. The new match should appear in your matches list.
-6. Click on the match to open its details page.
-7. The details page should show the information you entered.
+6. Click on it. The details page should show exactly what you entered.
 
-What should happen if the system is working properly: The match is created successfully. It appears in the list. Its details page shows accurate information including a unique ID and a hash value.
+What good looks like: The match is created. It appears in the list. The details are correct, including a unique reference number and a security hash.
 
-What to record if it does not work properly: Record the exact error. Record what fields you filled in. Record whether the match appeared in the list.
+What bad looks like: You get an error. The match does not appear. The details are wrong.
 
-Pass / fail rule: Pass if the match is created and visible with correct details. Fail if creation fails or details are wrong.
+If it fails, write down: The error. What you entered. Whether the match showed up.
+
+Pass or fail: Pass if the match is created with correct details. Fail if it is not.
 
 ---
 
-## TEST 14: Duplicate match prevention
+Test name: Preventing duplicate matches
 
-What this is testing: That the platform prevents the same match from being created twice if the user accidentally clicks the submit button more than once.
+What you are checking: If you accidentally click the Create button twice, does the system only create one match?
 
-Why this matters: Duplicate records are a serious problem in compliance and commercial systems. Each match should be unique.
+Why it matters: Duplicate records cause confusion, incorrect billing, and compliance problems.
 
-Who should run this test: Any signed-in user.
+Who should do this: Any signed-in user.
 
-What you need before starting: You must be signed in and ready to create a match.
+Before you start: You must be signed in.
 
-Steps to follow:
-1. Start creating a match with specific details.
-2. Click the Create or Submit button.
+Do this:
+1. Start creating a match.
+2. Click the Create button.
 3. Immediately click it again before the first request finishes.
-4. Wait for both requests to complete.
-5. Check the matches list.
+4. Check the matches list.
 
-What should happen if the system is working properly: Only one match is created. The second click is either blocked (button disabled after first click) or the server rejects the duplicate using an idempotency check.
+What good looks like: Only one match appears. The button was either disabled after the first click, or the platform caught the duplicate.
 
-What to record if it does not work properly: Record whether two identical matches appeared in the list. Record whether the button was disabled after the first click.
+What bad looks like: Two identical matches appear.
 
-Pass / fail rule: Pass if only one match is created. Fail if two identical matches appear.
+If it fails, write down: Whether two matches appeared. Whether the button was disabled after the first click.
 
----
-
-## TEST 15: Match details page
-
-What this is testing: That the match details page shows complete and accurate information about a match.
-
-Why this matters: This page is the source of truth for a commercial record. It must be accurate and complete.
-
-Who should run this test: Any signed-in user who has at least one match.
-
-What you need before starting: At least one match must exist (from Test 13).
-
-Steps to follow:
-1. Navigate to the Matches section.
-2. Click on a match to open its details.
-3. Check that the following are displayed: match ID, buyer, seller, commodity, quantity, price, status, creation date, and evidence hash.
-4. Check that there are tabs or sections for deal terms, documents, notes, timeline, and disputes.
-
-What should happen if the system is working properly: All fields are populated with the correct data. No fields show "undefined," "null," or are blank when they should have values. All tabs are accessible.
-
-What to record if it does not work properly: Record which fields are missing or show incorrect values. Take a screenshot.
-
-Pass / fail rule: Pass if all fields show correct data and all tabs work. Fail if any critical field is missing, shows "undefined," or tabs do not load.
+Pass or fail: Pass if only one match is created. Fail if duplicates appear.
 
 ---
 
-## TEST 16: Deal terms — create and save
+Test name: Reviewing match details
 
-What this is testing: That a user can enter and save deal terms (payment terms, delivery terms, inspection terms) for a match.
+What you are checking: Does the match details page show complete and accurate information?
 
-Why this matters: Deal terms are a legally relevant record. They must save correctly and be retrievable.
+Why it matters: This page is the official record of the deal. It must be right.
 
-Who should run this test: Any signed-in user with a match.
+Who should do this: Anyone with at least one match.
 
-What you need before starting: A match must exist.
+Before you start: You need an existing match.
 
-Steps to follow:
-1. Open a match details page.
-2. Navigate to the Deal Terms tab or section.
-3. Enter payment terms such as "30 days LC."
-4. Enter delivery terms such as "FOB Durban."
-5. Enter inspection terms such as "SGS at load port."
-6. Click Save or Submit.
+Do this:
+1. Open the Matches section.
+2. Click on a match.
+3. Check that you can see: the match reference, buyer, seller, what is being traded, quantity, price, current status, when it was created, and the evidence hash.
+4. Check that there are tabs for deal terms, documents, notes, timeline, and disputes.
+
+What good looks like: Every field has the right information. Nothing says "undefined" or "null." All tabs work.
+
+What bad looks like: Fields are missing or wrong. Tabs do not load.
+
+If it fails, write down: Which fields are wrong or missing. Screenshot the page.
+
+Pass or fail: Pass if all information is correct and all tabs work. Fail if anything is missing or broken.
+
+---
+
+## PART 6 — DEAL TERMS
+
+---
+
+Test name: Saving deal terms
+
+What you are checking: Can you enter the commercial terms for a deal and have them saved correctly?
+
+Why it matters: Deal terms are legally significant. If they do not save properly, the record is useless.
+
+Who should do this: Anyone with a match.
+
+Before you start: You need an existing match.
+
+Do this:
+1. Open a match.
+2. Go to the Deal Terms tab.
+3. Enter payment terms (e.g., "30 days letter of credit").
+4. Enter delivery terms (e.g., "FOB Durban").
+5. Enter inspection terms (e.g., "SGS at load port").
+6. Click Save.
 7. Navigate away from the page.
-8. Navigate back to the same match and open Deal Terms again.
+8. Come back to the same match and open Deal Terms again.
 
-What should happen if the system is working properly: The terms you entered are saved and shown when you return. Nothing is lost.
+What good looks like: Everything you entered is still there when you come back.
 
-What to record if it does not work properly: Record which fields were lost. Record any error message.
+What bad looks like: Some or all of the terms are missing.
 
-Pass / fail rule: Pass if all terms are saved and displayed correctly on return. Fail if any terms are lost or wrong.
+If it fails, write down: Which fields were lost. Any error messages.
 
----
-
-## TEST 17: Deal terms — version history
-
-What this is testing: That when deal terms are updated, the previous version is preserved and visible.
-
-Why this matters: In a dispute or audit, it is critical to know what the terms were at each point in time.
-
-Who should run this test: A user who has already saved deal terms (Test 16).
-
-What you need before starting: Deal terms must already exist for a match.
-
-Steps to follow:
-1. Open the deal terms for a match.
-2. Change one of the terms, such as changing "30 days LC" to "60 days LC."
-3. Save the changes.
-4. Check whether you can see the previous version or a version history.
-
-What should happen if the system is working properly: The new terms are saved. The previous version is still accessible or visible in a history view. Each version is numbered.
-
-What to record if it does not work properly: Record whether the old terms were overwritten without a trace. Record whether a version history is visible.
-
-Pass / fail rule: Pass if previous versions are preserved. Fail if old terms are silently overwritten with no history.
+Pass or fail: Pass if all terms are saved and still correct on return. Fail if anything is lost.
 
 ---
 
-## TEST 18: Deal terms — conflict handling (two users editing at the same time)
+Test name: Checking deal terms history
 
-What this is testing: That if two users edit the same deal terms at the same time, the platform does not silently lose one person's changes.
+What you are checking: When you update deal terms, is the old version still available?
 
-Why this matters: In a team environment, concurrent editing is common. Silent data loss is unacceptable.
+Why it matters: If there is ever a disagreement about what the terms were, you need to be able to look back at previous versions.
 
-Who should run this test: Two users in the same organisation. Both must be signed in on separate browsers or devices.
+Who should do this: Someone who already saved deal terms.
 
-What you need before starting: A match with existing deal terms. Two user accounts in the same organisation.
+Before you start: Deal terms must already exist for a match.
 
-Steps to follow:
-1. User A opens the deal terms for a specific match.
-2. User B opens the deal terms for the same match on a different browser.
-3. User A changes the payment terms to "45 days LC" and clicks Save.
-4. User B changes the payment terms to "90 days LC" and clicks Save (without refreshing first).
-5. Both users refresh the page.
+Do this:
+1. Open the deal terms.
+2. Change one field (e.g., change "30 days" to "60 days").
+3. Save.
+4. Look for a version history or "previous versions" option.
 
-What should happen if the system is working properly: Only one set of changes should be saved. Ideally, User B should be warned that the terms were changed since they loaded the page. At minimum, the saved record should be consistent — not a mix of the two edits.
+What good looks like: The new version is saved. The old version is still visible somewhere. Each version is numbered.
 
-What to record if it does not work properly: Record what each user sees after refreshing. Record whether the saved data is a mix of both edits. Record whether any warning was shown.
+What bad looks like: The old version is gone. There is no history.
 
-Pass / fail rule: Pass if one consistent version is saved and no data is silently mixed. Fail if the record is corrupted or both edits are partially applied.
+If it fails, write down: Whether the old terms were overwritten. Whether any history view exists.
+
+Pass or fail: Pass if old versions are kept. Fail if old terms vanish.
 
 ---
 
-## TEST 19: Document upload
+Test name: Two people editing deal terms at the same time
 
-What this is testing: That a user can upload a document against a match.
+What you are checking: If two colleagues edit the same deal terms at the same time, does the platform handle it safely?
 
-Why this matters: Documents such as invoices, certificates, and contracts are critical evidence in trade transactions.
+Why it matters: In a busy team, people sometimes work on the same record. The platform must not silently lose one person's work.
 
-Who should run this test: Any signed-in user with a match.
+Who should do this: Two people in the same organisation, each on their own computer.
 
-What you need before starting: A match must exist. Have a small PDF or image file ready to upload (under 10 MB).
+Before you start: A match with existing deal terms. Two accounts.
 
-Steps to follow:
-1. Open a match details page.
-2. Navigate to the Documents tab or section.
-3. Click "Upload Document" or similar.
-4. Select a file from your computer.
-5. Choose a document type if prompted (e.g., "Commercial Invoice").
+Do this:
+1. Person A opens the deal terms for a match.
+2. Person B opens the same deal terms on a different computer.
+3. Person A changes payment terms to "45 days" and clicks Save.
+4. Person B changes payment terms to "90 days" and clicks Save (without refreshing first).
+5. Both people refresh the page.
+
+What good looks like: Only one version is saved. Ideally, Person B was warned that the terms changed since they opened the page. At the very least, the saved record is consistent — not a mix of both edits.
+
+What bad looks like: The record is a confusing mix of both edits. Or one person's work disappears without any warning.
+
+If it fails, write down: What each person sees after refreshing. Whether any warning appeared.
+
+Pass or fail: Pass if the record is consistent. Fail if it is corrupted or mixed.
+
+---
+
+## PART 7 — DOCUMENTS
+
+---
+
+Test name: Uploading a document
+
+What you are checking: Can you attach a document (like an invoice or certificate) to a match?
+
+Why it matters: Trade documents are critical evidence. The platform must handle them reliably.
+
+Who should do this: Anyone with a match.
+
+Before you start: A match must exist. Have a small PDF or image file ready (under 10 MB).
+
+Do this:
+1. Open a match.
+2. Go to the Documents tab.
+3. Click "Upload Document."
+4. Choose a file from your computer.
+5. Select a document type if asked (e.g., "Commercial Invoice").
 6. Click Upload.
-7. The document should appear in the documents list.
+7. The document should appear in the list.
 
-What should happen if the system is working properly: The document uploads successfully. It appears in the list with the correct filename, type, and upload date.
+What good looks like: The document shows up with the right filename, type, and date.
 
-What to record if it does not work properly: Record the error message. Record the file type and size. Record whether the upload button became stuck or the spinner never stopped.
+What bad looks like: The upload fails. The spinner gets stuck. The document does not appear.
 
-Pass / fail rule: Pass if the document appears in the list with correct details. Fail if the upload fails or the document does not appear.
+If it fails, write down: The error. The file type and size.
 
----
-
-## TEST 20: Invalid file upload
-
-What this is testing: That the platform rejects files that are too large, empty, or of an unsupported type.
-
-Why this matters: Accepting invalid files can cause storage issues, security risks, or corrupted records.
-
-Who should run this test: Any signed-in user with a match.
-
-What you need before starting: A match must exist. Prepare the following test files: an empty file (0 bytes), a very large file (over 50 MB if possible), and a file with an unusual extension like ".exe" or ".bat."
-
-Steps to follow:
-1. Open the documents section of a match.
-2. Try to upload the empty file. Record what happens.
-3. Try to upload the oversized file. Record what happens.
-4. Try to upload the file with the unusual extension. Record what happens.
-
-What should happen if the system is working properly: Each invalid file is rejected with a clear error message explaining why. The upload does not silently succeed.
-
-What to record if it does not work properly: Record whether any invalid file was accepted. Record the error message for each rejection.
-
-Pass / fail rule: Pass if all invalid files are rejected with clear messages. Fail if any invalid file is silently accepted.
+Pass or fail: Pass if the document appears correctly. Fail if the upload fails.
 
 ---
 
-## TEST 21: Document access and revocation
+Test name: Uploading an invalid file
 
-What this is testing: That documents can be shared with specific users or organisations and that access can be revoked.
+What you are checking: Does the platform reject files that are too large, empty, or potentially dangerous?
 
-Why this matters: Trade documents contain commercially sensitive information. Access must be controlled and auditable.
+Why it matters: Accepting bad files is a security and data quality risk.
 
-Who should run this test: Two users, ideally in different organisations.
+Who should do this: Anyone with a match.
 
-What you need before starting: A match with at least one uploaded document. Two user accounts.
+Before you start: Prepare three files: an empty file (0 bytes), a very large file (over 50 MB), and something unusual like a .exe file.
 
-Steps to follow:
-1. User A uploads a document to a match.
-2. User A shares the document with User B's organisation.
-3. User B signs in and checks whether they can see or download the document.
-4. User A revokes access.
-5. User B refreshes the page and checks whether they can still see the document.
+Do this:
+1. Open the Documents section of a match.
+2. Try uploading the empty file. Note what happens.
+3. Try uploading the oversized file. Note what happens.
+4. Try uploading the .exe file. Note what happens.
 
-What should happen if the system is working properly: User B can access the document after sharing. After revocation, User B can no longer see or download it. Access logs record both the share and the revocation.
+What good looks like: Each bad file is rejected with a clear explanation.
 
-What to record if it does not work properly: Record whether User B could access the document before sharing. Record whether revocation actually removed access. Record whether access logs exist.
+What bad looks like: A bad file is silently accepted.
 
-Pass / fail rule: Pass if sharing grants access and revocation removes it. Fail if access is not properly controlled.
+If it fails, write down: Which files were accepted. What error messages appeared.
+
+Pass or fail: Pass if all bad files are rejected. Fail if any are accepted.
 
 ---
 
-## TEST 22: Confirm intent
+Test name: Sharing and revoking document access
 
-What this is testing: That a user can confirm their intent to proceed with a match, which is the most important commercial action on the platform.
+What you are checking: Can you share a document with another organisation and then take that access away?
 
-Why this matters: Confirming intent is a binding commercial action. It must work reliably, deduct credits, and create an auditable record.
+Why it matters: Trade documents are confidential. You need to control who sees them.
 
-Who should run this test: Any signed-in user with a match and sufficient credits.
+Who should do this: Two people in different organisations.
 
-What you need before starting: A match in an eligible state. Your organisation must have an active licence and sufficient credits. If you do not have credits, run the billing test first (Test 27).
+Before you start: A match with a document. Two accounts in different organisations.
 
-Steps to follow:
-1. Open a match details page.
-2. Find the "Confirm Intent" or "Settle" button.
+Do this:
+1. Person A uploads a document.
+2. Person A shares it with Person B's organisation.
+3. Person B signs in and checks whether they can see the document.
+4. Person A revokes access.
+5. Person B refreshes and checks whether the document is still visible.
+
+What good looks like: Person B can see the document after sharing. After revocation, they cannot.
+
+What bad looks like: Person B can see the document before sharing. Or they can still see it after revocation.
+
+If it fails, write down: Whether access worked correctly at each stage.
+
+Pass or fail: Pass if sharing gives access and revoking takes it away. Fail if access is not controlled properly.
+
+---
+
+## PART 8 — CONFIRMING INTENT
+
+---
+
+Test name: Confirming your intent on a match
+
+What you are checking: Can you formally declare that you intend to proceed with a deal?
+
+Why it matters: This is the most important action on the platform. It creates a binding commercial record, deducts credits, and generates an audit trail.
+
+Who should do this: Anyone with a match and enough credits.
+
+Before you start: A match in an eligible state. Your organisation must have an active licence and enough credits. If you need credits, complete the billing test first.
+
+Do this:
+1. Open a match.
+2. Find the "Confirm Intent" button.
 3. Click it.
-4. You should see a confirmation dialog asking you to confirm the action.
-5. Confirm the action.
+4. A confirmation dialog should appear asking you to confirm.
+5. Confirm.
 6. Wait for the result.
 
-What should happen if the system is working properly: The match status changes to "intent declared" or "settled." Your credit balance is reduced. An audit log entry is created. The match timeline shows the event.
+What good looks like: The match status changes to something like "intent declared." Your credit balance goes down. The audit log shows the action. The match timeline shows the event.
 
-What to record if it does not work properly: Record the exact error message. Note especially if it says "LICENCE_REQUIRED" — this means the licence setup is incomplete. Record your credit balance before and after.
+What bad looks like: You get an error. Pay special attention if the error says "LICENCE_REQUIRED" — that means the platform's licence setup is not complete. Also check whether your credits were deducted even though the action failed.
 
-Pass / fail rule: Pass if the status changes, credits are deducted, and an audit trail entry exists. Fail if the action fails, credits are not deducted, or no audit record is created.
+If it fails, write down: The exact error. Your credit balance before and after.
+
+Pass or fail: Pass if the status changes, credits are deducted correctly, and the audit trail exists. Fail if the action fails or credits are wrong.
 
 ---
 
-## TEST 23: Confirm intent — insufficient credits
+Test name: Confirming intent with no credits
 
-What this is testing: That the platform correctly blocks intent confirmation when the user does not have enough credits.
+What you are checking: Does the platform stop you from confirming intent when you do not have enough credits?
 
-Why this matters: Allowing an action without charging for it is a commercial error. The system must enforce credit requirements.
+Why it matters: Allowing the action without payment would be a commercial error.
 
-Who should run this test: A user with zero or very low credits.
+Who should do this: A user with no credits.
 
-What you need before starting: An account with no credits or fewer credits than required for confirmation. A match in an eligible state.
+Before you start: Make sure your credit balance is zero or too low.
 
-Steps to follow:
-1. Check your credit balance and confirm it is zero or too low.
+Do this:
+1. Check your balance and confirm it is low or zero.
 2. Open a match and try to confirm intent.
-3. The system should block the action and show a clear message about insufficient credits.
-4. The match status should NOT change.
+3. The platform should stop you with a clear message about needing more credits.
+4. The match status should not change.
 
-What should happen if the system is working properly: The action is blocked. A clear message explains that you need more credits. A link or button directs you to the billing page.
+What good looks like: You are blocked. A clear message explains the problem. There is a link to the billing page.
 
-What to record if it does not work properly: Record whether the action was allowed despite no credits. Record the message shown.
+What bad looks like: The action goes through despite no credits. Or there is no message explaining why you were blocked.
 
-Pass / fail rule: Pass if the action is blocked with a clear message. Fail if intent is confirmed without sufficient credits.
+If it fails, write down: Whether the action was allowed. What message appeared.
 
----
-
-## TEST 24: Bulk confirm intent
-
-What this is testing: That a user can confirm intent on multiple matches at once.
-
-Why this matters: Efficiency feature for users managing many matches. Must work reliably and show clear progress.
-
-Who should run this test: A user with at least 3 matches in an eligible state.
-
-What you need before starting: Multiple matches. Sufficient credits.
-
-Steps to follow:
-1. Navigate to the matches list.
-2. Select multiple matches using checkboxes or a select-all option.
-3. Click the "Bulk Confirm" or "Confirm Selected" button.
-4. A dialog should appear showing how many matches will be confirmed.
-5. Confirm the action.
-6. Watch the progress indicator.
-7. After completion, check each match to verify the status changed.
-
-What should happen if the system is working properly: All selected matches are confirmed. The progress indicator shows completion. Each match has the correct status and audit trail. Credits are deducted for each match.
-
-What to record if it does not work properly: Record how many matches were selected versus how many were actually confirmed. Record whether the progress indicator was clear. Record whether any matches were left in an inconsistent state.
-
-Pass / fail rule: Pass if all selected matches are confirmed with correct audit trails. Fail if any match is left in an inconsistent state or if the progress indicator was misleading.
+Pass or fail: Pass if the action is blocked with a helpful message. Fail if intent is confirmed without credits.
 
 ---
 
-## TEST 25: Credit balance display
+Test name: Confirming intent on several matches at once
 
-What this is testing: That the credit balance shown on screen is always accurate and up-to-date.
+What you are checking: Can you confirm intent on multiple matches in one go?
 
-Why this matters: If the balance is wrong, users may think they have credits they do not have, or they may be unable to act when they should be able to.
+Why it matters: Busy users managing many deals need to be able to do this efficiently.
 
-Who should run this test: Any signed-in user.
+Who should do this: Someone with at least 3 eligible matches and enough credits.
 
-What you need before starting: Note your current credit balance.
+Before you start: Multiple matches ready for confirmation. Enough credits.
 
-Steps to follow:
-1. Note your credit balance.
-2. Perform an action that costs credits (e.g., confirm intent or run a search).
-3. Check your credit balance again immediately.
+Do this:
+1. Go to the matches list.
+2. Select several matches using checkboxes.
+3. Click the bulk confirm button.
+4. A dialog should show how many will be confirmed.
+5. Confirm.
+6. Watch the progress.
+7. After it finishes, check each match to see if the status changed.
+
+What good looks like: All selected matches are confirmed. Progress was clear. Credits were deducted for each. Audit trail entries exist for each.
+
+What bad looks like: Some matches are confirmed but others are not, without explanation. Or the progress was unclear. Or some matches are stuck in a half-finished state.
+
+If it fails, write down: How many were selected versus confirmed. Whether any are in a confusing state.
+
+Pass or fail: Pass if all are confirmed with correct records. Fail if any are left in an inconsistent state.
+
+---
+
+## PART 9 — CREDITS AND BILLING
+
+---
+
+Test name: Checking your credit balance
+
+What you are checking: Is the credit balance on screen always accurate?
+
+Why it matters: If the balance is wrong, you might think you have credits you do not, or be blocked when you should not be.
+
+Who should do this: Any signed-in user.
+
+Before you start: Note your current balance.
+
+Do this:
+1. Write down your balance.
+2. Do something that uses credits (like confirming intent).
+3. Check the balance again immediately.
 4. Refresh the page.
-5. Check the balance again.
+5. Check the balance once more.
 
-What should happen if the system is working properly: The balance decreases by the correct amount after the action. It remains correct after refresh.
+What good looks like: The balance went down by the right amount. It is the same after refresh.
 
-What to record if it does not work properly: Record the balance before, the expected deduction, the balance after, and the balance after refresh.
+What bad looks like: The balance did not change. Or it changed by the wrong amount. Or it is different after refresh.
 
-Pass / fail rule: Pass if the balance is accurate immediately after the action and after refresh. Fail if the balance is stale or wrong.
+If it fails, write down: Balance before, expected deduction, balance after, balance after refresh.
 
----
-
-## TEST 26: Billing page — view credit packages
-
-What this is testing: That the billing page shows available credit packages with clear pricing.
-
-Why this matters: Users need to understand what they are buying before they pay.
-
-Who should run this test: Any signed-in user.
-
-What you need before starting: You must be signed in.
-
-Steps to follow:
-1. Navigate to the Billing page from the sidebar or settings.
-2. You should see a list of credit packages with prices in South African Rand (ZAR).
-3. Each package should clearly state how many credits it includes and the price.
-
-What should happen if the system is working properly: The billing page loads. Packages are clearly listed with prices. A "Buy" or "Purchase" button is available for each package.
-
-What to record if it does not work properly: Record whether the page loaded. Record whether prices were shown. Record whether any package was missing a price.
-
-Pass / fail rule: Pass if packages and prices are clearly displayed. Fail if the page is empty, prices are missing, or the page does not load.
+Pass or fail: Pass if the balance is correct at every step. Fail if it is ever wrong.
 
 ---
 
-## TEST 27: Billing — successful payment
+Test name: Viewing credit packages
 
-What this is testing: That purchasing credits through the payment flow works end-to-end.
+What you are checking: Does the billing page show the available packages with clear pricing?
 
-Why this matters: This is how the platform makes money. If payments fail, the business cannot operate.
+Why it matters: People need to understand what they are buying.
 
-Who should run this test: A user authorised to make test payments. Use a test card if available.
+Who should do this: Any signed-in user.
 
-What you need before starting: Access to the billing page. A test payment method.
+Before you start: Sign in.
 
-Steps to follow:
-1. Note your current credit balance.
+Do this:
+1. Go to the Billing page.
+2. You should see a list of credit packages with prices in Rands (ZAR).
+3. Each package should clearly say how many credits you get and what it costs.
+
+What good looks like: Packages are listed clearly with Buy buttons.
+
+What bad looks like: The page is blank. Prices are missing. There are no Buy buttons.
+
+If it fails, write down: What appeared on the page.
+
+Pass or fail: Pass if packages and prices are clearly shown. Fail if anything is missing or unclear.
+
+---
+
+Test name: Buying credits successfully
+
+What you are checking: Does the full payment process work from start to finish?
+
+Why it matters: This is how the business gets paid.
+
+Who should do this: Someone authorised to make test payments. Use a test card if one is available.
+
+Before you start: Note your current credit balance.
+
+Do this:
+1. Write down your balance.
 2. Go to the Billing page.
-3. Select a credit package.
-4. Click Buy or Purchase.
-5. You should be redirected to a payment page (Paystack).
-6. Complete the payment using a test card.
-7. After payment, you should be redirected back to the platform.
-8. You should see a success message.
-9. Check your credit balance. It should have increased by the amount in the package you purchased.
+3. Choose a package and click Buy.
+4. You will be taken to a payment page.
+5. Complete the payment.
+6. You should be brought back to the platform with a success message.
+7. Check your balance. It should have gone up by the amount in the package.
 
-What should happen if the system is working properly: Payment completes. You are redirected back. A success message appears. Credits are added to your balance immediately.
+What good looks like: Payment works. You come back. Balance increases immediately.
 
-What to record if it does not work properly: Record where the process failed. Record the error message. Record your balance before and after.
+What bad looks like: Payment succeeds but credits are not added. Or you are not brought back.
 
-Pass / fail rule: Pass if credits are added to your balance after successful payment. Fail if the payment succeeds but credits are not added, or if you are not redirected back.
+If it fails, write down: Where it broke. The error. Balance before and after.
 
----
-
-## TEST 28: Billing — payment cancellation
-
-What this is testing: That if a user starts a payment and then cancels, no credits are added and no charge is made.
-
-Why this matters: A cancelled payment must not result in credits being added or money being taken.
-
-Who should run this test: Any signed-in user.
-
-What you need before starting: Access to the billing page.
-
-Steps to follow:
-1. Note your credit balance.
-2. Go to the Billing page.
-3. Select a credit package and click Buy.
-4. On the payment page, click Cancel or close the browser tab.
-5. Return to the platform.
-6. Check your credit balance.
-
-What should happen if the system is working properly: Your balance has not changed. You see a message indicating the payment was cancelled. No charge was made.
-
-What to record if it does not work properly: Record whether credits were added despite cancellation. Record any error messages.
-
-Pass / fail rule: Pass if balance is unchanged and no charge was made. Fail if credits were added or a charge occurred.
+Pass or fail: Pass if credits appear after payment. Fail if they do not.
 
 ---
 
-## TEST 29: Billing — payment failure
+Test name: Cancelling a payment
 
-What this is testing: That if a payment fails (e.g., declined card), no credits are added and the user is informed.
+What you are checking: If you start a payment and then cancel, are you charged? Are credits added?
 
-Why this matters: A failed payment must not result in credits.
+Why it matters: Cancelling must not cost you anything.
 
-Who should run this test: A user with a test card that will be declined.
+Who should do this: Any signed-in user.
 
-What you need before starting: A payment method that will fail.
+Before you start: Note your balance.
 
-Steps to follow:
-1. Note your credit balance.
-2. Attempt to purchase credits using the failing payment method.
-3. The payment should fail.
-4. Return to the platform.
-5. Check your credit balance.
+Do this:
+1. Go to the Billing page.
+2. Choose a package and click Buy.
+3. On the payment page, click Cancel or close the tab.
+4. Come back to the platform.
+5. Check your balance.
 
-What should happen if the system is working properly: The balance is unchanged. A clear error message is shown with guidance on what to do next, including a support email address.
+What good looks like: Balance is unchanged. A message says the payment was cancelled.
 
-What to record if it does not work properly: Record whether credits were added despite failure. Record the error message.
+What bad looks like: Credits were added even though you cancelled.
 
-Pass / fail rule: Pass if balance is unchanged and a clear error message is shown. Fail if credits were added or no error message appears.
+If it fails, write down: Whether credits changed. Any messages shown.
 
----
-
-## TEST 30: Billing — double payment protection
-
-What this is testing: That if the payment system sends a duplicate confirmation (which can happen with webhooks), credits are only added once.
-
-Why this matters: Double-crediting is a serious financial error.
-
-Who should run this test: This test may require developer assistance to simulate a duplicate webhook. If you can test by rapidly clicking the buy button twice, do that.
-
-What you need before starting: Access to the billing page.
-
-Steps to follow:
-1. Note your credit balance.
-2. Purchase a credit package.
-3. Note the new balance.
-4. If possible, ask a developer to re-send the same payment webhook.
-5. Check the balance again.
-
-What should happen if the system is working properly: Credits are added only once, regardless of how many times the webhook is received.
-
-What to record if it does not work properly: Record the balance at each step. Record whether credits were added more than once.
-
-Pass / fail rule: Pass if credits are added exactly once. Fail if credits are doubled.
+Pass or fail: Pass if balance is unchanged. Fail if credits were added or money was charged.
 
 ---
 
-## TEST 31: Dispute — raise a dispute
+Test name: Payment failure
 
-What this is testing: That a user can raise a dispute against a match.
+What you are checking: If a payment is declined, is the user told clearly and are no credits added?
 
-Why this matters: Disputes are a critical governance mechanism. If they cannot be raised, users have no recourse.
+Why it matters: A declined payment must never result in credits.
 
-Who should run this test: Any signed-in user with a match.
+Who should do this: Someone with a payment method that will be declined (like a test card designed to fail).
 
-What you need before starting: A match must exist.
+Before you start: Note your balance.
 
-Steps to follow:
-1. Open a match details page.
-2. Navigate to the Disputes tab or section.
-3. Click "Raise Dispute" or similar.
-4. Enter a reason for the dispute.
-5. Submit the dispute.
-6. The dispute should appear in the disputes list for that match.
-7. The match status should reflect that a dispute is active.
+Do this:
+1. Try to buy credits with the failing payment method.
+2. The payment should fail.
+3. Come back to the platform.
+4. Check your balance.
 
-What should happen if the system is working properly: The dispute is created with the correct reason. It appears in the disputes list. The match status indicates a dispute is active. Settlement is blocked while the dispute is active.
+What good looks like: Balance is unchanged. A clear message explains what happened and suggests contacting support.
 
-What to record if it does not work properly: Record the error. Record whether the dispute appeared. Record whether the match status changed.
+What bad looks like: Credits were added despite the failure.
 
-Pass / fail rule: Pass if the dispute is created, visible, and blocks settlement. Fail if the dispute cannot be created or does not block settlement.
+If it fails, write down: Whether credits changed. The error message.
+
+Pass or fail: Pass if balance is unchanged and there is a clear error. Fail if credits appear.
 
 ---
 
-## TEST 32: Dispute — resolution
+Test name: Protection against being charged twice
 
-What this is testing: That a dispute can be resolved and settlement is unblocked afterward.
+What you are checking: If the payment system accidentally sends two confirmations for the same purchase, are credits only added once?
 
-Why this matters: Disputes must have a resolution path. If they cannot be resolved, matches are permanently stuck.
+Why it matters: Being charged twice or credited twice is a serious financial error.
 
-Who should run this test: A user with appropriate permissions (admin or the user who raised the dispute).
+Who should do this: This may need a developer to simulate. You can also try by clicking the Buy button twice very quickly.
 
-What you need before starting: An active dispute from Test 31.
+Before you start: Note your balance.
 
-Steps to follow:
-1. Open the match with the active dispute.
-2. Navigate to the Disputes section.
+Do this:
+1. Buy a credit package.
+2. Note the new balance.
+3. If possible, have a developer re-send the same payment confirmation.
+4. Check the balance again.
+
+What good looks like: Credits are added exactly once.
+
+What bad looks like: Credits are doubled.
+
+If it fails, write down: Balance at each step.
+
+Pass or fail: Pass if credits are added once. Fail if they are doubled.
+
+---
+
+## PART 10 — DISPUTES
+
+---
+
+Test name: Raising a dispute
+
+What you are checking: Can you formally challenge a match?
+
+Why it matters: Disputes are the safety valve. If a deal goes wrong, you need a way to raise a concern and block further action until it is resolved.
+
+Who should do this: Anyone with a match.
+
+Before you start: You need an existing match.
+
+Do this:
+1. Open a match.
+2. Go to the Disputes tab.
+3. Click "Raise Dispute."
+4. Enter a reason.
+5. Submit.
+6. The dispute should appear in the list.
+7. The match status should show a dispute is active.
+
+What good looks like: The dispute is created. It appears in the list. The match can no longer be settled while the dispute is active.
+
+What bad looks like: The dispute cannot be created. Or it does not block settlement.
+
+If it fails, write down: The error. Whether the dispute appeared. Whether settlement was blocked.
+
+Pass or fail: Pass if the dispute is created and blocks settlement. Fail otherwise.
+
+---
+
+Test name: Resolving a dispute
+
+What you are checking: Can a dispute be resolved so the match can move forward again?
+
+Why it matters: If disputes cannot be resolved, matches are permanently stuck.
+
+Who should do this: The person who raised the dispute, or an admin.
+
+Before you start: You need an active dispute.
+
+Do this:
+1. Open the match with the dispute.
+2. Go to the Disputes tab.
 3. Click on the dispute.
-4. Click "Resolve" or a similar resolution option.
-5. Enter a resolution outcome or notes.
-6. Submit the resolution.
-7. Confirm that the dispute status changes to "resolved."
+4. Click "Resolve."
+5. Enter a resolution note.
+6. Submit.
+7. The dispute status should change to "resolved."
 8. Try to confirm intent on the match. It should now be possible.
 
-What should happen if the system is working properly: The dispute is resolved. The match is no longer blocked. Settlement can proceed.
+What good looks like: The dispute is resolved. Settlement is unblocked.
 
-What to record if it does not work properly: Record whether the resolution option was available. Record whether settlement remained blocked after resolution.
+What bad looks like: The resolution option is missing. Or settlement is still blocked after resolution.
 
-Pass / fail rule: Pass if the dispute is resolved and settlement is unblocked. Fail if the dispute cannot be resolved or settlement remains blocked.
+If it fails, write down: Whether resolution was available. Whether settlement was unblocked.
+
+Pass or fail: Pass if the dispute is resolved and the match can proceed. Fail otherwise.
 
 ---
 
-## TEST 33: Team invite
+## PART 11 — TEAMS AND PERMISSIONS
 
-What this is testing: That an admin user can invite a new team member to their organisation.
+---
 
-Why this matters: Organisations need to add staff. If invitations do not work, teams cannot be built.
+Test name: Inviting a team member
 
-Who should run this test: An admin user.
+What you are checking: Can an admin invite someone new to the organisation?
 
-What you need before starting: You must be signed in as an admin. You need a second email address for the invitee.
+Why it matters: Organisations need to add staff. If invitations do not work, teams cannot grow.
 
-Steps to follow:
-1. Navigate to the Team Management section in your account settings.
-2. Click "Invite Member" or similar.
-3. Enter the invitee's email address.
-4. Select a role (e.g., "Member").
+Who should do this: An admin user.
+
+Before you start: You must be signed in as an admin. Have a second email address ready.
+
+Do this:
+1. Go to Team Management in your account settings.
+2. Click "Invite Member."
+3. Enter the new person's email.
+4. Choose their role (e.g., "Member").
 5. Click Send.
-6. The invitee should receive an email with instructions to join.
+6. Check whether the person appears as "pending" in the team list.
+7. Check whether they receive an email with instructions.
 
-What should happen if the system is working properly: The invitation is sent. The invitee appears in the team list as "pending." The invitee receives an email.
+What good looks like: The invite is sent. The person shows as pending. They get an email.
 
-What to record if it does not work properly: Record whether the invite was sent. Record whether the invitee received the email. Record any errors.
+What bad looks like: The invite fails. No email arrives.
 
-Pass / fail rule: Pass if the invitation is sent and the invitee receives it. Fail if the invite fails or no email arrives.
+If it fails, write down: The error. Whether the email arrived.
+
+Pass or fail: Pass if the invite is sent and the email arrives. Fail otherwise.
 
 ---
 
-## TEST 34: Team member access and permissions
+Test name: Making sure team members have the right access
 
-What this is testing: That a team member with the "member" role can see their organisation's data but cannot perform admin-only actions.
+What you are checking: Can a regular team member see their organisation's data but not do admin things?
 
-Why this matters: Permission boundaries are critical for enterprise trust. A member must not be able to delete API keys, manage team members, or access admin settings.
+Why it matters: People in different roles should have different levels of access. A junior staff member should not be able to delete API keys or manage the team.
 
-Who should run this test: Two users — one admin, one member — in the same organisation.
+Who should do this: Two people — one admin, one regular member — in the same organisation.
 
-What you need before starting: An admin account and a member account in the same organisation.
+Before you start: An admin account and a member account.
 
-Steps to follow:
+Do this:
 1. Sign in as the member.
-2. Verify you can see the dashboard, matches, search, and your profile.
-3. Try to access the Team Management section. You should either not see it or be blocked.
-4. Try to access admin settings. You should be blocked.
-5. Try to delete an API key created by the admin. You should be blocked.
-6. Sign in as the admin and verify you CAN perform all these actions.
+2. Check you can see the dashboard, matches, search, and your own profile.
+3. Try to get to Team Management. You should not be able to.
+4. Try to get to admin settings. You should be blocked.
+5. Try to delete an API key the admin created. You should be blocked.
+6. Now sign in as the admin. Confirm you CAN do all of these things.
 
-What should happen if the system is working properly: The member can view data but cannot perform admin actions. The admin can perform all actions.
+What good looks like: The member can view data but cannot do admin tasks.
 
-What to record if it does not work properly: Record which admin actions the member was able to perform. This is a security issue.
+What bad looks like: The member can access admin functions. This is a security problem.
 
-Pass / fail rule: Pass if the member is blocked from admin actions. Fail if the member can perform any admin-only action.
+If it fails, write down: Which admin actions the member could perform.
 
----
-
-## TEST 35: Admin access
-
-What this is testing: That the admin panel is only accessible to users with admin privileges.
-
-Why this matters: The admin panel contains sensitive system-wide data. Unauthorised access is a serious security breach.
-
-Who should run this test: One admin user and one non-admin user.
-
-What you need before starting: An admin account and a non-admin account.
-
-Steps to follow:
-1. Sign in as the non-admin user.
-2. Try to navigate to the admin panel by typing the admin URL directly into the browser.
-3. You should be redirected away or see an access-denied message.
-4. Sign in as the admin user.
-5. Navigate to the admin panel. You should see it normally.
-
-What should happen if the system is working properly: Non-admin users cannot access the admin panel. They are redirected to the dashboard.
-
-What to record if it does not work properly: Record whether the non-admin user could see any admin content.
-
-Pass / fail rule: Pass if non-admin is blocked. Fail if non-admin can see admin content.
+Pass or fail: Pass if the member is blocked from admin actions. Fail if they are not.
 
 ---
 
-## TEST 36: Data export — full export
+Test name: Admin panel access control
 
-What this is testing: That a user can export their data (matches, audit logs, etc.) as a complete download.
+What you are checking: Can a non-admin get into the admin panel?
 
-Why this matters: Data portability is required for compliance and enterprise use. Exports must be complete and accurate.
+Why it matters: The admin panel has system-wide data. Only authorised people should see it.
 
-Who should run this test: Any signed-in user with existing data.
+Who should do this: One admin and one non-admin.
 
-What you need before starting: At least a few matches and audit log entries.
+Before you start: Both accounts ready.
 
-Steps to follow:
-1. Navigate to the data export section (may be in Settings or Account).
-2. Click "Export" or "Download."
+Do this:
+1. Sign in as the non-admin.
+2. Type the admin page address directly into the browser.
+3. You should be sent to the dashboard or see an access-denied message.
+4. Sign in as the admin.
+5. Go to the admin panel normally. It should load fine.
+
+What good looks like: Non-admins cannot access the admin panel.
+
+What bad looks like: Non-admins can see admin content.
+
+If it fails, write down: What the non-admin could see.
+
+Pass or fail: Pass if non-admin is blocked. Fail if they can see anything.
+
+---
+
+## PART 12 — DATA EXPORTS
+
+---
+
+Test name: Exporting your data
+
+What you are checking: Can you download a complete copy of your data?
+
+Why it matters: Data portability is a compliance requirement. The export must be accurate and complete.
+
+Who should do this: Anyone with some data in the system.
+
+Before you start: You need at least a few matches and audit log entries.
+
+Do this:
+1. Go to the data export section (look in Settings or Account).
+2. Click Export or Download.
 3. A file should download.
-4. Open the file.
-5. Check that the data matches what you see on screen.
+4. Open it.
+5. Compare it to what you see on screen. The numbers should match.
 
-What should happen if the system is working properly: The file downloads. It contains all your data. It is properly formatted (JSON or CSV). It is not truncated — if you have 50 records, the file should contain all 50.
+What good looks like: The file downloads. It has all your data. If you have 50 records, all 50 are in the file.
 
-What to record if it does not work properly: Record whether the file downloaded. Record whether it was empty or incomplete. Record how many records you expected versus how many were in the file.
+What bad looks like: The file is empty. Or it has fewer records than expected.
 
-Pass / fail rule: Pass if the file is complete and accurate. Fail if it is truncated, empty, or contains wrong data.
+If it fails, write down: Whether the file downloaded. How many records you expected versus how many are in the file.
 
----
-
-## TEST 37: CSV export from list views
-
-What this is testing: That the CSV download from list views (matches, audit logs) produces a correctly formatted file.
-
-Why this matters: CSV files are used for reporting, auditing, and integration with other tools. They must be correctly formatted.
-
-Who should run this test: Any signed-in user with data.
-
-What you need before starting: At least a few records in the list you are exporting.
-
-Steps to follow:
-1. Navigate to a list view (e.g., Matches).
-2. Click the "Export CSV" or "Download" button.
-3. Open the downloaded file in a spreadsheet program (Excel, Google Sheets).
-4. Check that all columns are properly separated.
-5. Check that special characters (commas, quotes, line breaks in data) are properly handled and do not break the formatting.
-6. Check whether the export contains only the current page or all records.
-
-What should happen if the system is working properly: The CSV file opens correctly in a spreadsheet. All columns align. Special characters are properly escaped. The file indicates if it only contains a subset of records.
-
-What to record if it does not work properly: Record whether columns were misaligned. Record whether special characters broke the format. Record how many records were exported versus how many exist.
-
-Pass / fail rule: Pass if the file is correctly formatted and complete (or clearly indicates partial export). Fail if the format is broken or data is silently truncated.
+Pass or fail: Pass if the data is complete and correct. Fail if it is missing records.
 
 ---
 
-## TEST 38: Audit trail visibility
+Test name: Downloading a CSV from a list
 
-What this is testing: That important actions create audit log entries that are visible to the user.
+What you are checking: Does the CSV file open correctly in Excel or Google Sheets?
 
-Why this matters: Audit trails are essential for compliance, dispute resolution, and trust. Every important action must be recorded.
+Why it matters: CSV files are used for reporting and auditing. If the format is broken, the file is useless.
 
-Who should run this test: Any signed-in user who has performed actions.
+Who should do this: Anyone with data.
 
-What you need before starting: You should have already performed several actions (created matches, uploaded documents, confirmed intent, etc.).
+Before you start: You need at least a few records.
 
-Steps to follow:
-1. Navigate to the Audit Logs section.
-2. Look for entries corresponding to your recent actions.
-3. Check that each entry includes: the action type, who performed it, when it happened, and what it was performed on.
-4. For a match creation, verify the audit log records the match ID.
-5. For a dispute, verify the audit log records the dispute creation.
+Do this:
+1. Go to a list view (like Matches).
+2. Click "Export CSV" or "Download."
+3. Open the file in a spreadsheet program.
+4. Check that all the columns line up.
+5. Check whether special characters (like commas or quotation marks in data) break the formatting.
+6. Check whether the file contains only the current page or all your records.
 
-What should happen if the system is working properly: Every important action has a corresponding audit log entry. Entries are in chronological order. Each entry contains enough detail to understand what happened.
+What good looks like: The file opens correctly. Columns are aligned. The file says if it only includes some of your records.
 
-What to record if it does not work properly: Record which actions are missing from the audit log. Record whether entries are incomplete.
+What bad looks like: Columns are jumbled. Or you have 200 records but the file only has 25 without telling you.
 
-Pass / fail rule: Pass if all important actions are logged with sufficient detail. Fail if any critical action is missing from the log.
+If it fails, write down: Whether columns were broken. How many records were in the file versus how many exist.
+
+Pass or fail: Pass if the format is correct and it is honest about how many records are included. Fail if the format is broken or records are silently missing.
 
 ---
 
-## TEST 39: Cross-organisation data isolation
+## PART 13 — AUDIT TRAIL
 
-What this is testing: That users in one organisation cannot see data belonging to a different organisation.
+---
 
-Why this matters: This is the most important security property of a multi-tenant platform. If Organisation A can see Organisation B's matches, documents, or billing data, the platform is fundamentally broken.
+Test name: Checking the audit trail
 
-Who should run this test: Two users in different organisations.
+What you are checking: Are all your important actions recorded in the audit log?
 
-What you need before starting: Two accounts in different organisations. Each organisation should have at least one match.
+Why it matters: In compliance and trade, you must be able to prove who did what and when. The audit trail is the proof.
 
-Steps to follow:
-1. Sign in as User A (Organisation Alpha).
-2. Note the matches, documents, and audit logs visible.
+Who should do this: Anyone who has performed several actions.
+
+Before you start: You should have created matches, uploaded documents, and confirmed intent (or at least attempted to).
+
+Do this:
+1. Go to the Audit Logs section.
+2. Look for entries that match your recent actions.
+3. For each entry, check that it shows: what happened, who did it, when, and what it related to (e.g., which match).
+4. Specifically look for a "match created" entry for a match you created.
+5. If you raised a dispute, look for a "dispute created" entry.
+
+What good looks like: Every important thing you did has a log entry. Entries are in time order. Each one has enough detail to understand what happened.
+
+What bad looks like: Some actions are missing. Entries are incomplete.
+
+If it fails, write down: Which actions are missing from the log.
+
+Pass or fail: Pass if all important actions are recorded with enough detail. Fail if any are missing.
+
+---
+
+## PART 14 — SECURITY AND ISOLATION
+
+---
+
+Test name: Making sure organisations cannot see each other's data
+
+What you are checking: Can a user in one organisation see matches, documents, or records belonging to a different organisation?
+
+Why it matters: This is the single most important security test. If Organisation A can see Organisation B's data, the platform cannot be trusted.
+
+Who should do this: Two people, each in a different organisation.
+
+Before you start: Two accounts in two different organisations. Each should have at least one match.
+
+Do this:
+1. Sign in as someone from Organisation Alpha.
+2. Write down the matches and data you can see.
 3. Sign out.
-4. Sign in as User B (Organisation Beta).
-5. Note the matches, documents, and audit logs visible.
-6. Verify that User B cannot see any of Organisation Alpha's data.
-7. Verify that User A cannot see any of Organisation Beta's data.
-8. Try to access a match belonging to the other organisation by entering its URL directly.
+4. Sign in as someone from Organisation Beta.
+5. Write down the matches and data you can see.
+6. Confirm that nothing from Organisation Alpha is visible.
+7. Try typing the web address of one of Organisation Alpha's matches directly into the browser.
+8. You should get an error or be redirected — you should absolutely not see the match.
 
-What should happen if the system is working properly: Each user only sees their own organisation's data. Attempting to access the other organisation's data by URL results in an error or redirect — NOT the data being shown.
+What good looks like: Complete separation. Each organisation only sees its own data. Direct URL access to the other organisation's data is blocked.
 
-What to record if it does not work properly: Record exactly what data from the other organisation was visible. This is a critical security issue.
+What bad looks like: Any data from the other organisation is visible.
 
-Pass / fail rule: Pass if complete isolation is maintained. Fail if any cross-organisation data is visible. This is a critical failure.
+If it fails, write down: Exactly what cross-organisation data was visible. This is a critical security failure.
 
----
-
-## TEST 40: Multi-user testing (same organisation)
-
-What this is testing: That two users in the same organisation can both work on the platform at the same time without interfering with each other.
-
-Why this matters: Teams work simultaneously. The platform must handle this without data conflicts.
-
-Who should run this test: Two users in the same organisation.
-
-What you need before starting: Two accounts in the same organisation.
-
-Steps to follow:
-1. Both users sign in at the same time on separate browsers or devices.
-2. User A creates a match.
-3. User B refreshes their matches list. The new match should appear.
-4. User B opens the match and adds deal terms.
-5. User A refreshes the match details. The deal terms should appear.
-6. Both users check the audit log. Both actions should be logged.
-
-What should happen if the system is working properly: Both users can work simultaneously. Changes made by one user are visible to the other after refresh. Audit logs reflect both users' actions.
-
-What to record if it does not work properly: Record whether changes were visible across users. Record any errors.
-
-Pass / fail rule: Pass if both users can work simultaneously and see each other's changes. Fail if changes are lost or not visible.
+Pass or fail: Pass if complete isolation is maintained. Fail if any data leaks across organisations.
 
 ---
 
-## TEST 41: Error states
-
-What this is testing: That when something goes wrong, the platform shows a clear, helpful error message — not a blank screen, a cryptic error, or nothing at all.
-
-Why this matters: Errors happen. The user must know what went wrong and what to do about it.
-
-Who should run this test: Any signed-in user.
-
-What you need before starting: You must be signed in.
-
-Steps to follow:
-1. Try to access a match that does not exist by entering a made-up match ID in the URL.
-2. You should see a "not found" message, not a blank screen or crash.
-3. Try to submit a form with required fields left empty.
-4. You should see validation messages on the empty fields.
-5. Disconnect your internet connection and try to perform an action.
-6. You should see a network error message, not a silent failure.
-
-What should happen if the system is working properly: Each error scenario shows a clear, specific message. The user is never left guessing.
-
-What to record if it does not work properly: Record which error showed a blank screen, a crash, or no message at all.
-
-Pass / fail rule: Pass if all error scenarios show clear messages. Fail if any scenario shows a blank screen, crash, or silent failure.
+## PART 15 — WORKING TOGETHER
 
 ---
 
-## TEST 42: Empty states
+Test name: Two people working at the same time in the same organisation
 
-What this is testing: That when there is no data to display (e.g., no matches, no documents), the platform shows a helpful empty state — not a blank area.
+What you are checking: Can two colleagues use the platform at the same time without stepping on each other's toes?
 
-Why this matters: A blank section makes users think the page is broken. An empty state with guidance helps users understand what to do next.
+Why it matters: Teams work simultaneously. The platform must handle this without losing data.
 
-Who should run this test: A new user with no data, or test specific sections that have no data.
+Who should do this: Two people in the same organisation.
 
-What you need before starting: A section with no data (e.g., a new account with no matches).
+Before you start: Two accounts in the same organisation.
 
-Steps to follow:
-1. Navigate to each major section: Matches, Documents, Audit Logs, Billing, Team.
-2. If any section has no data, check whether it shows a helpful message like "No matches yet" or "Get started by creating your first match."
-3. There should NOT be a completely blank area.
+Do this:
+1. Both sign in at the same time on different computers.
+2. Person A creates a match.
+3. Person B refreshes their match list. The new match should appear.
+4. Person B opens the match and adds deal terms.
+5. Person A refreshes the match details. The deal terms should appear.
+6. Both check the audit log. Both actions should be logged.
 
-What should happen if the system is working properly: Every section without data shows a clear empty state message with guidance on what to do next.
+What good looks like: Both people can work at the same time. Changes show up after refresh. Both actions are in the audit log.
 
-What to record if it does not work properly: Record which sections show blank areas instead of empty states.
+What bad looks like: Changes are invisible to the other person. Or data is lost.
 
-Pass / fail rule: Pass if all empty sections show helpful messages. Fail if any section is completely blank when empty.
+If it fails, write down: Which changes were not visible. Any errors.
 
----
-
-## TEST 43: Loading states
-
-What this is testing: That when data is loading, the user sees a loading indicator — not a blank page or stale data.
-
-Why this matters: Without loading indicators, users do not know whether the platform is working or broken.
-
-Who should run this test: Any signed-in user.
-
-What you need before starting: You must be signed in.
-
-Steps to follow:
-1. Navigate to each major section.
-2. Watch for loading indicators (spinners, skeleton loaders, progress bars) as pages load.
-3. On a slow connection (you can simulate this in your browser's developer tools), check that loading indicators appear and persist until data loads.
-
-What should happen if the system is working properly: Every page shows a loading indicator while data is being fetched. The indicator disappears when data appears.
-
-What to record if it does not work properly: Record which pages show blank content during loading.
-
-Pass / fail rule: Pass if all pages show loading indicators. Fail if any page shows a blank area while loading.
+Pass or fail: Pass if both can work simultaneously and see each other's changes. Fail if data is lost or invisible.
 
 ---
 
-## TEST 44: Browser refresh during form entry
-
-What this is testing: That if a user accidentally refreshes the browser while filling out a form, their data is preserved or they are warned.
-
-Why this matters: Losing form data is frustrating and wastes time. Enterprise users expect data to be preserved during interruptions.
-
-Who should run this test: Any signed-in user.
-
-What you need before starting: You must be signed in and navigating to a form (e.g., deal terms).
-
-Steps to follow:
-1. Open a form such as deal terms or match creation.
-2. Fill in some fields but do NOT submit.
-3. Press F5 or click the browser refresh button.
-4. Check whether a "you have unsaved changes" warning appears.
-5. If the warning appears, click Cancel to stay on the page. Verify your data is still there.
-6. If no warning appears, check whether the data was preserved via draft saving.
-
-What should happen if the system is working properly: Either a warning dialog appears before refresh, or the form data is automatically saved as a draft and restored when the page reloads.
-
-What to record if it does not work properly: Record whether the warning appeared. Record whether data was lost.
-
-Pass / fail rule: Pass if data is warned about or preserved. Fail if data is silently lost.
+## PART 16 — WHAT HAPPENS WHEN THINGS GO WRONG
 
 ---
 
-## TEST 45: Close browser tab during form entry
+Test name: Error messages
 
-What this is testing: That closing the browser tab while filling out a form warns the user about unsaved changes.
+What you are checking: When something goes wrong, does the platform tell you clearly?
 
-Why this matters: Same reason as Test 44. Accidental tab closure is common.
+Why it matters: Errors are inevitable. What matters is that the user is never left staring at a blank screen wondering what happened.
 
-Who should run this test: Any signed-in user.
+Who should do this: Any signed-in user.
 
-What you need before starting: You must be signed in and on a form.
+Before you start: Sign in.
 
-Steps to follow:
-1. Open a form and fill in some fields.
+Do this:
+1. Type a made-up match reference into the URL and press Enter. You should see a "not found" message — not a crash or blank page.
+2. Try to submit a form with required fields left empty. You should see messages on the empty fields.
+3. Turn off your internet and try to do something. You should see a network error message — not silence.
+
+What good looks like: Every error shows a clear, specific message.
+
+What bad looks like: A blank screen. A crash. Or nothing at all — the action just silently fails.
+
+If it fails, write down: Which scenario produced a bad result.
+
+Pass or fail: Pass if all errors show clear messages. Fail if any show a blank screen, crash, or nothing.
+
+---
+
+Test name: Empty pages
+
+What you are checking: When a section has no data yet, does the platform explain that?
+
+Why it matters: A completely blank area looks broken. A message like "No matches yet — create your first one" is helpful.
+
+Who should do this: A new user, or test sections that have no data.
+
+Before you start: Find a section with no data.
+
+Do this:
+1. Go through each main section: Matches, Documents, Audit Logs, Billing, Team.
+2. If a section has no data, check whether it shows a helpful message.
+3. It should NOT be a completely blank area.
+
+What good looks like: Every empty section has a message with guidance.
+
+What bad looks like: A blank area with no explanation.
+
+If it fails, write down: Which sections were blank.
+
+Pass or fail: Pass if all empty sections have messages. Fail if any are blank.
+
+---
+
+Test name: Loading indicators
+
+What you are checking: When data is loading, do you see a spinner or other indicator?
+
+Why it matters: Without a loading indicator, you cannot tell if the platform is working or stuck.
+
+Who should do this: Any signed-in user.
+
+Before you start: Sign in.
+
+Do this:
+1. Navigate to each main section.
+2. Watch for a spinner, progress bar, or grey placeholder shapes while data loads.
+3. The indicator should disappear when the data appears.
+
+What good looks like: Every page shows a loading indicator while fetching data.
+
+What bad looks like: A blank page while data loads.
+
+If it fails, write down: Which pages showed nothing during loading.
+
+Pass or fail: Pass if all pages show loading indicators. Fail if any are blank during loading.
+
+---
+
+Test name: Refreshing the page while filling in a form
+
+What you are checking: If you accidentally hit refresh while entering information, do you lose everything?
+
+Why it matters: Losing your work because of an accidental refresh is frustrating, especially when entering complex deal terms.
+
+Who should do this: Any signed-in user.
+
+Before you start: Go to a form like deal terms.
+
+Do this:
+1. Open a form and fill in some fields but do NOT save.
+2. Press F5 (or the refresh button).
+3. Check whether a "you have unsaved changes" warning appeared.
+4. If it did, click Cancel to stay. Check your data is still there.
+5. If no warning appeared, check whether the data was automatically saved and restored.
+
+What good looks like: Either a warning stops the refresh, or your data is preserved automatically.
+
+What bad looks like: Everything you entered is silently lost.
+
+If it fails, write down: Whether a warning appeared. Whether data was lost.
+
+Pass or fail: Pass if data is protected. Fail if it is silently lost.
+
+---
+
+Test name: Closing the browser tab while filling in a form
+
+What you are checking: Same as above, but for accidentally closing the tab.
+
+Why it matters: Tab closure is even more common than accidental refresh.
+
+Who should do this: Any signed-in user.
+
+Before you start: Go to a form.
+
+Do this:
+1. Fill in some fields.
 2. Try to close the browser tab.
-3. A browser warning should appear asking if you want to leave.
+3. A "leave page?" warning should appear.
 
-What should happen if the system is working properly: A "leave page?" warning appears.
+What good looks like: The warning appears.
 
-What to record if it does not work properly: Record whether the warning appeared or whether the tab closed without warning.
+What bad looks like: The tab closes without warning.
 
-Pass / fail rule: Pass if a warning appears. Fail if the tab closes without warning.
+If it fails, write down: Whether the warning appeared.
 
----
-
-## TEST 46: Network disconnection during action
-
-What this is testing: That if the network drops while the user is performing an action (e.g., saving deal terms), the platform handles it gracefully.
-
-Why this matters: Network interruptions happen frequently, especially on mobile. The system must not silently fail.
-
-Who should run this test: A user comfortable with temporarily disconnecting their internet.
-
-What you need before starting: You must be signed in and ready to perform an action.
-
-Steps to follow:
-1. Start filling in a form (e.g., deal terms).
-2. Disconnect your internet (turn off Wi-Fi or unplug the cable).
-3. Click Save or Submit.
-4. You should see a network error message within 15 seconds.
-5. Reconnect your internet.
-6. Try the action again. It should succeed.
-
-What should happen if the system is working properly: The action fails with a clear network error message. Reconnecting and retrying works. No partial or corrupted data is saved.
-
-What to record if it does not work properly: Record whether an error appeared. Record how long it took. Record whether partial data was saved.
-
-Pass / fail rule: Pass if the error is shown within 15 seconds and retry works. Fail if the action silently fails, hangs indefinitely, or saves partial data.
+Pass or fail: Pass if a warning appears. Fail if the tab closes silently.
 
 ---
 
-## TEST 47: Pagination and large data volumes
+Test name: Losing your internet connection during an action
 
-What this is testing: That when there are many records (more than one page), the platform correctly paginates and tells the user how many records exist in total.
+What you are checking: If your internet drops while you are saving something, does the platform handle it gracefully?
 
-Why this matters: If the platform silently shows only the first page without telling you there are more, you might think you only have 25 matches when you actually have 200.
+Why it matters: This happens regularly, especially on mobile or unreliable connections.
 
-Who should run this test: A user with a large number of records (at least 30 matches or audit log entries).
+Who should do this: Someone comfortable turning their internet off and on.
 
-What you need before starting: An account with enough data to span multiple pages.
+Before you start: Sign in and go to a form.
 
-Steps to follow:
-1. Navigate to a list view (Matches, Audit Logs).
-2. Check whether the total count is displayed (e.g., "Showing 1-25 of 87").
-3. Navigate to the next page.
-4. Verify the records are different from the first page.
-5. Navigate to the last page.
-6. Verify the records end at the expected total.
+Do this:
+1. Start filling in a form.
+2. Turn off your internet.
+3. Click Save.
+4. You should see a network error within about 15 seconds.
+5. Turn your internet back on.
+6. Try again. It should work.
 
-What should happen if the system is working properly: The total count is displayed. Pagination controls work. Records are correctly divided across pages. The user is never left thinking they are seeing all records when they are only seeing one page.
+What good looks like: A clear error appears quickly. Reconnecting and retrying works. No garbled data is saved.
 
-What to record if it does not work properly: Record whether the total count was shown. Record whether pagination controls were present. Record whether the same records appeared on multiple pages.
+What bad looks like: The platform hangs forever. Or it silently fails. Or it saves partial, corrupted data.
 
-Pass / fail rule: Pass if total count is shown and pagination works correctly. Fail if data is silently truncated or pagination is missing.
+If it fails, write down: Whether the error appeared. How long it took. Whether the retry worked.
 
----
-
-## TEST 48: Full end-to-end journey — single user
-
-What this is testing: The complete lifecycle from sign-up to confirmed intent.
-
-Why this matters: This proves the platform works as a complete product, not just as individual features.
-
-Who should run this test: A new tester who has never used the platform before.
-
-What you need before starting: A fresh email address. A web browser.
-
-Steps to follow:
-1. Sign up with a new email (Test 1).
-2. Verify your email (Test 2).
-3. Sign in (Test 3).
-4. Complete onboarding (Test 9).
-5. Create an API key (Test 10).
-6. Run a search (Test 11).
-7. Create a match (Test 13).
-8. Add deal terms to the match (Test 16).
-9. Upload a document to the match (Test 19).
-10. Purchase credits via the billing page (Test 27).
-11. Confirm intent on the match (Test 22).
-12. Check the audit log for all your actions (Test 38).
-13. Export your data (Test 36).
-
-What should happen if the system is working properly: Every step succeeds. Each step builds on the previous one. The final audit log shows a complete history. The data export contains everything.
-
-What to record if it does not work properly: Record the step number where the journey broke. Record the exact error. Record what you had to do to work around it.
-
-Pass / fail rule: Pass if all 13 steps complete without errors. Fail if any step blocks progress.
+Pass or fail: Pass if you see an error within 15 seconds and retry works. Fail otherwise.
 
 ---
 
-## TEST 49: Full end-to-end journey — two organisations
+Test name: Handling large amounts of data
 
-What this is testing: The complete lifecycle involving two separate organisations interacting on a match.
+What you are checking: When there are lots of records, does the platform show them across multiple pages and tell you the total?
 
-Why this matters: The platform is designed for two parties to interact. This must work across organisation boundaries.
+Why it matters: If the platform shows you 25 matches but you actually have 200, and there is no indication that more exist, you might make decisions based on incomplete information.
 
-Who should run this test: Two testers, each in a different organisation.
+Who should do this: Someone with a lot of data (at least 30 records in one section).
 
-What you need before starting: Two separate organisation accounts, each with at least one user.
+Before you start: An account with enough data to fill more than one page.
 
-Steps to follow:
+Do this:
+1. Go to a list view (like Matches or Audit Logs).
+2. Look for a count (like "Showing 1–25 of 87").
+3. Click Next or go to the next page.
+4. Check that the records are different.
+5. Go to the last page and check the records end where expected.
+
+What good looks like: The total is shown. Pages work. Records are correctly split across pages.
+
+What bad looks like: No total is shown. Or the same records appear on every page. Or there are no page controls.
+
+If it fails, write down: Whether the total was shown. Whether pages worked.
+
+Pass or fail: Pass if the total is shown and pagination works. Fail if data is silently cut off.
+
+---
+
+## PART 17 — THE FULL JOURNEY
+
+---
+
+Test name: Complete single-user journey
+
+What you are checking: Can one person go from sign-up to confirmed intent without anything breaking?
+
+Why it matters: This proves the platform works as a complete product, not just a collection of separate features.
+
+Who should do this: A fresh tester who has never used the platform before.
+
+Before you start: A new email address and a web browser.
+
+Do this:
+1. Sign up with the new email.
+2. Verify your email.
+3. Sign in.
+4. Go through onboarding.
+5. Create an API key.
+6. Run a search.
+7. Create a match.
+8. Add deal terms.
+9. Upload a document.
+10. Buy credits.
+11. Confirm intent on the match.
+12. Check the audit log for all your actions.
+13. Export your data.
+
+What good looks like: Every single step works. Each step builds on the one before. The audit log shows a complete history. The export contains everything.
+
+What bad looks like: The journey breaks at any step.
+
+If it fails, write down: The step number where it broke. The exact error. What you did to try to get past it.
+
+Pass or fail: Pass if all 13 steps work without errors. Fail if any step blocks you.
+
+---
+
+Test name: Complete two-organisation journey
+
+What you are checking: Can two organisations interact through the platform on the same deal?
+
+Why it matters: The platform exists to connect two parties. This must work across organisation boundaries.
+
+Who should do this: Two people, each in a different organisation.
+
+Before you start: Two separate organisation accounts.
+
+Do this:
 1. Org A creates a match involving Org B.
-2. Org B signs in and checks whether the match is visible to them.
+2. Org B signs in and checks whether the match is visible.
 3. Org A adds deal terms.
 4. Org B reviews the deal terms.
 5. Org A uploads a document and shares it with Org B.
@@ -1274,114 +1431,106 @@ Steps to follow:
 10. Org B confirms intent.
 11. Both organisations check their audit logs.
 
-What should happen if the system is working properly: Both organisations can interact with the same match. Data shared between them is visible to both. Data NOT shared remains private. Audit logs in both organisations reflect the full history.
+What good looks like: Both sides can participate in the same match. Shared data is visible. Private data stays private. Both audit logs tell the full story.
 
-What to record if it does not work properly: Record which step failed and for which organisation. Record any data visibility issues.
+What bad looks like: Any step fails. Or data leaks across organisations.
 
-Pass / fail rule: Pass if both organisations can complete their respective steps and audit logs are accurate. Fail if any step fails or data isolation is broken.
+If it fails, write down: Which step failed. For which organisation. Any data that should not have been visible.
 
----
-
-## MINIMUM TESTS THAT MUST PASS BEFORE LIMITED LIVE TESTING
-
-Test 1: Sign up
-Test 2: Email verification
-Test 3: Sign in
-Test 4: Sign out
-Test 9: Onboarding
-Test 10: API key creation
-Test 11: Search
-Test 13: Match creation
-Test 15: Match details page
-Test 16: Deal terms create and save
-Test 38: Audit trail visibility
-Test 41: Error states
-Test 42: Empty states
-Test 43: Loading states
+Pass or fail: Pass if both organisations complete their steps and audit logs are accurate. Fail if any step fails or data isolation breaks.
 
 ---
 
-## MINIMUM TESTS THAT MUST PASS BEFORE SERIOUS CLIENT DEMO
-
-All of the above, plus:
-
-Test 5: Password reset request
-Test 6: Password reset completion
-Test 14: Duplicate match prevention
-Test 19: Document upload
-Test 22: Confirm intent
-Test 25: Credit balance display
-Test 26: Billing page
-Test 31: Dispute — raise
-Test 32: Dispute — resolve
-Test 36: Data export
-Test 37: CSV export
-Test 47: Pagination
-Test 48: Full end-to-end journey — single user
+## READINESS GATES
 
 ---
 
-## MINIMUM TESTS THAT MUST PASS BEFORE MULTI-USER INTERNAL TESTING
+Before limited live testing, these must pass:
+- Creating a new account
+- Email verification
+- Signing in
+- Signing out
+- Onboarding
+- API key creation
+- Running a search
+- Creating a match
+- Match details page
+- Saving deal terms
+- Audit trail
+- Error messages
+- Empty pages
+- Loading indicators
 
-All of the above, plus:
+Before a serious client demonstration, add these:
+- Password reset (request and completion)
+- Duplicate match prevention
+- Document upload
+- Confirming intent
+- Credit balance display
+- Billing page
+- Raising a dispute
+- Resolving a dispute
+- Data export
+- CSV export
+- Pagination
+- Complete single-user journey
 
-Test 18: Deal terms conflict handling
-Test 33: Team invite
-Test 34: Team member access and permissions
-Test 35: Admin access
-Test 39: Cross-organisation data isolation
-Test 40: Multi-user same organisation
-Test 49: Full end-to-end journey — two organisations
+Before multi-user internal testing, add these:
+- Deal terms conflict handling
+- Team invite
+- Team member access and permissions
+- Admin panel access control
+- Cross-organisation data isolation
+- Two people working at the same time
+- Complete two-organisation journey
+
+Before enterprise rollout, add these:
+- Password change from settings
+- Session expiry
+- Search interruption
+- Deal terms version history
+- Invalid file upload
+- Document sharing and revocation
+- Confirming intent with no credits
+- Bulk confirming intent
+- Buying credits successfully
+- Cancelling a payment
+- Payment failure
+- Double payment protection
+- Browser refresh during form entry
+- Closing tab during form entry
+- Network disconnection
+- Large data volumes
 
 ---
 
-## MINIMUM TESTS THAT MUST PASS BEFORE ENTERPRISE-GRADE ROLLOUT
+## WHAT TO CAPTURE IF A TEST FAILS
 
-All of the above, plus:
+For every failed test, record:
 
-Test 7: Password change
-Test 8: Session expiry
-Test 12: Search interruption
-Test 17: Deal terms version history
-Test 20: Invalid file upload
-Test 21: Document access and revocation
-Test 23: Confirm intent — insufficient credits
-Test 24: Bulk confirm intent
-Test 27: Billing — successful payment
-Test 28: Payment cancellation
-Test 29: Payment failure
-Test 30: Double payment protection
-Test 44: Browser refresh during form entry
-Test 45: Close tab during form entry
-Test 46: Network disconnection during action
-
----
-
-## EVIDENCE THE TESTER SHOULD CAPTURE FOR FAILED TESTS
-
-For every test that fails, capture and record the following:
-
-1. The test number and name.
+1. The test name.
 2. The date and time.
-3. The browser and device used.
-4. The email address of the account used.
-5. A screenshot of the error or unexpected result.
-6. The exact text of any error message.
-7. What you expected to see.
-8. What you actually saw.
-9. Whether you were able to work around the issue.
-10. Whether the issue is repeatable (does it happen every time or only sometimes).
+3. Which browser you used (Chrome, Safari, Firefox, etc.) and which device (laptop, phone, tablet).
+4. The email address of the account you used.
+5. A screenshot of what you saw.
+6. The exact words of any error message.
+7. What you expected to happen.
+8. What actually happened.
+9. Whether you found a workaround.
+10. Whether it happens every time or only sometimes.
 
-Save screenshots in a folder named "Test Results — [Date]" and name each file with the test number (e.g., "Test-22-confirm-intent-failure.png").
+Save screenshots in a folder called "Test Results — [Date]" and name each file after the test (e.g., "Confirming intent — error.png").
 
 ---
 
-## FINAL NOTE TO THE CLIENT
+## A NOTE ON WHAT THIS TEST PACK IS FOR
 
-A system that handles KYC verification, trade compliance, commercial intent records, audit trails, financial credits, and dispute resolution cannot be validated by looking at it. It must be proven through live behaviour.
+This platform handles trade compliance, commercial intent records, financial credits, audit trails, and dispute resolution. These are serious things with real consequences.
 
-This test script exists because the platform makes promises — promises about data accuracy, security boundaries, financial correctness, and audit completeness. Each test above is designed to verify one of those promises under realistic conditions.
+A platform like this cannot be judged by how it looks. It must be judged by how it behaves — under normal conditions, under pressure, and when things go wrong.
 
-A platform that passes all of these tests is a platform that can be trusted. A platform that fails any of the critical tests — especially cross-organisation data isolation, credit accuracy, or audit trail completeness — must not be presented to clients until those failures are resolved.
+This test pack exists to prove that behaviour. Every test checks a promise the platform makes: that records are accurate, that access is controlled, that money is handled correctly, and that there is always a trail of evidence.
 
-The purpose of this testing is not to find cosmetic issues. It is to prove that the system is truthful, recoverable, and hard to break. That is the standard.
+If every test in this pack passes, the platform can be trusted. If critical tests fail — especially around data isolation, credit accuracy, or audit completeness — those failures must be fixed before the platform is shown to clients.
+
+Trust is earned through proof, not polish. This is the proof.
