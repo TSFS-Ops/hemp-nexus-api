@@ -10,24 +10,24 @@
   :root {
     /* #FFFFFF — clean white */
     --background: 0 0% 100%;
-    /* #1F2933 — deep blue-charcoal */
-    --foreground: 210 24% 16%;
+    /* #111827 — rich near-black for maximum readability */
+    --foreground: 220 26% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 24% 16%;
+    --card-foreground: 220 26% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 24% 16%;
+    --popover-foreground: 220 26% 11%;
 
-    /* #1F4D3A — deep forest green (governance / signals) */
-    --primary: 155 42% 21%;
+    /* #1B4533 — brand dark green */
+    --primary: 155 44% 19%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 13% 95%;
-    --secondary-foreground: 210 24% 20%;
+    --secondary-foreground: 220 26% 14%;
 
     --muted: 220 13% 95%;
-    /* #6B7280 — neutral grey */
+    /* #6B7280 — mid-dark grey for secondary text & placeholders */
     --muted-foreground: 220 9% 46%;
 
     --accent: 220 13% 93%;
