@@ -39,14 +39,12 @@ export default function Landing() {
     const queryString = [data.product, data.location].filter(Boolean).join(" ");
     setLastQuery(queryString);
 
-    // If authenticated, redirect to real search in the console
     if (isAuthenticated) {
       const params = new URLSearchParams({ q: queryString });
       window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
 
-    // Unauthenticated: show scanning animation then gate behind sign-in
     setIsSearching(true);
     setIsFormLocked(true);
     setHasSearched(true);
@@ -86,7 +84,7 @@ export default function Landing() {
       <AnimatedBackground />
       <PublicHeader />
 
-      {/* Panel 1: Hero — Stat + Headline + Search */}
+      {/* Panel 1: Hero — Explanation first, then search below */}
       <HeroSection
         isSearching={isSearching}
         isFormLocked={isFormLocked}
@@ -97,46 +95,84 @@ export default function Landing() {
         onSignIn={navigateToAuth}
       />
 
-      {/* Panel 2: Market Signal Ticker */}
+      {/* Panel 2: Market Signal Ticker (bottom strip — Section 4B) */}
       <CommodityTicker />
 
       {/* Panel 3: Capabilities Grid */}
       <CapabilitiesGrid />
 
-      {/* Panel 4: Stats Bar */}
-      <StatsBar />
-
-      {/* Panel 5: Social Proof */}
-      <SocialProof />
-
-      {/* Panel 6: How It Works */}
+      {/* Panel 4: Full Workflow — KYC → Analysis → Counterparty → POI → WaD */}
       <section id="how-it-works" className="py-20 sm:py-28 px-4 sm:px-6 border-t border-border">
         <div className="max-w-[1280px] mx-auto">
           <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block animate-fade-up">
-            Workflow
+            Full Workflow
           </span>
-          <h2 className="text-foreground mb-12 tracking-tighter animate-fade-up delay-75">How it works</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border">
+          <h2 className="text-foreground mb-4 tracking-tighter animate-fade-up delay-75">How it works</h2>
+          <p className="text-[13px] text-muted-foreground max-w-lg leading-relaxed mb-12 animate-fade-up delay-100">
+            Five governed stages take you from first search to settlement-ready evidence — every step auditable, every decision verifiable.
+          </p>
+
+          {/* 5-step workflow grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-0 border border-border">
             {[
-              { step: "01", title: "Search", desc: "Describe what you're looking for — product, volume, price, and location. Izenzo searches verified counterparty sources and returns ranked results." },
-              { step: "02", title: "Match & Signal", desc: "Select a counterparty and create a match. When you're ready, confirm your intent — a verifiable, auditable record that signals serious interest." },
-              { step: "03", title: "Evidence & Compliance", desc: "Upload documents, complete compliance checks, and download a tamper-evident evidence pack for your records. Every step is hashed and chain-linked." },
+              {
+                step: "01",
+                title: "KYC & Eligibility",
+                desc: "Complete identity verification, sanctions screening, and eligibility checks before entering the marketplace. Every entity is verified against registered data sources.",
+              },
+              {
+                step: "02",
+                title: "Analysis & Discovery",
+                desc: "Search across verified counterparty sources with structured queries — product, volume, price, and corridor. Results are ranked by relevance and compliance readiness.",
+              },
+              {
+                step: "03",
+                title: "Counterparty Match",
+                desc: "Select a counterparty and create a governed match. Both parties are linked in a verifiable record with full audit trail and compliance checkpoint.",
+              },
+              {
+                step: "04",
+                title: "Proof-of-Intention",
+                desc: "Signal serious intent with a cryptographically signed POI. Your commitment is recorded as a tamper-evident, hash-linked governance event — not a soft enquiry.",
+              },
+              {
+                step: "05",
+                title: "WaD & Settlement",
+                desc: "Progress through the Willingness-and-Delivery workflow. Upload documents, complete compliance checks, and generate court-grade evidence packs for settlement.",
+              },
             ].map((item, i) => (
               <div
                 key={item.step}
-                className={`p-6 sm:p-8 ${i > 0 ? "sm:border-l border-t sm:border-t-0 border-border" : ""} group hover:bg-accent/20 transition-colors duration-300 animate-fade-up`}
-                style={{ animationDelay: `${i * 80}ms` }}
+                className={`p-5 sm:p-6 group hover:bg-accent/20 transition-colors duration-300 animate-fade-up
+                           ${i > 0 ? "sm:border-l border-t sm:border-t-0 border-border" : ""}`}
+                style={{ animationDelay: `${i * 70}ms` }}
               >
-                <span className="text-[28px] font-mono font-bold text-primary/80 tracking-tighter block mb-4 group-hover:text-primary transition-colors">
+                <span className="text-[24px] sm:text-[28px] font-mono font-bold text-primary/80 tracking-tighter block mb-3 group-hover:text-primary transition-colors">
                   {item.step}
                 </span>
-                <h3 className="text-foreground mb-2.5 tracking-tighter">{item.title}</h3>
-                <p className="text-[12px] text-muted-foreground leading-relaxed">{item.desc}</p>
+                <h3 className="text-[14px] font-semibold text-foreground mb-2 tracking-tighter leading-tight">{item.title}</h3>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Workflow connector line (visual) */}
+          <div className="hidden sm:flex items-center justify-between mt-4 px-6">
+            {[1, 2, 3, 4, 5].map((n, i) => (
+              <div key={n} className="flex items-center gap-0 flex-1">
+                <div className={`h-2 w-2 rounded-full border-2 border-primary ${i === 0 ? "bg-primary" : "bg-background"}`} />
+                {i < 4 && <div className="flex-1 h-px bg-border" />}
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Panel 5: Stats Bar */}
+      <StatsBar />
+
+      {/* Panel 6: Social Proof */}
+      <SocialProof />
 
       {/* Panel 7: Developer Access */}
       <DeveloperAccessPanel />
