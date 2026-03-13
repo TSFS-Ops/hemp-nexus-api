@@ -141,10 +141,10 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
       .limit(20);
 
     expect(error).toBeNull();
-    // Dispute.raised trigger writes to audit_logs — verify query succeeds
+    // RLS policy "Org members can view own audit logs" grants SELECT for own org
+    // audit_dispute_creation trigger writes dispute.raised to audit_logs
     const actions = (logs ?? []).map((r: { action: string }) => r.action);
-    console.info(`[UAT 3.5] Audit actions for org: ${actions.join(", ") || "(none visible — RLS may restrict)"}`);
-    // The trigger writes with raised_by_org_id which matches our org
-    expect(Array.isArray(logs)).toBe(true);
+    expect(actions.length).toBeGreaterThanOrEqual(1);
+    expect(actions).toContain("dispute.raised");
   });
 });

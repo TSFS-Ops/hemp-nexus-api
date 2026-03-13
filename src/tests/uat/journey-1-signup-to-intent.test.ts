@@ -217,12 +217,8 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
 
     expect(error).toBeNull();
     const actions = (data ?? []).map((r: { action: string }) => r.action);
-    // RLS scopes to own org — audit log should contain match.created
-    if (actions.length > 0) {
-      expect(actions).toContain("match.created");
-    } else {
-      // Audit log may be written by service_role and not visible to authenticated user
-      console.warn("[UAT 1.11] No audit logs visible — RLS may restrict access");
-    }
+    // RLS policy "Org members can view own audit logs" grants SELECT for own org
+    expect(actions.length).toBeGreaterThanOrEqual(1);
+    expect(actions).toContain("match.created");
   });
 });
