@@ -156,6 +156,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
   const isOrgMember = roles.includes(APP_ROLES.ORG_MEMBER) || isOrgAdmin;
 
+  /** Temporarily suppress session-expiry redirect (e.g. during password change) */
+  const suppressExpiry = useCallback(() => {
+    suppressExpiryRef.current = true;
+    // Auto-reset after 10s in case the flag isn't cleared
+    setTimeout(() => { suppressExpiryRef.current = false; }, 10000);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -170,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         signOut,
         refreshSession,
+        suppressExpiry,
       }}
     >
       {children}
