@@ -113,6 +113,14 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!res.ok) {
+    // Global 401 handler: expired session → redirect to auth with returnTo
+    if (res.status === 401) {
+      const currentPath = window.location.pathname + window.location.search;
+      const returnTo = encodeURIComponent(currentPath);
+      window.location.href = `/auth?returnTo=${returnTo}`;
+      // Throw so calling code stops execution
+      throw new AuthRequiredError();
+    }
     throw await ApiError.fromResponse(res);
   }
 

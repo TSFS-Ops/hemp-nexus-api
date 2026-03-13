@@ -165,12 +165,17 @@ export default function CounterpartySearch() {
     });
   };
 
-  const handleStartPOI = async () => {
+  const handleCreateMatchClick = () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one counterparty");
       return;
     }
+    setShowDraftDialog(true);
+  };
 
+  const handleConfirmDraftCreation = async () => {
+    setShowDraftDialog(false);
+    if (selectedResults.size === 0) return;
     if (isConfirming) return;
 
     setIsConfirming(true);
@@ -253,15 +258,18 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: { amount: 0, unit: "TBD" },
-                price: { amount: 0, currency: "TBD" },
-                terms: "Draft — counterparty discovered via search. Quantity, price, and terms to be confirmed during negotiation.",
+                // No quantity or price — this is a draft match.
+                // Commercial terms will be added during negotiation.
+                quantity: null,
+                price: null,
+                terms: null,
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
                   isDraft: true,
+                  draftReason: "Created from search — commercial terms to be confirmed during negotiation.",
                 }
               }),
             }
@@ -301,15 +309,15 @@ export default function CounterpartySearch() {
       const total = created + duplicates + failed;
       if (failed === 0 && duplicates === 0) {
         if (created === 1 && lastMatchId) {
-          toast.success("Match created — upload documents, then confirm intent.");
+          toast.success("Draft match created — add commercial terms and documents, then confirm intent.");
           navigate(`/dashboard/matches/${lastMatchId}`);
         } else {
-          toast.success(`${created} matches created. View them in your matches.`);
+          toast.success(`${created} draft matches created. Add commercial terms in each match before confirming intent.`);
           navigate("/dashboard/matches");
         }
       } else if (failed === 0) {
         if (created > 0) {
-          toast.success(`${created} new match${created > 1 ? "es" : ""} created. ${duplicates} already existed and were skipped.`);
+          toast.success(`${created} new draft match${created > 1 ? "es" : ""} created. ${duplicates} already existed and were skipped.`);
         } else {
           toast.info(`All ${duplicates} match${duplicates > 1 ? "es" : ""} already exist — no duplicates created. View them in your matches.`);
         }

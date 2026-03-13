@@ -288,11 +288,12 @@ export function MatchesList() {
         toast.error(`All ${failed} confirmations failed: ${errors[0] || "Unknown error"}`);
       }
 
-      // Keep only failed IDs selected for retry
+      // Keep only failed IDs selected for retry (batch key persists for retry)
       if (failedIds.length > 0) {
         setSelectedMatches(new Set(failedIds));
       } else {
         setSelectedMatches(new Set());
+        setBulkBatchKey(null); // Reset batch key on full success
       }
       setShowSettleDialog(false);
       refetch();
