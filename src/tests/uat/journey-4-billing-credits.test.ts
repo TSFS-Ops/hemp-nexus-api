@@ -110,7 +110,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
     const { error } = await supabase.rpc("atomic_token_burn", {
       p_org_id: orgId,
       p_amount: 100,
-      p_request_id: `uat-burn-${Date.now()}`,
+      p_reference_id: `uat-burn-${Date.now()}`,
       p_reason: "UAT simulated intent confirmation",
     });
 
