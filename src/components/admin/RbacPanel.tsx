@@ -80,6 +80,16 @@ export function RbacPanel() {
         throw error;
       }
 
+      // Audit log the role assignment
+      const { data: { user: caller } } = await supabase.auth.getUser();
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: caller?.id ?? "",
+        action: "role_assigned",
+        target_type: "user_role",
+        target_id: selectedUserId,
+        details: { role: selectedRole } as any,
+      });
+
       toast.success(`Role '${selectedRole}' assigned successfully`);
       setSelectedUserId("");
       setSelectedRole("");
