@@ -94,7 +94,10 @@ export default function Auth() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, [navigate, searchParams]);
 
   const passwordsMatch = signUpPassword === signUpConfirmPassword;
