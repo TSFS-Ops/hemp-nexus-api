@@ -83,8 +83,13 @@ Deno.serve(async (req) => {
 // ── List Users ────────────────────────────────────────────────────────────
 
 async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
-  const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+  // GoTrue listUsers defaults to 50/page; fetch up to 1000 via pagination
+  const allUsers: any[] = [];
+  let page = 1;
+  const perPage = 1000;
+  const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
   if (usersError) throw usersError;
+  allUsers.push(...users);
 
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
