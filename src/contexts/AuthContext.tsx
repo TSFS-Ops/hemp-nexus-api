@@ -140,8 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         hadUserRef.current = true;
+        // Only verify profile on sign-in/sign-up, not every token refresh
+        const needsProfileCheck = event === "SIGNED_IN" || event === "SIGNED_UP";
         setTimeout(async () => {
-          await ensureProfile(session.user.id, session.user.email ?? "");
+          if (needsProfileCheck) {
+            await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
+          }
           fetchRoles(session.user.id);
         }, 0);
       } else {
@@ -156,13 +160,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       
       if (session?.user) {
-        await ensureProfile(session.user.id, session.user.email ?? "");
+        await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
         fetchRoles(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchRoles, ensureProfile]);
+  }, [fetchRoles, ensureProfileIfNeeded]);
 
   const isPlatformAdmin = roles.some(r => (PLATFORM_ADMIN_ROLES as readonly string[]).includes(r));
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
