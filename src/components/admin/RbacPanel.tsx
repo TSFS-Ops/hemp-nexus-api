@@ -110,6 +110,17 @@ export function RbacPanel() {
         .eq("id", roleId);
 
       if (error) throw error;
+
+      // Audit log the role revocation
+      const { data: { user: caller } } = await supabase.auth.getUser();
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: caller?.id ?? "",
+        action: "role_revoked",
+        target_type: "user_role",
+        target_id: userId,
+        details: { role: roleName } as any,
+      });
+
       toast.success(`Role '${roleName}' revoked`);
       fetchRoles();
     } catch (error) {
