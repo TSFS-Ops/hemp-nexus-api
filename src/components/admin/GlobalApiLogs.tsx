@@ -108,9 +108,9 @@ export function GlobalApiLogs() {
         .select(`
           id, action, entity_type, entity_id, created_at, org_id, metadata,
           organizations:org_id (name)
-        `)
+        `, { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(BUSINESS_LOG_LIMIT);
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
