@@ -55,19 +55,25 @@ export function AdminAuditLogs() {
   const auditLogTotalCount = auditLogData?.totalCount ?? 0;
   const auditLogsTruncated = auditLogTotalCount > ADMIN_LOG_LIMIT;
 
-  const { data: adminAuditLogs } = useQuery({
+  const ADMIN_ACTION_LIMIT = 100;
+
+  const { data: adminAuditLogData } = useQuery({
     queryKey: ["admin-admin-audit-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("admin_audit_logs")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(ADMIN_ACTION_LIMIT);
 
       if (error) throw error;
-      return data || [];
+      return { logs: data || [], totalCount: count ?? data?.length ?? 0 };
     },
   });
+
+  const adminAuditLogs = adminAuditLogData?.logs;
+  const adminAuditTotalCount = adminAuditLogData?.totalCount ?? 0;
+  const adminAuditTruncated = adminAuditTotalCount > ADMIN_ACTION_LIMIT;
 
   const exportLogs = () => {
     if (!auditLogs || auditLogs.length === 0) {
@@ -271,6 +277,11 @@ export function AdminAuditLogs() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {adminAuditTruncated && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {adminAuditLogs?.length} of {adminAuditTotalCount} admin actions. Only the most recent {ADMIN_ACTION_LIMIT} are displayed.
+            </p>
+          )}
           {adminAuditLogs && adminAuditLogs.length > 0 ? (
             <div className="rounded-md border">
               <Table>
