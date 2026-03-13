@@ -99,7 +99,7 @@ async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
     .from('user_roles')
     .select('user_id, role');
 
-  const enrichedUsers = users.map((authUser) => {
+  const enrichedUsers = allUsers.map((authUser) => {
     const profile = profiles?.find((p) => p.id === authUser.id);
     const userRoles = roles?.filter((r) => r.user_id === authUser.id) || [];
 
