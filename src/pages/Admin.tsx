@@ -49,15 +49,17 @@ function AdminNotFound() {
 function DealsSection() {
   const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Deals" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Deals</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Deals</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-          <TabsTrigger value="matches">Matches</TabsTrigger>
-          <TabsTrigger value="approvals">Approvals</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+            <TabsTrigger value="matches">Matches</TabsTrigger>
+            <TabsTrigger value="approvals">Approvals</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="pipeline" className="mt-4"><AdminDealPipelinePanel /></TabsContent>
         <TabsContent value="matches" className="mt-4"><AdminMatchesPanel /></TabsContent>
         <TabsContent value="approvals" className="mt-4"><AdminTradeApprovalsPanel /></TabsContent>
@@ -70,16 +72,18 @@ function DealsSection() {
 function UsersOrgsSection() {
   const [tab, setTab] = useUrlTab("tab", "users", ["users", "orgs", "entities", "tokens"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Users & Orgs" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Users & Organisations</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Users & Organisations</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="orgs">Organisations</TabsTrigger>
-          <TabsTrigger value="entities">Entities</TabsTrigger>
-          <TabsTrigger value="tokens">Tokens</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="orgs">Organisations</TabsTrigger>
+            <TabsTrigger value="entities">Entities</TabsTrigger>
+            <TabsTrigger value="tokens">Tokens</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
         <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
         <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
@@ -93,15 +97,17 @@ function UsersOrgsSection() {
 function AdminComplianceSection() {
   const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Compliance" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Compliance</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Compliance</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="cases">Cases</TabsTrigger>
-          <TabsTrigger value="disputes">Disputes</TabsTrigger>
-          <TabsTrigger value="risk">Risk Register</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="cases">Cases</TabsTrigger>
+            <TabsTrigger value="disputes">Disputes</TabsTrigger>
+            <TabsTrigger value="risk">Risk Register</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
         <TabsContent value="disputes" className="mt-4"><AdminDisputesPanel /></TabsContent>
         <TabsContent value="risk" className="mt-4"><AdminRiskPanel /></TabsContent>
@@ -114,16 +120,18 @@ function AdminComplianceSection() {
 function AuditSection() {
   const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi", "ledger", "api"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Audit" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Audit Trail</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Audit Trail</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-          <TabsTrigger value="poi">POI History</TabsTrigger>
-          <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
-          <TabsTrigger value="api">API Logs</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+            <TabsTrigger value="poi">POI History</TabsTrigger>
+            <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
+            <TabsTrigger value="api">API Logs</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
         <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
         <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
@@ -136,18 +144,20 @@ function AuditSection() {
 function AdminContent() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AdminSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center px-4 bg-background justify-between">
-            <div className="flex items-center">
-              <SidebarTrigger />
-              <h1 className="ml-4 text-lg font-semibold">Admin</h1>
+      <div className="min-h-screen-safe flex w-full">
+        <div className="hidden md:block">
+          <AdminSidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 sm:h-14 border-b flex items-center px-3 sm:px-4 bg-background justify-between sticky top-0 z-10 safe-area-top">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="touch-target hidden md:flex" />
+              <h1 className="text-base sm:text-lg font-semibold truncate">Admin</h1>
             </div>
             <Button variant="outline" size="sm" asChild>
               <Link to={ROUTES.DASHBOARD}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Console
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Console</span>
               </Link>
             </Button>
           </header>

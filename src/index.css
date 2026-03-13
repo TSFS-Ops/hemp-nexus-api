@@ -161,6 +161,16 @@
     line-height: 1.5;
   }
 
+  /* Safe viewport height: dvh with vh fallback */
+  .h-screen-safe {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .min-h-screen-safe {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   /* Typography Scale — Swiss-Terminal precision */
   h1 {
     @apply font-sans font-bold;
@@ -380,16 +390,31 @@
   }
 }
 
-/* Safe area inset for iOS bottom bar */
+/* Safe area insets for iOS */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Prevent horizontal overflow on all major containers */
+.overflow-x-guard {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 @media (max-width: 767px) {
-  @supports (height: 1dvh) {
-    .mobile-bottom-nav-wrapper {
-      position: fixed;
-      bottom: 0;
-    }
+  /* Global mobile overflow prevention */
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* Mobile toast positioning — avoid header collision */
+  [data-sonner-toaster] {
+    top: 56px !important;
+    bottom: auto !important;
   }
 }

@@ -125,22 +125,22 @@ export function AdminAuditLogs() {
   const uniqueEntities = auditLogs ? [...new Set(auditLogs.map(l => l.entity_type))] : [];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Audit Logs</h2>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-xl sm:text-3xl font-bold tracking-tight">Audit Logs</h2>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm">
             Complete audit trail of all binding actions and admin operations
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button variant="outline" onClick={exportLogs}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <Button variant="outline" size="sm" onClick={exportLogs}>
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
         </div>
       </div>
@@ -171,7 +171,7 @@ export function AdminAuditLogs() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -182,28 +182,30 @@ export function AdminAuditLogs() {
                 aria-label="Search audit logs"
               />
             </div>
-            <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Action" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Actions</SelectItem>
-                {uniqueActions.map(action => (
-                  <SelectItem key={action} value={action}>{action}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={entityFilter} onValueChange={setEntityFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Entity Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Entities</SelectItem>
-                {uniqueEntities.map(entity => (
-                  <SelectItem key={entity} value={entity}>{entity}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={actionFilter} onValueChange={setActionFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Action" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Actions</SelectItem>
+                  {uniqueActions.map(action => (
+                    <SelectItem key={action} value={action}>{action}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={entityFilter} onValueChange={setEntityFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Entity Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Entities</SelectItem>
+                  {uniqueEntities.map(entity => (
+                    <SelectItem key={entity} value={entity}>{entity}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {auditLogsTruncated && (
@@ -217,49 +219,81 @@ export function AdminAuditLogs() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : auditLogs && auditLogs.length > 0 ? (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity Type</TableHead>
-                    <TableHead>Entity ID</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead className="text-right">Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell className="font-medium">{log.entity_type}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.entity_id?.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {(log.actor_user_id || log.actor_api_key_id)?.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(log.created_at), "MMM dd HH:mm:ss")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedLog(log);
-                            setShowDetailsDialog(true);
-                          }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
+            <>
+              {/* Mobile card view */}
+              <div className="space-y-3 md:hidden">
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      {getActionBadge(log.action)}
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(log.created_at), "MMM dd HH:mm")}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Entity</span>
+                        <p className="font-medium truncate">{log.entity_type}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">ID</span>
+                        <p className="font-mono truncate">{log.entity_id?.substring(0, 8)}...</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-9 touch-target"
+                      onClick={() => { setSelectedLog(log); setShowDetailsDialog(true); }}
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="rounded-md border hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Entity Type</TableHead>
+                      <TableHead>Entity ID</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead className="text-right">Details</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {auditLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{getActionBadge(log.action)}</TableCell>
+                        <TableCell className="font-medium">{log.entity_type}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {log.entity_id?.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {(log.actor_user_id || log.actor_api_key_id)?.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(log.created_at), "MMM dd HH:mm:ss")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setSelectedLog(log); setShowDetailsDialog(true); }}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
             <EmptyState title="No audit logs found" message="Audit logs will appear here once API activity occurs." />
           )}
@@ -325,7 +359,7 @@ export function AdminAuditLogs() {
 
       {/* Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Audit Log Details</DialogTitle>
             <DialogDescription>
@@ -334,7 +368,7 @@ export function AdminAuditLogs() {
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Action</label>
                   <p>{getActionBadge(selectedLog.action)}</p>

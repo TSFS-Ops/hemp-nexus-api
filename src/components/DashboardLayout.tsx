@@ -14,20 +14,20 @@ export interface DashboardLayoutProps {
 export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen-safe w-full bg-background">
         <div className="hidden md:block">
           <AppSidebar isAdmin={isAdmin} />
         </div>
         <main className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-            <div className="flex h-12 items-center justify-between px-4">
+          <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm safe-area-top">
+            <div className="flex h-12 items-center justify-between px-3 sm:px-4">
               <div className="hidden md:block">
-                <SidebarTrigger />
+                <SidebarTrigger className="touch-target" />
               </div>
-              <div className="md:hidden text-sm font-semibold text-foreground">
+              <div className="md:hidden text-sm font-semibold text-foreground truncate">
                 Compliance Match
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <NotificationBell />
                 <ThemeToggle />
               </div>
