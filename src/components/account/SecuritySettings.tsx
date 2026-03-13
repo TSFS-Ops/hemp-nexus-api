@@ -10,7 +10,7 @@ import { Shield, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function SecuritySettings() {
-  const { user } = useAuth();
+  const { user, suppressExpiry } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
