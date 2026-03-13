@@ -35,6 +35,7 @@ export function BreakGlassPanel() {
   const [globalFrozen, setGlobalFrozen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionType, setActionType] = useState("");
   const [reason, setReason] = useState("");
   const [targetOrgId, setTargetOrgId] = useState("");
