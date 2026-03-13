@@ -19,8 +19,8 @@ export const POI_STATES = [
 
 export type PoiState = typeof POI_STATES[number];
 
-/** Terminal states — no forward transitions allowed (except COLLAPSED → ANNULLED) */
-export const TERMINAL_STATES: PoiState[] = ['EXPIRED', 'REJECTED'];
+/** Terminal states — no forward transitions allowed */
+export const TERMINAL_STATES: PoiState[] = ['EXPIRED', 'REJECTED', 'ANNULLED'];
 
 /** Immutable states — no field mutations permitted */
 export const IMMUTABLE_STATES: PoiState[] = ['COLLAPSED', 'ANNULLED', 'EXPIRED', 'REJECTED'];
