@@ -370,6 +370,14 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   </ol>
                 </AlertDescription>
               </Alert>
+              <Alert className="text-left" variant="default">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>What is an organisation?</strong> When you signed up, an organisation was created for you automatically.
+                  It represents your company or team on the platform. API keys, matches, and compliance records all belong to your organisation.
+                  You can manage it later under Account settings.
+                </AlertDescription>
+              </Alert>
               <Button onClick={() => setCurrentStep(2)} size="lg" className="w-full">
                 Let's Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />

@@ -24,15 +24,18 @@ const emailSchema = z.object({
 export default function Auth() {
   // ── Sign-in state ──
   const [signInEmail, setSignInEmail] = useState("");
+  const [signInEmailError, setSignInEmailError] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
 
   // ── Sign-up state (isolated) ──
   const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpEmailError, setSignUpEmailError] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
   const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
@@ -70,6 +73,7 @@ export default function Auth() {
       if (session) {
         navigate(getPostAuthRedirect());
       }
+      setPageReady(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -388,8 +392,16 @@ export default function Auth() {
     );
   };
 
+  if (!pageReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6 animate-in fade-in duration-300">
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <BackLink />
@@ -435,10 +447,20 @@ export default function Auth() {
                   type="email"
                   placeholder="you@company.com"
                   value={signInEmail}
-                  onChange={(e) => setSignInEmail(e.target.value)}
+                  onChange={(e) => { setSignInEmail(e.target.value); if (signInEmailError) setSignInEmailError(""); }}
+                  onBlur={() => {
+                    if (signInEmail && !z.string().email().safeParse(signInEmail).success) {
+                      setSignInEmailError("Enter a valid email address");
+                    } else {
+                      setSignInEmailError("");
+                    }
+                  }}
                   required
-                  className="h-10"
+                  className={`h-10 ${signInEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
+                {signInEmailError && (
+                  <p className="text-xs text-destructive">{signInEmailError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -491,10 +513,20 @@ export default function Auth() {
                   type="email"
                   placeholder="you@company.com"
                   value={signUpEmail}
-                  onChange={(e) => setSignUpEmail(e.target.value)}
+                  onChange={(e) => { setSignUpEmail(e.target.value); if (signUpEmailError) setSignUpEmailError(""); }}
+                  onBlur={() => {
+                    if (signUpEmail && !z.string().email().safeParse(signUpEmail).success) {
+                      setSignUpEmailError("Enter a valid email address");
+                    } else {
+                      setSignUpEmailError("");
+                    }
+                  }}
                   required
-                  className="h-10"
+                  className={`h-10 ${signUpEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
+                {signUpEmailError && (
+                  <p className="text-xs text-destructive">{signUpEmailError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
