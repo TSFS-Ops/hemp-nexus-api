@@ -83,17 +83,32 @@ Deno.serve(async (req) => {
 // ── List Users ────────────────────────────────────────────────────────────
 
 async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
-  // GoTrue listUsers defaults to 50/page; fetch up to 1000 via pagination
+  // GoTrue paginated fetch — loop until we get a partial page
   const allUsers: any[] = [];
-  let page = 1;
   const perPage = 1000;
-  const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-  if (usersError) throw usersError;
-  allUsers.push(...users);
+  const maxPages = 10; // safety cap: 10,000 users max
+  for (let page = 1; page <= maxPages; page++) {
+    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (usersError) throw usersError;
+    allUsers.push(...users);
+    if (users.length < perPage) break; // last page
+  }
 
-  const { data: profiles } = await supabaseAdmin
-    .from('profiles')
-    .select('id, email, full_name, org_id, status, created_at, organizations(name)');
+  // Paginated profiles fetch to avoid 1000-row default cap
+  const allProfiles: any[] = [];
+  const profilePageSize = 1000;
+  let profileOffset = 0;
+  while (true) {
+    const { data: batch } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email, full_name, org_id, status, created_at, organizations(name)')
+      .range(profileOffset, profileOffset + profilePageSize - 1);
+    if (!batch || batch.length === 0) break;
+    allProfiles.push(...batch);
+    if (batch.length < profilePageSize) break;
+    profileOffset += profilePageSize;
+  }
+  const profiles = allProfiles;
 
   const { data: roles } = await supabaseAdmin
     .from('user_roles')
