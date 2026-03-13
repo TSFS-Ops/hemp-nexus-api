@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,16 @@ import { InlineLoader } from "@/components/ui/inline-loader";
 import { useDataFetch } from "@/hooks/use-data-fetch";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Dispute {
   id: string;
@@ -34,6 +44,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   const [showForm, setShowForm] = useState(false);
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { data: disputes, loading, refetch } = useDataFetch(
     async () => {
@@ -67,22 +78,32 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
     { successMessage: "Dispute raised successfully" }
   );
 
+  const handleSubmitClick = () => {
+    if (!reason.trim()) return;
+    setShowConfirmDialog(true);
+  };
+
+  const confirmAndSubmit = () => {
+    setShowConfirmDialog(false);
+    handleSubmit();
+  };
+
   const statusInfo: Record<string, { badge: JSX.Element; help: string }> = {
     open: { 
       badge: <Badge variant="destructive">Open</Badge>,
-      help: "Dispute has been raised and is awaiting review. Settlement is frozen."
+      help: "This dispute has been raised and is awaiting review. Settlement is paused until it is resolved."
     },
     under_review: { 
       badge: <Badge variant="secondary">Under Review</Badge>,
-      help: "A reviewer is investigating this dispute. You will be notified of the outcome."
+      help: "A reviewer is investigating this dispute. You will be notified when a decision is reached."
     },
     resolved: { 
       badge: <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400">Resolved</Badge>,
-      help: "Dispute has been resolved. See the resolution notes below."
+      help: "This dispute has been resolved. See the resolution details below."
     },
     escalated: { 
       badge: <Badge variant="destructive">Escalated</Badge>,
-      help: "Dispute has been escalated to senior review. Contact support if you need an update."
+      help: "This dispute has been escalated for senior review. Contact support@izenzo.co.za if you need an update."
     },
   };
 
@@ -147,13 +168,13 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
             </Alert>
             <LoadingButton
               variant="destructive"
-              onClick={handleSubmit}
+              onClick={handleSubmitClick}
               loading={submitting}
               disabled={!reason.trim()}
               icon={<ShieldAlert className="h-4 w-4" />}
               loadingText="Submitting…"
             >
-              Submit Dispute
+              Review &amp; Submit Dispute
             </LoadingButton>
           </CardContent>
         </Card>
@@ -179,10 +200,17 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
                 )}
                 <p className="text-sm font-medium">{d.reason}</p>
                 {d.evidence_notes && <p className="text-sm text-muted-foreground">{d.evidence_notes}</p>}
-                {d.resolution_outcome && (
-                  <div className="bg-muted rounded p-2 text-sm">
-                    <span className="font-medium">Resolution:</span> {d.resolution_outcome}
-                    {d.resolved_at && <span className="text-xs text-muted-foreground ml-2">({format(new Date(d.resolved_at), "dd MMM yyyy")})</span>}
+                {d.status === "resolved" && (
+                  <div className="bg-muted rounded p-3 text-sm space-y-1">
+                    <p className="font-medium">Resolution</p>
+                    {d.resolution_outcome ? (
+                      <p>{d.resolution_outcome}</p>
+                    ) : (
+                      <p className="text-muted-foreground italic">No resolution details were provided. Contact support@izenzo.co.za for more information.</p>
+                    )}
+                    {d.resolved_at && (
+                      <p className="text-xs text-muted-foreground">Resolved on {format(new Date(d.resolved_at), "dd MMM yyyy")}</p>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -190,6 +218,39 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
           ))}
         </div>
       )}
+
+      {/* Dispute confirmation dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm dispute submission</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>You are about to raise a dispute on this match. Please review before submitting:</p>
+              <div className="rounded-md border border-border p-3 space-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Reason:</span>
+                  <p className="font-medium mt-0.5">{reason}</p>
+                </div>
+                {evidence.trim() && (
+                  <div>
+                    <span className="text-muted-foreground">Evidence:</span>
+                    <p className="mt-0.5">{evidence}</p>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This will notify the counterparty and may freeze settlement until the dispute is resolved. This action is logged in the audit trail.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back and edit</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAndSubmit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Submit Dispute
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,15 +1,10 @@
 /**
- * MatchDetails Page — Thin orchestrator.
- *
- * Delegates to:
- *  - useMatchDetails (data fetching + mutations)
- *  - MatchHeroCard (top-level match summary)
- *  - MatchDetailsTabs (tabbed sub-sections incl. ConfirmIntentCard)
+ * MatchDetails Page — Thin orchestrator with breadcrumb back-navigation.
  */
 
-import { useParams } from "react-router-dom";
-import { ShieldAlert } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
+import { useParams, Link } from "react-router-dom";
+import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -58,17 +53,24 @@ export default function MatchDetails() {
               ? "The match ID in the URL is not valid. Check the link and try again."
               : "Something went wrong loading this match. Please retry, or contact support@izenzo.co.za if the problem persists."}
           </p>
-          {isValidMatchId && (
-            <LoadingButton
-              onClick={fetchMatch}
-              loading={loading}
-              variant="outline"
-              className="mt-4"
-              loadingText="Retrying…"
-            >
-              Retry
-            </LoadingButton>
-          )}
+          <div className="flex items-center justify-center gap-3 mt-4">
+            {isValidMatchId && (
+              <LoadingButton
+                onClick={fetchMatch}
+                loading={loading}
+                variant="outline"
+                loadingText="Retrying…"
+              >
+                Retry
+              </LoadingButton>
+            )}
+            <Button variant="outline" asChild>
+              <Link to={ROUTES.DASHBOARD_MATCHES}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Matches
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -81,6 +83,12 @@ export default function MatchDetails() {
         <div className="text-center py-16 text-muted-foreground">
           <p className="font-medium">Match not found</p>
           <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
+          <Button variant="outline" className="mt-4" asChild>
+            <Link to={ROUTES.DASHBOARD_MATCHES}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Matches
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -91,7 +99,15 @@ export default function MatchDetails() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs items={breadcrumbs} />
+      <div className="flex items-center justify-between">
+        <Breadcrumbs items={breadcrumbs} />
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={ROUTES.DASHBOARD_MATCHES}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            All Matches
+          </Link>
+        </Button>
+      </div>
 
       <MatchHeroCard match={match} isSettled={isSettled} />
 

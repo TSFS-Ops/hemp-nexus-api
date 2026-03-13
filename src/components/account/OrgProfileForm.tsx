@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, Loader2, Building2, X } from "lucide-react";
+import { Save, Loader2, Building2, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface OrgProfile {
@@ -29,12 +28,20 @@ export function OrgProfileForm() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [profile, setProfile] = useState<OrgProfile | null>(null);
   const [newJurisdiction, setNewJurisdiction] = useState("");
+  const successTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     fetchOrgProfile();
   }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeout.current) clearTimeout(successTimeout.current);
+    };
+  }, []);
 
   const fetchOrgProfile = async () => {
     try {
@@ -65,7 +72,6 @@ export function OrgProfileForm() {
   const handleSave = async () => {
     if (!profile) return;
 
-    // Input validation before save
     if (!profile.name.trim()) {
       toast.error("Display name is required");
       return;
@@ -74,7 +80,6 @@ export function OrgProfileForm() {
       toast.error("Display name must be under 200 characters");
       return;
     }
-    // Validate website URL to prevent javascript: injection
     if (profile.website) {
       const w = profile.website.trim();
       if (w && !/^https?:\/\//i.test(w)) {
@@ -84,6 +89,7 @@ export function OrgProfileForm() {
     }
 
     setSaving(true);
+    setSaveSuccess(false);
     try {
       const { error } = await supabase
         .from("organizations")
@@ -103,10 +109,13 @@ export function OrgProfileForm() {
         .eq("id", profile.id);
 
       if (error) throw error;
-      toast.success("Organisation profile updated");
+      setSaveSuccess(true);
+      toast.success("Organisation profile saved");
+      if (successTimeout.current) clearTimeout(successTimeout.current);
+      successTimeout.current = setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err) {
       console.error("Error saving org profile:", err);
-      toast.error("Failed to save organisation profile");
+      toast.error("Failed to save organisation profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -245,10 +254,16 @@ export function OrgProfileForm() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {saveSuccess && (
+          <span className="flex items-center gap-1.5 text-sm text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+            Saved successfully
+          </span>
+        )}
         <Button onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Save Organisation Profile
+          {saving ? "Saving…" : "Save Organisation Profile"}
         </Button>
       </div>
     </div>

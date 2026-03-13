@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { FileText, Info, Loader2 } from "lucide-react";
+import { FileText, Info, Loader2, Search, AlertTriangle, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +71,8 @@ export default function CounterpartySearch() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [similarAnchor, setSimilarAnchor] = useState<SearchResult | null>(null);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
@@ -108,6 +110,8 @@ export default function CounterpartySearch() {
     setResults([]);
     setMetrics(null);
     setSelectedResults(new Set());
+    setSearchError(null);
+    setHasSearched(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("search", {
@@ -120,24 +124,18 @@ export default function CounterpartySearch() {
         setResults(data.results || []);
         setMetrics(data.metrics || null);
         setParsedQuery(data.parsedQuery || null);
-        
-        if (data.results?.length === 0) {
-          toast.info("No results found. Try a different query.");
-        } else {
-          toast.success(`Found ${data.results.length} potential counterparties`);
-        }
       } else {
-      throw new Error(data.error || "Search failed");
+        throw new Error(data.error || "Search failed");
       }
     } catch (error) {
       console.error("Search error:", error);
       const msg = error instanceof Error ? error.message : "Search failed";
       if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed to fetch")) {
-        toast.error("Network error. Check your connection and try again.");
+        setSearchError("Network error. Check your connection and try again.");
       } else if (msg.includes("rate") || msg.includes("429")) {
-        toast.error("Too many requests. Please wait a moment before searching again.");
+        setSearchError("Too many requests. Please wait a moment before searching again.");
       } else {
-        toast.error(`${msg}. If this persists, contact support@izenzo.co.za.`);
+        setSearchError(`${msg}. If this persists, contact support@izenzo.co.za.`);
       }
     } finally {
       setIsSearching(false);
@@ -258,8 +256,6 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                // No quantity or price — this is a draft match.
-                // Commercial terms will be added during negotiation.
                 quantity: null,
                 price: null,
                 terms: null,
@@ -407,8 +403,62 @@ export default function CounterpartySearch() {
           </div>
         )}
 
+        {/* Error State */}
+        {!isSearching && searchError && (
+          <Card className="border-destructive/30">
+            <CardContent className="py-8 text-center space-y-3">
+              <AlertTriangle className="h-10 w-10 mx-auto text-destructive" />
+              <div>
+                <p className="font-medium text-foreground">Search failed</p>
+                <p className="text-sm text-muted-foreground mt-1">{searchError}</p>
+              </div>
+              <Button variant="outline" onClick={handleSearch}>
+                Retry search
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Results State */}
+        {!isSearching && !searchError && hasSearched && results.length === 0 && (
+          <Card>
+            <CardContent className="py-8 text-center space-y-3">
+              <SearchX className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div>
+                <p className="font-medium text-foreground">No counterparties found</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  No results matched your search for "{query}". Try broadening your query or using different terms.
+                </p>
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Tips: Include a commodity name (e.g. "chrome ore"), a region, or a company name.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pre-Search Empty State */}
+        {!isSearching && !searchError && !hasSearched && results.length === 0 && (
+          <Card>
+            <CardContent className="py-10 text-center space-y-4">
+              <Search className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div>
+                <p className="font-medium text-foreground">Search for counterparties</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                  Enter a commodity, region, or company name above to find verified buyers and sellers. 
+                  Select one or more results to create a draft match.
+                </p>
+              </div>
+              <div className="text-xs text-muted-foreground max-w-sm mx-auto">
+                <p className="font-medium mb-1">Example searches:</p>
+                <p>"chrome ore South Africa" · "manganese buyer" · "coal exports Richards Bay"</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Results */}
-        {!isSearching && results.length > 0 && (
+        {!isSearching && !searchError && results.length > 0 && (
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-semibold text-sm sm:text-base">
