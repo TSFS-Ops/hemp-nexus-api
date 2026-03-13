@@ -87,7 +87,11 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (canSearch && !isLocked) onSearch({ ...form, side });
+    if (canSearch && !isLocked) {
+      clearDraft();
+      setDraftRestored(false);
+      onSearch({ ...form, side });
+    }
   };
 
   const disabled = isLocked || isSearching;
