@@ -359,7 +359,7 @@ export function AdminAuditLogs() {
 
       {/* Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Audit Log Details</DialogTitle>
             <DialogDescription>
@@ -368,7 +368,7 @@ export function AdminAuditLogs() {
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Action</label>
                   <p>{getActionBadge(selectedLog.action)}</p>

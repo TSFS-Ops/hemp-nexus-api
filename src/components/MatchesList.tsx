@@ -360,41 +360,30 @@ export function MatchesList() {
   return (
     <>
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="px-3 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <CardTitle>Matches</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {selectedMatches.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => setShowSettleDialog(true)}
-                    disabled={isSettling}
-                  >
-                    {isSettling ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                    )}
-                    Confirm Intent ({selectedMatches.size})
-                  </Button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Signals your interest so the seller can prepare final terms. This does not create any contract, payment, or legal obligation.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setShowSettleDialog(true)}
+                  disabled={isSettling}
+                >
+                  {isSettling ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                  )}
+                  Confirm ({selectedMatches.size})
+                </Button>
               )}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" onClick={exportToCSV}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export CSV {totalPages > 1 ? "(this page)" : ""}
+                    <Button variant="outline" size="sm" onClick={exportToCSV}>
+                      <Download className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Export CSV {totalPages > 1 ? "(this page)" : ""}</span>
                     </Button>
                   </TooltipTrigger>
                   {totalPages > 1 && (
@@ -407,7 +396,7 @@ export function MatchesList() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
