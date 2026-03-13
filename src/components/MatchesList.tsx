@@ -68,19 +68,30 @@ export function MatchesList() {
   const page = Number.isFinite(rawPage) && rawPage >= 0 ? rawPage : 0;
 
   // Restore failed IDs from session storage (survives session-expiry redirect)
-  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(() => {
+  const [restoredFailedIds] = useState<string[]>(() => {
     try {
       const saved = sessionStorage.getItem(BULK_FAILED_KEY);
       if (saved) {
         sessionStorage.removeItem(BULK_FAILED_KEY);
         const ids = JSON.parse(saved) as string[];
-        if (Array.isArray(ids) && ids.length > 0) {
-          return new Set(ids);
-        }
+        if (Array.isArray(ids) && ids.length > 0) return ids;
       }
     } catch { /* ignore */ }
-    return new Set();
+    return [];
   });
+  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(
+    () => new Set(restoredFailedIds)
+  );
+
+  // Notify user if failed IDs were restored from a previous session
+  useEffect(() => {
+    if (restoredFailedIds.length > 0) {
+      toast.info(
+        `${restoredFailedIds.length} previously failed match${restoredFailedIds.length > 1 ? "es" : ""} re-selected for retry.`,
+        { duration: 8000 }
+      );
+    }
+  }, [restoredFailedIds]);
   const [isSettling, setIsSettling] = useState(false);
   const [showSettleDialog, setShowSettleDialog] = useState(false);
 
