@@ -106,6 +106,7 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     if (!passwordsMatch) {
       toast.error("Passwords do not match");
