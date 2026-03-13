@@ -458,7 +458,7 @@ export function MatchesList() {
         </div>
 
         <div className="min-h-[400px]">
-        {isError ? (
+        {isError && !paginationError ? (
           <ErrorState 
             type="server" 
             message={error?.message || "Failed to load matches"} 
@@ -468,6 +468,19 @@ export function MatchesList() {
         ) : isLoading ? (
           <TableSkeleton rows={5} columns={6} />
         ) : matches && matches.length > 0 ? (
+          <>
+            {paginationError && (
+              <div className="flex items-center gap-3 p-3 mb-4 rounded-md border border-destructive/30 bg-destructive/5 text-sm">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                <p className="text-foreground flex-1">
+                  Could not load the requested page. The data below is from a previous page and may not reflect the current view.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="shrink-0 gap-1.5">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Retry
+                </Button>
+              </div>
+            )}
           <>
             {/* Mobile card view for <768px */}
             <div className="space-y-3 md:hidden">
