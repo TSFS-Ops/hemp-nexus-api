@@ -86,21 +86,20 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
   });
 
   // ── Step 2: Match status reflects dispute ──────────────────────
-  it("3.3 — match state machine blocks confirm_intent during dispute", async () => {
-    // The state machine should prevent settling a disputed match
-    // Attempt to settle — should fail or be blocked
+  it("3.3 — settle is blocked by backend when an open dispute exists", async () => {
     const res = await fetch(`${BASE_URL}/functions/v1/match/${matchId}/settle`, {
       method: "POST",
       headers: { "X-API-Key": apiKey },
     });
 
-    // Depending on whether the match status was updated to 'disputed':
+    // Must be rejected — either 409 DISPUTE_ACTIVE or 400 INVALID_STATE
+    expect(res.ok).toBe(false);
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+
     const body = await res.json();
-    if (!res.ok) {
-      // Expected: state transition blocked
-      expect(res.status).toBeGreaterThanOrEqual(400);
-    }
-    console.info(`[UAT 3.3] Settle-during-dispute result: ${res.status} — ${body.error || body.status}`);
+    // Expect DISPUTE_ACTIVE if match is in discovery, or INVALID_STATE if already transitioned
+    expect(["DISPUTE_ACTIVE", "INVALID_STATE"]).toContain(body.code);
   });
 
   // ── Step 3: Resolve the dispute ────────────────────────────────

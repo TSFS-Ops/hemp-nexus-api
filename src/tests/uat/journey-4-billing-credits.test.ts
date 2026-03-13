@@ -75,14 +75,15 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
     const refId = `uat-credit-dup-${Date.now()}`;
 
     // First credit
-    await supabase.rpc("atomic_token_credit", {
+    const { error: firstErr } = await supabase.rpc("atomic_token_credit", {
       p_org_id: orgId,
       p_amount: 500,
       p_reference_id: refId,
       p_reason: "UAT first",
     });
+    expect(firstErr).toBeNull();
 
-    // Second credit — same reference_id
+    // Second credit — same reference_id — MUST fail
     const { error } = await supabase.rpc("atomic_token_credit", {
       p_org_id: orgId,
       p_amount: 500,
@@ -90,11 +91,8 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
       p_reason: "UAT duplicate",
     });
 
-    if (error) {
-      expect(error.message.toLowerCase()).toMatch(/duplicate|unique|already/);
-    } else {
-      console.warn("[UAT 4.4] Duplicate credit was NOT rejected — idempotency gap");
-    }
+    expect(error).not.toBeNull();
+    expect(error!.message.toLowerCase()).toMatch(/duplicate|unique|already|violates/);
   });
 
   // ── Step 4: Burn tokens (atomic_token_burn RPC) ────────────────
