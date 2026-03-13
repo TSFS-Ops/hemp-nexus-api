@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,31 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const formDirty = useRef(false);
+
+  // Emergency draft persistence on session expiry
+  const getCurrentForm = useCallback(() => {
+    if (!formDirty.current || !showForm) return null;
+    return form;
+  }, [form, showForm]);
+
+  const { restoreDraft: restoreDealDraft, clearDraft: clearDealDraft, hasRestoredDraft: hasDealDraft } = useDraftPersistence<typeof EMPTY_FORM>(
+    `deal-terms-${matchId}`,
+    getCurrentForm
+  );
+
+  // Restore draft on form open
+  useEffect(() => {
+    if (showForm && hasDealDraft) {
+      const draft = restoreDealDraft();
+      if (draft) {
+        setForm(draft);
+        toast.info("Unsaved deal terms from your previous session have been restored.", {
+          action: { label: "Discard", onClick: () => { setForm({ ...EMPTY_FORM }); clearDealDraft(); } },
+          duration: 8000,
+        });
+      }
+    }
+  }, [showForm, hasDealDraft]);
 
   // Track dirty state
   useEffect(() => {

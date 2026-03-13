@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Save, Loader2, Building2, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 
 interface OrgProfile {
   id: string;
@@ -39,6 +40,31 @@ export function OrgProfileForm() {
   const isDirty = profile !== null && savedProfile !== null &&
     JSON.stringify(profile) !== JSON.stringify(savedProfile);
   useUnsavedChanges(isDirty);
+
+  // Emergency draft persistence on session expiry
+  const getCurrentProfile = useCallback(() => {
+    if (!isDirty || !profile) return null;
+    return profile;
+  }, [isDirty, profile]);
+
+  const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<OrgProfile>(
+    "org-profile",
+    getCurrentProfile
+  );
+
+  // Restore draft on load if available and data is loaded
+  useEffect(() => {
+    if (!loading && profile && hasRestoredDraft) {
+      const draft = restoreDraft();
+      if (draft && draft.id === profile.id) {
+        setProfile(draft);
+        toast.info("Unsaved changes from your previous session have been restored.", {
+          action: { label: "Discard", onClick: () => { setProfile(JSON.parse(JSON.stringify(savedProfile))); clearDraft(); } },
+          duration: 8000,
+        });
+      }
+    }
+  }, [loading, hasRestoredDraft]);
 
   useEffect(() => {
     fetchOrgProfile();

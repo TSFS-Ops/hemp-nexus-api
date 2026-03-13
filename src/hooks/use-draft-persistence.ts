@@ -13,10 +13,12 @@ import { useState, useCallback, useEffect, useRef } from "react";
 
 const DRAFT_PREFIX = "izenzo_draft_";
 
-export function useDraftPersistence<T>(key: string) {
+export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | null) {
   const storageKey = `${DRAFT_PREFIX}${key}`;
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const initialised = useRef(false);
+  const getCurrentDataRef = useRef(getCurrentData);
+  getCurrentDataRef.current = getCurrentData;
 
   const restoreDraft = useCallback((): T | null => {
     try {
@@ -60,6 +62,18 @@ export function useDraftPersistence<T>(key: string) {
     const draft = restoreDraft();
     if (draft) setHasRestoredDraft(true);
   }, [restoreDraft]);
+
+  // Emergency save on session expiry
+  useEffect(() => {
+    const handler = () => {
+      const data = getCurrentDataRef.current?.();
+      if (data) {
+        saveDraft(data);
+      }
+    };
+    window.addEventListener("izenzo:session-expiry", handler);
+    return () => window.removeEventListener("izenzo:session-expiry", handler);
+  }, [saveDraft]);
 
   return { restoreDraft, saveDraft, clearDraft, hasRestoredDraft };
 }

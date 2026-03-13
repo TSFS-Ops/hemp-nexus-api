@@ -18,6 +18,8 @@ interface AuthContextType {
   roles: AppRole[];
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  /** Temporarily suppress session-expiry redirect (for password change flow) */
+  suppressExpiry: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   // Track whether user explicitly clicked sign-out (not session expiry)
   const explicitSignOutRef = useRef(false);
+  // Suppress session-expiry redirect during password change
+  const suppressExpiryRef = useRef(false);
   // Ref to track whether we had a user before (for expiry detection)
   const hadUserRef = useRef(false);
 
@@ -96,9 +100,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const wasExplicit = explicitSignOutRef.current;
         explicitSignOutRef.current = false;
 
+        // Suppress redirect during password change (which triggers auth events)
+        if (suppressExpiryRef.current) {
+          suppressExpiryRef.current = false;
+          return;
+        }
+
         if (!wasExplicit && hadUserRef.current) {
           // This is a genuine session expiry, not an explicit logout
-          // Check for unsaved changes via beforeunload simulation
+          // Dispatch custom event so draft-persistence hooks can emergency-save
+          window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+          // Also fire beforeunload so useUnsavedChanges can warn
           const beforeUnloadEvent = new Event("beforeunload", { cancelable: true });
           window.dispatchEvent(beforeUnloadEvent);
           
@@ -148,6 +160,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
   const isOrgMember = roles.includes(APP_ROLES.ORG_MEMBER) || isOrgAdmin;
 
+  /** Temporarily suppress session-expiry redirect (e.g. during password change) */
+  const suppressExpiry = useCallback(() => {
+    suppressExpiryRef.current = true;
+    // Auto-reset after 10s in case the flag isn't cleared
+    setTimeout(() => { suppressExpiryRef.current = false; }, 10000);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -162,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         signOut,
         refreshSession,
+        suppressExpiry,
       }}
     >
       {children}

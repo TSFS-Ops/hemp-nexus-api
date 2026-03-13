@@ -10,7 +10,7 @@ import { Shield, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function SecuritySettings() {
-  const { user } = useAuth();
+  const { user, suppressExpiry } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,6 +36,9 @@ export function SecuritySettings() {
     }
 
     setChangingPassword(true);
+    // Suppress session-expiry redirect during password change flow
+    // (signInWithPassword + updateUser both trigger auth state events)
+    suppressExpiry();
     try {
       // Step 1: Verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({

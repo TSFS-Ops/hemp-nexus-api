@@ -95,6 +95,15 @@ export default function Billing() {
       return;
     }
 
+    // Handle explicit failure status from payment provider
+    if (status === "failed" || status === "error") {
+      toast.error(
+        "Payment failed. Your card was not charged. Please try again or use a different payment method. If the problem persists, contact support@izenzo.co.za.",
+        { duration: 8000 }
+      );
+      return;
+    }
+
     if (status === "success" && reference) {
       verifyAttempted.current = true;
       (async () => {
@@ -248,14 +257,26 @@ export default function Billing() {
       }
 
       if (data?.checkoutUrl) {
+        // Start a timeout: if we're still on this page after 8s, the redirect failed
+        const redirectTimeout = setTimeout(() => {
+          setIsProcessing(false);
+          setSelectedPackage(null);
+          toast.error(
+            "Redirect to payment page did not complete. Please try again, or copy this link and open it manually.",
+            { duration: 10000 }
+          );
+        }, 8000);
+        // Store timeout so cleanup can clear it if page actually unloads
+        (window as any).__billingRedirectTimeout = redirectTimeout;
         window.location.href = data.checkoutUrl;
       } else {
-        toast.error("No checkout URL returned");
+        toast.error("No checkout URL was returned. Please try again or contact support@izenzo.co.za.");
+        setIsProcessing(false);
+        setSelectedPackage(null);
       }
     } catch (err) {
       console.error("Purchase error:", err);
       toast.error("Failed to initiate purchase. Please try again.");
-    } finally {
       setIsProcessing(false);
       setSelectedPackage(null);
     }
