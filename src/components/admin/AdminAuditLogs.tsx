@@ -202,6 +202,12 @@ export function AdminAuditLogs() {
             </Select>
           </div>
 
+          {auditLogsTruncated && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {auditLogs?.length} of {auditLogTotalCount} audit logs. Only the most recent {ADMIN_LOG_LIMIT} are displayed.
+            </p>
+          )}
+
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

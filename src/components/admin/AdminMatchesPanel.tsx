@@ -151,6 +151,12 @@ export function AdminMatchesPanel() {
             </Select>
           </div>
 
+          {isTruncated && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {matches?.length} of {totalCount} matches. Only the most recent {ADMIN_MATCH_LIMIT} are displayed.
+            </p>
+          )}
+
           {isLoading ? (
             <TableSkeleton rows={5} columns={9} />
           ) : matches && matches.length > 0 ? (
