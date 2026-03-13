@@ -140,6 +140,11 @@ export default function OrgsManagement() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
+        {!loading && totalCount > ORG_LIMIT && (
+          <p className="text-sm text-muted-foreground">
+            Showing {orgs.length} of {totalCount} organisations. Only the most recent {ORG_LIMIT} are displayed.
+          </p>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
