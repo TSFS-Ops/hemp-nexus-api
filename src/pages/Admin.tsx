@@ -97,15 +97,17 @@ function UsersOrgsSection() {
 function AdminComplianceSection() {
   const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Compliance" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Compliance</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Compliance</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="cases">Cases</TabsTrigger>
-          <TabsTrigger value="disputes">Disputes</TabsTrigger>
-          <TabsTrigger value="risk">Risk Register</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="cases">Cases</TabsTrigger>
+            <TabsTrigger value="disputes">Disputes</TabsTrigger>
+            <TabsTrigger value="risk">Risk Register</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
         <TabsContent value="disputes" className="mt-4"><AdminDisputesPanel /></TabsContent>
         <TabsContent value="risk" className="mt-4"><AdminRiskPanel /></TabsContent>
