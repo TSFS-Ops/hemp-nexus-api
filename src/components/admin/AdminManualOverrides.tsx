@@ -102,7 +102,7 @@ export function AdminManualOverrides() {
           });
           if (error) throw error;
           await supabase.from("admin_audit_logs").insert({
-            admin_user_id: (await supabase.auth.getUser()).data.user?.id ?? "",
+            admin_user_id: adminUserId,
             action: "regenerate_evidence_pack",
             target_type: "match",
             target_id: targetId.trim(),
