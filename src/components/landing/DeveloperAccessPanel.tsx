@@ -43,7 +43,7 @@ export function DeveloperAccessPanel() {
               <span className="text-basalt-foreground"> https://api.trade.izenzo.co.za/v1/intent/discover</span>
               <span className="text-basalt-foreground/30">{" \\"}</span>{"\n"}
               <span className="text-basalt-foreground">{"  -H "}</span>
-              <span className="text-signal-verified">{'"Authorization: Bearer sk_live_iz_9a8b7c6d5e4f"'}</span>
+              <span className="text-signal-verified">{'"Authorization: Bearer sk_test_example_9a8b7c6d"'}</span>
               <span className="text-basalt-foreground/30">{" \\"}</span>{"\n"}
               <span className="text-basalt-foreground">{"  -H "}</span>
               <span className="text-signal-verified">{'"Content-Type: application/json"'}</span>
