@@ -6,10 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { z } from "zod";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, LogIn } from "lucide-react";
 import { getPublicUrl, getHostType } from "@/lib/hostname";
 
 const authSchema = z.object({
@@ -436,6 +437,15 @@ export default function Auth() {
             Sign in to manage counterparty searches, matches, and compliance records
           </p>
         </div>
+
+        {searchParams.get("returnTo") && (
+          <Alert className="mb-6 border-primary/30 bg-primary/5">
+            <LogIn className="h-4 w-4" />
+            <AlertDescription className="text-sm text-foreground">
+              Sign in to continue where you left off. You'll be redirected back automatically.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {verificationPending && (
           <div className="mb-6 p-4 bg-muted/40 border border-border rounded-md">

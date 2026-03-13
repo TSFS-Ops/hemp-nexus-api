@@ -51,6 +51,8 @@ const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, sell
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
+const BULK_FAILED_KEY = "izenzo_bulk_failed_ids";
+
 export function MatchesList() {
   const navigate = useNavigate();
   const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
@@ -65,9 +67,44 @@ export function MatchesList() {
   const rawPage = parseInt(params.page, 10);
   const page = Number.isFinite(rawPage) && rawPage >= 0 ? rawPage : 0;
 
-  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(new Set());
+  // Restore failed IDs from session storage (survives session-expiry redirect)
+  const [restoredFailedIds] = useState<string[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(BULK_FAILED_KEY);
+      if (saved) {
+        sessionStorage.removeItem(BULK_FAILED_KEY);
+        const ids = JSON.parse(saved) as string[];
+        if (Array.isArray(ids) && ids.length > 0) return ids;
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
+  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(
+    () => new Set(restoredFailedIds)
+  );
+
+  // Notify user if failed IDs were restored from a previous session
+  useEffect(() => {
+    if (restoredFailedIds.length > 0) {
+      toast.info(
+        `${restoredFailedIds.length} previously failed match${restoredFailedIds.length > 1 ? "es" : ""} re-selected for retry.`,
+        { duration: 8000 }
+      );
+    }
+  }, [restoredFailedIds]);
   const [isSettling, setIsSettling] = useState(false);
   const [showSettleDialog, setShowSettleDialog] = useState(false);
+
+  // Emergency-save failed IDs on session expiry so they survive re-auth
+  useEffect(() => {
+    const handler = () => {
+      if (selectedMatches.size > 0) {
+        sessionStorage.setItem(BULK_FAILED_KEY, JSON.stringify(Array.from(selectedMatches)));
+      }
+    };
+    window.addEventListener("izenzo:session-expiry", handler);
+    return () => window.removeEventListener("izenzo:session-expiry", handler);
+  }, [selectedMatches]);
 
   // Debounce search to avoid firing a query on every keystroke
   const debouncedSearch = useDebounce(commoditySearch, 300);
