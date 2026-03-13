@@ -31,6 +31,7 @@ export default function OrgsManagement() {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
   
 
   useEffect(() => {
