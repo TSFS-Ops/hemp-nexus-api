@@ -16,6 +16,7 @@
 
 import { toast } from "sonner";
 import { isAuthError, isApiError } from "@/lib/api-client";
+import { captureError } from "@/lib/sentry";
 
 export interface ApiErrorOptions {
   /** Default message when no specific handler matches */
