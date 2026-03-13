@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,8 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
   const [entityType, setEntityType] = useState("");
   const [entityId, setEntityId] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [limit, setLimit] = useState("20");
+  const [limit, setLimit] = useState("50");
+  const [offset, setOffset] = useState(0);
 
   // NOTE: This component uses X-API-Key auth (for the API testing playground),
   // not session auth — this is intentional and correct.
@@ -53,6 +54,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     try {
       const params = new URLSearchParams();
       params.append("limit", limit);
+      params.append("offset", String(offset));
       if (action && action !== "all") params.append("action", action);
       if (entityType && entityType !== "all") params.append("entity_type", entityType);
       if (entityId) params.append("entity_id", entityId);
@@ -81,6 +83,10 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
       setLoading(false);
     }
   };
+
+  // Auto-fetch when offset changes (pagination)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (logs.length > 0 && apiKey) fetchAuditLogs(); }, [offset]);
 
   const getActionBadgeVariant = (action: string) => {
     if (action.includes("created")) return "default";
@@ -407,6 +413,33 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                 </Table>
               </div>
             </div>
+
+            {/* Pagination */}
+            {totalCount > parseInt(limit) && (
+              <div className="flex items-center justify-between pt-3 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Page {Math.floor(offset / parseInt(limit)) + 1} of {Math.ceil(totalCount / parseInt(limit))}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={offset === 0 || loading}
+                    onClick={() => { setOffset(Math.max(0, offset - parseInt(limit))); }}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={offset + parseInt(limit) >= totalCount || loading}
+                    onClick={() => { setOffset(offset + parseInt(limit)); }}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

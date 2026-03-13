@@ -11,6 +11,7 @@ import { Loader2, Search, RefreshCw, Download, Shield } from "lucide-react";
 import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { downloadCSV } from "@/lib/download-utils";
 import {
   Dialog,
   DialogContent,
@@ -92,19 +93,16 @@ export function AdminAuditLogs() {
       JSON.stringify(log.metadata),
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-    ].join("\n");
+    downloadCSV(headers, rows, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Audit logs exported");
+    if (auditLogsTruncated) {
+      toast.success(
+        `Exported ${auditLogs.length} of ${auditLogTotalCount} audit logs. Only the most recent ${ADMIN_LOG_LIMIT} are available for export.`,
+        { duration: 5000 }
+      );
+    } else {
+      toast.success(`Exported all ${auditLogs.length} audit logs`);
+    }
   };
 
   const getActionBadge = (action: string) => {

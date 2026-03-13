@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { downloadCSV } from "@/lib/download-utils";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,9 @@ interface AuditLog {
 export function GlobalApiLogs() {
   const [activeTab, setActiveTab] = useState("requests");
   
+  const API_LOG_LIMIT = 200;
+  const BUSINESS_LOG_LIMIT = 200;
+  
   // API Logs state
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +53,13 @@ export function GlobalApiLogs() {
   const [selectedLog, setSelectedLog] = useState<ApiLog | null>(null);
   const [correlationOpen, setCorrelationOpen] = useState(false);
   const [correlationRequestId, setCorrelationRequestId] = useState<string | null>(null);
+  const [apiTotalCount, setApiTotalCount] = useState(0);
   
   // Business Events state
   const [businessLogs, setBusinessLogs] = useState<AuditLog[]>([]);
   const [businessLoading, setBusinessLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState<string>("all");
+  const [businessTotalCount, setBusinessTotalCount] = useState(0);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -65,9 +71,9 @@ export function GlobalApiLogs() {
           *,
           api_keys (name),
           organizations (name)
-        `)
+        `, { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(API_LOG_LIMIT);
 
       if (statusFilter !== "all") {
         if (statusFilter === "success") {
@@ -81,10 +87,11 @@ export function GlobalApiLogs() {
         query = query.eq("endpoint", endpointFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
       setLogs(data || []);
+      setApiTotalCount(count ?? data?.length ?? 0);
     } catch (error) {
       console.error("Error fetching logs:", error);
       toast.error("Failed to load API logs");
@@ -102,18 +109,19 @@ export function GlobalApiLogs() {
         .select(`
           id, action, entity_type, entity_id, created_at, org_id, metadata,
           organizations:org_id (name)
-        `)
+        `, { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(BUSINESS_LOG_LIMIT);
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
       setBusinessLogs((data || []) as unknown as AuditLog[]);
+      setBusinessTotalCount(count ?? data?.length ?? 0);
     } catch (error) {
       console.error("Error fetching business logs:", error);
       toast.error("Failed to load business events");
@@ -131,7 +139,36 @@ export function GlobalApiLogs() {
   }, [activeTab, fetchLogs, fetchBusinessLogs]);
 
   const exportLogs = async () => {
-    toast.info("Export functionality coming soon");
+    if (activeTab === "requests") {
+      if (filteredLogs.length === 0) { toast.error("No logs to export"); return; }
+      const headers = ["Timestamp", "Method", "Endpoint", "Status", "Response Time (ms)", "Organisation", "API Key", "Request ID", "Error"];
+      const rows = filteredLogs.map(l => [
+        new Date(l.created_at).toISOString(), l.method, l.endpoint, l.status_code,
+        l.response_time_ms, l.organizations?.name || "", l.api_keys?.name || "",
+        l.request_id || "", l.error_message || "",
+      ]);
+      downloadCSV(headers, rows, `api-logs-${new Date().toISOString().split('T')[0]}.csv`);
+      if (apiTotalCount > API_LOG_LIMIT) {
+        toast.success(`Exported ${filteredLogs.length} of ${apiTotalCount} total logs. Only the most recent ${API_LOG_LIMIT} are available.`, { duration: 5000 });
+      } else {
+        toast.success(`Exported ${filteredLogs.length} API logs`);
+      }
+    } else {
+      if (businessLogs.length === 0) { toast.error("No events to export"); return; }
+      const headers = ["Timestamp", "Organisation", "Action", "Entity Type", "Entity ID", "Hash", "Metadata"];
+      const rows = businessLogs.map(l => [
+        new Date(l.created_at).toISOString(), l.organizations?.name || "", l.action,
+        l.entity_type, l.entity_id || "",
+        (l.metadata && typeof l.metadata === 'object' && 'hash' in l.metadata) ? String(l.metadata.hash) : "",
+        JSON.stringify(l.metadata || {}),
+      ]);
+      downloadCSV(headers, rows, `business-events-${new Date().toISOString().split('T')[0]}.csv`);
+      if (businessTotalCount > BUSINESS_LOG_LIMIT) {
+        toast.success(`Exported ${businessLogs.length} of ${businessTotalCount} total events. Only the most recent ${BUSINESS_LOG_LIMIT} are available.`, { duration: 5000 });
+      } else {
+        toast.success(`Exported ${businessLogs.length} business events`);
+      }
+    }
   };
 
   const getStatusColor = (status: number) => {
@@ -260,6 +297,11 @@ export function GlobalApiLogs() {
               </div>
             </CardHeader>
             <CardContent>
+              {apiTotalCount > API_LOG_LIMIT && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  Showing {logs.length} of {apiTotalCount} API requests. Only the most recent {API_LOG_LIMIT} are displayed.
+                </p>
+              )}
               {loading ? (
                 <div className="text-center py-8">Loading logs...</div>
               ) : filteredLogs.length === 0 ? (
@@ -410,6 +452,11 @@ export function GlobalApiLogs() {
               </div>
             </CardHeader>
             <CardContent>
+              {businessTotalCount > BUSINESS_LOG_LIMIT && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  Showing {businessLogs.length} of {businessTotalCount} business events. Only the most recent {BUSINESS_LOG_LIMIT} are displayed.
+                </p>
+              )}
               {businessLoading ? (
                 <div className="text-center py-8">Loading business events...</div>
               ) : businessLogs.length === 0 ? (

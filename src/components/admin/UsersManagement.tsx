@@ -263,6 +263,12 @@ export default function UsersManagement() {
           </Button>
         </div>
 
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {loading ? "" : `${filteredUsers.length} of ${users.length} users shown${users.length >= 1000 ? " (list may be truncated at 1,000)" : ""}`}
+          </p>
+        </div>
+
         {selectedCount > 0 && (
           <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
             <span className="text-sm font-medium">{selectedCount} selected</span>

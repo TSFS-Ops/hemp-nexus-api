@@ -83,8 +83,13 @@ Deno.serve(async (req) => {
 // ── List Users ────────────────────────────────────────────────────────────
 
 async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
-  const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+  // GoTrue listUsers defaults to 50/page; fetch up to 1000 via pagination
+  const allUsers: any[] = [];
+  let page = 1;
+  const perPage = 1000;
+  const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
   if (usersError) throw usersError;
+  allUsers.push(...users);
 
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
@@ -94,7 +99,7 @@ async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
     .from('user_roles')
     .select('user_id, role');
 
-  const enrichedUsers = users.map((authUser) => {
+  const enrichedUsers = allUsers.map((authUser) => {
     const profile = profiles?.find((p) => p.id === authUser.id);
     const userRoles = roles?.filter((r) => r.user_id === authUser.id) || [];
 

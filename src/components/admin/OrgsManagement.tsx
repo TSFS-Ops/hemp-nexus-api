@@ -31,48 +31,62 @@ export default function OrgsManagement() {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
   
 
   useEffect(() => {
     fetchOrgs();
   }, []);
 
+  const ORG_LIMIT = 500;
+
   const fetchOrgs = async () => {
     try {
       setLoading(true);
       
-      // Fetch organizations
-      const { data: orgsData, error: orgsError } = await supabase
+      // Fetch organizations with count
+      const { data: orgsData, error: orgsError, count } = await supabase
         .from("organizations")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .limit(ORG_LIMIT);
 
       if (orgsError) throw orgsError;
 
-      // Fetch counts for each org
-      const orgsWithCounts = await Promise.all(
-        (orgsData || []).map(async (org) => {
-          const [profilesCount, apiKeysCount] = await Promise.all([
-            supabase
-              .from("profiles")
-              .select("id", { count: "exact", head: true })
-              .eq("org_id", org.id),
-            supabase
-              .from("api_keys")
-              .select("id", { count: "exact", head: true })
-              .eq("org_id", org.id)
-              .eq("status", "active"),
-          ]);
+      setTotalCount(count ?? orgsData?.length ?? 0);
 
-          return {
-            ...org,
-            _count: {
-              profiles: profilesCount.count || 0,
-              api_keys: apiKeysCount.count || 0,
-            },
-          };
-        })
-      );
+      // Batch count: profiles per org (single query instead of N+1)
+      const orgIds = (orgsData || []).map(o => o.id);
+      
+      const [profilesRes, apiKeysRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("org_id")
+          .in("org_id", orgIds),
+        supabase
+          .from("api_keys")
+          .select("org_id")
+          .in("org_id", orgIds)
+          .eq("status", "active"),
+      ]);
+
+      // Aggregate counts client-side
+      const profileCounts = new Map<string, number>();
+      const apiKeyCounts = new Map<string, number>();
+      for (const p of profilesRes.data ?? []) {
+        profileCounts.set(p.org_id, (profileCounts.get(p.org_id) ?? 0) + 1);
+      }
+      for (const k of apiKeysRes.data ?? []) {
+        apiKeyCounts.set(k.org_id, (apiKeyCounts.get(k.org_id) ?? 0) + 1);
+      }
+
+      const orgsWithCounts = (orgsData || []).map((org) => ({
+        ...org,
+        _count: {
+          profiles: profileCounts.get(org.id) ?? 0,
+          api_keys: apiKeyCounts.get(org.id) ?? 0,
+        },
+      }));
 
       setOrgs(orgsWithCounts);
     } catch (error) {
@@ -126,6 +140,11 @@ export default function OrgsManagement() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
+        {!loading && totalCount > ORG_LIMIT && (
+          <p className="text-sm text-muted-foreground">
+            Showing {orgs.length} of {totalCount} organisations. Only the most recent {ORG_LIMIT} are displayed.
+          </p>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
