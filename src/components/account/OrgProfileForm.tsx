@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Save, Loader2, Building2, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 interface OrgProfile {
   id: string;
@@ -30,8 +31,14 @@ export function OrgProfileForm() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [profile, setProfile] = useState<OrgProfile | null>(null);
+  const [savedProfile, setSavedProfile] = useState<OrgProfile | null>(null);
   const [newJurisdiction, setNewJurisdiction] = useState("");
   const successTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  // Track dirty state by comparing current profile to last-saved version
+  const isDirty = profile !== null && savedProfile !== null &&
+    JSON.stringify(profile) !== JSON.stringify(savedProfile);
+  useUnsavedChanges(isDirty);
 
   useEffect(() => {
     fetchOrgProfile();
@@ -61,6 +68,7 @@ export function OrgProfileForm() {
 
       if (error) throw error;
       setProfile(data as OrgProfile | null);
+      setSavedProfile(data ? JSON.parse(JSON.stringify(data)) as OrgProfile : null);
     } catch (err) {
       console.error("Error loading org profile:", err);
       toast.error("Failed to load organisation profile");
@@ -109,6 +117,7 @@ export function OrgProfileForm() {
         .eq("id", profile.id);
 
       if (error) throw error;
+      setSavedProfile({ ...profile });
       setSaveSuccess(true);
       toast.success("Organisation profile saved");
       if (successTimeout.current) clearTimeout(successTimeout.current);

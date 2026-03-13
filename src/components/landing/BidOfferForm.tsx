@@ -3,8 +3,10 @@
  * Supports locked state during cryptographic scan phase.
  */
 
-import { useState, useEffect } from "react";
-import { Search, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Upload, Info } from "lucide-react";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface BidOfferData {
   product: string;
@@ -22,6 +24,15 @@ interface BidOfferFormProps {
 }
 
 export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
+  const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
+    side: "bid" | "offer";
+    product: string;
+    volume: string;
+    price: string;
+    location: string;
+    additionalInfo: string;
+  }>("bid-offer");
+
   const [side, setSide] = useState<"bid" | "offer">("bid");
   const [form, setForm] = useState({
     product: "",
@@ -31,6 +42,35 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     additionalInfo: "",
   });
   const [borderPulse, setBorderPulse] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const initialised = useRef(false);
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (initialised.current) return;
+    initialised.current = true;
+    const draft = restoreDraft();
+    if (draft) {
+      setSide(draft.side);
+      setForm({
+        product: draft.product || "",
+        volume: draft.volume || "",
+        price: draft.price || "",
+        location: draft.location || "",
+        additionalInfo: draft.additionalInfo || "",
+      });
+      setDraftRestored(true);
+    }
+  }, [restoreDraft]);
+
+  // Save draft on every change (after initial load)
+  useEffect(() => {
+    if (!initialised.current) return;
+    const hasContent = form.product || form.volume || form.price || form.location;
+    if (hasContent) {
+      saveDraft({ side, ...form });
+    }
+  }, [side, form, saveDraft]);
 
   useEffect(() => {
     if (isLocked) {
@@ -47,13 +87,37 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (canSearch && !isLocked) onSearch({ ...form, side });
+    if (canSearch && !isLocked) {
+      clearDraft();
+      setDraftRestored(false);
+      onSearch({ ...form, side });
+    }
   };
 
   const disabled = isLocked || isSearching;
 
   return (
     <form onSubmit={handleSubmit}>
+      {/* Draft restored notice */}
+      {draftRestored && (
+        <div className="flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border">
+          <span className="text-[10px] font-mono text-muted-foreground">
+            Draft restored from your previous session
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              clearDraft();
+              setDraftRestored(false);
+              setForm({ product: "", volume: "", price: "", location: "", additionalInfo: "" });
+              setSide("bid");
+            }}
+            className="text-[10px] font-mono text-muted-foreground hover:text-foreground underline"
+          >
+            Clear
+          </button>
+        </div>
+      )}
       {/* BID / OFFER tabs */}
       <div className="flex border-b border-border">
         <button
@@ -98,7 +162,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           value={form.volume} onChange={(v) => update("volume", v)}
           className="sm:border-l border-border" disabled={disabled} pulsingBorder={borderPulse}
         />
-        {/* Upload Docs field */}
+        {/* Upload Docs field — disabled with honest explanation */}
         <div
           className={`focus-copper-line border-b transition-colors duration-500 sm:border-l border-border ${
             borderPulse ? "border-primary" : "border-border"
@@ -109,17 +173,24 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           >
             Upload Docs
           </label>
-          <button
-            type="button"
-            disabled={disabled}
-            className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
-                       text-muted-foreground/30 hover:text-muted-foreground/50
-                       flex items-center gap-2 transition-colors
-                       disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span>Add documents</span>
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
+                             text-muted-foreground/20 cursor-not-allowed
+                             flex items-center gap-2"
+                  aria-disabled="true"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>Available after sign-in</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px] text-center">
+                <p className="text-xs">Document uploads are available inside the dashboard after you sign in or create an account.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 

@@ -21,13 +21,13 @@ export function SearchOutcomes({
 
   if (!hasSearched) return null;
 
-  // Scanning animation
+  // Scanning animation — truthful copy, no fake registry claim
   if (isSearching) {
     return (
       <div className="mt-0 border-t border-border">
         <div className="px-3 py-2.5 bg-basalt">
           <span className="text-[9px] font-mono uppercase tracking-widest text-basalt-foreground/60 animate-pulse">
-            Scanning verified counterparty registry...
+            Preparing your search…
           </span>
         </div>
         {[1, 2, 3].map((i) => (

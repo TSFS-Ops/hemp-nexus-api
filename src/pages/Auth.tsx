@@ -155,8 +155,11 @@ export default function Auth() {
           toast.error("Incorrect email or password. Check your credentials and try again.");
         } else if (msg.includes("Email not confirmed") || msg.includes("verify your email")) {
           toast.error(msg);
-        } else if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("locked")) {
-          toast.error("Account temporarily locked due to too many failed attempts. Try again in a few minutes.");
+      } else if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("locked")) {
+          toast.error(
+            "Too many failed sign-in attempts. Your account is temporarily locked for security. Wait 5 minutes, then try again. If you've forgotten your password, use 'Forgot password?' above.",
+            { duration: 10000 }
+          );
         } else {
           toast.error(msg || "Sign-in failed. Please check your credentials.");
         }
@@ -312,10 +315,26 @@ export default function Auth() {
           </div>
 
           {resetEmailSent ? (
-            <div className="p-4 bg-muted/40 border border-border rounded-md">
-              <p className="text-sm text-muted-foreground">
-                If an account exists with that email, you'll receive a password reset link. Check your spam folder if you don't see it.
+            <div className="p-4 bg-muted/40 border border-border rounded-md space-y-3">
+              <p className="text-sm font-medium text-foreground">
+                Reset link sent
               </p>
+              <p className="text-sm text-muted-foreground">
+                If an account exists for <strong>{resetEmail}</strong>, you'll receive a password reset link within a few minutes.
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>Check your <strong>spam or junk</strong> folder if you don't see it</li>
+                <li>The link expires after 1 hour and can only be used once</li>
+                <li>If nothing arrives after 5 minutes, try again or check the email address</li>
+              </ul>
+              <button
+                onClick={() => {
+                  setResetEmailSent(false);
+                }}
+                className="text-xs text-primary hover:underline mt-2"
+              >
+                Try a different email
+              </button>
             </div>
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">

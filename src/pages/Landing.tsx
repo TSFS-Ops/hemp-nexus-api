@@ -14,6 +14,7 @@ import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SCAN_DURATION_MS = 1200;
+const SCAN_TIMEOUT_MS = 8000; // Safety timeout for scan state
 
 export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
@@ -86,6 +87,16 @@ export default function Landing() {
     setIsSearching(false);
     setIsFormLocked(false);
   }, [isAuthenticated]);
+
+  // Safety timeout: if scan state gets stuck, auto-recover
+  useEffect(() => {
+    if (!isSearching) return;
+    const timeout = setTimeout(() => {
+      setIsSearching(false);
+      setIsFormLocked(false);
+    }, SCAN_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [isSearching]);
 
   return (
     <div className="h-screen h-[100dvh] flex flex-col bg-background relative overflow-hidden">

@@ -194,6 +194,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   };
 
+  const ALLOWED_EXTENSIONS = ".pdf, .jpg, .jpeg, .png, .gif, .doc, .docx, .xls, .xlsx";
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const file = e.target.files?.[0];
@@ -203,15 +205,23 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       return;
     }
 
+    // Pre-upload size feedback
     if (file.size > MAX_FILE_SIZE) {
-      setError("File size exceeds 50MB limit");
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setError(`File is ${sizeMB} MB, which exceeds the 50 MB limit. Choose a smaller file.`);
       setSelectedFile(null);
+      e.target.value = "";
       return;
     }
 
+    // Pre-upload type feedback
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("File type not allowed. Please use PDF, images, or Office documents.");
+      const ext = file.name.split('.').pop()?.toLowerCase() || "unknown";
+      setError(
+        `".${ext}" files are not supported. Allowed: PDF, JPEG, PNG, GIF, Word (.doc/.docx), and Excel (.xls/.xlsx).`
+      );
       setSelectedFile(null);
+      e.target.value = "";
       return;
     }
 
@@ -220,6 +230,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     if (!validMagic) {
       setError("File content does not match the declared file type. The file may be corrupted or renamed.");
       setSelectedFile(null);
+      e.target.value = "";
       return;
     }
 
@@ -445,12 +456,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 <Input
                   id="file"
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                  accept={ALLOWED_EXTENSIONS}
                   onChange={handleFileSelect}
                   disabled={uploading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Max 50MB. PDF, images, or Office documents.
+                  Max 50 MB. Accepted: PDF, JPEG, PNG, GIF, Word, Excel.
                 </p>
               </div>
               

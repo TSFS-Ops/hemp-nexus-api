@@ -144,7 +144,14 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     link.click();
     document.body.removeChild(link);
 
-    toast.success(`Exported ${logs.length} audit logs to CSV`);
+    if (totalCount > logs.length) {
+      toast.success(
+        `Exported ${logs.length} of ${totalCount} total audit logs. Increase the limit filter to export more.`,
+        { duration: 5000 }
+      );
+    } else {
+      toast.success(`Exported all ${logs.length} audit logs to CSV`);
+    }
   };
 
   return (
