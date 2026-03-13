@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
 import { toast } from "sonner";
+import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 
 interface AuthContextType {
   user: User | null;
