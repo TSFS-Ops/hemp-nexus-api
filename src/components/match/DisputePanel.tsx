@@ -172,7 +172,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <ShieldAlert className="h-5 w-5" />Disputes
         </h3>
-        <Button variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
+        <Button variant="outline" size="sm" onClick={handleOpenForm}>
           <Plus className="h-4 w-4 mr-1" />{showForm ? "Cancel" : "Raise Dispute"}
         </Button>
       </div>
