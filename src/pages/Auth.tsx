@@ -36,6 +36,7 @@ export default function Auth() {
 
   const [loading, setLoading] = useState(false);
   const [pageReady, setPageReady] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);

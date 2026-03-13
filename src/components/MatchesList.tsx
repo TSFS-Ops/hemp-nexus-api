@@ -71,6 +71,8 @@ export function MatchesList() {
   // Debounce search to avoid firing a query on every keystroke
   const debouncedSearch = useDebounce(commoditySearch, 300);
 
+  const [paginationError, setPaginationError] = useState(false);
+
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["matches", statusFilter, debouncedSearch, sortBy, page],
     placeholderData: (prev) => prev, // keep previous data visible while loading next page
@@ -94,7 +96,16 @@ export function MatchesList() {
 
       const { data, error, count } = await query;
       if (error) throw error;
+      setPaginationError(false);
       return { matches: data as Match[], totalCount: count ?? 0 };
+    },
+    meta: {
+      onSettled: (_data: unknown, err: unknown) => {
+        if (err && !isLoading) {
+          setPaginationError(true);
+          toast.error("Could not load the requested page. The data shown below is from the previous page.", { duration: 6000 });
+        }
+      },
     },
   });
 
