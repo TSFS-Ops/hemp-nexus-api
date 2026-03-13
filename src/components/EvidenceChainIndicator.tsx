@@ -18,8 +18,13 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
   const { data: status, isLoading } = useQuery({
     queryKey: ["evidence-chain", matchId],
     queryFn: async () => {
+      // Validate matchId format before making network request (defense-in-depth)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(matchId)) {
+        return { eventCount: 0, chainValid: false, hasIntentConfirmed: false };
+      }
+
       // Use server-side verification via the evidence-pack edge function
-      // This ensures chain integrity is validated authoritatively, not client-side
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Authentication required for chain verification");
@@ -37,7 +42,6 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       );
 
       if (!response.ok) {
-        // For non-settled matches or permission errors, fall back to no-evidence state
         if (response.status === 403 || response.status === 404) {
           return { eventCount: 0, chainValid: true, hasIntentConfirmed: false };
         }
@@ -45,7 +49,8 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       }
 
       const pack = await response.json();
-      const chainVerification = pack.chainVerification || { valid: true, eventCount: 0 };
+      // Secure default: treat missing verification data as invalid, not valid
+      const chainVerification = pack.chainVerification || { valid: false, eventCount: 0 };
       const timeline = pack.canonical?.timeline || [];
 
       const hasIntent = timeline.some(
