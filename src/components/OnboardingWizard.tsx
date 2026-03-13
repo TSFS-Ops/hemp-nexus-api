@@ -177,9 +177,12 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       setApiKey(data.key);
       setApiKeyCreated(true);
       
-      await navigator.clipboard.writeText(data.key);
-      
-      toast.success("API key created and copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(data.key);
+        toast.success("API key created and copied to clipboard!");
+      } catch {
+        toast.success("API key created! Copy it from the field below — it won't be shown again.");
+      }
       
       const timer = setTimeout(() => {
         if (open) setCurrentStep(4);
@@ -275,10 +278,22 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     }
   };
 
-  const handleCopyKey = () => {
-    if (apiKey) {
-      navigator.clipboard.writeText(apiKey);
+  const handleCopyKey = async () => {
+    if (!apiKey) return;
+    try {
+      await navigator.clipboard.writeText(apiKey);
       toast.success("API key copied!");
+    } catch {
+      // Fallback: select the text for manual copy
+      const el = document.querySelector<HTMLElement>("[data-api-key-display]");
+      if (el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+      toast.info("Could not copy automatically. Please select and copy the key manually.");
     }
   };
 
@@ -534,7 +549,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <Card className="p-4">
                     <Label className="text-sm font-medium mb-2 block">Your API Key</Label>
                     <div className="flex gap-2">
-                      <code className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all">
+                      <code data-api-key-display className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all select-all">
                         {apiKey}
                       </code>
                       <Button variant="outline" size="icon" onClick={handleCopyKey}>

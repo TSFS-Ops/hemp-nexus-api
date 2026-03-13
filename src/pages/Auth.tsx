@@ -106,6 +106,7 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     if (!passwordsMatch) {
       toast.error("Passwords do not match");
@@ -148,6 +149,7 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       authSchema.parse({ email: signInEmail, password: signInPassword });
@@ -190,6 +192,7 @@ export default function Auth() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       emailSchema.parse({ email: resetEmail });
@@ -216,6 +219,7 @@ export default function Auth() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       authSchema.parse({ email: "reset@placeholder.com", password: resetPassword });

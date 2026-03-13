@@ -60,8 +60,8 @@ export function useMatchDetails(matchId: string | undefined) {
 
       if (error) throw error;
       if (!data) {
-        toast.error("Match not found");
-        navigate("/dashboard");
+        setMatch(null);
+        setLoading(false);
         return;
       }
 

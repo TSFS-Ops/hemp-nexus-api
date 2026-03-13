@@ -309,8 +309,9 @@ export function MatchesList() {
         setSelectedMatches(new Set());
         setBulkBatchKey(null); // Reset batch key on full success
       }
-      setShowSettleDialog(false);
       refetch();
+      // Only close dialog after processing is complete
+      setShowSettleDialog(false);
     } catch (error: any) {
       console.error("Error confirming intent:", error);
       toast.error("Failed to confirm intent");

@@ -177,6 +177,8 @@ export default function CounterpartySearch() {
     if (isConfirming) return;
 
     setIsConfirming(true);
+    // Generate a batch idempotency key to prevent duplicate match creation on retry
+    const batchKey = crypto.randomUUID();
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -238,6 +240,7 @@ export default function CounterpartySearch() {
       for (const selectedResult of selectedItems) {
         try {
           const requestStartedAt = Date.now();
+          const idempotencyKey = `match_create_${batchKey}_${selectedResult.id}`;
           const response = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
             {
@@ -245,6 +248,7 @@ export default function CounterpartySearch() {
               headers: {
                 Authorization: `Bearer ${session.access_token}`,
                 "Content-Type": "application/json",
+                "Idempotency-Key": idempotencyKey,
               },
               body: JSON.stringify({
                 buyer: { 

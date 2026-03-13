@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, UserPlus, Loader2, Trash2, Info, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, Loader2, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -47,8 +47,6 @@ export function TeamManagement() {
   const [inviting, setInviting] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; inviteId: string | null }>({ open: false, inviteId: null });
-  const [roleChangeDialog, setRoleChangeDialog] = useState<{ open: boolean; member: TeamMember | null; newRole: string }>({ open: false, member: null, newRole: "" });
-  const [changingRole, setChangingRole] = useState(false);
 
   useEffect(() => {
     fetchTeam();
@@ -156,26 +154,6 @@ export function TeamManagement() {
       toast.error("Failed to cancel invitation");
     }
   };
-
-  const initiateRoleChange = (member: TeamMember, newRole: string) => {
-    setRoleChangeDialog({ open: true, member, newRole });
-  };
-
-  const confirmRoleChange = async () => {
-    const { member, newRole } = roleChangeDialog;
-    if (!member || !newRole) return;
-
-    setChangingRole(true);
-    try {
-      // This is a display-only change since roles are managed in user_roles table
-      // For now, show honest disclosure
-      toast.info("Role changes require backend support that is not yet automated. Please contact support@izenzo.co.za to change a team member's role.", { duration: 6000 });
-    } finally {
-      setChangingRole(false);
-      setRoleChangeDialog({ open: false, member: null, newRole: "" });
-    }
-  };
-
   const roleBadgeColour = (role: string) => {
     switch (role) {
       case "platform_admin": return "bg-red-500/10 text-red-700 border-red-200";
@@ -230,19 +208,15 @@ export function TeamManagement() {
                   </TableCell>
                   {isOrgAdmin && (
                     <TableCell>
-                      {m.id !== user?.id && (
-                        <Select
-                          value=""
-                          onValueChange={(newRole) => initiateRoleChange(m, newRole)}
+                  {m.id !== user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-muted-foreground"
+                          onClick={() => toast.info("Role changes are not yet available as a self-service action. Contact support@izenzo.co.za to change a team member's role.", { duration: 6000 })}
                         >
-                          <SelectTrigger className="w-[90px] h-8 text-xs">
-                            <span className="text-muted-foreground">Change</span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="org_member">Member</SelectItem>
-                            <SelectItem value="org_admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          Change role
+                        </Button>
                       )}
                     </TableCell>
                   )}
@@ -351,35 +325,6 @@ export function TeamManagement() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Cancel Invitation
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Role change confirmation dialog */}
-      <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => {
-        if (!open) setRoleChangeDialog({ open: false, member: null, newRole: "" });
-      }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
-              Confirm role change
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>You are about to change the role for:</p>
-              <div className="rounded-md border border-border p-3 text-sm">
-                <p><span className="text-muted-foreground">Member:</span> <strong>{roleChangeDialog.member?.full_name || roleChangeDialog.member?.email}</strong></p>
-                <p><span className="text-muted-foreground">Current roles:</span> {roleChangeDialog.member?.roles.map(roleDisplayName).join(", ")}</p>
-                <p><span className="text-muted-foreground">New role:</span> <strong>{roleDisplayName(roleChangeDialog.newRole)}</strong></p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={changingRole}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRoleChange} disabled={changingRole}>
-              {changingRole ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Confirm Change
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
