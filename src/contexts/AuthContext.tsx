@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     explicitSignOutRef.current = true;
     profileVerifiedRef.current.clear();
+    clearSentryUser();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
