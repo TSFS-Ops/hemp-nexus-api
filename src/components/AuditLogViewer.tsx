@@ -409,6 +409,33 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                 </Table>
               </div>
             </div>
+
+            {/* Pagination */}
+            {totalCount > parseInt(limit) && (
+              <div className="flex items-center justify-between pt-3 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Page {Math.floor(offset / parseInt(limit)) + 1} of {Math.ceil(totalCount / parseInt(limit))}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={offset === 0 || loading}
+                    onClick={() => { setOffset(Math.max(0, offset - parseInt(limit))); }}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={offset + parseInt(limit) >= totalCount || loading}
+                    onClick={() => { setOffset(offset + parseInt(limit)); }}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
