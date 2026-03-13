@@ -116,10 +116,11 @@ export function GlobalApiLogs() {
         query = query.eq("action", actionFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
       setBusinessLogs((data || []) as unknown as AuditLog[]);
+      setBusinessTotalCount(count ?? data?.length ?? 0);
     } catch (error) {
       console.error("Error fetching business logs:", error);
       toast.error("Failed to load business events");
