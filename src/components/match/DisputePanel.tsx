@@ -116,6 +116,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
       if (error) throw error;
       setReason("");
       setEvidence("");
+      clearDraft();
       setShowForm(false);
       refetch();
     },
