@@ -49,15 +49,17 @@ function AdminNotFound() {
 function DealsSection() {
   const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Deals" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Deals</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Deals</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-          <TabsTrigger value="matches">Matches</TabsTrigger>
-          <TabsTrigger value="approvals">Approvals</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+            <TabsTrigger value="matches">Matches</TabsTrigger>
+            <TabsTrigger value="approvals">Approvals</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="pipeline" className="mt-4"><AdminDealPipelinePanel /></TabsContent>
         <TabsContent value="matches" className="mt-4"><AdminMatchesPanel /></TabsContent>
         <TabsContent value="approvals" className="mt-4"><AdminTradeApprovalsPanel /></TabsContent>
