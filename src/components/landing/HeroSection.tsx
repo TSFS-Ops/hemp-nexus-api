@@ -46,12 +46,14 @@ export function HeroSection({
       <div className="max-w-[1280px] mx-auto relative z-10">
         {/* Explanation — simple, non-technical */}
         <div className="mb-10 sm:mb-14 animate-fade-up">
-          <h1 className="text-foreground tracking-tighter text-balance max-w-2xl mb-5 leading-[1.05]">
-            Find the right counterparty. Signal your intent. Get to trade.
+          <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-5 leading-[1.02]">
+            Discover counterparties. Signal intent. Execute with confidence.
           </h1>
-          <p className="text-[14px] text-muted-foreground max-w-lg leading-relaxed mb-8 animate-fade-up delay-75">
-            Izenzo connects buyers and sellers across commodities and jurisdictions.
-            Enter what you're looking for, find a match, and move toward a verified agreement — all in one place.
+          <p className="text-[14px] text-muted-foreground max-w-lg leading-relaxed mb-2 animate-fade-up delay-75">
+            Izenzo is a next-generation search and governance infrastructure for trade.
+          </p>
+          <p className="text-[14px] text-muted-foreground max-w-lg leading-relaxed mb-8 animate-fade-up delay-100">
+            It enables counterparties to discover each other, signal intent, and progress toward compliant transactions across industries and jurisdictions. By combining structured search with Proof-of-Intention (POI), it turns early-stage interest into governed, verifiable pathways to trade.
           </p>
 
           {/* CTA buttons */}
