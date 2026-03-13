@@ -24,6 +24,15 @@ interface BidOfferFormProps {
 }
 
 export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
+  const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
+    side: "bid" | "offer";
+    product: string;
+    volume: string;
+    price: string;
+    location: string;
+    additionalInfo: string;
+  }>("bid-offer");
+
   const [side, setSide] = useState<"bid" | "offer">("bid");
   const [form, setForm] = useState({
     product: "",
@@ -33,6 +42,35 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     additionalInfo: "",
   });
   const [borderPulse, setBorderPulse] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const initialised = useRef(false);
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (initialised.current) return;
+    initialised.current = true;
+    const draft = restoreDraft();
+    if (draft) {
+      setSide(draft.side);
+      setForm({
+        product: draft.product || "",
+        volume: draft.volume || "",
+        price: draft.price || "",
+        location: draft.location || "",
+        additionalInfo: draft.additionalInfo || "",
+      });
+      setDraftRestored(true);
+    }
+  }, [restoreDraft]);
+
+  // Save draft on every change (after initial load)
+  useEffect(() => {
+    if (!initialised.current) return;
+    const hasContent = form.product || form.volume || form.price || form.location;
+    if (hasContent) {
+      saveDraft({ side, ...form });
+    }
+  }, [side, form, saveDraft]);
 
   useEffect(() => {
     if (isLocked) {
