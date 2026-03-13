@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import { generateCSV } from "@/lib/download-utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "./test-client";
 
 const TEST_EMAIL = `uat-export-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";

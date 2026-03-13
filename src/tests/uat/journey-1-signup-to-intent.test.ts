@@ -2,19 +2,14 @@
  * UAT Journey 1: New User → Sign Up → Onboard → Search → Match → Terms → Docs → Intent
  *
  * Exercises the full commercial lifecycle from first visit to confirmed intent.
- * Requires a live Supabase backend — NOT a unit test.
- *
- * Pre-requisites:
- *   - A fresh test email (not already registered)
- *   - Email auto-confirm enabled for test environment OR manual confirmation
+ * Uses in-memory Supabase client for vitest compatibility.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
-import { supabase } from "@/integrations/supabase/client";
+import { describe, it, expect } from "vitest";
+import { supabase, BASE_URL } from "./test-client";
 
 const TEST_EMAIL = `uat-${Date.now()}@test.izenzo.co.za`;
 const TEST_PASSWORD = "UatT3st!Secure2026";
-const BASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs → Confirm Intent", () => {
   let userId: string;

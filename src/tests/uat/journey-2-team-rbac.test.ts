@@ -6,12 +6,11 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, BASE_URL } from "./test-client";
 
 const ADMIN_EMAIL = `uat-admin-${Date.now()}@test.izenzo.co.za`;
 const MEMBER_EMAIL = `uat-member-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
-const BASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 describe("Journey 2: Team Admin invites user → role assigned → member acts within permissions", () => {
   let adminUserId: string;
@@ -128,6 +127,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
     // Should be 403 or 401
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThan(500);
+    await res.text(); // consume body
   });
 
   // ── Step 5: Audit log records role assignment ──────────────────

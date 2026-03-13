@@ -5,9 +5,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, BASE_URL } from "./test-client";
 
-const BASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const TEST_EMAIL = `uat-dispute-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
 
