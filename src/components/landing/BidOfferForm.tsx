@@ -142,7 +142,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           value={form.volume} onChange={(v) => update("volume", v)}
           className="sm:border-l border-border" disabled={disabled} pulsingBorder={borderPulse}
         />
-        {/* Upload Docs field */}
+        {/* Upload Docs field — disabled with honest explanation */}
         <div
           className={`focus-copper-line border-b transition-colors duration-500 sm:border-l border-border ${
             borderPulse ? "border-primary" : "border-border"
@@ -153,17 +153,24 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           >
             Upload Docs
           </label>
-          <button
-            type="button"
-            disabled={disabled}
-            className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
-                       text-muted-foreground/30 hover:text-muted-foreground/50
-                       flex items-center gap-2 transition-colors
-                       disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span>Add documents</span>
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
+                             text-muted-foreground/20 cursor-not-allowed
+                             flex items-center gap-2"
+                  aria-disabled="true"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>Available after sign-in</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px] text-center">
+                <p className="text-xs">Document uploads are available inside the dashboard after you sign in or create an account.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
