@@ -329,35 +329,6 @@ export function TeamManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Role change confirmation dialog */}
-      <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => {
-        if (!open) setRoleChangeDialog({ open: false, member: null, newRole: "" });
-      }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
-              Confirm role change
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>You are about to change the role for:</p>
-              <div className="rounded-md border border-border p-3 text-sm">
-                <p><span className="text-muted-foreground">Member:</span> <strong>{roleChangeDialog.member?.full_name || roleChangeDialog.member?.email}</strong></p>
-                <p><span className="text-muted-foreground">Current roles:</span> {roleChangeDialog.member?.roles.map(roleDisplayName).join(", ")}</p>
-                <p><span className="text-muted-foreground">New role:</span> <strong>{roleDisplayName(roleChangeDialog.newRole)}</strong></p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={changingRole}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRoleChange} disabled={changingRole}>
-              {changingRole ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Confirm Change
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
