@@ -1,5 +1,6 @@
 /**
  * Trust badges row — 4 key platform attributes.
+ * Centered both vertically and horizontally within each cell.
  */
 
 import { ShieldCheck, Brain, FileCheck, ScrollText } from "lucide-react";
@@ -17,14 +18,14 @@ export function TrustBadges() {
       {BADGES.map((badge, i) => (
         <div
           key={badge.title}
-          className={`flex items-center gap-3 px-4 py-3
+          className={`flex items-center justify-center gap-3 px-4 py-4
                      ${i > 0 ? "sm:border-l border-border" : ""}
                      ${i >= 2 ? "border-t sm:border-t-0 border-border" : ""}`}
         >
           <badge.icon className="h-5 w-5 text-primary/60 flex-shrink-0" />
           <div>
-            <span className="text-[11px] font-semibold text-foreground block leading-tight">{badge.title}</span>
-            <span className="text-[9px] text-muted-foreground/60">{badge.desc}</span>
+            <span className="text-[12px] font-semibold text-foreground block leading-tight">{badge.title}</span>
+            <span className="text-[11px] text-muted-foreground font-medium">{badge.desc}</span>
           </div>
         </div>
       ))}

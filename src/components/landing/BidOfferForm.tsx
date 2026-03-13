@@ -119,7 +119,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
       {/* Draft restored notice */}
       {draftRestored && (
         <div className="flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border">
-          <span className="text-[10px] font-mono text-muted-foreground">
+          <span className="text-[11px] font-mono text-muted-foreground">
             Draft restored from your previous session
           </span>
           <button
@@ -130,7 +130,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               setForm({ product: "", volume: "", price: "", location: "", additionalInfo: "" });
               setSide("bid");
             }}
-            className="text-[10px] font-mono text-muted-foreground hover:text-foreground underline"
+            className="text-[11px] font-mono text-muted-foreground hover:text-foreground underline"
           >
             Clear
           </button>
@@ -187,7 +187,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           }`}
         >
           <label
-            className="block px-3 pt-2.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground select-none"
+            className="block px-3 pt-2.5 text-[12px] font-mono uppercase tracking-widest text-muted-foreground font-medium select-none"
           >
             Upload Docs
           </label>
@@ -196,8 +196,8 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               <TooltipTrigger asChild>
                 <div
                   className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
-                             text-muted-foreground/20 cursor-not-allowed
-                             flex items-center gap-2"
+                             text-muted-foreground cursor-not-allowed
+                             flex items-center gap-2 opacity-40"
                   aria-disabled="true"
                 >
                   <Upload className="h-3.5 w-3.5" />
@@ -223,7 +223,9 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
                    focus:outline-none active:scale-[0.995]
                    ${isSearching
                      ? "bg-basalt text-basalt-foreground w-full"
-                     : "bg-primary text-primary-foreground shadow-inner-metallic hover:opacity-90 disabled:opacity-30"
+                     : canSearch && !disabled
+                       ? "bg-primary text-primary-foreground shadow-inner-metallic hover:opacity-90"
+                       : "bg-muted text-muted-foreground opacity-100"
                    }`}
         >
           {isSearching ? (
@@ -259,7 +261,7 @@ function LedgerField({
     >
       <label
         htmlFor={id}
-        className="block px-3 pt-2.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground select-none"
+        className="block px-3 pt-2.5 text-[12px] font-mono uppercase tracking-widest text-muted-foreground font-medium select-none"
       >
         {label}
         {required && <span className="text-primary ml-0.5">*</span>}
@@ -272,8 +274,8 @@ function LedgerField({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className="w-full h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
-                   placeholder:text-muted-foreground/30 text-foreground
-                   focus:outline-none border-none
+                   placeholder:text-muted-foreground text-foreground
+                   focus:outline-none border-none rounded-[4px]
                    transition-colors
                    disabled:opacity-40 disabled:cursor-not-allowed"
       />

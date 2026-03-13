@@ -112,7 +112,7 @@ export default function Landing() {
             <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02]">
               Discover counterparties. Signal intent. Execute with confidence.
             </h1>
-            <p className="text-[14px] text-muted-foreground mb-6">
+            <p className="text-[14px] text-muted-foreground font-semibold mb-6">
               Governance Infrastructure for Trade and Institutions
             </p>
 

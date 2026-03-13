@@ -48,17 +48,20 @@ export function PoiCommitmentRow() {
                        ${accepted ? "translate-x-5" : "translate-x-0"}`}
           />
         </button>
-        <span className="text-[11px] text-foreground font-medium">
+        <span className="text-[12px] text-foreground font-medium">
           I understand and commit to the POI terms
         </span>
       </label>
       <button
         onClick={handleProceed}
         disabled={!accepted}
-        className="px-6 h-9 bg-primary text-primary-foreground shadow-inner-metallic
+        className={`px-6 h-9 shadow-inner-metallic
                  font-mono text-[11px] uppercase tracking-widest font-medium
-                 hover:opacity-90 transition-all active:scale-[0.98]
-                 disabled:opacity-30 disabled:cursor-not-allowed"
+                 transition-all active:scale-[0.98]
+                 ${accepted
+                   ? "bg-primary text-primary-foreground hover:opacity-90"
+                   : "bg-muted text-muted-foreground cursor-not-allowed"
+                 }`}
       >
         Proceed with WaD
       </button>
