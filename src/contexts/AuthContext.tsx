@@ -18,6 +18,8 @@ interface AuthContextType {
   roles: AppRole[];
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  /** Temporarily suppress session-expiry redirect (for password change flow) */
+  suppressExpiry: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
