@@ -61,7 +61,7 @@ export async function recordMatchEvent(
 
     console.log(`Match event recorded: ${eventType} (hash: ${payloadHash.substring(0, 8)}...)`);
   } catch (error) {
-    console.error(`Error recording match event:`, error);
-    // Don't throw - allow the main operation to succeed even if event logging fails
+    console.error(`CRITICAL: match event write failed, aborting to preserve evidence chain integrity:`, error);
+    throw error;
   }
 }

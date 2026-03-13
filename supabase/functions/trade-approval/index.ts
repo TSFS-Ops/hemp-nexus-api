@@ -173,6 +173,22 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
 
+      // Event store + audit log (parity with issue & revoke)
+      const eventHash = await sha256(JSON.stringify({ action: "renew", org_id: targetOrgId, extend_days }));
+      await admin.from("event_store").insert({
+        org_id: orgId, domain: "compliance", aggregate_type: "trade_approval", aggregate_id: updated.id,
+        event_type: "compliance.trade_approval.renewed",
+        actor_id: authCtx.userId, actor_role: authCtx.roles?.[0] || null,
+        payload: { target_org_id: targetOrgId, previous_valid_until: existing.valid_until, new_valid_until: newExpiry.toISOString(), extend_days },
+        event_hash: eventHash,
+      });
+
+      await admin.from("audit_logs").insert({
+        org_id: orgId, actor_user_id: authCtx.userId,
+        action: "trade_approval.renewed", entity_type: "trade_approval", entity_id: updated.id,
+        metadata: { target_org_id: targetOrgId, previous_valid_until: existing.valid_until, new_valid_until: newExpiry.toISOString(), extend_days },
+      });
+
       return new Response(JSON.stringify(envelope(updated, correlationId)), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
