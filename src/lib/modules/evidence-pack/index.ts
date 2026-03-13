@@ -58,17 +58,8 @@ export function assembleEvidencePack(
 }
 
 /**
- * Verify that an evidence pack's event chain is consistent.
+ * Event chain integrity verification is performed by the
+ * EvidenceChainIndicator component, which validates the actual
+ * hash chain (payload_hash → previous_event_hash) from match_events.
+ * See: src/components/EvidenceChainIndicator.tsx
  */
-export function verifyEventChain(events: EvidenceEvent[]): boolean {
-  if (events.length === 0) return true;
-  
-  for (let i = 1; i < events.length; i++) {
-    const prev = events[i - 1];
-    const curr = events[i];
-    if (prev.toState !== curr.fromState) {
-      return false;
-    }
-  }
-  return true;
-}
