@@ -392,10 +392,21 @@ export function MatchesList() {
                   </TooltipProvider>
                 </div>
               )}
-              <Button variant="outline" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={exportToCSV}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export CSV {totalPages > 1 ? "(this page)" : ""}
+                    </Button>
+                  </TooltipTrigger>
+                  {totalPages > 1 && (
+                    <TooltipContent>
+                      <p>Exports the {PAGE_SIZE} matches currently shown (page {page + 1} of {totalPages})</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardHeader>

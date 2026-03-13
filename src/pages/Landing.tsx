@@ -88,6 +88,16 @@ export default function Landing() {
     setIsFormLocked(false);
   }, [isAuthenticated]);
 
+  // Safety timeout: if scan state gets stuck, auto-recover
+  useEffect(() => {
+    if (!isSearching) return;
+    const timeout = setTimeout(() => {
+      setIsSearching(false);
+      setIsFormLocked(false);
+    }, SCAN_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [isSearching]);
+
   return (
     <div className="h-screen h-[100dvh] flex flex-col bg-background relative overflow-hidden">
       <AnimatedBackground />

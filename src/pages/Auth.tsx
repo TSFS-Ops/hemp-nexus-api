@@ -155,8 +155,11 @@ export default function Auth() {
           toast.error("Incorrect email or password. Check your credentials and try again.");
         } else if (msg.includes("Email not confirmed") || msg.includes("verify your email")) {
           toast.error(msg);
-        } else if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("locked")) {
-          toast.error("Account temporarily locked due to too many failed attempts. Try again in a few minutes.");
+      } else if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("locked")) {
+          toast.error(
+            "Too many failed sign-in attempts. Your account is temporarily locked for security. Wait 5 minutes, then try again. If you've forgotten your password, use 'Forgot password?' above.",
+            { duration: 10000 }
+          );
         } else {
           toast.error(msg || "Sign-in failed. Please check your credentials.");
         }
