@@ -53,7 +53,7 @@ export default function Auth() {
       const safe = getSafeReturnTo(returnTo);
       // If returnTo was valid and not the default, use it (with resume flag)
       if (returnTo && safe !== "/dashboard") return `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
-      if (hasPreAuthState()) return "/?resume=1";
+      if (hasPreAuthState()) return "/dashboard/search?resume=1";
       return "/dashboard";
     };
 
