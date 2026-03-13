@@ -177,9 +177,12 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       setApiKey(data.key);
       setApiKeyCreated(true);
       
-      await navigator.clipboard.writeText(data.key);
-      
-      toast.success("API key created and copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(data.key);
+        toast.success("API key created and copied to clipboard!");
+      } catch {
+        toast.success("API key created! Copy it from the field below — it won't be shown again.");
+      }
       
       const timer = setTimeout(() => {
         if (open) setCurrentStep(4);
