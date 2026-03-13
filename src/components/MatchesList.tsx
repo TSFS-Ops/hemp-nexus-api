@@ -481,7 +481,6 @@ export function MatchesList() {
                 </Button>
               </div>
             )}
-          <>
             {/* Mobile card view for <768px */}
             <div className="space-y-3 md:hidden">
               {matches.map((match) => (
