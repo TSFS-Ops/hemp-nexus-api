@@ -44,13 +44,13 @@
     --radius: 0.125rem;
 
     --sidebar-background: 210 20% 98%;
-    --sidebar-foreground: 210 24% 16%;
-    --sidebar-primary: 155 42% 21%;
+    --sidebar-foreground: 220 26% 11%;
+    --sidebar-primary: 155 44% 19%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 93%;
-    --sidebar-accent-foreground: 210 24% 16%;
+    --sidebar-accent-foreground: 220 26% 11%;
     --sidebar-border: 220 13% 83%;
-    --sidebar-ring: 155 42% 21%;
+    --sidebar-ring: 155 44% 19%;
 
     /* Semantic surface tokens */
     --surface-elevated: 0 0% 100%;
