@@ -107,12 +107,12 @@ export default function Landing() {
       <div className="flex-1 flex min-h-0 relative z-10">
         {/* Left: Main content area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-[960px]">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[960px]">
             {/* Hero headline — LOCKED: Do not change without client approval */}
-            <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02]">
+            <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02] text-[1.375rem] sm:text-[2rem] lg:text-[2.75rem]">
               Discover counterparties. Signal intent. Execute with confidence.
             </h1>
-            <p className="text-[14px] text-muted-foreground font-semibold mb-6">
+            <p className="text-[13px] sm:text-[14px] text-muted-foreground font-semibold mb-4 sm:mb-6 leading-[1.5] max-w-md sm:max-w-none">
               Governance Infrastructure for Trade and Institutions
             </p>
 

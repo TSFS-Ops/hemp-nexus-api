@@ -423,3 +423,12 @@
     bottom: auto !important;
   }
 }
+
+/* Hidden scrollbar utility — for swipeable steppers and tickers */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
