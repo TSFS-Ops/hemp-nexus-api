@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
-import { Loader2, RefreshCw, Filter, Shield, Hash, Download } from "lucide-react";
+import { Loader2, RefreshCw, Filter, Shield, Hash, Download, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
