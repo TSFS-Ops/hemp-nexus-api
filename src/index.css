@@ -10,28 +10,28 @@
   :root {
     /* #FFFFFF — clean white */
     --background: 0 0% 100%;
-    /* #1F2933 — deep blue-charcoal */
-    --foreground: 210 24% 16%;
+    /* #111827 — rich near-black for maximum readability */
+    --foreground: 220 26% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 24% 16%;
+    --card-foreground: 220 26% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 24% 16%;
+    --popover-foreground: 220 26% 11%;
 
-    /* #1F4D3A — deep forest green (governance / signals) */
-    --primary: 155 42% 21%;
+    /* #1B4533 — brand dark green */
+    --primary: 155 44% 19%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 13% 95%;
-    --secondary-foreground: 210 24% 20%;
+    --secondary-foreground: 220 26% 14%;
 
     --muted: 220 13% 95%;
-    /* #6B7280 — neutral grey */
+    /* #6B7280 — mid-dark grey for secondary text & placeholders */
     --muted-foreground: 220 9% 46%;
 
     --accent: 220 13% 93%;
-    --accent-foreground: 210 24% 16%;
+    --accent-foreground: 220 26% 11%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -39,18 +39,18 @@
     /* #D1D5DB — slightly darker dividers for structural clarity */
     --border: 220 13% 83%;
     --input: 220 13% 83%;
-    --ring: 155 42% 21%;
+    --ring: 155 44% 19%;
 
     --radius: 0.125rem;
 
     --sidebar-background: 210 20% 98%;
-    --sidebar-foreground: 210 24% 16%;
-    --sidebar-primary: 155 42% 21%;
+    --sidebar-foreground: 220 26% 11%;
+    --sidebar-primary: 155 44% 19%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 93%;
-    --sidebar-accent-foreground: 210 24% 16%;
+    --sidebar-accent-foreground: 220 26% 11%;
     --sidebar-border: 220 13% 83%;
-    --sidebar-ring: 155 42% 21%;
+    --sidebar-ring: 155 44% 19%;
 
     /* Semantic surface tokens */
     --surface-elevated: 0 0% 100%;
@@ -62,7 +62,7 @@
     --warning-foreground: 0 0% 0%;
 
     /* Signal colors — #059669 for legible status text */
-    --signal-verified: 160 91% 31%;
+    --signal-verified: 160 84% 29%;
     --signal-pending: 43 96% 56%;
 
     /* Sidebar panel background — #F9FAFB */
