@@ -452,6 +452,11 @@ export function GlobalApiLogs() {
               </div>
             </CardHeader>
             <CardContent>
+              {businessTotalCount > BUSINESS_LOG_LIMIT && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  Showing {businessLogs.length} of {businessTotalCount} business events. Only the most recent {BUSINESS_LOG_LIMIT} are displayed.
+                </p>
+              )}
               {businessLoading ? (
                 <div className="text-center py-8">Loading business events...</div>
               ) : businessLogs.length === 0 ? (
