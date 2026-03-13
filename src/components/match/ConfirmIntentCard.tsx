@@ -5,14 +5,13 @@
  * before the irreversible action fires. Refetches balance when dialog opens.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Info, AlertTriangle, Coins } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingButton } from "@/components/ui/loading-button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,7 +59,6 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
   const remaining = currentBalance - CREDITS_REQUIRED;
 
   const handleConfirmClick = () => {
-    // Refetch balance right before showing the dialog to ensure freshness
     refetch();
     setShowDialog(true);
   };
@@ -82,7 +80,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 Insufficient credits
               </h4>
               <p className="text-sm text-muted-foreground">
-                You need {CREDITS_REQUIRED} credits to confirm intent. Your current balance is {currentBalance.toLocaleString()} credits.
+                You need {CREDITS_REQUIRED} credits to signal intent. Your current balance is {currentBalance.toLocaleString()} credits.
               </p>
             </div>
             <a
@@ -103,11 +101,16 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h4 className="font-semibold">Ready to Confirm Intent?</h4>
+            <div className="space-y-2">
+              <h4 className="font-semibold">Ready to Signal Intent?</h4>
               <p className="text-sm text-muted-foreground">
-                Upload any supporting documents above first. {CREDITS_REQUIRED} credits will be deducted. No legal obligation is created.
+                This records your interest so the counterparty can prepare terms. {CREDITS_REQUIRED} credits will be deducted.
               </p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• <strong>Non-binding:</strong> No contract, payment, or legal obligation is created.</p>
+                <p>• <strong>Irreversible:</strong> Once confirmed, this cannot be undone. Credits are not refundable.</p>
+                <p>• <strong>What happens next:</strong> An immutable proof record is created. The counterparty is notified.</p>
+              </div>
               {!balanceLoading && (
                 <p className="text-xs text-muted-foreground">
                   Your balance: {currentBalance.toLocaleString()} credits
@@ -119,20 +122,10 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 onClick={handleConfirmClick}
                 loading={loading}
                 size="lg"
-                loadingText="Confirming…"
+                loadingText="Processing — do not close this page…"
               >
-                Confirm Intent
+                Signal Intent — {CREDITS_REQUIRED} credits
               </LoadingButton>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Confirms your intent and burns {CREDITS_REQUIRED} credits. This creates an immutable proof record that will appear in your logs.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
           </div>
         </CardContent>
@@ -141,12 +134,11 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm intent for this match?</AlertDialogTitle>
+            <AlertDialogTitle>Signal intent for this match?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  This will deduct {CREDITS_REQUIRED} credits from your balance and create an immutable
-                  proof record. This action cannot be undone.
+                  This records your interest so the counterparty can begin preparing terms.
                 </p>
                 <div className="rounded-md border border-border p-3 space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -163,14 +155,16 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                     <span className="font-medium text-foreground">{remaining.toLocaleString()} credits</span>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  No contract, payment, or legal obligation is created. This only records your intent.
-                </p>
+                <div className="text-xs text-muted-foreground space-y-1 p-3 rounded-md bg-muted/30">
+                  <p><strong>Non-binding.</strong> No contract, payment, or legal obligation is created.</p>
+                  <p><strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.</p>
+                  <p><strong>What happens next.</strong> An immutable proof-of-intent record is created. The counterparty will be able to see your interest and may begin preparing deal terms.</p>
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={loading}>Cancel — no credits deducted</AlertDialogCancel>
             <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
               <Coins className="h-4 w-4 mr-2" />
               Confirm — deduct {CREDITS_REQUIRED} credits

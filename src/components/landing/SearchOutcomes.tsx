@@ -38,8 +38,7 @@ export function SearchOutcomes({
   }
 
   // Search complete — prompt sign-in to view results
-  const authHref = isPreview ? "/auth" : getAuthUrl();
-
+  // Use onSignIn callback which handles pre-auth state saving and returnTo
   return (
     <div className="mt-0 border-t border-border animate-fade-up">
       <div className="p-4 sm:p-5">
@@ -51,8 +50,8 @@ export function SearchOutcomes({
           Create a free account to search verified counterparties, create matches, and confirm intent.
         </p>
 
-        <a
-          href={authHref}
+        <button
+          onClick={onSignIn}
           className="w-full h-11 bg-primary text-primary-foreground shadow-inner-metallic
                    font-mono text-[11px] uppercase tracking-widest font-medium
                    transition-all hover:opacity-90 active:scale-[0.998]
@@ -60,7 +59,7 @@ export function SearchOutcomes({
         >
           <LogIn className="h-3.5 w-3.5" />
           Sign in to search
-        </a>
+        </button>
         <p className="text-[10px] font-mono text-muted-foreground/40 mt-2.5 text-center tracking-wide">
           No obligation. Free to create an account.
         </p>

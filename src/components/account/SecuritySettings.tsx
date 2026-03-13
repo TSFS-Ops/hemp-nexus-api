@@ -17,6 +17,10 @@ export function SecuritySettings() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast.error("Please enter your current password");
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -25,9 +29,24 @@ export function SecuritySettings() {
       toast.error("Password must be at least 8 characters");
       return;
     }
+    if (currentPassword === newPassword) {
+      toast.error("New password must be different from your current password");
+      return;
+    }
 
     setChangingPassword(true);
     try {
+      // Step 1: Verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email ?? "",
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast.error("Current password is incorrect");
+        return;
+      }
+
+      // Step 2: Update to new password
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       toast.success("Password updated successfully");
@@ -46,9 +65,20 @@ export function SecuritySettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5" />Change Password</CardTitle>
-          <CardDescription>Update your account password. Minimum 8 characters required.</CardDescription>
+          <CardDescription>Update your account password. You must verify your current password first.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter your current password"
+              aria-label="Current password"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="new-password">New Password</Label>
             <Input
@@ -56,9 +86,12 @@ export function SecuritySettings() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
+              placeholder="Minimum 8 characters"
               aria-label="New password"
             />
+            {newPassword.length > 0 && newPassword.length < 8 && (
+              <p className="text-xs text-destructive">Password must be at least 8 characters ({8 - newPassword.length} more needed)</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm New Password</Label>
@@ -67,11 +100,14 @@ export function SecuritySettings() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
+              placeholder="Re-enter new password"
               aria-label="Confirm new password"
             />
+            {confirmPassword.length > 0 && confirmPassword !== newPassword && (
+              <p className="text-xs text-destructive">Passwords do not match</p>
+            )}
           </div>
-          <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword}>
+          <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}>
             {changingPassword ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Lock className="h-4 w-4 mr-2" />}
             Update Password
           </Button>

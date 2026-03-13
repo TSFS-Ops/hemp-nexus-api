@@ -19,28 +19,47 @@ export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
+  const [lastFormData, setLastFormData] = useState<BidOfferData | null>(null);
   const [isFormLocked, setIsFormLocked] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
   const { isAuthenticated } = useAuth();
 
   const navigateToAuth = useCallback(() => {
+    // Save the search state before redirecting to auth
+    if (lastQuery) {
+      savePreAuthState({
+        query: lastQuery,
+        selectedIds: [],
+        pendingAction: "interested",
+        returnTo: "/",
+      });
+    }
     if (isPreview) {
       window.location.assign("/auth?returnTo=/");
     } else {
       window.location.href = authUrl;
     }
-  }, [isPreview, authUrl]);
+  }, [isPreview, authUrl, lastQuery]);
 
   const handleSearch = useCallback(async (data: BidOfferData) => {
     const queryString = [data.product, data.location].filter(Boolean).join(" ");
     setLastQuery(queryString);
+    setLastFormData(data);
 
     if (isAuthenticated) {
       const params = new URLSearchParams({ q: queryString });
       window.location.assign(`/dashboard/search?${params.toString()}`);
       return;
     }
+
+    // Save pre-auth state immediately when the unauthenticated user searches
+    savePreAuthState({
+      query: queryString,
+      selectedIds: [],
+      pendingAction: "interested",
+      returnTo: "/",
+    });
 
     setIsSearching(true);
     setIsFormLocked(true);
