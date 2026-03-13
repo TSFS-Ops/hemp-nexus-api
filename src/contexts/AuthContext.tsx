@@ -98,6 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const wasExplicit = explicitSignOutRef.current;
         explicitSignOutRef.current = false;
 
+        // Suppress redirect during password change (which triggers auth events)
+        if (suppressExpiryRef.current) {
+          suppressExpiryRef.current = false;
+          return;
+        }
+
         if (!wasExplicit && hadUserRef.current) {
           // This is a genuine session expiry, not an explicit logout
           // Check for unsaved changes via beforeunload simulation
