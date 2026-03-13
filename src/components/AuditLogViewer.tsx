@@ -84,6 +84,10 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     }
   };
 
+  // Auto-fetch when offset changes (pagination)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (logs.length > 0 && apiKey) fetchAuditLogs(); }, [offset]);
+
   const getActionBadgeVariant = (action: string) => {
     if (action.includes("created")) return "default";
     if (action.includes("settled") || action.includes("updated") || action.includes("confirmed")) return "secondary";
