@@ -210,28 +210,6 @@ export async function getLicenceStats(
   };
 }
 
-/**
- * Tier-based features/limits (for future use)
- */
-export const TIER_LIMITS = {
-  professional: {
-    maxTransactionsPerMonth: 100,
-    maxUsersPerOrg: 5,
-    supportLevel: 'email',
-  },
-  corporate: {
-    maxTransactionsPerMonth: 500,
-    maxUsersPerOrg: 25,
-    supportLevel: 'priority',
-  },
-  institutional: {
-    maxTransactionsPerMonth: -1, // Unlimited
-    maxUsersPerOrg: -1, // Unlimited
-    supportLevel: 'dedicated',
-  },
-  sovereign: {
-    maxTransactionsPerMonth: -1,
-    maxUsersPerOrg: -1,
-    supportLevel: 'dedicated',
-  },
-} as const;
+// Tier limits removed — they were defined but never enforced anywhere.
+// When tier enforcement is needed, implement it in enforceLicence()
+// with actual DB checks against transaction counts and user counts.
