@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, Shield, ShieldCheck, ShieldAlert, FileText, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, FileText, AlertTriangle, RefreshCw } from "lucide-react";
+import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -115,43 +116,7 @@ export function MatchesList() {
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Batch-fetch evidence chain status for current page's matches (fixes N+1)
-  const matchIds = useMemo(() => matches?.map(m => m.id) ?? [], [matches]);
-  const { data: evidenceMap } = useQuery({
-    queryKey: ["evidence-chain-batch", matchIds],
-    queryFn: async () => {
-      if (matchIds.length === 0) return {};
-      const { data: events, error } = await supabase
-        .from("match_events")
-        .select("id, match_id, event_type, payload_hash, previous_event_hash")
-        .in("match_id", matchIds)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      // Group by match_id and compute chain status
-      const grouped = new Map<string, typeof events>();
-      for (const evt of events ?? []) {
-        if (!grouped.has(evt.match_id)) grouped.set(evt.match_id, []);
-        grouped.get(evt.match_id)!.push(evt);
-      }
-
-      const result: Record<string, { eventCount: number; chainValid: boolean; hasIntentConfirmed: boolean }> = {};
-      for (const [mid, evts] of grouped) {
-        let valid = true;
-        let hasIntent = false;
-        for (let i = 0; i < evts.length; i++) {
-          const expected = i === 0 ? null : evts[i - 1].payload_hash;
-          if (evts[i].previous_event_hash !== expected) valid = false;
-          if (evts[i].event_type === "intent.confirmed" || evts[i].event_type === "match.settled") hasIntent = true;
-        }
-        result[mid] = { eventCount: evts.length, chainValid: valid, hasIntentConfirmed: hasIntent };
-      }
-      return result;
-    },
-    enabled: matchIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Evidence chain status is now rendered per-match by EvidenceChainIndicator (hardened component)
 
   // Use ref to avoid stale closure in real-time subscription
   const refetchRef = useRef(refetch);
@@ -353,27 +318,7 @@ export function MatchesList() {
   const unsettledMatches = matches?.filter(m => MatchState.canDo(m.status, "select_for_bulk")) || [];
   const allUnsettledSelected = unsettledMatches.length > 0 && selectedMatches.size === unsettledMatches.length;
 
-  // Inline evidence indicator using batch data (avoids N+1)
-  const renderEvidence = (matchId: string) => {
-    const status = evidenceMap?.[matchId];
-    if (!status || status.eventCount === 0) {
-      return <Shield className="h-4 w-4 text-muted-foreground" />;
-    }
-    const Icon = status.chainValid ? ShieldCheck : ShieldAlert;
-    const colorClass = status.chainValid ? "text-green-600" : "text-destructive";
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <Icon className={`h-4 w-4 ${colorClass}`} />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{status.eventCount} event{status.eventCount !== 1 ? 's' : ''} — {status.chainValid ? 'Chain verified' : 'Chain compromised'}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
+  // Evidence rendering now delegated to EvidenceChainIndicator (handles timeout, auth, 402, parse errors)
 
   return (
     <>
@@ -517,7 +462,7 @@ export function MatchesList() {
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
                     <div className="flex items-center gap-2">
-                      {renderEvidence(match.id)}
+                      <EvidenceChainIndicator matchId={match.id} compact />
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(match.created_at), "MMM dd")}
                       </span>
@@ -580,7 +525,7 @@ export function MatchesList() {
                       </TableCell>
                       <TableCell>{getStatusBadge(match.status)}</TableCell>
                       <TableCell className="hidden xl:table-cell">
-                        {renderEvidence(match.id)}
+                        <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
