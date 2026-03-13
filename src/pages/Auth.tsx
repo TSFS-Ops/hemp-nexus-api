@@ -312,10 +312,26 @@ export default function Auth() {
           </div>
 
           {resetEmailSent ? (
-            <div className="p-4 bg-muted/40 border border-border rounded-md">
-              <p className="text-sm text-muted-foreground">
-                If an account exists with that email, you'll receive a password reset link. Check your spam folder if you don't see it.
+            <div className="p-4 bg-muted/40 border border-border rounded-md space-y-3">
+              <p className="text-sm font-medium text-foreground">
+                Reset link sent
               </p>
+              <p className="text-sm text-muted-foreground">
+                If an account exists for <strong>{resetEmail}</strong>, you'll receive a password reset link within a few minutes.
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>Check your <strong>spam or junk</strong> folder if you don't see it</li>
+                <li>The link expires after 1 hour and can only be used once</li>
+                <li>If nothing arrives after 5 minutes, try again or check the email address</li>
+              </ul>
+              <button
+                onClick={() => {
+                  setResetEmailSent(false);
+                }}
+                className="text-xs text-primary hover:underline mt-2"
+              >
+                Try a different email
+              </button>
             </div>
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">
