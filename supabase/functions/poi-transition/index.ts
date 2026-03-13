@@ -57,6 +57,23 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── IDOR guard: resolve caller's org_id from profile ──
+    const adminClientForProfile = createClient(supabaseUrl, serviceKey);
+    const { data: callerProfile, error: profileError } = await adminClientForProfile
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !callerProfile?.org_id) {
+      return new Response(
+        JSON.stringify({ error: "User profile not found" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const callerOrgId = callerProfile.org_id;
+
     const body = await req.json();
     const { matchId, toState, reason, metadata } = body;
 
@@ -80,6 +97,14 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Match not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── IDOR enforcement: caller must belong to the match's org ──
+    if (match.org_id !== callerOrgId) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: you do not have access to this match" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
