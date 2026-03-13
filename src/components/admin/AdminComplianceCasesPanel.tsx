@@ -172,6 +172,17 @@ export function AdminComplianceCasesPanel() {
                   <TableCell className="max-w-[250px] truncate">{c.decision_notes || "—"}</TableCell>
                   <TableCell>{c.decided_at ? format(new Date(c.decided_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
                   <TableCell>{format(new Date(c.created_at), "dd MMM yyyy HH:mm")}</TableCell>
+                  <TableCell>
+                    {(c.status === "open" || c.status === "escalated") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setActionCase(c); setActionType(""); setDecisionNotes(""); }}
+                      >
+                        Resolve
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
