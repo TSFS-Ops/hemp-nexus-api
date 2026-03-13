@@ -149,6 +149,7 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       authSchema.parse({ email: signInEmail, password: signInPassword });
