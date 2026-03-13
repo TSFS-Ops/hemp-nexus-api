@@ -116,6 +116,7 @@ export function OrgProfileForm() {
         .eq("id", profile.id);
 
       if (error) throw error;
+      setSavedProfile({ ...profile });
       setSaveSuccess(true);
       toast.success("Organisation profile saved");
       if (successTimeout.current) clearTimeout(successTimeout.current);

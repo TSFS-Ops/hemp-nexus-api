@@ -456,12 +456,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 <Input
                   id="file"
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                  accept={ALLOWED_EXTENSIONS}
                   onChange={handleFileSelect}
                   disabled={uploading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Max 50MB. PDF, images, or Office documents.
+                  Max 50 MB. Accepted: PDF, JPEG, PNG, GIF, Word, Excel.
                 </p>
               </div>
               
