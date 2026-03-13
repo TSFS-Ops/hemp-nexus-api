@@ -505,10 +505,20 @@ export default function Auth() {
                   type="email"
                   placeholder="you@company.com"
                   value={signUpEmail}
-                  onChange={(e) => setSignUpEmail(e.target.value)}
+                  onChange={(e) => { setSignUpEmail(e.target.value); if (signUpEmailError) setSignUpEmailError(""); }}
+                  onBlur={() => {
+                    if (signUpEmail && !z.string().email().safeParse(signUpEmail).success) {
+                      setSignUpEmailError("Enter a valid email address");
+                    } else {
+                      setSignUpEmailError("");
+                    }
+                  }}
                   required
-                  className="h-10"
+                  className={`h-10 ${signUpEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
+                {signUpEmailError && (
+                  <p className="text-xs text-destructive">{signUpEmailError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
