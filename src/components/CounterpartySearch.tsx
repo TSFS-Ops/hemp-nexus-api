@@ -14,6 +14,17 @@ import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
+import { consumePreAuthState } from "@/lib/pre-auth-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SearchResult {
   id: string;
@@ -59,8 +70,27 @@ export default function CounterpartySearch() {
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [isConfirming, setIsConfirming] = useState(false);
   const [similarAnchor, setSimilarAnchor] = useState<SearchResult | null>(null);
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
+
+  // Restore pre-auth state on mount (when returning from auth flow)
+  useEffect(() => {
+    if (authLoading) return;
+    const resumed = searchParams.get("resume");
+    if (resumed !== "1") return;
+    
+    const preAuth = consumePreAuthState();
+    if (preAuth?.query && !query) {
+      setQuery(preAuth.query);
+      setSearchParams((prev) => {
+        const updated = new URLSearchParams(prev);
+        updated.set("q", preAuth.query);
+        updated.delete("resume");
+        return updated;
+      }, { replace: true });
+    }
+  }, [authLoading]);
 
   const handleSearch = async () => {
     if (!query.trim()) {
