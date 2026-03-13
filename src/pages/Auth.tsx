@@ -438,6 +438,15 @@ export default function Auth() {
           </p>
         </div>
 
+        {searchParams.get("returnTo") && (
+          <Alert className="mb-6 border-primary/30 bg-primary/5">
+            <LogIn className="h-4 w-4" />
+            <AlertDescription className="text-sm text-foreground">
+              Sign in to continue where you left off. You'll be redirected back automatically.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {verificationPending && (
           <div className="mb-6 p-4 bg-muted/40 border border-border rounded-md">
             <p className="text-sm text-muted-foreground">
