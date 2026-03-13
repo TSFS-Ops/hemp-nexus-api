@@ -120,16 +120,18 @@ function AdminComplianceSection() {
 function AuditSection() {
   const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi", "ledger", "api"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Audit" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Audit Trail</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Audit Trail</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-          <TabsTrigger value="poi">POI History</TabsTrigger>
-          <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
-          <TabsTrigger value="api">API Logs</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+            <TabsTrigger value="poi">POI History</TabsTrigger>
+            <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
+            <TabsTrigger value="api">API Logs</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
         <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
         <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
