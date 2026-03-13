@@ -108,7 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!wasExplicit && hadUserRef.current) {
           // This is a genuine session expiry, not an explicit logout
-          // Check for unsaved changes via beforeunload simulation
+          // Dispatch custom event so draft-persistence hooks can emergency-save
+          window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+          // Also fire beforeunload so useUnsavedChanges can warn
           const beforeUnloadEvent = new Event("beforeunload", { cancelable: true });
           window.dispatchEvent(beforeUnloadEvent);
           

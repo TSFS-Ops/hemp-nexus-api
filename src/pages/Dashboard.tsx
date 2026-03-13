@@ -31,12 +31,42 @@ function DashboardNotFound() {
   );
 }
 
+function AccessDeniedBanner() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const denied = searchParams.get("denied") === "1";
+
+  if (!denied) return null;
+
+  return (
+    <Alert variant="destructive" className="mb-4">
+      <ShieldAlert className="h-4 w-4" />
+      <AlertDescription>
+        You were redirected because you don't have permission to access that page.
+        If you believe this is an error, contact your organisation admin or{" "}
+        <a href="mailto:support@izenzo.co.za" className="underline font-medium">support@izenzo.co.za</a>.
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-2 h-6 text-xs"
+          onClick={() => {
+            searchParams.delete("denied");
+            setSearchParams(searchParams, { replace: true });
+          }}
+        >
+          Dismiss
+        </Button>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 export default function Dashboard() {
   const { isAdmin } = useAuth();
 
   return (
     <RequireAuth>
       <DashboardLayout isAdmin={isAdmin}>
+        <AccessDeniedBanner />
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<ConsoleOverview />} />

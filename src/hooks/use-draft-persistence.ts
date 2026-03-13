@@ -63,5 +63,17 @@ export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | n
     if (draft) setHasRestoredDraft(true);
   }, [restoreDraft]);
 
+  // Emergency save on session expiry
+  useEffect(() => {
+    const handler = () => {
+      const data = getCurrentDataRef.current?.();
+      if (data) {
+        saveDraft(data);
+      }
+    };
+    window.addEventListener("izenzo:session-expiry", handler);
+    return () => window.removeEventListener("izenzo:session-expiry", handler);
+  }, [saveDraft]);
+
   return { restoreDraft, saveDraft, clearDraft, hasRestoredDraft };
 }

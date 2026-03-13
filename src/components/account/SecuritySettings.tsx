@@ -36,6 +36,9 @@ export function SecuritySettings() {
     }
 
     setChangingPassword(true);
+    // Suppress session-expiry redirect during password change flow
+    // (signInWithPassword + updateUser both trigger auth state events)
+    suppressExpiry();
     try {
       // Step 1: Verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({
