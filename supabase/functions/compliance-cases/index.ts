@@ -52,14 +52,15 @@ Deno.serve(async (req: Request) => {
       const body = await req.json();
       const parsed = CaseCreateSchema.parse(body);
 
-      // Verify entity exists
+      // Verify entity exists AND belongs to the caller's org
       const { data: entity } = await admin
         .from("entities")
-        .select("id")
+        .select("id, org_id")
         .eq("id", parsed.entity_id)
         .maybeSingle();
 
       if (!entity) throw new ApiException("NOT_FOUND", "Entity not found", 404);
+      if (entity.org_id !== orgId) throw new ApiException("FORBIDDEN", "Entity does not belong to your organisation", 403);
 
       // Check for existing open case
       const { data: existingCase } = await admin
