@@ -31,14 +31,16 @@ export function AdminMatchesPanel() {
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  const { data: matches, isLoading, isError, refetch } = useQuery({
+  const ADMIN_MATCH_LIMIT = 100;
+
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-matches", statusFilter, search],
     queryFn: async () => {
       let query = supabase
         .from("matches")
-        .select("*, organizations(name)")
+        .select("*, organizations(name)", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(ADMIN_MATCH_LIMIT);
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
@@ -48,11 +50,15 @@ export function AdminMatchesPanel() {
         query = query.or(`commodity.ilike.%${search}%,buyer_name.ilike.%${search}%,seller_name.ilike.%${search}%`);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data;
+      return { matches: data, totalCount: count ?? data?.length ?? 0 };
     },
   });
+
+  const matches = data?.matches;
+  const totalCount = data?.totalCount ?? 0;
+  const isTruncated = totalCount > ADMIN_MATCH_LIMIT;
 
   const exportMatches = () => {
     if (!matches || matches.length === 0) {
@@ -144,6 +150,12 @@ export function AdminMatchesPanel() {
               </SelectContent>
             </Select>
           </div>
+
+          {isTruncated && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {matches?.length} of {totalCount} matches. Only the most recent {ADMIN_MATCH_LIMIT} are displayed.
+            </p>
+          )}
 
           {isLoading ? (
             <TableSkeleton rows={5} columns={9} />

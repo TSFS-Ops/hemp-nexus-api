@@ -26,14 +26,16 @@ export function AdminAuditLogs() {
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  const { data: auditLogs, isLoading, refetch } = useQuery({
+  const ADMIN_LOG_LIMIT = 200;
+
+  const { data: auditLogData, isLoading, refetch } = useQuery({
     queryKey: ["admin-audit-logs", actionFilter, entityFilter, search],
     queryFn: async () => {
       let query = supabase
         .from("audit_logs")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(ADMIN_LOG_LIMIT);
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
@@ -43,11 +45,15 @@ export function AdminAuditLogs() {
         query = query.eq("entity_type", entityFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data || [];
+      return { logs: data || [], totalCount: count ?? data?.length ?? 0 };
     },
   });
+
+  const auditLogs = auditLogData?.logs;
+  const auditLogTotalCount = auditLogData?.totalCount ?? 0;
+  const auditLogsTruncated = auditLogTotalCount > ADMIN_LOG_LIMIT;
 
   const { data: adminAuditLogs } = useQuery({
     queryKey: ["admin-admin-audit-logs"],
@@ -195,6 +201,12 @@ export function AdminAuditLogs() {
               </SelectContent>
             </Select>
           </div>
+
+          {auditLogsTruncated && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {auditLogs?.length} of {auditLogTotalCount} audit logs. Only the most recent {ADMIN_LOG_LIMIT} are displayed.
+            </p>
+          )}
 
           {isLoading ? (
             <div className="flex justify-center py-8">

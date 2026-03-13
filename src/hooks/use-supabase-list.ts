@@ -59,7 +59,7 @@ export function useSupabaseList<T = Record<string, unknown>>(
     queryFn: async () => {
       let query = (supabase
         .from(table) as any)
-        .select(columns)
+        .select(columns, { count: "exact" })
         .order(order.column, { ascending: order.ascending ?? false })
         .limit(limit);
 
@@ -67,9 +67,13 @@ export function useSupabaseList<T = Record<string, unknown>>(
         query = filters(query);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data as T[]) ?? [];
+      const items = (data as T[]) ?? [];
+      // Attach totalCount to the array for truncation disclosure
+      (items as any).__totalCount = count ?? items.length;
+      (items as any).__limit = limit;
+      return items;
     },
     enabled,
     staleTime,
