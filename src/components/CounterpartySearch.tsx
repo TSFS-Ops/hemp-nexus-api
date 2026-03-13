@@ -455,6 +455,32 @@ export default function CounterpartySearch() {
           </div>
         )}
 
+        {/* Draft Match Confirmation Dialog */}
+        <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Create Draft Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  You are about to create {selectedResults.size} draft match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
+                </p>
+                <p>
+                  <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Creating a draft match does not create any financial obligation or deduct credits.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDraftCreation}>
+                Create Draft{selectedResults.size > 1 ? "s" : ""}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Similar Counterparties Sheet */}
         <SimilarCounterpartiesSheet
           open={!!similarAnchor}
