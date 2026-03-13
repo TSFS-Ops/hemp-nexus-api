@@ -1,7 +1,6 @@
 /**
  * Right-hand sidebar — platform capabilities + compliance status.
- * Replaces the misleading commodity-price sidebar with content
- * that accurately represents a compliance matching platform.
+ * Uses --surface-sidebar (#F9FAFB) background to visually separate from main workspace.
  */
 
 import { ArrowRight, ShieldCheck, Search, FileCheck, Lock, Scale } from "lucide-react";
@@ -23,13 +22,13 @@ const RECENT_UPDATES = [
 
 export function MarketWatchSidebar() {
   return (
-    <div className="border-l border-border bg-background flex flex-col h-full">
+    <div className="border-l border-border flex flex-col h-full" style={{ backgroundColor: 'hsl(var(--surface-sidebar))' }}>
       {/* Platform Status */}
       <div className="flex-shrink-0">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-verified" />
-            <span className="text-[11px] font-semibold text-foreground tracking-tight">Platform Status</span>
+            <span className="text-[12px] font-semibold text-foreground tracking-tight">Platform Status</span>
           </div>
         </div>
         <div>
@@ -40,9 +39,9 @@ export function MarketWatchSidebar() {
             >
               <div className="flex items-center gap-2">
                 <item.icon className="h-3 w-3 text-muted-foreground" />
-                <span className="text-[11px] text-foreground font-medium">{item.label}</span>
+                <span className="text-[12px] text-foreground font-medium">{item.label}</span>
               </div>
-              <span className="text-[10px] font-mono font-medium text-signal-verified">
+              <span className="text-[11px] font-mono font-medium text-signal-verified">
                 {item.status}
               </span>
             </div>
@@ -54,7 +53,7 @@ export function MarketWatchSidebar() {
       <div className="flex-1 min-h-0">
         <div className="px-4 py-3 border-b border-border flex items-center gap-2">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-          <span className="text-[11px] font-semibold text-foreground tracking-tight">System</span>
+          <span className="text-[12px] font-semibold text-foreground tracking-tight">System</span>
         </div>
         <div>
           {RECENT_UPDATES.map((item, i) => (
@@ -62,8 +61,8 @@ export function MarketWatchSidebar() {
               key={i}
               className="px-4 py-3 border-b border-border"
             >
-              <p className="text-[11px] text-foreground font-medium leading-snug mb-1">{item.headline}</p>
-              <span className="text-[9px] font-mono text-muted-foreground/50">{item.time}</span>
+              <p className="text-[12px] text-foreground font-medium leading-snug mb-1">{item.headline}</p>
+              <span className="text-[11px] font-mono text-muted-foreground">{item.time}</span>
             </div>
           ))}
         </div>
@@ -71,10 +70,10 @@ export function MarketWatchSidebar() {
 
       {/* Need help */}
       <div className="flex-shrink-0 px-4 py-3 border-t border-border">
-        <p className="text-[11px] font-medium text-foreground mb-0.5">Need help?</p>
+        <p className="text-[12px] font-medium text-foreground mb-0.5">Need help?</p>
         <a
           href="/docs"
-          className="text-[11px] text-primary font-medium inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+          className="text-[12px] text-primary font-medium inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
         >
           Read the docs
           <ArrowRight className="h-3 w-3" />

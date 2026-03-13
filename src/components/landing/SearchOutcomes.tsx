@@ -26,7 +26,7 @@ export function SearchOutcomes({
     return (
       <div className="mt-0 border-t border-border">
         <div className="px-3 py-2.5 bg-basalt">
-          <span className="text-[9px] font-mono uppercase tracking-widest text-basalt-foreground/60 animate-pulse">
+          <span className="text-[11px] font-mono uppercase tracking-widest text-basalt-foreground/60 animate-pulse">
             Preparing your search…
           </span>
         </div>
@@ -38,14 +38,13 @@ export function SearchOutcomes({
   }
 
   // Search complete — prompt sign-in to view results
-  // Use onSignIn callback which handles pre-auth state saving and returnTo
   return (
     <div className="mt-0 border-t border-border animate-fade-up">
       <div className="p-4 sm:p-5">
         <h3 className="text-[15px] font-semibold text-foreground tracking-tighter leading-tight mb-2">
           Sign in to view results
         </h3>
-        <p className="text-[12px] text-muted-foreground leading-relaxed mb-5 max-w-md">
+        <p className="text-[12px] text-muted-foreground font-medium leading-relaxed mb-5 max-w-md">
           Counterparty search results are available to registered users.
           Create a free account to search verified counterparties, create matches, and confirm intent.
         </p>
@@ -60,7 +59,7 @@ export function SearchOutcomes({
           <LogIn className="h-3.5 w-3.5" />
           Sign in to search
         </button>
-        <p className="text-[10px] font-mono text-muted-foreground/40 mt-2.5 text-center tracking-wide">
+        <p className="text-[11px] font-mono text-muted-foreground mt-2.5 text-center tracking-wide">
           No obligation. Free to create an account.
         </p>
       </div>

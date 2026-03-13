@@ -34,7 +34,7 @@ export function WorkflowPipeline() {
           <Search className="h-3.5 w-3.5" />
           Find a Bid / Offer
         </button>
-        <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest">or</span>
+        <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest">or</span>
         <button
           onClick={() => setActiveTab("buyer")}
           className={`inline-flex items-center gap-2 px-5 py-2.5 text-[11px] font-mono uppercase tracking-widest font-medium
@@ -49,8 +49,8 @@ export function WorkflowPipeline() {
         </button>
       </div>
 
-      {/* 6-step pipeline */}
-      <div className="px-4 py-5 overflow-x-auto">
+      {/* 6-step pipeline — generous vertical padding for breathing room */}
+      <div className="px-4 py-6 overflow-x-auto">
         <div className="flex items-center justify-between min-w-[600px] gap-1">
           {PIPELINE_STEPS.map((step, i) => (
             <div key={step.label} className="flex items-center gap-1">
@@ -62,13 +62,13 @@ export function WorkflowPipeline() {
                       : "border-border bg-accent/30 text-muted-foreground"
                     }`}
                 >
-                  <span className="text-[10px] font-mono font-bold">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="text-[11px] font-mono font-bold">{String(i + 1).padStart(2, "0")}</span>
                 </div>
-                <span className="text-[10px] font-semibold text-foreground leading-tight">{step.label}</span>
-                <span className="text-[9px] text-muted-foreground/60 leading-tight mt-0.5">{step.subtitle}</span>
+                <span className="text-[12px] font-semibold text-foreground leading-tight">{step.label}</span>
+                <span className="text-[11px] text-muted-foreground font-medium leading-tight mt-0.5">{step.subtitle}</span>
               </div>
               {i < PIPELINE_STEPS.length - 1 && (
-                <ArrowRight className="h-3 w-3 text-muted-foreground/30 flex-shrink-0 mx-1" />
+                <ArrowRight className="h-3 w-3 text-muted-foreground/40 flex-shrink-0 mx-1" />
               )}
             </div>
           ))}

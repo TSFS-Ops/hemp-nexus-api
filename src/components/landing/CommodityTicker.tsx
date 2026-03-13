@@ -1,6 +1,6 @@
 /**
- * Bottom status bar — replaces the misleading commodity ticker
- * with platform identity and compliance status indicators.
+ * Bottom status bar — compliance status indicators.
+ * Status text uses signal-verified (#059669) for legibility.
  */
 
 import { ShieldCheck, Lock, FileCheck } from "lucide-react";
@@ -17,7 +17,7 @@ export function CommodityTicker() {
       <div className="flex items-center h-8">
         {/* Platform label */}
         <div className="flex-shrink-0 px-3 border-r border-border h-full flex items-center">
-          <span className="text-[10px] font-mono font-medium text-primary uppercase tracking-widest">
+          <span className="text-[11px] font-mono font-medium text-primary uppercase tracking-widest">
             Compliance Status
           </span>
         </div>
@@ -29,8 +29,8 @@ export function CommodityTicker() {
               className="flex-shrink-0 flex items-center gap-2 px-4 border-r border-border h-8"
             >
               <item.icon className="h-3 w-3 text-signal-verified" />
-              <span className="text-[10px] font-semibold text-foreground">{item.label}</span>
-              <span className="text-[10px] font-mono text-signal-verified">{item.status}</span>
+              <span className="text-[11px] font-semibold text-foreground">{item.label}</span>
+              <span className="text-[11px] font-mono font-medium text-signal-verified">{item.status}</span>
             </div>
           ))}
         </div>

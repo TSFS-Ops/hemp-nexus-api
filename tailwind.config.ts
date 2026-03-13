@@ -85,6 +85,7 @@ export default {
           pending: "hsl(var(--signal-pending))",
         },
         graphite: "hsl(var(--graphite))",
+        "surface-sidebar": "hsl(var(--surface-sidebar))",
       },
       borderRadius: {
         lg: "2px",
