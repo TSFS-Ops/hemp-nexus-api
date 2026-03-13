@@ -51,6 +51,8 @@ const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, sell
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
+const BULK_FAILED_KEY = "izenzo_bulk_failed_ids";
+
 export function MatchesList() {
   const navigate = useNavigate();
   const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
@@ -65,7 +67,20 @@ export function MatchesList() {
   const rawPage = parseInt(params.page, 10);
   const page = Number.isFinite(rawPage) && rawPage >= 0 ? rawPage : 0;
 
-  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(new Set());
+  // Restore failed IDs from session storage (survives session-expiry redirect)
+  const [selectedMatches, setSelectedMatches] = useState<Set<string>>(() => {
+    try {
+      const saved = sessionStorage.getItem(BULK_FAILED_KEY);
+      if (saved) {
+        sessionStorage.removeItem(BULK_FAILED_KEY);
+        const ids = JSON.parse(saved) as string[];
+        if (Array.isArray(ids) && ids.length > 0) {
+          return new Set(ids);
+        }
+      }
+    } catch { /* ignore */ }
+    return new Set();
+  });
   const [isSettling, setIsSettling] = useState(false);
   const [showSettleDialog, setShowSettleDialog] = useState(false);
 
