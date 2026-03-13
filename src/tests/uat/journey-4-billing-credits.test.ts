@@ -49,12 +49,12 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
 
   // ── Step 2: Simulate credit (atomic_token_credit RPC) ─────────
   it("4.3 — atomic_token_credit adds tokens to the balance", async () => {
-    const requestId = `uat-credit-${Date.now()}`;
+    const refId = `uat-credit-${Date.now()}`;
 
     const { data, error } = await supabase.rpc("atomic_token_credit", {
       p_org_id: orgId,
       p_amount: 1000,
-      p_request_id: requestId,
+      p_reference_id: refId,
       p_reason: "UAT simulated purchase",
     });
 
