@@ -37,7 +37,8 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
   const [entityType, setEntityType] = useState("");
   const [entityId, setEntityId] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [limit, setLimit] = useState("20");
+  const [limit, setLimit] = useState("50");
+  const [offset, setOffset] = useState(0);
 
   // NOTE: This component uses X-API-Key auth (for the API testing playground),
   // not session auth — this is intentional and correct.
