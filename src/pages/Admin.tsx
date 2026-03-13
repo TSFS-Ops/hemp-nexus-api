@@ -72,16 +72,18 @@ function DealsSection() {
 function UsersOrgsSection() {
   const [tab, setTab] = useUrlTab("tab", "users", ["users", "orgs", "entities", "tokens"]);
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Users & Orgs" }]} />
-      <h2 className="text-2xl font-bold tracking-tight">Users & Organisations</h2>
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Users & Organisations</h2>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="orgs">Organisations</TabsTrigger>
-          <TabsTrigger value="entities">Entities</TabsTrigger>
-          <TabsTrigger value="tokens">Tokens</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="orgs">Organisations</TabsTrigger>
+            <TabsTrigger value="entities">Entities</TabsTrigger>
+            <TabsTrigger value="tokens">Tokens</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
         <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
         <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
