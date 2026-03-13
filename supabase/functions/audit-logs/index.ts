@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
+        headers: { ...headers, ...cacheHeaders("private-short"), "Content-Type": "application/json" },
       }
     );
   } catch (error) {

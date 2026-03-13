@@ -330,7 +330,7 @@ Deno.serve(async (req) => {
     }, null, 2),
     {
       status: overallStatus === "healthy" ? 200 : overallStatus === "degraded" ? 207 : 503,
-      headers: { "Content-Type": "application/json", ...headers }
+      headers: { "Content-Type": "application/json", ...headers, ...cacheHeaders("short") }
     }
   );
 });

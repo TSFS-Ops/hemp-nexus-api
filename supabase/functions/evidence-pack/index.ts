@@ -446,6 +446,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: {
         ...headers,
+        ...cacheHeaders("static"),
         "Content-Type": "application/json",
         "Content-Disposition": `attachment; filename="evidence-pack-${matchId}.json"`,
       },
