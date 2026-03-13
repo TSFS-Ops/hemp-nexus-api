@@ -66,7 +66,7 @@ export default function Landing() {
             </h1>
 
             {/* Search form with BID/OFFER tabs */}
-            <div className="border border-border">
+            <div className="border border-border mb-4">
               <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
               <SearchOutcomes
                 isSearching={isSearching}
@@ -74,6 +74,19 @@ export default function Landing() {
                 onSignIn={navigateToAuth}
               />
             </div>
+
+            {/* 6-step workflow pipeline */}
+            <div className="mb-4">
+              <WorkflowPipeline />
+            </div>
+
+            {/* POI commitment row */}
+            <div className="mb-4">
+              <PoiCommitmentRow />
+            </div>
+
+            {/* Trust badges */}
+            <TrustBadges />
           </div>
         </div>
 

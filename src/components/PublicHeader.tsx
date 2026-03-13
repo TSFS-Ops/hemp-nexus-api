@@ -15,10 +15,6 @@ export function PublicHeader() {
     return <a href={authUrl} className={className}>{children}</a>;
   };
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
@@ -32,22 +28,6 @@ export function PublicHeader() {
 
         {/* Center nav — with subtle hover underlines */}
         <div className="hidden md:flex items-center gap-8">
-          {[
-            { label: "How it Works", id: "how-it-works" },
-            { label: "Signals", id: "signals" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollTo(item.id)}
-              className="relative text-[11px] font-mono uppercase tracking-widest text-muted-foreground
-                       hover:text-foreground transition-colors py-1
-                       after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px
-                       after:bg-primary after:scale-x-0 after:transition-transform after:duration-300
-                       hover:after:scale-x-100 after:origin-left"
-            >
-              {item.label}
-            </button>
-          ))}
           <Link
             to="/docs"
             className="relative text-[11px] font-mono uppercase tracking-widest text-muted-foreground
