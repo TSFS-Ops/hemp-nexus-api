@@ -54,6 +54,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
     try {
       const params = new URLSearchParams();
       params.append("limit", limit);
+      params.append("offset", String(offset));
       if (action && action !== "all") params.append("action", action);
       if (entityType && entityType !== "all") params.append("entity_type", entityType);
       if (entityId) params.append("entity_id", entityId);
