@@ -212,18 +212,56 @@ export function BreakGlassPanel() {
 
           <Button
             variant="destructive"
-            onClick={executeAction}
+            onClick={() => setConfirmOpen(true)}
             disabled={executing || !actionType || !reason}
             className="w-full"
           >
-            {executing ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Executing…</>
-            ) : (
-              <><Shield className="h-4 w-4 mr-2" />Execute Break-Glass Action</>
-            )}
+            <Shield className="h-4 w-4 mr-2" />Execute Break-Glass Action
           </Button>
         </CardContent>
       </Card>
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Break-Glass Action</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>You are about to execute an irrevocable emergency action:</p>
+              <div className="rounded-md border border-border p-3 space-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Action:</span>
+                  <p className="font-medium mt-0.5">{actionLabels[actionType] || actionType}</p>
+                </div>
+                {targetOrgId && (
+                  <div>
+                    <span className="text-muted-foreground">Target Org:</span>
+                    <p className="font-mono mt-0.5">{targetOrgId.slice(0, 12)}…</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground">Reason:</span>
+                  <p className="mt-0.5">{reason}</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This action will be permanently recorded in the append-only break-glass log and cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeAction}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={executing}
+            >
+              {executing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Confirm & Execute
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Separator />
 
