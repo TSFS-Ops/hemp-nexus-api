@@ -36,6 +36,7 @@ export default function Auth() {
 
   const [loading, setLoading] = useState(false);
   const [pageReady, setPageReady] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
@@ -69,11 +70,22 @@ export default function Auth() {
       return "/dashboard";
     };
 
+    // Timeout: if auth check takes >8s, show the form anyway
+    const timeoutId = setTimeout(() => {
+      setLoadingTimedOut(true);
+      setPageReady(true);
+    }, 8000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
       if (session) {
         navigate(getPostAuthRedirect());
       }
       setPageReady(true);
+    }).catch(() => {
+      clearTimeout(timeoutId);
+      setPageReady(true);
+      setLoadingTimedOut(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -82,7 +94,10 @@ export default function Auth() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, [navigate, searchParams]);
 
   const passwordsMatch = signUpPassword === signUpConfirmPassword;
@@ -394,8 +409,9 @@ export default function Auth() {
 
   if (!pageReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Checking your session…</p>
       </div>
     );
   }

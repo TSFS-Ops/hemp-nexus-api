@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, Shield, ShieldCheck, ShieldAlert, FileText } from "lucide-react";
+import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, Shield, ShieldCheck, ShieldAlert, FileText, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -71,9 +71,11 @@ export function MatchesList() {
   // Debounce search to avoid firing a query on every keystroke
   const debouncedSearch = useDebounce(commoditySearch, 300);
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+  const [paginationError, setPaginationError] = useState(false);
+
+  const { data, isLoading, isError, error, refetch, isFetching, isPlaceholderData } = useQuery({
     queryKey: ["matches", statusFilter, debouncedSearch, sortBy, page],
-    placeholderData: (prev) => prev, // keep previous data visible while loading next page
+    placeholderData: (prev) => prev,
     queryFn: async () => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -94,9 +96,20 @@ export function MatchesList() {
 
       const { data, error, count } = await query;
       if (error) throw error;
+      setPaginationError(false);
       return { matches: data as Match[], totalCount: count ?? 0 };
     },
   });
+
+  // Detect pagination fetch failure when stale placeholder data is still showing
+  useEffect(() => {
+    if (isError && isPlaceholderData) {
+      setPaginationError(true);
+      toast.error("Could not load the requested page. The data shown below is from a previous page.", { duration: 6000 });
+    } else if (!isError) {
+      setPaginationError(false);
+    }
+  }, [isError, isPlaceholderData]);
 
   const matches = data?.matches;
   const totalCount = data?.totalCount ?? 0;
@@ -445,7 +458,7 @@ export function MatchesList() {
         </div>
 
         <div className="min-h-[400px]">
-        {isError ? (
+        {isError && !paginationError ? (
           <ErrorState 
             type="server" 
             message={error?.message || "Failed to load matches"} 
@@ -456,6 +469,18 @@ export function MatchesList() {
           <TableSkeleton rows={5} columns={6} />
         ) : matches && matches.length > 0 ? (
           <>
+            {paginationError && (
+              <div className="flex items-center gap-3 p-3 mb-4 rounded-md border border-destructive/30 bg-destructive/5 text-sm">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                <p className="text-foreground flex-1">
+                  Could not load the requested page. The data below is from a previous page and may not reflect the current view.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="shrink-0 gap-1.5">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Retry
+                </Button>
+              </div>
+            )}
             {/* Mobile card view for <768px */}
             <div className="space-y-3 md:hidden">
               {matches.map((match) => (
