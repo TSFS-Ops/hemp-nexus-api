@@ -84,6 +84,17 @@ export function MatchesList() {
   const [isSettling, setIsSettling] = useState(false);
   const [showSettleDialog, setShowSettleDialog] = useState(false);
 
+  // Emergency-save failed IDs on session expiry so they survive re-auth
+  useEffect(() => {
+    const handler = () => {
+      if (selectedMatches.size > 0) {
+        sessionStorage.setItem(BULK_FAILED_KEY, JSON.stringify(Array.from(selectedMatches)));
+      }
+    };
+    window.addEventListener("izenzo:session-expiry", handler);
+    return () => window.removeEventListener("izenzo:session-expiry", handler);
+  }, [selectedMatches]);
+
   // Debounce search to avoid firing a query on every keystroke
   const debouncedSearch = useDebounce(commoditySearch, 300);
 
