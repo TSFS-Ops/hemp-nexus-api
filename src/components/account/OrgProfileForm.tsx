@@ -68,6 +68,7 @@ export function OrgProfileForm() {
 
       if (error) throw error;
       setProfile(data as OrgProfile | null);
+      setSavedProfile(data ? JSON.parse(JSON.stringify(data)) as OrgProfile : null);
     } catch (err) {
       console.error("Error loading org profile:", err);
       toast.error("Failed to load organisation profile");
