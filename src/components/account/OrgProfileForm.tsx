@@ -31,8 +31,14 @@ export function OrgProfileForm() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [profile, setProfile] = useState<OrgProfile | null>(null);
+  const [savedProfile, setSavedProfile] = useState<OrgProfile | null>(null);
   const [newJurisdiction, setNewJurisdiction] = useState("");
   const successTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  // Track dirty state by comparing current profile to last-saved version
+  const isDirty = profile !== null && savedProfile !== null &&
+    JSON.stringify(profile) !== JSON.stringify(savedProfile);
+  useUnsavedChanges(isDirty);
 
   useEffect(() => {
     fetchOrgProfile();
