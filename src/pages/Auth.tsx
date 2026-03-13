@@ -439,10 +439,20 @@ export default function Auth() {
                   type="email"
                   placeholder="you@company.com"
                   value={signInEmail}
-                  onChange={(e) => setSignInEmail(e.target.value)}
+                  onChange={(e) => { setSignInEmail(e.target.value); if (signInEmailError) setSignInEmailError(""); }}
+                  onBlur={() => {
+                    if (signInEmail && !z.string().email().safeParse(signInEmail).success) {
+                      setSignInEmailError("Enter a valid email address");
+                    } else {
+                      setSignInEmailError("");
+                    }
+                  }}
                   required
-                  className="h-10"
+                  className={`h-10 ${signInEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
+                {signInEmailError && (
+                  <p className="text-xs text-destructive">{signInEmailError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
