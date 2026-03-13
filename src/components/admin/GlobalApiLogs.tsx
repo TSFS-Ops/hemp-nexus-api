@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { downloadCSV } from "@/lib/download-utils";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
