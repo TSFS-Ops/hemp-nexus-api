@@ -86,10 +86,11 @@ export function GlobalApiLogs() {
         query = query.eq("endpoint", endpointFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
       setLogs(data || []);
+      setApiTotalCount(count ?? data?.length ?? 0);
     } catch (error) {
       console.error("Error fetching logs:", error);
       toast.error("Failed to load API logs");
