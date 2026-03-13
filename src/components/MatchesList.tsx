@@ -229,11 +229,13 @@ export function MatchesList() {
       // Sequential to avoid race conditions on balance
       for (const matchId of eligibleIds) {
         try {
+          const idempotencyKey = `bulk_settle_${matchId}_${Date.now()}`;
           const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match/${matchId}/settle`, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${session.access_token}`,
               "Content-Type": "application/json",
+              "Idempotency-Key": idempotencyKey,
             },
           });
 

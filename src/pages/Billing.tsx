@@ -384,7 +384,12 @@ export default function Billing() {
                     {isProcessing && selectedPackage === pkg.id ? (
                       <>
                         <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Processing...
+                        Redirecting to payment…
+                      </>
+                    ) : isProcessing ? (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Buy Now
                       </>
                     ) : (
                       <>
