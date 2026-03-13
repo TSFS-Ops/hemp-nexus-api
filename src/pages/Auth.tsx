@@ -35,6 +35,7 @@ export default function Auth() {
   const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
