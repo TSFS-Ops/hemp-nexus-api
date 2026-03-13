@@ -277,6 +277,11 @@ export function AdminAuditLogs() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {adminAuditTruncated && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {adminAuditLogs?.length} of {adminAuditTotalCount} admin actions. Only the most recent {ADMIN_ACTION_LIMIT} are displayed.
+            </p>
+          )}
           {adminAuditLogs && adminAuditLogs.length > 0 ? (
             <div className="rounded-md border">
               <Table>
