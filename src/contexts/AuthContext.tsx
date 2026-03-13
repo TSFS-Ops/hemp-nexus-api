@@ -77,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const userRoles = (data || []).map(r => r.role as AppRole);
       setRoles(userRoles);
+
+      // Set Sentry user context for error attribution
+      const profile = await supabase.from("profiles").select("org_id").eq("id", userId).maybeSingle();
+      if (profile.data?.org_id) {
+        setSentryUser(userId, profile.data.org_id, userRoles);
+      }
     } catch (err) {
       console.error("[AuthContext] Unexpected error fetching roles:", err);
       setRoles([]);
