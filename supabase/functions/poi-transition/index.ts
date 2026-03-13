@@ -100,6 +100,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── IDOR enforcement: caller must belong to the match's org ──
+    if (match.org_id !== callerOrgId) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: you do not have access to this match" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const fromState = match.poi_state;
 
     // ── DISC-007: Discovery Gate Enforcement ──
