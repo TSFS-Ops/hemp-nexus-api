@@ -2,11 +2,14 @@
  * MatchHeroCard — Top-level match summary card with buyer/seller/price info.
  *
  * Single Responsibility: display-only presentation of core match data.
+ * Handles draft matches (null quantity/price) gracefully.
+ * Does NOT expose raw metadata JSON.
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import type { Match } from "@/hooks/use-match-details";
@@ -16,15 +19,54 @@ interface MatchHeroCardProps {
   isSettled: boolean;
 }
 
+function isDraft(match: Match): boolean {
+  return (
+    (match.quantity_amount === 0 || match.quantity_amount === null) &&
+    (match.price_amount === 0 || match.price_amount === null) &&
+    (match.metadata as any)?.isDraft === true
+  );
+}
+
+/** Extract meaningful context from metadata without dumping raw JSON */
+function getMatchContext(match: Match): { label: string; value: string }[] {
+  const meta = match.metadata as Record<string, unknown> | null;
+  if (!meta) return [];
+  
+  const items: { label: string; value: string }[] = [];
+  
+  if (meta.searchQuery && typeof meta.searchQuery === "string") {
+    items.push({ label: "Search query", value: meta.searchQuery });
+  }
+  if (meta.source && typeof meta.source === "string") {
+    items.push({ label: "Source", value: meta.source });
+  }
+  if (typeof meta.coherenceScore === "number") {
+    items.push({ label: "Match confidence", value: `${Math.round(meta.coherenceScore * 100)}%` });
+  }
+  if (meta.draftReason && typeof meta.draftReason === "string") {
+    items.push({ label: "Note", value: meta.draftReason });
+  }
+
+  return items;
+}
+
 export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
+  const draft = isDraft(match);
+  const contextItems = getMatchContext(match);
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <MatchStatusBadge status={match.status} />
+              {draft && (
+                <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                  Draft — no commercial terms
+                </Badge>
+              )}
               <span className="text-sm text-muted-foreground font-mono">
                 {match.hash.substring(0, 8)}...
               </span>
@@ -41,29 +83,21 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="font-semibold mb-4">Buyer Information</h3>
+            <h3 className="font-semibold mb-4">Buyer</h3>
             <dl className="space-y-2">
               <div>
                 <dt className="text-sm text-muted-foreground">Name</dt>
                 <dd className="font-medium">{match.buyer_name}</dd>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">ID</dt>
-                <dd className="font-mono text-sm">{match.buyer_id}</dd>
-              </div>
             </dl>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Seller Information</h3>
+            <h3 className="font-semibold mb-4">Seller</h3>
             <dl className="space-y-2">
               <div>
                 <dt className="text-sm text-muted-foreground">Name</dt>
                 <dd className="font-medium">{match.seller_name}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">ID</dt>
-                <dd className="font-mono text-sm">{match.seller_id}</dd>
               </div>
             </dl>
           </div>
@@ -71,45 +105,65 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
 
         <Separator className="my-6" />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h3 className="font-semibold mb-4">Quantity</h3>
-            <p className="text-2xl font-bold">
-              {match.quantity_amount} <span className="text-base font-normal text-muted-foreground">{match.quantity_unit}</span>
-            </p>
+        {draft ? (
+          <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Commercial terms not yet added</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This is a draft match. Go to the <strong>Terms</strong> tab to propose quantity, price, delivery, and payment terms before confirming intent.
+                </p>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold mb-4">Price</h3>
-            <p className="text-2xl font-bold">
-              {match.price_currency} {match.price_amount.toLocaleString()}
-            </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="font-semibold mb-4">Quantity</h3>
+              <p className="text-2xl font-bold">
+                {match.quantity_amount} <span className="text-base font-normal text-muted-foreground">{match.quantity_unit}</span>
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Price</h3>
+              <p className="text-2xl font-bold">
+                {match.price_currency} {match.price_amount?.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Total Value</h3>
+              <p className="text-2xl font-bold">
+                {match.price_currency} {((match.price_amount ?? 0) * (match.quantity_amount ?? 0)).toLocaleString()}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold mb-4">Total Value</h3>
-            <p className="text-2xl font-bold">
-              {match.price_currency} {(match.price_amount * match.quantity_amount).toLocaleString()}
-            </p>
-          </div>
-        </div>
+        )}
 
         {match.terms && (
           <>
             <Separator className="my-6" />
             <div>
-              <h3 className="font-semibold mb-2">Terms & Conditions</h3>
+              <h3 className="font-semibold mb-2">Terms</h3>
               <p className="text-sm text-muted-foreground">{match.terms}</p>
             </div>
           </>
         )}
 
-        {match.metadata && Object.keys(match.metadata).length > 0 && (
+        {/* Human-readable context instead of raw JSON */}
+        {contextItems.length > 0 && (
           <>
             <Separator className="my-6" />
             <div>
-              <h3 className="font-semibold mb-2">Additional Metadata</h3>
-              <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto">
-                {JSON.stringify(match.metadata, null, 2)}
-              </pre>
+              <h3 className="font-semibold mb-3">Match Context</h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {contextItems.map((item) => (
+                  <div key={item.label}>
+                    <dt className="text-muted-foreground">{item.label}</dt>
+                    <dd className="font-medium">{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           </>
         )}

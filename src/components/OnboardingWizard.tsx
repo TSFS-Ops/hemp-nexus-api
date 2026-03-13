@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { 
   CheckCircle2, 
   Circle, 
@@ -20,10 +22,16 @@ import {
   ArrowRight,
   Sparkles,
   Globe,
-  Info
+  Info,
+  Search,
+  FileText,
+  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
+import { ROUTES } from "@/lib/constants";
+
+const ONBOARDING_STORAGE_KEY = "onboarding_state";
 
 interface OnboardingStep {
   id: number;
@@ -38,13 +46,44 @@ interface OnboardingWizardProps {
   onClose: () => void;
 }
 
+interface SavedOnboardingState {
+  currentStep: number;
+  apiKeyCreated: boolean;
+  testPassed: boolean;
+  selectedRegion: string;
+}
+
+function saveOnboardingProgress(state: SavedOnboardingState) {
+  try {
+    sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
+  } catch { /* ignore */ }
+}
+
+function loadOnboardingProgress(): SavedOnboardingState | null {
+  try {
+    const raw = sessionStorage.getItem(ONBOARDING_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedOnboardingState;
+  } catch {
+    return null;
+  }
+}
+
+function clearOnboardingProgress() {
+  try { sessionStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch { /* ignore */ }
+}
+
 export default function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  // Restore saved progress
+  const savedState = loadOnboardingProgress();
+  
+  const [currentStep, setCurrentStep] = useState(savedState?.currentStep ?? 1);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKeyCreated, setApiKeyCreated] = useState(savedState?.apiKeyCreated ?? false);
   const [keyName, setKeyName] = useState("My First API Key");
   const [creating, setCreating] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+  const [testResult, setTestResult] = useState<"success" | "error" | null>(savedState?.testPassed ? "success" : null);
   const [errorDetails, setErrorDetails] = useState<{
     status?: number;
     statusText?: string;
@@ -60,7 +99,20 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [responseDetails, setResponseDetails] = useState<any>(null);
   const [showDebugger, setShowDebugger] = useState(false);
 
-  const [selectedRegion, setSelectedRegion] = useState("za-jnb");
+  const [selectedRegion, setSelectedRegion] = useState(savedState?.selectedRegion ?? "za-jnb");
+  const navigate = useNavigate();
+
+  // Persist progress on step changes
+  useEffect(() => {
+    if (open) {
+      saveOnboardingProgress({
+        currentStep,
+        apiKeyCreated,
+        testPassed: testResult === "success",
+        selectedRegion,
+      });
+    }
+  }, [currentStep, apiKeyCreated, testResult, selectedRegion, open]);
 
   const DATA_REGIONS = [
     { value: "za-jnb", label: "South Africa (Johannesburg)", flag: "🇿🇦" },
@@ -90,7 +142,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       title: "Create API Key",
       description: "Generate your first API key",
       icon: Key,
-      completed: currentStep > 3 || !!apiKey
+      completed: currentStep > 3 || apiKeyCreated
     },
     {
       id: 4,
@@ -123,6 +175,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         }),
       });
       setApiKey(data.key);
+      setApiKeyCreated(true);
       
       await navigator.clipboard.writeText(data.key);
       
@@ -231,12 +284,13 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
   const handleComplete = () => {
     localStorage.setItem("onboarding_completed", "true");
+    clearOnboardingProgress();
     onClose();
-    toast.success("You're all set! Happy building!");
   };
 
   const handleSkip = () => {
     localStorage.setItem("onboarding_completed", "true");
+    clearOnboardingProgress();
     onClose();
   };
 
@@ -400,7 +454,21 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </p>
               </div>
 
-              {!apiKey ? (
+              {/* If key was already created in a previous session but user came back */}
+              {apiKeyCreated && !apiKey ? (
+                <div className="space-y-4">
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <AlertDescription>
+                      You already created an API key in a previous session. You can skip this step or create another one.
+                    </AlertDescription>
+                  </Alert>
+                  <Button onClick={() => setCurrentStep(4)} size="lg" className="w-full">
+                    Continue to Testing
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              ) : !apiKey ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="key-name">Key Name</Label>
@@ -520,6 +588,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 )}
               </Button>
 
+              {!apiKey && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    No API key in this session. Go back to create one, or skip this step if you already have a key.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {testResult === "success" && (
                 <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -537,27 +614,85 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   </AlertDescription>
                 </Alert>
               )}
+
+              {!apiKey && (
+                <Button variant="outline" onClick={() => setCurrentStep(5)} className="w-full">
+                  Skip test — continue to summary
+                </Button>
+              )}
             </div>
           )}
 
-          {/* Step 5: Complete */}
+          {/* Step 5: Complete — Summary */}
           {currentStep === 5 && (
-            <div className="space-y-6 text-center">
-              <div className="flex justify-center">
-                <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-full">
-                  <Trophy className="h-12 w-12 text-green-600" />
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="flex justify-center">
+                  <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <Trophy className="h-12 w-12 text-green-600" />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold">You're Ready! 🎉</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  You've created your API key and made your first successful API call. 
-                  You're all set to start integrating.
+                <h3 className="text-2xl font-bold mt-4">Setup Complete 🎉</h3>
+                <p className="text-muted-foreground max-w-md mx-auto mt-2">
+                  Here's a summary of what was set up and what to do next.
                 </p>
               </div>
-              <Button onClick={handleComplete} size="lg" className="w-full">
-                Go to Console
-              </Button>
+
+              {/* Summary */}
+              <Card className="p-4 space-y-3">
+                <h4 className="font-semibold text-sm">What was completed</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span>Data region preference recorded: {DATA_REGIONS.find(r => r.value === selectedRegion)?.label ?? selectedRegion}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {apiKeyCreated ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span>{apiKeyCreated ? "Sandbox API key created" : "API key creation skipped"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {testResult === "success" ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span>{testResult === "success" ? "API test passed" : "API test skipped"}</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Next steps */}
+              <Card className="p-4 space-y-3">
+                <h4 className="font-semibold text-sm">Recommended next steps</h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-primary shrink-0" />
+                    <span>Search for counterparties to find potential matches</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                    <span>Create a match and add commercial terms</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary shrink-0" />
+                    <span>Signal intent to record your interest</span>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => { handleComplete(); navigate(ROUTES.DASHBOARD_SEARCH); }} size="lg" className="w-full gap-2">
+                  <Search className="h-4 w-4" />
+                  Search for counterparties
+                </Button>
+                <Button variant="outline" onClick={handleComplete} className="w-full">
+                  Go to Console
+                </Button>
+              </div>
             </div>
           )}
         </div>

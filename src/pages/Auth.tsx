@@ -22,12 +22,22 @@ const emailSchema = z.object({
 });
 
 export default function Auth() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // ── Sign-in state ──
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+
+  // ── Sign-up state (isolated) ──
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPasswordValue] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -51,7 +61,6 @@ export default function Auth() {
     const getPostAuthRedirect = () => {
       const returnTo = searchParams.get("returnTo");
       const safe = getSafeReturnTo(returnTo);
-      // If returnTo was valid and not the default, use it (with resume flag)
       if (returnTo && safe !== "/dashboard") return `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
       if (hasPreAuthState()) return "/dashboard/search?resume=1";
       return "/dashboard";
@@ -72,16 +81,25 @@ export default function Auth() {
     return () => subscription.unsubscribe();
   }, [navigate, searchParams]);
 
+  const passwordsMatch = signUpPassword === signUpConfirmPassword;
+  const showMismatch = confirmPasswordTouched && signUpConfirmPassword.length > 0 && !passwordsMatch;
+  const signUpValid = signUpEmail.trim().length > 0 && signUpPassword.length >= 8 && passwordsMatch && signUpConfirmPassword.length > 0;
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!passwordsMatch) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({ email: signUpEmail, password: signUpPassword });
       setLoading(true);
 
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: signUpEmail,
+        password: signUpPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/auth`
         }
@@ -95,7 +113,6 @@ export default function Auth() {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
-        // Surface specific signup failures users actually encounter
         const msg = error.message;
         if (msg.includes("already registered") || msg.includes("already been registered")) {
           toast.error("An account with this email already exists. Try signing in instead.");
@@ -114,12 +131,12 @@ export default function Auth() {
     e.preventDefault();
     
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({ email: signInEmail, password: signInPassword });
       setLoading(true);
 
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: signInEmail,
+        password: signInPassword,
       });
 
       if (error) {
@@ -153,10 +170,10 @@ export default function Auth() {
     e.preventDefault();
     
     try {
-      emailSchema.parse({ email });
+      emailSchema.parse({ email: resetEmail });
       setLoading(true);
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
@@ -179,11 +196,11 @@ export default function Auth() {
     e.preventDefault();
     
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({ email: "reset@placeholder.com", password: resetPassword });
       setLoading(true);
 
       const { error } = await supabase.auth.updateUser({
-        password: password,
+        password: resetPassword,
       });
 
       if (error) throw error;
@@ -191,7 +208,7 @@ export default function Auth() {
       toast.success("Your password has been updated.");
       
       setShowForgotPassword(false);
-      setPassword("");
+      setResetPasswordValue("");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -204,11 +221,16 @@ export default function Auth() {
   };
 
   const resendVerification = async () => {
+    const email = signInEmail || signUpEmail;
+    if (!email) {
+      toast.error("Enter your email address first.");
+      return;
+    }
     try {
       setLoading(true);
       const { error } = await supabase.auth.resend({
         type: "signup",
-        email: email,
+        email,
       });
 
       if (error) throw error;
@@ -245,8 +267,8 @@ export default function Auth() {
                 id="new-password"
                 type="password"
                 placeholder="Minimum 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={resetPassword}
+                onChange={(e) => setResetPasswordValue(e.target.value)}
                 required
                 className="h-10"
               />
@@ -303,8 +325,8 @@ export default function Auth() {
                   id="reset-email"
                   type="email"
                   placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
                   required
                   className="h-10"
                 />
@@ -330,7 +352,6 @@ export default function Auth() {
   const hostType = getHostType();
   const backUrl = hostType === 'preview' ? '/' : getPublicUrl('/');
   
-  // Helper for back link
   const BackLink = () => {
     if (hostType === 'preview') {
       return (
@@ -394,8 +415,8 @@ export default function Auth() {
                   id="signin-email"
                   type="email"
                   placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={signInEmail}
+                  onChange={(e) => setSignInEmail(e.target.value)}
                   required
                   className="h-10"
                 />
@@ -415,12 +436,12 @@ export default function Auth() {
                   id="signin-password"
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={signInPassword}
+                  onChange={(e) => setSignInPassword(e.target.value)}
                   required
                   className="h-10"
                 />
-                {password.length > 0 && password.length < 8 && (
+                {signInPassword.length > 0 && signInPassword.length < 8 && (
                   <p className="text-xs text-destructive">Password must be at least 8 characters</p>
                 )}
               </div>
@@ -450,8 +471,8 @@ export default function Auth() {
                   id="signup-email"
                   type="email"
                   placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={signUpEmail}
+                  onChange={(e) => setSignUpEmail(e.target.value)}
                   required
                   className="h-10"
                 />
@@ -462,19 +483,40 @@ export default function Auth() {
                   id="signup-password"
                   type="password"
                   placeholder="Minimum 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={signUpPassword}
+                  onChange={(e) => setSignUpPassword(e.target.value)}
                   required
-                  className={`h-10 ${password.length > 0 && password.length < 8 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  className={`h-10 ${signUpPassword.length > 0 && signUpPassword.length < 8 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
-                {password.length > 0 && password.length < 8 && (
-                  <p className="text-xs text-destructive">Password must be at least 8 characters ({8 - password.length} more needed)</p>
+                {signUpPassword.length > 0 && signUpPassword.length < 8 && (
+                  <p className="text-xs text-destructive">Password must be at least 8 characters ({8 - signUpPassword.length} more needed)</p>
                 )}
-                {password.length >= 8 && (
+                {signUpPassword.length >= 8 && (
                   <p className="text-xs text-green-600">✓ Password meets minimum length</p>
                 )}
               </div>
-              <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+              <div className="space-y-2">
+                <Label htmlFor="signup-confirm-password" className="text-sm font-medium">Confirm password</Label>
+                <Input
+                  id="signup-confirm-password"
+                  type="password"
+                  placeholder="Re-enter your password"
+                  value={signUpConfirmPassword}
+                  onChange={(e) => {
+                    setSignUpConfirmPassword(e.target.value);
+                    if (!confirmPasswordTouched) setConfirmPasswordTouched(true);
+                  }}
+                  required
+                  className={`h-10 ${showMismatch ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                />
+                {showMismatch && (
+                  <p className="text-xs text-destructive">Passwords do not match</p>
+                )}
+                {confirmPasswordTouched && signUpConfirmPassword.length > 0 && passwordsMatch && signUpPassword.length >= 8 && (
+                  <p className="text-xs text-green-600">✓ Passwords match</p>
+                )}
+              </div>
+              <Button type="submit" className="w-full h-10 bg-foreground text-background hover:bg-foreground/90" disabled={loading || !signUpValid}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
