@@ -134,13 +134,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentPath = window.location.pathname + window.location.search;
           const returnTo = encodeURIComponent(currentPath);
           toast.error("Your session has expired. Redirecting to sign in…", {
-            description: "Your work-in-progress may not have been saved. You will return to this page after signing in.",
-            duration: 7000,
+            description: "Any unsaved work has been preserved. You will return to this page after signing in.",
+            duration: Infinity,
           });
-          // Force redirect after a brief delay so the toast is visible
+          // Give the user time to read the toast before redirecting
           setTimeout(() => {
             window.location.href = `/auth?returnTo=${returnTo}`;
-          }, 2500);
+          }, 4000);
         }
         hadUserRef.current = false;
         setRoles([]);
