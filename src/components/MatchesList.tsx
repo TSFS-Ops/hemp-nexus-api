@@ -525,7 +525,7 @@ export function MatchesList() {
                       </TableCell>
                       <TableCell>{getStatusBadge(match.status)}</TableCell>
                       <TableCell className="hidden xl:table-cell">
-                        {renderEvidence(match.id)}
+                        <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
