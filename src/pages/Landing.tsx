@@ -55,7 +55,7 @@ export default function Landing() {
       <AnimatedBackground />
       <PublicHeader />
 
-      {/* Main content: Left panel + Right sidebar */}
+      {/* Main content */}
       <div className="flex-1 flex min-h-0 relative z-10">
         {/* Left: Main content area */}
         <div className="flex-1 overflow-y-auto">
@@ -66,7 +66,7 @@ export default function Landing() {
             </h1>
 
             {/* Search form with BID/OFFER tabs */}
-            <div className="border border-border mb-4">
+            <div className="border border-border">
               <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
               <SearchOutcomes
                 isSearching={isSearching}
@@ -74,19 +74,6 @@ export default function Landing() {
                 onSignIn={navigateToAuth}
               />
             </div>
-
-            {/* 6-step workflow pipeline */}
-            <div className="mb-4">
-              <WorkflowPipeline />
-            </div>
-
-            {/* POI commitment row */}
-            <div className="mb-4">
-              <PoiCommitmentRow />
-            </div>
-
-            {/* Trust badges */}
-            <TrustBadges />
           </div>
         </div>
 
