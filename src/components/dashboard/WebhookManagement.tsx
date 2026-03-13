@@ -313,8 +313,12 @@ export function WebhookManagement() {
           {loading ? (
             <TableSkeleton rows={3} columns={5} />
           ) : webhooks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No webhook endpoints configured. Create one to get started.
+            <div className="text-center py-12 space-y-3">
+              <Webhook className="h-10 w-10 mx-auto text-muted-foreground" />
+              <p className="font-medium text-foreground">No webhook endpoints</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Webhooks send real-time event notifications to your systems when matches, intents, or settlements happen.
+              </p>
             </div>
           ) : (
             <div className="border rounded-lg">

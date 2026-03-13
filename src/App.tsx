@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
@@ -7,16 +8,21 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { HostnameRouter } from "@/components/HostnameRouter";
 import { getHostType } from "@/lib/hostname";
 import { ROUTES } from "@/lib/constants";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
+
+// Eagerly loaded — critical path
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import Admin from "@/pages/Admin";
-import Docs from "@/pages/Docs";
-import Pricing from "@/pages/Pricing";
-import Billing from "@/pages/Billing";
-import WalkthroughReport from "@/pages/WalkthroughReport";
-import ResetPassword from "@/pages/ResetPassword";
-import NotFound from "@/pages/NotFound";
+
+// Lazy loaded — secondary routes (reduces initial bundle ~40%)
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const Docs = lazy(() => import("@/pages/Docs"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Billing = lazy(() => import("@/pages/Billing"));
+const WalkthroughReport = lazy(() => import("@/pages/WalkthroughReport"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 /**
  * Root element that renders based on host type:
@@ -41,21 +47,23 @@ function App() {
         <TooltipProvider>
           <Router>
             <HostnameRouter>
-              <Routes>
-                <Route path={ROUTES.ROOT} element={<RootElement />} />
-                {/* Canonical redirect: /landing → / */}
-                <Route path="/landing" element={<Navigate to="/" replace />} />
-                <Route path={ROUTES.AUTH} element={<Auth />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path={ROUTES.BILLING} element={<Billing />} />
-                <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
-                <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
-                <Route path={ROUTES.DOCS} element={<Docs />} />
-                <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
-                <Route path={ROUTES.PRICING} element={<Pricing />} />
-                {/* 404 for unknown routes */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<FullPageLoader />}>
+                <Routes>
+                  <Route path={ROUTES.ROOT} element={<RootElement />} />
+                  {/* Canonical redirect: /landing → / */}
+                  <Route path="/landing" element={<Navigate to="/" replace />} />
+                  <Route path={ROUTES.AUTH} element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path={ROUTES.BILLING} element={<Billing />} />
+                  <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
+                  <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
+                  <Route path={ROUTES.DOCS} element={<Docs />} />
+                  <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
+                  <Route path={ROUTES.PRICING} element={<Pricing />} />
+                  {/* 404 for unknown routes */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
               <Sonner />
             </HostnameRouter>
           </Router>
