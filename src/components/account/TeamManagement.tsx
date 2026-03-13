@@ -47,8 +47,6 @@ export function TeamManagement() {
   const [inviting, setInviting] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; inviteId: string | null }>({ open: false, inviteId: null });
-  const [roleChangeDialog, setRoleChangeDialog] = useState<{ open: boolean; member: TeamMember | null; newRole: string }>({ open: false, member: null, newRole: "" });
-  const [changingRole, setChangingRole] = useState(false);
 
   useEffect(() => {
     fetchTeam();
