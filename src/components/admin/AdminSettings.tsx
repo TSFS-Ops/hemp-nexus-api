@@ -147,7 +147,7 @@ export function AdminSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="siteName">Site Name</Label>
+                <Label>Site Name</Label>
                 <Input
                   id="siteName"
                   value={general.siteName}
@@ -161,6 +161,9 @@ export function AdminSettings() {
                   <p className="text-sm text-muted-foreground">
                     Temporarily disable access to the platform
                   </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                    Saved as a configuration flag. Enforcement requires deployment of a maintenance gate.
+                  </p>
                 </div>
                 <Switch
                   checked={general.maintenanceMode}
@@ -173,6 +176,9 @@ export function AdminSettings() {
                   <Label>Allow New Registrations</Label>
                   <p className="text-sm text-muted-foreground">
                     Allow new users to sign up
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                    Saved as a configuration flag. Auth provider settings control actual registration.
                   </p>
                 </div>
                 <Switch

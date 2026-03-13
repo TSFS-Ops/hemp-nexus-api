@@ -38,20 +38,43 @@ export function AdminManualOverrides() {
 
     setExecuting(true);
     try {
+      const adminUserId = (await supabase.auth.getUser()).data.user?.id ?? "";
+
       switch (action) {
         case "force_status": {
-          const { error } = await supabase
+          // Use safe_transition_match_state to enforce state guards
+          // First read current state to populate expected_state
+          const { data: currentMatch, error: fetchError } = await supabase
             .from("matches")
-            .update({ status: newStatus })
-            .eq("id", targetId.trim());
-          if (error) throw error;
+            .select("state, org_id")
+            .eq("id", targetId.trim())
+            .maybeSingle();
+          if (fetchError) throw fetchError;
+          if (!currentMatch) throw new Error("Match not found");
+
+          const { data: result, error: rpcError } = await supabase.rpc(
+            "safe_transition_match_state",
+            {
+              p_match_id: targetId.trim(),
+              p_org_id: currentMatch.org_id,
+              p_expected_state: currentMatch.state ?? "discovery",
+              p_new_state: newStatus,
+              p_update_fields: { status: newStatus },
+            }
+          );
+          if (rpcError) throw rpcError;
+          const rpcResult = result as any;
+          if (rpcResult && !rpcResult.success) {
+            throw new Error(rpcResult.message || "State transition rejected");
+          }
+
           // Log admin action
           await supabase.from("admin_audit_logs").insert({
-            admin_user_id: (await supabase.auth.getUser()).data.user?.id ?? "",
+            admin_user_id: adminUserId,
             action: "force_status_change",
             target_type: "match",
             target_id: targetId.trim(),
-            details: { new_status: newStatus, reason } as any,
+            details: { new_status: newStatus, previous_state: currentMatch.state, reason } as any,
           });
           toast.success(`Match status forced to "${newStatus}"`);
           break;
@@ -63,7 +86,7 @@ export function AdminManualOverrides() {
           });
           if (error) throw error;
           await supabase.from("admin_audit_logs").insert({
-            admin_user_id: (await supabase.auth.getUser()).data.user?.id ?? "",
+            admin_user_id: adminUserId,
             action: "rerun_screening",
             target_type: "entity",
             target_id: targetId.trim(),
@@ -79,7 +102,7 @@ export function AdminManualOverrides() {
           });
           if (error) throw error;
           await supabase.from("admin_audit_logs").insert({
-            admin_user_id: (await supabase.auth.getUser()).data.user?.id ?? "",
+            admin_user_id: adminUserId,
             action: "regenerate_evidence_pack",
             target_type: "match",
             target_id: targetId.trim(),
@@ -89,17 +112,37 @@ export function AdminManualOverrides() {
           break;
         }
         case "void_match": {
-          const { error } = await supabase
+          // Read current state, then use safe RPC
+          const { data: voidMatch, error: voidFetchErr } = await supabase
             .from("matches")
-            .update({ status: "voided" })
-            .eq("id", targetId.trim());
-          if (error) throw error;
+            .select("state, org_id")
+            .eq("id", targetId.trim())
+            .maybeSingle();
+          if (voidFetchErr) throw voidFetchErr;
+          if (!voidMatch) throw new Error("Match not found");
+
+          const { data: voidResult, error: voidRpcErr } = await supabase.rpc(
+            "safe_transition_match_state",
+            {
+              p_match_id: targetId.trim(),
+              p_org_id: voidMatch.org_id,
+              p_expected_state: voidMatch.state ?? "discovery",
+              p_new_state: "voided",
+              p_update_fields: { status: "voided" },
+            }
+          );
+          if (voidRpcErr) throw voidRpcErr;
+          const voidRes = voidResult as any;
+          if (voidRes && !voidRes.success) {
+            throw new Error(voidRes.message || "Void transition rejected");
+          }
+
           await supabase.from("admin_audit_logs").insert({
-            admin_user_id: (await supabase.auth.getUser()).data.user?.id ?? "",
+            admin_user_id: adminUserId,
             action: "void_match",
             target_type: "match",
             target_id: targetId.trim(),
-            details: { reason } as any,
+            details: { previous_state: voidMatch.state, reason } as any,
           });
           toast.success("Match voided");
           break;

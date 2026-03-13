@@ -92,13 +92,13 @@ export function AdminOverview() {
   }
 
   const quickActions = [
-    { to: "/admin/matches", icon: GitCompare, label: "Matches" },
-    { to: "/admin/signals", icon: Radio, label: "Signals" },
-    { to: "/admin/coherence", icon: TrendingUp, label: "Coherence Engine" },
-    { to: "/admin/behavioral", icon: Activity, label: "Behavioural Analytics" },
+    { to: "/admin/deals?tab=pipeline", icon: GitCompare, label: "Deal Pipeline" },
+    { to: "/admin/deals?tab=matches", icon: GitCompare, label: "Matches" },
     { to: "/admin/audit", icon: FileText, label: "Audit Logs" },
     { to: "/admin/api-keys", icon: Key, label: "API Keys" },
     { to: "/admin/users-orgs", icon: Users, label: "Users & Orgs" },
+    { to: "/admin/compliance", icon: Settings, label: "Compliance" },
+    { to: "/admin/overrides", icon: Settings, label: "Overrides" },
     { to: "/admin/settings", icon: Settings, label: "Settings" },
   ];
 
