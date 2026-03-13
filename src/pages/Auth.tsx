@@ -24,6 +24,7 @@ const emailSchema = z.object({
 export default function Auth() {
   // ── Sign-in state ──
   const [signInEmail, setSignInEmail] = useState("");
+  const [signInEmailError, setSignInEmailError] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
 
   // ── Sign-up state (isolated) ──
