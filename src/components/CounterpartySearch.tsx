@@ -417,7 +417,7 @@ export default function CounterpartySearch() {
               {selectedResults.size > 0 && (
                 <div className="flex items-center gap-2">
                   <Button 
-                    onClick={handleStartPOI}
+                    onClick={handleCreateMatchClick}
                     disabled={isConfirming}
                     size="sm" 
                     className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
@@ -427,7 +427,7 @@ export default function CounterpartySearch() {
                     ) : (
                       <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
                     )}
-                    Create Match ({selectedResults.size})
+                    {isConfirming ? "Creating…" : `Create Draft Match (${selectedResults.size})`}
                   </Button>
                 </div>
               )}
