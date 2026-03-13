@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { useDataFetch } from "@/hooks/use-data-fetch";
 import { useAsyncAction } from "@/hooks/use-async-action";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -39,12 +40,54 @@ interface DisputePanelProps {
   orgId: string;
 }
 
+interface DisputeDraft {
+  reason: string;
+  evidence: string;
+}
+
 export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Draft persistence for dispute form
+  const getCurrentDraft = useCallback((): DisputeDraft | null => {
+    if (!reason.trim() && !evidence.trim()) return null;
+    return { reason, evidence };
+  }, [reason, evidence]);
+
+  const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<DisputeDraft>(
+    `dispute-${matchId}`,
+    getCurrentDraft
+  );
+
+  // Restore draft on form open
+  const handleOpenForm = () => {
+    if (!showForm) {
+      const draft = restoreDraft();
+      if (draft) {
+        setReason(draft.reason);
+        setEvidence(draft.evidence);
+        toast.info("Unsaved dispute draft restored from your previous session.", {
+          action: { label: "Discard", onClick: () => { setReason(""); setEvidence(""); clearDraft(); } },
+          duration: 8000,
+        });
+      }
+    }
+    setShowForm(!showForm);
+  };
+
+  // Save draft on every change
+  const handleReasonChange = (val: string) => {
+    setReason(val);
+    saveDraft({ reason: val, evidence });
+  };
+  const handleEvidenceChange = (val: string) => {
+    setEvidence(val);
+    saveDraft({ reason, evidence: val });
+  };
 
   const { data: disputes, loading, refetch } = useDataFetch(
     async () => {
