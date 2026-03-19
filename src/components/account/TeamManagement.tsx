@@ -363,7 +363,7 @@ export function TeamManagement() {
         <Card>
           <CardHeader>
             <CardTitle>Pending Invitations</CardTitle>
-            <CardDescription>These invitations have been recorded but require manual follow-up.</CardDescription>
+            <CardDescription>These invitations have been sent and are awaiting signup.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
