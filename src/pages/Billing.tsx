@@ -85,7 +85,7 @@ export default function Billing() {
     const reference = params.get("reference") || params.get("trxref");
 
     // Clean URL immediately regardless of outcome
-    if (status) {
+    if (status || reference) {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
@@ -101,6 +101,59 @@ export default function Billing() {
         "Payment failed. Your card was not charged. Please try again or use a different payment method. If the problem persists, contact support@izenzo.co.za.",
         { duration: 8000 }
       );
+      return;
+    }
+
+    // Handle case where user returns from Paystack without explicit success status
+    // (e.g. user closes checkout, Paystack redirects with just trxref)
+    if (!status && reference) {
+      verifyAttempted.current = true;
+      // Verify the transaction — it may have succeeded even without status=success
+      (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
+            method: "POST",
+            body: { reference },
+          });
+          if (error) {
+            toast.info(
+              "We couldn't confirm your payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference.",
+              { duration: 10000 }
+            );
+            return;
+          }
+          if (data?.success) {
+            if (data.alreadyCredited) {
+              toast.success("Credits already applied to your account.");
+            } else {
+              toast.success(`${data.credits} credits added. New balance: ${data.newBalance?.toLocaleString() ?? "updated"}.`);
+            }
+            queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
+            queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
+            queryClient.invalidateQueries({ queryKey: ["token-balance"] });
+            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
+          } else {
+            const paystackStatus = data?.paystackStatus;
+            if (paystackStatus === "abandoned") {
+              toast.info("Payment was not completed. No credits were charged.");
+            } else if (paystackStatus === "failed") {
+              toast.error(
+                "Payment failed. Your card was not charged. Please try again or use a different payment method.",
+                { duration: 8000 }
+              );
+            } else {
+              toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
+            }
+          }
+        } catch (err) {
+          console.error("Verify error:", err);
+          toast.info(
+            "We couldn't confirm your payment status. If you were charged, credits will appear within 5 minutes. Otherwise, email support@izenzo.co.za.",
+            { duration: 10000 }
+          );
+        }
+      })();
       return;
     }
 
