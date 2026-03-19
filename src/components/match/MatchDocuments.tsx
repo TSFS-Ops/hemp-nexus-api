@@ -97,7 +97,7 @@ const VISIBILITY_OPTIONS = [
   { value: "share_with_counterparty", label: "Share with Counterparty", icon: Users, description: "Both buyer and seller" },
 ];
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (aligned with bucket limit)
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB — compliance-grade cap, enforced server-side via bucket config
 const ALLOWED_TYPES = [
   "application/pdf",
   "image/jpeg",
@@ -235,7 +235,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     // Pre-upload size feedback
     if (file.size > MAX_FILE_SIZE) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      setError(`File is ${sizeMB} MB, which exceeds the 50 MB limit. Choose a smaller file.`);
+      setError(`File is ${sizeMB} MB, which exceeds the 20 MB limit. Choose a smaller file.`);
       setSelectedFile(null);
       e.target.value = "";
       return;
