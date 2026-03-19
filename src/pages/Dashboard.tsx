@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Link, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { ROUTES } from "@/lib/constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -36,6 +37,16 @@ function AccessDeniedBanner() {
   const [searchParams] = useSearchParams();
   const [dismissed, setDismissed] = useState(false);
   const denied = searchParams.get("denied") === "1";
+
+  // Fire a persistent toast on mount so the user cannot miss the explanation
+  useEffect(() => {
+    if (denied) {
+      toast.error(
+        "You don't have permission to access that page. You've been redirected to the console.",
+        { duration: 10000 }
+      );
+    }
+  }, [denied]);
 
   if (!denied || dismissed) return null;
 
