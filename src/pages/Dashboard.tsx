@@ -38,6 +38,16 @@ function AccessDeniedBanner() {
   const [dismissed, setDismissed] = useState(false);
   const denied = searchParams.get("denied") === "1";
 
+  // Fire a persistent toast on mount so the user cannot miss the explanation
+  useEffect(() => {
+    if (denied) {
+      toast.error(
+        "You don't have permission to access that page. You've been redirected to the console.",
+        { duration: 10000 }
+      );
+    }
+  }, [denied]);
+
   if (!denied || dismissed) return null;
 
   return (
