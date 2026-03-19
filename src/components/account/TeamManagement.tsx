@@ -238,14 +238,27 @@ export function TeamManagement() {
                   {isOrgAdmin && (
                     <TableCell>
                   {m.id !== user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs text-muted-foreground"
-                          onClick={() => toast.info("Role changes are not yet available as a self-service action. Contact support@izenzo.co.za to change a team member's role.", { duration: 6000 })}
+                        <Select
+                          value={m.roles.includes("org_admin") ? "org_admin" : "org_member"}
+                          onValueChange={(newRole) => {
+                            const currentRole = m.roles.includes("org_admin") ? "org_admin" : "org_member";
+                            if (newRole !== currentRole) {
+                              setRoleChangeDialog({ open: true, member: m, newRole });
+                            }
+                          }}
                         >
-                          Change role
-                        </Button>
+                          <SelectTrigger className="h-8 w-[120px] text-xs" aria-label={`Change role for ${m.email}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="org_member">
+                              <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Member</span>
+                            </SelectItem>
+                            <SelectItem value="org_admin">
+                              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Admin</span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       )}
                     </TableCell>
                   )}
