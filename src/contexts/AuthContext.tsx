@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentPath = window.location.pathname + window.location.search;
           const returnTo = encodeURIComponent(currentPath);
           toast.error("Your session has expired. Redirecting to sign in…", {
-            description: "Any unsaved work has been preserved. You will return to this page after signing in.",
+            description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
             duration: Infinity,
           });
           // Give the user time to read the toast before redirecting
