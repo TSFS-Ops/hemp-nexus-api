@@ -5,6 +5,9 @@ import { ApiKeysSection } from "@/components/dashboard/sections/ApiKeysSection";
 import { WebhooksSection } from "@/components/dashboard/sections/WebhooksSection";
 import { UsageBillingSection } from "@/components/dashboard/sections/UsageBillingSection";
 import { useUrlTab } from "@/hooks/use-url-tab";
+import { Link } from "react-router-dom";
+import { Lock, Building2 } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 
 /**
  * Unified settings page: API Keys, Webhooks, and Usage & Billing.
