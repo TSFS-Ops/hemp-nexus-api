@@ -547,7 +547,7 @@ export function MatchesList() {
                         {match.quantity_amount} {match.quantity_unit}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {match.price_currency} {match.price_amount.toLocaleString()}
+                        {match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
                       <TableCell>{getStatusBadge(match.status)}</TableCell>
                       <TableCell className="hidden xl:table-cell">
