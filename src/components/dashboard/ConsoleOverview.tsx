@@ -10,6 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 
 const OnboardingWizard = lazy(() => import("@/components/OnboardingWizard"));
+
+// TEMPORARY: Force error to test ErrorBoundary — REMOVE AFTER TEST
+function BrokenChild() { throw new Error("ErrorBoundary test: deliberate crash"); return null; }
 function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
   const navigate = useNavigate();
 
