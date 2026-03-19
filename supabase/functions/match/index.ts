@@ -636,15 +636,14 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Build canonical JSON for hashing
+      // Build canonical JSON for hashing – only stable business fields.
+      // Metadata (searchQuery, coherenceScore, source, etc.) is volatile and
+      // MUST be excluded so the same buyer+seller+commodity is detected as a
+      // duplicate regardless of which search session created it.
       const canonical = {
-        buyer: body.buyer,
-        seller: body.seller,
-        commodity: body.commodity,
-        quantity: body.quantity,
-        price: body.price,
-        terms: body.terms,
-        metadata: body.metadata || {}
+        buyer_id: body.buyer.id,
+        seller_id: body.seller.id,
+        commodity: (body.commodity || "").trim().toLowerCase(),
       };
 
       // Compute SHA-256 hash
