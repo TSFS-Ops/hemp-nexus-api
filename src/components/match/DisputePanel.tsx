@@ -344,13 +344,49 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
                     )}
                   </div>
                 )}
+                {/* Action buttons for open/under_review disputes owned by this org */}
+                {d.raised_by_org_id === orgId && (d.status === "open" || d.status === "under_review") && (
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActionDispute(d);
+                        setActionType("resolved");
+                        setActionNotes("");
+                        setShowActionConfirm(true);
+                      }}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Resolve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActionDispute(d);
+                        setActionType("escalated");
+                        setActionNotes("");
+                        setShowActionConfirm(true);
+                      }}
+                    >
+                      <ArrowUpCircle className="h-3.5 w-3.5 mr-1" />
+                      Escalate
+                    </Button>
+                  </div>
+                )}
+                {d.raised_by_org_id !== orgId && (d.status === "open" || d.status === "under_review") && (
+                  <p className="text-xs text-muted-foreground italic pt-2 border-t border-border">
+                    Only the organisation that raised this dispute can resolve or escalate it. Contact support@izenzo.co.za if you believe this is incorrect.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Dispute confirmation dialog */}
+      {/* Dispute creation confirmation dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -378,6 +414,55 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
             <AlertDialogCancel>Go back and edit</AlertDialogCancel>
             <AlertDialogAction onClick={confirmAndSubmit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Submit Dispute
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dispute action (resolve/escalate) confirmation dialog */}
+      <AlertDialog open={showActionConfirm} onOpenChange={(open) => { if (!open) { setShowActionConfirm(false); setActionDispute(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "resolved" ? "Resolve this dispute" : "Escalate this dispute"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              {actionDispute && (
+                <div className="rounded-md border border-border p-3 text-sm space-y-1">
+                  <p className="font-medium">Original reason: {actionDispute.reason}</p>
+                  {actionDispute.evidence_notes && (
+                    <p className="text-muted-foreground">Evidence: {actionDispute.evidence_notes}</p>
+                  )}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>{actionType === "resolved" ? "Resolution notes (mandatory)" : "Escalation reason (mandatory)"}</Label>
+                <Textarea
+                  value={actionNotes}
+                  onChange={(e) => setActionNotes(e.target.value)}
+                  placeholder={
+                    actionType === "resolved"
+                      ? "Explain how this dispute was resolved…"
+                      : "Explain why this requires senior review…"
+                  }
+                  className="min-h-[80px]"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {actionType === "resolved"
+                  ? "Resolving will unblock settlement. This action is logged in the audit trail."
+                  : "Escalation will notify senior reviewers. This action is logged in the audit trail."}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisputeAction}
+              disabled={actionSubmitting || !actionNotes.trim()}
+              className={actionType === "resolved" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {actionSubmitting ? "Processing…" : actionType === "resolved" ? "Confirm Resolution" : "Confirm Escalation"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
