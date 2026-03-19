@@ -125,7 +125,32 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
   const [accessLogsDoc, setAccessLogsDoc] = useState<MatchDocument | null>(null);
 
+  // Draft persistence for upload form fields (file itself cannot be persisted)
+  type UploadDraft = { docType: string; title: string; notes: string; visibility: string };
+  const getCurrentUploadDraft = useCallback((): UploadDraft | null => {
+    if (!docType && !title && !notes) return null;
+    return { docType, title, notes, visibility };
+  }, [docType, title, notes, visibility]);
+
+  const { restoreDraft, clearDraft: clearUploadDraft, hasRestoredDraft } = useDraftPersistence<UploadDraft>(
+    `doc-upload-${matchId}`,
+    getCurrentUploadDraft
+  );
+
   useEffect(() => {
+    if (hasRestoredDraft) {
+      const draft = restoreDraft();
+      if (draft) {
+        if (draft.docType) setDocType(draft.docType);
+        if (draft.title) setTitle(draft.title);
+        if (draft.notes) setNotes(draft.notes);
+        if (draft.visibility) setVisibility(draft.visibility);
+        toast.info("Your unsaved document form has been restored. Re-select the file to continue.");
+      }
+    }
+  }, [hasRestoredDraft]);
+
+
     const getSessionOrgId = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
