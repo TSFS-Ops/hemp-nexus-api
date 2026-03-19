@@ -117,6 +117,7 @@ export function TeamManagement() {
 
     setInviting(true);
     try {
+      // 1. Record the invitation in the database
       const { error } = await supabase
         .from("team_invitations")
         .insert({
@@ -127,8 +128,48 @@ export function TeamManagement() {
         });
 
       if (error) throw error;
-      toast.success(`Invitation recorded for ${inviteEmail}`, {
-        description: "They will appear in the pending list. Invitation emails are not yet sent automatically — please share the sign-up link with them directly.",
+
+      // 2. Send the invitation email (best-effort — don't block on failure)
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", orgId)
+        .maybeSingle();
+
+      const { data: inviterProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const signupUrl = `${window.location.origin}/auth`;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/send-team-invite`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: inviteEmail.trim().toLowerCase(),
+              role: inviteRole,
+              org_name: orgData?.name || "Your organisation",
+              inviter_name: inviterProfile?.full_name || user.email,
+              signup_url: signupUrl,
+            }),
+          });
+        } catch (emailErr) {
+          // Email send failed — invitation is still recorded, log but don't block
+          console.warn("[TeamManagement] Invite email failed to send:", emailErr);
+        }
+      }
+
+      toast.success(`Invitation sent to ${inviteEmail}`, {
+        description: "An email has been sent with instructions to join your organisation.",
       });
       setInviteEmail("");
       fetchTeam();
