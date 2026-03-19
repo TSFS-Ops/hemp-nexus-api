@@ -126,37 +126,30 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     {
       id: 1,
       title: "Welcome",
-      description: "Let's get you started with the API",
+      description: "Understand how the platform works",
       icon: Rocket,
       completed: currentStep > 1
     },
     {
       id: 2,
-      title: "Data Region",
-      description: "Choose where your data is stored",
+      title: "Your Organisation",
+      description: "Review your org and data region",
       icon: Globe,
       completed: currentStep > 2
     },
     {
       id: 3,
-      title: "Create API Key",
-      description: "Generate your first API key",
-      icon: Key,
-      completed: currentStep > 3 || apiKeyCreated
+      title: "Run a Search",
+      description: "Find counterparties for your commodity",
+      icon: Search,
+      completed: currentStep > 3
     },
     {
       id: 4,
-      title: "Test API",
-      description: "Make your first API call",
-      icon: Play,
-      completed: currentStep > 4 || testResult === "success"
-    },
-    {
-      id: 5,
-      title: "You're Ready!",
-      description: "Start building amazing things",
+      title: "Next Steps",
+      description: "What to do after your first search",
       icon: Trophy,
-      completed: currentStep > 5
+      completed: currentStep > 4
     }
   ];
 
