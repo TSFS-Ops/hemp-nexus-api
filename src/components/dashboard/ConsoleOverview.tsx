@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 
 const OnboardingWizard = lazy(() => import("@/components/OnboardingWizard"));
+
+
 function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
   const navigate = useNavigate();
 
@@ -169,6 +171,7 @@ export function ConsoleOverview() {
 
   return (
     <div className="space-y-6">
+      
       <header>
         <h1 className="text-2xl font-semibold text-foreground mb-1">Console</h1>
         <p className="text-muted-foreground">
