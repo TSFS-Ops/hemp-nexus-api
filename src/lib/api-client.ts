@@ -135,7 +135,7 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    // Global 401 handler: expired session → emergency-save drafts, then redirect
+    // Global 401 handler: expired session → emergency-save drafts, notify, then redirect
     if (res.status === 401) {
       // Dispatch session-expiry event so useDraftPersistence hooks can emergency-save
       window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
@@ -143,10 +143,15 @@ export async function apiFetch<T = unknown>(
       const currentPath = window.location.pathname + window.location.search;
       const returnTo = encodeURIComponent(currentPath);
 
-      // Brief delay to allow draft saves to complete before navigation
+      toast.error("Your session has expired. Redirecting to sign in…", {
+        description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
+        duration: Infinity,
+      });
+
+      // Match AuthContext's 4-second delay so user can read the toast
       setTimeout(() => {
         window.location.href = `/auth?returnTo=${returnTo}`;
-      }, 500);
+      }, 4000);
 
       // Throw so calling code stops execution immediately
       throw new AuthRequiredError();
