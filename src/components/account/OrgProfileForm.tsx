@@ -130,7 +130,7 @@ export function OrgProfileForm() {
     setSaving(true);
     setSaveSuccess(false);
     try {
-      const { error } = await supabase
+      const { error, data: updated } = await supabase
         .from("organizations")
         .update({
           name: profile.name.trim().slice(0, 200),
@@ -145,9 +145,19 @@ export function OrgProfileForm() {
           website: profile.website?.slice(0, 500) || null,
           industry: profile.industry?.slice(0, 100) || null,
         })
-        .eq("id", profile.id);
+        .eq("id", profile.id)
+        .select();
 
       if (error) throw error;
+
+      if (!updated || updated.length === 0) {
+        toast.error("Your changes were not saved", {
+          description: "You may not have permission to edit this organisation. Contact your organisation admin or support@izenzo.co.za.",
+          duration: 8000,
+        });
+        return;
+      }
+
       setSavedProfile({ ...profile });
       setSaveSuccess(true);
       toast.success("Organisation profile saved");
