@@ -115,6 +115,7 @@ export function AdminComplianceCasesPanel() {
       });
 
       toast.success(`Case ${actionType}`);
+      clearDraft();
       setActionCase(null);
       setActionType("");
       setDecisionNotes("");
