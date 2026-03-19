@@ -438,6 +438,15 @@ export default function Auth() {
           </p>
         </div>
 
+        {searchParams.get("signedOut") === "1" && !searchParams.get("returnTo") && (
+          <Alert className="mb-6 border-border bg-muted/30">
+            <LogIn className="h-4 w-4" />
+            <AlertDescription className="text-sm text-foreground">
+              You've been signed out successfully.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {searchParams.get("returnTo") && (
           <Alert className={`mb-6 ${searchParams.get("expired") === "1" ? "border-destructive/30 bg-destructive/5" : "border-primary/30 bg-primary/5"}`}>
             <LogIn className="h-4 w-4" />

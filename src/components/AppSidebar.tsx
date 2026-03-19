@@ -47,7 +47,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     if (error) {
       toast.error("Error signing out", { description: error.message });
     } else {
-      navigate(ROUTES.AUTH);
+      navigate(`${ROUTES.AUTH}?signedOut=1`);
     }
   };
 
