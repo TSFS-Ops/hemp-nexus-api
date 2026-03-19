@@ -733,11 +733,11 @@ Deno.serve(async (req) => {
             seller_id: body.seller.id,
             seller_name: body.seller.name,
             commodity: body.commodity,
-            quantity_amount: body.quantity.amount,
-            quantity_unit: body.quantity.unit,
-            price_amount: body.price.amount,
-            price_currency: body.price.currency,
-            terms: body.terms,
+            quantity_amount: body.quantity?.amount ?? null,
+            quantity_unit: body.quantity?.unit ?? null,
+            price_amount: body.price?.amount ?? null,
+            price_currency: body.price?.currency ?? null,
+            terms: body.terms ?? null,
             canonical_string: canonicalString
           }
         });
