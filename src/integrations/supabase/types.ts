@@ -2573,10 +2573,10 @@ export type Database = {
           org_id: string
           poi_state: string
           previous_event_hash: string | null
-          price_amount: number
-          price_currency: string
-          quantity_amount: number
-          quantity_unit: string
+          price_amount: number | null
+          price_currency: string | null
+          quantity_amount: number | null
+          quantity_unit: string | null
           seller_committed_at: string | null
           seller_id: string
           seller_name: string
@@ -2605,10 +2605,10 @@ export type Database = {
           org_id: string
           poi_state?: string
           previous_event_hash?: string | null
-          price_amount: number
-          price_currency: string
-          quantity_amount: number
-          quantity_unit: string
+          price_amount?: number | null
+          price_currency?: string | null
+          quantity_amount?: number | null
+          quantity_unit?: string | null
           seller_committed_at?: string | null
           seller_id: string
           seller_name: string
@@ -2637,10 +2637,10 @@ export type Database = {
           org_id?: string
           poi_state?: string
           previous_event_hash?: string | null
-          price_amount?: number
-          price_currency?: string
-          quantity_amount?: number
-          quantity_unit?: string
+          price_amount?: number | null
+          price_currency?: string | null
+          quantity_amount?: number | null
+          quantity_unit?: string | null
           seller_committed_at?: string | null
           seller_id?: string
           seller_name?: string
