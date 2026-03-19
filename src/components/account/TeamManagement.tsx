@@ -371,6 +371,28 @@ export function TeamManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Role change confirmation dialog */}
+      <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => { if (!open) setRoleChangeDialog({ open: false, member: null, newRole: "" }); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              {roleChangeDialog.member && roleChangeDialog.newRole === "org_admin"
+                ? `Promote ${roleChangeDialog.member.email} to Admin? They will be able to edit the organisation profile, manage team members, and change roles.`
+                : `Demote ${roleChangeDialog.member?.email} to Member? They will lose the ability to edit the organisation profile and manage the team.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={changingRole}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRoleChange} disabled={changingRole}>
+              {changingRole ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {roleChangeDialog.newRole === "org_admin" ? "Promote to Admin" : "Demote to Member"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
