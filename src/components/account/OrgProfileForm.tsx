@@ -200,8 +200,7 @@ export function OrgProfileForm() {
           <CardDescription>KYB details for your organisation. Complete these once — they're used across compliance and trade workflows.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <fieldset disabled={readOnly} className="space-y-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Label htmlFor="org-name">Display Name</Label>
               <Input id="org-name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} aria-label="Display name" maxLength={200} required />
             </div>
