@@ -248,7 +248,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
               <Label className="text-muted-foreground">Transaction</Label>
               <p className="font-medium">{match.commodity}</p>
               <p className="text-sm text-muted-foreground">
-                {match.quantity_amount} {match.quantity_unit} @ {match.price_currency} {match.price_amount}
+                {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""} @ {match.price_currency ?? ""} {match.price_amount ?? "—"}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">

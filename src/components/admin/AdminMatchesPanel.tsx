@@ -244,7 +244,7 @@ export function AdminMatchesPanel() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Value</label>
-                  <p>{selectedMatch.price_currency} {selectedMatch.price_amount.toLocaleString()}</p>
+                  <p>{selectedMatch.price_currency ?? ""} {selectedMatch.price_amount?.toLocaleString() ?? "—"}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Buyer</label>

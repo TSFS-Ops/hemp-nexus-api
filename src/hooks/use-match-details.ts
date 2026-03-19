@@ -65,7 +65,7 @@ export function useMatchDetails(matchId: string | undefined) {
         return;
       }
 
-      if (!data.id || !data.commodity || typeof data.price_amount !== "number") {
+      if (!data.id || !data.commodity) {
         throw new Error("Received malformed match data from the server.");
       }
 

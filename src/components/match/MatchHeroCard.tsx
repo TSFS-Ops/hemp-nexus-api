@@ -122,7 +122,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             <div>
               <h3 className="font-semibold mb-4">Quantity</h3>
               <p className="text-2xl font-bold">
-                {match.quantity_amount} <span className="text-base font-normal text-muted-foreground">{match.quantity_unit}</span>
+                {match.quantity_amount ?? "—"} <span className="text-base font-normal text-muted-foreground">{match.quantity_unit ?? ""}</span>
               </p>
             </div>
             <div>
