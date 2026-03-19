@@ -353,7 +353,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         {/* Step Content */}
         <div className="min-h-[300px] flex flex-col justify-center">
-          {/* Step 1: Welcome */}
+          {/* Step 1: Welcome — Explain the platform workflow */}
           {currentStep === 1 && (
             <div className="space-y-6 text-center">
               <div className="flex justify-center">
@@ -362,36 +362,45 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Welcome to the Compliance Matching API! 🎉</h3>
+                <h3 className="text-2xl font-bold">Welcome to Compliance Matching</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  This quick wizard will help you create your first API key and make your first API call. 
-                  It takes less than 2 minutes!
+                  This platform helps you find counterparties, record commercial intent, and generate tamper-evident evidence packs for compliance.
                 </p>
               </div>
-              <Alert className="text-left">
-                <AlertDescription>
-                  <strong>What you'll do:</strong>
-                  <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-                    <li>Create a sandbox API key (safe for testing)</li>
-                    <li>Make your first API call</li>
-                    <li>See a successful response</li>
-                  </ol>
-                </AlertDescription>
-              </Alert>
+              <div className="text-left space-y-3 max-w-md mx-auto">
+                <h4 className="font-semibold text-sm">How it works — 4 steps:</h4>
+                <div className="space-y-2">
+                  {[
+                    { num: "1", icon: Search, label: "Search", desc: "Find verified buyers or sellers by commodity, region, or company name." },
+                    { num: "2", icon: FileText, label: "Create Match", desc: "Select counterparties and create a draft match. No commercial terms are recorded yet." },
+                    { num: "3", icon: Zap, label: "Confirm Intent", desc: "Add commercial terms, then signal your serious interest. This deducts 500 credits and creates an audit record." },
+                    { num: "4", icon: Key, label: "Evidence Pack", desc: "Download a tamper-evident evidence pack with cryptographic proof for your compliance records." },
+                  ].map((s) => (
+                    <div key={s.num} className="flex items-start gap-3 p-2 rounded-md">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">
+                        {s.num}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium">{s.label}</p>
+                        <p className="text-xs text-muted-foreground">{s.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <Alert className="text-left" variant="default">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <strong>What is an organisation?</strong> When you signed up, an organisation was created for you automatically.
                   It represents your company or team on the platform. API keys, matches, and compliance records all belong to your organisation.
-                  You can manage it later under Account settings.
                 </AlertDescription>
               </Alert>
               <Button onClick={() => setCurrentStep(2)} size="lg" className="w-full">
-                Let's Get Started
+                Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button variant="ghost" onClick={handleSkip} className="w-full">
-                Skip for now
+                Skip — I'll explore on my own
               </Button>
             </div>
           )}
