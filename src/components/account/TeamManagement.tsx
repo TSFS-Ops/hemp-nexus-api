@@ -156,6 +156,33 @@ export function TeamManagement() {
       toast.error("Failed to cancel invitation");
     }
   };
+
+  const handleRoleChange = async () => {
+    if (!roleChangeDialog.member || !roleChangeDialog.newRole) return;
+    setChangingRole(true);
+    try {
+      const { data, error } = await supabase.rpc("change_org_member_role", {
+        p_target_user_id: roleChangeDialog.member.id,
+        p_new_role: roleChangeDialog.newRole,
+      });
+      if (error) throw error;
+      const result = data as Record<string, unknown>;
+      if (result?.success) {
+        toast.success(`Role updated to ${roleDisplayName(roleChangeDialog.newRole)}`, {
+          description: `${roleChangeDialog.member.email}'s role has been changed.`,
+        });
+        fetchTeam();
+      } else {
+        toast.error((result?.message as string) || "Failed to change role");
+      }
+    } catch (err: any) {
+      toast.error("Failed to change role", { description: err.message });
+    } finally {
+      setChangingRole(false);
+      setRoleChangeDialog({ open: false, member: null, newRole: "" });
+    }
+  };
+
   const roleBadgeColour = (role: string) => {
     switch (role) {
       case "platform_admin": return "bg-red-500/10 text-red-700 border-red-200";
