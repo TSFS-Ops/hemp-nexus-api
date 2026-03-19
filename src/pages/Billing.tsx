@@ -275,6 +275,7 @@ export default function Billing() {
         body: { 
           packageId,
           callbackUrl: `${window.location.origin}/billing?status=success`,
+          cancelUrl: `${window.location.origin}/billing?status=cancelled`,
         },
       });
 
