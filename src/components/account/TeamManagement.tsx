@@ -351,7 +351,7 @@ export function TeamManagement() {
               <div className="flex items-end">
                 <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
                   {inviting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                  Record Invitation
+                  Send Invitation
                 </Button>
               </div>
             </div>
