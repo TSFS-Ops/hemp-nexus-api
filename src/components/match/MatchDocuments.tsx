@@ -102,7 +102,6 @@ const ALLOWED_TYPES = [
   "application/pdf",
   "image/jpeg",
   "image/png",
-  "image/gif",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.ms-excel",
@@ -196,7 +195,6 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
     "image/jpeg": [[0xFF, 0xD8, 0xFF]],
     "image/png": [[0x89, 0x50, 0x4E, 0x47]],
-    "image/gif": [[0x47, 0x49, 0x46]],
     // Office Open XML (docx, xlsx) — PK zip header
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [[0x50, 0x4B, 0x03, 0x04]],
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [[0x50, 0x4B, 0x03, 0x04]],
@@ -245,7 +243,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     if (!ALLOWED_TYPES.includes(file.type)) {
       const ext = file.name.split('.').pop()?.toLowerCase() || "unknown";
       setError(
-        `".${ext}" files are not supported. Allowed: PDF, JPEG, PNG, GIF, Word (.doc/.docx), and Excel (.xls/.xlsx).`
+        `".${ext}" files are not supported. Allowed: PDF, JPEG, PNG, Word (.doc/.docx), and Excel (.xls/.xlsx).`
       );
       setSelectedFile(null);
       e.target.value = "";
@@ -509,7 +507,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   disabled={uploading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Max 50 MB. Accepted: PDF, JPEG, PNG, GIF, Word, Excel.
+                  Max 20 MB. Accepted: PDF, JPEG, PNG, Word, Excel.
                 </p>
               </div>
               
