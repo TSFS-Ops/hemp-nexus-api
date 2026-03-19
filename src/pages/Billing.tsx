@@ -140,10 +140,8 @@ export default function Billing() {
             if (paystackStatus === "abandoned") {
               toast.info("Payment was not completed. No credits were charged.");
             } else if (paystackStatus === "failed") {
-              toast.error(
-                "Payment failed. Your card was not charged. Please try again or use a different payment method.",
-                { duration: 8000 }
-              );
+              setPaymentFailure("Your payment was not successful. Your card was not charged. Please try again below or use a different payment method.");
+              toast.error("Payment failed. Your card was not charged.", { duration: 8000 });
             } else {
               toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
             }
