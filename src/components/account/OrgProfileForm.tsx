@@ -185,15 +185,22 @@ export function OrgProfileForm() {
     return <p className="text-muted-foreground py-8 text-center">No organisation found.</p>;
   }
 
+  const readOnly = !isOrgAdmin;
+
   return (
     <div className="space-y-6">
+      {readOnly && (
+        <div className="p-3 rounded-md border border-border bg-muted/50 text-sm text-muted-foreground">
+          You have view-only access to this profile. Only organisation admins can edit these details.
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" />Organisation Profile</CardTitle>
           <CardDescription>KYB details for your organisation. Complete these once — they're used across compliance and trade workflows.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <fieldset disabled={readOnly} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="org-name">Display Name</Label>
               <Input id="org-name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} aria-label="Display name" maxLength={200} required />
