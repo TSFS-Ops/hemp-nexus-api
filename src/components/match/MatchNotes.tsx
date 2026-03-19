@@ -78,6 +78,7 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
 
       if (error) throw error;
       setNewNote("");
+      clearDraft();
       toast.success("Note added");
       refetch();
     } catch (err: any) {
