@@ -126,37 +126,30 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     {
       id: 1,
       title: "Welcome",
-      description: "Let's get you started with the API",
+      description: "Understand how the platform works",
       icon: Rocket,
       completed: currentStep > 1
     },
     {
       id: 2,
-      title: "Data Region",
-      description: "Choose where your data is stored",
+      title: "Your Organisation",
+      description: "Review your org and data region",
       icon: Globe,
       completed: currentStep > 2
     },
     {
       id: 3,
-      title: "Create API Key",
-      description: "Generate your first API key",
-      icon: Key,
-      completed: currentStep > 3 || apiKeyCreated
+      title: "Run a Search",
+      description: "Find counterparties for your commodity",
+      icon: Search,
+      completed: currentStep > 3
     },
     {
       id: 4,
-      title: "Test API",
-      description: "Make your first API call",
-      icon: Play,
-      completed: currentStep > 4 || testResult === "success"
-    },
-    {
-      id: 5,
-      title: "You're Ready!",
-      description: "Start building amazing things",
+      title: "Next Steps",
+      description: "What to do after your first search",
       icon: Trophy,
-      completed: currentStep > 5
+      completed: currentStep > 4
     }
   ];
 
@@ -360,7 +353,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         {/* Step Content */}
         <div className="min-h-[300px] flex flex-col justify-center">
-          {/* Step 1: Welcome */}
+          {/* Step 1: Welcome — Explain the platform workflow */}
           {currentStep === 1 && (
             <div className="space-y-6 text-center">
               <div className="flex justify-center">
@@ -369,47 +362,56 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Welcome to the Compliance Matching API! 🎉</h3>
+                <h3 className="text-2xl font-bold">Welcome to Compliance Matching</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  This quick wizard will help you create your first API key and make your first API call. 
-                  It takes less than 2 minutes!
+                  This platform helps you find counterparties, record commercial intent, and generate tamper-evident evidence packs for compliance.
                 </p>
               </div>
-              <Alert className="text-left">
-                <AlertDescription>
-                  <strong>What you'll do:</strong>
-                  <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-                    <li>Create a sandbox API key (safe for testing)</li>
-                    <li>Make your first API call</li>
-                    <li>See a successful response</li>
-                  </ol>
-                </AlertDescription>
-              </Alert>
+              <div className="text-left space-y-3 max-w-md mx-auto">
+                <h4 className="font-semibold text-sm">How it works — 4 steps:</h4>
+                <div className="space-y-2">
+                  {[
+                    { num: "1", icon: Search, label: "Search", desc: "Find verified buyers or sellers by commodity, region, or company name." },
+                    { num: "2", icon: FileText, label: "Create Match", desc: "Select counterparties and create a draft match. No commercial terms are recorded yet." },
+                    { num: "3", icon: Zap, label: "Confirm Intent", desc: "Add commercial terms, then signal your serious interest. This deducts 500 credits and creates an audit record." },
+                    { num: "4", icon: Key, label: "Evidence Pack", desc: "Download a tamper-evident evidence pack with cryptographic proof for your compliance records." },
+                  ].map((s) => (
+                    <div key={s.num} className="flex items-start gap-3 p-2 rounded-md">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">
+                        {s.num}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium">{s.label}</p>
+                        <p className="text-xs text-muted-foreground">{s.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <Alert className="text-left" variant="default">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <strong>What is an organisation?</strong> When you signed up, an organisation was created for you automatically.
                   It represents your company or team on the platform. API keys, matches, and compliance records all belong to your organisation.
-                  You can manage it later under Account settings.
                 </AlertDescription>
               </Alert>
               <Button onClick={() => setCurrentStep(2)} size="lg" className="w-full">
-                Let's Get Started
+                Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button variant="ghost" onClick={handleSkip} className="w-full">
-                Skip for now
+                Skip — I'll explore on my own
               </Button>
             </div>
           )}
 
-          {/* Step 2: Data Region Selection */}
+          {/* Step 2: Organisation & Data Region */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Data Region Preference</h3>
+                <h3 className="text-xl font-bold">Your Organisation & Data Region</h3>
                 <p className="text-muted-foreground">
-                  Indicate your preferred data region. This helps us understand your compliance requirements.
+                  Your organisation was created automatically when you signed up. Indicate your preferred data region below.
                 </p>
               </div>
 
@@ -467,187 +469,55 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* Step 3: Create API Key */}
+          {/* Step 3: Run a Search — guide them to the actual commercial action */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Create Your First API Key</h3>
+                <h3 className="text-xl font-bold">Run Your First Search</h3>
                 <p className="text-muted-foreground">
-                  API keys authenticate your requests. We'll create a sandbox key for safe testing.
+                  The fastest way to get started is to search for a counterparty. Try entering a commodity you trade (e.g. "chrome ore South Africa") on the Search page.
                 </p>
               </div>
 
-              {/* If key was already created in a previous session but user came back */}
-              {apiKeyCreated && !apiKey ? (
-                <div className="space-y-4">
-                  <Alert>
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <AlertDescription>
-                      You already created an API key in a previous session. You can skip this step or create another one.
-                    </AlertDescription>
-                  </Alert>
-                  <Button onClick={() => setCurrentStep(4)} size="lg" className="w-full">
-                    Continue to Testing
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              ) : !apiKey ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="key-name">Key Name</Label>
-                    <Input
-                      id="key-name"
-                      value={keyName}
-                      onChange={(e) => setKeyName(e.target.value)}
-                      placeholder="e.g., My First API Key"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Give your key a descriptive name to identify it later
-                    </p>
+              <Card className="p-4 space-y-3">
+                <h4 className="font-semibold text-sm">What happens when you search:</h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">1</span>
+                    <span>The platform finds verified buyers and sellers matching your query.</span>
                   </div>
-
-                  <Alert>
-                    <AlertDescription>
-                      <strong>This key will have:</strong>
-                      <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                        <li>Sandbox environment (safe for testing)</li>
-                        <li>Read and write signals permissions</li>
-                        <li>No expiry date</li>
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Button 
-                    onClick={handleCreateApiKey} 
-                    disabled={creating || !keyName} 
-                    className="w-full"
-                    size="lg"
-                  >
-                    {creating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Key className="mr-2 h-4 w-4" />
-                        Create API Key
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex items-start gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">2</span>
+                    <span>Select one or more results and click "Create Draft Match".</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">3</span>
+                    <span>A draft match is created — no credits deducted, no commitment made.</span>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      <strong>API key created successfully!</strong>
-                      <p className="text-sm mt-1">It's been copied to your clipboard.</p>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Card className="p-4">
-                    <Label className="text-sm font-medium mb-2 block">Your API Key</Label>
-                    <div className="flex gap-2">
-                      <code data-api-key-display className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all select-all">
-                        {apiKey}
-                      </code>
-                      <Button variant="outline" size="icon" onClick={handleCopyKey}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      ⚠️ Save this key securely - you won't be able to see it again!
-                    </p>
-                  </Card>
-
-                  <Button onClick={() => setCurrentStep(4)} size="lg" className="w-full">
-                    Continue to Testing
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 4: Test API */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold">Test Your API Key</h3>
-                <p className="text-muted-foreground">
-                  Let's make your first API call to the signals endpoint.
-                </p>
-              </div>
-
-              <Card className="p-4 bg-muted/30">
-                <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
-{`POST /functions/v1/signals
-{
-  "product": "Test Product",
-  "quantity": 100,
-  "unit": "units",
-  "location": "Test Location"
-}`}
-                </pre>
               </Card>
 
-              <Button
-                onClick={handleTestApi}
-                disabled={testing || !apiKey}
-                size="lg"
-                className="w-full"
-              >
-                {testing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-2 h-4 w-4" />
-                    Run API Test
-                  </>
-                )}
-              </Button>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>No charges yet.</strong> Creating a draft match is free. Credits are only deducted when you explicitly confirm intent on the match detail page.
+                </AlertDescription>
+              </Alert>
 
-              {!apiKey && (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    No API key in this session. Go back to create one, or skip this step if you already have a key.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {testResult === "success" && (
-                <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <AlertDescription className="text-green-800 dark:text-green-200">
-                    <strong>API test successful!</strong> Your key is working.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {testResult === "error" && errorDetails && (
-                <Alert variant="destructive">
-                  <AlertDescription>
-                    <strong>Test failed:</strong> {errorDetails.message}
-                    {errorDetails.status && <span className="ml-1">(HTTP {errorDetails.status})</span>}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {!apiKey && (
-                <Button variant="outline" onClick={() => setCurrentStep(5)} className="w-full">
-                  Skip test — continue to summary
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => { handleComplete(); navigate(ROUTES.DASHBOARD_SEARCH); }} size="lg" className="w-full gap-2">
+                  <Search className="h-4 w-4" />
+                  Go to Search
                 </Button>
-              )}
+                <Button variant="outline" onClick={() => setCurrentStep(4)} className="w-full">
+                  I'll search later — show me next steps
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* Step 5: Complete — Summary */}
-          {currentStep === 5 && (
+          {/* Step 4: Next Steps — Summary */}
+          {currentStep === 4 && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="flex justify-center">
@@ -655,62 +525,57 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     <Trophy className="h-12 w-12 text-green-600" />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold mt-4">Setup Complete 🎉</h3>
+                <h3 className="text-2xl font-bold mt-4">You're Ready</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mt-2">
-                  Here's a summary of what was set up and what to do next.
+                  Here's what to do next in your first session.
                 </p>
               </div>
 
-              {/* Summary */}
               <Card className="p-4 space-y-3">
-                <h4 className="font-semibold text-sm">What was completed</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    <span>Data region preference recorded: {DATA_REGIONS.find(r => r.value === selectedRegion)?.label ?? selectedRegion}</span>
+                <h4 className="font-semibold text-sm">Your first session checklist</h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <Search className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-foreground">Search for counterparties</span>
+                      <p className="text-xs">Enter a commodity and region to find verified buyers or sellers.</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {apiKeyCreated ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                    <span>{apiKeyCreated ? "Sandbox API key created" : "API key creation skipped"}</span>
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-foreground">Create a draft match</span>
+                      <p className="text-xs">Select a counterparty and create a match. Add commercial terms on the match detail page.</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {testResult === "success" ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                    <span>{testResult === "success" ? "API test passed" : "API test skipped"}</span>
+                  <div className="flex items-start gap-2">
+                    <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-foreground">Confirm intent (500 credits)</span>
+                      <p className="text-xs">Signal your serious interest. This creates a hash-chained audit record — no contract, no legal obligation.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Key className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-foreground">Download evidence pack</span>
+                      <p className="text-xs">Get a tamper-evident evidence pack for your compliance records.</p>
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              {/* Next steps */}
-              <Card className="p-4 space-y-3">
-                <h4 className="font-semibold text-sm">Recommended next steps</h4>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-primary shrink-0" />
-                    <span>Search for counterparties to find potential matches</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary shrink-0" />
-                    <span>Create a match and add commercial terms</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary shrink-0" />
-                    <span>Signal intent to record your interest</span>
-                  </div>
-                </div>
-              </Card>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Need API access?</strong> You can create API keys anytime from Settings → API Keys. The SDK documentation is available under Docs.
+                </AlertDescription>
+              </Alert>
 
               <div className="flex flex-col gap-2">
                 <Button onClick={() => { handleComplete(); navigate(ROUTES.DASHBOARD_SEARCH); }} size="lg" className="w-full gap-2">
                   <Search className="h-4 w-4" />
-                  Search for counterparties
+                  Start searching
                 </Button>
                 <Button variant="outline" onClick={handleComplete} className="w-full">
                   Go to Console

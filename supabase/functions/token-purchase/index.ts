@@ -31,6 +31,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const purchaseSchema = z.object({
   packageId: z.enum(["starter", "professional", "enterprise"]),
   callbackUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
 });
 
 const verifySchema = z.object({
@@ -364,7 +365,7 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { packageId, callbackUrl } = parsed.data;
+    const { packageId, callbackUrl, cancelUrl } = parsed.data;
     const pkg = TOKEN_PACKAGES[packageId]!;
 
     // Get client IP for audit

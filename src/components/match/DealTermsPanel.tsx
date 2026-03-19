@@ -245,9 +245,15 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <FileText className="h-5 w-5" />Deal Terms
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5" />Deal Terms
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Terms are versioned — each proposal creates a new immutable record.
+            {latestTerm && " Click \"Amend Terms\" to propose changes based on the current version."}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {olderTerms.length > 0 && (
             <Button variant="ghost" size="sm" onClick={() => setShowHistory(!showHistory)}>
@@ -255,8 +261,27 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
               {showHistory ? "Hide history" : `${olderTerms.length} previous version${olderTerms.length > 1 ? "s" : ""}`}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => showForm ? handleCancelForm() : setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-1" />{showForm ? "Cancel" : "Propose Terms"}
+          <Button variant="outline" size="sm" onClick={() => {
+            if (showForm) {
+              handleCancelForm();
+            } else {
+              // Pre-populate form with latest term values so user can "edit"
+              if (latestTerm) {
+                setForm({
+                  payment_terms: latestTerm.payment_terms || "",
+                  delivery_terms: latestTerm.delivery_terms || "",
+                  inspection_terms: latestTerm.inspection_terms || "",
+                  penalty_terms: latestTerm.penalty_terms || "",
+                  partial_shipment: latestTerm.partial_shipment ?? false,
+                  amendment_notes: "",
+                });
+              } else {
+                setForm({ ...EMPTY_FORM });
+              }
+              setShowForm(true);
+            }
+          }}>
+            <Plus className="h-4 w-4 mr-1" />{showForm ? "Cancel" : latestTerm ? "Amend Terms" : "Propose Terms"}
           </Button>
         </div>
       </div>
