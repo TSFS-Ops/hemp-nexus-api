@@ -97,7 +97,7 @@ const VISIBILITY_OPTIONS = [
   { value: "share_with_counterparty", label: "Share with Counterparty", icon: Users, description: "Both buyer and seller" },
 ];
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (aligned with bucket limit)
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB — compliance-grade cap, enforced server-side via bucket config
 const ALLOWED_TYPES = [
   "application/pdf",
   "image/jpeg",
