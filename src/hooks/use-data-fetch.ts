@@ -90,7 +90,8 @@ export function useDataFetch<T>(
         console.error(errorMessage, err);
 
         // Detect expired session from Supabase SDK errors and trigger redirect
-        if (isAuthRelatedError(err) && !redirectingRef.current) {
+        // Skip if the user is intentionally signing out (flag set by AppSidebar)
+        if (isAuthRelatedError(err) && !redirectingRef.current && !(window as any).__izenzo_signing_out) {
           redirectingRef.current = true;
           window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
           const currentPath = window.location.pathname + window.location.search;
