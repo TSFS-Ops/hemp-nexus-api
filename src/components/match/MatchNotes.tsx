@@ -29,6 +29,26 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
   const [newNote, setNewNote] = useState("");
   const [posting, setPosting] = useState(false);
 
+  const getCurrentDraft = useCallback(() => {
+    if (!newNote.trim()) return null;
+    return { content: newNote };
+  }, [newNote]);
+
+  const { restoreDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{ content: string }>(
+    `match-note-${matchId}`,
+    getCurrentDraft
+  );
+
+  useEffect(() => {
+    if (hasRestoredDraft) {
+      const draft = restoreDraft();
+      if (draft?.content) {
+        setNewNote(draft.content);
+        toast.info("Your unsaved note has been restored.");
+      }
+    }
+  }, [hasRestoredDraft]);
+
   const { data: notes, loading, refetch } = useDataFetch(
     async () => {
       const { data, error } = await supabase
