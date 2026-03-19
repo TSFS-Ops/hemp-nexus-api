@@ -482,7 +482,19 @@ export function MatchesList() {
                        />
                       <span className="font-medium text-sm">{match.commodity}</span>
                     </div>
-                    {getStatusBadge(match.status)}
+                    <div className="flex items-center gap-1.5">
+                      {activeDisputeIds.has(match.id) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <ShieldAlert className="h-4 w-4 text-destructive" />
+                            </TooltipTrigger>
+                            <TooltipContent>Active dispute on this match</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      {getStatusBadge(match.status)}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
