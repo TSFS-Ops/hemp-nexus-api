@@ -208,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             duration: Infinity,
           });
           setTimeout(() => {
-            window.location.href = `/auth?returnTo=${returnTo}`;
+            window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
           }, 4000);
         }
       } catch {
