@@ -139,6 +139,22 @@ export function MatchesList() {
     },
   });
 
+  // Fetch match IDs that have active disputes (for inline indicator)
+  const { data: disputeMatchIds } = useQuery({
+    queryKey: ["dispute-match-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("disputes")
+        .select("match_id")
+        .in("status", ["open", "escalated", "under_review"]);
+      if (error) return new Set<string>();
+      return new Set((data || []).map((d) => d.match_id));
+    },
+    staleTime: 30_000,
+  });
+
+  const activeDisputeIds = disputeMatchIds ?? new Set<string>();
+
   // Detect pagination fetch failure when stale placeholder data is still showing
   useEffect(() => {
     if (isError && isPlaceholderData) {
