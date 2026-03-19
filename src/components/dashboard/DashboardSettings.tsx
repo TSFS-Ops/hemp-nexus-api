@@ -5,6 +5,9 @@ import { ApiKeysSection } from "@/components/dashboard/sections/ApiKeysSection";
 import { WebhooksSection } from "@/components/dashboard/sections/WebhooksSection";
 import { UsageBillingSection } from "@/components/dashboard/sections/UsageBillingSection";
 import { useUrlTab } from "@/hooks/use-url-tab";
+import { Link } from "react-router-dom";
+import { Lock, Building2 } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 
 /**
  * Unified settings page: API Keys, Webhooks, and Usage & Billing.
@@ -29,6 +32,22 @@ export function DashboardSettings() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-1">Manage your API keys, webhooks, and usage.</p>
+        <div className="flex flex-wrap gap-3 mt-3">
+          <Link
+            to={`${ROUTES.DASHBOARD_ACCOUNT}?tab=security`}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-md px-3 py-1.5"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            Change password
+          </Link>
+          <Link
+            to={ROUTES.DASHBOARD_ACCOUNT}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-md px-3 py-1.5"
+          >
+            <Building2 className="h-3.5 w-3.5" />
+            Organisation profile
+          </Link>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">

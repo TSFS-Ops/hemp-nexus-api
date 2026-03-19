@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Coins, CreditCard, TrendingUp, AlertTriangle, History, 
-  Shield, Building2, FileText, Check, Mail 
+  Shield, Building2, FileText, Check, Mail, Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -75,6 +75,7 @@ export default function Billing() {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
@@ -92,7 +93,7 @@ export default function Billing() {
 
     // Handle cancelled/abandoned checkout
     if (status === "cancelled" || status === "cancel") {
-      toast.info("Payment was cancelled. No credits were charged.");
+      setPaymentCancelled(true);
       return;
     }
 
@@ -348,6 +349,24 @@ export default function Billing() {
           title="API Credits"
           description="Purchase credits to use the Compliance Matching API"
         />
+
+        {/* Payment cancellation banner — persists until dismissed */}
+        {paymentCancelled && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-medium text-foreground">Payment cancelled</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Your payment was not processed and no credits were charged. You can select a package below to try again.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setPaymentCancelled(false)}>
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Payment failure banner — persists until dismissed */}
         {paymentFailure && (
