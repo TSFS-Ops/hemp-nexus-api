@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -45,6 +46,27 @@ export function AdminComplianceCasesPanel() {
   const [actionType, setActionType] = useState<string>("");
   const [decisionNotes, setDecisionNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const getCurrentDraft = useCallback(() => {
+    if (!decisionNotes.trim() || !actionCase) return null;
+    return { notes: decisionNotes, caseId: actionCase.id, actionType };
+  }, [decisionNotes, actionCase, actionType]);
+
+  const { restoreDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{ notes: string; caseId: string; actionType: string }>(
+    "compliance-decision",
+    getCurrentDraft
+  );
+
+  useEffect(() => {
+    if (hasRestoredDraft && actionCase) {
+      const draft = restoreDraft();
+      if (draft?.notes && draft.caseId === actionCase.id) {
+        setDecisionNotes(draft.notes);
+        if (draft.actionType) setActionType(draft.actionType);
+        toast.info("Your unsaved decision notes have been restored.");
+      }
+    }
+  }, [hasRestoredDraft, actionCase]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -93,6 +115,7 @@ export function AdminComplianceCasesPanel() {
       });
 
       toast.success(`Case ${actionType}`);
+      clearDraft();
       setActionCase(null);
       setActionType("");
       setDecisionNotes("");
