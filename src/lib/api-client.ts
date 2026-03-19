@@ -16,6 +16,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /** Thrown when no active session exists. UI layers can catch this specifically. */
 export class AuthRequiredError extends Error {
