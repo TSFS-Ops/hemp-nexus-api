@@ -479,7 +479,7 @@ export function MatchesList() {
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Quantity</span>
-                      <p>{match.quantity_amount} {match.quantity_unit}</p>
+                      <p>{match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Price</span>
