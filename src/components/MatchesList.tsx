@@ -479,11 +479,11 @@ export function MatchesList() {
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Quantity</span>
-                      <p>{match.quantity_amount} {match.quantity_unit}</p>
+                      <p>{match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Price</span>
-                      <p>{match.price_currency} {match.price_amount.toLocaleString()}</p>
+                      <p>{match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
@@ -544,10 +544,10 @@ export function MatchesList() {
                       <TableCell className="hidden lg:table-cell">{match.buyer_name}</TableCell>
                       <TableCell className="hidden lg:table-cell">{match.seller_name}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {match.quantity_amount} {match.quantity_unit}
+                        {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {match.price_currency} {match.price_amount.toLocaleString()}
+                        {match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
                       <TableCell>{getStatusBadge(match.status)}</TableCell>
                       <TableCell className="hidden xl:table-cell">
