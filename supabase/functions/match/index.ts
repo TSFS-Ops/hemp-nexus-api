@@ -16,7 +16,8 @@ import {
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
-import { enforceLicence } from "../_shared/licence-enforcement.ts";
+// Licence enforcement disabled until purchase flow is built (credits already gate actions)
+// import { enforceLicence } from "../_shared/licence-enforcement.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
