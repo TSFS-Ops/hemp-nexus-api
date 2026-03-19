@@ -134,12 +134,20 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    // Global 401 handler: expired session → redirect to auth with returnTo
+    // Global 401 handler: expired session → emergency-save drafts, then redirect
     if (res.status === 401) {
+      // Dispatch session-expiry event so useDraftPersistence hooks can emergency-save
+      window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+
       const currentPath = window.location.pathname + window.location.search;
       const returnTo = encodeURIComponent(currentPath);
-      window.location.href = `/auth?returnTo=${returnTo}`;
-      // Throw so calling code stops execution
+
+      // Brief delay to allow draft saves to complete before navigation
+      setTimeout(() => {
+        window.location.href = `/auth?returnTo=${returnTo}`;
+      }, 500);
+
+      // Throw so calling code stops execution immediately
       throw new AuthRequiredError();
     }
     throw await ApiError.fromResponse(res);
