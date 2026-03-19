@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 
 const OnboardingWizard = lazy(() => import("@/components/OnboardingWizard"));
-function GettingStartedEmpty() {
+function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
   const navigate = useNavigate();
 
   const steps = [
@@ -19,24 +19,32 @@ function GettingStartedEmpty() {
       title: "Search for a counterparty",
       description: "Find verified buyers or sellers by commodity, region, or company name.",
       icon: Search,
+      action: () => navigate(ROUTES.DASHBOARD_SEARCH),
+      actionLabel: "Start searching",
     },
     {
       number: "2",
       title: "Create a match",
       description: "Select one or more counterparties and create a match to begin the workflow.",
       icon: Handshake,
+      action: () => navigate(ROUTES.DASHBOARD_SEARCH),
+      actionLabel: "Find counterparties",
     },
     {
       number: "3",
       title: "Confirm intent",
       description: "Signal your serious interest — no contract, no payment, just a verifiable audit record.",
       icon: Zap,
+      action: () => navigate(ROUTES.DASHBOARD_MATCHES),
+      actionLabel: "View matches",
     },
     {
       number: "4",
       title: "Download evidence pack",
       description: "Get a tamper-evident evidence pack for your compliance records.",
       icon: Key,
+      action: () => navigate(ROUTES.DASHBOARD_MATCHES),
+      actionLabel: "View matches",
     },
   ];
 
@@ -51,38 +59,47 @@ function GettingStartedEmpty() {
           Welcome to your Console
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-          You're all set up. Run your first counterparty search to see activity appear here.
+          You're all set up. Follow the steps below to complete your first counterparty workflow, or launch the guided setup wizard.
         </p>
       </div>
 
       {/* Steps */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {steps.map((step) => (
-          <div
+          <button
             key={step.number}
-            className="relative p-5 rounded-lg border border-border bg-background hover:border-primary/40 transition-colors"
+            onClick={step.action}
+            className="relative p-5 rounded-lg border border-border bg-background hover:border-primary/40 hover:bg-accent/30 transition-colors text-left group"
           >
             <div className="flex items-start gap-3">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {step.number}
               </span>
-              <div className="space-y-1">
+              <div className="space-y-1 flex-1">
                 <h3 className="font-medium text-sm text-foreground">{step.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{step.description}</p>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {step.actionLabel}
+                  <ArrowRight className="h-3 w-3" />
+                </span>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
       {/* CTAs */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
-          <Search className="h-4 w-4" />
-          Run your first search
+        <Button onClick={onStartWizard} className="gap-2">
+          <Play className="h-4 w-4" />
+          Launch setup wizard
           <ArrowRight className="h-4 w-4" />
         </Button>
-        <Button variant="outline" onClick={() => navigate(ROUTES.DOCS)} className="gap-2">
+        <Button variant="outline" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+          <Search className="h-4 w-4" />
+          Skip — run a search now
+        </Button>
+        <Button variant="ghost" onClick={() => navigate(ROUTES.DOCS)} className="gap-2">
           <BookOpen className="h-4 w-4" />
           Read the docs
         </Button>
