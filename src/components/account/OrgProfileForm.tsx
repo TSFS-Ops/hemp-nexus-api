@@ -27,7 +27,7 @@ interface OrgProfile {
 }
 
 export function OrgProfileForm() {
-  const { user } = useAuth();
+  const { user, isOrgAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
