@@ -164,20 +164,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
 
       if (error) throw error;
 
-      // Audit log
-      await supabase.from("audit_logs").insert({
-        org_id: orgId,
-        actor_user_id: user.id,
-        action: `dispute.${actionType}`,
-        entity_type: "dispute",
-        entity_id: actionDispute.id,
-        metadata: {
-          match_id: matchId,
-          previous_status: actionDispute.status,
-          new_status: actionType,
-          notes: actionNotes.trim(),
-        },
-      });
+      // Audit log is now handled by server-side trigger (trg_audit_dispute_status_change)
 
       toast.success(
         actionType === "resolved"
