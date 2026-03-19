@@ -43,11 +43,15 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   };
 
   const handleSignOut = async () => {
+    // Set global flag BEFORE signOut so useDataFetch hooks don't race
+    // with a false "session expired" redirect.
+    (window as any).__izenzo_signing_out = true;
     const { error } = await supabase.auth.signOut();
     if (error) {
+      (window as any).__izenzo_signing_out = false;
       toast.error("Error signing out", { description: error.message });
     } else {
-      navigate(`${ROUTES.AUTH}?signedOut=1`);
+      window.location.href = `${ROUTES.AUTH}?signedOut=1`;
     }
   };
 
