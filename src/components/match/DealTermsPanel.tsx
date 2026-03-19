@@ -225,7 +225,16 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
       setForm({ ...EMPTY_FORM });
       fetchTerms();
     } catch (err: any) {
-      toast.error("Failed to save terms", { description: err.message });
+      const msg = err?.message || "";
+      if (msg.includes("unique") || msg.includes("duplicate") || msg.includes("deal_terms_match_id_version")) {
+        toast.error(
+          "Version conflict: another user submitted terms at the same time. Refreshing to show the latest version.",
+          { duration: 8000 }
+        );
+        await fetchTerms();
+      } else {
+        toast.error("Failed to save terms", { description: msg });
+      }
     } finally {
       setSaving(false);
     }

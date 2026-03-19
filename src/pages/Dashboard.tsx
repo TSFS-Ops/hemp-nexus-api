@@ -43,7 +43,7 @@ function AccessDeniedBanner() {
     if (denied) {
       toast.error(
         "You don't have permission to access that page. You've been redirected to the console.",
-        { duration: 10000 }
+        { duration: Infinity }
       );
     }
   }, [denied]);
