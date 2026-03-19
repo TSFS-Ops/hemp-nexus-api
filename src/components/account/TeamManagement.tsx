@@ -130,6 +130,7 @@ export function TeamManagement() {
       if (error) throw error;
 
       // 2. Send the invitation email (best-effort — don't block on failure)
+      let emailSent = false;
       const { data: orgData } = await supabase
         .from("organizations")
         .select("name")
@@ -148,7 +149,7 @@ export function TeamManagement() {
       if (session) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         try {
-          await fetch(`${supabaseUrl}/functions/v1/send-team-invite`, {
+          const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-team-invite`, {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${session.access_token}`,
@@ -162,15 +163,21 @@ export function TeamManagement() {
               signup_url: signupUrl,
             }),
           });
+          emailSent = emailRes.ok;
         } catch (emailErr) {
-          // Email send failed — invitation is still recorded, log but don't block
           console.warn("[TeamManagement] Invite email failed to send:", emailErr);
         }
       }
 
-      toast.success(`Invitation sent to ${inviteEmail}`, {
-        description: "An email has been sent with instructions to join your organisation.",
-      });
+      if (emailSent) {
+        toast.success(`Invitation sent to ${inviteEmail}`, {
+          description: "An email has been sent with instructions to join your organisation.",
+        });
+      } else {
+        toast.success(`Invitation recorded for ${inviteEmail}`, {
+          description: "The invitation email could not be sent. Please share your signup link manually.",
+        });
+      }
       setInviteEmail("");
       fetchTeam();
     } catch (err: any) {
