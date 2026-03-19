@@ -142,7 +142,63 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
     handleSubmit();
   };
 
-  const statusInfo: Record<string, { badge: JSX.Element; help: string }> = {
+  // Dispute action handler (withdraw / resolve / escalate)
+  const handleDisputeAction = async () => {
+    if (!actionDispute || !actionType || !actionNotes.trim() || !user) return;
+    setActionSubmitting(true);
+    try {
+      const updateFields: Record<string, unknown> = {
+        status: actionType,
+      };
+      if (actionType === "resolved") {
+        updateFields.resolution_outcome = actionNotes.trim();
+        updateFields.resolved_at = new Date().toISOString();
+        updateFields.resolved_by = user.id;
+      }
+
+      const { error } = await supabase
+        .from("disputes")
+        .update(updateFields)
+        .eq("id", actionDispute.id)
+        .eq("raised_by_org_id", orgId); // Only allow the raising org to act
+
+      if (error) throw error;
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        org_id: orgId,
+        actor_user_id: user.id,
+        action: `dispute.${actionType}`,
+        entity_type: "dispute",
+        entity_id: actionDispute.id,
+        metadata: {
+          match_id: matchId,
+          previous_status: actionDispute.status,
+          new_status: actionType,
+          notes: actionNotes.trim(),
+        },
+      });
+
+      toast.success(
+        actionType === "resolved"
+          ? "Dispute resolved. Settlement may now proceed."
+          : actionType === "escalated"
+          ? "Dispute escalated for senior review."
+          : `Dispute status updated to ${actionType}.`
+      );
+      setActionDispute(null);
+      setActionType("");
+      setActionNotes("");
+      setShowActionConfirm(false);
+      refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Failed to update dispute", { description: message });
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
+
     open: { 
       badge: <Badge variant="destructive">Open</Badge>,
       help: "This dispute has been raised and is awaiting review. Settlement is paused until it is resolved."
