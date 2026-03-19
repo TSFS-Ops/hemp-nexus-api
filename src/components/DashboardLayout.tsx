@@ -29,7 +29,7 @@ export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
                 <NotificationBell />
-                <ThemeToggle />
+                
               </div>
             </div>
           </header>
