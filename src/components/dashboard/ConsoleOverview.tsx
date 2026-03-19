@@ -112,6 +112,15 @@ export function ConsoleOverview() {
   const { session } = useAuth();
   const navigate = useNavigate();
 
+  // Onboarding wizard state — auto-open for first-time users
+  const [wizardOpen, setWizardOpen] = useState(() => {
+    try {
+      return localStorage.getItem("onboarding_completed") !== "true";
+    } catch {
+      return false;
+    }
+  });
+
   const { data: stats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["console-overview-stats"],
     queryFn: async () => {
