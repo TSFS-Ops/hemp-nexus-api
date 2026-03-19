@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Plus, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Plus, ShieldAlert, CheckCircle2, ArrowUpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { InlineLoader } from "@/components/ui/inline-loader";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataFetch } from "@/hooks/use-data-fetch";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
@@ -33,6 +34,8 @@ interface Dispute {
   status: string;
   resolution_outcome: string | null;
   resolved_at: string | null;
+  resolved_by: string | null;
+  raised_by_org_id: string;
   created_at: string;
 }
 
@@ -52,6 +55,12 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  // Resolve/withdraw state
+  const [actionDispute, setActionDispute] = useState<Dispute | null>(null);
+  const [actionType, setActionType] = useState<string>("");
+  const [actionNotes, setActionNotes] = useState("");
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [showActionConfirm, setShowActionConfirm] = useState(false);
 
   // Draft persistence for dispute form
   const getCurrentDraft = useCallback((): DisputeDraft | null => {
@@ -131,6 +140,63 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   const confirmAndSubmit = () => {
     setShowConfirmDialog(false);
     handleSubmit();
+  };
+
+  // Dispute action handler (withdraw / resolve / escalate)
+  const handleDisputeAction = async () => {
+    if (!actionDispute || !actionType || !actionNotes.trim() || !user) return;
+    setActionSubmitting(true);
+    try {
+      const updateFields: Record<string, unknown> = {
+        status: actionType,
+      };
+      if (actionType === "resolved") {
+        updateFields.resolution_outcome = actionNotes.trim();
+        updateFields.resolved_at = new Date().toISOString();
+        updateFields.resolved_by = user.id;
+      }
+
+      const { error } = await supabase
+        .from("disputes")
+        .update(updateFields)
+        .eq("id", actionDispute.id)
+        .eq("raised_by_org_id", orgId); // Only allow the raising org to act
+
+      if (error) throw error;
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        org_id: orgId,
+        actor_user_id: user.id,
+        action: `dispute.${actionType}`,
+        entity_type: "dispute",
+        entity_id: actionDispute.id,
+        metadata: {
+          match_id: matchId,
+          previous_status: actionDispute.status,
+          new_status: actionType,
+          notes: actionNotes.trim(),
+        },
+      });
+
+      toast.success(
+        actionType === "resolved"
+          ? "Dispute resolved. Settlement may now proceed."
+          : actionType === "escalated"
+          ? "Dispute escalated for senior review."
+          : `Dispute status updated to ${actionType}.`
+      );
+      setActionDispute(null);
+      setActionType("");
+      setActionNotes("");
+      setShowActionConfirm(false);
+      refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Failed to update dispute", { description: message });
+    } finally {
+      setActionSubmitting(false);
+    }
   };
 
   const statusInfo: Record<string, { badge: JSX.Element; help: string }> = {
@@ -278,13 +344,49 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
                     )}
                   </div>
                 )}
+                {/* Action buttons for open/under_review disputes owned by this org */}
+                {d.raised_by_org_id === orgId && (d.status === "open" || d.status === "under_review") && (
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActionDispute(d);
+                        setActionType("resolved");
+                        setActionNotes("");
+                        setShowActionConfirm(true);
+                      }}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Resolve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActionDispute(d);
+                        setActionType("escalated");
+                        setActionNotes("");
+                        setShowActionConfirm(true);
+                      }}
+                    >
+                      <ArrowUpCircle className="h-3.5 w-3.5 mr-1" />
+                      Escalate
+                    </Button>
+                  </div>
+                )}
+                {d.raised_by_org_id !== orgId && (d.status === "open" || d.status === "under_review") && (
+                  <p className="text-xs text-muted-foreground italic pt-2 border-t border-border">
+                    Only the organisation that raised this dispute can resolve or escalate it. Contact support@izenzo.co.za if you believe this is incorrect.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Dispute confirmation dialog */}
+      {/* Dispute creation confirmation dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -312,6 +414,55 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
             <AlertDialogCancel>Go back and edit</AlertDialogCancel>
             <AlertDialogAction onClick={confirmAndSubmit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Submit Dispute
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dispute action (resolve/escalate) confirmation dialog */}
+      <AlertDialog open={showActionConfirm} onOpenChange={(open) => { if (!open) { setShowActionConfirm(false); setActionDispute(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "resolved" ? "Resolve this dispute" : "Escalate this dispute"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              {actionDispute && (
+                <div className="rounded-md border border-border p-3 text-sm space-y-1">
+                  <p className="font-medium">Original reason: {actionDispute.reason}</p>
+                  {actionDispute.evidence_notes && (
+                    <p className="text-muted-foreground">Evidence: {actionDispute.evidence_notes}</p>
+                  )}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>{actionType === "resolved" ? "Resolution notes (mandatory)" : "Escalation reason (mandatory)"}</Label>
+                <Textarea
+                  value={actionNotes}
+                  onChange={(e) => setActionNotes(e.target.value)}
+                  placeholder={
+                    actionType === "resolved"
+                      ? "Explain how this dispute was resolved…"
+                      : "Explain why this requires senior review…"
+                  }
+                  className="min-h-[80px]"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {actionType === "resolved"
+                  ? "Resolving will unblock settlement. This action is logged in the audit trail."
+                  : "Escalation will notify senior reviewers. This action is logged in the audit trail."}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisputeAction}
+              disabled={actionSubmitting || !actionNotes.trim()}
+              className={actionType === "resolved" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {actionSubmitting ? "Processing…" : actionType === "resolved" ? "Confirm Resolution" : "Confirm Escalation"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -177,6 +177,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchRoles, ensureProfileIfNeeded]);
 
+  // ── Periodic session health check ──
+  // Catches the case where the refresh token itself expires after inactivity.
+  // The Supabase SDK does NOT fire onAuthStateChange in this scenario — API
+  // calls simply fail with 401 and pages "become unavailable."
+  // Every 60 seconds, if we think we have a user, we verify the session is
+  // still valid. If it's gone, we trigger the same expiry flow.
+  useEffect(() => {
+    const HEALTH_CHECK_INTERVAL = 60_000; // 60 seconds
+    const intervalId = setInterval(async () => {
+      if (!hadUserRef.current) return; // no user to check
+      if (explicitSignOutRef.current) return; // signing out
+      if (suppressExpiryRef.current) return; // password change in progress
+
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        if (error || !currentSession) {
+          // Session is genuinely gone — trigger expiry
+          hadUserRef.current = false;
+          setUser(null);
+          setSession(null);
+          setRoles([]);
+
+          window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+
+          const currentPath = window.location.pathname + window.location.search;
+          const returnTo = encodeURIComponent(currentPath);
+          toast.error("Your session has expired. Redirecting to sign in…", {
+            description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
+            duration: Infinity,
+          });
+          setTimeout(() => {
+            window.location.href = `/auth?returnTo=${returnTo}`;
+          }, 4000);
+        }
+      } catch {
+        // Network error — don't treat as session expiry, just skip
+      }
+    }, HEALTH_CHECK_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   const isPlatformAdmin = roles.some(r => (PLATFORM_ADMIN_ROLES as readonly string[]).includes(r));
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
   const isOrgMember = roles.includes(APP_ROLES.ORG_MEMBER) || isOrgAdmin;
