@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
@@ -108,6 +109,8 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
+interface UploadDraft { docType: string; title: string; notes: string; visibility: string }
+
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +126,30 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
   const [accessLogsDoc, setAccessLogsDoc] = useState<MatchDocument | null>(null);
+
+  // Draft persistence for upload form fields (file itself cannot be persisted)
+  const getCurrentUploadDraft = useCallback((): UploadDraft | null => {
+    if (!docType && !title && !notes) return null;
+    return { docType, title, notes, visibility };
+  }, [docType, title, notes, visibility]);
+
+  const { restoreDraft, clearDraft: clearUploadDraft, hasRestoredDraft } = useDraftPersistence<UploadDraft>(
+    `doc-upload-${matchId}`,
+    getCurrentUploadDraft
+  );
+
+  useEffect(() => {
+    if (hasRestoredDraft) {
+      const draft = restoreDraft();
+      if (draft) {
+        if (draft.docType) setDocType(draft.docType);
+        if (draft.title) setTitle(draft.title);
+        if (draft.notes) setNotes(draft.notes);
+        if (draft.visibility) setVisibility(draft.visibility);
+        toast.info("Your unsaved document form has been restored. Re-select the file to continue.");
+      }
+    }
+  }, [hasRestoredDraft]);
 
   useEffect(() => {
     const getSessionOrgId = async () => {
@@ -361,6 +388,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     setTitle("");
     setNotes("");
     setVisibility("private");
+    clearUploadDraft();
   };
 
   const handleDownload = async (doc: MatchDocument) => {
