@@ -75,6 +75,7 @@ export default function Billing() {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
