@@ -146,7 +146,7 @@ export function OrgProfileForm() {
           industry: profile.industry?.slice(0, 100) || null,
         })
         .eq("id", profile.id)
-        .select("id", { count: "exact", head: true });
+        .select();
 
       if (error) throw error;
 
