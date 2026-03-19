@@ -26,6 +26,28 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
+/** Supabase PostgREST/SDK errors that indicate an expired or missing session */
+const AUTH_ERROR_CODES = ["PGRST301", "401", "403"];
+const AUTH_ERROR_MESSAGES = [
+  "JWT expired",
+  "invalid JWT",
+  "not authenticated",
+  "permission denied",
+  "new row violates row-level security",
+];
+
+function isAuthRelatedError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as Record<string, unknown>;
+
+  // Supabase PostgREST errors have a `code` field
+  if (typeof e.code === "string" && AUTH_ERROR_CODES.includes(e.code)) return true;
+
+  // Check message for auth-related keywords
+  const msg = (typeof e.message === "string" ? e.message : "").toLowerCase();
+  return AUTH_ERROR_MESSAGES.some(pattern => msg.includes(pattern.toLowerCase()));
+}
+
 export interface UseDataFetchOptions {
   /** Dependencies that trigger a refetch (like useEffect deps) */
   deps?: unknown[];
@@ -51,6 +73,7 @@ export function useDataFetch<T>(
   const [loading, setLoading] = useState(!lazy);
   const [error, setError] = useState<Error | null>(null);
   const mountedRef = useRef(true);
+  const redirectingRef = useRef(false);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -65,6 +88,23 @@ export function useDataFetch<T>(
         const e = err instanceof Error ? err : new Error(String(err));
         setError(e);
         console.error(errorMessage, err);
+
+        // Detect expired session from Supabase SDK errors and trigger redirect
+        if (isAuthRelatedError(err) && !redirectingRef.current) {
+          redirectingRef.current = true;
+          window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+          const currentPath = window.location.pathname + window.location.search;
+          const returnTo = encodeURIComponent(currentPath);
+          toast.error("Your session has expired. Redirecting to sign in…", {
+            description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
+            duration: Infinity,
+          });
+          setTimeout(() => {
+            window.location.href = `/auth?returnTo=${returnTo}`;
+          }, 4000);
+          return; // Don't show generic error toast
+        }
+
         if (errorMessage !== false) {
           toast.error(errorMessage);
         }
@@ -78,6 +118,7 @@ export function useDataFetch<T>(
 
   useEffect(() => {
     mountedRef.current = true;
+    redirectingRef.current = false;
     if (!lazy) {
       refetch();
     }

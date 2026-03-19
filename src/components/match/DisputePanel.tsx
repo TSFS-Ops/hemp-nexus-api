@@ -451,7 +451,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
               <p className="text-xs text-muted-foreground">
                 {actionType === "resolved"
                   ? "Resolving will unblock settlement. This action is logged in the audit trail."
-                  : "Escalation will notify senior reviewers. This action is logged in the audit trail."}
+                  : "Escalation flags this dispute for senior review. This action is logged in the audit trail."}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
