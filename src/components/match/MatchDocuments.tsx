@@ -195,7 +195,6 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
     "image/jpeg": [[0xFF, 0xD8, 0xFF]],
     "image/png": [[0x89, 0x50, 0x4E, 0x47]],
-    "image/gif": [[0x47, 0x49, 0x46]],
     // Office Open XML (docx, xlsx) — PK zip header
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [[0x50, 0x4B, 0x03, 0x04]],
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [[0x50, 0x4B, 0x03, 0x04]],
