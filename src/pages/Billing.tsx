@@ -349,6 +349,19 @@ export default function Billing() {
           description="Purchase credits to use the Compliance Matching API"
         />
 
+        {/* Payment failure banner — persists until dismissed */}
+        {paymentFailure && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-4">
+              <span>{paymentFailure}</span>
+              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setPaymentFailure(null)}>
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Current Balance Card */}
         <Card className={cn(
           isCritical && "border-amber-500",
