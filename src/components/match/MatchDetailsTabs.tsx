@@ -72,6 +72,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
       </div>
 
       <TabsContent value="details" className="mt-4 space-y-4">
+        <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setActiveTab("disputes")} />
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Match Summary</CardTitle>
