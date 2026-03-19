@@ -200,7 +200,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
       expect(body.state === "intent_declared" || body.status === "settled").toBe(true);
     } else {
       // Acceptable failures: insufficient tokens, already in wrong state
-      expect(["INSUFFICIENT_TOKENS", "INVALID_STATE", "insufficient_tokens", "LICENCE_REQUIRED"]).toContain(body.code);
+      expect(["INSUFFICIENT_TOKENS", "INVALID_STATE", "insufficient_tokens"]).toContain(body.code);
     }
   }, 15_000);
 
