@@ -74,7 +74,22 @@ export default function Dashboard() {
             <Route path="/matches" element={<MatchesSection />} />
             <Route path="/matches/:matchId" element={<MatchDetails />} />
             <Route path="/settings" element={<DashboardSettings />} />
-            <Route path="/account" element={<AccountSection />} />
+            <Route path="/account" element={
+              <ErrorBoundary fallback={
+                <div className="text-center py-12 space-y-3">
+                  <p className="text-lg font-semibold text-foreground">Couldn't load your organisation</p>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    We had trouble loading your organisation profile. This may be a temporary issue — try refreshing. If the problem persists, contact{" "}
+                    <a href="mailto:support@izenzo.co.za" className="underline font-medium">support@izenzo.co.za</a>.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                    Refresh page
+                  </Button>
+                </div>
+              }>
+                <AccountSection />
+              </ErrorBoundary>
+            } />
             <Route path="/compliance" element={<ComplianceSection />} />
             <Route path="*" element={<DashboardNotFound />} />
           </Routes>

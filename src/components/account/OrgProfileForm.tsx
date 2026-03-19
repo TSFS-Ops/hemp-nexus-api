@@ -27,7 +27,7 @@ interface OrgProfile {
 }
 
 export function OrgProfileForm() {
-  const { user } = useAuth();
+  const { user, isOrgAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -185,8 +185,15 @@ export function OrgProfileForm() {
     return <p className="text-muted-foreground py-8 text-center">No organisation found.</p>;
   }
 
+  const readOnly = !isOrgAdmin;
+
   return (
-    <div className="space-y-6">
+    <fieldset disabled={readOnly} className="space-y-6">
+      {readOnly && (
+        <div className="p-3 rounded-md border border-border bg-muted/50 text-sm text-muted-foreground">
+          You have view-only access to this profile. Only organisation admins can edit these details.
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" />Organisation Profile</CardTitle>
@@ -274,38 +281,44 @@ export function OrgProfileForm() {
             {profile.jurisdictions.map((j, i) => (
               <Badge key={i} variant="secondary" className="gap-1">
                 {j}
-                <button onClick={() => removeJurisdiction(i)} className="ml-1 hover:text-destructive" aria-label={`Remove ${j}`}>
-                  <X className="h-3 w-3" />
-                </button>
+                {!readOnly && (
+                  <button onClick={() => removeJurisdiction(i)} className="ml-1 hover:text-destructive" aria-label={`Remove ${j}`}>
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </Badge>
             ))}
           </div>
-          <div className="flex gap-2">
-            <Input
-              value={newJurisdiction}
-              onChange={(e) => setNewJurisdiction(e.target.value)}
-              placeholder="e.g. ZA"
-              className="max-w-[120px]"
-              onKeyDown={(e) => e.key === "Enter" && addJurisdiction()}
-              aria-label="Add jurisdiction"
-            />
-            <Button variant="outline" size="sm" onClick={addJurisdiction}>Add</Button>
-          </div>
+          {!readOnly && (
+            <div className="flex gap-2">
+              <Input
+                value={newJurisdiction}
+                onChange={(e) => setNewJurisdiction(e.target.value)}
+                placeholder="e.g. ZA"
+                className="max-w-[120px]"
+                onKeyDown={(e) => e.key === "Enter" && addJurisdiction()}
+                aria-label="Add jurisdiction"
+              />
+              <Button variant="outline" size="sm" onClick={addJurisdiction}>Add</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-end gap-3">
-        {saveSuccess && (
-          <span className="flex items-center gap-1.5 text-sm text-green-600">
-            <CheckCircle2 className="h-4 w-4" />
-            Saved successfully
-          </span>
-        )}
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          {saving ? "Saving…" : "Save Organisation Profile"}
-        </Button>
-      </div>
-    </div>
+      {!readOnly && (
+        <div className="flex items-center justify-end gap-3">
+          {saveSuccess && (
+            <span className="flex items-center gap-1.5 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              Saved successfully
+            </span>
+          )}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            {saving ? "Saving…" : "Save Organisation Profile"}
+          </Button>
+        </div>
+      )}
+    </fieldset>
   );
 }
