@@ -243,7 +243,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     if (!ALLOWED_TYPES.includes(file.type)) {
       const ext = file.name.split('.').pop()?.toLowerCase() || "unknown";
       setError(
-        `".${ext}" files are not supported. Allowed: PDF, JPEG, PNG, GIF, Word (.doc/.docx), and Excel (.xls/.xlsx).`
+        `".${ext}" files are not supported. Allowed: PDF, JPEG, PNG, Word (.doc/.docx), and Excel (.xls/.xlsx).`
       );
       setSelectedFile(null);
       e.target.value = "";
