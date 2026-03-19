@@ -410,7 +410,7 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POST /match/${matchId}/commit`);
 
-      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
+      // await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
       const { data: match, error: fetchError } = await supabase
         .from("matches")
