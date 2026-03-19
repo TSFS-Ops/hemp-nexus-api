@@ -156,13 +156,17 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
         updateFields.resolved_by = user.id;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("disputes")
         .update(updateFields)
         .eq("id", actionDispute.id)
-        .eq("raised_by_org_id", orgId); // Only allow the raising org to act
+        .eq("raised_by_org_id", orgId)
+        .select("id");
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Update had no effect. You may not have permission to modify this dispute, or it may have already been actioned.");
+      }
 
       // Audit log is now handled by server-side trigger (trg_audit_dispute_status_change)
 
