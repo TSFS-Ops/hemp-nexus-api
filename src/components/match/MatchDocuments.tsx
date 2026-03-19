@@ -109,6 +109,8 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
+interface UploadDraft { docType: string; title: string; notes: string; visibility: string }
+
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +128,6 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [accessLogsDoc, setAccessLogsDoc] = useState<MatchDocument | null>(null);
 
   // Draft persistence for upload form fields (file itself cannot be persisted)
-  interface UploadDraft { docType: string; title: string; notes: string; visibility: string }
   const getCurrentUploadDraft = useCallback((): UploadDraft | null => {
     if (!docType && !title && !notes) return null;
     return { docType, title, notes, visibility };
