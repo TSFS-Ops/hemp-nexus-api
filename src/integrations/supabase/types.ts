@@ -4967,6 +4967,14 @@ export type Database = {
         }
         Returns: Json
       }
+      change_org_member_role: {
+        Args: {
+          p_new_role: string
+          p_reason?: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       check_and_increment_auth_failure: {
         Args: {
           p_base_lockout_seconds?: number
