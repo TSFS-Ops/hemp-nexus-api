@@ -119,8 +119,23 @@ export function useMatchDetails(matchId: string | undefined) {
         if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
           throw new Error("Insufficient credits. Purchase more credits from the Billing page before confirming intent.");
         }
-        if (msg.includes("STATE_CONFLICT") || msg.includes("already")) {
-          throw new Error("This match has already been confirmed. Refresh the page to see the latest status.");
+        if (msg.includes("ELIGIBILITY_FAILED") || msg.includes("eligibility")) {
+          // Extract denial reasons if present in the error body
+          let guidance = "This match is missing required data fields (e.g. buyer name, seller name, commodity, price, or quantity). All fields must be complete before you can confirm intent. This is not a credit issue — your credits are safe.";
+          try {
+            // Try to parse structured error details
+            const parsed = JSON.parse(msg.replace(/^.*?(\{.*)$/, '$1'));
+            if (parsed?.denialReasons?.length) {
+              guidance = `Cannot confirm intent — missing or invalid fields:\n• ${parsed.denialReasons.join('\n• ')}\n\nFix the match data and try again. Your credits have not been deducted.`;
+            }
+          } catch { /* use default guidance */ }
+          throw new Error(guidance);
+        }
+        if (msg.includes("DISPUTE_ACTIVE") || msg.includes("dispute")) {
+          throw new Error("Cannot confirm intent while an active dispute exists on this match. Resolve the dispute first, then try again.");
+        }
+        if (msg.includes("INVALID_STATE") || msg.includes("STATE_CONFLICT") || msg.includes("already")) {
+          throw new Error("This match has already been confirmed or is not in the correct state. Refresh the page to see the latest status.");
         }
         if (msg.includes("FORBIDDEN") || msg.includes("permission")) {
           throw new Error("You do not have permission to confirm this match. It may belong to a different organisation.");

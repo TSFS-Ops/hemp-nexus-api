@@ -93,7 +93,7 @@ export default function Billing() {
 
     // Handle cancelled/abandoned checkout
     if (status === "cancelled" || status === "cancel") {
-      toast.info("Payment was cancelled. No credits were charged.");
+      setPaymentCancelled(true);
       return;
     }
 
