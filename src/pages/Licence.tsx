@@ -153,9 +153,20 @@ export default function Licence() {
                 <p className="text-muted-foreground mb-4">
                   An annual licence is required to access billable API features
                 </p>
-                <Button onClick={() => handleUpgrade('professional')}>
-                  Purchase Licence
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button disabled>
+                          Purchase Licence
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Coming soon — contact support@izenzo.co.za for early access</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </CardContent>
