@@ -98,8 +98,9 @@ export default function Billing() {
 
     // Handle explicit failure status from payment provider
     if (status === "failed" || status === "error") {
+      setPaymentFailure("Your payment was not successful. Your card was not charged. Please try again or use a different payment method. If the problem persists, contact support@izenzo.co.za.");
       toast.error(
-        "Payment failed. Your card was not charged. Please try again or use a different payment method. If the problem persists, contact support@izenzo.co.za.",
+        "Payment failed. Your card was not charged.",
         { duration: 8000 }
       );
       return;
