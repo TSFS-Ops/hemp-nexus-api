@@ -439,10 +439,12 @@ export default function Auth() {
         </div>
 
         {searchParams.get("returnTo") && (
-          <Alert className="mb-6 border-primary/30 bg-primary/5">
+          <Alert className={`mb-6 ${searchParams.get("expired") === "1" ? "border-destructive/30 bg-destructive/5" : "border-primary/30 bg-primary/5"}`}>
             <LogIn className="h-4 w-4" />
             <AlertDescription className="text-sm text-foreground">
-              Sign in to continue where you left off. You'll be redirected back automatically.
+              {searchParams.get("expired") === "1"
+                ? "Your session expired. Sign in again to continue where you left off — any unsaved form data has been preserved."
+                : "Sign in to continue where you left off. You'll be redirected back automatically."}
             </AlertDescription>
           </Alert>
         )}

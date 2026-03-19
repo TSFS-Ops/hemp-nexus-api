@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Routes, Route, Link, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -32,10 +33,11 @@ function DashboardNotFound() {
 }
 
 function AccessDeniedBanner() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const [dismissed, setDismissed] = useState(false);
   const denied = searchParams.get("denied") === "1";
 
-  if (!denied) return null;
+  if (!denied || dismissed) return null;
 
   return (
     <Alert variant="destructive" className="mb-4">
@@ -48,10 +50,7 @@ function AccessDeniedBanner() {
           variant="ghost"
           size="sm"
           className="ml-2 h-6 text-xs"
-          onClick={() => {
-            searchParams.delete("denied");
-            setSearchParams(searchParams, { replace: true });
-          }}
+          onClick={() => setDismissed(true)}
         >
           Dismiss
         </Button>
