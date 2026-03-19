@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, FileText, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, Search, Eye, Download, CheckCircle2, Info, ChevronLeft, ChevronRight, FileText, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
 import { EvidenceChainIndicator } from "@/components/EvidenceChainIndicator";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -138,6 +138,22 @@ export function MatchesList() {
       return { matches: data as Match[], totalCount: count ?? 0 };
     },
   });
+
+  // Fetch match IDs that have active disputes (for inline indicator)
+  const { data: disputeMatchIds } = useQuery({
+    queryKey: ["dispute-match-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("disputes")
+        .select("match_id")
+        .in("status", ["open", "escalated", "under_review"]);
+      if (error) return new Set<string>();
+      return new Set((data || []).map((d) => d.match_id));
+    },
+    staleTime: 30_000,
+  });
+
+  const activeDisputeIds = disputeMatchIds ?? new Set<string>();
 
   // Detect pagination fetch failure when stale placeholder data is still showing
   useEffect(() => {
@@ -466,7 +482,19 @@ export function MatchesList() {
                        />
                       <span className="font-medium text-sm">{match.commodity}</span>
                     </div>
-                    {getStatusBadge(match.status)}
+                    <div className="flex items-center gap-1.5">
+                      {activeDisputeIds.has(match.id) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <ShieldAlert className="h-4 w-4 text-destructive" />
+                            </TooltipTrigger>
+                            <TooltipContent>Active dispute on this match</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      {getStatusBadge(match.status)}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
@@ -549,7 +577,21 @@ export function MatchesList() {
                       <TableCell className="whitespace-nowrap">
                         {match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
-                      <TableCell>{getStatusBadge(match.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {activeDisputeIds.has(match.id) && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+                                </TooltipTrigger>
+                                <TooltipContent>Active dispute</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {getStatusBadge(match.status)}
+                        </div>
+                      </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
