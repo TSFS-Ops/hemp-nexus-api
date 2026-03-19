@@ -387,6 +387,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     setTitle("");
     setNotes("");
     setVisibility("private");
+    clearUploadDraft();
   };
 
   const handleDownload = async (doc: MatchDocument) => {
