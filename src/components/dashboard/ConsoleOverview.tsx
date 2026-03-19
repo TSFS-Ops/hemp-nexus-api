@@ -230,36 +230,89 @@ export function ConsoleOverview() {
       {!isError && hasZeroActivity ? (
         <GettingStartedEmpty onStartWizard={() => setWizardOpen(true)} />
       ) : !isError && !hasZeroActivity && !isLoading ? (
-        <div className="p-5 border border-border rounded-lg bg-muted/30">
-          <h3 className="font-medium text-foreground mb-3">How it works</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            {[
-              { step: "1", label: "Search", desc: "Find counterparties" },
-              { step: "2", label: "Match", desc: "Select & create" },
-              { step: "3", label: "Confirm", desc: "Signal intent" },
-              { step: "4", label: "Evidence", desc: "Download pack" },
-            ].map((s) => (
-              <div key={s.step} className="text-center p-3 rounded-md bg-background border border-border">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mb-1">
-                  {s.step}
-                </span>
-                <p className="text-xs font-medium text-foreground">{s.label}</p>
-                <p className="text-[10px] text-muted-foreground">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mb-3">
-            Confirming intent records your interest — no contract, no payment, no legal obligation.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="default" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
-              <Search className="h-3.5 w-3.5" />
-              Search counterparties
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)} className="gap-2">
-              <FileText className="h-3.5 w-3.5" />
-              View matches
-            </Button>
+        <div className="space-y-4">
+          {/* Contextual next-step prompt */}
+          {stats && (() => {
+            const hasKeys = stats.activeApiKeys > 0;
+            const hasSearches = stats.callsLast24h > 0 || stats.callsLast7d > 0;
+            const hasIntents = stats.confirmedIntents > 0;
+
+            if (!hasKeys) {
+              return (
+                <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Your next step: Create an API key</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">You need an API key to run searches and interact with the platform programmatically.</p>
+                  </div>
+                  <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SETTINGS)}>
+                    <Key className="h-3.5 w-3.5 mr-1.5" />
+                    Create API key
+                  </Button>
+                </div>
+              );
+            }
+            if (!hasSearches) {
+              return (
+                <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Your next step: Run your first search</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Search for counterparties by commodity, region, or company name to find potential matches.</p>
+                  </div>
+                  <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)}>
+                    <Search className="h-3.5 w-3.5 mr-1.5" />
+                    Start searching
+                  </Button>
+                </div>
+              );
+            }
+            if (!hasIntents) {
+              return (
+                <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Your next step: Confirm intent on a match</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable proof-of-intent record.</p>
+                  </div>
+                  <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)}>
+                    <Handshake className="h-3.5 w-3.5 mr-1.5" />
+                    View matches
+                  </Button>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          <div className="p-5 border border-border rounded-lg bg-muted/30">
+            <h3 className="font-medium text-foreground mb-3">How it works</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[
+                { step: "1", label: "Search", desc: "Find counterparties" },
+                { step: "2", label: "Match", desc: "Select & create" },
+                { step: "3", label: "Confirm", desc: "Signal intent" },
+                { step: "4", label: "Evidence", desc: "Download pack" },
+              ].map((s) => (
+                <div key={s.step} className="text-center p-3 rounded-md bg-background border border-border">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mb-1">
+                    {s.step}
+                  </span>
+                  <p className="text-xs font-medium text-foreground">{s.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Confirming intent records your interest — no contract, no payment, no legal obligation.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="default" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+                <Search className="h-3.5 w-3.5" />
+                Search counterparties
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)} className="gap-2">
+                <FileText className="h-3.5 w-3.5" />
+                View matches
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}
