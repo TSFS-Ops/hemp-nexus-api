@@ -577,7 +577,21 @@ export function MatchesList() {
                       <TableCell className="whitespace-nowrap">
                         {match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
-                      <TableCell>{getStatusBadge(match.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {activeDisputeIds.has(match.id) && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+                                </TooltipTrigger>
+                                <TooltipContent>Active dispute</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {getStatusBadge(match.status)}
+                        </div>
+                      </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
