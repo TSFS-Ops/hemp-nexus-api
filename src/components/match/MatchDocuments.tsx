@@ -379,6 +379,19 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     }
   };
 
+  const handleOpenDocument = async (doc: MatchDocument) => {
+    try {
+      const { data } = await apiFetch<{ data: { download_url: string } }>(
+        `document-download/${doc.id}`
+      );
+
+      window.open(data.download_url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("Error opening document:", err);
+      toast.error("Failed to open document");
+    }
+  };
+
   const getStatusBadge = (status: string, expiryDate: string | null) => {
     if (expiryDate && new Date(expiryDate) < new Date()) {
       return <Badge variant="destructive">Expired</Badge>;
