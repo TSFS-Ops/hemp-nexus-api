@@ -350,6 +350,24 @@ export default function Billing() {
           description="Purchase credits to use the Compliance Matching API"
         />
 
+        {/* Payment cancellation banner — persists until dismissed */}
+        {paymentCancelled && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-medium text-foreground">Payment cancelled</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Your payment was not processed and no credits were charged. You can select a package below to try again.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setPaymentCancelled(false)}>
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Payment failure banner — persists until dismissed */}
         {paymentFailure && (
           <Alert variant="destructive">
