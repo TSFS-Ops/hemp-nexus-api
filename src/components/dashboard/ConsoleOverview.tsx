@@ -263,6 +263,11 @@ export function ConsoleOverview() {
           </div>
         </div>
       ) : null}
+
+      {/* Onboarding Wizard */}
+      <Suspense fallback={null}>
+        <OnboardingWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      </Suspense>
     </div>
   );
 }
