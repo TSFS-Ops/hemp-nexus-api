@@ -5070,6 +5070,10 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_match_participant: {
+        Args: { _match_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_org_admin: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
