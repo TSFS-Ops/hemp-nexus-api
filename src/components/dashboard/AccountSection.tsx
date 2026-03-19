@@ -3,8 +3,13 @@ import { OrgProfileForm } from "@/components/account/OrgProfileForm";
 import { TeamManagement } from "@/components/account/TeamManagement";
 import { SecuritySettings } from "@/components/account/SecuritySettings";
 import { DataControls } from "@/components/account/DataControls";
+import { useUrlTab } from "@/hooks/use-url-tab";
+
+const ALLOWED_TABS = ["profile", "team", "security", "data"];
 
 export function AccountSection() {
+  const [tab, setTab] = useUrlTab("tab", "profile", ALLOWED_TABS);
+
   return (
     <div className="space-y-6">
       <div>
@@ -14,7 +19,7 @@ export function AccountSection() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList>
           <TabsTrigger value="profile">Organisation</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>

@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Coins, CreditCard, TrendingUp, AlertTriangle, History, 
-  Shield, Building2, FileText, Check, Mail 
+  Shield, Building2, FileText, Check, Mail, Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { SectionHeader } from "@/components/ui/section-header";
