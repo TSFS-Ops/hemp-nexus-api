@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, UserPlus, Loader2, Trash2, Info } from "lucide-react";
+import { Users, UserPlus, Loader2, Trash2, Info, ShieldCheck, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -47,6 +47,8 @@ export function TeamManagement() {
   const [inviting, setInviting] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; inviteId: string | null }>({ open: false, inviteId: null });
+  const [roleChangeDialog, setRoleChangeDialog] = useState<{ open: boolean; member: TeamMember | null; newRole: string }>({ open: false, member: null, newRole: "" });
+  const [changingRole, setChangingRole] = useState(false);
 
   useEffect(() => {
     fetchTeam();
@@ -115,6 +117,7 @@ export function TeamManagement() {
 
     setInviting(true);
     try {
+      // 1. Record the invitation in the database
       const { error } = await supabase
         .from("team_invitations")
         .insert({
@@ -125,8 +128,48 @@ export function TeamManagement() {
         });
 
       if (error) throw error;
-      toast.success(`Invitation recorded for ${inviteEmail}`, {
-        description: "They will appear in the pending list. Invitation emails are not yet sent automatically — please share the sign-up link with them directly.",
+
+      // 2. Send the invitation email (best-effort — don't block on failure)
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", orgId)
+        .maybeSingle();
+
+      const { data: inviterProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const signupUrl = `${window.location.origin}/auth`;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/send-team-invite`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: inviteEmail.trim().toLowerCase(),
+              role: inviteRole,
+              org_name: orgData?.name || "Your organisation",
+              inviter_name: inviterProfile?.full_name || user.email,
+              signup_url: signupUrl,
+            }),
+          });
+        } catch (emailErr) {
+          // Email send failed — invitation is still recorded, log but don't block
+          console.warn("[TeamManagement] Invite email failed to send:", emailErr);
+        }
+      }
+
+      toast.success(`Invitation sent to ${inviteEmail}`, {
+        description: "An email has been sent with instructions to join your organisation.",
       });
       setInviteEmail("");
       fetchTeam();
@@ -154,6 +197,33 @@ export function TeamManagement() {
       toast.error("Failed to cancel invitation");
     }
   };
+
+  const handleRoleChange = async () => {
+    if (!roleChangeDialog.member || !roleChangeDialog.newRole) return;
+    setChangingRole(true);
+    try {
+      const { data, error } = await supabase.rpc("change_org_member_role", {
+        p_target_user_id: roleChangeDialog.member.id,
+        p_new_role: roleChangeDialog.newRole,
+      });
+      if (error) throw error;
+      const result = data as Record<string, unknown>;
+      if (result?.success) {
+        toast.success(`Role updated to ${roleDisplayName(roleChangeDialog.newRole)}`, {
+          description: `${roleChangeDialog.member.email}'s role has been changed.`,
+        });
+        fetchTeam();
+      } else {
+        toast.error((result?.message as string) || "Failed to change role");
+      }
+    } catch (err: any) {
+      toast.error("Failed to change role", { description: err.message });
+    } finally {
+      setChangingRole(false);
+      setRoleChangeDialog({ open: false, member: null, newRole: "" });
+    }
+  };
+
   const roleBadgeColour = (role: string) => {
     switch (role) {
       case "platform_admin": return "bg-red-500/10 text-red-700 border-red-200";
@@ -209,14 +279,27 @@ export function TeamManagement() {
                   {isOrgAdmin && (
                     <TableCell>
                   {m.id !== user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs text-muted-foreground"
-                          onClick={() => toast.info("Role changes are not yet available as a self-service action. Contact support@izenzo.co.za to change a team member's role.", { duration: 6000 })}
+                        <Select
+                          value={m.roles.includes("org_admin") ? "org_admin" : "org_member"}
+                          onValueChange={(newRole) => {
+                            const currentRole = m.roles.includes("org_admin") ? "org_admin" : "org_member";
+                            if (newRole !== currentRole) {
+                              setRoleChangeDialog({ open: true, member: m, newRole });
+                            }
+                          }}
                         >
-                          Change role
-                        </Button>
+                          <SelectTrigger className="h-8 w-[120px] text-xs" aria-label={`Change role for ${m.email}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="org_member">
+                              <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Member</span>
+                            </SelectItem>
+                            <SelectItem value="org_admin">
+                              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Admin</span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       )}
                     </TableCell>
                   )}
@@ -231,14 +314,14 @@ export function TeamManagement() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" />Invite Teammate</CardTitle>
-            <CardDescription>Record an invitation for a new team member</CardDescription>
+            <CardDescription>Send an invitation email to a new team member</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                Automated invitation emails are not yet enabled. After recording the invitation below, 
-                please share your organisation's sign-up link with the invitee directly.
+                An invitation email will be sent to the address below. When they sign up with this email,
+                they will automatically join your organisation with the selected role.
               </AlertDescription>
             </Alert>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -268,7 +351,7 @@ export function TeamManagement() {
               <div className="flex items-end">
                 <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
                   {inviting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                  Record Invitation
+                  Send Invitation
                 </Button>
               </div>
             </div>
@@ -280,7 +363,7 @@ export function TeamManagement() {
         <Card>
           <CardHeader>
             <CardTitle>Pending Invitations</CardTitle>
-            <CardDescription>These invitations have been recorded but require manual follow-up.</CardDescription>
+            <CardDescription>These invitations have been sent and are awaiting signup.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -325,6 +408,28 @@ export function TeamManagement() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Cancel Invitation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Role change confirmation dialog */}
+      <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => { if (!open) setRoleChangeDialog({ open: false, member: null, newRole: "" }); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              {roleChangeDialog.member && roleChangeDialog.newRole === "org_admin"
+                ? `Promote ${roleChangeDialog.member.email} to Admin? They will be able to edit the organisation profile, manage team members, and change roles.`
+                : `Demote ${roleChangeDialog.member?.email} to Member? They will lose the ability to edit the organisation profile and manage the team.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={changingRole}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRoleChange} disabled={changingRole}>
+              {changingRole ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {roleChangeDialog.newRole === "org_admin" ? "Promote to Admin" : "Demote to Member"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

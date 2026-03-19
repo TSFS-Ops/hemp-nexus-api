@@ -1,0 +1,173 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+const inviteEmailSchema = z.object({
+  email: z.string().email().max(255),
+  role: z.string().max(50),
+  org_name: z.string().max(200),
+  inviter_name: z.string().max(200).optional(),
+  signup_url: z.string().url().max(2048),
+});
+
+// Simple in-memory rate limiting per email
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+
+function checkRateLimit(email: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(email);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(email, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
+    // Authenticate caller
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate input
+    const body = await req.json();
+    const parsed = inviteEmailSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.issues }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { email, role, org_name, inviter_name, signup_url } = parsed.data;
+
+    // Rate limit
+    if (!checkRateLimit(email)) {
+      return new Response(JSON.stringify({ error: "Too many invitations sent to this email. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const roleDisplay = role === "org_admin" ? "Admin" : "Member";
+    const inviterDisplay = inviter_name || "A team member";
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        <tr><td style="padding:40px 32px;">
+          <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#09090b;">You've been invited to join ${escapeHtml(org_name)}</h1>
+          <p style="margin:0 0 24px;font-size:15px;color:#71717a;line-height:1.6;">
+            ${escapeHtml(inviterDisplay)} has invited you to join <strong>${escapeHtml(org_name)}</strong> on izenzo as a <strong>${roleDisplay}</strong>.
+          </p>
+          <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+            <tr><td style="background-color:#09090b;border-radius:8px;padding:12px 28px;">
+              <a href="${escapeHtml(signup_url)}" style="color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;display:inline-block;">
+                Accept Invitation
+              </a>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 8px;font-size:13px;color:#a1a1aa;line-height:1.5;">
+            If you don't have an account yet, clicking the link above will take you to sign up. Your invitation will be applied automatically.
+          </p>
+          <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.5;">
+            If you weren't expecting this invitation, you can safely ignore this email.
+          </p>
+        </td></tr>
+        <tr><td style="padding:16px 32px;background-color:#fafafa;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;font-size:12px;color:#a1a1aa;text-align:center;">
+            izenzo · Trusted commodity trade infrastructure
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    // Send via Resend
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "izenzo <noreply@izenzo.co.za>",
+        to: [email],
+        subject: `${inviterDisplay} invited you to join ${org_name} on izenzo`,
+        html: htmlContent,
+      }),
+    });
+
+    if (!resendRes.ok) {
+      const errorBody = await resendRes.text();
+      console.error(`[send-team-invite] Resend error ${resendRes.status}:`, errorBody);
+      throw new Error(`Email delivery failed: ${resendRes.status}`);
+    }
+
+    const result = await resendRes.json();
+    console.log(`[send-team-invite] Sent to ${email} for org ${org_name}, resend_id: ${result.id}`);
+
+    return new Response(JSON.stringify({ success: true, email_id: result.id }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("[send-team-invite] Error:", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useDataFetch } from "@/hooks/use-data-fetch";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 
 interface Note {
   id: string;
@@ -27,6 +28,26 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
   const { user } = useAuth();
   const [newNote, setNewNote] = useState("");
   const [posting, setPosting] = useState(false);
+
+  const getCurrentDraft = useCallback(() => {
+    if (!newNote.trim()) return null;
+    return { content: newNote };
+  }, [newNote]);
+
+  const { restoreDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{ content: string }>(
+    `match-note-${matchId}`,
+    getCurrentDraft
+  );
+
+  useEffect(() => {
+    if (hasRestoredDraft) {
+      const draft = restoreDraft();
+      if (draft?.content) {
+        setNewNote(draft.content);
+        toast.info("Your unsaved note has been restored.");
+      }
+    }
+  }, [hasRestoredDraft]);
 
   const { data: notes, loading, refetch } = useDataFetch(
     async () => {
@@ -57,6 +78,7 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
 
       if (error) throw error;
       setNewNote("");
+      clearDraft();
       toast.success("Note added");
       refetch();
     } catch (err: any) {
