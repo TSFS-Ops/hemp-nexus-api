@@ -9,6 +9,7 @@ import { Shield, Calendar, AlertTriangle, CheckCircle, Clock } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
 import { SectionHeader } from "@/components/ui/section-header";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const LICENCE_TIERS = {
   professional: {
