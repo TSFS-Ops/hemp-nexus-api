@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, UserPlus, Loader2, Trash2, Info } from "lucide-react";
+import { Users, UserPlus, Loader2, Trash2, Info, ShieldCheck, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
