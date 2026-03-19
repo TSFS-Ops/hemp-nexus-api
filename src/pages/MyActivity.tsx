@@ -221,7 +221,7 @@ export default function MyActivity() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-sm font-medium">
-                              {match.quantity_amount} {match.quantity_unit}
+                              {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(match.created_at), { addSuffix: true })}
