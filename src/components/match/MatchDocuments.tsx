@@ -150,7 +150,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     }
   }, [hasRestoredDraft]);
 
-
+  useEffect(() => {
     const getSessionOrgId = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
