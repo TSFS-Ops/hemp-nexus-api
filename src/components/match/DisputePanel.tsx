@@ -199,6 +199,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
     }
   };
 
+  const statusInfo: Record<string, { badge: JSX.Element; help: string }> = {
     open: { 
       badge: <Badge variant="destructive">Open</Badge>,
       help: "This dispute has been raised and is awaiting review. Settlement is paused until it is resolved."
