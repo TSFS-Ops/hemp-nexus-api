@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
