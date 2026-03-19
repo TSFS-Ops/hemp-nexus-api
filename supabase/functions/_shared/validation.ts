@@ -15,12 +15,12 @@ export const matchSchema = z.object({
   quantity: z.object({
     amount: z.number().positive(),
     unit: z.string().trim().min(1).max(50),
-  }),
+  }).nullable().optional(),
   price: z.object({
     amount: z.number().positive(),
     currency: z.string().length(3),
-  }),
-  terms: z.string().trim().min(1).max(1000).optional(), // Key commercial terms - optional to match DB schema
+  }).nullable().optional(),
+  terms: z.string().trim().min(1).max(1000).nullable().optional(),
   metadata: z.record(z.unknown()).optional(), // Optional minimal extra data
 });
 
