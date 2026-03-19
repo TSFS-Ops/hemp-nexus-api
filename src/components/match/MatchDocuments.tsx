@@ -659,6 +659,13 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
+                              onClick={() => handleOpenDocument(doc)}
+                              disabled={doc.status === "revoked"}
+                            >
+                              <FileCheck className="h-4 w-4 mr-2" />
+                              Open
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
                               onClick={() => handleDownload(doc)}
                               disabled={doc.status === "revoked"}
                             >

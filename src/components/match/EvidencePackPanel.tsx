@@ -320,9 +320,9 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
                 <FileJson className="h-4 w-4 mr-2" />
                 Download JSON
               </Button>
-              <Button variant="outline" className="flex-1" onClick={downloadPdf}>
+              <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
                 <FileText className="h-4 w-4 mr-2" />
-                Download PDF
+                Download Report (.html)
               </Button>
             </div>
 
