@@ -314,14 +314,14 @@ export function TeamManagement() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" />Invite Teammate</CardTitle>
-            <CardDescription>Record an invitation for a new team member</CardDescription>
+            <CardDescription>Send an invitation email to a new team member</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                Automated invitation emails are not yet enabled. After recording the invitation below, 
-                please share your organisation's sign-up link with the invitee directly.
+                An invitation email will be sent to the address below. When they sign up with this email,
+                they will automatically join your organisation with the selected role.
               </AlertDescription>
             </Alert>
             <div className="flex flex-col sm:flex-row gap-3">
