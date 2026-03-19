@@ -93,8 +93,13 @@ export function OrgProfileForm() {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data as OrgProfile | null);
-      setSavedProfile(data ? JSON.parse(JSON.stringify(data)) as OrgProfile : null);
+      const normalized = data ? {
+        ...data,
+        address: data.address ?? {},
+        jurisdictions: data.jurisdictions ?? [],
+      } as OrgProfile : null;
+      setProfile(normalized);
+      setSavedProfile(normalized ? JSON.parse(JSON.stringify(normalized)) as OrgProfile : null);
     } catch (err) {
       console.error("Error loading org profile:", err);
       toast.error("Failed to load organisation profile");
