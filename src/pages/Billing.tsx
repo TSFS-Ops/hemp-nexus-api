@@ -74,6 +74,7 @@ export default function Billing() {
   const { session, isAdmin } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
