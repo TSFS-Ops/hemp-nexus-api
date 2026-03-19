@@ -507,7 +507,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   disabled={uploading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Max 50 MB. Accepted: PDF, JPEG, PNG, GIF, Word, Excel.
+                  Max 20 MB. Accepted: PDF, JPEG, PNG, Word, Excel.
                 </p>
               </div>
               
