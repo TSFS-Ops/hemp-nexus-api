@@ -405,13 +405,13 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* Step 2: Data Region Selection */}
+          {/* Step 2: Organisation & Data Region */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Data Region Preference</h3>
+                <h3 className="text-xl font-bold">Your Organisation & Data Region</h3>
                 <p className="text-muted-foreground">
-                  Indicate your preferred data region. This helps us understand your compliance requirements.
+                  Your organisation was created automatically when you signed up. Indicate your preferred data region below.
                 </p>
               </div>
 
