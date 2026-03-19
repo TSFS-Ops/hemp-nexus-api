@@ -185,7 +185,7 @@ export function AdminMatchesPanel() {
                       <TableCell>{match.buyer_name}</TableCell>
                       <TableCell>{match.seller_name}</TableCell>
                       <TableCell>
-                        {match.price_currency} {match.price_amount.toLocaleString()}
+                        {match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
                       <TableCell>
                         <MatchStatusBadge status={match.status} />
