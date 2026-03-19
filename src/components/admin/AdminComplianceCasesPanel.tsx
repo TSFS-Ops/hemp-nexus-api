@@ -47,6 +47,27 @@ export function AdminComplianceCasesPanel() {
   const [decisionNotes, setDecisionNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const getCurrentDraft = useCallback(() => {
+    if (!decisionNotes.trim() || !actionCase) return null;
+    return { notes: decisionNotes, caseId: actionCase.id, actionType };
+  }, [decisionNotes, actionCase, actionType]);
+
+  const { restoreDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{ notes: string; caseId: string; actionType: string }>(
+    "compliance-decision",
+    getCurrentDraft
+  );
+
+  useEffect(() => {
+    if (hasRestoredDraft && actionCase) {
+      const draft = restoreDraft();
+      if (draft?.notes && draft.caseId === actionCase.id) {
+        setDecisionNotes(draft.notes);
+        if (draft.actionType) setActionType(draft.actionType);
+        toast.info("Your unsaved decision notes have been restored.");
+      }
+    }
+  }, [hasRestoredDraft, actionCase]);
+
   const fetchData = async () => {
     setLoading(true);
     const { data } = await supabase
