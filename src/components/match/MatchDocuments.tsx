@@ -235,7 +235,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     // Pre-upload size feedback
     if (file.size > MAX_FILE_SIZE) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      setError(`File is ${sizeMB} MB, which exceeds the 50 MB limit. Choose a smaller file.`);
+      setError(`File is ${sizeMB} MB, which exceeds the 20 MB limit. Choose a smaller file.`);
       setSelectedFile(null);
       e.target.value = "";
       return;
