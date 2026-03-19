@@ -7,6 +7,10 @@ import "./index.css";
 // Initialize error tracking before rendering
 initSentry();
 
+// Ensure light mode only — remove any stale dark class
+document.documentElement.classList.remove("dark");
+localStorage.removeItem("theme");
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
