@@ -483,7 +483,7 @@ export function MatchesList() {
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Price</span>
-                      <p>{match.price_currency} {match.price_amount.toLocaleString()}</p>
+                      <p>{match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
