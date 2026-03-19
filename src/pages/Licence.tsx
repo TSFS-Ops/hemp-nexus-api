@@ -129,9 +129,20 @@ export default function Licence() {
                         Renew your licence to maintain uninterrupted access
                       </p>
                     </div>
-                    <Button size="sm" className="ml-auto">
-                      Renew Now
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0} className="ml-auto">
+                            <Button size="sm" disabled>
+                              Renew Now
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Coming soon — contact support@izenzo.co.za for early access</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 )}
 
