@@ -55,6 +55,12 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  // Resolve/withdraw state
+  const [actionDispute, setActionDispute] = useState<Dispute | null>(null);
+  const [actionType, setActionType] = useState<string>("");
+  const [actionNotes, setActionNotes] = useState("");
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [showActionConfirm, setShowActionConfirm] = useState(false);
 
   // Draft persistence for dispute form
   const getCurrentDraft = useCallback((): DisputeDraft | null => {
