@@ -205,14 +205,26 @@ export default function Licence() {
                             </li>
                           ))}
                         </ul>
-                        <Button 
-                          className="w-full" 
-                          variant={isCurrentTier ? "outline" : "default"}
-                          disabled={isCurrentTier}
-                          onClick={() => handleUpgrade(key)}
-                        >
-                          {isCurrentTier ? 'Current Plan' : 'Upgrade'}
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="w-full">
+                                <Button 
+                                  className="w-full" 
+                                  variant={isCurrentTier ? "outline" : "default"}
+                                  disabled
+                                >
+                                  {isCurrentTier ? 'Current Plan' : 'Coming Soon'}
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {!isCurrentTier && (
+                              <TooltipContent>
+                                <p>Coming soon — contact support@izenzo.co.za for early access</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                       </CardContent>
                     </Card>
                   );
