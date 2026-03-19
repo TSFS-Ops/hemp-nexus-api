@@ -544,7 +544,7 @@ export function MatchesList() {
                       <TableCell className="hidden lg:table-cell">{match.buyer_name}</TableCell>
                       <TableCell className="hidden lg:table-cell">{match.seller_name}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {match.quantity_amount} {match.quantity_unit}
+                        {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}
