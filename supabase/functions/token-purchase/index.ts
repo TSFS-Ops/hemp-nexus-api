@@ -365,7 +365,7 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { packageId, callbackUrl } = parsed.data;
+    const { packageId, callbackUrl, cancelUrl } = parsed.data;
     const pkg = TOKEN_PACKAGES[packageId]!;
 
     // Get client IP for audit
