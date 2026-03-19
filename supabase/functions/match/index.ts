@@ -128,8 +128,8 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POST /match/${matchId}/${action} (Confirm Intent)`);
 
-      // Enforce licence for billable action
-      await enforceLicence(supabase, authCtx.orgId, endpointLabel);
+      // Licence gate disabled — credits (500/confirm) already gate this action commercially
+      // await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
       // --- Fetch match (read-only, for eligibility check & audit metadata) ---
       const { data: match, error: fetchError } = await supabase
