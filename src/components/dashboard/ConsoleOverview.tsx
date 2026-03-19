@@ -228,7 +228,7 @@ export function ConsoleOverview() {
 
       {/* Empty state or info block — only show onboarding when query SUCCEEDED with zero data */}
       {!isError && hasZeroActivity ? (
-        <GettingStartedEmpty />
+        <GettingStartedEmpty onStartWizard={() => setWizardOpen(true)} />
       ) : !isError && !hasZeroActivity && !isLoading ? (
         <div className="p-5 border border-border rounded-lg bg-muted/30">
           <h3 className="font-medium text-foreground mb-3">How it works</h3>
