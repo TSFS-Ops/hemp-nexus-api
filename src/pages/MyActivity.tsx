@@ -221,7 +221,7 @@ export default function MyActivity() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-sm font-medium">
-                              {match.quantity_amount} {match.quantity_unit}
+                              {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(match.created_at), { addSuffix: true })}
@@ -286,7 +286,7 @@ export default function MyActivity() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-sm font-medium">
-                              {match.price_currency} {match.price_amount.toLocaleString()}
+                              {match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Confirmed {match.settled_at ? formatDistanceToNow(new Date(match.settled_at), { addSuffix: true }) : ""}

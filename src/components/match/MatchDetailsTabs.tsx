@@ -81,9 +81,9 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
               <div><span className="text-muted-foreground">Status:</span> <MatchStatusBadge status={match.status} /></div>
               <div><span className="text-muted-foreground">Buyer:</span> <span className="font-medium">{match.buyer_name}</span></div>
               <div><span className="text-muted-foreground">Seller:</span> <span className="font-medium">{match.seller_name}</span></div>
-              <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{match.quantity_amount} {match.quantity_unit}</span></div>
-              <div><span className="text-muted-foreground">Price:</span> <span className="font-medium">{match.price_currency} {match.price_amount.toLocaleString()}</span></div>
-              <div><span className="text-muted-foreground">Total Value:</span> <span className="font-medium">{match.price_currency} {(match.price_amount * match.quantity_amount).toLocaleString()}</span></div>
+              <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}</span></div>
+              <div><span className="text-muted-foreground">Price:</span> <span className="font-medium">{match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}</span></div>
+              <div><span className="text-muted-foreground">Total Value:</span> <span className="font-medium">{match.price_currency ?? ""} {((match.price_amount ?? 0) * (match.quantity_amount ?? 0)).toLocaleString()}</span></div>
               <div><span className="text-muted-foreground">Hash:</span> <span className="font-mono text-xs">{match.hash}</span></div>
             </div>
             {match.terms && (
