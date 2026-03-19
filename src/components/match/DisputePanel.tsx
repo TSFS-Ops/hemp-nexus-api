@@ -34,6 +34,8 @@ interface Dispute {
   status: string;
   resolution_outcome: string | null;
   resolved_at: string | null;
+  resolved_by: string | null;
+  raised_by_org_id: string;
   created_at: string;
 }
 
