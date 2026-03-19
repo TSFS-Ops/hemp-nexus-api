@@ -14,6 +14,7 @@ import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchNotes } from "@/components/match/MatchNotes";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
+import { DisputeBanner } from "@/components/match/DisputeBanner";
 import { ConfirmIntentCard } from "@/components/match/ConfirmIntentCard";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import type { Match } from "@/hooks/use-match-details";
