@@ -183,7 +183,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
         actionType === "resolved"
           ? "Dispute resolved. Settlement may now proceed."
           : actionType === "escalated"
-          ? "Dispute escalated for senior review."
+          ? "Dispute escalated. It is now flagged for senior review in the audit trail."
           : `Dispute status updated to ${actionType}.`
       );
       setActionDispute(null);
