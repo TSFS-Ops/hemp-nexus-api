@@ -105,11 +105,15 @@ export function MatchTimeline({ matchId }: MatchTimelineProps) {
   };
 
   const getEventLabel = (eventType: string) => {
-    // Map internal event types to user-friendly labels
     const labelMap: Record<string, string> = {
       "match.created": "Match Created",
       "match.settled": "Intent Confirmed",
       "intent.confirmed": "Intent Confirmed",
+      "dispute.raised": "Dispute Raised",
+      "dispute.open": "Dispute Raised",
+      "dispute.resolved": "Dispute Resolved",
+      "dispute.escalated": "Dispute Escalated",
+      "dispute.withdrawn": "Dispute Withdrawn",
     };
     
     if (labelMap[eventType]) {
