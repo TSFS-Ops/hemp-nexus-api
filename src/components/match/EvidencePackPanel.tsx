@@ -112,7 +112,7 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
     toast.success("JSON evidence pack downloaded");
   }, [pack, matchId]);
 
-  const downloadPdf = useCallback(async () => {
+  const downloadHtmlReport = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -125,14 +125,14 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
         }
       );
 
-      if (!response.ok) throw new Error("Failed to download PDF");
+      if (!response.ok) throw new Error("Failed to download report");
 
       const html = await response.text();
       downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
-      toast.success("PDF evidence pack downloaded");
+      toast.success("Evidence report downloaded — open the .html file in your browser to view");
     } catch (error) {
-      console.error("PDF download error:", error);
-      toast.error("Failed to download PDF view");
+      console.error("Report download error:", error);
+      toast.error("Failed to download evidence report");
     }
   }, [matchId]);
 
@@ -320,9 +320,9 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
                 <FileJson className="h-4 w-4 mr-2" />
                 Download JSON
               </Button>
-              <Button variant="outline" className="flex-1" onClick={downloadPdf}>
+              <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
                 <FileText className="h-4 w-4 mr-2" />
-                Download PDF
+                Download Report (.html)
               </Button>
             </div>
 
