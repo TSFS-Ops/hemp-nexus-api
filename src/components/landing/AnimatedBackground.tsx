@@ -1,26 +1,22 @@
 /**
- * Dark terminal animated background — dotted world map, floating emerald orbs,
- * and slow scan line. Scoped to landing page only.
+ * Dark terminal animated background — faint dotted world map overlay,
+ * floating emerald orbs, and slow scan line. NO grid pattern.
  */
 
 export function AnimatedBackground() {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-      {/* Deep dark base */}
-      <div className="absolute inset-0" style={{ backgroundColor: 'var(--lt-bg)' }} />
-
-      {/* World map dot pattern — top-left quadrant */}
+      {/* Deep dark navy/slate gradient base */}
       <div
-        className="absolute top-0 left-0 w-[70%] h-[60%] opacity-40 world-map-dots"
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(145deg, #0A0E17 0%, #0D1220 40%, #0A0E17 100%)',
+        }}
       />
 
-      {/* Animated dot grid that slowly drifts */}
+      {/* World map dot pattern — faint, top-left quadrant */}
       <div
-        className="absolute inset-[-50%] w-[200%] h-[200%] opacity-[0.03] animate-grid-drift"
-        style={{
-          backgroundImage: `radial-gradient(circle, rgba(226, 232, 240, 0.5) 0.5px, transparent 0.5px)`,
-          backgroundSize: "32px 32px",
-        }}
+        className="absolute top-0 left-0 w-[70%] h-[60%] opacity-30 world-map-dots"
       />
 
       {/* Floating orb 1 — emerald, top-left */}
@@ -41,7 +37,7 @@ export function AnimatedBackground() {
       {/* Thin horizontal scan line */}
       <div
         className="absolute left-0 right-0 h-px animate-scan-line"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.15), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.12), transparent)' }}
       />
     </div>
   );

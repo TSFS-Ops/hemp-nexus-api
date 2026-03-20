@@ -114,8 +114,14 @@ export default function Landing() {
               Governance Infrastructure for Trade and Institutions
             </p>
 
-            {/* Search form */}
-            <div className="mb-4 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--lt-surface)', border: '1px solid var(--lt-border)' }}>
+            {/* Search form — distinct panel */}
+            <div
+              className="mb-5 rounded-2xl overflow-hidden"
+              style={{
+                backgroundColor: '#131823',
+                border: '1px solid var(--lt-border)',
+              }}
+            >
               <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
               <SearchOutcomes
                 isSearching={isSearching}
@@ -125,12 +131,12 @@ export default function Landing() {
             </div>
 
             {/* 6-step workflow pipeline */}
-            <div className="mb-4">
+            <div className="mb-5">
               <WorkflowPipeline />
             </div>
 
             {/* POI commitment row */}
-            <div className="mb-4">
+            <div className="mb-5">
               <PoiCommitmentRow />
             </div>
 
