@@ -195,7 +195,7 @@ export default function WebhookDeliveryLogs() {
                           <Badge variant="outline">{log.event_type}</Badge>
                         </TableCell>
                         <TableCell className="font-mono text-xs max-w-xs truncate hidden lg:table-cell">
-                          {log.webhook_endpoints.url}
+                          {log.webhook_endpoints_safe.url}
                         </TableCell>
                         <TableCell>{getStatusBadge(log)}</TableCell>
                         <TableCell className="text-xs hidden xl:table-cell">{log.delivery_attempt}</TableCell>
