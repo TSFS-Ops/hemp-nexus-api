@@ -109,10 +109,7 @@ export default function Landing() {
             >
               Discover counterparties. Signal intent. Execute with confidence.
             </h1>
-            <p className="text-[12px] sm:text-[13px] font-medium mb-4 sm:mb-5 leading-[1.5]"
-               style={{ color: 'var(--lt-text-muted)' }}>
-              Governance Infrastructure for Trade and Institutions
-            </p>
+
 
             {/* Search form — interactive teaser */}
             <div
