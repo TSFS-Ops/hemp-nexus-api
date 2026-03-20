@@ -20,7 +20,7 @@ interface WebhookDeliveryLog {
   error_message: string | null;
   delivery_attempt: number;
   delivered_at: string;
-  webhook_endpoints: {
+  webhook_endpoints_safe: {
     url: string;
   };
 }
@@ -50,7 +50,7 @@ export default function WebhookDeliveryLogs() {
     queryFn: async () => {
       let query = supabase
         .from("webhook_deliveries")
-        .select("*, webhook_endpoints!inner(url)")
+        .select("*, webhook_endpoints_safe!inner(url)")
         .order("delivered_at", { ascending: false })
         .limit(50);
 
@@ -154,7 +154,7 @@ export default function WebhookDeliveryLogs() {
                       {new Date(log.delivered_at).toLocaleString()}
                     </p>
                     <p className="font-mono truncate text-muted-foreground">
-                      {log.webhook_endpoints.url}
+                      {log.webhook_endpoints_safe.url}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Attempt:</span>
@@ -195,7 +195,7 @@ export default function WebhookDeliveryLogs() {
                           <Badge variant="outline">{log.event_type}</Badge>
                         </TableCell>
                         <TableCell className="font-mono text-xs max-w-xs truncate hidden lg:table-cell">
-                          {log.webhook_endpoints.url}
+                          {log.webhook_endpoints_safe.url}
                         </TableCell>
                         <TableCell>{getStatusBadge(log)}</TableCell>
                         <TableCell className="text-xs hidden xl:table-cell">{log.delivery_attempt}</TableCell>
