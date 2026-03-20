@@ -20,7 +20,7 @@ interface WebhookDeliveryLog {
   error_message: string | null;
   delivery_attempt: number;
   delivered_at: string;
-  webhook_endpoints: {
+  webhook_endpoints_safe: {
     url: string;
   };
 }
