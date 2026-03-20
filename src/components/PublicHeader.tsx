@@ -8,11 +8,11 @@ export function PublicHeader() {
   const authUrl = getAuthUrl();
   const { isAuthenticated } = useAuth();
 
-  const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const AuthLink = ({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => {
     if (isPreview) {
-      return <Link to="/auth" className={className}>{children}</Link>;
+      return <Link to="/auth" className={className} style={style}>{children}</Link>;
     }
-    return <a href={authUrl} className={className}>{children}</a>;
+    return <a href={authUrl} className={className} style={style}>{children}</a>;
   };
 
   return (
