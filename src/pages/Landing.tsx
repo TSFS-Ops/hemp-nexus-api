@@ -7,7 +7,7 @@ import { BidOfferForm, type BidOfferData } from "@/components/landing/BidOfferFo
 import { SearchOutcomes } from "@/components/landing/SearchOutcomes";
 import { MarketWatchSidebar } from "@/components/landing/MarketWatchSidebar";
 import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
-import { PoiCommitmentRow } from "@/components/landing/PoiCommitmentRow";
+
 import { TrustBadges } from "@/components/landing/TrustBadges";
 import { CommodityTicker } from "@/components/landing/CommodityTicker";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
