@@ -129,7 +129,10 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
 
       const html = await response.text();
       downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
-      toast.success("Evidence report downloaded — open the .html file in your browser to view");
+      toast.success("Evidence report downloaded", {
+        description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
+        duration: 8000,
+      });
     } catch (error) {
       console.error("Report download error:", error);
       toast.error("Failed to download evidence report");
