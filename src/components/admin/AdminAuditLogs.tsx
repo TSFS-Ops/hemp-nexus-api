@@ -96,13 +96,13 @@ export function AdminAuditLogs() {
 
     downloadCSV(headers, rows, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
 
-    if (auditLogsTruncated) {
+    if (auditLogTotalCount > (auditLogs?.length ?? 0)) {
       toast.success(
-        `Exported ${auditLogs.length} of ${auditLogTotalCount} audit logs. Only the most recent ${ADMIN_LOG_LIMIT} are available for export.`,
+        `Exported ${auditLogs?.length} of ${auditLogTotalCount} audit logs (current page). Use pagination to access other pages.`,
         { duration: 5000 }
       );
     } else {
-      toast.success(`Exported all ${auditLogs.length} audit logs`);
+      toast.success(`Exported all ${auditLogs?.length} audit logs`);
     }
   };
 
