@@ -20,6 +20,10 @@ api_url = "http://127.0.0.1"
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:3000"
+min_password_length = 8
+
+[auth.password]
+hibp_enabled = true
 
 [auth.email]
 enable_signup = true
