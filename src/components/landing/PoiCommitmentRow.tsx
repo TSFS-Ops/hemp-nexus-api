@@ -34,8 +34,8 @@ export function PoiCommitmentRow() {
 
   return (
     <div
-      className="rounded-md px-4 py-3 flex items-center justify-between gap-4 flex-wrap"
-      style={{ backgroundColor: 'var(--lt-surface)', border: '1px solid var(--lt-border)' }}
+      className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap"
+      style={{ backgroundColor: '#131823', border: '1px solid var(--lt-border)' }}
     >
       <label className="flex items-center gap-3 cursor-pointer select-none">
         <button
@@ -61,11 +61,12 @@ export function PoiCommitmentRow() {
         onClick={handleProceed}
         disabled={!accepted}
         className="px-6 h-9 font-mono text-[11px] uppercase tracking-wider font-semibold
-                 transition-all active:scale-[0.98] rounded-md"
+                 transition-all active:scale-[0.98] rounded-full"
         style={{
           backgroundColor: accepted ? 'var(--lt-emerald-dark)' : 'var(--lt-panel)',
           color: accepted ? 'white' : 'var(--lt-text-dim)',
           cursor: accepted ? 'pointer' : 'not-allowed',
+          boxShadow: accepted ? '0 0 16px rgba(5, 150, 105, 0.25)' : 'none',
         }}
       >
         Proceed with WaD

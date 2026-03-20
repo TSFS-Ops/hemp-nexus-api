@@ -1,6 +1,6 @@
 /**
  * Bloomberg-style right sidebar — Market Watch + Latest News + Support.
- * Live pulsing dots, monospace prices, red/green indicators.
+ * Distinct panel background, glowing emerald numbers, monospace prices.
  */
 
 import { useState, useEffect } from "react";
@@ -25,7 +25,6 @@ export function MarketWatchSidebar() {
   const [prices, setPrices] = useState(MARKET_DATA);
   const [tickIndex, setTickIndex] = useState(-1);
 
-  // Simulate ticking prices every 4 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const idx = Math.floor(Math.random() * prices.length);
@@ -43,9 +42,9 @@ export function MarketWatchSidebar() {
 
   return (
     <div
-      className="flex flex-col h-full rounded-xl mx-2 my-2"
+      className="flex flex-col h-full rounded-2xl mx-2 my-2"
       style={{
-        backgroundColor: 'rgba(15, 20, 32, 0.6)',
+        backgroundColor: '#131823',
         border: '1px solid var(--lt-border)',
       }}
     >
@@ -79,7 +78,10 @@ export function MarketWatchSidebar() {
               </span>
               <span
                 className="text-[11px] font-mono font-semibold tabular-nums flex items-center gap-0.5"
-                style={{ color: item.positive ? 'var(--lt-emerald)' : 'var(--lt-red)' }}
+                style={{
+                  color: item.positive ? 'var(--lt-emerald-bright)' : 'var(--lt-red)',
+                  textShadow: item.positive ? '0 0 8px rgba(16, 185, 129, 0.4)' : 'none',
+                }}
               >
                 {item.positive ? (
                   <ChevronUp className="h-3 w-3" />

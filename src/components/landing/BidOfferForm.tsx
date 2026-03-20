@@ -1,6 +1,6 @@
 /**
- * Bloomberg-style bid/offer entry form — dark terminal aesthetic.
- * Premium dark inputs with emerald focus states.
+ * Bloomberg-style bid/offer entry form — ultra-premium dark terminal aesthetic.
+ * Pill-shaped toggles, borderless inputs with focus glow, rounded search button.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -102,10 +102,11 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
   const disabled = isLocked || isSearching;
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="p-4 space-y-4">
       {/* Draft restored notice */}
       {draftRestored && (
-        <div className="flex items-center justify-between px-3 py-1.5" style={{ backgroundColor: 'var(--lt-panel)', borderBottom: '1px solid var(--lt-border)' }}>
+        <div className="flex items-center justify-between px-3 py-1.5 rounded-lg"
+             style={{ backgroundColor: 'var(--lt-panel)', border: '1px solid var(--lt-border)' }}>
           <span className="text-[11px] font-mono" style={{ color: 'var(--lt-text-muted)' }}>
             Draft restored from your previous session
           </span>
@@ -125,15 +126,16 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       )}
 
-      {/* BID / OFFER tabs */}
-      <div className="flex" style={{ borderBottom: '1px solid var(--lt-border)' }}>
+      {/* BID / OFFER pill toggle */}
+      <div className="inline-flex rounded-full p-1" style={{ backgroundColor: '#0D1220', border: '1px solid var(--lt-border)' }}>
         <button
           type="button"
           onClick={() => setSide("bid")}
-          className="flex-1 h-11 text-[12px] font-semibold uppercase tracking-wider transition-all duration-200"
+          className="px-5 py-2 text-[11px] font-mono uppercase tracking-wider font-semibold rounded-full transition-all duration-200"
           style={{
-            backgroundColor: side === "bid" ? 'var(--lt-emerald-dark)' : 'transparent',
-            color: side === "bid" ? 'white' : 'var(--lt-text-muted)',
+            backgroundColor: side === "bid" ? 'var(--lt-panel)' : 'transparent',
+            color: side === "bid" ? 'var(--lt-emerald)' : 'var(--lt-text-dim)',
+            boxShadow: side === "bid" ? '0 0 12px rgba(16, 185, 129, 0.15)' : 'none',
           }}
         >
           BID (Buyer)
@@ -141,46 +143,46 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         <button
           type="button"
           onClick={() => setSide("offer")}
-          className="flex-1 h-11 text-[12px] font-semibold uppercase tracking-wider transition-all duration-200"
+          className="px-5 py-2 text-[11px] font-mono uppercase tracking-wider font-semibold rounded-full transition-all duration-200"
           style={{
-            backgroundColor: side === "offer" ? 'var(--lt-emerald-dark)' : 'transparent',
-            color: side === "offer" ? 'white' : 'var(--lt-text-muted)',
-            borderLeft: '1px solid var(--lt-border)',
+            backgroundColor: side === "offer" ? 'var(--lt-panel)' : 'transparent',
+            color: side === "offer" ? 'var(--lt-emerald)' : 'var(--lt-text-dim)',
+            boxShadow: side === "offer" ? '0 0 12px rgba(16, 185, 129, 0.15)' : 'none',
           }}
         >
           OFFER (Seller)
         </button>
       </div>
 
-      {/* Fields grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4">
-        <TerminalField
+      {/* Fields grid — borderless inputs with focus glow */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <PremiumField
           id="product" label="Product" required placeholder="Select product / asset"
           value={form.product} onChange={(v) => update("product", v)}
           disabled={disabled}
         />
-        <TerminalField
+        <PremiumField
           id="price" label="Price" placeholder="Enter price (ZAR/USD)"
           value={form.price} onChange={(v) => update("price", v)}
-          disabled={disabled} borderLeft
+          disabled={disabled}
         />
-        <TerminalField
+        <PremiumField
           id="volume" label="Quantity" placeholder="Enter quantity"
           value={form.volume} onChange={(v) => update("volume", v)}
-          disabled={disabled} borderLeft
+          disabled={disabled}
         />
         {/* Upload Docs — disabled */}
-        <div
-          style={{ borderBottom: '1px solid var(--lt-border)', borderLeft: '1px solid var(--lt-border)' }}
-          className="hidden sm:block"
-        >
-          <label className="block px-3 pt-2.5 text-[11px] font-mono uppercase tracking-wider font-medium" style={{ color: 'var(--lt-text-dim)' }}>
+        <div>
+          <label className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1" style={{ color: 'var(--lt-text-dim)' }}>
             Upload Docs
           </label>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-full h-9 px-3 pb-2 text-[13px] font-mono flex items-center gap-2 opacity-40 cursor-not-allowed" style={{ color: 'var(--lt-text-muted)' }}>
+                <div
+                  className="w-full h-10 px-3 text-[13px] font-mono flex items-center gap-2 opacity-40 cursor-not-allowed rounded-lg"
+                  style={{ backgroundColor: '#111827', color: 'var(--lt-text-muted)' }}
+                >
                   <Upload className="h-3.5 w-3.5" />
                   <span>Add documents</span>
                 </div>
@@ -193,15 +195,15 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       </div>
 
-      {/* Search button */}
+      {/* Search button — rounded-full with emerald glow */}
       <div className="flex sm:justify-end">
         <button
           type="submit"
           disabled={!canSearch || disabled}
-          className="h-11 sm:h-10 px-8 font-mono text-[12px] uppercase tracking-wider font-semibold
+          className="h-10 px-8 font-mono text-[12px] uppercase tracking-wider font-semibold
                    transition-all duration-200 disabled:cursor-not-allowed
                    flex items-center justify-center gap-2.5
-                   w-full sm:w-auto rounded-none"
+                   w-full sm:w-auto rounded-full"
           style={{
             backgroundColor: isSearching
               ? 'var(--lt-panel)'
@@ -209,6 +211,9 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
                 ? 'var(--lt-emerald-dark)'
                 : 'var(--lt-panel)',
             color: canSearch && !disabled ? 'white' : 'var(--lt-text-dim)',
+            boxShadow: canSearch && !disabled && !isSearching
+              ? '0 0 20px rgba(5, 150, 105, 0.25)'
+              : 'none',
           }}
         >
           {isSearching ? (
@@ -228,25 +233,17 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
   );
 }
 
-function TerminalField({
-  id, label, placeholder, value, onChange, required,
-  disabled, borderLeft,
+function PremiumField({
+  id, label, placeholder, value, onChange, required, disabled,
 }: {
   id: string; label: string; placeholder: string; value: string;
-  onChange: (v: string) => void; required?: boolean;
-  disabled?: boolean; borderLeft?: boolean;
+  onChange: (v: string) => void; required?: boolean; disabled?: boolean;
 }) {
   return (
-    <div
-      style={{
-        borderBottom: '1px solid var(--lt-border)',
-        ...(borderLeft ? { borderLeft: '1px solid var(--lt-border)' } : {}),
-      }}
-      className="group"
-    >
+    <div>
       <label
         htmlFor={id}
-        className="block px-3 pt-2.5 text-[11px] font-mono uppercase tracking-wider font-medium select-none"
+        className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
         style={{ color: 'var(--lt-text-dim)' }}
       >
         {label}
@@ -259,11 +256,14 @@ function TerminalField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full h-10 sm:h-9 px-3 pb-2 text-[13px] font-mono bg-transparent
-                   focus:outline-none border-none
-                   transition-colors
-                   disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full h-10 px-3 text-[13px] font-mono rounded-lg
+                   border border-transparent
+                   focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30
+                   transition-all duration-200
+                   disabled:opacity-40 disabled:cursor-not-allowed
+                   placeholder:text-[var(--lt-text-dim)]"
         style={{
+          backgroundColor: '#111827',
           color: 'var(--lt-text)',
           caretColor: 'var(--lt-emerald)',
         }}
