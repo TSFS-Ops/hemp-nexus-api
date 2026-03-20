@@ -102,19 +102,19 @@ export default function Landing() {
         {/* Left: Main content area — 70% */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[960px]">
-            {/* Hero headline */}
+            {/* Page header — reduced from billboard to header */}
             <h1
-              className="tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02] text-[1.375rem] sm:text-[2rem] lg:text-[2.75rem]"
+              className="tracking-tighter text-balance max-w-2xl mb-1 leading-[1.08] text-[1rem] sm:text-[1.25rem] lg:text-[1.5rem] font-semibold"
               style={{ color: 'var(--lt-text)' }}
             >
               Discover counterparties. Signal intent. Execute with confidence.
             </h1>
-            <p className="text-[13px] sm:text-[14px] font-medium mb-4 sm:mb-6 leading-[1.5] max-w-md sm:max-w-none"
+            <p className="text-[12px] sm:text-[13px] font-medium mb-4 sm:mb-5 leading-[1.5]"
                style={{ color: 'var(--lt-text-muted)' }}>
               Governance Infrastructure for Trade and Institutions
             </p>
 
-            {/* Search form — distinct panel */}
+            {/* Search form — interactive teaser */}
             <div
               className="mb-5 rounded-2xl overflow-hidden"
               style={{
@@ -135,12 +135,30 @@ export default function Landing() {
               <WorkflowPipeline />
             </div>
 
-            {/* POI commitment row */}
-            <div className="mb-5">
-              <PoiCommitmentRow />
+            {/* Single CTA — replaces POI toggle + Proceed with WaD */}
+            <div className="mb-8">
+              <button
+                onClick={() => {
+                  if (isAuthenticated) {
+                    window.location.assign("/dashboard");
+                  } else {
+                    navigateToAuth();
+                  }
+                }}
+                className="w-full sm:w-auto px-8 h-11 font-mono text-[11px] uppercase tracking-wider font-semibold
+                         transition-all active:scale-[0.98] rounded-full flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: 'var(--lt-emerald-dark)',
+                  color: 'white',
+                  boxShadow: '0 0 24px rgba(5, 150, 105, 0.3)',
+                }}
+              >
+                {isAuthenticated ? 'Go to Dashboard' : 'Create Account to Execute Trade'}
+                <span className="text-[13px]">→</span>
+              </button>
             </div>
 
-            {/* Trust badges */}
+            {/* Trust badges — below the fold */}
             <TrustBadges />
           </div>
         </div>
