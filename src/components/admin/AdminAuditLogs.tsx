@@ -184,7 +184,7 @@ export function AdminAuditLogs() {
               />
             </div>
             <div className="flex gap-2">
-              <Select value={actionFilter} onValueChange={setActionFilter}>
+              <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setAuditPage(0); }}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Action" />
                 </SelectTrigger>
