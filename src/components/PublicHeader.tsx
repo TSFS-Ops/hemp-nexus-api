@@ -67,11 +67,11 @@ export function PublicHeader() {
           ) : (
             <>
               <AuthLink className="hidden sm:inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
-                        style={{ color: 'var(--lt-text-muted)' } as React.CSSProperties}>
+                        style={{ color: 'var(--lt-text-muted)' }}>
                 Log In
               </AuthLink>
               <AuthLink className="inline-flex items-center gap-1.5 px-4 h-8 text-xs font-semibold rounded-md transition-all duration-200 hover:opacity-90"
-                        style={{ backgroundColor: 'var(--lt-emerald-dark)', color: 'white' } as React.CSSProperties}>
+                        style={{ backgroundColor: 'var(--lt-emerald-dark)', color: 'white' }}>
                 Sign Up
               </AuthLink>
             </>

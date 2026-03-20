@@ -14,7 +14,7 @@ import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SCAN_DURATION_MS = 1200;
-const SCAN_TIMEOUT_MS = 8000; // Safety timeout for scan state
+const SCAN_TIMEOUT_MS = 8000;
 
 export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
@@ -26,8 +26,6 @@ export default function Landing() {
   const authUrl = getAuthUrl();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Restore pre-auth state: when user returns to / after auth with resume=1,
-  // redirect them to the dashboard search with their original query
   useEffect(() => {
     if (authLoading) return;
     const params = new URLSearchParams(window.location.search);
@@ -39,13 +37,11 @@ export default function Landing() {
       const searchParams = new URLSearchParams({ q: preAuth.query, resume: "1" });
       window.location.assign(`/dashboard/search?${searchParams.toString()}`);
     } else {
-      // Authenticated but no state to restore — go to dashboard
       window.location.assign("/dashboard");
     }
   }, [authLoading, isAuthenticated]);
 
   const navigateToAuth = useCallback(() => {
-    // Save the search state before redirecting to auth
     if (lastQuery) {
       savePreAuthState({
         query: lastQuery,
@@ -72,7 +68,6 @@ export default function Landing() {
       return;
     }
 
-    // Save pre-auth state immediately when the unauthenticated user searches
     savePreAuthState({
       query: queryString,
       selectedIds: [],
@@ -88,7 +83,6 @@ export default function Landing() {
     setIsFormLocked(false);
   }, [isAuthenticated]);
 
-  // Safety timeout: if scan state gets stuck, auto-recover
   useEffect(() => {
     if (!isSearching) return;
     const timeout = setTimeout(() => {
@@ -99,25 +93,29 @@ export default function Landing() {
   }, [isSearching]);
 
   return (
-    <div className="h-screen-safe flex flex-col bg-background relative overflow-hidden">
+    <div className="landing-terminal h-screen-safe flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--lt-bg)' }}>
       <AnimatedBackground />
       <PublicHeader />
 
       {/* Main content */}
       <div className="flex-1 flex min-h-0 relative z-10">
-        {/* Left: Main content area */}
+        {/* Left: Main content area — 70% */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[960px]">
-            {/* Hero headline — LOCKED: Do not change without client approval */}
-            <h1 className="text-foreground tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02] text-[1.375rem] sm:text-[2rem] lg:text-[2.75rem]">
-              Discover counterparties. Signal intent. Execute with confidence.
+            {/* Hero headline */}
+            <h1
+              className="tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02] text-[1.375rem] sm:text-[2rem] lg:text-[2.75rem]"
+              style={{ color: 'var(--lt-text)' }}
+            >
+              Become a Buyer or Seller
             </h1>
-            <p className="text-[13px] sm:text-[14px] text-muted-foreground font-semibold mb-4 sm:mb-6 leading-[1.5] max-w-md sm:max-w-none">
+            <p className="text-[13px] sm:text-[14px] font-medium mb-4 sm:mb-6 leading-[1.5] max-w-md sm:max-w-none"
+               style={{ color: 'var(--lt-text-muted)' }}>
               Governance Infrastructure for Trade and Institutions
             </p>
 
-            {/* Search form with BID/OFFER tabs */}
-            <div className="border border-border mb-4">
+            {/* Search form */}
+            <div className="mb-4 rounded-md overflow-hidden" style={{ backgroundColor: 'var(--lt-surface)', border: '1px solid var(--lt-border)' }}>
               <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
               <SearchOutcomes
                 isSearching={isSearching}
@@ -141,7 +139,7 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Right: Market Watch sidebar — hidden on mobile */}
+        {/* Right: Bloomberg sidebar — hidden on mobile */}
         <div className="hidden lg:block w-[300px] xl:w-[320px] flex-shrink-0">
           <MarketWatchSidebar />
         </div>
