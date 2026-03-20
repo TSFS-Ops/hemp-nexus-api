@@ -58,11 +58,17 @@ Deno.serve(async (req) => {
 
     // POST: lookup_profiles action OR default list
     if (req.method === 'POST') {
-      let body: Record<string, unknown>;
-      try {
-        body = await req.json();
-      } catch {
-        return jsonResponse({ error: 'Invalid request body' }, 400);
+      let body: Record<string, unknown> = {};
+      const contentType = req.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          const text = await req.text();
+          if (text.trim()) {
+            body = JSON.parse(text);
+          }
+        } catch {
+          return jsonResponse({ error: 'Invalid request body' }, 400);
+        }
       }
 
       if (body.action === 'lookup_profiles') {
