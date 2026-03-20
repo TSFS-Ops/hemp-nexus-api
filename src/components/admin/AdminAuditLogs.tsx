@@ -26,17 +26,18 @@ export function AdminAuditLogs() {
   const [search, setSearch] = useState("");
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [auditPage, setAuditPage] = useState(0);
 
   const ADMIN_LOG_LIMIT = 200;
 
   const { data: auditLogData, isLoading, refetch } = useQuery({
-    queryKey: ["admin-audit-logs", actionFilter, entityFilter, search],
+    queryKey: ["admin-audit-logs", actionFilter, entityFilter, search, auditPage],
     queryFn: async () => {
       let query = supabase
         .from("audit_logs")
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(ADMIN_LOG_LIMIT);
+        .range(auditPage * ADMIN_LOG_LIMIT, (auditPage + 1) * ADMIN_LOG_LIMIT - 1);
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
@@ -54,7 +55,7 @@ export function AdminAuditLogs() {
 
   const auditLogs = auditLogData?.logs;
   const auditLogTotalCount = auditLogData?.totalCount ?? 0;
-  const auditLogsTruncated = auditLogTotalCount > ADMIN_LOG_LIMIT;
+  const totalAuditPages = Math.ceil(auditLogTotalCount / ADMIN_LOG_LIMIT);
 
   const ADMIN_ACTION_LIMIT = 100;
 
