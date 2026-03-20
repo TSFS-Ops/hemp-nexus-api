@@ -107,7 +107,7 @@ export default function Landing() {
               className="tracking-tighter text-balance max-w-3xl mb-2 leading-[1.02] text-[1.375rem] sm:text-[2rem] lg:text-[2.75rem]"
               style={{ color: 'var(--lt-text)' }}
             >
-              Become a Buyer or Seller
+              Discover counterparties. Signal intent. Execute with confidence.
             </h1>
             <p className="text-[13px] sm:text-[14px] font-medium mb-4 sm:mb-6 leading-[1.5] max-w-md sm:max-w-none"
                style={{ color: 'var(--lt-text-muted)' }}>
