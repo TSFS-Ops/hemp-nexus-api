@@ -209,9 +209,10 @@ export function AdminAuditLogs() {
             </div>
           </div>
 
-          {auditLogsTruncated && (
+          {auditLogTotalCount > 0 && (
             <p className="text-sm text-muted-foreground mb-3">
-              Showing {auditLogs?.length} of {auditLogTotalCount} audit logs. Only the most recent {ADMIN_LOG_LIMIT} are displayed.
+              Showing {auditPage * ADMIN_LOG_LIMIT + 1}–{Math.min((auditPage + 1) * ADMIN_LOG_LIMIT, auditLogTotalCount)} of {auditLogTotalCount} audit logs.
+              {totalAuditPages > 1 && ` Page ${auditPage + 1} of ${totalAuditPages}.`}
             </p>
           )}
 
