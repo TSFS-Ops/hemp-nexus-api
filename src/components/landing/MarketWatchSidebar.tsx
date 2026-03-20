@@ -1,81 +1,130 @@
 /**
- * Right-hand sidebar — platform capabilities + compliance status.
- * Uses --surface-sidebar (#F9FAFB) background to visually separate from main workspace.
+ * Bloomberg-style right sidebar — Market Watch + Latest News + Support.
+ * Live pulsing dots, monospace prices, red/green indicators.
  */
 
-import { ArrowRight, ShieldCheck, Search, FileCheck, Lock, Scale } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, ChevronUp, ChevronDown } from "lucide-react";
 
-const PLATFORM_CAPABILITIES = [
-  { label: "KYC & Identity Verification", icon: ShieldCheck, status: "Active" },
-  { label: "Sanctions Screening", icon: Search, status: "Active" },
-  { label: "Cryptographic Evidence", icon: Lock, status: "Active" },
-  { label: "Compliance Matching", icon: Scale, status: "Active" },
-  { label: "Document Vault", icon: FileCheck, status: "Active" },
+const MARKET_DATA = [
+  { name: "Gold", price: 1945.20, change: 0.62, positive: true },
+  { name: "Oil (Brent)", price: 81.23, change: -0.41, positive: false },
+  { name: "Carbon Credits", price: 73.15, change: 1.21, positive: true },
+  { name: "USD/ZAR", price: 18.72, change: -0.34, positive: false },
+  { name: "Copper", price: 8923.11, change: 0.10, positive: true },
 ];
 
-const RECENT_UPDATES = [
-  { headline: "WaD seal verification now enforced", time: "System" },
-  { headline: "Multi-party attestation live", time: "System" },
-  { headline: "Tiered approval workflow active", time: "System" },
-  { headline: "Append-only audit ledger enabled", time: "System" },
+const NEWS_ITEMS = [
+  { headline: "New compliance rule approved", time: "5 min ago" },
+  { headline: "Infrastructure deal signed", time: "18 min ago" },
+  { headline: "Carbon market hits record volume", time: "35 min ago" },
+  { headline: "Regulators align on data standards", time: "1 hour ago" },
 ];
 
 export function MarketWatchSidebar() {
+  const [prices, setPrices] = useState(MARKET_DATA);
+  const [tickIndex, setTickIndex] = useState(-1);
+
+  // Simulate ticking prices every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const idx = Math.floor(Math.random() * prices.length);
+      setTickIndex(idx);
+      setPrices(prev => prev.map((item, i) => {
+        if (i !== idx) return item;
+        const delta = (Math.random() - 0.5) * 2;
+        const newPrice = Math.max(0.01, item.price + delta);
+        return { ...item, price: Number(newPrice.toFixed(2)) };
+      }));
+      setTimeout(() => setTickIndex(-1), 300);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="border-l border-border flex flex-col h-full" style={{ backgroundColor: 'hsl(var(--surface-sidebar))' }}>
-      {/* Platform Status */}
-      <div className="flex-shrink-0">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-verified" />
-            <span className="text-[12px] font-semibold text-foreground tracking-tight">Platform Status</span>
-          </div>
+    <div
+      className="flex flex-col h-full rounded-xl mx-2 my-2"
+      style={{
+        backgroundColor: 'rgba(15, 20, 32, 0.6)',
+        border: '1px solid var(--lt-border)',
+      }}
+    >
+      {/* Market Watch Header */}
+      <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between"
+           style={{ borderBottom: '1px solid var(--lt-border)' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--lt-emerald)' }} />
+          <span className="text-[12px] font-semibold tracking-tight" style={{ color: 'var(--lt-text)' }}>
+            Market Watch
+          </span>
         </div>
-        <div>
-          {PLATFORM_CAPABILITIES.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between px-4 py-2.5 border-b border-border"
-            >
-              <div className="flex items-center gap-2">
-                <item.icon className="h-3 w-3 text-muted-foreground" />
-                <span className="text-[12px] text-foreground font-medium">{item.label}</span>
-              </div>
-              <span className="text-[11px] font-mono font-medium text-signal-verified">
-                {item.status}
+        <ChevronUp className="h-3.5 w-3.5" style={{ color: 'var(--lt-text-dim)' }} />
+      </div>
+
+      {/* Price list */}
+      <div className="flex-shrink-0">
+        {prices.map((item, i) => (
+          <div
+            key={item.name}
+            className="flex items-center justify-between px-4 py-2.5 transition-colors duration-200 hover:bg-white/[0.02]"
+            style={{ borderBottom: '1px solid var(--lt-border)' }}
+          >
+            <span className="text-[12px] font-medium" style={{ color: 'var(--lt-text)' }}>{item.name}</span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`text-[13px] font-mono font-semibold tabular-nums ${tickIndex === i ? 'animate-tick' : ''}`}
+                style={{ color: 'var(--lt-text)' }}
+              >
+                {item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span
+                className="text-[11px] font-mono font-semibold tabular-nums flex items-center gap-0.5"
+                style={{ color: item.positive ? 'var(--lt-emerald)' : 'var(--lt-red)' }}
+              >
+                {item.positive ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
+                {item.positive ? '+' : ''}{item.change.toFixed(2)}%
               </span>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
-      {/* System Updates */}
+      {/* Latest News */}
       <div className="flex-1 min-h-0">
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-          <span className="text-[12px] font-semibold text-foreground tracking-tight">System</span>
+        <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--lt-border)' }}>
+          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
+          <span className="text-[12px] font-semibold tracking-tight" style={{ color: 'var(--lt-text)' }}>
+            Latest News
+          </span>
+          <ChevronUp className="h-3.5 w-3.5 ml-auto" style={{ color: 'var(--lt-text-dim)' }} />
         </div>
         <div>
-          {RECENT_UPDATES.map((item, i) => (
+          {NEWS_ITEMS.map((item, i) => (
             <div
               key={i}
-              className="px-4 py-3 border-b border-border"
+              className="px-4 py-3 transition-colors duration-200 hover:bg-white/[0.02]"
+              style={{ borderBottom: '1px solid var(--lt-border)' }}
             >
-              <p className="text-[12px] text-foreground font-medium leading-snug mb-1">{item.headline}</p>
-              <span className="text-[11px] font-mono text-muted-foreground">{item.time}</span>
+              <p className="text-[12px] font-medium leading-snug mb-1" style={{ color: 'var(--lt-text)' }}>{item.headline}</p>
+              <span className="text-[10px] font-mono" style={{ color: 'var(--lt-text-dim)' }}>{item.time}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Need help */}
-      <div className="flex-shrink-0 px-4 py-3 border-t border-border">
-        <p className="text-[12px] font-medium text-foreground mb-0.5">Need help?</p>
+      {/* Support */}
+      <div className="flex-shrink-0 px-4 py-3" style={{ borderTop: '1px solid var(--lt-border)' }}>
+        <p className="text-[12px] font-medium mb-0.5" style={{ color: 'var(--lt-text)' }}>Need help?</p>
         <a
-          href="/docs"
-          className="text-[12px] text-primary font-medium inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+          href="mailto:support@izenzo.co.za"
+          className="text-[12px] font-medium inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+          style={{ color: 'var(--lt-emerald)' }}
         >
-          Read the docs
+          Chat with support
           <ArrowRight className="h-3 w-3" />
         </a>
       </div>
