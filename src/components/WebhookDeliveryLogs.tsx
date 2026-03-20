@@ -50,7 +50,7 @@ export default function WebhookDeliveryLogs() {
     queryFn: async () => {
       let query = supabase
         .from("webhook_deliveries")
-        .select("*, webhook_endpoints!inner(url)")
+        .select("*, webhook_endpoints_safe!inner(url)")
         .order("delivered_at", { ascending: false })
         .limit(50);
 

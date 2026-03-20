@@ -73,7 +73,7 @@ export default function SystemAnalytics() {
         supabase.from("api_keys").select("id", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("signals").select("id", { count: "exact", head: true }),
         supabase.from("matches").select("id", { count: "exact", head: true }),
-        supabase.from("webhook_endpoints").select("id", { count: "exact", head: true }),
+        supabase.from("webhook_endpoints_safe").select("id", { count: "exact", head: true }),
         supabase.from("organizations").select("id", { count: "exact", head: true }).eq("sandbox_enabled", true),
         supabase
           .from("audit_logs")
