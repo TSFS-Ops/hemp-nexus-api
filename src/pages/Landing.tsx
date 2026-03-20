@@ -104,7 +104,7 @@ export default function Landing() {
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[960px]">
             {/* Page header — reduced from billboard to header */}
             <h1
-              className="tracking-tighter text-balance max-w-2xl mb-1 leading-[1.08] text-[1rem] sm:text-[1.25rem] lg:text-[1.5rem] font-semibold"
+              className="tracking-tighter max-w-none mb-1 leading-[1.08] text-[1rem] sm:text-[1.25rem] lg:text-[1.5rem] font-semibold whitespace-normal lg:whitespace-nowrap"
               style={{ color: 'var(--lt-text)' }}
             >
               Discover counterparties. Signal intent. Execute with confidence.
