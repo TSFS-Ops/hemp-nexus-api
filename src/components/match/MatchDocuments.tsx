@@ -219,7 +219,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   };
 
-  const ALLOWED_EXTENSIONS = ".pdf, .jpg, .jpeg, .png, .gif, .doc, .docx, .xls, .xlsx";
+  const ALLOWED_EXTENSIONS = ".pdf, .jpg, .jpeg, .png, .doc, .docx, .xls, .xlsx";
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);

@@ -325,8 +325,11 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
               </Button>
               <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
                 <FileText className="h-4 w-4 mr-2" />
-                Download Report (.html)
+                Download Report
               </Button>
+              <p className="text-[11px] text-muted-foreground col-span-2 text-center -mt-1">
+                The report downloads as an HTML file. Open it in your browser (Chrome, Edge, Safari) to view.
+              </p>
             </div>
 
             {/* Verify button */}
