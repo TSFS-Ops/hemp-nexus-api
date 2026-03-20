@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Globe, HelpCircle } from "lucide-react";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,50 +16,63 @@ export function PublicHeader() {
   };
 
   return (
-    <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <span className="text-[14px] font-bold tracking-tighter text-foreground transition-colors">IZENZO</span>
-          <span className="text-[9px] font-mono font-medium text-muted-foreground tracking-widest uppercase border border-border px-1.5 py-0.5 group-hover:border-primary/30 transition-colors">
-            API
+    <nav
+      className="sticky top-0 z-50 backdrop-blur-md"
+      style={{
+        backgroundColor: 'rgba(10, 14, 23, 0.85)',
+        borderBottom: '1px solid var(--lt-border)',
+      }}
+    >
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        {/* Logo + tagline */}
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex items-center gap-2">
+            {/* Logo mark */}
+            <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ backgroundColor: 'var(--lt-emerald-dark)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <span className="text-lg font-bold tracking-tight" style={{ color: 'var(--lt-text)' }}>Izenzo</span>
+          </div>
+          <div className="hidden sm:block h-5 w-px" style={{ backgroundColor: 'var(--lt-border)' }} />
+          <span className="hidden sm:block text-xs font-medium" style={{ color: 'var(--lt-text-muted)' }}>
+            Governed infrastructure for trade and compliance
           </span>
         </Link>
 
-        {/* Center nav — with subtle hover underlines */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link
-            to="/docs"
-            className="relative text-[11px] font-mono uppercase tracking-widest text-muted-foreground
-                     hover:text-foreground transition-colors py-1
-                     after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px
-                     after:bg-primary after:scale-x-0 after:transition-transform after:duration-300
-                     hover:after:scale-x-100 after:origin-left"
-          >
-            Developer Access
-          </Link>
-        </div>
+        {/* Right side */}
+        <div className="flex items-center gap-2">
+          {/* Icon buttons */}
+          <button className="w-9 h-9 rounded-md flex items-center justify-center transition-colors duration-200 hover:bg-white/5" style={{ color: 'var(--lt-text-muted)' }}>
+            <Globe className="h-4 w-4" />
+          </button>
+          <button className="w-9 h-9 rounded-md flex items-center justify-center transition-colors duration-200 hover:bg-white/5" style={{ color: 'var(--lt-text-muted)' }}>
+            <HelpCircle className="h-4 w-4" />
+          </button>
 
-        {/* Auth */}
-        <div className="flex items-center gap-3">
+          <div className="w-px h-5 mx-1" style={{ backgroundColor: 'var(--lt-border)' }} />
+
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3.5 h-8 text-[11px] font-mono uppercase tracking-widest font-medium
-                       bg-primary text-primary-foreground shadow-inner-metallic
-                       hover:opacity-90 transition-all active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 px-4 h-8 text-xs font-mono font-medium rounded-md transition-all duration-200"
+              style={{ backgroundColor: 'var(--lt-emerald-dark)', color: 'white' }}
             >
               Dashboard
               <ArrowRight className="h-3 w-3" />
             </Link>
           ) : (
             <>
-              <AuthLink className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex">
-                Sign In
+              <AuthLink className="hidden sm:inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
+                        style={{ color: 'var(--lt-text-muted)' } as React.CSSProperties}>
+                Log In
               </AuthLink>
-              <AuthLink className="inline-flex items-center gap-1.5 px-3.5 h-8 text-[11px] font-mono uppercase tracking-widest font-medium
-                                 border border-border text-foreground hover:bg-accent hover:border-foreground/15 transition-all active:scale-[0.98]">
-                Create Account
+              <AuthLink className="inline-flex items-center gap-1.5 px-4 h-8 text-xs font-semibold rounded-md transition-all duration-200 hover:opacity-90"
+                        style={{ backgroundColor: 'var(--lt-emerald-dark)', color: 'white' } as React.CSSProperties}>
+                Sign Up
               </AuthLink>
             </>
           )}
