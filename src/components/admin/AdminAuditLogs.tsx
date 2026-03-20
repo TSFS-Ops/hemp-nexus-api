@@ -195,7 +195,7 @@ export function AdminAuditLogs() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={entityFilter} onValueChange={setEntityFilter}>
+              <Select value={entityFilter} onValueChange={(v) => { setEntityFilter(v); setAuditPage(0); }}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Entity Type" />
                 </SelectTrigger>
