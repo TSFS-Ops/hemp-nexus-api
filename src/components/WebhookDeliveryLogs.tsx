@@ -154,7 +154,7 @@ export default function WebhookDeliveryLogs() {
                       {new Date(log.delivered_at).toLocaleString()}
                     </p>
                     <p className="font-mono truncate text-muted-foreground">
-                      {log.webhook_endpoints.url}
+                      {log.webhook_endpoints_safe.url}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Attempt:</span>
