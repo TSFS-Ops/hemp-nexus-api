@@ -26,17 +26,18 @@ export function AdminAuditLogs() {
   const [search, setSearch] = useState("");
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [auditPage, setAuditPage] = useState(0);
 
   const ADMIN_LOG_LIMIT = 200;
 
   const { data: auditLogData, isLoading, refetch } = useQuery({
-    queryKey: ["admin-audit-logs", actionFilter, entityFilter, search],
+    queryKey: ["admin-audit-logs", actionFilter, entityFilter, search, auditPage],
     queryFn: async () => {
       let query = supabase
         .from("audit_logs")
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(ADMIN_LOG_LIMIT);
+        .range(auditPage * ADMIN_LOG_LIMIT, (auditPage + 1) * ADMIN_LOG_LIMIT - 1);
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
@@ -54,7 +55,7 @@ export function AdminAuditLogs() {
 
   const auditLogs = auditLogData?.logs;
   const auditLogTotalCount = auditLogData?.totalCount ?? 0;
-  const auditLogsTruncated = auditLogTotalCount > ADMIN_LOG_LIMIT;
+  const totalAuditPages = Math.ceil(auditLogTotalCount / ADMIN_LOG_LIMIT);
 
   const ADMIN_ACTION_LIMIT = 100;
 
@@ -95,13 +96,13 @@ export function AdminAuditLogs() {
 
     downloadCSV(headers, rows, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
 
-    if (auditLogsTruncated) {
+    if (auditLogTotalCount > (auditLogs?.length ?? 0)) {
       toast.success(
-        `Exported ${auditLogs.length} of ${auditLogTotalCount} audit logs. Only the most recent ${ADMIN_LOG_LIMIT} are available for export.`,
+        `Exported ${auditLogs?.length} of ${auditLogTotalCount} audit logs (current page). Use pagination to access other pages.`,
         { duration: 5000 }
       );
     } else {
-      toast.success(`Exported all ${auditLogs.length} audit logs`);
+      toast.success(`Exported all ${auditLogs?.length} audit logs`);
     }
   };
 
@@ -183,7 +184,7 @@ export function AdminAuditLogs() {
               />
             </div>
             <div className="flex gap-2">
-              <Select value={actionFilter} onValueChange={setActionFilter}>
+              <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setAuditPage(0); }}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Action" />
                 </SelectTrigger>
@@ -194,7 +195,7 @@ export function AdminAuditLogs() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={entityFilter} onValueChange={setEntityFilter}>
+              <Select value={entityFilter} onValueChange={(v) => { setEntityFilter(v); setAuditPage(0); }}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Entity Type" />
                 </SelectTrigger>
@@ -208,9 +209,10 @@ export function AdminAuditLogs() {
             </div>
           </div>
 
-          {auditLogsTruncated && (
+          {auditLogTotalCount > 0 && (
             <p className="text-sm text-muted-foreground mb-3">
-              Showing {auditLogs?.length} of {auditLogTotalCount} audit logs. Only the most recent {ADMIN_LOG_LIMIT} are displayed.
+              Showing {auditPage * ADMIN_LOG_LIMIT + 1}–{Math.min((auditPage + 1) * ADMIN_LOG_LIMIT, auditLogTotalCount)} of {auditLogTotalCount} audit logs.
+              {totalAuditPages > 1 && ` Page ${auditPage + 1} of ${totalAuditPages}.`}
             </p>
           )}
 
@@ -293,6 +295,31 @@ export function AdminAuditLogs() {
                   </TableBody>
                 </Table>
               </div>
+            {totalAuditPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Page {auditPage + 1} of {totalAuditPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={auditPage === 0 || isLoading}
+                    onClick={() => setAuditPage(p => Math.max(0, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={auditPage >= totalAuditPages - 1 || isLoading}
+                    onClick={() => setAuditPage(p => p + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
             </>
           ) : (
             <EmptyState title="No audit logs found" message="Audit logs will appear here once API activity occurs." />
