@@ -219,7 +219,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   };
 
-  const ALLOWED_EXTENSIONS = ".pdf, .jpg, .jpeg, .png, .gif, .doc, .docx, .xls, .xlsx";
+  const ALLOWED_EXTENSIONS = ".pdf, .jpg, .jpeg, .png, .doc, .docx, .xls, .xlsx";
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -407,14 +407,24 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
   const handleOpenDocument = async (doc: MatchDocument) => {
     try {
+      // Capture a blank tab synchronously (before the async call) to avoid popup blockers
+      const newTab = window.open("about:blank", "_blank", "noopener,noreferrer");
+
       const { data } = await apiFetch<{ data: { download_url: string } }>(
         `document-download/${doc.id}`
       );
 
-      window.open(data.download_url, "_blank", "noopener,noreferrer");
+      if (newTab) {
+        newTab.location.href = data.download_url;
+      } else {
+        // Fallback if popup was blocked: navigate current tab or download
+        window.open(data.download_url, "_blank", "noopener,noreferrer");
+      }
     } catch (err) {
       console.error("Error opening document:", err);
-      toast.error("Failed to open document");
+      toast.error("Failed to open document", {
+        description: "Try using the Download option instead.",
+      });
     }
   };
 
