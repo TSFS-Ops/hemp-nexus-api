@@ -295,6 +295,31 @@ export function AdminAuditLogs() {
                   </TableBody>
                 </Table>
               </div>
+            {totalAuditPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Page {auditPage + 1} of {totalAuditPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={auditPage === 0 || isLoading}
+                    onClick={() => setAuditPage(p => Math.max(0, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={auditPage >= totalAuditPages - 1 || isLoading}
+                    onClick={() => setAuditPage(p => p + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
             </>
           ) : (
             <EmptyState title="No audit logs found" message="Audit logs will appear here once API activity occurs." />
