@@ -499,14 +499,20 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   });
 
   it("8.2 — Non-admin cannot delete from user_roles", async () => {
-    const { error } = await ctx.buyer.client
+    const { error, count } = await ctx.buyer.client
       .from("user_roles")
-      .delete()
+      .delete({ count: "exact" })
       .eq("user_id", ctx.buyer.userId)
       .eq("role", "org_member");
 
-    // Should either error or affect 0 rows (RLS blocks)
-    expect(error?.code === "42501" || error !== null).toBe(true);
+    // RESTRICTIVE RLS silently filters — either error or 0 rows deleted
+    // Both prove the policy works: the role still exists
+    const { data: roles } = await ctx.buyer.client
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", ctx.buyer.userId);
+    const names = (roles ?? []).map((r: any) => r.role);
+    expect(names).toContain("org_member"); // Role was NOT deleted
   });
 
   // ═══════════════════════════════════════════════════════════════
