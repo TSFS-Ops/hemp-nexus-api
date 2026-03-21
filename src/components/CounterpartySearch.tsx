@@ -62,6 +62,10 @@ export default function CounterpartySearch() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialQuery = (searchParams.get("q") || "").trim();
+  const initialSide = searchParams.get("side") as "bid" | "offer" | null;
+  const initialPrice = searchParams.get("price") || "";
+  const initialVolume = searchParams.get("volume") || "";
+
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -74,6 +78,13 @@ export default function CounterpartySearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  // Structured bid/offer context from landing page
+  const [bidOfferContext, setBidOfferContext] = useState<{
+    side?: "bid" | "offer";
+    price?: string;
+    volume?: string;
+  }>({ side: initialSide || undefined, price: initialPrice, volume: initialVolume });
+
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
   // Restore pre-auth state on mount (when returning from auth flow)
@@ -85,9 +96,15 @@ export default function CounterpartySearch() {
     const preAuth = consumePreAuthState();
     if (preAuth?.query && !query) {
       setQuery(preAuth.query);
+      if (preAuth.side || preAuth.price || preAuth.volume) {
+        setBidOfferContext({ side: preAuth.side, price: preAuth.price, volume: preAuth.volume });
+      }
       setSearchParams((prev) => {
         const updated = new URLSearchParams(prev);
         updated.set("q", preAuth.query);
+        if (preAuth.side) updated.set("side", preAuth.side);
+        if (preAuth.price) updated.set("price", preAuth.price);
+        if (preAuth.volume) updated.set("volume", preAuth.volume);
         updated.delete("resume");
         return updated;
       }, { replace: true });
@@ -114,8 +131,10 @@ export default function CounterpartySearch() {
     setHasSearched(true);
 
     try {
+      // Map bid/offer side to search role: bid = buyer (looking for sellers), offer = seller (looking for buyers)
+      const role = bidOfferContext.side === "offer" ? "seller" : bidOfferContext.side === "bid" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20 }
+        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}) }
       });
 
       if (error) throw error;
@@ -260,16 +279,25 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: null,
-                price: null,
+                quantity: bidOfferContext.volume ? {
+                  amount: parseFloat(bidOfferContext.volume),
+                  unit: "MT",
+                } : null,
+                price: bidOfferContext.price ? {
+                  amount: parseFloat(bidOfferContext.price),
+                  currency: "USD",
+                } : null,
                 terms: null,
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
-                  isDraft: true,
-                  draftReason: "Created from search — commercial terms to be confirmed during negotiation.",
+                  isDraft: !bidOfferContext.price && !bidOfferContext.volume,
+                  draftReason: !bidOfferContext.price && !bidOfferContext.volume
+                    ? "Created from search — commercial terms to be confirmed during negotiation."
+                    : undefined,
+                  bidOfferSide: bidOfferContext.side || null,
                 }
               }),
             }
@@ -381,6 +409,22 @@ export default function CounterpartySearch() {
             >
               {parsedQuery.role === "buyer" ? "Buyer" : "Seller"}
             </Badge>
+            {bidOfferContext.volume && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                  {bidOfferContext.volume} MT
+                </Badge>
+              </>
+            )}
+            {bidOfferContext.price && (
+              <>
+                <span className="text-muted-foreground">@</span>
+                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                  ${bidOfferContext.price}
+                </Badge>
+              </>
+            )}
           </div>
         )}
 
@@ -513,16 +557,26 @@ export default function CounterpartySearch() {
         <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Create Draft Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
+              <AlertDialogTitle>Create {bidOfferContext.price || bidOfferContext.volume ? "" : "Draft "}Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
                 <p>
-                  You are about to create {selectedResults.size} draft match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
+                  You are about to create {selectedResults.size} match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
                 </p>
-                <p>
-                  <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
-                </p>
+                {bidOfferContext.price || bidOfferContext.volume ? (
+                  <p>
+                    <strong>Commercial terms from your bid/offer will be recorded:</strong>
+                    {bidOfferContext.volume && ` Quantity: ${bidOfferContext.volume} MT`}
+                    {bidOfferContext.price && ` · Price: $${bidOfferContext.price}`}
+                    {bidOfferContext.side && ` · Side: ${bidOfferContext.side.toUpperCase()}`}
+                    . You can amend these on the match detail page.
+                  </p>
+                ) : (
+                  <p>
+                    <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Creating a draft match does not create any financial obligation or deduct credits.
+                  Creating a match does not create any financial obligation or deduct credits.
                 </p>
               </AlertDialogDescription>
             </AlertDialogHeader>
