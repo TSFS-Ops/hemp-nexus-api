@@ -279,24 +279,32 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: bidOfferContext.volume ? {
-                  amount: parseFloat(bidOfferContext.volume),
-                  unit: "MT",
-                } : null,
-                price: bidOfferContext.price ? {
-                  amount: parseFloat(bidOfferContext.price),
-                  currency: "USD",
-                } : null,
+                quantity: (() => {
+                  const v = bidOfferContext.volume ? parseFloat(bidOfferContext.volume) : NaN;
+                  return !isNaN(v) && v > 0 ? { amount: v, unit: "MT" } : null;
+                })(),
+                price: (() => {
+                  const p = bidOfferContext.price ? parseFloat(bidOfferContext.price) : NaN;
+                  return !isNaN(p) && p > 0 ? { amount: p, currency: "USD" } : null;
+                })(),
                 terms: null,
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
-                  isDraft: !bidOfferContext.price && !bidOfferContext.volume,
-                  draftReason: !bidOfferContext.price && !bidOfferContext.volume
-                    ? "Created from search — commercial terms to be confirmed during negotiation."
-                    : undefined,
+                  isDraft: (() => {
+                    const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
+                    const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                    return !hasValidPrice && !hasValidVolume;
+                  })(),
+                  draftReason: (() => {
+                    const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
+                    const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                    return !hasValidPrice && !hasValidVolume
+                      ? "Created from search — commercial terms to be confirmed during negotiation."
+                      : undefined;
+                  })(),
                   bidOfferSide: bidOfferContext.side || null,
                 }
               }),
