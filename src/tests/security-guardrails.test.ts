@@ -77,9 +77,9 @@ describe('Security Guardrails', () => {
     expect(typeof result.email).toBe('string');
   });
 
-  it('demo mode returns synthetic org', () => {
-    const result = redactOrg({ name: 'Real Corp', id: 'real-id' }, 'demo');
-    expect(result.name).toBe('Demo Organization');
+  it('client mode redacts org data', () => {
+    const result = redactOrg({ name: 'Real Corp', id: 'real-id' }, 'client');
+    expect(typeof result.name).toBe('string');
   });
 
   // Secret Field Protection
@@ -126,9 +126,9 @@ describe('Security Guardrails', () => {
   });
 
   // Match Redaction
-  it('demo match is synthetic', () => {
-    const result = redactMatch(mockMatch, 'demo');
-    expect(result.id).toBe('00000000-0000-0000-0000-000000000000');
+  it('client match redacts counterparty data', () => {
+    const result = redactMatch(mockMatch, 'client', 'different-org-id');
+    expect(result.price_amount).toBe('[REDACTED]');
   });
 
   it('client cannot see other org trade secrets', () => {
@@ -137,9 +137,9 @@ describe('Security Guardrails', () => {
   });
 
   // Evidence Pack
-  it('demo evidence is synthetic', () => {
-    const evidence = generateEvidencePack(mockMatch, [], [], 'demo');
-    expect(evidence.match_id).toBe('00000000-0000-0000-0000-000000000000');
+  it('evidence pack returns empty when no match provided', () => {
+    const evidence = generateEvidencePack(null, [], [], 'client');
+    expect(evidence.status).toBe('unavailable');
   });
 
   it('evidence pack has correct sensitivity level', () => {

@@ -75,14 +75,15 @@ async function executeOsintCrawl(
   const sources: string[] = [];
   const results: Record<string, unknown> = {};
 
-  if (searchProvider === "mock" || !searchApiKey) {
-    // Mock mode for development/testing
-    newsCount = Math.floor(Math.random() * 15);
-    socialCount = Math.floor(Math.random() * 10);
-    webCount = Math.floor(Math.random() * 20);
-    entityConfidence = 0.5 + Math.random() * 0.5;
-    sources.push("mock");
-    results.mock = true;
+  if (!searchApiKey) {
+    // No API key configured — return zeros instead of fake data
+    newsCount = 0;
+    socialCount = 0;
+    webCount = 0;
+    entityConfidence = 0;
+    sources.push("none");
+    results.unavailable = true;
+    results.reason = "SEARCH_API_KEY not configured";
   } else {
     // Use real search infrastructure
     try {

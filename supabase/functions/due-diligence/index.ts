@@ -5,12 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ── Mock sanctions list (swap for real provider in production) ──
-const MOCK_SANCTIONS_LIST = [
-  { name: "Test Sanctioned Entity", type: "entity", list: "OFAC SDN" },
-  { name: "John Sanctioned", type: "individual", list: "UN Sanctions" },
-  { name: "Sanctioned Corp Ltd", type: "entity", list: "EU Sanctions" },
-];
+// ── Sanctions screening placeholder ──
+// Real sanctions screening requires IDV/SAN provider integration (excluded scope: IDV-001, SAN-001/002).
+// When DILISENSE_API_KEY is configured, the dilisense-screen function handles live screening.
+// This empty list ensures no false positives from mock data.
+const SANCTIONS_HITS: { name: string; type: string; list: string }[] = [];
 
 // ── Default risk weights ──
 const DEFAULT_WEIGHTS = {
@@ -193,9 +192,9 @@ Deno.serve(async (req: Request) => {
 
       const results: any[] = [];
 
-      // Screen each director against mock sanctions list
+      // Screen each director against sanctions list (empty until live provider configured)
       for (const director of (directors || [])) {
-        const matches = MOCK_SANCTIONS_LIST.filter(s => fuzzyMatch(s.name, director.full_name));
+        const matches = SANCTIONS_HITS.filter(s => fuzzyMatch(s.name, director.full_name));
         results.push({
           screening_type: "sanctions",
           org_id: targetOrg,
@@ -221,7 +220,7 @@ Deno.serve(async (req: Request) => {
       // If no directors, run org-level screening
       if (!directors || directors.length === 0) {
         const { data: org } = await admin.from("organizations").select("name").eq("id", targetOrg).single();
-        const matches = MOCK_SANCTIONS_LIST.filter(s => fuzzyMatch(s.name, org?.name || ""));
+        const matches = SANCTIONS_HITS.filter(s => fuzzyMatch(s.name, org?.name || ""));
         results.push({
           screening_type: "sanctions",
           org_id: targetOrg,

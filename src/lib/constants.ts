@@ -24,10 +24,6 @@ export const PLATFORM_ADMIN_ROLES: readonly string[] = [
   APP_ROLES.ADMIN,
 ] as const;
 
-/** Roles permitted to run the checkpoint demo */
-export const CHECKPOINT_DEMO_ROLES: readonly string[] = [
-  'platform_admin', 'admin', 'director', 'api_admin',
-] as const;
 
 // ─── Routes ─────────────────────────────────────────────────────────
 export const ROUTES = {
@@ -108,8 +104,6 @@ export const RISK_BAND = {
 } as const;
 
 // ─── Timing constants ───────────────────────────────────────────────
-/** Delay between checkpoint demo steps (ms) */
-export const CHECKPOINT_STEP_DELAY_MS = 500;
 
 /** How long "Copied!" stays visible (ms) */
 export const COPY_FEEDBACK_DURATION_MS = 2000;

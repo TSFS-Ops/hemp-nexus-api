@@ -115,7 +115,7 @@ export const PII_TABLES = [
 ] as const;
 
 // Viewer roles for evidence packs
-export type ViewerRole = 'demo' | 'client' | 'admin' | 'auditor';
+export type ViewerRole = 'client' | 'admin' | 'auditor';
 
 // Evidence sensitivity levels
 export type SensitivityLevel = 'public' | 'client' | 'admin';
