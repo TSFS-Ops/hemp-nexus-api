@@ -126,9 +126,9 @@ describe('Security Guardrails', () => {
   });
 
   // Match Redaction
-  it('demo match is synthetic', () => {
-    const result = redactMatch(mockMatch, 'demo');
-    expect(result.id).toBe('00000000-0000-0000-0000-000000000000');
+  it('client match redacts counterparty data', () => {
+    const result = redactMatch(mockMatch, 'client', 'different-org-id');
+    expect(result.price_amount).toBe('[REDACTED]');
   });
 
   it('client cannot see other org trade secrets', () => {
