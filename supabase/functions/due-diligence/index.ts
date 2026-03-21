@@ -220,7 +220,7 @@ Deno.serve(async (req: Request) => {
       // If no directors, run org-level screening
       if (!directors || directors.length === 0) {
         const { data: org } = await admin.from("organizations").select("name").eq("id", targetOrg).single();
-        const matches = MOCK_SANCTIONS_LIST.filter(s => fuzzyMatch(s.name, org?.name || ""));
+        const matches = SANCTIONS_HITS.filter(s => fuzzyMatch(s.name, org?.name || ""));
         results.push({
           screening_type: "sanctions",
           org_id: targetOrg,
