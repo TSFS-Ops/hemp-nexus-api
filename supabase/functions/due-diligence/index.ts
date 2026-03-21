@@ -192,9 +192,9 @@ Deno.serve(async (req: Request) => {
 
       const results: any[] = [];
 
-      // Screen each director against mock sanctions list
+      // Screen each director against sanctions list (empty until live provider configured)
       for (const director of (directors || [])) {
-        const matches = MOCK_SANCTIONS_LIST.filter(s => fuzzyMatch(s.name, director.full_name));
+        const matches = SANCTIONS_HITS.filter(s => fuzzyMatch(s.name, director.full_name));
         results.push({
           screening_type: "sanctions",
           org_id: targetOrg,
