@@ -114,3 +114,6 @@ verify_jwt = false
 
 [functions.data-retention]
 verify_jwt = false
+
+[functions.document-review]
+verify_jwt = false

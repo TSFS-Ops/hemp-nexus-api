@@ -32,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -49,7 +50,9 @@ import {
   History,
   Lock,
   Users,
-  EyeOff
+  EyeOff,
+  RefreshCw,
+  ClipboardCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
@@ -74,6 +77,11 @@ interface MatchDocument {
   visibility: string;
   valid_from: string | null;
   valid_to: string | null;
+  version?: number;
+  supersedes_document_id?: string | null;
+  verified_at?: string | null;
+  verified_by?: string | null;
+  verification_notes?: string | null;
 }
 
 interface MatchDocumentsProps {
@@ -125,6 +133,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
   const [accessLogsDoc, setAccessLogsDoc] = useState<MatchDocument | null>(null);
+  const [replacingDoc, setReplacingDoc] = useState<MatchDocument | null>(null);
 
   // Draft persistence for upload form fields (file itself cannot be persisted)
   const getCurrentUploadDraft = useCallback((): UploadDraft | null => {
@@ -367,7 +376,22 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         },
       });
 
-      toast.success("Document uploaded successfully");
+      // If this is a replacement upload, link it to the old version
+      if (replacingDoc) {
+        try {
+          await apiFetch(`document-review/${replacingDoc.id}/replace`, {
+            method: "POST",
+            body: JSON.stringify({ new_document_id: docId }),
+          });
+          toast.success(`Document replaced. Version ${(replacingDoc.version || 1) + 1} is now active.`);
+        } catch (replaceErr) {
+          console.error("Version linking failed:", replaceErr);
+          toast.warning("Document uploaded but version linking failed. Contact support.");
+        }
+      } else {
+        toast.success("Document uploaded successfully");
+      }
+
       resetForm();
       fetchDocuments();
     } catch (err: unknown) {
@@ -386,6 +410,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     setTitle("");
     setNotes("");
     setVisibility("private");
+    setReplacingDoc(null);
     clearUploadDraft();
   };
 
@@ -428,6 +453,29 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     }
   };
 
+  const handleRequestReview = async (doc: MatchDocument) => {
+    try {
+      await apiFetch(`document-review/${doc.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "request_review" }),
+      });
+      toast.success("Document submitted for review");
+      fetchDocuments();
+    } catch (err) {
+      console.error("Error requesting review:", err);
+      toast.error("Failed to submit for review");
+    }
+  };
+
+  const handleReplaceDocument = async (oldDoc: MatchDocument) => {
+    // Set up the upload form pre-filled for replacement
+    setReplacingDoc(oldDoc);
+    setDocType(oldDoc.doc_type);
+    setTitle(oldDoc.title || "");
+    setVisibility(oldDoc.visibility);
+    toast.info("Select a file to upload as a replacement. The current version will be archived.");
+  };
+
   const getStatusBadge = (status: string, expiryDate: string | null) => {
     if (expiryDate && new Date(expiryDate) < new Date()) {
       return <Badge variant="destructive">Expired</Badge>;
@@ -436,12 +484,18 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     switch (status) {
       case "uploaded":
         return <Badge variant="secondary">Uploaded</Badge>;
+      case "pending_review":
+        return <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">Pending Review</Badge>;
+      case "accepted":
+        return <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Accepted</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">Rejected</Badge>;
       case "verified":
         return <Badge variant="default">Verified</Badge>;
       case "revoked":
         return <Badge variant="destructive">Revoked</Badge>;
       case "archived":
-        return <Badge variant="outline">Archived</Badge>;
+        return <Badge variant="outline">Archived (Superseded)</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -503,8 +557,16 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               <Upload className="h-4 w-4" />
-              Upload Document
+              {replacingDoc ? `Replace: ${replacingDoc.title || replacingDoc.filename} (v${replacingDoc.version || 1})` : "Upload Document"}
             </h4>
+            {replacingDoc && (
+              <div className="flex items-center gap-2 p-2 rounded bg-muted text-sm">
+                <RefreshCw className="h-4 w-4 text-primary" />
+                <span>Uploading a replacement for version {replacingDoc.version || 1}. The previous version will be archived (read-only).</span>
+                <Button variant="ghost" size="sm" onClick={() => setReplacingDoc(null)} className="ml-auto">Cancel</Button>
+              </div>
+            )}
+            
             
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -645,13 +707,14 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 </TableHeader>
                 <TableBody>
                   {documents.map((doc) => (
-                    <TableRow key={doc.id} className={doc.status === "revoked" ? "opacity-60" : ""}>
+                    <TableRow key={doc.id} className={doc.status === "revoked" || doc.status === "archived" ? "opacity-60" : ""}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <span className="font-medium truncate max-w-[200px] block">
                               {doc.title || doc.filename}
+                              {(doc.version && doc.version > 1) ? <span className="text-xs text-muted-foreground ml-1">(v{doc.version})</span> : null}
                             </span>
                             {doc.title && (
                               <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
@@ -716,6 +779,21 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                               <History className="h-4 w-4 mr-2" />
                               Access History
                             </DropdownMenuItem>
+                            {doc.status !== "revoked" && doc.status !== "archived" && (
+                              <>
+                                <DropdownMenuSeparator />
+                                {(doc.status === "uploaded" || doc.status === "rejected") && (
+                                  <DropdownMenuItem onClick={() => handleRequestReview(doc)}>
+                                    <ClipboardCheck className="h-4 w-4 mr-2" />
+                                    Submit for Review
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => handleReplaceDocument(doc)}>
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Replace (New Version)
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
