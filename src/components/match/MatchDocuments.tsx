@@ -770,6 +770,21 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                               <History className="h-4 w-4 mr-2" />
                               Access History
                             </DropdownMenuItem>
+                            {doc.status !== "revoked" && doc.status !== "archived" && (
+                              <>
+                                <DropdownMenuSeparator />
+                                {(doc.status === "uploaded" || doc.status === "rejected") && (
+                                  <DropdownMenuItem onClick={() => handleRequestReview(doc)}>
+                                    <ClipboardCheck className="h-4 w-4 mr-2" />
+                                    Submit for Review
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => handleReplaceDocument(doc)}>
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Replace (New Version)
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
