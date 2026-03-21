@@ -407,6 +407,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     setTitle("");
     setNotes("");
     setVisibility("private");
+    setReplacingDoc(null);
     clearUploadDraft();
   };
 
