@@ -161,16 +161,6 @@ export function redactOrg(
     return deepRedact(org, { allowPII: true, allowTradeSecrets: true });
   }
 
-  const redacted = deepRedact(org);
-  
-  // For demo mode, also redact the org name
-  if (viewerRole === 'demo') {
-    return {
-      ...redacted,
-      name: 'Demo Organization',
-      id: '00000000-0000-0000-0000-000000000000',
-    };
-  }
 
   return redacted;
 }
