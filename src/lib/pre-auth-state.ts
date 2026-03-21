@@ -10,6 +10,10 @@ export interface PreAuthState {
   selectedIds: string[];
   pendingAction: "interested" | "publish_poi";
   returnTo: string;
+  /** Structured bid/offer fields from landing form */
+  side?: "bid" | "offer";
+  price?: string;
+  volume?: string;
 }
 
 export function savePreAuthState(state: PreAuthState) {

@@ -62,9 +62,17 @@ export default function Landing() {
     setLastQuery(queryString);
     setLastFormData(data);
 
+    // Build structured URL params so the dashboard search can use price/volume/side
+    const buildSearchParams = () => {
+      const p = new URLSearchParams({ q: queryString });
+      if (data.side) p.set("side", data.side);
+      if (data.price) p.set("price", data.price);
+      if (data.volume) p.set("volume", data.volume);
+      return p;
+    };
+
     if (isAuthenticated) {
-      const params = new URLSearchParams({ q: queryString });
-      window.location.assign(`/dashboard/search?${params.toString()}`);
+      window.location.assign(`/dashboard/search?${buildSearchParams().toString()}`);
       return;
     }
 
@@ -73,6 +81,9 @@ export default function Landing() {
       selectedIds: [],
       pendingAction: "interested",
       returnTo: "/",
+      side: data.side,
+      price: data.price,
+      volume: data.volume,
     });
 
     setIsSearching(true);
