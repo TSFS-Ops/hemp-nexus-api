@@ -74,6 +74,11 @@ interface MatchDocument {
   visibility: string;
   valid_from: string | null;
   valid_to: string | null;
+  version?: number;
+  supersedes_document_id?: string | null;
+  verified_at?: string | null;
+  verified_by?: string | null;
+  verification_notes?: string | null;
 }
 
 interface MatchDocumentsProps {
