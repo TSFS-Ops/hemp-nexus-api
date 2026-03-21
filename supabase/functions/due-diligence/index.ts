@@ -5,12 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ── Mock sanctions list (swap for real provider in production) ──
-const MOCK_SANCTIONS_LIST = [
-  { name: "Test Sanctioned Entity", type: "entity", list: "OFAC SDN" },
-  { name: "John Sanctioned", type: "individual", list: "UN Sanctions" },
-  { name: "Sanctioned Corp Ltd", type: "entity", list: "EU Sanctions" },
-];
+// ── Sanctions screening placeholder ──
+// Real sanctions screening requires IDV/SAN provider integration (excluded scope: IDV-001, SAN-001/002).
+// When DILISENSE_API_KEY is configured, the dilisense-screen function handles live screening.
+// This empty list ensures no false positives from mock data.
+const SANCTIONS_HITS: { name: string; type: string; list: string }[] = [];
 
 // ── Default risk weights ──
 const DEFAULT_WEIGHTS = {
