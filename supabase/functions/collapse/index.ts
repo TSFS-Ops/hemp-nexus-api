@@ -151,7 +151,6 @@ Deno.serve(async (req: Request) => {
       idempotency_key,
       signed_payload,
       signature_key_id,
-      public_key_jwk,
       match_id,
       metadata,
     } = body;
