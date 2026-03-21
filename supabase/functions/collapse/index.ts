@@ -151,7 +151,6 @@ Deno.serve(async (req: Request) => {
       idempotency_key,
       signed_payload,
       signature_key_id,
-      public_key_jwk,
       match_id,
       metadata,
     } = body;
@@ -397,23 +396,63 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── ECDSA signature verification ──
+    // ── ECDSA signature verification via persistent key registry ──
+    if (!signature_key_id) {
+      throw new ApiException(
+        "VALIDATION_ERROR",
+        "signature_key_id is required. Register your signing key via the /signing-keys endpoint first.",
+        400
+      );
+    }
+
+    // Look up the public key from the server-side registry — never trust client-supplied keys
+    const { data: registeredKey, error: keyLookupErr } = await adminClient
+      .from("signing_keys")
+      .select("id, public_key_jwk, status, algorithm")
+      .eq("org_id", org_id)
+      .eq("key_id", signature_key_id)
+      .maybeSingle();
+
+    if (keyLookupErr) {
+      throw new ApiException("INTERNAL_ERROR", "Failed to look up signing key", 500);
+    }
+
+    if (!registeredKey) {
+      throw new ApiException(
+        "KEY_NOT_FOUND",
+        `Signing key '${signature_key_id}' is not registered for this organisation. Register it via POST /signing-keys.`,
+        404,
+        { signature_key_id }
+      );
+    }
+
+    if (registeredKey.status !== "active") {
+      throw new ApiException(
+        "KEY_REVOKED",
+        `Signing key '${signature_key_id}' has status '${registeredKey.status}'. Only active keys may be used for collapse.`,
+        403,
+        { signature_key_id, key_status: registeredKey.status }
+      );
+    }
+
     let signatureValid = false;
-    if (public_key_jwk && signed_payload) {
-      const parts = signed_payload.split(":");
-      if (parts.length >= 2) {
-        const signatureB64 = parts[0];
-        const canonicalPayload = parts.slice(1).join(":");
-        signatureValid = await verifyEcdsaSignature(canonicalPayload, signatureB64, public_key_jwk);
-      }
+    const parts = signed_payload.split(":");
+    if (parts.length >= 2) {
+      const signatureB64 = parts[0];
+      const canonicalPayload = parts.slice(1).join(":");
+      signatureValid = await verifyEcdsaSignature(
+        canonicalPayload,
+        signatureB64,
+        registeredKey.public_key_jwk as JsonWebKey
+      );
     }
 
     if (!signatureValid) {
       throw new ApiException(
         "SIGNATURE_INVALID",
-        "Invalid ECDSA signature — collapse rejected",
+        "ECDSA signature verification failed against the registered public key. Collapse rejected.",
         400,
-        { signatureValid: false }
+        { signatureValid: false, signature_key_id }
       );
     }
 
