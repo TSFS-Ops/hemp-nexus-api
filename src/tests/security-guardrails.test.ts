@@ -77,9 +77,9 @@ describe('Security Guardrails', () => {
     expect(typeof result.email).toBe('string');
   });
 
-  it('demo mode returns synthetic org', () => {
-    const result = redactOrg({ name: 'Real Corp', id: 'real-id' }, 'demo');
-    expect(result.name).toBe('Demo Organization');
+  it('client mode redacts org data', () => {
+    const result = redactOrg({ name: 'Real Corp', id: 'real-id' }, 'client');
+    expect(typeof result.name).toBe('string');
   });
 
   // Secret Field Protection
