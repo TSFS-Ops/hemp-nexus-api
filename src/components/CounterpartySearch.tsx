@@ -96,9 +96,15 @@ export default function CounterpartySearch() {
     const preAuth = consumePreAuthState();
     if (preAuth?.query && !query) {
       setQuery(preAuth.query);
+      if (preAuth.side || preAuth.price || preAuth.volume) {
+        setBidOfferContext({ side: preAuth.side, price: preAuth.price, volume: preAuth.volume });
+      }
       setSearchParams((prev) => {
         const updated = new URLSearchParams(prev);
         updated.set("q", preAuth.query);
+        if (preAuth.side) updated.set("side", preAuth.side);
+        if (preAuth.price) updated.set("price", preAuth.price);
+        if (preAuth.volume) updated.set("volume", preAuth.volume);
         updated.delete("resume");
         return updated;
       }, { replace: true });
