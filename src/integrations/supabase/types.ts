@@ -2319,6 +2319,7 @@ export type Database = {
           mime_type: string | null
           notes: string | null
           org_id: string
+          rejection_reason: string | null
           sha256_hash: string
           status: string
           storage_path: string
@@ -2346,6 +2347,7 @@ export type Database = {
           mime_type?: string | null
           notes?: string | null
           org_id: string
+          rejection_reason?: string | null
           sha256_hash: string
           status?: string
           storage_path: string
@@ -2373,6 +2375,7 @@ export type Database = {
           mime_type?: string | null
           notes?: string | null
           org_id?: string
+          rejection_reason?: string | null
           sha256_hash?: string
           status?: string
           storage_path?: string
