@@ -256,23 +256,21 @@ export function generateEvidencePack(
   viewerRole: ViewerRole,
   viewerOrgId?: string
 ): EvidencePack {
-  // Demo mode: always return synthetic data
-  if (viewerRole === 'demo' || !match) {
-    return generateDemoEvidence();
+  // No match data available
+  if (!match) {
+    return generateEmptyEvidence();
   }
   
   // Admin/auditor: full access
   if (viewerRole === 'admin' || viewerRole === 'auditor') {
     const evidence = generateAdminEvidence(match, events, documents);
-    // Safety check: verify no secrets leaked
     assertNoSecrets(evidence, 'admin evidence pack');
     return evidence;
   }
   
   // Client: restricted view
   if (!viewerOrgId) {
-    // If no org ID provided, treat as demo
-    return generateDemoEvidence();
+    return generateEmptyEvidence();
   }
   
   const evidence = generateClientEvidence(match, events, documents, viewerOrgId);
