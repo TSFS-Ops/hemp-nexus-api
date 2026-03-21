@@ -287,9 +287,6 @@ export function canAccessEvidence(
   viewerRole: ViewerRole,
   viewerOrgId?: string
 ): boolean {
-  // Demo can see demo data only
-  if (viewerRole === 'demo') return true;
-  
   // Admin/auditor can see all
   if (viewerRole === 'admin' || viewerRole === 'auditor') return true;
   

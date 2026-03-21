@@ -198,34 +198,6 @@ export function redactEvidencePack(
   viewerRole: ViewerRole = 'client',
   viewerOrgId?: string
 ): Record<string, unknown> {
-  // Demo: completely synthetic
-  if (viewerRole === 'demo') {
-    return {
-      match_id: '00000000-0000-0000-0000-000000000000',
-      status: 'settled',
-      match_hash: '[DEMO_EVIDENCE_HASH]',
-      event_timeline: [
-        {
-          event_type: 'match.created',
-          created_at: new Date().toISOString(),
-          payload_hash: '[DEMO_EVENT_HASH_1]',
-        },
-        {
-          event_type: 'match.settled',
-          created_at: new Date().toISOString(),
-          payload_hash: '[DEMO_EVENT_HASH_2]',
-        },
-      ],
-      match_data: {
-        commodity: 'Sample Commodity',
-        quantity: { amount: 1000, unit: 'kg' },
-        price: REDACTED,
-        buyer_name: 'Demo Buyer',
-        seller_name: 'Demo Seller',
-      },
-    };
-  }
-
   // Admin/auditor: full evidence access
   if (viewerRole === 'admin' || viewerRole === 'auditor') {
     return deepRedact(evidence, { allowPII: true, allowTradeSecrets: true });
