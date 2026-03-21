@@ -541,16 +541,26 @@ export default function CounterpartySearch() {
         <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Create Draft Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
+              <AlertDialogTitle>Create {bidOfferContext.price || bidOfferContext.volume ? "" : "Draft "}Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
                 <p>
-                  You are about to create {selectedResults.size} draft match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
+                  You are about to create {selectedResults.size} match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
                 </p>
-                <p>
-                  <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
-                </p>
+                {bidOfferContext.price || bidOfferContext.volume ? (
+                  <p>
+                    <strong>Commercial terms from your bid/offer will be recorded:</strong>
+                    {bidOfferContext.volume && ` Quantity: ${bidOfferContext.volume} MT`}
+                    {bidOfferContext.price && ` · Price: $${bidOfferContext.price}`}
+                    {bidOfferContext.side && ` · Side: ${bidOfferContext.side.toUpperCase()}`}
+                    . You can amend these on the match detail page.
+                  </p>
+                ) : (
+                  <p>
+                    <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Creating a draft match does not create any financial obligation or deduct credits.
+                  Creating a match does not create any financial obligation or deduct credits.
                 </p>
               </AlertDialogDescription>
             </AlertDialogHeader>
