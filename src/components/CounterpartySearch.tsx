@@ -62,6 +62,10 @@ export default function CounterpartySearch() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialQuery = (searchParams.get("q") || "").trim();
+  const initialSide = searchParams.get("side") as "bid" | "offer" | null;
+  const initialPrice = searchParams.get("price") || "";
+  const initialVolume = searchParams.get("volume") || "";
+
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -73,6 +77,13 @@ export default function CounterpartySearch() {
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Structured bid/offer context from landing page
+  const [bidOfferContext, setBidOfferContext] = useState<{
+    side?: "bid" | "offer";
+    price?: string;
+    volume?: string;
+  }>({ side: initialSide || undefined, price: initialPrice, volume: initialVolume });
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
