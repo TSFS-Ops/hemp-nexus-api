@@ -24,10 +24,6 @@ export const PLATFORM_ADMIN_ROLES: readonly string[] = [
   APP_ROLES.ADMIN,
 ] as const;
 
-/** Roles permitted to run the checkpoint demo */
-export const CHECKPOINT_DEMO_ROLES: readonly string[] = [
-  'platform_admin', 'admin', 'director', 'api_admin',
-] as const;
 
 // ─── Routes ─────────────────────────────────────────────────────────
 export const ROUTES = {
