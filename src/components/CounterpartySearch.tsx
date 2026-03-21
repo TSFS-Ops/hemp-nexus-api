@@ -417,7 +417,7 @@ export default function CounterpartySearch() {
             >
               {parsedQuery.role === "buyer" ? "Buyer" : "Seller"}
             </Badge>
-            {bidOfferContext.volume && (
+            {bidOfferContext.volume && !isNaN(parseFloat(bidOfferContext.volume)) && parseFloat(bidOfferContext.volume) > 0 && (
               <>
                 <span className="text-muted-foreground">·</span>
                 <Badge variant="outline" className="text-[10px] sm:text-xs">
@@ -425,7 +425,7 @@ export default function CounterpartySearch() {
                 </Badge>
               </>
             )}
-            {bidOfferContext.price && (
+            {bidOfferContext.price && !isNaN(parseFloat(bidOfferContext.price)) && parseFloat(bidOfferContext.price) > 0 && (
               <>
                 <span className="text-muted-foreground">@</span>
                 <Badge variant="outline" className="text-[10px] sm:text-xs">
