@@ -161,8 +161,7 @@ export function redactOrg(
     return deepRedact(org, { allowPII: true, allowTradeSecrets: true });
   }
 
-
-  return redacted;
+  return deepRedact(org);
 }
 
 /**

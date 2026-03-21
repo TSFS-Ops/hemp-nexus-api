@@ -137,9 +137,9 @@ describe('Security Guardrails', () => {
   });
 
   // Evidence Pack
-  it('demo evidence is synthetic', () => {
-    const evidence = generateEvidencePack(mockMatch, [], [], 'demo');
-    expect(evidence.match_id).toBe('00000000-0000-0000-0000-000000000000');
+  it('evidence pack returns empty when no match provided', () => {
+    const evidence = generateEvidencePack(null, [], [], 'client');
+    expect(evidence.status).toBe('unavailable');
   });
 
   it('evidence pack has correct sensitivity level', () => {
