@@ -557,7 +557,15 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               <Upload className="h-4 w-4" />
-              Upload Document
+              {replacingDoc ? `Replace: ${replacingDoc.title || replacingDoc.filename} (v${replacingDoc.version || 1})` : "Upload Document"}
+            </h4>
+            {replacingDoc && (
+              <div className="flex items-center gap-2 p-2 rounded bg-muted text-sm">
+                <RefreshCw className="h-4 w-4 text-primary" />
+                <span>Uploading a replacement for version {replacingDoc.version || 1}. The previous version will be archived (read-only).</span>
+                <Button variant="ghost" size="sm" onClick={() => setReplacingDoc(null)} className="ml-auto">Cancel</Button>
+              </div>
+            )}
             </h4>
             
             <div className="grid gap-4 sm:grid-cols-2">
