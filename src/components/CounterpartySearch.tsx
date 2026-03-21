@@ -279,16 +279,25 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: null,
-                price: null,
+                quantity: bidOfferContext.volume ? {
+                  amount: parseFloat(bidOfferContext.volume),
+                  unit: "MT",
+                } : null,
+                price: bidOfferContext.price ? {
+                  amount: parseFloat(bidOfferContext.price),
+                  currency: "USD",
+                } : null,
                 terms: null,
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
-                  isDraft: true,
-                  draftReason: "Created from search — commercial terms to be confirmed during negotiation.",
+                  isDraft: !bidOfferContext.price && !bidOfferContext.volume,
+                  draftReason: !bidOfferContext.price && !bidOfferContext.volume
+                    ? "Created from search — commercial terms to be confirmed during negotiation."
+                    : undefined,
+                  bidOfferSide: bidOfferContext.side || null,
                 }
               }),
             }
