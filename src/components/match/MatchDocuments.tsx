@@ -707,13 +707,14 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 </TableHeader>
                 <TableBody>
                   {documents.map((doc) => (
-                    <TableRow key={doc.id} className={doc.status === "revoked" ? "opacity-60" : ""}>
+                    <TableRow key={doc.id} className={doc.status === "revoked" || doc.status === "archived" ? "opacity-60" : ""}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <span className="font-medium truncate max-w-[200px] block">
                               {doc.title || doc.filename}
+                              {(doc.version && doc.version > 1) ? <span className="text-xs text-muted-foreground ml-1">(v{doc.version})</span> : null}
                             </span>
                             {doc.title && (
                               <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
