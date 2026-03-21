@@ -173,25 +173,6 @@ export function redactMatch(
   viewerRole: ViewerRole = 'client',
   viewerOrgId?: string
 ): Record<string, unknown> {
-  // Demo mode: fully synthetic data
-  if (viewerRole === 'demo') {
-    return {
-      id: '00000000-0000-0000-0000-000000000000',
-      status: match.status || 'matched',
-      commodity: 'Sample Commodity',
-      quantity_amount: 1000,
-      quantity_unit: 'kg',
-      price_amount: REDACTED,
-      price_currency: 'USD',
-      buyer_name: 'Demo Buyer Corp',
-      seller_name: 'Demo Seller Ltd',
-      buyer_id: REDACTED_ID,
-      seller_id: REDACTED_ID,
-      created_at: new Date().toISOString(),
-      hash: '[DEMO_HASH]',
-    };
-  }
-
   // Admin: full access except raw secrets
   if (viewerRole === 'admin' || viewerRole === 'auditor') {
     return deepRedact(match, { allowPII: true, allowTradeSecrets: true });
