@@ -32,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -49,7 +50,9 @@ import {
   History,
   Lock,
   Users,
-  EyeOff
+  EyeOff,
+  RefreshCw,
+  ClipboardCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
