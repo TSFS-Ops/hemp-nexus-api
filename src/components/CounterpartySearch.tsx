@@ -409,6 +409,22 @@ export default function CounterpartySearch() {
             >
               {parsedQuery.role === "buyer" ? "Buyer" : "Seller"}
             </Badge>
+            {bidOfferContext.volume && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                  {bidOfferContext.volume} MT
+                </Badge>
+              </>
+            )}
+            {bidOfferContext.price && (
+              <>
+                <span className="text-muted-foreground">@</span>
+                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                  ${bidOfferContext.price}
+                </Badge>
+              </>
+            )}
           </div>
         )}
 
