@@ -104,8 +104,6 @@ export const RISK_BAND = {
 } as const;
 
 // ─── Timing constants ───────────────────────────────────────────────
-/** Delay between checkpoint demo steps (ms) */
-export const CHECKPOINT_STEP_DELAY_MS = 500;
 
 /** How long "Copied!" stays visible (ms) */
 export const COPY_FEEDBACK_DURATION_MS = 2000;
