@@ -3853,6 +3853,66 @@ export type Database = {
           },
         ]
       }
+      signing_keys: {
+        Row: {
+          algorithm: string
+          created_at: string
+          created_by: string | null
+          id: string
+          key_id: string
+          org_id: string
+          public_key_jwk: Json
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          rotated_to: string | null
+          status: string
+        }
+        Insert: {
+          algorithm?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_id: string
+          org_id: string
+          public_key_jwk: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          rotated_to?: string | null
+          status?: string
+        }
+        Update: {
+          algorithm?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_id?: string
+          org_id?: string
+          public_key_jwk?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          rotated_to?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signing_keys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signing_keys_rotated_to_fkey"
+            columns: ["rotated_to"]
+            isOneToOne: false
+            referencedRelation: "signing_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_invitations: {
         Row: {
           accepted_at: string | null
