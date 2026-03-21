@@ -5,7 +5,6 @@
  * Never return raw match rows or evidence data directly.
  * 
  * Evidence Views:
- * - demo: Fully synthetic, never real data
  * - client: Only what the client org is allowed to see
  * - admin/auditor: Full detail for compliance purposes
  */
