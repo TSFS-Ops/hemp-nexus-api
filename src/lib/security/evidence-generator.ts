@@ -63,64 +63,31 @@ export interface EvidencePack {
 }
 
 /**
- * Demo evidence pack - completely synthetic, safe for public display
+ * Empty evidence pack returned when no match data is available
  */
-function generateDemoEvidence(): EvidencePack {
+function generateEmptyEvidence(): EvidencePack {
   const now = new Date();
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  
   return {
-    match_id: '00000000-0000-0000-0000-000000000000',
-    status: 'settled',
-    match_hash: 'demo_hash_abc123def456',
+    match_id: '',
+    status: 'unavailable',
+    match_hash: '',
     sensitivity_level: 'public',
     generated_at: now.toISOString(),
-    generated_for_role: 'demo',
-    
+    generated_for_role: 'client',
     match_summary: {
-      commodity: 'Sample Agricultural Product',
-      quantity: { amount: 1000, unit: 'MT' },
-      price: { amount: '[DEMO]', currency: 'USD' },
-      buyer: { name: 'Demo Buyer Corporation' },
-      seller: { name: 'Demo Seller Limited' },
-      created_at: yesterday.toISOString(),
-      settled_at: now.toISOString(),
+      commodity: 'N/A',
+      quantity: { amount: 0, unit: 'N/A' },
+      buyer: { name: 'N/A' },
+      seller: { name: 'N/A' },
+      created_at: now.toISOString(),
     },
-    
-    event_timeline: [
-      {
-        event_type: 'match.created',
-        created_at: yesterday.toISOString(),
-        payload_hash: 'demo_event_hash_001',
-      },
-      {
-        event_type: 'match.confirmed',
-        created_at: new Date(yesterday.getTime() + 3600000).toISOString(),
-        payload_hash: 'demo_event_hash_002',
-      },
-      {
-        event_type: 'match.settled',
-        created_at: now.toISOString(),
-        payload_hash: 'demo_event_hash_003',
-      },
-    ],
-    
-    documents: [
-      {
-        id: 'demo-doc-001',
-        doc_type: 'invoice',
-        filename: 'demo_invoice.pdf',
-        sha256_hash: 'demo_doc_hash_001',
-        status: 'verified',
-        uploaded_at: now.toISOString(),
-      },
-    ],
-    
+    event_timeline: [],
+    documents: [],
     chain_verification: {
-      is_valid: true,
-      event_count: 3,
-      first_event_hash: 'demo_event_hash_001',
-      last_event_hash: 'demo_event_hash_003',
+      is_valid: false,
+      event_count: 0,
+      first_event_hash: '',
+      last_event_hash: '',
     },
   };
 }
