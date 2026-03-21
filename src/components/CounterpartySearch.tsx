@@ -279,24 +279,32 @@ export default function CounterpartySearch() {
                   name: selectedResult.title 
                 },
                 commodity: parsedQuery?.product || query,
-                quantity: bidOfferContext.volume ? {
-                  amount: parseFloat(bidOfferContext.volume),
-                  unit: "MT",
-                } : null,
-                price: bidOfferContext.price ? {
-                  amount: parseFloat(bidOfferContext.price),
-                  currency: "USD",
-                } : null,
+                quantity: (() => {
+                  const v = bidOfferContext.volume ? parseFloat(bidOfferContext.volume) : NaN;
+                  return !isNaN(v) && v > 0 ? { amount: v, unit: "MT" } : null;
+                })(),
+                price: (() => {
+                  const p = bidOfferContext.price ? parseFloat(bidOfferContext.price) : NaN;
+                  return !isNaN(p) && p > 0 ? { amount: p, currency: "USD" } : null;
+                })(),
                 terms: null,
                 metadata: { 
                   searchQuery: query, 
                   parsedQuery,
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
-                  isDraft: !bidOfferContext.price && !bidOfferContext.volume,
-                  draftReason: !bidOfferContext.price && !bidOfferContext.volume
-                    ? "Created from search — commercial terms to be confirmed during negotiation."
-                    : undefined,
+                  isDraft: (() => {
+                    const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
+                    const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                    return !hasValidPrice && !hasValidVolume;
+                  })(),
+                  draftReason: (() => {
+                    const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
+                    const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                    return !hasValidPrice && !hasValidVolume
+                      ? "Created from search — commercial terms to be confirmed during negotiation."
+                      : undefined;
+                  })(),
                   bidOfferSide: bidOfferContext.side || null,
                 }
               }),
@@ -409,7 +417,7 @@ export default function CounterpartySearch() {
             >
               {parsedQuery.role === "buyer" ? "Buyer" : "Seller"}
             </Badge>
-            {bidOfferContext.volume && (
+            {bidOfferContext.volume && !isNaN(parseFloat(bidOfferContext.volume)) && parseFloat(bidOfferContext.volume) > 0 && (
               <>
                 <span className="text-muted-foreground">·</span>
                 <Badge variant="outline" className="text-[10px] sm:text-xs">
@@ -417,7 +425,7 @@ export default function CounterpartySearch() {
                 </Badge>
               </>
             )}
-            {bidOfferContext.price && (
+            {bidOfferContext.price && !isNaN(parseFloat(bidOfferContext.price)) && parseFloat(bidOfferContext.price) > 0 && (
               <>
                 <span className="text-muted-foreground">@</span>
                 <Badge variant="outline" className="text-[10px] sm:text-xs">
@@ -557,24 +565,35 @@ export default function CounterpartySearch() {
         <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Create {bidOfferContext.price || bidOfferContext.volume ? "" : "Draft "}Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
+              <AlertDialogTitle>Create {(() => {
+                const vp = parseFloat(bidOfferContext.price || "");
+                const vv = parseFloat(bidOfferContext.volume || "");
+                return (!isNaN(vp) && vp > 0) || (!isNaN(vv) && vv > 0) ? "" : "Draft ";
+              })()}Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
                 <p>
                   You are about to create {selectedResults.size} match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
                 </p>
-                {bidOfferContext.price || bidOfferContext.volume ? (
-                  <p>
-                    <strong>Commercial terms from your bid/offer will be recorded:</strong>
-                    {bidOfferContext.volume && ` Quantity: ${bidOfferContext.volume} MT`}
-                    {bidOfferContext.price && ` · Price: $${bidOfferContext.price}`}
-                    {bidOfferContext.side && ` · Side: ${bidOfferContext.side.toUpperCase()}`}
-                    . You can amend these on the match detail page.
-                  </p>
-                ) : (
-                  <p>
-                    <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
-                  </p>
-                )}
+                {(() => {
+                  const validPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
+                  const validVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                  if (validPrice || validVolume) {
+                    return (
+                      <p>
+                        <strong>Commercial terms from your bid/offer will be recorded:</strong>
+                        {validVolume && ` Quantity: ${bidOfferContext.volume} MT`}
+                        {validPrice && ` · Price: $${bidOfferContext.price}`}
+                        {bidOfferContext.side && ` · Side: ${bidOfferContext.side.toUpperCase()}`}
+                        . You can amend these on the match detail page.
+                      </p>
+                    );
+                  }
+                  return (
+                    <p>
+                      <strong>This is a draft.</strong> No commercial terms (quantity, price, currency) will be recorded. You will need to add real commercial terms on the match detail page before confirming intent.
+                    </p>
+                  );
+                })()}
                 <p className="text-xs text-muted-foreground">
                   Creating a match does not create any financial obligation or deduct credits.
                 </p>
