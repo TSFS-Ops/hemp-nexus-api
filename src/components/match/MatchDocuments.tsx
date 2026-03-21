@@ -130,6 +130,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
   const [accessLogsDoc, setAccessLogsDoc] = useState<MatchDocument | null>(null);
+  const [replacingDoc, setReplacingDoc] = useState<MatchDocument | null>(null);
 
   // Draft persistence for upload form fields (file itself cannot be persisted)
   const getCurrentUploadDraft = useCallback((): UploadDraft | null => {
