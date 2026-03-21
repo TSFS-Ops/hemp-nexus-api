@@ -373,7 +373,22 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         },
       });
 
-      toast.success("Document uploaded successfully");
+      // If this is a replacement upload, link it to the old version
+      if (replacingDoc) {
+        try {
+          await apiFetch(`document-review/${replacingDoc.id}/replace`, {
+            method: "POST",
+            body: JSON.stringify({ new_document_id: docId }),
+          });
+          toast.success(`Document replaced. Version ${(replacingDoc.version || 1) + 1} is now active.`);
+        } catch (replaceErr) {
+          console.error("Version linking failed:", replaceErr);
+          toast.warning("Document uploaded but version linking failed. Contact support.");
+        }
+      } else {
+        toast.success("Document uploaded successfully");
+      }
+
       resetForm();
       fetchDocuments();
     } catch (err: unknown) {
