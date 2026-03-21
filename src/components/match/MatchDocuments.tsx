@@ -433,6 +433,29 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     }
   };
 
+  const handleRequestReview = async (doc: MatchDocument) => {
+    try {
+      await apiFetch(`document-review/${doc.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "request_review" }),
+      });
+      toast.success("Document submitted for review");
+      fetchDocuments();
+    } catch (err) {
+      console.error("Error requesting review:", err);
+      toast.error("Failed to submit for review");
+    }
+  };
+
+  const handleReplaceDocument = async (oldDoc: MatchDocument) => {
+    // Set up the upload form pre-filled for replacement
+    setReplacingDoc(oldDoc);
+    setDocType(oldDoc.doc_type);
+    setTitle(oldDoc.title || "");
+    setVisibility(oldDoc.visibility);
+    toast.info("Select a file to upload as a replacement. The current version will be archived.");
+  };
+
   const getStatusBadge = (status: string, expiryDate: string | null) => {
     if (expiryDate && new Date(expiryDate) < new Date()) {
       return <Badge variant="destructive">Expired</Badge>;
@@ -441,12 +464,18 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     switch (status) {
       case "uploaded":
         return <Badge variant="secondary">Uploaded</Badge>;
+      case "pending_review":
+        return <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">Pending Review</Badge>;
+      case "accepted":
+        return <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Accepted</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">Rejected</Badge>;
       case "verified":
         return <Badge variant="default">Verified</Badge>;
       case "revoked":
         return <Badge variant="destructive">Revoked</Badge>;
       case "archived":
-        return <Badge variant="outline">Archived</Badge>;
+        return <Badge variant="outline">Archived (Superseded)</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
