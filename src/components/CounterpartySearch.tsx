@@ -131,8 +131,10 @@ export default function CounterpartySearch() {
     setHasSearched(true);
 
     try {
+      // Map bid/offer side to search role: bid = buyer (looking for sellers), offer = seller (looking for buyers)
+      const role = bidOfferContext.side === "offer" ? "seller" : bidOfferContext.side === "bid" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20 }
+        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}) }
       });
 
       if (error) throw error;
