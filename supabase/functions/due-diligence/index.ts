@@ -122,20 +122,41 @@ Deno.serve(async (req: Request) => {
         return json({ error: "doc_type, filename, storage_path, sha256_hash are required" }, 400);
       }
 
-      // ── Server-side magic-byte validation ──
+      // ── Server-side magic-byte validation (mandatory — never skip) ──
       if (storage_path) {
         const bucket = storage_path.startsWith("kyc-documents") ? "kyc-documents" : storage_path.split("/")[0] || "kyc-documents";
         const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
         const { data: fileData, error: dlError } = await admin.storage.from(bucket).download(filePath);
-        if (!dlError && fileData) {
-          const headerBytes = new Uint8Array(await fileData.slice(0, 16).arrayBuffer());
-          const mbResult = validateMagicBytes(headerBytes, mime_type || "application/octet-stream", file_size || 0);
-          if (mbResult.blocked) {
-            return json({ error: mbResult.blockReason || "File type not allowed" }, 400);
-          }
-          if (mbResult.detectedMime && !mbResult.clientMimeMatch) {
-            console.warn(`[due-diligence] KYC MIME mismatch: client=${mime_type}, detected=${mbResult.detectedMime}`);
-          }
+        if (dlError || !fileData) {
+          // FAIL-CLOSED: if we cannot read the file, we cannot validate it — reject
+          console.error(`[due-diligence] KYC magic-byte validation failed — could not download file: ${dlError?.message}`);
+          return json({ error: "File validation failed — could not verify uploaded file integrity" }, 500);
+        }
+        const headerBytes = new Uint8Array(await fileData.slice(0, 16).arrayBuffer());
+        const mbResult = validateMagicBytes(headerBytes, mime_type || "application/octet-stream", file_size || 0);
+        if (mbResult.blocked) {
+          // Audit the rejection
+          await admin.from("audit_logs").insert({
+            org_id: targetOrg,
+            actor_user_id: user.id,
+            action: "dd.kyc_upload_blocked",
+            entity_type: "kyc_documents",
+            entity_id: null,
+            metadata: { filename, doc_type, client_mime: mime_type, detected_mime: mbResult.detectedMime, reason: mbResult.blockReason },
+          }).catch(() => {});
+          return json({ error: mbResult.blockReason || "File type not allowed" }, 400);
+        }
+        if (mbResult.detectedMime && !mbResult.clientMimeMatch) {
+          console.warn(`[due-diligence] KYC MIME mismatch: client=${mime_type}, detected=${mbResult.detectedMime}`);
+          // Audit mismatch (non-blocking)
+          await admin.from("audit_logs").insert({
+            org_id: targetOrg,
+            actor_user_id: user.id,
+            action: "dd.kyc_mime_mismatch",
+            entity_type: "kyc_documents",
+            entity_id: null,
+            metadata: { filename, doc_type, client_mime: mime_type, detected_mime: mbResult.detectedMime },
+          }).catch(() => {});
         }
       }
 
@@ -643,6 +664,16 @@ Deno.serve(async (req: Request) => {
             console.error("[due-diligence] Partial approval notification failed:", err.message)
           );
         }
+
+        // External dispatch for partial approval (email/Slack)
+        await admin.functions.invoke("notification-dispatch", {
+          body: {
+            event_type: "dd.approval_partial",
+            subject: `Partial approval — ${remainingRoles.join(", ")} still required`,
+            message: `${actingRole} has approved request ${approval_request_id}. Remaining roles needed: ${remainingRoles.join(", ")}.`,
+            metadata: { org_id: request.requesting_org_id, approval_request_id, completed_roles: newCompleted, remaining_roles: remainingRoles },
+          },
+        }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
       }
 
       return json({

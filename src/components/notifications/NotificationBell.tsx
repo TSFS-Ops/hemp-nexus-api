@@ -103,6 +103,13 @@ export function NotificationBell() {
       case "webhook_failure": return "🔴";
       case "screening_complete": return "🔍";
       case "doc_request": return "📄";
+      case "approval_required": return "🔐";
+      case "approval_rejected": return "❌";
+      case "approval_completed": return "✅";
+      case "breach_detected": return "🚨";
+      case "breach_escalated": return "⚠️";
+      case "overdue_milestone": return "⏰";
+      case "retention_action": return "🗄️";
       default: return "📬";
     }
   };
