@@ -513,8 +513,9 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
   const isFinalised = podState === "FINALISED";
   const isBreached = podState === "BREACHED";
   const completedMs = milestones.filter(m => m.status === "completed");
-  const pendingMs = milestones.filter(m => m.status === "pending");
-  const openBreaches = breaches.filter(b => b.status === "open");
+  const pendingMs = milestones.filter(m => ["pending", "OPEN", "breach_detected"].includes(m.status));
+  const overdueMs = milestones.filter(m => m.due_at && !["completed"].includes(m.status) && new Date(m.due_at) < new Date());
+  const openBreaches = breaches.filter(b => !["resolved", "remediated", "dismissed"].includes(b.status));
 
   substeps.push(
     { label: "WaD sealed", done: true },
