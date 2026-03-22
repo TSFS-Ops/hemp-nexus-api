@@ -81,19 +81,25 @@ export function AdminWadPanel() {
     try {
       // Log admin access with reason
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
-        if (profile?.org_id) {
-          await supabase.from("audit_logs").insert({
-            org_id: profile.org_id,
-            actor_user_id: session.user.id,
-            action: "admin.wad.certificate.downloaded",
-            entity_type: "wad",
-            entity_id: wadId,
-            metadata: { reason: accessReason },
-          });
-        }
+      if (!session) {
+        toast.error("Session expired. Please sign in again.");
+        return;
       }
+
+      const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
+      if (profile?.org_id) {
+        await supabase.from("audit_logs").insert({
+          org_id: profile.org_id,
+          actor_user_id: session.user.id,
+          action: "admin.wad.certificate.downloaded",
+          entity_type: "wad",
+          entity_id: wadId,
+          metadata: { reason: accessReason },
+        });
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wadId}/certificate`,
@@ -102,8 +108,11 @@ export function AdminWadPanel() {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
