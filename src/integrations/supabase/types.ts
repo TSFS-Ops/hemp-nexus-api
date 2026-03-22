@@ -637,32 +637,50 @@ export type Database = {
       breaches: {
         Row: {
           detected_at: string
+          escalated_at: string | null
           id: string
           milestone_id: string | null
+          notification_sent_at: string | null
           org_id: string
           pod_id: string
           reason: string
           recorded_at: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
           status: string
         }
         Insert: {
           detected_at?: string
+          escalated_at?: string | null
           id?: string
           milestone_id?: string | null
+          notification_sent_at?: string | null
           org_id: string
           pod_id: string
           reason: string
           recorded_at?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
           status?: string
         }
         Update: {
           detected_at?: string
+          escalated_at?: string | null
           id?: string
           milestone_id?: string | null
+          notification_sent_at?: string | null
           org_id?: string
           pod_id?: string
           reason?: string
           recorded_at?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
           status?: string
         }
         Relationships: [
@@ -3141,6 +3159,7 @@ export type Database = {
           id: string
           name: string
           org_id: string
+          overdue_notified_at: string | null
           pod_id: string
           sequence_order: number | null
           status: string
@@ -3156,6 +3175,7 @@ export type Database = {
           id?: string
           name: string
           org_id: string
+          overdue_notified_at?: string | null
           pod_id: string
           sequence_order?: number | null
           status?: string
@@ -3171,6 +3191,7 @@ export type Database = {
           id?: string
           name?: string
           org_id?: string
+          overdue_notified_at?: string | null
           pod_id?: string
           sequence_order?: number | null
           status?: string

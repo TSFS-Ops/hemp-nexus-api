@@ -116,12 +116,17 @@ export interface MilestoneData {
   status: string;
   depends_on?: string | null;
   sequence_order?: number;
+  due_at?: string;
+  breach_detected_at?: string | null;
+  grace_period_ends_at?: string | null;
 }
 
 export interface BreachData {
   id: string;
   status: string;
   reason: string;
+  severity?: string;
+  resolved_at?: string | null;
 }
 
 export interface DocumentSummary {
@@ -508,8 +513,9 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
   const isFinalised = podState === "FINALISED";
   const isBreached = podState === "BREACHED";
   const completedMs = milestones.filter(m => m.status === "completed");
-  const pendingMs = milestones.filter(m => m.status === "pending");
-  const openBreaches = breaches.filter(b => b.status === "open");
+  const pendingMs = milestones.filter(m => ["pending", "OPEN", "breach_detected"].includes(m.status));
+  const overdueMs = milestones.filter(m => m.due_at && !["completed"].includes(m.status) && new Date(m.due_at) < new Date());
+  const openBreaches = breaches.filter(b => !["resolved", "remediated", "dismissed"].includes(b.status));
 
   substeps.push(
     { label: "WaD sealed", done: true },
@@ -520,19 +526,36 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
     },
   );
 
-  // Add individual milestones as substeps
+  // Add individual milestones as substeps with overdue awareness
   for (const ms of milestones) {
     const isDone = ms.status === "completed";
+    const isOverdue = ms.due_at && !isDone && new Date(ms.due_at) < new Date();
     const hasDep = ms.depends_on;
     const depMet = !hasDep || milestones.some(
       m => m.id === hasDep && m.status === "completed"
     );
+    const isBreachDetected = ms.breach_detected_at != null;
+    const graceEnds = ms.grace_period_ends_at ? new Date(ms.grace_period_ends_at) : null;
+    const gracePast = graceEnds && graceEnds < new Date();
+
+    let detail: string | undefined;
+    if (isBreachDetected && !isDone) {
+      detail = gracePast
+        ? "Breach finalised — grace period expired"
+        : graceEnds
+          ? `Breach detected — grace period ends ${graceEnds.toLocaleDateString()}`
+          : "Breach detected";
+    } else if (isOverdue) {
+      const daysOverdue = Math.floor((Date.now() - new Date(ms.due_at!).getTime()) / (24 * 60 * 60 * 1000));
+      detail = `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""}`;
+    } else if (!isDone && hasDep && !depMet) {
+      detail = "Blocked — prerequisite milestone not yet complete";
+    }
+
     substeps.push({
-      label: ms.name,
+      label: ms.name + (isOverdue && !isDone ? " ⚠" : ""),
       done: isDone,
-      detail: !isDone && hasDep && !depMet
-        ? "Blocked — prerequisite milestone not yet complete"
-        : undefined,
+      detail,
     });
   }
 

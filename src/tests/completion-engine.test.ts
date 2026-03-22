@@ -228,4 +228,50 @@ describe("resolveCompletion", () => {
     const confirmAction = result.stages[0].actions.find(a => a.type === "confirm_intent");
     expect(confirmAction!.allowed).toBe(false);
   });
+
+  it("overdue milestone shows warning in substep detail", () => {
+    const yesterday = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const result = resolveCompletion(baseInput({
+      match: { ...baseInput().match, status: "settled", settled_at: "2026-01-01T00:00:00Z" },
+      wad: { id: "wad-1", state: "sealed", seal_hash: "abc", sealed_at: "2026-01-02T00:00:00Z" },
+      pod: { id: "pod-1", state: "ACTIVE", wad_id: "wad-1" },
+      milestones: [
+        { id: "ms-1", name: "Delivery", status: "pending", due_at: yesterday, sequence_order: 1 },
+      ],
+    }));
+    const pod = result.stages[2];
+    const deliverySub = pod.substeps.find(s => s.label.includes("Delivery"));
+    expect(deliverySub).toBeTruthy();
+    expect(deliverySub!.label).toContain("⚠");
+    expect(deliverySub!.detail).toContain("Overdue");
+  });
+
+  it("breach with grace period shows in substep detail", () => {
+    const future = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+    const result = resolveCompletion(baseInput({
+      match: { ...baseInput().match, status: "settled", settled_at: "2026-01-01T00:00:00Z" },
+      wad: { id: "wad-1", state: "sealed", seal_hash: "abc", sealed_at: "2026-01-02T00:00:00Z" },
+      pod: { id: "pod-1", state: "BREACHED", wad_id: "wad-1" },
+      milestones: [
+        { id: "ms-1", name: "Delivery", status: "breach_detected", due_at: "2026-01-01T00:00:00Z", breach_detected_at: "2026-03-20T00:00:00Z", grace_period_ends_at: future, sequence_order: 1 },
+      ],
+      breaches: [{ id: "b-1", status: "grace_period", reason: "Overdue", severity: "medium" }],
+    }));
+    const pod = result.stages[2];
+    const deliverySub = pod.substeps.find(s => s.label.includes("Delivery"));
+    expect(deliverySub!.detail).toContain("grace period");
+  });
+
+  it("resolved breaches are not counted as open", () => {
+    const result = resolveCompletion(baseInput({
+      match: { ...baseInput().match, status: "settled", settled_at: "2026-01-01T00:00:00Z" },
+      wad: { id: "wad-1", state: "sealed", seal_hash: "abc", sealed_at: "2026-01-02T00:00:00Z" },
+      pod: { id: "pod-1", state: "ACTIVE", wad_id: "wad-1" },
+      milestones: [{ id: "ms-1", name: "Delivery", status: "completed", sequence_order: 1 }],
+      breaches: [{ id: "b-1", status: "resolved", reason: "Was overdue", severity: "low", resolved_at: "2026-03-21T00:00:00Z" }],
+    }));
+    const pod = result.stages[2];
+    // No resolve_breach action since breach is resolved
+    expect(pod.actions.find(a => a.type === "resolve_breach")).toBeFalsy();
+  });
 });
