@@ -146,9 +146,10 @@ Deno.serve(async (req) => {
     const orderSide = signalType === "buyer" ? "offer" : "bid";
     let orderBookQuery = supabase
       .from("trade_orders")
-      .select("id, side, product, price, price_currency, volume, volume_unit, location, org_id, created_at")
+      .select("id, side, product, price, price_currency, volume, volume_unit, location, org_id, created_at, expires_at")
       .eq("status", "active")
       .eq("side", orderSide)
+      .neq("org_id", authCtx.orgId) // exclude self-matches
       .limit(20);
 
     if (product) {
