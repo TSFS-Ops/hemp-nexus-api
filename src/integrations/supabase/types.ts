@@ -3573,32 +3573,65 @@ export type Database = {
       retention_flags: {
         Row: {
           archived_at: string | null
+          enforcement_applied_at: string | null
+          enforcement_applied_by: string | null
+          enforcement_audit_id: string | null
           flag_type: string
           flagged_at: string
           id: string
+          last_scan_at: string | null
+          org_id: string | null
           record_created_at: string
           record_id: string
+          resolution_note: string | null
+          resolution_status: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          retention_action: string | null
           retention_expires_at: string
+          retention_status: string
           table_name: string
         }
         Insert: {
           archived_at?: string | null
+          enforcement_applied_at?: string | null
+          enforcement_applied_by?: string | null
+          enforcement_audit_id?: string | null
           flag_type?: string
           flagged_at?: string
           id?: string
+          last_scan_at?: string | null
+          org_id?: string | null
           record_created_at: string
           record_id: string
+          resolution_note?: string | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retention_action?: string | null
           retention_expires_at: string
+          retention_status?: string
           table_name: string
         }
         Update: {
           archived_at?: string | null
+          enforcement_applied_at?: string | null
+          enforcement_applied_by?: string | null
+          enforcement_audit_id?: string | null
           flag_type?: string
           flagged_at?: string
           id?: string
+          last_scan_at?: string | null
+          org_id?: string | null
           record_created_at?: string
           record_id?: string
+          resolution_note?: string | null
+          resolution_status?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retention_action?: string | null
           retention_expires_at?: string
+          retention_status?: string
           table_name?: string
         }
         Relationships: []
