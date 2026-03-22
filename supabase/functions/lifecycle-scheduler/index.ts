@@ -2,13 +2,32 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 
 /**
- * Lifecycle Scheduler — handles multiple periodic tasks:
+ * Lifecycle Scheduler — handles periodic tasks:
  *
  * 1. INT-UNLOCK: Expire mutual interests after 30 days → revoke intelligence
  * 2. POD/BREACH: Auto-detect breached milestones (overdue) + 7-day grace period
+ * 3. NOTIFICATIONS: Dispatch overdue/breach alerts via notification-dispatch
+ * 4. ESCALATION: Escalate unresolved breaches past grace period
  *
  * Designed to be called via pg_cron (daily at 3 AM UTC).
+ * Deduplication: Uses breach_detected_at on milestones and unique index on breaches
+ * to prevent duplicate records on repeated runs.
  */
+
+const BREACH_GRACE_DAYS = 7;
+const OVERDUE_SEVERITY_THRESHOLDS = {
+  low: 0,       // Just overdue
+  medium: 3,    // 3+ days overdue
+  high: 7,      // 7+ days overdue (past grace)
+  critical: 14, // 14+ days overdue
+};
+
+function computeSeverity(daysOverdue: number): string {
+  if (daysOverdue >= OVERDUE_SEVERITY_THRESHOLDS.critical) return "critical";
+  if (daysOverdue >= OVERDUE_SEVERITY_THRESHOLDS.high) return "high";
+  if (daysOverdue >= OVERDUE_SEVERITY_THRESHOLDS.medium) return "medium";
+  return "low";
+}
 
 Deno.serve(async (req: Request) => {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
@@ -24,13 +43,14 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     const results: Record<string, unknown> = {};
+    const now = new Date();
+    const nowIso = now.toISOString();
 
     // ────────────────────────────────────────────
     // 1. INT-UNLOCK: Expire mutual interests > 30 days
     // ────────────────────────────────────────────
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Expire accepted invites that are older than 30 days and haven't progressed to a match
     const { data: expiredInvites, error: inviteErr } = await admin
       .from("invites")
       .update({ status: "expired" })
@@ -44,7 +64,6 @@ Deno.serve(async (req: Request) => {
       error: inviteErr?.message || null,
     };
 
-    // Expire pending signals older than 30 days
     const { data: expiredSignals, error: signalErr } = await admin
       .from("signals")
       .update({ status: "expired" })
@@ -57,7 +76,6 @@ Deno.serve(async (req: Request) => {
       error: signalErr?.message || null,
     };
 
-    // Expire matches in DRAFT/PENDING_APPROVAL state older than 30 days
     const { data: expiredMatches, error: matchErr } = await admin
       .from("matches")
       .update({ poi_state: "EXPIRED", status: "expired" })
@@ -73,44 +91,73 @@ Deno.serve(async (req: Request) => {
     // ────────────────────────────────────────────
     // 2. POD/BREACH: Auto-detect overdue milestones
     // ────────────────────────────────────────────
-    const now = new Date().toISOString();
-
     // Find milestones that are overdue (due_at < now, not completed, no breach detected yet)
+    // The `breach_detected_at IS NULL` guard prevents duplicate processing on re-runs.
     const { data: overdueMilestones, error: msErr } = await admin
       .from("pod_milestones")
       .select("id, pod_id, org_id, name, due_at")
-      .lt("due_at", now)
+      .lt("due_at", nowIso)
       .is("completed_at", null)
       .is("breach_detected_at", null)
-      .eq("status", "pending");
+      .in("status", ["pending", "OPEN"]);
 
     let breachesCreated = 0;
+    const notificationQueue: Array<{
+      event_type: string;
+      subject: string;
+      message: string;
+      metadata: Record<string, unknown>;
+    }> = [];
+
     if (overdueMilestones && overdueMilestones.length > 0) {
       for (const ms of overdueMilestones) {
-        const gracePeriodEnd = new Date(new Date(ms.due_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const dueDate = new Date(ms.due_at);
+        const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000));
+        const severity = computeSeverity(daysOverdue);
+        const gracePeriodEnd = new Date(dueDate.getTime() + BREACH_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-        // Mark breach detected with 7-day grace period
+        // Mark breach detected with grace period on milestone
         await admin
           .from("pod_milestones")
           .update({
             status: "breach_detected",
-            breach_detected_at: now,
+            breach_detected_at: nowIso,
             grace_period_ends_at: gracePeriodEnd,
-            detected_deficiency_at: now,
+            detected_deficiency_at: nowIso,
+            overdue_notified_at: nowIso,
           })
-          .eq("id", ms.id);
+          .eq("id", ms.id)
+          .is("breach_detected_at", null); // Double-guard against race conditions
 
-        // Create breach record
+        // Create breach record — unique index prevents duplicates per milestone
         const { error: breachErr } = await admin.from("breaches").insert({
           org_id: ms.org_id,
           pod_id: ms.pod_id,
           milestone_id: ms.id,
-          reason: `Milestone "${ms.name}" overdue since ${ms.due_at}`,
+          reason: `Milestone "${ms.name}" overdue since ${dueDate.toISOString().split("T")[0]} (${daysOverdue} day${daysOverdue !== 1 ? "s" : ""})`,
           status: "grace_period",
-          detected_at: now,
+          severity,
+          detected_at: nowIso,
         });
 
-        if (!breachErr) breachesCreated++;
+        if (!breachErr) {
+          breachesCreated++;
+          // Queue notification
+          notificationQueue.push({
+            event_type: "delivery.milestone.overdue",
+            subject: `Milestone overdue: ${ms.name}`,
+            message: `Milestone "${ms.name}" is ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} overdue. A ${BREACH_GRACE_DAYS}-day grace period has been applied. Severity: ${severity}.`,
+            metadata: {
+              org_id: ms.org_id,
+              pod_id: ms.pod_id,
+              milestone_id: ms.id,
+              days_overdue: daysOverdue,
+              severity,
+              grace_period_ends: gracePeriodEnd,
+            },
+          });
+        }
+        // If breach insert failed due to unique constraint, that's expected dedup — skip silently
       }
     }
 
@@ -120,14 +167,20 @@ Deno.serve(async (req: Request) => {
       error: msErr?.message || null,
     };
 
-    // Finalise breaches past grace period (7 days after detection)
+    // ────────────────────────────────────────────
+    // 3. BREACH ESCALATION: Finalise breaches past grace period
+    // ────────────────────────────────────────────
+    const gracePeriodCutoff = new Date(Date.now() - BREACH_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: expiredBreaches, error: expBreachErr } = await admin
       .from("breaches")
-      .select("id, pod_id, org_id, milestone_id")
+      .select("id, pod_id, org_id, milestone_id, severity")
       .eq("status", "grace_period")
-      .lt("detected_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      .lt("detected_at", gracePeriodCutoff);
 
     let breachesFinalised = 0;
+    let breachesRemediated = 0;
+
     if (expiredBreaches && expiredBreaches.length > 0) {
       for (const breach of expiredBreaches) {
         // Check if milestone was remediated during grace period
@@ -139,15 +192,43 @@ Deno.serve(async (req: Request) => {
 
         if (milestone?.completed_at) {
           // Remediated — close breach
-          await admin.from("breaches").update({ status: "remediated" }).eq("id", breach.id);
+          await admin.from("breaches")
+            .update({ status: "remediated", resolved_at: nowIso, resolution_note: "Milestone completed during grace period" })
+            .eq("id", breach.id);
+          breachesRemediated++;
         } else {
-          // Not remediated — finalise breach
-          await admin.from("breaches").update({ status: "finalised" }).eq("id", breach.id);
+          // Not remediated — escalate to finalised, increase severity
+          const escalatedSeverity = breach.severity === "low" ? "medium"
+            : breach.severity === "medium" ? "high"
+            : "critical";
+
+          await admin.from("breaches")
+            .update({ status: "finalised", severity: escalatedSeverity, escalated_at: nowIso })
+            .eq("id", breach.id);
           await admin
             .from("pod_milestones")
             .update({ status: "breached" })
             .eq("id", breach.milestone_id);
+
+          // Update PoD state to BREACHED
+          await admin.from("pods")
+            .update({ state: "BREACHED" })
+            .eq("id", breach.pod_id);
+
           breachesFinalised++;
+
+          // Queue escalation notification
+          notificationQueue.push({
+            event_type: "delivery.breach.escalated",
+            subject: `Breach escalated — grace period expired`,
+            message: `A breach on PoD ${breach.pod_id} has been escalated to "${escalatedSeverity}" severity after the ${BREACH_GRACE_DAYS}-day grace period expired without remediation.`,
+            metadata: {
+              org_id: breach.org_id,
+              pod_id: breach.pod_id,
+              breach_id: breach.id,
+              severity: escalatedSeverity,
+            },
+          });
         }
       }
     }
@@ -155,7 +236,36 @@ Deno.serve(async (req: Request) => {
     results.breach_finalisation = {
       evaluated: (expiredBreaches || []).length,
       finalised: breachesFinalised,
+      remediated: breachesRemediated,
       error: expBreachErr?.message || null,
+    };
+
+    // ────────────────────────────────────────────
+    // 4. DISPATCH NOTIFICATIONS
+    // ────────────────────────────────────────────
+    let notificationsSent = 0;
+    for (const notification of notificationQueue) {
+      try {
+        const { error: dispatchErr } = await admin.functions.invoke("notification-dispatch", {
+          body: notification,
+        });
+        if (!dispatchErr) {
+          notificationsSent++;
+          // Mark breach notification_sent_at if it's a breach notification
+          if (notification.metadata.breach_id) {
+            await admin.from("breaches")
+              .update({ notification_sent_at: nowIso })
+              .eq("id", notification.metadata.breach_id as string);
+          }
+        }
+      } catch (err) {
+        console.error("[lifecycle-scheduler] Notification dispatch failed:", err);
+      }
+    }
+
+    results.notifications = {
+      queued: notificationQueue.length,
+      sent: notificationsSent,
     };
 
     // ── Audit ──
@@ -168,7 +278,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({
       success: true,
-      timestamp: now,
+      timestamp: nowIso,
       results,
     }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
   } catch (err) {
