@@ -95,15 +95,21 @@ Deno.serve(async (req) => {
 
       const body = await req.json();
       const newDocId = body.new_document_id;
+      const changeNotes = body.change_notes || null;
 
       if (!newDocId || !uuidRegex.test(newDocId)) {
         throw new ApiException("VALIDATION_ERROR", "new_document_id (UUID) is required", 400);
       }
 
+      // Circular-supersession prevention
+      if (newDocId === documentId) {
+        throw new ApiException("VALIDATION_ERROR", "A document cannot supersede itself", 400);
+      }
+
       // Verify the new document exists and belongs to same match
       const { data: newDoc, error: newDocErr } = await supabase
         .from("match_documents")
-        .select("id, match_id, version, supersedes_document_id")
+        .select("id, match_id, version, supersedes_document_id, root_document_id")
         .eq("id", newDocId)
         .single();
 
@@ -115,22 +121,45 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Replacement document must belong to the same POI", 400);
       }
 
+      // Prevent circular chains: new doc must not already be in this chain
+      if (newDoc.supersedes_document_id) {
+        throw new ApiException("STATE_CONFLICT", "Replacement document already supersedes another document", 422);
+      }
+
       const newVersion = (doc.version || 1) + 1;
+      const rootId = doc.root_document_id || doc.id;
+      const nowIso = new Date().toISOString();
 
-      // Mark old document as superseded (read-only)
-      await supabase
+      // Mark old document as superseded (read-only, not current)
+      const { data: archivedRows, error: archiveErr } = await supabase
         .from("match_documents")
-        .update({ status: "archived" })
-        .eq("id", documentId);
+        .update({
+          status: "archived",
+          is_current_version: false,
+          superseded_at: nowIso,
+        })
+        .eq("id", documentId)
+        .eq("is_current_version", true)
+        .select("id");
 
-      // Update new document with version chain
-      await supabase
+      if (archiveErr) handleDatabaseError(archiveErr, requestId);
+      if (!archivedRows || archivedRows.length === 0) {
+        throw new ApiException("STATE_CONFLICT", "Document was already superseded by another version", 422);
+      }
+
+      // Update new document with version chain fields
+      const { error: linkErr } = await supabase
         .from("match_documents")
         .update({
           version: newVersion,
           supersedes_document_id: documentId,
+          root_document_id: rootId,
+          is_current_version: true,
+          change_notes: changeNotes,
         })
         .eq("id", newDocId);
+
+      if (linkErr) handleDatabaseError(linkErr, requestId);
 
       // Audit
       await supabase.from("audit_logs").insert({
@@ -144,7 +173,9 @@ Deno.serve(async (req) => {
           new_document_id: newDocId,
           old_version: doc.version || 1,
           new_version: newVersion,
+          root_document_id: rootId,
           match_id: doc.match_id,
+          change_notes: changeNotes,
         },
       });
 
@@ -155,6 +186,7 @@ Deno.serve(async (req) => {
           new_document_id: newDocId,
           old_version: doc.version || 1,
           new_version: newVersion,
+          root_document_id: rootId,
           message: `Document replaced. Version ${doc.version || 1} is now archived (read-only). Version ${newVersion} is active.`,
         },
       }), { status: 200, headers });
