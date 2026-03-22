@@ -95,9 +95,15 @@ interface MatchDocument {
   valid_to: string | null;
   version?: number;
   supersedes_document_id?: string | null;
+  root_document_id?: string | null;
+  is_current_version?: boolean;
+  superseded_at?: string | null;
+  change_notes?: string | null;
   verified_at?: string | null;
   verified_by?: string | null;
   verification_notes?: string | null;
+  uploader_user_id?: string | null;
+  uploader_org_id?: string | null;
 }
 
 interface MatchDocumentsProps {
