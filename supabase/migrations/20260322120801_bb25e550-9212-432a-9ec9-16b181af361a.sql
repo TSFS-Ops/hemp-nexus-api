@@ -1,0 +1,1 @@
+ALTER TABLE public.wads ADD COLUMN IF NOT EXISTS certificate_generated_at timestamptz DEFAULT NULL;

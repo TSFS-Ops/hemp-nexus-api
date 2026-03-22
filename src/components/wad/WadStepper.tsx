@@ -200,21 +200,22 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to download certificate");
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || "Failed to download certificate");
       }
 
-      const certificate = await response.json();
-      const blob = new Blob([JSON.stringify(certificate, null, 2)], { type: "application/json" });
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `wad-certificate-${wad.id}.json`;
+      a.download = `WaD-Certificate-${wad.id.substring(0, 8)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
 
       toast.success("Certificate downloaded");
-    } catch (error) {
-      toast.error("Failed to download certificate");
+    } catch (error: any) {
+      console.error("Certificate download error:", error);
+      toast.error(error.message || "Failed to download certificate");
     } finally {
       setDownloading(false);
     }
@@ -482,10 +483,10 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
             <Button onClick={handleDownloadCertificate} disabled={downloading} className="w-full">
               {downloading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <Download className="h-4 w-4 mr-2" />
-              Download Certificate
+              Download PDF Certificate
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              Certificate includes all attestations, evidence bundle hash, and seal verification data.
+              PDF certificate includes all attestations, evidence bundle hashes, seal verification data, and a cryptographic verification section.
             </p>
           </div>
         );
