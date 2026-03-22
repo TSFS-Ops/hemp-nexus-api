@@ -2327,22 +2327,26 @@ export type Database = {
       }
       match_documents: {
         Row: {
+          change_notes: string | null
           created_at: string
           doc_type: string
           expiry_date: string | null
           file_size: number | null
           filename: string
           id: string
+          is_current_version: boolean
           magic_bytes_verified: boolean | null
           match_id: string
           mime_type: string | null
           notes: string | null
           org_id: string
           rejection_reason: string | null
+          root_document_id: string | null
           server_detected_mime: string | null
           sha256_hash: string
           status: string
           storage_path: string
+          superseded_at: string | null
           supersedes_document_id: string | null
           title: string | null
           updated_at: string
@@ -2357,22 +2361,26 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          change_notes?: string | null
           created_at?: string
           doc_type: string
           expiry_date?: string | null
           file_size?: number | null
           filename: string
           id?: string
+          is_current_version?: boolean
           magic_bytes_verified?: boolean | null
           match_id: string
           mime_type?: string | null
           notes?: string | null
           org_id: string
           rejection_reason?: string | null
+          root_document_id?: string | null
           server_detected_mime?: string | null
           sha256_hash: string
           status?: string
           storage_path: string
+          superseded_at?: string | null
           supersedes_document_id?: string | null
           title?: string | null
           updated_at?: string
@@ -2387,22 +2395,26 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          change_notes?: string | null
           created_at?: string
           doc_type?: string
           expiry_date?: string | null
           file_size?: number | null
           filename?: string
           id?: string
+          is_current_version?: boolean
           magic_bytes_verified?: boolean | null
           match_id?: string
           mime_type?: string | null
           notes?: string | null
           org_id?: string
           rejection_reason?: string | null
+          root_document_id?: string | null
           server_detected_mime?: string | null
           sha256_hash?: string
           status?: string
           storage_path?: string
+          superseded_at?: string | null
           supersedes_document_id?: string | null
           title?: string | null
           updated_at?: string
@@ -2436,6 +2448,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_documents_root_document_id_fkey"
+            columns: ["root_document_id"]
+            isOneToOne: false
+            referencedRelation: "match_documents"
             referencedColumns: ["id"]
           },
           {
