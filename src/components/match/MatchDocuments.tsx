@@ -958,6 +958,64 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           documentName={accessLogsDoc.title || accessLogsDoc.filename}
         />
       )}
+
+      {/* Version History Dialog */}
+      {historyRootId && (
+        <Dialog open={!!historyRootId} onOpenChange={(open) => !open && setHistoryRootId(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Version History
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {getVersionChain(historyRootId).reverse().map((doc) => (
+                <div
+                  key={doc.id}
+                  className={`border rounded-lg p-3 space-y-1 ${doc.is_current_version !== false ? "border-primary/50 bg-primary/5" : "opacity-70"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold">v{doc.version || 1}</span>
+                      {doc.is_current_version !== false ? (
+                        <Badge variant="default" className="text-[10px]">Current</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Superseded</Badge>
+                      )}
+                      {getStatusBadge(doc.status, doc.expiry_date)}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => handleOpenDocument(doc)}>
+                        Open
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => handleDownload(doc)}>
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium">{doc.title || doc.filename}</p>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{format(new Date(doc.created_at), "MMM dd, yyyy HH:mm")}</span>
+                    <span className="font-mono">{doc.sha256_hash.slice(0, 12)}…</span>
+                    {doc.file_size && <span>{formatFileSize(doc.file_size)}</span>}
+                  </div>
+                  {doc.change_notes && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Change: {doc.change_notes}
+                    </p>
+                  )}
+                  {doc.superseded_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Superseded: {format(new Date(doc.superseded_at), "MMM dd, yyyy HH:mm")}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
