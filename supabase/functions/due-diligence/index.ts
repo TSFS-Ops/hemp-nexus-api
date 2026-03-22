@@ -664,6 +664,16 @@ Deno.serve(async (req: Request) => {
             console.error("[due-diligence] Partial approval notification failed:", err.message)
           );
         }
+
+        // External dispatch for partial approval (email/Slack)
+        await admin.functions.invoke("notification-dispatch", {
+          body: {
+            event_type: "dd.approval_partial",
+            subject: `Partial approval — ${remainingRoles.join(", ")} still required`,
+            message: `${actingRole} has approved request ${approval_request_id}. Remaining roles needed: ${remainingRoles.join(", ")}.`,
+            metadata: { org_id: request.requesting_org_id, approval_request_id, completed_roles: newCompleted, remaining_roles: remainingRoles },
+          },
+        }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
       }
 
       return json({
