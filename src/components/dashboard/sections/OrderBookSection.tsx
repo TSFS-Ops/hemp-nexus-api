@@ -37,6 +37,13 @@ interface TradeOrder {
   created_at: string;
 }
 
+/** Sanitise product filter — allow only safe characters to prevent ilike injection */
+function sanitiseProductFilter(raw: string): string {
+  return raw.replace(/[%_\\]/g, "").replace(/[^a-zA-Z0-9\s\-.,()]/g, "").slice(0, 100);
+}
+
+const ORDER_PAGE_SIZE = 200;
+
 export function OrderBookSection() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -61,37 +68,47 @@ export function OrderBookSection() {
 
   const orgId = profile?.org_id;
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: ordersResult, isLoading } = useQuery({
     queryKey: ["trade-orders", sideFilter, productFilter],
     queryFn: async () => {
       let query = supabase
         .from("trade_orders")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(ORDER_PAGE_SIZE);
 
       if (sideFilter !== "all") {
         query = query.eq("side", sideFilter);
       }
-      if (productFilter.trim()) {
-        query = query.ilike("product", `%${productFilter.trim()}%`);
+      const sanitised = sanitiseProductFilter(productFilter);
+      if (sanitised) {
+        query = query.ilike("product", `%${sanitised}%`);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as TradeOrder[];
+      return { orders: (data || []) as TradeOrder[], totalCount: count ?? (data || []).length };
     },
     enabled: !!orgId,
   });
 
+  const orders = ordersResult?.orders;
+  const totalCount = ordersResult?.totalCount ?? 0;
+  const isTruncated = totalCount > ORDER_PAGE_SIZE;
+
   const cancelMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const { error } = await supabase
+      // Ownership enforced: RLS ensures only own-org orders can be updated,
+      // but we also explicitly scope the filter for defence-in-depth.
+      const { data, error } = await supabase
         .from("trade_orders")
         .update({ status: "cancelled", updated_at: new Date().toISOString() })
-        .eq("id", orderId);
+        .eq("id", orderId)
+        .eq("org_id", orgId!)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error("Order not found or you do not have permission to cancel it");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trade-orders"] });

@@ -266,7 +266,7 @@ Deno.serve(async (req: Request) => {
         .in("role", rolesToNotify);
 
       if (approverUsers && approverUsers.length > 0) {
-        const notifications = approverUsers.map((u: any) => ({
+        const notificationRows = approverUsers.map((u: any) => ({
           user_id: u.user_id,
           org_id: parsed.org_id,
           type: "approval_required",
@@ -275,9 +275,20 @@ Deno.serve(async (req: Request) => {
           link: `/dashboard/compliance`,
           read: false,
         }));
-        await admin.from("notifications").insert(notifications).catch((err: any) => {
-          console.error("Failed to send approval notifications:", err);
-        });
+        const { error: notifErr } = await admin.from("notifications").insert(notificationRows);
+        if (notifErr) {
+          // Log but do not block approval issuance — notifications are non-transactional.
+          // Record failure in audit log for operational visibility.
+          console.error("Approval notification delivery failed:", notifErr.message);
+          await admin.from("audit_logs").insert({
+            org_id: orgId, actor_user_id: authCtx.userId,
+            action: "approval_notification.failed", entity_type: "trade_approval", entity_id: approval.id,
+            metadata: { error: notifErr.message, intended_recipients: notificationRows.length, roles: rolesToNotify },
+          }).catch(() => { /* best-effort audit */ });
+        }
+      } else {
+        // No approvers found — log for operational awareness
+        console.warn(`No users with roles [${rolesToNotify.join(", ")}] found for org ${parsed.org_id}`);
       }
 
       return new Response(JSON.stringify(envelope(approval, correlationId)), {
