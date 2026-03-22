@@ -78,7 +78,7 @@ export function StageCard({ stage, userRole, onAction, defaultExpanded = false }
   const recommendedAction = stage.actions.find(a => a.isRecommended);
 
   return (
-    <Card className={stage.status === "blocked" ? "border-destructive/50" : stage.status === "complete" ? "border-green-500/30" : ""}>
+    <Card className={stage.status === "blocked" ? "border-destructive/50" : stage.status === "complete" ? "border-success/30" : ""}>
       <CardHeader className="pb-2 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
