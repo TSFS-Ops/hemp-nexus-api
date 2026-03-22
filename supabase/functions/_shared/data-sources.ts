@@ -178,58 +178,8 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
     });
 
     if (!searchResponse.ok) {
-      console.error(`[${signalId}] Web search failed: ${searchResponse.status}`);
-      // Fallback: insert mock options so users can test end-to-end
-      try {
-        // Ensure a virtual data source exists
-        let webSearchSource = await supabase
-          .from("data_sources")
-          .select("*")
-          .eq("type", "web_search")
-          .eq("name", "AI Web Search")
-          .single();
-
-        if (!webSearchSource.data) {
-          const { data: newSource } = await supabase
-            .from("data_sources")
-            .insert({
-              name: "AI Web Search",
-              type: "web_search",
-              status: "active",
-              org_id: signal.org_id,
-              config: { description: "AI-powered web crawling and discovery (fallback)" }
-            })
-            .select()
-            .single();
-          webSearchSource = { data: newSource } as any;
-        }
-
-        const mockOptions = generateMockOptions(signal, webSearchSource.data);
-        let insertedCount = 0;
-        for (const opt of mockOptions) {
-          const score = scoreOptionSync(opt, signal);
-          const { error: insertError } = await supabase.from("options").insert({
-            signal_id: signalId,
-            data_source_id: webSearchSource.data.id,
-            what: opt.what,
-            how_much: opt.how_much,
-            unit: opt.unit,
-            where_location: opt.where_location,
-            when_available: opt.when_available,
-            price: opt.price,
-            currency: opt.currency,
-            quality_flags: opt.quality_flags,
-            confidence_score: opt.confidence_score,
-            source_link: opt.source_link,
-            freshness: opt.freshness,
-            score
-          });
-          if (!insertError) insertedCount++;
-        }
-        console.log(`[${signalId}] Inserted ${insertedCount}/${mockOptions.length} fallback options`);
-      } catch (e) {
-        console.error(`[${signalId}] Fallback insert failed:`, e);
-      }
+      console.error(`[${signalId}] Web search failed: ${searchResponse.status} — returning empty results (no synthetic data)`);
+      return;
       return;
     }
 
