@@ -132,7 +132,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
       </TabsContent>
 
       <TabsContent value="progress" className="mt-4">
-        <CompletionTracker matchId={match.id} orgId={match.org_id} />
+        <CompletionTracker matchId={match.id} orgId={match.org_id} onNavigateTab={setActiveTab} />
       </TabsContent>
 
       <TabsContent value="timeline" className="mt-4">
