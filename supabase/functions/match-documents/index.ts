@@ -85,17 +85,22 @@ Deno.serve(async (req) => {
     }
 
     // Fetch documents for match — include version lineage fields
+    // Supabase default limit is 1000; use explicit limit and detect truncation
+    const DOC_LIMIT = 1000;
     const { data: docs, error: docsError } = await supabase
       .from("match_documents")
       .select(
         "id, match_id, org_id, uploader_org_id, uploader_user_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, notes, visibility, valid_from, valid_to, version, supersedes_document_id, root_document_id, is_current_version, superseded_at, change_notes, verified_at, verified_by, verification_notes"
       )
       .eq("match_id", matchId)
-      .order("created_at", { ascending });
+      .order("created_at", { ascending })
+      .limit(DOC_LIMIT);
 
     if (docsError) {
       handleDatabaseError(docsError, requestId);
     }
+
+    const truncated = (docs || []).length >= DOC_LIMIT;
 
     // Fetch explicit grants once (used for role-based visibility)
     const grantedDocIds = new Set<string>();
@@ -150,6 +155,8 @@ Deno.serve(async (req) => {
         data: {
           match_id: matchId,
           documents: filtered,
+          truncated,
+          ...(truncated ? { warning: `Results limited to ${DOC_LIMIT} documents. Some records may not be shown.` } : {}),
         },
       }),
       {

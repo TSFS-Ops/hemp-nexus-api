@@ -38,13 +38,21 @@ type MatchDocumentsResponse = {
   data?: {
     match_id: string;
     documents: MatchDocumentListItem[];
+    truncated?: boolean;
+    warning?: string;
   };
+};
+
+export type MatchDocumentsResult = {
+  documents: MatchDocumentListItem[];
+  truncated: boolean;
+  warning?: string;
 };
 
 export async function listMatchDocuments(
   matchId: string,
   opts?: { order?: "asc" | "desc" }
-): Promise<MatchDocumentListItem[]> {
+): Promise<MatchDocumentsResult> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     throw new Error("Not signed in");
@@ -68,5 +76,9 @@ export async function listMatchDocuments(
     throw new Error(msg);
   }
 
-  return payload.data?.documents || [];
+  return {
+    documents: payload.data?.documents || [],
+    truncated: payload.data?.truncated || false,
+    warning: payload.data?.warning,
+  };
 }

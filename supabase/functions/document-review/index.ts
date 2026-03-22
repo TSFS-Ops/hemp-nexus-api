@@ -106,10 +106,10 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "A document cannot supersede itself", 400);
       }
 
-      // Verify the new document exists and belongs to same match
+      // Verify the new document exists, belongs to same match, and same org (IDOR prevention)
       const { data: newDoc, error: newDocErr } = await supabase
         .from("match_documents")
-        .select("id, match_id, version, supersedes_document_id, root_document_id")
+        .select("id, match_id, version, supersedes_document_id, root_document_id, uploader_org_id, org_id")
         .eq("id", newDocId)
         .single();
 
@@ -119,6 +119,12 @@ Deno.serve(async (req) => {
 
       if (newDoc.match_id !== doc.match_id) {
         throw new ApiException("VALIDATION_ERROR", "Replacement document must belong to the same POI", 400);
+      }
+
+      // IDOR: new document must belong to the same org as the caller
+      const newDocOrgId = newDoc.uploader_org_id || newDoc.org_id;
+      if (!isAdmin && newDocOrgId !== authCtx.orgId) {
+        throw new ApiException("FORBIDDEN", "You can only link documents uploaded by your organisation", 403);
       }
 
       // Prevent circular chains: new doc must not already be in this chain
@@ -147,8 +153,8 @@ Deno.serve(async (req) => {
         throw new ApiException("STATE_CONFLICT", "Document was already superseded by another version", 422);
       }
 
-      // Update new document with version chain fields
-      const { error: linkErr } = await supabase
+      // Update new document with version chain fields — verify with .select() for RLS truthfulness
+      const { data: linkedRows, error: linkErr } = await supabase
         .from("match_documents")
         .update({
           version: newVersion,
@@ -157,9 +163,27 @@ Deno.serve(async (req) => {
           is_current_version: true,
           change_notes: changeNotes,
         })
-        .eq("id", newDocId);
+        .eq("id", newDocId)
+        .select("id");
 
-      if (linkErr) handleDatabaseError(linkErr, requestId);
+      if (linkErr) {
+        // Rollback: restore old document as current since link failed
+        console.error(`[${requestId}] Link step failed, rolling back archive`, linkErr);
+        await supabase
+          .from("match_documents")
+          .update({ status: doc.status, is_current_version: true, superseded_at: null })
+          .eq("id", documentId);
+        handleDatabaseError(linkErr, requestId);
+      }
+      if (!linkedRows || linkedRows.length === 0) {
+        // Rollback: link was silently blocked (e.g. RLS)
+        console.error(`[${requestId}] Link step returned 0 rows, rolling back archive`);
+        await supabase
+          .from("match_documents")
+          .update({ status: doc.status, is_current_version: true, superseded_at: null })
+          .eq("id", documentId);
+        throw new ApiException("STATE_CONFLICT", "Failed to link replacement document. The original has been restored.", 422);
+      }
 
       // Audit
       await supabase.from("audit_logs").insert({
