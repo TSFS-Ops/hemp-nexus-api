@@ -23,6 +23,14 @@ import { GlobalApiLogs } from "@/components/admin/GlobalApiLogs";
 import { PoiStateHistory } from "@/components/admin/PoiStateHistory";
 import { CollapseLedgerViewer } from "@/components/admin/CollapseLedgerViewer";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel";
+import { AdminGovernanceDocsPanel } from "@/components/admin/AdminGovernanceDocsPanel";
+import { AdminReputationPanel } from "@/components/admin/AdminReputationPanel";
+import { AdminRetentionFlagsPanel } from "@/components/admin/AdminRetentionFlagsPanel";
+import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
+import { AdminRiskSnapshotsPanel } from "@/components/admin/AdminRiskSnapshotsPanel";
+import { AdminScreeningRunsPanel } from "@/components/admin/AdminScreeningRunsPanel";
+import { AdminUboPanel } from "@/components/admin/AdminUboPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -169,6 +177,8 @@ function AdminContent() {
               <Route path="/compliance" element={<AdminComplianceSection />} />
               <Route path="/audit" element={<AuditSection />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route path="/infrastructure" element={<InfrastructureSection />} />
+              <Route path="/data-governance" element={<DataGovernanceSection />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="*" element={<AdminNotFound />} />

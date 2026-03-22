@@ -7,6 +7,8 @@ import {
   GitCompare,
   Scale,
   Wrench,
+  Server,
+  Database,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -27,6 +29,8 @@ const sidebarItems = [
   { title: "Users & Orgs", url: ROUTES.ADMIN_USERS_ORGS, icon: Users },
   { title: "Compliance", url: ROUTES.ADMIN_COMPLIANCE, icon: Scale },
   { title: "Audit", url: ROUTES.ADMIN_AUDIT, icon: Shield },
+  { title: "Infrastructure", url: ROUTES.ADMIN_INFRASTRUCTURE, icon: Server },
+  { title: "Data Governance", url: ROUTES.ADMIN_DATA_GOVERNANCE, icon: Database },
   { title: "API Keys", url: ROUTES.ADMIN_API_KEYS, icon: Key },
   { title: "Overrides", url: ROUTES.ADMIN_OVERRIDES, icon: Wrench },
   { title: "Settings", url: ROUTES.ADMIN_SETTINGS, icon: Settings },
