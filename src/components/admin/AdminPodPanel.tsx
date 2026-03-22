@@ -639,16 +639,28 @@ function AddMilestoneForm({
       toast.error("Name and due date are required");
       return;
     }
+    const dueDate = new Date(dueAt);
+    if (dueDate <= new Date()) {
+      toast.error("Due date must be in the future");
+      return;
+    }
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("pod_milestones").insert({
+      const { data: inserted, error } = await supabase.from("pod_milestones").insert({
         pod_id: podId,
+        org_id: orgId,
         name: name.trim(),
-        due_at: new Date(dueAt).toISOString(),
+        due_at: dueDate.toISOString(),
         status: "pending",
         depends_on: dependsOn === "none" ? null : dependsOn,
-      } as any);
+      } as any).select();
       if (error) throw error;
+      if (!inserted || inserted.length === 0) {
+        toast.error("Milestone was not created", {
+          description: "Access may have been denied. Please check your permissions.",
+        });
+        return;
+      }
       toast.success(`Milestone "${name.trim()}" added`);
       onSuccess();
     } catch (err: any) {
