@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,43 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Loader2, Check, FileText, Users, Shield, Download, 
+import {
+  Loader2, Check, FileText, Users, Shield, Download,
   AlertCircle, CheckCircle2, Clock, Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
-import * as WadState from "@/lib/wad-state";
+import {
+  submitAttestation,
+  sealWad,
+  downloadCertificate,
+  triggerBlobDownload,
+  resolveAttestationRole,
+  type WadRecord,
+  type ConsequenceState,
+} from "@/lib/modules/consequence";
 
 type Match = Tables<"matches">;
 
-interface Attestation {
-  id: string;
-  wad_id: string;
-  user_id: string;
-  org_id: string;
-  role: string;
-  attested_name: string;
-  attested_at: string;
-  attestation_text: string;
-}
-
-interface Wad {
-  id: string;
-  poi_id: string;
-  status: string;
-  evidence_bundle: any;
-  seal_hash: string | null;
-  sealed_at: string | null;
-  created_at: string;
-  buyer_org_id: string | null;
-  seller_org_id: string | null;
-  attestations?: Attestation[];
-}
-
 interface WadStepperProps {
-  wad: Wad;
+  wad: WadRecord;
   match: Match;
+  consequenceState: ConsequenceState;
+  userOrgId: string | null;
   onUpdate: () => void;
 }
 
@@ -57,176 +42,84 @@ const STEPS = [
 
 const ATTESTATION_TEXT = "I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed.";
 
-export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
+export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }: WadStepperProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const [userOrgId, setUserOrgId] = useState<string | null>(null);
   const [attesting, setAttesting] = useState(false);
   const [sealing, setSealing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
 
-  useEffect(() => {
-    fetchUserOrg();
-  }, []);
-
-  const fetchUserOrg = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", session.user.id)
-        .single();
-      if (profile) {
-        setUserOrgId(profile.org_id);
-      }
-    }
-  };
+  // All decision logic comes from consequenceState — no inline derivation
+  const {
+    canAttest,
+    hasAttested,
+    canSeal,
+    canDownloadCertificate,
+    attestations,
+    uiStatus,
+    statusLabel,
+  } = consequenceState;
 
   const getStatusBadge = () => {
-    const label = WadState.statusLabel(wad.status);
-    switch (wad.status) {
+    switch (uiStatus) {
       case "draft":
-        return <Badge variant="secondary">{label}</Badge>;
+        return <Badge variant="secondary">{statusLabel}</Badge>;
       case "awaiting_attestations":
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Awaiting Attestations</Badge>;
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">{statusLabel}</Badge>;
+      case "ready_to_seal":
+        return <Badge variant="outline" className="border-blue-500 text-blue-600">{statusLabel}</Badge>;
       case "sealed":
-        return <Badge className="bg-primary text-primary-foreground">{label}</Badge>;
+        return <Badge className="bg-primary text-primary-foreground">{statusLabel}</Badge>;
       case "revoked":
-        return <Badge variant="destructive">{label}</Badge>;
+        return <Badge variant="destructive">{statusLabel}</Badge>;
       default:
-        return <Badge variant="secondary">{label}</Badge>;
+        return <Badge variant="secondary">{statusLabel}</Badge>;
     }
   };
 
-  const buyerAttested = wad.attestations?.some(a => a.role === "buyer_signatory");
-  const sellerAttested = wad.attestations?.some(a => a.role === "seller_signatory");
-  const userIsBuyer = userOrgId === wad.buyer_org_id;
-  const userIsSeller = userOrgId === wad.seller_org_id;
-  const userHasAttested = wad.attestations?.some(a => a.org_id === userOrgId);
-  const canSeal = buyerAttested && sellerAttested && WadState.canDo(wad.status, "seal");
-
   const handleAttest = async () => {
-    if (!attestedName.trim()) {
-      toast.error("Please enter your name");
-      return;
-    }
-    if (!attestConfirmed) {
-      toast.error("Please confirm the attestation statement");
+    if (!attestedName.trim() || !attestConfirmed) {
+      toast.error(!attestedName.trim() ? "Please enter your name" : "Please confirm the attestation statement");
       return;
     }
 
-    try {
-      setAttesting(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    setAttesting(true);
+    const role = resolveAttestationRole(userOrgId, wad.buyer_org_id, wad.seller_org_id);
+    const result = await submitAttestation(wad.id, attestedName, role);
+    setAttesting(false);
 
-      const role = userIsBuyer ? "buyer_signatory" : userIsSeller ? "seller_signatory" : "witness";
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wad.id}/attest`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            attested_name: attestedName,
-            role,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to attest");
-      }
-
+    if (result.success) {
       toast.success("Attestation recorded");
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to attest");
-    } finally {
-      setAttesting(false);
+    } else {
+      toast.error(result.error || "Failed to attest");
     }
   };
 
   const handleSeal = async () => {
-    try {
-      setSealing(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    setSealing(true);
+    const result = await sealWad(wad.id);
+    setSealing(false);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wad.id}/seal`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to seal");
-      }
-
+    if (result.success) {
       toast.success("WaD sealed successfully");
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to seal");
-    } finally {
-      setSealing(false);
+    } else {
+      toast.error(result.error || "Failed to seal");
     }
   };
 
   const handleDownloadCertificate = async () => {
-    try {
-      setDownloading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Session expired. Please sign in again.");
-        return;
-      }
+    setDownloading(true);
+    const result = await downloadCertificate(wad.id);
+    setDownloading(false);
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wad.id}/certificate`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          signal: controller.signal,
-        }
-      );
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        throw new Error(errorBody?.message || "Failed to download certificate");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `WaD-Certificate-${wad.id.substring(0, 8)}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-
+    if (result.success && result.data) {
+      triggerBlobDownload(result.data, `WaD-Certificate-${wad.id.substring(0, 8)}.pdf`);
       toast.success("Certificate downloaded");
-    } catch (error: any) {
-      console.error("Certificate download error:", error);
-      toast.error(error.message || "Failed to download certificate");
-    } finally {
-      setDownloading(false);
+    } else {
+      toast.error(result.error || "Failed to download certificate");
     }
   };
 
@@ -283,8 +176,8 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
           </div>
         );
 
-      case "evidence":
-        const evidence = wad.evidence_bundle;
+      case "evidence": {
+        const evidence = wad.evidence_bundle as Record<string, any> | null;
         return (
           <div className="space-y-4">
             <div>
@@ -327,6 +220,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
             </div>
           </div>
         );
+      }
 
       case "signatories":
         return (
@@ -337,7 +231,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  {buyerAttested ? (
+                  {attestations.buyerAttested ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                   ) : (
                     <Clock className="h-5 w-5 text-muted-foreground" />
@@ -347,13 +241,13 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
                     <p className="text-sm text-muted-foreground">{match.buyer_name}</p>
                   </div>
                 </div>
-                {buyerAttested && (
+                {attestations.buyerAttested && (
                   <Badge variant="outline" className="text-green-600">Attested</Badge>
                 )}
               </div>
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  {sellerAttested ? (
+                  {attestations.sellerAttested ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                   ) : (
                     <Clock className="h-5 w-5 text-muted-foreground" />
@@ -363,7 +257,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
                     <p className="text-sm text-muted-foreground">{match.seller_name}</p>
                   </div>
                 </div>
-                {sellerAttested && (
+                {attestations.sellerAttested && (
                   <Badge variant="outline" className="text-green-600">Attested</Badge>
                 )}
               </div>
@@ -390,7 +284,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         );
 
       case "attest":
-        if (WadState.isSealed(wad.status)) {
+        if (uiStatus === "sealed") {
           return (
             <div className="text-center py-6">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -400,7 +294,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
           );
         }
 
-        if (userHasAttested) {
+        if (hasAttested) {
           return (
             <div className="space-y-4">
               <div className="text-center py-4">
@@ -418,6 +312,18 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
                   </Button>
                 </>
               )}
+            </div>
+          );
+        }
+
+        if (!canAttest) {
+          return (
+            <div className="text-center py-6">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="font-medium">Attestation not available</p>
+              <p className="text-sm text-muted-foreground">
+                Only buyer and seller signatories can attest on this WaD.
+              </p>
             </div>
           );
         }
@@ -446,13 +352,13 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
                   onCheckedChange={(checked) => setAttestConfirmed(checked === true)}
                 />
                 <Label htmlFor="attest-confirm" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that this is NOT a contract, involves NO payment, and creates NO legal obligation. 
+                  I confirm that this is NOT a contract, involves NO payment, and creates NO legal obligation.
                   This is an evidence record that intent was confirmed.
                 </Label>
               </div>
             </div>
-            <Button 
-              onClick={handleAttest} 
+            <Button
+              onClick={handleAttest}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
               className="w-full"
             >
@@ -464,7 +370,7 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         );
 
       case "certificate":
-        if (!WadState.isSealed(wad.status)) {
+        if (!canDownloadCertificate) {
           return (
             <div className="text-center py-6">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -505,6 +411,8 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
     }
   };
 
+  const isSealed = uiStatus === "sealed";
+
   return (
     <Card>
       <CardHeader>
@@ -520,29 +428,29 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Step indicators - horizontal scroll on mobile, flex on desktop */}
+        {/* Step indicators */}
         <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2 -mx-2 px-2 lg:justify-between lg:gap-0 lg:mx-0 lg:px-0">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
             const isActive = index === activeStep;
-            const isCompleted = index < activeStep || 
-              (step.id === "certificate" && WadState.isSealed(wad.status)) ||
-              (step.id === "attest" && WadState.isSealed(wad.status));
-            
+            const isCompleted = index < activeStep ||
+              (step.id === "certificate" && isSealed) ||
+              (step.id === "attest" && isSealed);
+
             return (
               <button
                 key={step.id}
                 onClick={() => setActiveStep(index)}
                 className={`flex flex-col items-center gap-1 px-2 py-1 rounded transition-colors min-w-[70px] flex-shrink-0 lg:min-w-[80px] lg:flex-shrink ${
-                  isActive 
-                    ? "bg-primary/10 text-primary" 
+                  isActive
+                    ? "bg-primary/10 text-primary"
                     : isCompleted
                     ? "text-green-600"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <div className={`p-1.5 lg:p-2 rounded-full ${
-                  isActive ? "bg-primary text-primary-foreground" : 
+                  isActive ? "bg-primary text-primary-foreground" :
                   isCompleted ? "bg-green-100 text-green-600" : "bg-muted"
                 }`}>
                   {isCompleted && !isActive ? (
@@ -558,11 +466,8 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
         </div>
 
         <Separator className="mb-6" />
-
-        {/* Step content */}
         {renderStepContent()}
 
-        {/* Navigation */}
         <div className="flex justify-between mt-6 pt-4 border-t">
           <Button
             variant="outline"

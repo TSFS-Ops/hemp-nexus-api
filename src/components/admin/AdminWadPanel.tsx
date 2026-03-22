@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
-import * as WadState from "@/lib/wad-state";
+import { revokeWad, WadState } from "@/lib/modules/consequence";
 import { apiFetch } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -54,21 +54,17 @@ export function AdminWadPanel() {
       return;
     }
 
-    try {
-      setRevoking(true);
-      await apiFetch(`wad/${revokeWadId}/revoke`, {
-        method: "POST",
-        body: JSON.stringify({ reason: revokeReason }),
-      });
+    setRevoking(true);
+    const result = await revokeWad(revokeWadId, revokeReason);
+    setRevoking(false);
 
+    if (result.success) {
       toast.success("WaD revoked");
       setRevokeWadId(null);
       setRevokeReason("");
       queryClient.invalidateQueries({ queryKey: ["admin-wads"] });
-    } catch (error: any) {
-      toast.error(error.message || "Failed to revoke WaD");
-    } finally {
-      setRevoking(false);
+    } else {
+      toast.error(result.error || "Failed to revoke WaD");
     }
   };
 
