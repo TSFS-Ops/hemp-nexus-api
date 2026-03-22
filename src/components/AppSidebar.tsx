@@ -1,4 +1,4 @@
-import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard } from "lucide-react";
+import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import {
