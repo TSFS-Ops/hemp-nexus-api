@@ -628,7 +628,18 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 <Button variant="ghost" size="sm" onClick={() => setReplacingDoc(null)} className="ml-auto">Cancel</Button>
               </div>
             )}
-            
+            {replacingDoc && (
+              <div className="space-y-2">
+                <Label htmlFor="changeNotes">Change Notes (optional)</Label>
+                <Input
+                  id="changeNotes"
+                  value={changeNotes}
+                  onChange={(e) => setChangeNotes(e.target.value)}
+                  placeholder="Describe what changed in this version…"
+                  disabled={uploading}
+                />
+              </div>
+            )}
             
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
