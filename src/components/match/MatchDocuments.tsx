@@ -429,7 +429,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         try {
           await apiFetch(`document-review/${replacingDoc.id}/replace`, {
             method: "POST",
-            body: JSON.stringify({ new_document_id: docId }),
+            body: JSON.stringify({ new_document_id: docId, change_notes: changeNotes || null }),
           });
           toast.success(`Document replaced. Version ${(replacingDoc.version || 1) + 1} is now active.`);
         } catch (replaceErr) {
