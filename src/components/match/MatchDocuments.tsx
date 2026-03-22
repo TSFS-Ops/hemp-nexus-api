@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -95,9 +96,15 @@ interface MatchDocument {
   valid_to: string | null;
   version?: number;
   supersedes_document_id?: string | null;
+  root_document_id?: string | null;
+  is_current_version?: boolean;
+  superseded_at?: string | null;
+  change_notes?: string | null;
   verified_at?: string | null;
   verified_by?: string | null;
   verification_notes?: string | null;
+  uploader_user_id?: string | null;
+  uploader_org_id?: string | null;
 }
 
 interface MatchDocumentsProps {
@@ -143,8 +150,11 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [visibility, setVisibility] = useState("private");
+  const [changeNotes, setChangeNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sessionOrgId, setSessionOrgId] = useState<string | null>(null);
+  const [showSuperseded, setShowSuperseded] = useState(false);
+  const [historyRootId, setHistoryRootId] = useState<string | null>(null);
   
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
@@ -382,6 +392,10 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           title: title || null,
           notes: notes || null,
           visibility: visibility,
+          // Version chain: new standalone doc is its own root, version 1, current
+          root_document_id: docId,
+          version: 1,
+          is_current_version: true,
         });
 
       if (insertError) {
@@ -416,7 +430,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         try {
           await apiFetch(`document-review/${replacingDoc.id}/replace`, {
             method: "POST",
-            body: JSON.stringify({ new_document_id: docId }),
+            body: JSON.stringify({ new_document_id: docId, change_notes: changeNotes || null }),
           });
           toast.success(`Document replaced. Version ${(replacingDoc.version || 1) + 1} is now active.`);
         } catch (replaceErr) {
@@ -444,10 +458,24 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     setDocType("");
     setTitle("");
     setNotes("");
+    setChangeNotes("");
     setVisibility("private");
     setReplacingDoc(null);
     clearUploadDraft();
   };
+
+  /** Get all docs in the same version chain */
+  const getVersionChain = (rootId: string | null | undefined): MatchDocument[] => {
+    if (!rootId) return [];
+    return documents
+      .filter(d => d.root_document_id === rootId)
+      .sort((a, b) => (a.version || 1) - (b.version || 1));
+  };
+
+  /** Filter: show only current versions unless toggled */
+  const visibleDocuments = showSuperseded
+    ? documents
+    : documents.filter(d => d.is_current_version !== false);
 
   const handleDownload = async (doc: MatchDocument) => {
     try {
@@ -520,9 +548,9 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       case "uploaded":
         return <Badge variant="secondary">Uploaded</Badge>;
       case "pending_review":
-        return <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">Pending Review</Badge>;
+        return <Badge className="bg-warning/10 text-warning border-warning/20">Pending Review</Badge>;
       case "accepted":
-        return <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Accepted</Badge>;
+        return <Badge className="bg-success/10 text-success border-success/20">Accepted</Badge>;
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>;
       case "verified":
@@ -601,7 +629,18 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 <Button variant="ghost" size="sm" onClick={() => setReplacingDoc(null)} className="ml-auto">Cancel</Button>
               </div>
             )}
-            
+            {replacingDoc && (
+              <div className="space-y-2">
+                <Label htmlFor="changeNotes">Change Notes (optional)</Label>
+                <Input
+                  id="changeNotes"
+                  value={changeNotes}
+                  onChange={(e) => setChangeNotes(e.target.value)}
+                  placeholder="Describe what changed in this version…"
+                  disabled={uploading}
+                />
+              </div>
+            )}
             
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -715,7 +754,27 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
             </Button>
           </div>
 
-          {/* Documents List */}
+          {/* Version filter + Documents List */}
+          {!loading && documents.length > 0 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {visibleDocuments.length} document{visibleDocuments.length !== 1 ? "s" : ""}
+                {!showSuperseded && documents.length > visibleDocuments.length && (
+                  <span> · {documents.length - visibleDocuments.length} superseded hidden</span>
+                )}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSuperseded(!showSuperseded)}
+                className="text-xs"
+              >
+                <History className="h-3 w-3 mr-1" />
+                {showSuperseded ? "Hide Superseded" : "Show All Versions"}
+              </Button>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
@@ -733,6 +792,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   <TableRow>
                     <TableHead>Document</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Version</TableHead>
                     <TableHead>Visibility</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Hash</TableHead>
@@ -741,99 +801,134 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id} className={doc.status === "revoked" || doc.status === "archived" ? "opacity-60" : ""}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <span className="font-medium truncate max-w-[200px] block">
-                              {doc.title || doc.filename}
-                              {(doc.version && doc.version > 1) ? <span className="text-xs text-muted-foreground ml-1">(v{doc.version})</span> : null}
-                            </span>
-                            {doc.title && (
-                              <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
-                                {doc.filename}
+                  {visibleDocuments.map((doc) => {
+                    const chain = getVersionChain(doc.root_document_id);
+                    const hasHistory = chain.length > 1;
+                    return (
+                      <TableRow key={doc.id} className={doc.status === "revoked" || doc.status === "archived" ? "opacity-60" : ""}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <span className="font-medium truncate max-w-[200px] block">
+                                {doc.title || doc.filename}
                               </span>
+                              {doc.title && (
+                                <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
+                                  {doc.filename}
+                                </span>
+                              )}
+                              {doc.change_notes && (
+                                <span className="text-xs text-muted-foreground/70 italic truncate max-w-[200px] block">
+                                  {doc.change_notes}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {DOC_TYPES.find((t) => t.value === doc.doc_type)?.label || doc.doc_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-mono">v{doc.version || 1}</span>
+                            {doc.is_current_version !== false ? (
+                              <Badge variant="default" className="text-[10px] px-1 py-0">Current</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">Superseded</Badge>
+                            )}
+                            {hasHistory && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0 ml-1"
+                                title="View version history"
+                                onClick={() => setHistoryRootId(doc.root_document_id || doc.id)}
+                              >
+                                <History className="h-3 w-3" />
+                              </Button>
                             )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {DOC_TYPES.find((t) => t.value === doc.doc_type)?.label || doc.doc_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getVisibilityBadge(doc.visibility)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(doc.status, doc.expiry_date)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-green-500" />
-                          <code className="text-xs font-mono">
-                            {doc.sha256_hash.slice(0, 8)}...
-                          </code>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(doc.created_at), "MMM dd, yyyy")}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => handleOpenDocument(doc)}
-                              disabled={doc.status === "revoked"}
-                            >
-                              <FileCheck className="h-4 w-4 mr-2" />
-                              Open
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDownload(doc)}
-                              disabled={doc.status === "revoked"}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSharingDoc(doc)}>
-                              <Share2 className="h-4 w-4 mr-2" />
-                              Sharing Settings
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setAccessLogsDoc(doc)}>
-                              <History className="h-4 w-4 mr-2" />
-                              Access History
-                            </DropdownMenuItem>
-                            {doc.status !== "revoked" && doc.status !== "archived" && (
-                              <>
-                                <DropdownMenuSeparator />
-                                {(doc.status === "uploaded" || doc.status === "rejected") && (
-                                  <DropdownMenuItem onClick={() => handleRequestReview(doc)}>
-                                    <ClipboardCheck className="h-4 w-4 mr-2" />
-                                    Submit for Review
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => handleReplaceDocument(doc)}>
+                        </TableCell>
+                        <TableCell>
+                          {getVisibilityBadge(doc.visibility)}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(doc.status, doc.expiry_date)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-success" />
+                            <code className="text-xs font-mono">
+                              {doc.sha256_hash.slice(0, 8)}...
+                            </code>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(doc.created_at), "MMM dd, yyyy")}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => handleOpenDocument(doc)}
+                                disabled={doc.status === "revoked"}
+                              >
+                                <FileCheck className="h-4 w-4 mr-2" />
+                                Open
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDownload(doc)}
+                                disabled={doc.status === "revoked"}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setSharingDoc(doc)}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Sharing Settings
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setAccessLogsDoc(doc)}>
+                                <History className="h-4 w-4 mr-2" />
+                                Access History
+                              </DropdownMenuItem>
+                              {hasHistory && (
+                                <DropdownMenuItem onClick={() => setHistoryRootId(doc.root_document_id || doc.id)}>
                                   <RefreshCw className="h-4 w-4 mr-2" />
-                                  Replace (New Version)
+                                  Version History ({chain.length} versions)
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              )}
+                              {doc.status !== "revoked" && doc.status !== "archived" && doc.is_current_version !== false && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  {(doc.status === "uploaded" || doc.status === "rejected") && (
+                                    <DropdownMenuItem onClick={() => handleRequestReview(doc)}>
+                                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                                      Submit for Review
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleReplaceDocument(doc)}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Replace (New Version)
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -863,6 +958,64 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           documentId={accessLogsDoc.id}
           documentName={accessLogsDoc.title || accessLogsDoc.filename}
         />
+      )}
+
+      {/* Version History Dialog */}
+      {historyRootId && (
+        <Dialog open={!!historyRootId} onOpenChange={(open) => !open && setHistoryRootId(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Version History
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {getVersionChain(historyRootId).reverse().map((doc) => (
+                <div
+                  key={doc.id}
+                  className={`border rounded-lg p-3 space-y-1 ${doc.is_current_version !== false ? "border-primary/50 bg-primary/5" : "opacity-70"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold">v{doc.version || 1}</span>
+                      {doc.is_current_version !== false ? (
+                        <Badge variant="default" className="text-[10px]">Current</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Superseded</Badge>
+                      )}
+                      {getStatusBadge(doc.status, doc.expiry_date)}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => handleOpenDocument(doc)}>
+                        Open
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => handleDownload(doc)}>
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium">{doc.title || doc.filename}</p>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{format(new Date(doc.created_at), "MMM dd, yyyy HH:mm")}</span>
+                    <span className="font-mono">{doc.sha256_hash.slice(0, 12)}…</span>
+                    {doc.file_size && <span>{formatFileSize(doc.file_size)}</span>}
+                  </div>
+                  {doc.change_notes && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Change: {doc.change_notes}
+                    </p>
+                  )}
+                  {doc.superseded_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Superseded: {format(new Date(doc.superseded_at), "MMM dd, yyyy HH:mm")}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

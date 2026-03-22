@@ -5,6 +5,7 @@ export type MatchDocumentListItem = {
   match_id: string;
   org_id: string;
   uploader_org_id: string | null;
+  uploader_user_id: string | null;
   doc_type: string;
   filename: string;
   storage_path: string;
@@ -19,6 +20,15 @@ export type MatchDocumentListItem = {
   visibility: string;
   valid_from: string | null;
   valid_to: string | null;
+  version: number;
+  supersedes_document_id: string | null;
+  root_document_id: string | null;
+  is_current_version: boolean;
+  superseded_at: string | null;
+  change_notes: string | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  verification_notes: string | null;
 };
 
 type MatchDocumentsResponse = {

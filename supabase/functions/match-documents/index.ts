@@ -84,11 +84,11 @@ Deno.serve(async (req) => {
       throw new ApiException("FORBIDDEN", "You do not have access to this POI", 403);
     }
 
-    // Fetch documents for match
+    // Fetch documents for match — include version lineage fields
     const { data: docs, error: docsError } = await supabase
       .from("match_documents")
       .select(
-        "id, match_id, org_id, uploader_org_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, notes, visibility, valid_from, valid_to"
+        "id, match_id, org_id, uploader_org_id, uploader_user_id, doc_type, filename, storage_path, sha256_hash, file_size, mime_type, status, created_at, expiry_date, title, notes, visibility, valid_from, valid_to, version, supersedes_document_id, root_document_id, is_current_version, superseded_at, change_notes, verified_at, verified_by, verification_notes"
       )
       .eq("match_id", matchId)
       .order("created_at", { ascending });
