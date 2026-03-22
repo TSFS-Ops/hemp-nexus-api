@@ -149,8 +149,11 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [visibility, setVisibility] = useState("private");
+  const [changeNotes, setChangeNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sessionOrgId, setSessionOrgId] = useState<string | null>(null);
+  const [showSuperseded, setShowSuperseded] = useState(false);
+  const [historyRootId, setHistoryRootId] = useState<string | null>(null);
   
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
