@@ -44,6 +44,8 @@ export const ROUTES = {
   ADMIN_AUDIT: '/admin/audit',
   ADMIN_API_KEYS: '/admin/api-keys',
   ADMIN_OVERRIDES: '/admin/overrides',
+  ADMIN_INFRASTRUCTURE: '/admin/infrastructure',
+  ADMIN_DATA_GOVERNANCE: '/admin/data-governance',
   ADMIN_SETTINGS: '/admin/settings',
   PRICING: '/pricing',
   BILLING: '/billing',
