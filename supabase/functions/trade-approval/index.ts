@@ -252,6 +252,34 @@ Deno.serve(async (req: Request) => {
         metadata: { target_org_id: parsed.org_id, risk_band: riskBand, valid_days: parsed.valid_days },
       });
 
+      // ── Approval routing notifications ──
+      // Notify required approvers based on risk band / threshold
+      const rolesToNotify: string[] = ["compliance_analyst"];
+      if (riskBand === "medium" || riskBand === "high") rolesToNotify.push("legal_reviewer");
+      if (riskBand === "high") rolesToNotify.push("director");
+
+      // Find users with DD roles matching the required approver roles
+      const { data: approverUsers } = await admin
+        .from("dd_roles")
+        .select("user_id, role")
+        .eq("org_id", parsed.org_id)
+        .in("role", rolesToNotify);
+
+      if (approverUsers && approverUsers.length > 0) {
+        const notifications = approverUsers.map((u: any) => ({
+          user_id: u.user_id,
+          org_id: parsed.org_id,
+          type: "approval_required",
+          title: `Trade approval requires your sign-off (${u.role})`,
+          body: `A ${riskBand}-risk trade approval for this organisation requires ${u.role} review.`,
+          link: `/dashboard/compliance`,
+          read: false,
+        }));
+        await admin.from("notifications").insert(notifications).catch((err: any) => {
+          console.error("Failed to send approval notifications:", err);
+        });
+      }
+
       return new Response(JSON.stringify(envelope(approval, correlationId)), {
         status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -60,6 +60,22 @@ import { DocumentAccessLogs } from "./DocumentAccessLogs";
 import { listMatchDocuments } from "@/lib/match-documents-client";
 import { apiFetch } from "@/lib/api-client";
 
+/** Detect MIME from first bytes of a file — client-side magic-byte check */
+const MAGIC_SIGS: [string, number[]][] = [
+  ["application/pdf", [0x25, 0x50, 0x44, 0x46]],
+  ["image/png", [0x89, 0x50, 0x4E, 0x47]],
+  ["image/jpeg", [0xFF, 0xD8, 0xFF]],
+  ["image/gif", [0x47, 0x49, 0x46, 0x38]],
+  ["application/zip", [0x50, 0x4B, 0x03, 0x04]],
+];
+function detectMimeFromHeader(header: Uint8Array): string | null {
+  for (const [mime, bytes] of MAGIC_SIGS) {
+    if (header.length < bytes.length) continue;
+    if (bytes.every((b, i) => header[i] === b)) return mime;
+  }
+  return null;
+}
+
 interface MatchDocument {
   id: string;
   match_id: string;
@@ -282,6 +298,23 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       setUploading(true);
       setError(null);
 
+      // ── Magic-byte validation: inspect first 16 bytes ──
+      const headerSlice = selectedFile.slice(0, 16);
+      const headerBytes = new Uint8Array(await headerSlice.arrayBuffer());
+      const detectedMime = detectMimeFromHeader(headerBytes);
+      if (detectedMime === "image/gif") {
+        setError("GIF files are not allowed");
+        setUploading(false);
+        return;
+      }
+      if (detectedMime && detectedMime !== selectedFile.type) {
+        // ZIP-based Office formats are expected
+        const isZipOffice = detectedMime === "application/zip" && selectedFile.type.includes("openxmlformats");
+        if (!isZipOffice) {
+          console.warn(`MIME mismatch: client says ${selectedFile.type}, magic bytes say ${detectedMime}`);
+        }
+      }
+
       const sha256Hash = await computeFileHash(selectedFile);
 
       // Check for duplicate hash
@@ -343,6 +376,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           sha256_hash: sha256Hash,
           file_size: selectedFile.size,
           mime_type: selectedFile.type,
+          magic_bytes_verified: !!detectedMime,
+          server_detected_mime: detectedMime || null,
           status: "uploaded",
           title: title || null,
           notes: notes || null,

@@ -5,7 +5,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
+import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert, ListChecks } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
@@ -16,10 +16,11 @@ import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
 import { DisputeBanner } from "@/components/match/DisputeBanner";
 import { ConfirmIntentCard } from "@/components/match/ConfirmIntentCard";
+import { CompletionTracker } from "@/components/match/CompletionTracker";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import type { Match } from "@/hooks/use-match-details";
 
-const ALLOWED_TABS = ["details", "documents", "terms", "notes", "evidence", "wad", "disputes", "timeline"];
+const ALLOWED_TABS = ["details", "documents", "terms", "notes", "evidence", "wad", "progress", "disputes", "timeline"];
 
 interface MatchDetailsTabsProps {
   match: Match;
@@ -35,7 +36,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-8">
+        <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-9">
           <TabsTrigger value="details" className="flex items-center gap-1.5 min-w-[44px]">
             <Info className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Details</span>
@@ -63,6 +64,10 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
           <TabsTrigger value="disputes" className="flex items-center gap-1.5 min-w-[44px]">
             <ShieldAlert className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Disputes</span>
+          </TabsTrigger>
+          <TabsTrigger value="progress" className="flex items-center gap-1.5 min-w-[44px]">
+            <ListChecks className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Progress</span>
           </TabsTrigger>
           <TabsTrigger value="timeline" className="flex items-center gap-1.5 min-w-[44px]">
             <Clock className="h-4 w-4 shrink-0" />
@@ -124,6 +129,10 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
 
       <TabsContent value="disputes" className="mt-4">
         <DisputePanel matchId={match.id} orgId={match.org_id} />
+      </TabsContent>
+
+      <TabsContent value="progress" className="mt-4">
+        <CompletionTracker matchId={match.id} orgId={match.org_id} />
       </TabsContent>
 
       <TabsContent value="timeline" className="mt-4">

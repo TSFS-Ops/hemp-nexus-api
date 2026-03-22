@@ -22,6 +22,7 @@ const PodCreateSchema = z.object({
     z.object({
       name: z.string().min(1).max(256),
       due_at: z.string().datetime(),
+      depends_on_index: z.number().int().min(0).optional(),
     })
   ).min(1).max(20),
 });
@@ -123,13 +124,16 @@ Deno.serve(async (req: Request) => {
 
       if (podErr) throw new ApiException("INTERNAL_ERROR", podErr.message, 500);
 
-      // Create milestones
-      const milestoneInserts = parsed.milestones.map((m) => ({
+      // Create milestones with sequence order and dependencies
+      // First pass: insert all milestones to get IDs
+      const milestoneInserts = parsed.milestones.map((m, idx) => ({
         org_id: orgId,
         pod_id: pod.id,
         name: m.name,
         due_at: m.due_at,
         status: "pending",
+        sequence_order: idx,
+        depends_on: null as string | null,
       }));
 
       const { data: milestones, error: msErr } = await admin
@@ -138,6 +142,21 @@ Deno.serve(async (req: Request) => {
         .select();
 
       if (msErr) throw new ApiException("INTERNAL_ERROR", msErr.message, 500);
+
+      // Second pass: wire up dependencies using returned IDs
+      const milestoneIds = (milestones || []).map((m: any) => m.id);
+      const depUpdates: Promise<any>[] = [];
+      parsed.milestones.forEach((m, idx) => {
+        if (m.depends_on_index !== undefined && m.depends_on_index < idx) {
+          const depId = milestoneIds[m.depends_on_index];
+          if (depId) {
+            depUpdates.push(
+              admin.from("pod_milestones").update({ depends_on: depId }).eq("id", milestoneIds[idx])
+            );
+          }
+        }
+      });
+      if (depUpdates.length > 0) await Promise.all(depUpdates);
 
       // Record event
       await admin.from("event_store").insert({
@@ -190,6 +209,23 @@ Deno.serve(async (req: Request) => {
       }
       if (milestone.status === "completed") {
         throw new ApiException("CONFLICT", "Milestone already completed", 409);
+      }
+
+      // ── Dependency check: block if prerequisite milestone is not completed ──
+      if ((milestone as any).depends_on) {
+        const { data: dep } = await admin
+          .from("pod_milestones")
+          .select("id, name, status")
+          .eq("id", (milestone as any).depends_on)
+          .maybeSingle();
+
+        if (dep && dep.status !== "completed") {
+          throw new ApiException(
+            "PRECONDITION_FAILED",
+            `Cannot complete "${milestone.name}" — prerequisite "${dep.name}" must be completed first`,
+            412
+          );
+        }
       }
 
       const { data: updated, error } = await admin
