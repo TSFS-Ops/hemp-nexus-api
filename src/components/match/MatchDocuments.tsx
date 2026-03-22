@@ -457,10 +457,24 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     setDocType("");
     setTitle("");
     setNotes("");
+    setChangeNotes("");
     setVisibility("private");
     setReplacingDoc(null);
     clearUploadDraft();
   };
+
+  /** Get all docs in the same version chain */
+  const getVersionChain = (rootId: string | null | undefined): MatchDocument[] => {
+    if (!rootId) return [];
+    return documents
+      .filter(d => d.root_document_id === rootId)
+      .sort((a, b) => (a.version || 1) - (b.version || 1));
+  };
+
+  /** Filter: show only current versions unless toggled */
+  const visibleDocuments = showSuperseded
+    ? documents
+    : documents.filter(d => d.is_current_version !== false);
 
   const handleDownload = async (doc: MatchDocument) => {
     try {
