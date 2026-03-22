@@ -97,6 +97,16 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ case_id: compCase.id })),
       });
 
+      // Dispatch notification for compliance case opened
+      await admin.functions.invoke("notification-dispatch", {
+        body: {
+          event_type: "compliance.case.opened",
+          subject: "Compliance case opened",
+          message: `A new compliance case has been opened for entity ${parsed.entity_id}.`,
+          metadata: { org_id: orgId, case_id: compCase.id, entity_id: parsed.entity_id },
+        },
+      }).catch((err: any) => console.error("[compliance-cases] Notification dispatch failed:", err));
+
       return new Response(JSON.stringify(successEnvelope(compCase, correlationId)), {
         status: 201,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
