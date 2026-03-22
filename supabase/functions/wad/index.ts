@@ -486,7 +486,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── GET /wad/:wadId/certificate ── Download certificate
+    // ── GET /wad/:wadId/certificate ── Download PDF certificate
     if (req.method === "GET" && parts.length === 2 && parts[1] === "certificate") {
       const wadId = parts[0];
 
@@ -505,53 +505,319 @@ Deno.serve(async (req) => {
 
       // Fetch attestations + POI in parallel
       const [attResult, poiResult] = await Promise.all([
-        supabase.from("wad_attestations").select("*").eq("wad_id", wadId),
+        supabase.from("wad_attestations").select("*").eq("wad_id", wadId).order("attested_at", { ascending: true }),
         supabase.from("matches").select("*").eq("id", wad.poi_id).single(),
       ]);
 
       const attestations = attResult.data || [];
       const poi = poiResult.data;
+      const generatedAt = new Date().toISOString();
 
-      const certificate = {
-        certificate_type: "WaD_Certificate",
-        version: "1.0",
-        wad_id: wad.id,
-        poi_id: wad.poi_id,
-        seal_hash: wad.seal_hash,
-        sealed_at: wad.sealed_at,
-        ledger_entry_hash: wad.ledger_entry_hash,
-        parties: {
-          buyer: { org_id: wad.buyer_org_id, name: poi?.buyer_name },
-          seller: { org_id: wad.seller_org_id, name: poi?.seller_name },
-        },
-        transaction_summary: {
-          commodity: poi?.commodity,
-          quantity: `${poi?.quantity_amount} ${poi?.quantity_unit}`,
-          price: `${poi?.price_currency} ${poi?.price_amount}`,
-          confirmed_at: poi?.settled_at,
-        },
-        attestations: attestations.map(a => ({
-          role: a.role,
-          attested_name: a.attested_name,
-          attested_at: a.attested_at,
-          attestation_text: a.attestation_text,
-        })),
-        evidence_bundle_hash: await generateHash(wad.evidence_bundle),
-        disclaimer: "This is NOT a contract. No payment. No obligation. This is an evidence-grade record that intent was confirmed.",
-        generated_at: new Date().toISOString(),
+      // ── Build PDF ──
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.setTitle(`WaD Certificate — ${wadId}`);
+      pdfDoc.setSubject("Without-a-Doubt Certificate");
+      pdfDoc.setProducer("Izenzo Platform");
+      pdfDoc.setCreator("Izenzo Platform");
+      pdfDoc.setCreationDate(new Date());
+
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const courier = await pdfDoc.embedFont(StandardFonts.Courier);
+
+      const PAGE_W = 595.28; // A4
+      const PAGE_H = 841.89;
+      const MARGIN = 50;
+      const CONTENT_W = PAGE_W - 2 * MARGIN;
+      const LINE_H = 16;
+      const SMALL_LINE_H = 13;
+
+      let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      let y = PAGE_H - MARGIN;
+
+      // Utility: draw text with wrapping, returns new y
+      const drawWrapped = (
+        text: string,
+        x: number,
+        startY: number,
+        maxW: number,
+        font: typeof helvetica,
+        size: number,
+        color = rgb(0.15, 0.15, 0.15),
+        lineH = SMALL_LINE_H
+      ): number => {
+        const words = text.split(" ");
+        let line = "";
+        let cy = startY;
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          const tw = font.widthOfTextAtSize(test, size);
+          if (tw > maxW && line) {
+            if (cy < MARGIN + 40) {
+              // Add footer to current page
+              drawFooter(page);
+              page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+              cy = PAGE_H - MARGIN;
+            }
+            page.drawText(line, { x, y: cy, size, font, color });
+            cy -= lineH;
+            line = word;
+          } else {
+            line = test;
+          }
+        }
+        if (line) {
+          if (cy < MARGIN + 40) {
+            drawFooter(page);
+            page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+            cy = PAGE_H - MARGIN;
+          }
+          page.drawText(line, { x, y: cy, size, font, color });
+          cy -= lineH;
+        }
+        return cy;
       };
 
+      const drawFooter = (p: typeof page) => {
+        const footerY = MARGIN - 15;
+        p.drawLine({
+          start: { x: MARGIN, y: footerY + 12 },
+          end: { x: PAGE_W - MARGIN, y: footerY + 12 },
+          thickness: 0.5,
+          color: grayscale(0.7),
+        });
+        p.drawText(`Generated: ${generatedAt}`, {
+          x: MARGIN,
+          y: footerY,
+          size: 7,
+          font: helvetica,
+          color: grayscale(0.5),
+        });
+        p.drawText("Izenzo — Governed Infrastructure for Trade and Compliance", {
+          x: PAGE_W - MARGIN - helvetica.widthOfTextAtSize("Izenzo — Governed Infrastructure for Trade and Compliance", 7),
+          y: footerY,
+          size: 7,
+          font: helvetica,
+          color: grayscale(0.5),
+        });
+      };
+
+      const drawSectionHeader = (label: string): void => {
+        if (y < MARGIN + 80) {
+          drawFooter(page);
+          page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+          y = PAGE_H - MARGIN;
+        }
+        y -= 8;
+        page.drawLine({
+          start: { x: MARGIN, y: y + 4 },
+          end: { x: PAGE_W - MARGIN, y: y + 4 },
+          thickness: 0.5,
+          color: grayscale(0.8),
+        });
+        y -= LINE_H;
+        page.drawText(label, {
+          x: MARGIN,
+          y,
+          size: 12,
+          font: helveticaBold,
+          color: rgb(0.1, 0.1, 0.1),
+        });
+        y -= LINE_H + 2;
+      };
+
+      const drawField = (label: string, value: string, mono = false): void => {
+        if (y < MARGIN + 40) {
+          drawFooter(page);
+          page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+          y = PAGE_H - MARGIN;
+        }
+        page.drawText(label, {
+          x: MARGIN,
+          y,
+          size: 9,
+          font: helveticaBold,
+          color: grayscale(0.4),
+        });
+        y -= SMALL_LINE_H;
+        y = drawWrapped(
+          value || "—",
+          MARGIN,
+          y,
+          CONTENT_W,
+          mono ? courier : helvetica,
+          mono ? 8 : 10,
+          rgb(0.15, 0.15, 0.15),
+          SMALL_LINE_H
+        );
+        y -= 4;
+      };
+
+      // ══════════════════════════════════════
+      // PAGE CONTENT
+      // ══════════════════════════════════════
+
+      // ── Header / Title ──
+      // Decorative top bar
+      page.drawRectangle({
+        x: 0, y: PAGE_H - 8,
+        width: PAGE_W, height: 8,
+        color: rgb(0.16, 0.65, 0.53), // teal brand colour
+      });
+
+      y -= 20;
+      page.drawText("CERTIFICATE", {
+        x: MARGIN,
+        y,
+        size: 28,
+        font: helveticaBold,
+        color: rgb(0.1, 0.1, 0.1),
+      });
+      y -= 24;
+      page.drawText("Without-a-Doubt (WaD) — Sealed Evidence Record", {
+        x: MARGIN,
+        y,
+        size: 12,
+        font: helvetica,
+        color: grayscale(0.4),
+      });
+      y -= LINE_H;
+
+      // ── Certificate Identity ──
+      drawSectionHeader("Certificate Details");
+      drawField("WaD Identifier", wadId, true);
+      drawField("POI Identifier", wad.poi_id, true);
+      drawField("Certificate Status", "SEALED");
+      drawField("Issued", wad.sealed_at ? new Date(wad.sealed_at).toUTCString() : "—");
+      drawField("Generated", new Date(generatedAt).toUTCString());
+
+      // ── Transaction Summary ──
+      drawSectionHeader("Transaction Summary");
+      drawField("Commodity", poi?.commodity || "—");
+      drawField("Quantity", `${poi?.quantity_amount ?? "—"} ${poi?.quantity_unit ?? ""}`);
+      drawField("Price", `${poi?.price_currency ?? ""} ${poi?.price_amount ?? "—"}`);
+      drawField("Intent Confirmed", poi?.settled_at ? new Date(poi.settled_at).toUTCString() : "—");
+
+      // ── Parties ──
+      drawSectionHeader("Parties");
+      drawField("Buyer", poi?.buyer_name || "—");
+      drawField("Buyer Organisation", wad.buyer_org_id || "—", true);
+      drawField("Seller", poi?.seller_name || "—");
+      drawField("Seller Organisation", wad.seller_org_id || "—", true);
+
+      // ── Attestations ──
+      drawSectionHeader("Attestations");
+      if (attestations.length === 0) {
+        drawField("Attestations", "None recorded");
+      } else {
+        for (const att of attestations) {
+          const roleLabel = att.role.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+          drawField(
+            `${roleLabel} — ${att.attested_name}`,
+            `Attested: ${new Date(att.attested_at).toUTCString()}`
+          );
+          y = drawWrapped(
+            `"${att.attestation_text}"`,
+            MARGIN + 10,
+            y,
+            CONTENT_W - 10,
+            helvetica,
+            8,
+            grayscale(0.45),
+            SMALL_LINE_H
+          );
+          y -= 6;
+        }
+      }
+
+      // ── Cryptographic Seal ──
+      drawSectionHeader("Cryptographic Verification");
+      drawField("Seal Hash (SHA-256)", wad.seal_hash || "—", true);
+      drawField("Ledger Entry Hash", wad.ledger_entry_hash || "—", true);
+      if (wad.prev_ledger_entry_hash) {
+        drawField("Previous Ledger Hash", wad.prev_ledger_entry_hash, true);
+      }
+      const evidenceBundleHash = await generateHash(wad.evidence_bundle);
+      drawField("Evidence Bundle Hash", evidenceBundleHash, true);
+
+      // ── Evidence Summary ──
+      const evidence = wad.evidence_bundle as any;
+      if (evidence) {
+        drawSectionHeader("Evidence Summary");
+        drawField("Documents Included", String(evidence?.documents?.length || 0));
+        drawField("Event Chain Length", String(evidence?.event_count || 0));
+        if (evidence?.documents?.length > 0) {
+          for (const doc of evidence.documents.slice(0, 10)) {
+            const docLabel = doc.title || doc.doc_type || "Document";
+            const hashShort = doc.sha256_hash ? doc.sha256_hash.substring(0, 24) + "…" : "—";
+            drawField(docLabel, `Hash: ${hashShort}`, true);
+          }
+          if (evidence.documents.length > 10) {
+            y = drawWrapped(
+              `… and ${evidence.documents.length - 10} more documents`,
+              MARGIN,
+              y,
+              CONTENT_W,
+              helvetica,
+              9,
+              grayscale(0.5),
+              SMALL_LINE_H
+            );
+          }
+        }
+      }
+
+      // ── Disclaimer ──
+      drawSectionHeader("Disclaimer");
+      y = drawWrapped(
+        "This is NOT a contract. No payment. No obligation. This document is an evidence-grade record that intent was confirmed between the named parties. It does not create, evidence, or imply any legally binding agreement, payment obligation, or contractual commitment.",
+        MARGIN,
+        y,
+        CONTENT_W,
+        helvetica,
+        9,
+        grayscale(0.4),
+        SMALL_LINE_H
+      );
+      y -= 6;
+
+      // ── Verification Notice ──
+      y = drawWrapped(
+        `To verify this certificate, compare the Seal Hash and Ledger Entry Hash with the platform records for WaD ID ${wadId}. The seal hash is a SHA-256 digest of the canonical payload including all attestations, document hashes, and event chain data at the time of sealing.`,
+        MARGIN,
+        y,
+        CONTENT_W,
+        helvetica,
+        8,
+        grayscale(0.5),
+        SMALL_LINE_H
+      );
+
+      // ── Footer on final page ──
+      drawFooter(page);
+
+      // Serialise PDF
+      const pdfBytes = await pdfDoc.save();
+
+      // Update certificate_generated_at if the column exists
+      await supabase
+        .from("wads")
+        .update({ certificate_generated_at: generatedAt })
+        .eq("id", wadId);
+
+      // Audit
       const auditAction = isAdmin(authCtx) && !isPartyToWad(wad, authCtx.orgId)
         ? "admin.wad.certificate.downloaded"
-        : "wad.downloaded";
-      await writeAuditLog(auditAction, wadId);
+        : "wad.certificate.downloaded";
+      await writeAuditLog(auditAction, wadId, { format: "pdf" });
 
-      return new Response(JSON.stringify(certificate, null, 2), {
+      return new Response(pdfBytes, {
         status: 200,
-        headers: { 
-          ...headers, 
-          "Content-Type": "application/json",
-          "Content-Disposition": `attachment; filename="wad-certificate-${wadId}.json"`,
+        headers: {
+          ...headers,
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="WaD-Certificate-${wadId.substring(0, 8)}.pdf"`,
+          "Content-Length": String(pdfBytes.length),
         },
       });
     }
