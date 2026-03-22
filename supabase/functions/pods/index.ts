@@ -228,6 +228,9 @@ Deno.serve(async (req: Request) => {
         }
       }
 
+      // Atomic update with status guard — prevents double-completion under concurrency.
+      // If another request completes this milestone between our SELECT and UPDATE,
+      // the WHERE clause prevents a second mutation.
       const { data: updated, error } = await admin
         .from("pod_milestones")
         .update({
@@ -236,10 +239,14 @@ Deno.serve(async (req: Request) => {
           evidence_document_id: parsed.evidence_document_id || null,
         })
         .eq("id", parsed.milestone_id)
+        .eq("status", "pending")
         .select()
         .single();
 
-      if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
+      if (error || !updated) {
+        // If no rows matched, another request already completed it
+        throw new ApiException("CONFLICT", "Milestone was already completed by another request", 409);
+      }
 
       await admin.from("event_store").insert({
         org_id: orgId,
