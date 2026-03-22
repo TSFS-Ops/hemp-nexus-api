@@ -276,20 +276,41 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
               </div>
               <div className="flex items-center gap-2">
                 {stage.actionLabel && stage.actionKey && (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => handleAction(stage.actionKey!)}
-                    disabled={isActioning}
-                    className="h-7 text-xs"
-                  >
-                    {isActioning ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                    ) : (
-                      <Play className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    {stage.actionLabel}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        disabled={isActioning}
+                        className="h-7 text-xs"
+                      >
+                        {isActioning ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        {stage.actionLabel}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {stage.actionKey === "start_wad" ? "Create Written Acknowledgement of Debt?" : "Create Proof of Delivery?"}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {stage.actionKey === "start_wad"
+                            ? "This will create an irrevocable WaD governance record for this match. This action cannot be undone."
+                            : "This will create a PoD with milestone tracking for this deal. This action cannot be undone."}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleAction(stage.actionKey!)}>
+                          Confirm
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 {statusBadge(stage.status)}
               </div>
