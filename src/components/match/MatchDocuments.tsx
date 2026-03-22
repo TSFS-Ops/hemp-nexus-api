@@ -753,7 +753,27 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
             </Button>
           </div>
 
-          {/* Documents List */}
+          {/* Version filter + Documents List */}
+          {!loading && documents.length > 0 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {visibleDocuments.length} document{visibleDocuments.length !== 1 ? "s" : ""}
+                {!showSuperseded && documents.length > visibleDocuments.length && (
+                  <span> · {documents.length - visibleDocuments.length} superseded hidden</span>
+                )}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSuperseded(!showSuperseded)}
+                className="text-xs"
+              >
+                <History className="h-3 w-3 mr-1" />
+                {showSuperseded ? "Hide Superseded" : "Show All Versions"}
+              </Button>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
@@ -771,6 +791,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   <TableRow>
                     <TableHead>Document</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Version</TableHead>
                     <TableHead>Visibility</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Hash</TableHead>
@@ -779,99 +800,134 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id} className={doc.status === "revoked" || doc.status === "archived" ? "opacity-60" : ""}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <span className="font-medium truncate max-w-[200px] block">
-                              {doc.title || doc.filename}
-                              {(doc.version && doc.version > 1) ? <span className="text-xs text-muted-foreground ml-1">(v{doc.version})</span> : null}
-                            </span>
-                            {doc.title && (
-                              <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
-                                {doc.filename}
+                  {visibleDocuments.map((doc) => {
+                    const chain = getVersionChain(doc.root_document_id);
+                    const hasHistory = chain.length > 1;
+                    return (
+                      <TableRow key={doc.id} className={doc.status === "revoked" || doc.status === "archived" ? "opacity-60" : ""}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <span className="font-medium truncate max-w-[200px] block">
+                                {doc.title || doc.filename}
                               </span>
+                              {doc.title && (
+                                <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
+                                  {doc.filename}
+                                </span>
+                              )}
+                              {doc.change_notes && (
+                                <span className="text-xs text-muted-foreground/70 italic truncate max-w-[200px] block">
+                                  {doc.change_notes}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {DOC_TYPES.find((t) => t.value === doc.doc_type)?.label || doc.doc_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-mono">v{doc.version || 1}</span>
+                            {doc.is_current_version !== false ? (
+                              <Badge variant="default" className="text-[10px] px-1 py-0">Current</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">Superseded</Badge>
+                            )}
+                            {hasHistory && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0 ml-1"
+                                title="View version history"
+                                onClick={() => setHistoryRootId(doc.root_document_id || doc.id)}
+                              >
+                                <History className="h-3 w-3" />
+                              </Button>
                             )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {DOC_TYPES.find((t) => t.value === doc.doc_type)?.label || doc.doc_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getVisibilityBadge(doc.visibility)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(doc.status, doc.expiry_date)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-green-500" />
-                          <code className="text-xs font-mono">
-                            {doc.sha256_hash.slice(0, 8)}...
-                          </code>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(doc.created_at), "MMM dd, yyyy")}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => handleOpenDocument(doc)}
-                              disabled={doc.status === "revoked"}
-                            >
-                              <FileCheck className="h-4 w-4 mr-2" />
-                              Open
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDownload(doc)}
-                              disabled={doc.status === "revoked"}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSharingDoc(doc)}>
-                              <Share2 className="h-4 w-4 mr-2" />
-                              Sharing Settings
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setAccessLogsDoc(doc)}>
-                              <History className="h-4 w-4 mr-2" />
-                              Access History
-                            </DropdownMenuItem>
-                            {doc.status !== "revoked" && doc.status !== "archived" && (
-                              <>
-                                <DropdownMenuSeparator />
-                                {(doc.status === "uploaded" || doc.status === "rejected") && (
-                                  <DropdownMenuItem onClick={() => handleRequestReview(doc)}>
-                                    <ClipboardCheck className="h-4 w-4 mr-2" />
-                                    Submit for Review
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => handleReplaceDocument(doc)}>
+                        </TableCell>
+                        <TableCell>
+                          {getVisibilityBadge(doc.visibility)}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(doc.status, doc.expiry_date)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-success" />
+                            <code className="text-xs font-mono">
+                              {doc.sha256_hash.slice(0, 8)}...
+                            </code>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(doc.created_at), "MMM dd, yyyy")}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => handleOpenDocument(doc)}
+                                disabled={doc.status === "revoked"}
+                              >
+                                <FileCheck className="h-4 w-4 mr-2" />
+                                Open
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDownload(doc)}
+                                disabled={doc.status === "revoked"}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setSharingDoc(doc)}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Sharing Settings
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setAccessLogsDoc(doc)}>
+                                <History className="h-4 w-4 mr-2" />
+                                Access History
+                              </DropdownMenuItem>
+                              {hasHistory && (
+                                <DropdownMenuItem onClick={() => setHistoryRootId(doc.root_document_id || doc.id)}>
                                   <RefreshCw className="h-4 w-4 mr-2" />
-                                  Replace (New Version)
+                                  Version History ({chain.length} versions)
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              )}
+                              {doc.status !== "revoked" && doc.status !== "archived" && doc.is_current_version !== false && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  {(doc.status === "uploaded" || doc.status === "rejected") && (
+                                    <DropdownMenuItem onClick={() => handleRequestReview(doc)}>
+                                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                                      Submit for Review
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleReplaceDocument(doc)}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Replace (New Version)
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
