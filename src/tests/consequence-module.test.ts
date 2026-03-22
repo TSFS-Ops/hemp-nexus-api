@@ -12,8 +12,7 @@ import {
   hasSupersessionHistory,
   type WadRecord,
   type WadAttestation,
-  type ConsequenceState,
-} from "@/lib/modules/consequence";
+} from "@/lib/modules/consequence/logic";
 
 // ── Test data factories ──
 
@@ -99,8 +98,8 @@ describe("Consequence Module — deriveConsequenceState", () => {
       expect(state.uiStatus).toBe("awaiting_attestations");
       expect(state.attestations.buyerAttested).toBe(true);
       expect(state.attestations.sellerAttested).toBe(false);
-      expect(state.canAttest).toBe(true); // seller can still attest
-      expect(state.hasAttested).toBe(false); // seller hasn't
+      expect(state.canAttest).toBe(true);
+      expect(state.hasAttested).toBe(false);
       expect(state.canSeal).toBe(false);
     });
 
@@ -147,7 +146,7 @@ describe("Consequence Module — deriveConsequenceState", () => {
       expect(state.canRevoke).toBe(true);
       expect(state.canSeal).toBe(false);
       expect(state.canAttest).toBe(false);
-      expect(state.isTerminal).toBe(false); // sealed is not terminal
+      expect(state.isTerminal).toBe(false);
     });
   });
 
