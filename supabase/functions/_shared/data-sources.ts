@@ -180,7 +180,6 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
     if (!searchResponse.ok) {
       console.error(`[${signalId}] Web search failed: ${searchResponse.status} — returning empty results (no synthetic data)`);
       return;
-      return;
     }
 
     const searchData = await searchResponse.json();
