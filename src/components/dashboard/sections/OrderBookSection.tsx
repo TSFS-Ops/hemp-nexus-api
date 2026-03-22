@@ -20,7 +20,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface TradeOrder {
   id: string;

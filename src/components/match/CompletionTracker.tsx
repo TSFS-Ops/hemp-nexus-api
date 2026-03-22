@@ -57,7 +57,7 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
     queryFn: async () => {
       const [matchRes, wadRes, podRes] = await Promise.all([
         supabase.from("matches").select("id, status, state, poi_state, buyer_committed_at, seller_committed_at, settled_at").eq("id", matchId).maybeSingle(),
-        supabase.from("p3_wads").select("id, state, denied_reasons").eq("match_id", matchId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("p3_wads").select("id, state, denial_reasons").eq("match_id", matchId).order("created_at", { ascending: false }).limit(1),
         supabase.from("pods").select("id, state, wad_id").order("created_at", { ascending: false }).limit(1),
       ]);
 
