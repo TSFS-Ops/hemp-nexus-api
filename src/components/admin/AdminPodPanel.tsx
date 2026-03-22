@@ -277,13 +277,20 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
 
     setCompleting(ms.id);
     try {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("pod_milestones")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", ms.id)
-        .eq("status", "pending"); // guard against double-completion
+        .eq("status", "pending")
+        .select();
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        toast.error("Milestone was not updated", {
+          description: "It may have already been completed or access was denied.",
+        });
+        return;
+      }
       toast.success(`Milestone "${ms.name}" completed`);
       onRefresh();
     } catch (err: any) {

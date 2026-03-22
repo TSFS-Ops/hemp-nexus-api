@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
         location: o.location,
       },
     }));
-    console.log(`[search] Order book matched ${orderBookResults.length} active orders`);
+    console.log(`[search] Order book matched ${orderBookResults.length} active orders (${(orderBookHits || []).length - validOrders.length} expired filtered)`);
 
     // Calculate discovery metrics
     const metrics = calculateMetrics(baselineCount, mergedResults);
