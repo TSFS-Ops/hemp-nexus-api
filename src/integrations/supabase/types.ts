@@ -2315,11 +2315,13 @@ export type Database = {
           file_size: number | null
           filename: string
           id: string
+          magic_bytes_verified: boolean | null
           match_id: string
           mime_type: string | null
           notes: string | null
           org_id: string
           rejection_reason: string | null
+          server_detected_mime: string | null
           sha256_hash: string
           status: string
           storage_path: string
@@ -2343,11 +2345,13 @@ export type Database = {
           file_size?: number | null
           filename: string
           id?: string
+          magic_bytes_verified?: boolean | null
           match_id: string
           mime_type?: string | null
           notes?: string | null
           org_id: string
           rejection_reason?: string | null
+          server_detected_mime?: string | null
           sha256_hash: string
           status?: string
           storage_path: string
@@ -2371,11 +2375,13 @@ export type Database = {
           file_size?: number | null
           filename?: string
           id?: string
+          magic_bytes_verified?: boolean | null
           match_id?: string
           mime_type?: string | null
           notes?: string | null
           org_id?: string
           rejection_reason?: string | null
+          server_detected_mime?: string | null
           sha256_hash?: string
           status?: string
           storage_path?: string
@@ -3127,6 +3133,7 @@ export type Database = {
         Row: {
           breach_detected_at: string | null
           completed_at: string | null
+          depends_on: string | null
           detected_deficiency_at: string | null
           due_at: string
           evidence_document_id: string | null
@@ -3135,11 +3142,13 @@ export type Database = {
           name: string
           org_id: string
           pod_id: string
+          sequence_order: number | null
           status: string
         }
         Insert: {
           breach_detected_at?: string | null
           completed_at?: string | null
+          depends_on?: string | null
           detected_deficiency_at?: string | null
           due_at: string
           evidence_document_id?: string | null
@@ -3148,11 +3157,13 @@ export type Database = {
           name: string
           org_id: string
           pod_id: string
+          sequence_order?: number | null
           status?: string
         }
         Update: {
           breach_detected_at?: string | null
           completed_at?: string | null
+          depends_on?: string | null
           detected_deficiency_at?: string | null
           due_at?: string
           evidence_document_id?: string | null
@@ -3161,9 +3172,17 @@ export type Database = {
           name?: string
           org_id?: string
           pod_id?: string
+          sequence_order?: number | null
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pod_milestones_depends_on_fkey"
+            columns: ["depends_on"]
+            isOneToOne: false
+            referencedRelation: "pod_milestones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pod_milestones_org_id_fkey"
             columns: ["org_id"]
@@ -4208,6 +4227,68 @@ export type Database = {
             foreignKeyName: "trade_approvals_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_orders: {
+        Row: {
+          additional_info: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          location: string | null
+          org_id: string
+          price: number | null
+          price_currency: string | null
+          product: string
+          side: string
+          status: string
+          updated_at: string
+          user_id: string
+          volume: number | null
+          volume_unit: string | null
+        }
+        Insert: {
+          additional_info?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          location?: string | null
+          org_id: string
+          price?: number | null
+          price_currency?: string | null
+          product: string
+          side: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          volume?: number | null
+          volume_unit?: string | null
+        }
+        Update: {
+          additional_info?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          location?: string | null
+          org_id?: string
+          price?: number | null
+          price_currency?: string | null
+          product?: string
+          side?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          volume?: number | null
+          volume_unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_orders_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
