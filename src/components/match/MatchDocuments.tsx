@@ -60,6 +60,22 @@ import { DocumentAccessLogs } from "./DocumentAccessLogs";
 import { listMatchDocuments } from "@/lib/match-documents-client";
 import { apiFetch } from "@/lib/api-client";
 
+/** Detect MIME from first bytes of a file — client-side magic-byte check */
+const MAGIC_SIGS: [string, number[]][] = [
+  ["application/pdf", [0x25, 0x50, 0x44, 0x46]],
+  ["image/png", [0x89, 0x50, 0x4E, 0x47]],
+  ["image/jpeg", [0xFF, 0xD8, 0xFF]],
+  ["image/gif", [0x47, 0x49, 0x46, 0x38]],
+  ["application/zip", [0x50, 0x4B, 0x03, 0x04]],
+];
+function detectMimeFromHeader(header: Uint8Array): string | null {
+  for (const [mime, bytes] of MAGIC_SIGS) {
+    if (header.length < bytes.length) continue;
+    if (bytes.every((b, i) => header[i] === b)) return mime;
+  }
+  return null;
+}
+
 interface MatchDocument {
   id: string;
   match_id: string;
