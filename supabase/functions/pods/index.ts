@@ -22,6 +22,7 @@ const PodCreateSchema = z.object({
     z.object({
       name: z.string().min(1).max(256),
       due_at: z.string().datetime(),
+      depends_on_index: z.number().int().min(0).optional(),
     })
   ).min(1).max(20),
 });
