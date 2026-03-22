@@ -146,9 +146,10 @@ Deno.serve(async (req) => {
     const orderSide = signalType === "buyer" ? "offer" : "bid";
     let orderBookQuery = supabase
       .from("trade_orders")
-      .select("id, side, product, price, price_currency, volume, volume_unit, location, org_id, created_at")
+      .select("id, side, product, price, price_currency, volume, volume_unit, location, org_id, created_at, expires_at")
       .eq("status", "active")
       .eq("side", orderSide)
+      .neq("org_id", authCtx.orgId) // exclude self-matches
       .limit(20);
 
     if (product) {
@@ -156,7 +157,11 @@ Deno.serve(async (req) => {
     }
 
     const { data: orderBookHits } = await orderBookQuery;
-    const orderBookResults = (orderBookHits || []).map((o: any) => ({
+    // Filter out expired orders (server-side, since Supabase doesn't support OR-with-null easily)
+    const validOrders = (orderBookHits || []).filter((o: any) =>
+      !o.expires_at || new Date(o.expires_at) > new Date()
+    );
+    const orderBookResults = validOrders.map((o: any) => ({
       id: o.id,
       title: `${o.side.toUpperCase()}: ${o.product}`,
       description: [
@@ -178,7 +183,7 @@ Deno.serve(async (req) => {
         location: o.location,
       },
     }));
-    console.log(`[search] Order book matched ${orderBookResults.length} active orders`);
+    console.log(`[search] Order book matched ${orderBookResults.length} active orders (${(orderBookHits || []).length - validOrders.length} expired filtered)`);
 
     // Calculate discovery metrics
     const metrics = calculateMetrics(baselineCount, mergedResults);

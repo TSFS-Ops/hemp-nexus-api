@@ -137,6 +137,16 @@ Deno.serve(async (req: Request) => {
         metadata: { target_org_id: targetOrgId, reason },
       });
 
+      // Dispatch notification for trade approval revocation
+      await admin.functions.invoke("notification-dispatch", {
+        body: {
+          event_type: "compliance.trade_approval.revoked",
+          subject: "Trade approval revoked",
+          message: `Trade approval for organisation ${targetOrgId} has been revoked. Reason: ${reason}`,
+          metadata: { org_id: orgId, target_org_id: targetOrgId },
+        },
+      }).catch((err: any) => console.error("[trade-approval] Notification dispatch failed:", err));
+
       return new Response(JSON.stringify(envelope(updated, correlationId)), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

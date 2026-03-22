@@ -327,6 +327,16 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ breach_id: breach.id })),
       });
 
+      // Dispatch breach notification
+      await admin.functions.invoke("notification-dispatch", {
+        body: {
+          event_type: "delivery.breach.detected",
+          subject: "PoD breach detected",
+          message: `A breach has been detected on PoD ${parsed.pod_id}: ${parsed.reason}. Grace period: ${BREACH_GRACE_DAYS} days.`,
+          metadata: { org_id: orgId, pod_id: parsed.pod_id, breach_id: breach.id },
+        },
+      }).catch((err: any) => console.error("[pods] Notification dispatch failed:", err));
+
       return new Response(
         JSON.stringify(
           successEnvelope(

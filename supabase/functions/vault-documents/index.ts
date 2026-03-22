@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 
 /**
  * DISC-004 Supporting Collateral Documentation
@@ -90,6 +91,24 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!entity) throw new ApiException("NOT_FOUND", "Entity not found", 404);
+
+      // ── Server-side magic-byte validation ──
+      // Read the first 16 bytes from storage to verify the file is what it claims to be
+      if (storage_path) {
+        const bucket = storage_path.startsWith("vault-documents") ? "vault-documents" : storage_path.split("/")[0] || "vault-documents";
+        const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
+        const { data: fileData, error: dlError } = await admin.storage.from(bucket).download(filePath);
+        if (!dlError && fileData) {
+          const headerBytes = new Uint8Array(await fileData.slice(0, 16).arrayBuffer());
+          const result = validateMagicBytes(headerBytes, mime_type || "application/octet-stream", file_size || 0);
+          if (result.blocked) {
+            throw new ApiException("VALIDATION_ERROR", result.blockReason || "File type not allowed", 400);
+          }
+          if (result.detectedMime && !result.clientMimeMatch) {
+            console.warn(`[vault-documents] MIME mismatch: client=${mime_type}, detected=${result.detectedMime}`);
+          }
+        }
+      }
 
       const { data: doc, error: insertErr } = await admin
         .from("vault_documents")
