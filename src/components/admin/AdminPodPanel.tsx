@@ -355,7 +355,7 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
               const daysOverdue = isOverdue
                 ? Math.floor((Date.now() - new Date(m.due_at).getTime()) / (24 * 60 * 60 * 1000))
                 : 0;
-              const isCompletable = (m.status === "pending" || m.status === "OPEN") && depMet;
+              const isCompletable = (m.status === "pending" || m.status === "OPEN" || m.status === "breach_detected") && depMet;
               return (
                 <TableRow key={m.id} className={isOverdue && m.status !== "completed" ? "bg-destructive/5" : ""}>
                   <TableCell className="font-mono text-xs">{m.id.slice(0, 8)}…</TableCell>
