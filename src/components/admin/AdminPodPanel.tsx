@@ -45,9 +45,16 @@ interface Breach {
   id: string;
   pod_id: string;
   org_id: string;
+  milestone_id: string | null;
   reason: string;
   status: string;
+  severity: string;
   detected_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolution_note: string | null;
+  notification_sent_at: string | null;
+  escalated_at: string | null;
 }
 
 const POD_STATE_COLOURS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
