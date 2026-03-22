@@ -141,12 +141,52 @@ Deno.serve(async (req) => {
     const mergedResults = mergeResults(baselineResults, enrichedResults);
     console.log(`[search] Merged to ${mergedResults.length} total results`);
 
+    // ── Order Book Augmentation ──────────────────────────────────
+    // Query active trade_orders that match the product/location and opposite side
+    const orderSide = signalType === "buyer" ? "offer" : "bid";
+    let orderBookQuery = supabase
+      .from("trade_orders")
+      .select("id, side, product, price, price_currency, volume, volume_unit, location, org_id, created_at")
+      .eq("status", "active")
+      .eq("side", orderSide)
+      .limit(20);
+
+    if (product) {
+      orderBookQuery = orderBookQuery.ilike("product", `%${product.replace(/[%_\\]/g, "")}%`);
+    }
+
+    const { data: orderBookHits } = await orderBookQuery;
+    const orderBookResults = (orderBookHits || []).map((o: any) => ({
+      id: o.id,
+      title: `${o.side.toUpperCase()}: ${o.product}`,
+      description: [
+        o.price != null ? `${o.price_currency} ${Number(o.price).toLocaleString()}` : null,
+        o.volume != null ? `${Number(o.volume).toLocaleString()} ${o.volume_unit}` : null,
+        o.location,
+      ].filter(Boolean).join(" · "),
+      url: null,
+      source: "order_book",
+      is_enriched: false,
+      is_order_book: true,
+      confidence_score: 0.8,
+      metadata: {
+        order_id: o.id,
+        org_id: o.org_id,
+        side: o.side,
+        price: o.price,
+        volume: o.volume,
+        location: o.location,
+      },
+    }));
+    console.log(`[search] Order book matched ${orderBookResults.length} active orders`);
+
     // Calculate discovery metrics
     const metrics = calculateMetrics(baselineCount, mergedResults);
     console.log(`[search] Uplift: ${metrics.uplift_pct.toFixed(1)}%`);
 
-    // Score and rank results with embeddings
-    const scoredResults = await scoreResults(mergedResults.slice(0, limit), queryEmbedding, mockSignal);
+    // Score and rank results with embeddings (includes web + order book)
+    const allResults = [...mergedResults, ...orderBookResults];
+    const scoredResults = await scoreResults(allResults.slice(0, limit), queryEmbedding, mockSignal);
 
     // Sort by score descending
     scoredResults.sort((a, b) => b.score - a.score);
