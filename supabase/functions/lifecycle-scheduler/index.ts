@@ -76,9 +76,10 @@ Deno.serve(async (req: Request) => {
       error: signalErr?.message || null,
     };
 
+    // Expire stale draft matches — only update poi_state (avoid status constraint violation)
     const { data: expiredMatches, error: matchErr } = await admin
       .from("matches")
-      .update({ poi_state: "EXPIRED", status: "expired" })
+      .update({ poi_state: "EXPIRED" })
       .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
       .lt("created_at", thirtyDaysAgo)
       .select("id");
