@@ -12,15 +12,9 @@ import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { QUERY_LIMIT_ADMIN } from "@/lib/constants";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface RetentionFlag {
-  id: string;
-  table_name: string;
-  record_id: string;
-  flag_type: string;
-  record_date: string;
-  flagged_at: string;
-}
+type RetentionFlag = Tables<"retention_flags">;
 
 export function AdminRetentionFlagsPanel() {
   const [flags, setFlags] = useState<RetentionFlag[]>([]);
@@ -33,22 +27,16 @@ export function AdminRetentionFlagsPanel() {
     setLoading(true);
     setError(null);
     try {
-      let countQuery = supabase.from("retention_flags").select("id", { count: "exact", head: true });
-      if (typeFilter !== "all") countQuery = countQuery.eq("flag_type", typeFilter);
-      const { count } = await countQuery;
+      let countQ = supabase.from("retention_flags").select("id", { count: "exact", head: true });
+      if (typeFilter !== "all") countQ = countQ.eq("flag_type", typeFilter);
+      const { count } = await countQ;
       setTotal(count);
 
-      let query = supabase
-        .from("retention_flags")
-        .select("*")
-        .order("flagged_at", { ascending: false })
-        .limit(QUERY_LIMIT_ADMIN);
-
+      let query = supabase.from("retention_flags").select("*").order("flagged_at", { ascending: false }).limit(QUERY_LIMIT_ADMIN);
       if (typeFilter !== "all") query = query.eq("flag_type", typeFilter);
-
       const { data, error: fetchErr } = await query;
       if (fetchErr) throw fetchErr;
-      setFlags((data as RetentionFlag[]) || []);
+      setFlags(data || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load retention flags";
       setError(msg);
@@ -68,22 +56,18 @@ export function AdminRetentionFlagsPanel() {
     }
   };
 
-  if (error && flags.length === 0) {
-    return <ErrorState title="Failed to load retention flags" description={error} onRetry={fetchFlags} />;
-  }
+  if (error && flags.length === 0) return <ErrorState title="Failed to load retention flags" message={error} onRetry={fetchFlags} />;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Archive className="h-5 w-5" />Data Retention Flags</CardTitle>
-        <CardDescription>Records approaching or exceeding the 7-year retention policy. Scanned daily by the retention engine.</CardDescription>
+        <CardDescription>Records approaching or exceeding the 7-year retention policy. Scanned daily.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
+            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filter by type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All flags</SelectItem>
               <SelectItem value="approaching_expiry">Approaching expiry</SelectItem>
@@ -96,40 +80,26 @@ export function AdminRetentionFlagsPanel() {
         </div>
 
         {total !== null && flags.length >= QUERY_LIMIT_ADMIN && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>Showing {flags.length} of {total} flags. Refine filters for more.</AlertDescription>
-          </Alert>
+          <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {flags.length} of {total} flags.</AlertDescription></Alert>
         )}
 
-        {loading && flags.length === 0 ? (
-          <InlineLoader message="Loading retention flags…" />
-        ) : flags.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No retention flags raised.</p>
-            <p className="text-xs mt-1">All records are within the 7-year retention window.</p>
-          </div>
+        {loading && flags.length === 0 ? <InlineLoader message="Loading retention flags…" /> : flags.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground"><Clock className="h-8 w-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No retention flags raised.</p><p className="text-xs mt-1">All records are within the 7-year retention window.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Table</TableHead>
-                  <TableHead>Record ID</TableHead>
-                  <TableHead>Flag Type</TableHead>
-                  <TableHead>Record Date</TableHead>
-                  <TableHead>Flagged At</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Table</TableHead><TableHead>Record ID</TableHead><TableHead>Flag Type</TableHead><TableHead>Record Created</TableHead><TableHead>Expires</TableHead><TableHead>Flagged At</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
-                {flags.map((flag) => (
-                  <TableRow key={flag.id}>
-                    <TableCell><Badge variant="outline">{flag.table_name}</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">{flag.record_id.slice(0, 8)}…</TableCell>
-                    <TableCell>{flagBadge(flag.flag_type)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{format(new Date(flag.record_date), "dd MMM yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{format(new Date(flag.flagged_at), "dd MMM yyyy HH:mm")}</TableCell>
+                {flags.map((f) => (
+                  <TableRow key={f.id}>
+                    <TableCell><Badge variant="outline">{f.table_name}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{f.record_id.slice(0, 8)}…</TableCell>
+                    <TableCell>{flagBadge(f.flag_type)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(f.record_created_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(f.retention_expires_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(f.flagged_at), "dd MMM yyyy HH:mm")}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

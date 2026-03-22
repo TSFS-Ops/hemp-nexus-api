@@ -6,24 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Key, Search, RefreshCw, Loader2, AlertTriangle, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Key, Search, RefreshCw, Loader2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { QUERY_LIMIT_ADMIN } from "@/lib/constants";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface SigningKey {
-  id: string;
-  org_id: string;
-  algorithm: string;
-  public_key_pem: string | null;
-  status: string;
-  created_at: string;
-  revoked_at: string | null;
-  revoked_by: string | null;
-  fingerprint: string | null;
-}
+type SigningKey = Tables<"signing_keys">;
 
 export function AdminSigningKeysPanel() {
   const [keys, setKeys] = useState<SigningKey[]>([]);
@@ -36,24 +27,17 @@ export function AdminSigningKeysPanel() {
     setLoading(true);
     setError(null);
     try {
-      const { count } = await supabase
-        .from("signing_keys")
-        .select("id", { count: "exact", head: true });
+      const { count } = await supabase.from("signing_keys").select("id", { count: "exact", head: true });
       setTotal(count);
 
-      let query = supabase
-        .from("signing_keys")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(QUERY_LIMIT_ADMIN);
-
+      let query = supabase.from("signing_keys").select("*").order("created_at", { ascending: false }).limit(QUERY_LIMIT_ADMIN);
       if (search.trim()) {
-        query = query.or(`org_id.eq.${search.trim()},fingerprint.ilike.%${search.trim()}%`);
+        query = query.or(`org_id.eq.${search.trim()},key_id.ilike.%${search.trim()}%`);
       }
 
       const { data, error: fetchErr } = await query;
       if (fetchErr) throw fetchErr;
-      setKeys((data as SigningKey[]) || []);
+      setKeys(data || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load signing keys";
       setError(msg);
@@ -69,13 +53,12 @@ export function AdminSigningKeysPanel() {
     switch (status) {
       case "active": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Active</Badge>;
       case "revoked": return <Badge variant="destructive">Revoked</Badge>;
+      case "rotated": return <Badge variant="secondary">Rotated</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  if (error && keys.length === 0) {
-    return <ErrorState title="Failed to load signing keys" description={error} onRetry={fetchKeys} />;
-  }
+  if (error && keys.length === 0) return <ErrorState title="Failed to load signing keys" message={error} onRetry={fetchKeys} />;
 
   return (
     <Card>
@@ -87,13 +70,7 @@ export function AdminSigningKeysPanel() {
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by org ID or fingerprint…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && fetchKeys()}
-              className="pl-9"
-            />
+            <Input placeholder="Search by org ID or key ID…" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchKeys()} className="pl-9" />
           </div>
           <Button variant="outline" size="sm" onClick={fetchKeys} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -101,39 +78,22 @@ export function AdminSigningKeysPanel() {
         </div>
 
         {total !== null && keys.length >= QUERY_LIMIT_ADMIN && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Showing {keys.length} of {total} keys. Use search to refine results.
-            </AlertDescription>
-          </Alert>
+          <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {keys.length} of {total} keys. Use search to refine.</AlertDescription></Alert>
         )}
 
-        {loading && keys.length === 0 ? (
-          <InlineLoader message="Loading signing keys…" />
-        ) : keys.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <ShieldCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No signing keys found.</p>
-          </div>
+        {loading && keys.length === 0 ? <InlineLoader message="Loading signing keys…" /> : keys.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground"><ShieldCheck className="h-8 w-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No signing keys found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fingerprint</TableHead>
-                  <TableHead>Algorithm</TableHead>
-                  <TableHead>Org ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Revoked</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Key ID</TableHead><TableHead>Algorithm</TableHead><TableHead>Org ID</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead>Revoked</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
                 {keys.map((key) => (
                   <TableRow key={key.id}>
-                    <TableCell className="font-mono text-xs">{key.fingerprint?.slice(0, 16) ?? key.id.slice(0, 8)}…</TableCell>
-                    <TableCell><Badge variant="outline">{key.algorithm || "ECDSA"}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{key.key_id.slice(0, 16)}…</TableCell>
+                    <TableCell><Badge variant="outline">{key.algorithm}</Badge></TableCell>
                     <TableCell className="font-mono text-xs">{key.org_id.slice(0, 8)}…</TableCell>
                     <TableCell>{statusBadge(key.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(key.created_at), "dd MMM yyyy")}</TableCell>

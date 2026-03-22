@@ -11,16 +11,9 @@ import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { QUERY_LIMIT_ADMIN } from "@/lib/constants";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface RiskSnapshot {
-  id: string;
-  org_id: string;
-  snapshot_type: string;
-  risk_score: number | null;
-  risk_band: string | null;
-  factors: Record<string, unknown> | null;
-  created_at: string;
-}
+type RiskSnapshot = Tables<"risk_snapshots">;
 
 export function AdminRiskSnapshotsPanel() {
   const [snapshots, setSnapshots] = useState<RiskSnapshot[]>([]);
@@ -32,19 +25,11 @@ export function AdminRiskSnapshotsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const { count } = await supabase
-        .from("risk_snapshots")
-        .select("id", { count: "exact", head: true });
+      const { count } = await supabase.from("risk_snapshots").select("id", { count: "exact", head: true });
       setTotal(count);
-
-      const { data, error: fetchErr } = await supabase
-        .from("risk_snapshots")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(QUERY_LIMIT_ADMIN);
-
+      const { data, error: fetchErr } = await supabase.from("risk_snapshots").select("*").order("created_at", { ascending: false }).limit(QUERY_LIMIT_ADMIN);
       if (fetchErr) throw fetchErr;
-      setSnapshots((data as RiskSnapshot[]) || []);
+      setSnapshots(data || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load risk snapshots";
       setError(msg);
@@ -56,18 +41,16 @@ export function AdminRiskSnapshotsPanel() {
 
   useEffect(() => { fetchSnapshots(); }, []);
 
-  const bandBadge = (band: string | null) => {
+  const bandBadge = (band: string) => {
     switch (band) {
       case "low": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Low</Badge>;
       case "medium": return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Medium</Badge>;
       case "high": return <Badge variant="destructive">High</Badge>;
-      default: return <Badge variant="secondary">{band || "—"}</Badge>;
+      default: return <Badge variant="secondary">{band}</Badge>;
     }
   };
 
-  if (error && snapshots.length === 0) {
-    return <ErrorState title="Failed to load risk snapshots" description={error} onRetry={fetchSnapshots} />;
-  }
+  if (error && snapshots.length === 0) return <ErrorState title="Failed to load risk snapshots" message={error} onRetry={fetchSnapshots} />;
 
   return (
     <Card>
@@ -82,41 +65,26 @@ export function AdminRiskSnapshotsPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
         {total !== null && snapshots.length >= QUERY_LIMIT_ADMIN && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>Showing {snapshots.length} of {total} snapshots.</AlertDescription>
-          </Alert>
+          <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {snapshots.length} of {total} snapshots.</AlertDescription></Alert>
         )}
 
-        {loading && snapshots.length === 0 ? (
-          <InlineLoader message="Loading risk snapshots…" />
-        ) : snapshots.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No risk snapshots recorded.</p>
-          </div>
+        {loading && snapshots.length === 0 ? <InlineLoader message="Loading risk snapshots…" /> : snapshots.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground"><ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No risk snapshots recorded.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Org ID</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Band</TableHead>
-                  <TableHead>Factors</TableHead>
-                  <TableHead>Captured</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Entity ID</TableHead><TableHead>Org ID</TableHead><TableHead>Score</TableHead><TableHead>Band</TableHead><TableHead>Inputs</TableHead><TableHead>Captured</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
                 {snapshots.map((s) => (
                   <TableRow key={s.id}>
+                    <TableCell className="font-mono text-xs">{s.entity_id.slice(0, 8)}…</TableCell>
                     <TableCell className="font-mono text-xs">{s.org_id.slice(0, 8)}…</TableCell>
-                    <TableCell><Badge variant="outline">{s.snapshot_type}</Badge></TableCell>
-                    <TableCell className="font-semibold">{s.risk_score?.toFixed(1) ?? "—"}</TableCell>
+                    <TableCell className="font-semibold">{s.risk_score.toFixed(1)}</TableCell>
                     <TableCell>{bandBadge(s.risk_band)}</TableCell>
                     <TableCell className="text-xs max-w-[150px] truncate">
-                      {s.factors ? Object.keys(s.factors).length + " factors" : "—"}
+                      {typeof s.inputs === "object" && s.inputs ? Object.keys(s.inputs).length + " factors" : "—"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(s.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                   </TableRow>

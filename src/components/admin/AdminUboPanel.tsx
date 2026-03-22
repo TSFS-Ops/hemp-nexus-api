@@ -4,45 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Search, RefreshCw, Loader2, AlertTriangle, Building, UserCheck } from "lucide-react";
+import { Users, RefreshCw, Loader2 from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { QUERY_LIMIT_ADMIN } from "@/lib/constants";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface OrgDirector {
-  id: string;
-  org_id: string;
-  entity_id: string;
-  role: string;
-  appointed_at: string | null;
-  resigned_at: string | null;
-  created_at: string;
-}
-
-interface UboLink {
-  id: string;
-  org_id: string;
-  person_entity_id: string;
-  company_entity_id: string;
-  ownership_percentage: number | null;
-  control_type: string | null;
-  verified_at: string | null;
-  created_at: string;
-}
-
-interface OwnershipLink {
-  id: string;
-  parent_entity_id: string;
-  child_entity_id: string;
-  ownership_percentage: number | null;
-  link_type: string;
-  created_at: string;
-}
+type OrgDirector = Tables<"org_directors">;
+type UboLink = Tables<"ubo_links">;
+type OwnershipLink = Tables<"ownership_links">;
 
 export function AdminUboPanel() {
   const [directors, setDirectors] = useState<OrgDirector[]>([]);
@@ -50,7 +23,6 @@ export function AdminUboPanel() {
   const [ownerships, setOwnerships] = useState<OwnershipLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
 
   const fetchAll = async () => {
     setLoading(true);
@@ -61,14 +33,12 @@ export function AdminUboPanel() {
         supabase.from("ubo_links").select("*").order("created_at", { ascending: false }).limit(QUERY_LIMIT_ADMIN),
         supabase.from("ownership_links").select("*").order("created_at", { ascending: false }).limit(QUERY_LIMIT_ADMIN),
       ]);
-
       if (dirRes.error) throw dirRes.error;
       if (uboRes.error) throw uboRes.error;
       if (ownRes.error) throw ownRes.error;
-
-      setDirectors((dirRes.data as OrgDirector[]) || []);
-      setUbos((uboRes.data as UboLink[]) || []);
-      setOwnerships((ownRes.data as OwnershipLink[]) || []);
+      setDirectors(dirRes.data || []);
+      setUbos(uboRes.data || []);
+      setOwnerships(ownRes.data || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load UBO data";
       setError(msg);
@@ -80,9 +50,7 @@ export function AdminUboPanel() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  if (error && directors.length === 0 && ubos.length === 0) {
-    return <ErrorState title="Failed to load UBO data" description={error} onRetry={fetchAll} />;
-  }
+  if (error && directors.length === 0 && ubos.length === 0) return <ErrorState title="Failed to load UBO data" message={error} onRetry={fetchAll} />;
 
   return (
     <Card>
@@ -96,9 +64,7 @@ export function AdminUboPanel() {
         </Button>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <InlineLoader message="Loading UBO data…" />
-        ) : (
+        {loading ? <InlineLoader message="Loading UBO data…" /> : (
           <Tabs defaultValue="directors">
             <TabsList>
               <TabsTrigger value="directors">Directors ({directors.length})</TabsTrigger>
@@ -112,27 +78,18 @@ export function AdminUboPanel() {
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Org ID</TableHead>
-                        <TableHead>Entity ID</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Appointed</TableHead>
-                        <TableHead>Resigned</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow>
+                      <TableHead>Full Name</TableHead><TableHead>Role</TableHead><TableHead>Org ID</TableHead><TableHead>Nationality</TableHead><TableHead>PEP</TableHead><TableHead>Ownership %</TableHead>
+                    </TableRow></TableHeader>
                     <TableBody>
                       {directors.map((d) => (
                         <TableRow key={d.id}>
-                          <TableCell className="font-mono text-xs">{d.org_id.slice(0, 8)}…</TableCell>
-                          <TableCell className="font-mono text-xs">{d.entity_id.slice(0, 8)}…</TableCell>
+                          <TableCell className="font-medium">{d.full_name}</TableCell>
                           <TableCell><Badge variant="outline">{d.role}</Badge></TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {d.appointed_at ? format(new Date(d.appointed_at), "dd MMM yyyy") : "—"}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {d.resigned_at ? format(new Date(d.resigned_at), "dd MMM yyyy") : "Active"}
-                          </TableCell>
+                          <TableCell className="font-mono text-xs">{d.org_id.slice(0, 8)}…</TableCell>
+                          <TableCell className="text-sm">{d.nationality || "—"}</TableCell>
+                          <TableCell>{d.is_pep ? <Badge variant="destructive">PEP</Badge> : <Badge variant="secondary">No</Badge>}</TableCell>
+                          <TableCell>{d.ownership_percentage != null ? `${d.ownership_percentage}%` : "—"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -147,30 +104,21 @@ export function AdminUboPanel() {
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Person Entity</TableHead>
-                        <TableHead>Company Entity</TableHead>
-                        <TableHead>Ownership %</TableHead>
-                        <TableHead>Control Type</TableHead>
-                        <TableHead>Verified</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow>
+                      <TableHead>Person Entity</TableHead><TableHead>Company Entity</TableHead><TableHead>Ownership %</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead>Verified</TableHead>
+                    </TableRow></TableHeader>
                     <TableBody>
                       {ubos.map((u) => (
                         <TableRow key={u.id}>
                           <TableCell className="font-mono text-xs">{u.person_entity_id.slice(0, 8)}…</TableCell>
                           <TableCell className="font-mono text-xs">{u.company_entity_id.slice(0, 8)}…</TableCell>
-                          <TableCell className="font-semibold">{u.ownership_percentage != null ? `${u.ownership_percentage}%` : "—"}</TableCell>
-                          <TableCell><Badge variant="outline">{u.control_type || "direct"}</Badge></TableCell>
+                          <TableCell className="font-semibold">{u.ownership_percentage}%</TableCell>
+                          <TableCell><Badge variant="outline">{u.verification_method || "—"}</Badge></TableCell>
                           <TableCell>
-                            {u.verified_at ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">
-                                {format(new Date(u.verified_at), "dd MMM yyyy")}
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">Unverified</Badge>
-                            )}
+                            {u.status === "verified" ? <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Verified</Badge> : <Badge variant="secondary">{u.status}</Badge>}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {u.verified_at ? format(new Date(u.verified_at), "dd MMM yyyy") : "—"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -186,22 +134,16 @@ export function AdminUboPanel() {
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Parent Entity</TableHead>
-                        <TableHead>Child Entity</TableHead>
-                        <TableHead>Ownership %</TableHead>
-                        <TableHead>Link Type</TableHead>
-                        <TableHead>Created</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow>
+                      <TableHead>Owner Entity</TableHead><TableHead>Company Entity</TableHead><TableHead>Ownership %</TableHead><TableHead>Org ID</TableHead><TableHead>Created</TableHead>
+                    </TableRow></TableHeader>
                     <TableBody>
                       {ownerships.map((o) => (
                         <TableRow key={o.id}>
-                          <TableCell className="font-mono text-xs">{o.parent_entity_id.slice(0, 8)}…</TableCell>
-                          <TableCell className="font-mono text-xs">{o.child_entity_id.slice(0, 8)}…</TableCell>
-                          <TableCell className="font-semibold">{o.ownership_percentage != null ? `${o.ownership_percentage}%` : "—"}</TableCell>
-                          <TableCell><Badge variant="outline">{o.link_type}</Badge></TableCell>
+                          <TableCell className="font-mono text-xs">{o.owner_entity_id.slice(0, 8)}…</TableCell>
+                          <TableCell className="font-mono text-xs">{o.company_entity_id.slice(0, 8)}…</TableCell>
+                          <TableCell className="font-semibold">{o.ownership_percent}%</TableCell>
+                          <TableCell className="font-mono text-xs">{o.org_id.slice(0, 8)}…</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{format(new Date(o.created_at), "dd MMM yyyy")}</TableCell>
                         </TableRow>
                       ))}

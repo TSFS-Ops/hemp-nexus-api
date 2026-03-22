@@ -13,20 +13,9 @@ import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { QUERY_LIMIT_ADMIN } from "@/lib/constants";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface KycDocument {
-  id: string;
-  entity_id: string;
-  org_id: string;
-  doc_type: string;
-  filename: string;
-  storage_path: string;
-  status: string;
-  uploaded_at: string;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
-  expiry_date: string | null;
-}
+type KycDocument = Tables<"kyc_documents">;
 
 export function AdminKycDocsPanel() {
   const [docs, setDocs] = useState<KycDocument[]>([]);
@@ -45,20 +34,13 @@ export function AdminKycDocsPanel() {
       const { count } = await countQ;
       setTotal(count);
 
-      let query = supabase
-        .from("kyc_documents")
-        .select("*")
-        .order("uploaded_at", { ascending: false })
-        .limit(QUERY_LIMIT_ADMIN);
-
+      let query = supabase.from("kyc_documents").select("*").order("created_at", { ascending: false }).limit(QUERY_LIMIT_ADMIN);
       if (statusFilter !== "all") query = query.eq("status", statusFilter);
-      if (search.trim()) {
-        query = query.or(`entity_id.eq.${search.trim()},org_id.eq.${search.trim()},filename.ilike.%${search.trim()}%`);
-      }
+      if (search.trim()) query = query.or(`org_id.eq.${search.trim()},filename.ilike.%${search.trim()}%`);
 
       const { data, error: fetchErr } = await query;
       if (fetchErr) throw fetchErr;
-      setDocs((data as KycDocument[]) || []);
+      setDocs(data || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load KYC documents";
       setError(msg);
@@ -80,9 +62,7 @@ export function AdminKycDocsPanel() {
     }
   };
 
-  if (error && docs.length === 0) {
-    return <ErrorState title="Failed to load KYC documents" description={error} onRetry={fetchDocs} />;
-  }
+  if (error && docs.length === 0) return <ErrorState title="Failed to load KYC documents" message={error} onRetry={fetchDocs} />;
 
   return (
     <Card>
@@ -94,24 +74,15 @@ export function AdminKycDocsPanel() {
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by entity ID, org ID, or filename…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && fetchDocs()}
-              className="pl-9"
-            />
+            <Input placeholder="Search by org ID or filename…" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchDocs()} className="pl-9" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="verified">Verified</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="sm" onClick={fetchDocs} disabled={loading}>
@@ -120,43 +91,27 @@ export function AdminKycDocsPanel() {
         </div>
 
         {total !== null && docs.length >= QUERY_LIMIT_ADMIN && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>Showing {docs.length} of {total} documents. Refine your filters.</AlertDescription>
-          </Alert>
+          <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {docs.length} of {total} documents.</AlertDescription></Alert>
         )}
 
-        {loading && docs.length === 0 ? (
-          <InlineLoader message="Loading KYC documents…" />
-        ) : docs.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <FileCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No KYC documents found.</p>
-          </div>
+        {loading && docs.length === 0 ? <InlineLoader message="Loading KYC documents…" /> : docs.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground"><FileCheck className="h-8 w-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No KYC documents found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Filename</TableHead>
-                  <TableHead>Doc Type</TableHead>
-                  <TableHead>Entity ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Uploaded</TableHead>
-                  <TableHead>Expiry</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Filename</TableHead><TableHead>Doc Type</TableHead><TableHead>Org ID</TableHead><TableHead>Status</TableHead><TableHead>Country</TableHead><TableHead>Created</TableHead><TableHead>Expiry</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
                 {docs.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="max-w-[180px] truncate font-medium">{doc.filename}</TableCell>
                     <TableCell><Badge variant="outline">{doc.doc_type}</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">{doc.entity_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="font-mono text-xs">{doc.org_id.slice(0, 8)}…</TableCell>
                     <TableCell>{statusBadge(doc.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{format(new Date(doc.uploaded_at), "dd MMM yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {doc.expiry_date ? format(new Date(doc.expiry_date), "dd MMM yyyy") : "—"}
-                    </TableCell>
+                    <TableCell className="text-sm">{doc.issuing_country || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{format(new Date(doc.created_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{doc.expiry_date ? format(new Date(doc.expiry_date), "dd MMM yyyy") : "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
