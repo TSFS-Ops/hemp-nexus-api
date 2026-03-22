@@ -282,6 +282,23 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       setUploading(true);
       setError(null);
 
+      // ── Magic-byte validation: inspect first 16 bytes ──
+      const headerSlice = selectedFile.slice(0, 16);
+      const headerBytes = new Uint8Array(await headerSlice.arrayBuffer());
+      const detectedMime = detectMimeFromHeader(headerBytes);
+      if (detectedMime === "image/gif") {
+        setError("GIF files are not allowed");
+        setUploading(false);
+        return;
+      }
+      if (detectedMime && detectedMime !== selectedFile.type) {
+        // ZIP-based Office formats are expected
+        const isZipOffice = detectedMime === "application/zip" && selectedFile.type.includes("openxmlformats");
+        if (!isZipOffice) {
+          console.warn(`MIME mismatch: client says ${selectedFile.type}, magic bytes say ${detectedMime}`);
+        }
+      }
+
       const sha256Hash = await computeFileHash(selectedFile);
 
       // Check for duplicate hash
