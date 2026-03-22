@@ -75,18 +75,18 @@ export function AdminRetentionFlagsPanel() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch counts by status for summary
-      const { data: allFlags } = await supabase
-        .from("retention_flags")
-        .select("retention_status");
-
-      if (allFlags) {
-        const counts: Record<string, number> = {};
-        for (const f of allFlags) {
-          counts[f.retention_status] = (counts[f.retention_status] || 0) + 1;
-        }
-        setStats(counts);
-      }
+      // Fetch counts by status using individual count queries (avoids fetching all rows)
+      const statusKeys = ["active", "flagged", "retained", "archived", "quarantined", "pending_deletion", "deleted", "resolved"];
+      const countResults = await Promise.all(
+        statusKeys.map(async (s) => {
+          const { count } = await supabase
+            .from("retention_flags")
+            .select("id", { count: "exact", head: true })
+            .eq("retention_status", s);
+          return [s, count ?? 0] as [string, number];
+        })
+      );
+      setStats(Object.fromEntries(countResults));
 
       // Count query
       let countQ = supabase.from("retention_flags").select("id", { count: "exact", head: true });
