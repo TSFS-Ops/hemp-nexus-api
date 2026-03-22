@@ -411,40 +411,179 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
 
 /* ── Breaches Tab ─────────────────────────────────────────── */
 
-function BreachesTab({ breaches }: { breaches: Breach[] }) {
+function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: () => void }) {
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
+  const [resolutionAction, setResolutionAction] = useState<"resolved" | "dismissed">("resolved");
+
+  const openBreaches = breaches.filter(b => !["resolved", "remediated", "dismissed"].includes(b.status));
+  const closedBreaches = breaches.filter(b => ["resolved", "remediated", "dismissed"].includes(b.status));
+
+  const handleResolve = async (breachId: string) => {
+    try {
+      const { error } = await supabase
+        .from("breaches")
+        .update({
+          status: resolutionAction,
+          resolved_at: new Date().toISOString(),
+          resolution_note: resolutionNote || null,
+        } as any)
+        .eq("id", breachId);
+
+      if (error) throw error;
+      toast.success(`Breach ${resolutionAction}`);
+      setResolving(null);
+      setResolutionNote("");
+      onRefresh();
+    } catch (err: any) {
+      toast.error("Failed to resolve breach", { description: err.message });
+    }
+  };
+
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>PoD</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Detected</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {breaches.length === 0 ? (
+    <div className="space-y-4">
+      {/* Open breaches */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            Open Breaches ({openBreaches.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">No breaches recorded</TableCell>
+                <TableHead>ID</TableHead>
+                <TableHead>PoD</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Severity</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Detected</TableHead>
+                <TableHead>Notified</TableHead>
+                <TableHead className="w-28"></TableHead>
               </TableRow>
-            ) : breaches.map((b) => (
-              <TableRow key={b.id}>
-                <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}…</TableCell>
-                <TableCell className="font-mono text-xs">{b.pod_id.slice(0, 8)}…</TableCell>
-                <TableCell className="max-w-[300px] truncate">{b.reason}</TableCell>
-                <TableCell>
-                  <Badge variant={b.status === "open" ? "destructive" : "default"}>{b.status}</Badge>
-                </TableCell>
-                <TableCell>{format(new Date(b.detected_at), "dd MMM yyyy HH:mm")}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {openBreaches.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">No open breaches</TableCell>
+                </TableRow>
+              ) : openBreaches.map((b) => (
+                <TableRow key={b.id}>
+                  <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}…</TableCell>
+                  <TableCell className="font-mono text-xs">{b.pod_id.slice(0, 8)}…</TableCell>
+                  <TableCell className="max-w-[250px] truncate text-sm">{b.reason}</TableCell>
+                  <TableCell>
+                    <Badge variant={SEVERITY_COLOURS[b.severity] || "outline"} className="text-xs">
+                      {b.severity}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={BREACH_STATUS_COLOURS[b.status] || "secondary"}>{b.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs">{format(new Date(b.detected_at), "dd MMM yyyy HH:mm")}</TableCell>
+                  <TableCell className="text-xs">
+                    {b.notification_sent_at ? format(new Date(b.notification_sent_at), "dd MMM HH:mm") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Dialog open={resolving === b.id} onOpenChange={(open) => { setResolving(open ? b.id : null); setResolutionNote(""); }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                          Resolve
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Resolve Breach</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-sm font-medium">Reason</p>
+                            <p className="text-sm text-muted-foreground">{b.reason}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Resolution Action</Label>
+                            <Select value={resolutionAction} onValueChange={(v) => setResolutionAction(v as any)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="resolved">Resolved — issue has been fixed</SelectItem>
+                                <SelectItem value="dismissed">Dismissed — breach was invalid</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Resolution Note</Label>
+                            <Input
+                              value={resolutionNote}
+                              onChange={(e) => setResolutionNote(e.target.value)}
+                              placeholder="Describe how the breach was addressed…"
+                            />
+                          </div>
+                          <Button onClick={() => handleResolve(b.id)} className="w-full">
+                            {resolutionAction === "resolved" ? "Mark as Resolved" : "Dismiss Breach"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Closed breaches */}
+      {closedBreaches.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-success" />
+              Resolved Breaches ({closedBreaches.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Detected</TableHead>
+                  <TableHead>Resolved</TableHead>
+                  <TableHead>Note</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {closedBreaches.map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell className="font-mono text-xs">{b.id.slice(0, 8)}…</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-sm">{b.reason}</TableCell>
+                    <TableCell>
+                      <Badge variant={SEVERITY_COLOURS[b.severity] || "outline"} className="text-xs">{b.severity}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={BREACH_STATUS_COLOURS[b.status] || "default"}>{b.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{format(new Date(b.detected_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell className="text-xs">
+                      {b.resolved_at ? format(new Date(b.resolved_at), "dd MMM yyyy HH:mm") : "—"}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
+                      {b.resolution_note || "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
