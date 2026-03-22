@@ -82,6 +82,7 @@ export default function Dashboard() {
           <Routes>
             <Route path="/" element={<ConsoleOverview />} />
             <Route path="/search" element={<SearchSection />} />
+            <Route path="/order-book" element={<OrderBookSection />} />
             <Route path="/matches" element={<MatchesSection />} />
             <Route path="/matches/:matchId" element={<MatchDetails />} />
             <Route path="/settings" element={<DashboardSettings />} />

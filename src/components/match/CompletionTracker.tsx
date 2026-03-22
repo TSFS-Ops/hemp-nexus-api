@@ -133,7 +133,7 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
       detail: wadDone
         ? "WaD issued and sealed"
         : wadDenied
-          ? `Denied: ${(wad.denied_reasons as string[])?.join(", ") || "See details"}`
+          ? `Denied: ${(wad.denial_reasons as string[])?.join(", ") || "See details"}`
           : `WaD state: ${wad.state}`,
     };
   }
