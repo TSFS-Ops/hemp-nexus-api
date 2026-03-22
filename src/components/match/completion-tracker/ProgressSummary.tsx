@@ -20,7 +20,7 @@ export function ProgressSummary({ state, onAction }: ProgressSummaryProps) {
   const allDone = completedCount === stages.length;
 
   return (
-    <Card className={allDone ? "border-green-500/30" : blockedCount > 0 ? "border-destructive/30" : ""}>
+    <Card className={allDone ? "border-success/30" : blockedCount > 0 ? "border-destructive/30" : ""}>
       <CardContent className="pt-4 pb-3 space-y-3">
         <div className="flex items-center justify-between">
           <div>
