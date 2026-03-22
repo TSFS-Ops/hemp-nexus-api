@@ -219,6 +219,7 @@ Deno.serve(async (req) => {
           enrichedCount: metrics.enriched_count,
           upliftPct: Math.round(metrics.uplift_pct * 10) / 10,
           enrichmentReasons: metrics.enrichment_reasons,
+          orderBookMatches: orderBookResults.length,
         }
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
