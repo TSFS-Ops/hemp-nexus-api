@@ -177,6 +177,8 @@ function AdminContent() {
               <Route path="/compliance" element={<AdminComplianceSection />} />
               <Route path="/audit" element={<AuditSection />} />
               <Route path="/api-keys" element={<AdminApiKeys />} />
+              <Route path="/infrastructure" element={<InfrastructureSection />} />
+              <Route path="/data-governance" element={<DataGovernanceSection />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="*" element={<AdminNotFound />} />
