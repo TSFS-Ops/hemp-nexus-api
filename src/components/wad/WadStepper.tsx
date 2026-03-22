@@ -187,7 +187,13 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
     try {
       setDownloading(true);
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        toast.error("Session expired. Please sign in again.");
+        return;
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wad.id}/certificate`,
@@ -196,8 +202,11 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
