@@ -93,8 +93,9 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
           options = result.options || [];
           console.log(`[${signalId}] Received ${options.length} options from ${dataSource.name}`);
         } else {
-          // Use mock data for non-HTTP sources
-          options = generateMockOptions(signal, dataSource);
+          // Non-HTTP sources without an endpoint cannot produce real results — skip
+          console.log(`[${signalId}] Skipping non-HTTP data source "${dataSource.name}" — no endpoint configured`);
+          continue;
         }
 
         // Insert options with scores
