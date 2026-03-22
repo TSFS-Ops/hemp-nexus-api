@@ -307,13 +307,13 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
         .from("pod_milestones")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", ms.id)
-        .eq("status", "pending")
+        .in("status", ["pending", "OPEN", "breach_detected"])
         .select();
 
       if (error) throw error;
       if (!updated || updated.length === 0) {
         toast.error("Milestone was not updated", {
-          description: "It may have already been completed or access was denied.",
+          description: "It may have already been completed, is in a non-completable state, or access was denied.",
         });
         return;
       }
