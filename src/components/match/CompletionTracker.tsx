@@ -56,8 +56,9 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
     queryKey: ["completion-tracker", matchId],
     queryFn: async () => {
       const matchRes = await supabase.from("matches").select("id, status, state, poi_state, buyer_committed_at, seller_committed_at, settled_at").eq("id", matchId).single();
-      const wadRes = await supabase.from("p3_wads").select("*").eq("match_id" as any, matchId).order("created_at", { ascending: false }).limit(1);
-      const podRes = await supabase.from("pods").select("*").order("created_at", { ascending: false }).limit(1);
+      // WaD links via poi_id which equals the match ID in this system
+      const wadRes = await supabase.from("p3_wads").select("id, state, denial_reasons").eq("poi_id", matchId).order("created_at", { ascending: false }).limit(1);
+      const podRes = await supabase.from("pods").select("id, state, wad_id").order("created_at", { ascending: false }).limit(1);
 
       const wadData = (wadRes.data as any)?.[0] || null;
       const podData = (podRes.data as any)?.[0] || null;
