@@ -17,9 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ArrowUpDown, Filter, X } from "lucide-react";
+import { Plus, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TradeOrder {
   id: string;
