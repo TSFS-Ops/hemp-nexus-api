@@ -56,22 +56,24 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
     queryKey: ["completion-tracker", matchId],
     queryFn: async () => {
       const [matchRes, wadRes, podRes] = await Promise.all([
-        supabase.from("matches").select("id, status, state, poi_state, buyer_committed_at, seller_committed_at, settled_at").eq("id", matchId).maybeSingle(),
-        supabase.from("p3_wads").select("id, state, denial_reasons").eq("match_id", matchId).order("created_at", { ascending: false }).limit(1),
+        supabase.from("matches").select("id, status, state, poi_state, buyer_committed_at, seller_committed_at, settled_at").eq("id", matchId).single(),
+        supabase.from("p3_wads").select("id, state, denial_reasons").eq("match_id" as any, matchId).order("created_at", { ascending: false }).limit(1),
         supabase.from("pods").select("id, state, wad_id").order("created_at", { ascending: false }).limit(1),
       ]);
 
+      const wadData = (wadRes.data as any)?.[0] || null;
+      const podData = (podRes.data as any)?.[0] || null;
+
       let milestones: any[] = [];
-      const pod = podRes.data?.[0] || null;
-      if (pod) {
-        const { data: ms } = await supabase.from("pod_milestones").select("id, name, status").eq("pod_id", pod.id).order("sequence_order", { ascending: true });
-        milestones = ms || [];
+      if (podData) {
+        const { data: ms } = await supabase.from("pod_milestones").select("id, name, status").eq("pod_id", podData.id).order("sequence_order" as any, { ascending: true });
+        milestones = (ms as any[]) || [];
       }
 
       return {
-        match: matchRes.data,
-        wad: wadRes.data,
-        pod,
+        match: matchRes.data as any,
+        wad: wadData,
+        pod: podData,
         milestones,
       };
     },
