@@ -39,8 +39,8 @@ const STAGE_ICONS: Record<StageId, React.ReactNode> = {
 
 function statusIcon(status: StageStatus) {
   switch (status) {
-    case "complete": return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-    case "in_progress": return <Clock className="h-5 w-5 text-blue-500 animate-pulse" />;
+    case "complete": return <CheckCircle2 className="h-5 w-5 text-success" />;
+    case "in_progress": return <Clock className="h-5 w-5 text-primary animate-pulse" />;
     case "blocked": return <AlertTriangle className="h-5 w-5 text-destructive" />;
     case "pending": return <Circle className="h-5 w-5 text-muted-foreground" />;
     case "not_started": return <Circle className="h-5 w-5 text-muted-foreground/40" />;
