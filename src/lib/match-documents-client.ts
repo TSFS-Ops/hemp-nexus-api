@@ -38,6 +38,8 @@ type MatchDocumentsResponse = {
   data?: {
     match_id: string;
     documents: MatchDocumentListItem[];
+    truncated?: boolean;
+    warning?: string;
   };
 };
 
