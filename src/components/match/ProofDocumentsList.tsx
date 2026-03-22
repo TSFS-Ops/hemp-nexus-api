@@ -44,8 +44,8 @@ export function ProofDocumentsList({ matchId }: ProofDocumentsListProps) {
     try {
       setLoading(true);
 
-      const docs = await listMatchDocuments(matchId, { order: "asc" });
-      const safeDocs = (docs || [])
+      const result = await listMatchDocuments(matchId, { order: "asc" });
+      const safeDocs = (result.documents || [])
         .filter((d) => d.status !== "revoked" && d.status !== "archived")
         .map(
           (d): ProofDocument => ({

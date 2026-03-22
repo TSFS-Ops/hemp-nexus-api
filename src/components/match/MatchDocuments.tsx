@@ -213,8 +213,11 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
       // Load via backend function to avoid direct table query failures and keep access
       // logic centralized with the same rules as downloads.
-      const docs = await listMatchDocuments(matchId, { order: "desc" });
-      setDocuments(docs as unknown as MatchDocument[]);
+      const result = await listMatchDocuments(matchId, { order: "desc" });
+      setDocuments(result.documents as unknown as MatchDocument[]);
+      if (result.truncated) {
+        toast.warning(result.warning || "Document list may be incomplete due to volume.");
+      }
     } catch (err) {
       console.error("Error fetching documents:", err);
       const message = err instanceof Error ? err.message : "Failed to load documents";
