@@ -1,5 +1,5 @@
 // Data source search logic
-import { scoreOptionSync, generateMockOptions } from "./scoring.ts";
+import { scoreOptionSync } from "./scoring.ts";
 import { logPerformance, getSourceRankings } from "./performance.ts";
 
 export async function searchDataSources(signalId: string, orgId: string, supabase: any) {

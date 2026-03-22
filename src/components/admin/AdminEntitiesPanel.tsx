@@ -48,25 +48,35 @@ export function AdminEntitiesPanel() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      await supabase.functions.invoke("entities", {
-        method: "POST",
-        headers: {
-          "Idempotency-Key": `screen-${entityId}-${Date.now()}`,
-          "X-Correlation-ID": crypto.randomUUID(),
-        },
-        body: {
-          entity_id: entityId,
-          provider: "stub",
-          result: "clear",
-          details: { note: "Automated stub screening — no real provider configured" },
-        },
+      // Check if a real screening provider is configured
+      const dilisenseConfigured = true; // DILISENSE_API_KEY is set in edge function secrets
+      if (!dilisenseConfigured) {
+        toast.error("No screening provider configured. Contact platform admin to set up Dilisense or another provider.");
+        return;
+      }
+
+      const resp = await supabase.functions.invoke("dilisense-screen", {
+        body: { entity_id: entityId },
       });
 
-      toast.success("Screening completed: CLEAR");
+      if (resp.error) {
+        const errMsg = typeof resp.error === "object" && "message" in resp.error 
+          ? (resp.error as any).message 
+          : String(resp.error);
+        // If the provider key is missing, surface that clearly
+        if (errMsg.includes("not configured") || errMsg.includes("API key")) {
+          toast.error("Screening provider not configured — no stub results will be created.");
+        } else {
+          toast.error(`Screening failed: ${errMsg}`);
+        }
+        return;
+      }
+
+      toast.success("Screening completed");
       refetch();
     } catch (err) {
       console.error("Screening error:", err);
-      toast.error("Screening failed");
+      toast.error("Screening failed — check provider configuration");
     } finally {
       setScreeningEntity(null);
     }
