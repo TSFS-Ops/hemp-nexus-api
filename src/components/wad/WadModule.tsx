@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileCheck, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api-client";
 import { WadStepper } from "./WadStepper";
 import type { Tables } from "@/integrations/supabase/types";
-import * as WadState from "@/lib/wad-state";
+import {
+  fetchActiveWad,
+  createWad,
+  deriveConsequenceState,
+  type WadRecord,
+  type ConsequenceState,
+} from "@/lib/modules/consequence";
+import { supabase } from "@/integrations/supabase/client";
 
 type Match = Tables<"matches">;
 
@@ -16,51 +22,39 @@ interface WadModuleProps {
   onWadCreated?: () => void;
 }
 
-interface Wad {
-  id: string;
-  poi_id: string;
-  status: string;
-  evidence_bundle: any;
-  seal_hash: string | null;
-  sealed_at: string | null;
-  created_at: string;
-  buyer_org_id: string | null;
-  seller_org_id: string | null;
-  attestations?: Attestation[];
-}
-
-interface Attestation {
-  id: string;
-  wad_id: string;
-  user_id: string;
-  org_id: string;
-  role: string;
-  attested_name: string;
-  attested_at: string;
-  attestation_text: string;
-}
-
 export function WadModule({ match, onWadCreated }: WadModuleProps) {
-  const [wad, setWad] = useState<Wad | null>(null);
+  const [wad, setWad] = useState<WadRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [gateFailures, setGateFailures] = useState<string[]>([]);
+  const [userOrgId, setUserOrgId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchWad();
+    loadUserOrg();
+    loadWad();
   }, [match.id]);
 
-  const fetchWad = async () => {
+  const loadUserOrg = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session.user.id)
+        .single();
+      if (profile) setUserOrgId(profile.org_id);
+    }
+  };
+
+  const loadWad = async () => {
     try {
       setLoading(true);
-      const wads = await apiFetch<Wad[]>(`wad?poi_id=${match.id}`);
-      const activeWad = wads.find((w: Wad) => !WadState.isTerminal(w.status));
-      if (activeWad) {
-        const detail = await apiFetch<Wad>(`wad/${activeWad.id}`);
-        setWad(detail);
+      const result = await fetchActiveWad(match.id);
+      if (result.success) {
+        setWad(result.data ?? null);
+      } else {
+        console.error("Error fetching WaD:", result.error);
       }
-    } catch (error) {
-      console.error("Error fetching WaD:", error);
     } finally {
       setLoading(false);
     }
@@ -70,25 +64,26 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     if (creating) return;
     try {
       setCreating(true);
-      const newWad = await apiFetch<Wad>("wad", {
-        method: "POST",
-        body: JSON.stringify({ poi_id: match.id }),
-      });
-      setWad(newWad);
-      setGateFailures([]);
-      toast.success("WaD created successfully");
-      onWadCreated?.();
-    } catch (error: any) {
-      console.error("Error creating WaD:", error);
-      // Surface specific gate failures from the backend
-      if (error.failures && Array.isArray(error.failures)) {
-        setGateFailures(error.failures);
+      const result = await createWad(match.id);
+
+      if (result.success && result.data) {
+        setWad(result.data);
+        setGateFailures([]);
+        toast.success("WaD created successfully");
+        onWadCreated?.();
+      } else {
+        if (result.gateFailures?.length) {
+          setGateFailures(result.gateFailures);
+        }
+        toast.error(result.error || "Failed to create WaD");
       }
-      toast.error(error.message || "Failed to create WaD");
     } finally {
       setCreating(false);
     }
   };
+
+  // Derive consequence state from the module
+  const state: ConsequenceState = deriveConsequenceState(wad, match.status ?? "", userOrgId);
 
   if (loading) {
     return (
@@ -103,7 +98,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   }
 
   // POI must be confirmed (settled) to create WaD
-  if (match.status !== "settled") {
+  if (state.uiStatus === "blocked") {
     return (
       <Card>
         <CardHeader>
@@ -119,7 +114,8 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
             <div>
               <p className="font-medium">Intent must be confirmed first</p>
               <p className="text-sm text-muted-foreground">
-                WaD can only be created after both parties have confirmed intent on this POI.
+                {state.createBlockedReasons[0]?.reason ||
+                  "WaD can only be created after both parties have confirmed intent on this POI."}
               </p>
             </div>
           </div>
@@ -129,7 +125,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   }
 
   // No WaD exists yet - show create button
-  if (!wad) {
+  if (state.uiStatus === "not_started") {
     return (
       <Card>
         <CardHeader>
@@ -142,7 +138,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
         <CardContent className="space-y-4">
           <div className="p-4 bg-muted rounded-lg space-y-3">
             <p className="text-sm">
-              WaD creates an auditable, tamper-evident record that packages the full evidence trail 
+              WaD creates an auditable, tamper-evident record that packages the full evidence trail
               for this proof-of-intent. It includes:
             </p>
             <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
@@ -154,7 +150,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
             </ul>
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground italic">
-                <strong>Note:</strong> WaD is NOT a contract. No payment. No obligation. 
+                <strong>Note:</strong> WaD is NOT a contract. No payment. No obligation.
                 It is an evidence-grade "proof bundle".
               </p>
             </div>
@@ -163,7 +159,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
             <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
               <p className="text-sm font-medium text-destructive flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                WaD creation blocked — {gateFailures.length} gate{gateFailures.length > 1 ? 's' : ''} failed:
+                WaD creation blocked — {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
               </p>
               <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
                 {gateFailures.map((f, i) => (
@@ -178,19 +174,21 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
           <Button onClick={handleCreateWad} disabled={creating} className="w-full">
             {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <FileCheck className="h-4 w-4 mr-2" />
-            {gateFailures.length > 0 ? 'Retry WaD Creation' : 'Create WaD'}
+            {gateFailures.length > 0 ? "Retry WaD Creation" : "Create WaD"}
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  // WaD exists - show stepper
+  // WaD exists - show stepper with derived state
   return (
-    <WadStepper 
-      wad={wad} 
-      match={match} 
-      onUpdate={fetchWad} 
+    <WadStepper
+      wad={wad!}
+      match={match}
+      consequenceState={state}
+      userOrgId={userOrgId}
+      onUpdate={loadWad}
     />
   );
 }
