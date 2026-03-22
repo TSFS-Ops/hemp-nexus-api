@@ -512,6 +512,36 @@ Deno.serve(async (req: Request) => {
           metadata: { role: actingRole, reason },
         });
 
+        // ── Notify requester of rejection ──
+        const { data: requesterProfile } = await admin
+          .from("profiles")
+          .select("id")
+          .eq("org_id", request.requesting_org_id)
+          .limit(5);
+        if (requesterProfile && requesterProfile.length > 0) {
+          const rejectNotifs = requesterProfile.map((p: any) => ({
+            user_id: p.id,
+            org_id: request.requesting_org_id,
+            type: "approval_rejected",
+            title: "Approval request rejected",
+            body: `Your due diligence approval request was rejected by ${actingRole}. Reason: ${reason || "No reason provided"}.`,
+            link: `/due-diligence`,
+            read: false,
+          }));
+          await admin.from("notifications").insert(rejectNotifs).catch((err: any) =>
+            console.error("[due-diligence] Rejection notification failed:", err.message)
+          );
+        }
+
+        await admin.functions.invoke("notification-dispatch", {
+          body: {
+            event_type: "dd.approval_rejected",
+            subject: "Due diligence approval rejected",
+            message: `Approval request ${approval_request_id} was rejected by ${actingRole}. Reason: ${reason || "N/A"}.`,
+            metadata: { org_id: request.requesting_org_id, approval_request_id, role: actingRole },
+          },
+        }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
+
         return json({ success: true, status: "rejected" });
       }
 
@@ -558,6 +588,62 @@ Deno.serve(async (req: Request) => {
           all_complete: allComplete,
         },
       });
+
+      // ── Notify on approval progress ──
+      if (allComplete) {
+        // Notify requester that approval is fully complete
+        const { data: reqOrgUsers } = await admin
+          .from("profiles")
+          .select("id")
+          .eq("org_id", request.requesting_org_id)
+          .limit(10);
+        if (reqOrgUsers && reqOrgUsers.length > 0) {
+          const completeNotifs = reqOrgUsers.map((p: any) => ({
+            user_id: p.id,
+            org_id: request.requesting_org_id,
+            type: "approval_completed",
+            title: "Trade approval granted",
+            body: "All required approvals have been completed. The organisation is now approved to trade.",
+            link: `/due-diligence`,
+            read: false,
+          }));
+          await admin.from("notifications").insert(completeNotifs).catch((err: any) =>
+            console.error("[due-diligence] Completion notification failed:", err.message)
+          );
+        }
+
+        await admin.functions.invoke("notification-dispatch", {
+          body: {
+            event_type: "dd.approval_completed",
+            subject: "Trade approval fully granted",
+            message: `All required role approvals have been completed for approval request ${approval_request_id}. Organisation ${request.target_org_id} is now approved to trade.`,
+            metadata: { org_id: request.requesting_org_id, target_org_id: request.target_org_id, approval_request_id },
+          },
+        }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
+      } else {
+        // Notify remaining approvers that a partial approval occurred
+        const remainingRoles = requiredRoles.filter((r: string) => !newCompleted.includes(r));
+        const { data: remainingUsers } = await admin
+          .from("dd_roles")
+          .select("user_id, role")
+          .eq("org_id", request.requesting_org_id)
+          .in("role", remainingRoles);
+
+        if (remainingUsers && remainingUsers.length > 0) {
+          const partialNotifs = remainingUsers.map((u: any) => ({
+            user_id: u.user_id,
+            org_id: request.requesting_org_id,
+            type: "approval_required",
+            title: `Your approval is still required (${u.role})`,
+            body: `${actingRole} has approved. Your ${u.role} sign-off is still needed to complete the approval.`,
+            link: `/due-diligence`,
+            read: false,
+          }));
+          await admin.from("notifications").insert(partialNotifs).catch((err: any) =>
+            console.error("[due-diligence] Partial approval notification failed:", err.message)
+          );
+        }
+      }
 
       return json({
         success: true,
