@@ -143,6 +143,21 @@ Deno.serve(async (req: Request) => {
 
       if (msErr) throw new ApiException("INTERNAL_ERROR", msErr.message, 500);
 
+      // Second pass: wire up dependencies using returned IDs
+      const milestoneIds = (milestones || []).map((m: any) => m.id);
+      const depUpdates: Promise<any>[] = [];
+      parsed.milestones.forEach((m, idx) => {
+        if (m.depends_on_index !== undefined && m.depends_on_index < idx) {
+          const depId = milestoneIds[m.depends_on_index];
+          if (depId) {
+            depUpdates.push(
+              admin.from("pod_milestones").update({ depends_on: depId }).eq("id", milestoneIds[idx])
+            );
+          }
+        }
+      });
+      if (depUpdates.length > 0) await Promise.all(depUpdates);
+
       // Record event
       await admin.from("event_store").insert({
         org_id: orgId,
