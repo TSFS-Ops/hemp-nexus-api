@@ -122,6 +122,23 @@ Deno.serve(async (req: Request) => {
         return json({ error: "doc_type, filename, storage_path, sha256_hash are required" }, 400);
       }
 
+      // ── Server-side magic-byte validation ──
+      if (storage_path) {
+        const bucket = storage_path.startsWith("kyc-documents") ? "kyc-documents" : storage_path.split("/")[0] || "kyc-documents";
+        const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
+        const { data: fileData, error: dlError } = await admin.storage.from(bucket).download(filePath);
+        if (!dlError && fileData) {
+          const headerBytes = new Uint8Array(await fileData.slice(0, 16).arrayBuffer());
+          const mbResult = validateMagicBytes(headerBytes, mime_type || "application/octet-stream", file_size || 0);
+          if (mbResult.blocked) {
+            return json({ error: mbResult.blockReason || "File type not allowed" }, 400);
+          }
+          if (mbResult.detectedMime && !mbResult.clientMimeMatch) {
+            console.warn(`[due-diligence] KYC MIME mismatch: client=${mime_type}, detected=${mbResult.detectedMime}`);
+          }
+        }
+      }
+
       const { data: doc, error } = await admin.from("kyc_documents").insert({
         org_id: targetOrg,
         doc_type,
