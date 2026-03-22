@@ -163,6 +163,16 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ case_id: compCase.id, status: parsed.status })),
       });
 
+      // Dispatch notification for compliance case decision
+      await admin.functions.invoke("notification-dispatch", {
+        body: {
+          event_type: `compliance.case.${parsed.status}`,
+          subject: `Compliance case ${parsed.status}`,
+          message: `Compliance case ${compCase.id} has been ${parsed.status}.${parsed.decision_notes ? ` Notes: ${parsed.decision_notes}` : ""}`,
+          metadata: { org_id: orgId, case_id: compCase.id, status: parsed.status },
+        },
+      }).catch((err: any) => console.error("[compliance-cases] Notification dispatch failed:", err));
+
       return new Response(JSON.stringify(successEnvelope(updated, correlationId)), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
