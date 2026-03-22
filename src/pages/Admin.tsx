@@ -192,7 +192,7 @@ function DataGovernanceSection() {
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="governance-docs">Governance Documents</TabsTrigger>
-            <TabsTrigger value="retention">Retention Flags</TabsTrigger>
+            <TabsTrigger value="retention">Retention Enforcement</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="governance-docs" className="mt-4"><AdminGovernanceDocsPanel /></TabsContent>
