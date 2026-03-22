@@ -24,6 +24,7 @@ interface AppSidebarProps {
 const mainNavItems = [
   { path: ROUTES.DASHBOARD, title: "Overview", icon: LayoutDashboard },
   { path: ROUTES.DASHBOARD_SEARCH, title: "Search", icon: Search },
+  { path: ROUTES.DASHBOARD_ORDER_BOOK, title: "Order Book", icon: BookOpen },
   { path: ROUTES.DASHBOARD_MATCHES, title: "Matches", icon: Handshake },
 ];
 

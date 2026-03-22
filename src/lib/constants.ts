@@ -32,6 +32,7 @@ export const ROUTES = {
   
   DASHBOARD: '/dashboard',
   DASHBOARD_SEARCH: '/dashboard/search',
+  DASHBOARD_ORDER_BOOK: '/dashboard/order-book',
   DASHBOARD_MATCHES: '/dashboard/matches',
   DASHBOARD_SETTINGS: '/dashboard/settings',
   DASHBOARD_ACCOUNT: '/dashboard/account',
