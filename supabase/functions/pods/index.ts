@@ -124,13 +124,16 @@ Deno.serve(async (req: Request) => {
 
       if (podErr) throw new ApiException("INTERNAL_ERROR", podErr.message, 500);
 
-      // Create milestones
-      const milestoneInserts = parsed.milestones.map((m) => ({
+      // Create milestones with sequence order and dependencies
+      // First pass: insert all milestones to get IDs
+      const milestoneInserts = parsed.milestones.map((m, idx) => ({
         org_id: orgId,
         pod_id: pod.id,
         name: m.name,
         due_at: m.due_at,
         status: "pending",
+        sequence_order: idx,
+        depends_on: null as string | null,
       }));
 
       const { data: milestones, error: msErr } = await admin
