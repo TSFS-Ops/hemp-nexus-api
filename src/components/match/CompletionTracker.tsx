@@ -1,14 +1,17 @@
 /**
  * CompletionTracker — Unified view of POI → WaD → PoD progress for a match.
- * Shows each stage's status, blocking conditions, and next steps.
+ * Shows each stage's status, blocking conditions, next steps, and action triggers.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, Circle, Clock, AlertTriangle, ArrowRight, ShieldCheck, FileCheck, Truck } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertTriangle, ShieldCheck, FileCheck, Truck, Play, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface CompletionTrackerProps {
   matchId: string;
@@ -21,6 +24,8 @@ interface StageInfo {
   status: "complete" | "in_progress" | "blocked" | "pending" | "not_started";
   detail: string;
   substeps?: { label: string; done: boolean }[];
+  actionLabel?: string;
+  actionKey?: "start_wad" | "start_pod";
 }
 
 function statusIcon(status: StageInfo["status"]) {
@@ -52,11 +57,12 @@ function statusBadge(status: StageInfo["status"]) {
 }
 
 export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
+  const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ["completion-tracker", matchId],
     queryFn: async () => {
       const matchRes = await supabase.from("matches").select("id, status, state, poi_state, buyer_committed_at, seller_committed_at, settled_at").eq("id", matchId).single();
-      // WaD links via poi_id which equals the match ID in this system
       const wadRes = await supabase.from("p3_wads").select("id, state, denial_reasons").eq("poi_id", matchId).order("created_at", { ascending: false }).limit(1);
       const podRes = await supabase.from("pods").select("id, state, wad_id").order("created_at", { ascending: false }).limit(1);
 
@@ -77,6 +83,47 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
       };
     },
   });
+
+  const startWadMutation = useMutation({
+    mutationFn: async () => {
+      const { data: fnRes, error } = await supabase.functions.invoke("wad", {
+        body: { action: "create", poi_id: matchId, org_id: orgId },
+      });
+      if (error) throw error;
+      if (fnRes && !fnRes.ok) throw new Error(fnRes.error || "Failed to create WaD");
+      return fnRes;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["completion-tracker", matchId] });
+      toast.success("WaD process initiated", { description: "The Written Acknowledgement of Debt has been created." });
+    },
+    onError: (err: Error) => toast.error("Failed to start WaD", { description: err.message }),
+  });
+
+  const startPodMutation = useMutation({
+    mutationFn: async () => {
+      const wadId = data?.wad?.id;
+      if (!wadId) throw new Error("WaD must be issued before creating a PoD");
+      const { data: fnRes, error } = await supabase.functions.invoke("pods", {
+        body: { action: "create", wad_id: wadId, org_id: orgId },
+      });
+      if (error) throw error;
+      if (fnRes && !fnRes.ok) throw new Error(fnRes.error || "Failed to create PoD");
+      return fnRes;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["completion-tracker", matchId] });
+      toast.success("PoD process initiated", { description: "Proof of Delivery tracking has been created." });
+    },
+    onError: (err: Error) => toast.error("Failed to start PoD", { description: err.message }),
+  });
+
+  const handleAction = (key: string) => {
+    if (key === "start_wad") startWadMutation.mutate();
+    if (key === "start_pod") startPodMutation.mutate();
+  };
+
+  const isActioning = startWadMutation.isPending || startPodMutation.isPending;
 
   if (isLoading) {
     return (
@@ -122,6 +169,8 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
       icon: <FileCheck className="h-5 w-5" />,
       status: poiDone ? "pending" : "not_started",
       detail: poiDone ? "Ready to create — POI is complete" : "Waiting for POI completion",
+      actionLabel: poiDone ? "Start WaD" : undefined,
+      actionKey: poiDone ? "start_wad" : undefined,
     };
   } else {
     const wadDone = wad.state === "ISSUED";
@@ -147,6 +196,8 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
       icon: <Truck className="h-5 w-5" />,
       status: wadDone ? "pending" : "not_started",
       detail: wadDone ? "Ready to create — WaD is issued" : "Waiting for WaD issuance",
+      actionLabel: wadDone ? "Start PoD" : undefined,
+      actionKey: wadDone ? "start_pod" : undefined,
     };
   } else {
     const podDone = pod.state === "FINALISED";
@@ -212,7 +263,25 @@ export function CompletionTracker({ matchId, orgId }: CompletionTrackerProps) {
                 {statusIcon(stage.status)}
                 <CardTitle className="text-base">{stage.label}</CardTitle>
               </div>
-              {statusBadge(stage.status)}
+              <div className="flex items-center gap-2">
+                {stage.actionLabel && stage.actionKey && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => handleAction(stage.actionKey!)}
+                    disabled={isActioning}
+                    className="h-7 text-xs"
+                  >
+                    {isActioning ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    {stage.actionLabel}
+                  </Button>
+                )}
+                {statusBadge(stage.status)}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">

@@ -31,6 +31,7 @@ import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminRiskSnapshotsPanel } from "@/components/admin/AdminRiskSnapshotsPanel";
 import { AdminScreeningRunsPanel } from "@/components/admin/AdminScreeningRunsPanel";
 import { AdminUboPanel } from "@/components/admin/AdminUboPanel";
+import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -101,9 +102,9 @@ function UsersOrgsSection() {
   );
 }
 
-/** Compliance: Cases + Risk */
+/** Compliance: Cases + Risk + KYC + Screening + UBO */
 function AdminComplianceSection() {
-  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk"]);
+  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Compliance" }]} />
@@ -114,11 +115,17 @@ function AdminComplianceSection() {
             <TabsTrigger value="cases">Cases</TabsTrigger>
             <TabsTrigger value="disputes">Disputes</TabsTrigger>
             <TabsTrigger value="risk">Risk Register</TabsTrigger>
+            <TabsTrigger value="kyc">KYC Docs</TabsTrigger>
+            <TabsTrigger value="screening">Screening</TabsTrigger>
+            <TabsTrigger value="ubo">UBO</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
         <TabsContent value="disputes" className="mt-4"><AdminDisputesPanel /></TabsContent>
         <TabsContent value="risk" className="mt-4"><AdminRiskPanel /></TabsContent>
+        <TabsContent value="kyc" className="mt-4"><AdminKycDocsPanel /></TabsContent>
+        <TabsContent value="screening" className="mt-4"><AdminScreeningRunsPanel /></TabsContent>
+        <TabsContent value="ubo" className="mt-4"><AdminUboPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -144,6 +151,52 @@ function AuditSection() {
         <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
         <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
         <TabsContent value="api" className="mt-4"><GlobalApiLogs /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/** Infrastructure: Signing Keys + Reputation + PoD */
+function InfrastructureSection() {
+  const [tab, setTab] = useUrlTab("tab", "signing-keys", ["signing-keys", "reputation", "pods", "risk-snapshots"]);
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Infrastructure" }]} />
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Infrastructure</h2>
+      <Tabs value={tab} onValueChange={setTab}>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="signing-keys">Signing Keys</TabsTrigger>
+            <TabsTrigger value="reputation">Reputation</TabsTrigger>
+            <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
+            <TabsTrigger value="risk-snapshots">Risk Snapshots</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="signing-keys" className="mt-4"><AdminSigningKeysPanel /></TabsContent>
+        <TabsContent value="reputation" className="mt-4"><AdminReputationPanel /></TabsContent>
+        <TabsContent value="pods" className="mt-4"><AdminPodPanel /></TabsContent>
+        <TabsContent value="risk-snapshots" className="mt-4"><AdminRiskSnapshotsPanel /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/** Data Governance: Governance Docs + Retention + Settings */
+function DataGovernanceSection() {
+  const [tab, setTab] = useUrlTab("tab", "governance-docs", ["governance-docs", "retention"]);
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Data Governance" }]} />
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Data Governance</h2>
+      <Tabs value={tab} onValueChange={setTab}>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="governance-docs">Governance Documents</TabsTrigger>
+            <TabsTrigger value="retention">Retention Flags</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="governance-docs" className="mt-4"><AdminGovernanceDocsPanel /></TabsContent>
+        <TabsContent value="retention" className="mt-4"><AdminRetentionFlagsPanel /></TabsContent>
       </Tabs>
     </div>
   );
