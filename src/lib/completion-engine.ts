@@ -116,12 +116,17 @@ export interface MilestoneData {
   status: string;
   depends_on?: string | null;
   sequence_order?: number;
+  due_at?: string;
+  breach_detected_at?: string | null;
+  grace_period_ends_at?: string | null;
 }
 
 export interface BreachData {
   id: string;
   status: string;
   reason: string;
+  severity?: string;
+  resolved_at?: string | null;
 }
 
 export interface DocumentSummary {
