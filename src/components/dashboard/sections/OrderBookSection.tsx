@@ -287,6 +287,7 @@ export function OrderBookSection() {
                 ))}
               </TableBody>
             </Table>
+            </>
           )}
         </CardContent>
       </Card>
