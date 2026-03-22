@@ -39,11 +39,26 @@ interface TradeOrder {
 }
 
 export function OrderBookSection() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [sideFilter, setSideFilter] = useState<string>("all");
   const [productFilter, setProductFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+
+  // Fetch profile for org_id
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, org_id")
+        .eq("id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const orgId = profile?.org_id;
 
