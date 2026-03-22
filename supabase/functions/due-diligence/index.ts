@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,6 +120,23 @@ Deno.serve(async (req: Request) => {
 
       if (!doc_type || !filename || !storage_path || !sha256_hash) {
         return json({ error: "doc_type, filename, storage_path, sha256_hash are required" }, 400);
+      }
+
+      // ── Server-side magic-byte validation ──
+      if (storage_path) {
+        const bucket = storage_path.startsWith("kyc-documents") ? "kyc-documents" : storage_path.split("/")[0] || "kyc-documents";
+        const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
+        const { data: fileData, error: dlError } = await admin.storage.from(bucket).download(filePath);
+        if (!dlError && fileData) {
+          const headerBytes = new Uint8Array(await fileData.slice(0, 16).arrayBuffer());
+          const mbResult = validateMagicBytes(headerBytes, mime_type || "application/octet-stream", file_size || 0);
+          if (mbResult.blocked) {
+            return json({ error: mbResult.blockReason || "File type not allowed" }, 400);
+          }
+          if (mbResult.detectedMime && !mbResult.clientMimeMatch) {
+            console.warn(`[due-diligence] KYC MIME mismatch: client=${mime_type}, detected=${mbResult.detectedMime}`);
+          }
+        }
       }
 
       const { data: doc, error } = await admin.from("kyc_documents").insert({
@@ -390,6 +408,38 @@ Deno.serve(async (req: Request) => {
         metadata: { target_org_id, required_roles: requiredRoles, risk_band: riskBand },
       });
 
+      // ── Notify required approvers ──
+      const { data: approverUsers } = await admin
+        .from("dd_roles")
+        .select("user_id, role")
+        .eq("org_id", profile.org_id)
+        .in("role", requiredRoles);
+
+      if (approverUsers && approverUsers.length > 0) {
+        const notifRows = approverUsers.map((u: any) => ({
+          user_id: u.user_id,
+          org_id: profile.org_id,
+          type: "approval_required",
+          title: `Approval required: ${u.role}`,
+          body: `A ${riskBand}-risk due diligence approval request requires your ${u.role} sign-off.`,
+          link: `/due-diligence`,
+          read: false,
+        }));
+        await admin.from("notifications").insert(notifRows).catch((err: any) =>
+          console.error("[due-diligence] Approval notification insert failed:", err.message)
+        );
+      }
+
+      // Dispatch external notifications (email/Slack)
+      await admin.functions.invoke("notification-dispatch", {
+        body: {
+          event_type: "dd.approval_submitted",
+          subject: `Due diligence approval submitted (${riskBand} risk)`,
+          message: `A ${riskBand}-risk approval request has been submitted for organisation ${target_org_id}. Required roles: ${requiredRoles.join(", ")}.`,
+          metadata: { org_id: profile.org_id, target_org_id, risk_band: riskBand, required_roles: requiredRoles },
+        },
+      }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
+
       return json({ success: true, approval_request: request });
     }
 
@@ -462,6 +512,36 @@ Deno.serve(async (req: Request) => {
           metadata: { role: actingRole, reason },
         });
 
+        // ── Notify requester of rejection ──
+        const { data: requesterProfile } = await admin
+          .from("profiles")
+          .select("id")
+          .eq("org_id", request.requesting_org_id)
+          .limit(5);
+        if (requesterProfile && requesterProfile.length > 0) {
+          const rejectNotifs = requesterProfile.map((p: any) => ({
+            user_id: p.id,
+            org_id: request.requesting_org_id,
+            type: "approval_rejected",
+            title: "Approval request rejected",
+            body: `Your due diligence approval request was rejected by ${actingRole}. Reason: ${reason || "No reason provided"}.`,
+            link: `/due-diligence`,
+            read: false,
+          }));
+          await admin.from("notifications").insert(rejectNotifs).catch((err: any) =>
+            console.error("[due-diligence] Rejection notification failed:", err.message)
+          );
+        }
+
+        await admin.functions.invoke("notification-dispatch", {
+          body: {
+            event_type: "dd.approval_rejected",
+            subject: "Due diligence approval rejected",
+            message: `Approval request ${approval_request_id} was rejected by ${actingRole}. Reason: ${reason || "N/A"}.`,
+            metadata: { org_id: request.requesting_org_id, approval_request_id, role: actingRole },
+          },
+        }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
+
         return json({ success: true, status: "rejected" });
       }
 
@@ -508,6 +588,62 @@ Deno.serve(async (req: Request) => {
           all_complete: allComplete,
         },
       });
+
+      // ── Notify on approval progress ──
+      if (allComplete) {
+        // Notify requester that approval is fully complete
+        const { data: reqOrgUsers } = await admin
+          .from("profiles")
+          .select("id")
+          .eq("org_id", request.requesting_org_id)
+          .limit(10);
+        if (reqOrgUsers && reqOrgUsers.length > 0) {
+          const completeNotifs = reqOrgUsers.map((p: any) => ({
+            user_id: p.id,
+            org_id: request.requesting_org_id,
+            type: "approval_completed",
+            title: "Trade approval granted",
+            body: "All required approvals have been completed. The organisation is now approved to trade.",
+            link: `/due-diligence`,
+            read: false,
+          }));
+          await admin.from("notifications").insert(completeNotifs).catch((err: any) =>
+            console.error("[due-diligence] Completion notification failed:", err.message)
+          );
+        }
+
+        await admin.functions.invoke("notification-dispatch", {
+          body: {
+            event_type: "dd.approval_completed",
+            subject: "Trade approval fully granted",
+            message: `All required role approvals have been completed for approval request ${approval_request_id}. Organisation ${request.target_org_id} is now approved to trade.`,
+            metadata: { org_id: request.requesting_org_id, target_org_id: request.target_org_id, approval_request_id },
+          },
+        }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
+      } else {
+        // Notify remaining approvers that a partial approval occurred
+        const remainingRoles = requiredRoles.filter((r: string) => !newCompleted.includes(r));
+        const { data: remainingUsers } = await admin
+          .from("dd_roles")
+          .select("user_id, role")
+          .eq("org_id", request.requesting_org_id)
+          .in("role", remainingRoles);
+
+        if (remainingUsers && remainingUsers.length > 0) {
+          const partialNotifs = remainingUsers.map((u: any) => ({
+            user_id: u.user_id,
+            org_id: request.requesting_org_id,
+            type: "approval_required",
+            title: `Your approval is still required (${u.role})`,
+            body: `${actingRole} has approved. Your ${u.role} sign-off is still needed to complete the approval.`,
+            link: `/due-diligence`,
+            read: false,
+          }));
+          await admin.from("notifications").insert(partialNotifs).catch((err: any) =>
+            console.error("[due-diligence] Partial approval notification failed:", err.message)
+          );
+        }
+      }
 
       return json({
         success: true,
