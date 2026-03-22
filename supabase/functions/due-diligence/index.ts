@@ -408,6 +408,38 @@ Deno.serve(async (req: Request) => {
         metadata: { target_org_id, required_roles: requiredRoles, risk_band: riskBand },
       });
 
+      // ── Notify required approvers ──
+      const { data: approverUsers } = await admin
+        .from("dd_roles")
+        .select("user_id, role")
+        .eq("org_id", profile.org_id)
+        .in("role", requiredRoles);
+
+      if (approverUsers && approverUsers.length > 0) {
+        const notifRows = approverUsers.map((u: any) => ({
+          user_id: u.user_id,
+          org_id: profile.org_id,
+          type: "approval_required",
+          title: `Approval required: ${u.role}`,
+          body: `A ${riskBand}-risk due diligence approval request requires your ${u.role} sign-off.`,
+          link: `/due-diligence`,
+          read: false,
+        }));
+        await admin.from("notifications").insert(notifRows).catch((err: any) =>
+          console.error("[due-diligence] Approval notification insert failed:", err.message)
+        );
+      }
+
+      // Dispatch external notifications (email/Slack)
+      await admin.functions.invoke("notification-dispatch", {
+        body: {
+          event_type: "dd.approval_submitted",
+          subject: `Due diligence approval submitted (${riskBand} risk)`,
+          message: `A ${riskBand}-risk approval request has been submitted for organisation ${target_org_id}. Required roles: ${requiredRoles.join(", ")}.`,
+          metadata: { org_id: profile.org_id, target_org_id, risk_band: riskBand, required_roles: requiredRoles },
+        },
+      }).catch((err: any) => console.error("[due-diligence] notification-dispatch failed:", err));
+
       return json({ success: true, approval_request: request });
     }
 
