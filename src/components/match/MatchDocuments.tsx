@@ -547,9 +547,9 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       case "uploaded":
         return <Badge variant="secondary">Uploaded</Badge>;
       case "pending_review":
-        return <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">Pending Review</Badge>;
+        return <Badge className="bg-warning/10 text-warning border-warning/20">Pending Review</Badge>;
       case "accepted":
-        return <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Accepted</Badge>;
+        return <Badge className="bg-success/10 text-success border-success/20">Accepted</Badge>;
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>;
       case "verified":
