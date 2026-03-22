@@ -307,13 +307,13 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
         .from("pod_milestones")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", ms.id)
-        .eq("status", "pending")
+        .in("status", ["pending", "OPEN", "breach_detected"])
         .select();
 
       if (error) throw error;
       if (!updated || updated.length === 0) {
         toast.error("Milestone was not updated", {
-          description: "It may have already been completed or access was denied.",
+          description: "It may have already been completed, is in a non-completable state, or access was denied.",
         });
         return;
       }
@@ -355,7 +355,7 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
               const daysOverdue = isOverdue
                 ? Math.floor((Date.now() - new Date(m.due_at).getTime()) / (24 * 60 * 60 * 1000))
                 : 0;
-              const isCompletable = (m.status === "pending" || m.status === "OPEN") && depMet;
+              const isCompletable = (m.status === "pending" || m.status === "OPEN" || m.status === "breach_detected") && depMet;
               return (
                 <TableRow key={m.id} className={isOverdue && m.status !== "completed" ? "bg-destructive/5" : ""}>
                   <TableCell className="font-mono text-xs">{m.id.slice(0, 8)}…</TableCell>
@@ -421,16 +421,44 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
 
   const handleResolve = async (breachId: string) => {
     try {
-      const { error } = await supabase
+      // Get current user for actor tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Session expired", { description: "Please sign in again." });
+        return;
+      }
+
+      const { data: updated, error } = await supabase
         .from("breaches")
         .update({
           status: resolutionAction,
           resolved_at: new Date().toISOString(),
+          resolved_by: user.id,
           resolution_note: resolutionNote || null,
         } as any)
-        .eq("id", breachId);
+        .eq("id", breachId)
+        .select();
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        toast.error("Breach was not updated", {
+          description: "It may have already been resolved or access was denied.",
+        });
+        return;
+      }
+
+      // Audit log the resolution
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: user.id,
+        action: `breach.${resolutionAction}`,
+        target_type: "breach",
+        target_id: breachId,
+        details: {
+          resolution_action: resolutionAction,
+          resolution_note: resolutionNote || null,
+        },
+      });
+
       toast.success(`Breach ${resolutionAction}`);
       setResolving(null);
       setResolutionNote("");
@@ -611,16 +639,28 @@ function AddMilestoneForm({
       toast.error("Name and due date are required");
       return;
     }
+    const dueDate = new Date(dueAt);
+    if (dueDate <= new Date()) {
+      toast.error("Due date must be in the future");
+      return;
+    }
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("pod_milestones").insert({
+      const { data: inserted, error } = await supabase.from("pod_milestones").insert({
         pod_id: podId,
+        org_id: orgId,
         name: name.trim(),
-        due_at: new Date(dueAt).toISOString(),
+        due_at: dueDate.toISOString(),
         status: "pending",
         depends_on: dependsOn === "none" ? null : dependsOn,
-      } as any);
+      } as any).select();
       if (error) throw error;
+      if (!inserted || inserted.length === 0) {
+        toast.error("Milestone was not created", {
+          description: "Access may have been denied. Please check your permissions.",
+        });
+        return;
+      }
       toast.success(`Milestone "${name.trim()}" added`);
       onSuccess();
     } catch (err: any) {
