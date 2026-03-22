@@ -40,7 +40,7 @@ export function ProgressSummary({ state, onAction }: ProgressSummaryProps) {
                 }`} />
                 {i < stages.length - 1 && (
                   <div className={`h-0.5 w-6 ${
-                    s.status === "complete" ? "bg-green-500" : "bg-muted"
+                    s.status === "complete" ? "bg-success" : "bg-muted"
                   }`} />
                 )}
               </div>
