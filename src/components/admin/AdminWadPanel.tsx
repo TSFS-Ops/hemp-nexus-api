@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
-import * as WadState from "@/lib/wad-state";
+import { revokeWad, WadState } from "@/lib/modules/consequence";
 import { apiFetch } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
