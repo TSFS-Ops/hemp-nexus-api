@@ -95,12 +95,26 @@ export function AdminWadPanel() {
         }
       }
 
-      const certificate = await apiFetch(`wad/${wadId}/certificate`);
-      const blob = new Blob([JSON.stringify(certificate, null, 2)], { type: "application/json" });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wad/${wadId}/certificate`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || "Failed to download certificate");
+      }
+
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `wad-certificate-${wadId}.json`;
+      a.download = `WaD-Certificate-${wadId.substring(0, 8)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
 
