@@ -33,8 +33,8 @@ export function ProgressSummary({ state, onAction }: ProgressSummaryProps) {
             {stages.map((s, i) => (
               <div key={i} className="flex items-center">
                 <div className={`h-3 w-3 rounded-full ${
-                  s.status === "complete" ? "bg-green-500" :
-                  s.status === "in_progress" ? "bg-blue-500" :
+                  s.status === "complete" ? "bg-success" :
+                  s.status === "in_progress" ? "bg-primary" :
                   s.status === "blocked" ? "bg-destructive" :
                   "bg-muted"
                 }`} />
