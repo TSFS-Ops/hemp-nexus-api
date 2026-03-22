@@ -54,8 +54,8 @@ export function ProgressSummary({ state, onAction }: ProgressSummaryProps) {
           <div className="flex items-center gap-2 text-sm">
             {allDone ? (
               <>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span className="text-green-600 font-medium">{summary}</span>
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <span className="text-success font-medium">{summary}</span>
               </>
             ) : blockedCount > 0 ? (
               <>

@@ -125,7 +125,7 @@ export function StageCard({ stage, userRole, onAction, defaultExpanded = false }
               {stage.substeps.map((sub, j) => (
                 <div key={j} className="flex items-start gap-2 text-sm">
                   {sub.done ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
                   ) : (
                     <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-0.5" />
                   )}
