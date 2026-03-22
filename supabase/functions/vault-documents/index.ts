@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 
 /**
  * DISC-004 Supporting Collateral Documentation
