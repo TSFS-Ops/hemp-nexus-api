@@ -65,6 +65,10 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
             <ShieldAlert className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Disputes</span>
           </TabsTrigger>
+          <TabsTrigger value="progress" className="flex items-center gap-1.5 min-w-[44px]">
+            <ListChecks className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Progress</span>
+          </TabsTrigger>
           <TabsTrigger value="timeline" className="flex items-center gap-1.5 min-w-[44px]">
             <Clock className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Timeline</span>
