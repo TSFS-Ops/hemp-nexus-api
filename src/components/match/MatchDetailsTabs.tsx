@@ -5,7 +5,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert } from "lucide-react";
+import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert, ListChecks } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
@@ -16,10 +16,11 @@ import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
 import { DisputeBanner } from "@/components/match/DisputeBanner";
 import { ConfirmIntentCard } from "@/components/match/ConfirmIntentCard";
+import { CompletionTracker } from "@/components/match/CompletionTracker";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import type { Match } from "@/hooks/use-match-details";
 
-const ALLOWED_TABS = ["details", "documents", "terms", "notes", "evidence", "wad", "disputes", "timeline"];
+const ALLOWED_TABS = ["details", "documents", "terms", "notes", "evidence", "wad", "progress", "disputes", "timeline"];
 
 interface MatchDetailsTabsProps {
   match: Match;
