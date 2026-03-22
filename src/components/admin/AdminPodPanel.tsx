@@ -338,6 +338,7 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
               <TableHead>Depends On</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Due</TableHead>
+              <TableHead>Overdue</TableHead>
               <TableHead>Completed</TableHead>
               <TableHead className="w-24"></TableHead>
             </TableRow>
@@ -345,13 +346,18 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
           <TableBody>
             {milestones.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">No milestones yet</TableCell>
+                <TableCell colSpan={9} className="text-center text-muted-foreground">No milestones yet</TableCell>
               </TableRow>
             ) : milestones.map((m) => {
               const depName = m.depends_on ? milestones.find(d => d.id === m.depends_on)?.name : null;
               const depMet = !m.depends_on || milestones.find(d => d.id === m.depends_on)?.status === "completed";
+              const isOverdue = !m.completed_at && new Date(m.due_at) < new Date();
+              const daysOverdue = isOverdue
+                ? Math.floor((Date.now() - new Date(m.due_at).getTime()) / (24 * 60 * 60 * 1000))
+                : 0;
+              const isCompletable = (m.status === "pending" || m.status === "OPEN") && depMet;
               return (
-                <TableRow key={m.id}>
+                <TableRow key={m.id} className={isOverdue && m.status !== "completed" ? "bg-destructive/5" : ""}>
                   <TableCell className="font-mono text-xs">{m.id.slice(0, 8)}…</TableCell>
                   <TableCell className="font-mono text-xs">{m.pod_id.slice(0, 8)}…</TableCell>
                   <TableCell className="font-medium">{m.name}</TableCell>
@@ -364,9 +370,18 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
                   </TableCell>
                   <TableCell><Badge variant={MS_STATUS_COLOURS[m.status] || "secondary"}>{m.status}</Badge></TableCell>
                   <TableCell>{format(new Date(m.due_at), "dd MMM yyyy")}</TableCell>
+                  <TableCell>
+                    {isOverdue && m.status !== "completed" ? (
+                      <Badge variant="destructive" className="text-xs">
+                        {daysOverdue}d overdue
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/50">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>{m.completed_at ? format(new Date(m.completed_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
                   <TableCell>
-                    {m.status === "pending" && (
+                    {isCompletable && (
                       <Button
                         variant="outline"
                         size="sm"
