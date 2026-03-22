@@ -483,10 +483,10 @@ export function WadStepper({ wad, match, onUpdate }: WadStepperProps) {
             <Button onClick={handleDownloadCertificate} disabled={downloading} className="w-full">
               {downloading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <Download className="h-4 w-4 mr-2" />
-              Download Certificate
+              Download PDF Certificate
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              Certificate includes all attestations, evidence bundle hash, and seal verification data.
+              PDF certificate includes all attestations, evidence bundle hashes, seal verification data, and a cryptographic verification section.
             </p>
           </div>
         );
