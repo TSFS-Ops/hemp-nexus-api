@@ -211,6 +211,23 @@ Deno.serve(async (req: Request) => {
         throw new ApiException("CONFLICT", "Milestone already completed", 409);
       }
 
+      // ── Dependency check: block if prerequisite milestone is not completed ──
+      if ((milestone as any).depends_on) {
+        const { data: dep } = await admin
+          .from("pod_milestones")
+          .select("id, name, status")
+          .eq("id", (milestone as any).depends_on)
+          .maybeSingle();
+
+        if (dep && dep.status !== "completed") {
+          throw new ApiException(
+            "PRECONDITION_FAILED",
+            `Cannot complete "${milestone.name}" — prerequisite "${dep.name}" must be completed first`,
+            412
+          );
+        }
+      }
+
       const { data: updated, error } = await admin
         .from("pod_milestones")
         .update({
