@@ -421,16 +421,44 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
 
   const handleResolve = async (breachId: string) => {
     try {
-      const { error } = await supabase
+      // Get current user for actor tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Session expired", { description: "Please sign in again." });
+        return;
+      }
+
+      const { data: updated, error } = await supabase
         .from("breaches")
         .update({
           status: resolutionAction,
           resolved_at: new Date().toISOString(),
+          resolved_by: user.id,
           resolution_note: resolutionNote || null,
         } as any)
-        .eq("id", breachId);
+        .eq("id", breachId)
+        .select();
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        toast.error("Breach was not updated", {
+          description: "It may have already been resolved or access was denied.",
+        });
+        return;
+      }
+
+      // Audit log the resolution
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: user.id,
+        action: `breach.${resolutionAction}`,
+        target_type: "breach",
+        target_id: breachId,
+        details: {
+          resolution_action: resolutionAction,
+          resolution_note: resolutionNote || null,
+        },
+      });
+
       toast.success(`Breach ${resolutionAction}`);
       setResolving(null);
       setResolutionNote("");
