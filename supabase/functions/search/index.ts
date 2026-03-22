@@ -157,7 +157,11 @@ Deno.serve(async (req) => {
     }
 
     const { data: orderBookHits } = await orderBookQuery;
-    const orderBookResults = (orderBookHits || []).map((o: any) => ({
+    // Filter out expired orders (server-side, since Supabase doesn't support OR-with-null easily)
+    const validOrders = (orderBookHits || []).filter((o: any) =>
+      !o.expires_at || new Date(o.expires_at) > new Date()
+    );
+    const orderBookResults = validOrders.map((o: any) => ({
       id: o.id,
       title: `${o.side.toUpperCase()}: ${o.product}`,
       description: [
