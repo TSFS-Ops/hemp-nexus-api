@@ -228,7 +228,13 @@ export function OrderBookSection() {
               </Button>
             </div>
           ) : (
-            <Table>
+            <>
+              {isTruncated && (
+                <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-b">
+                  Showing {ORDER_PAGE_SIZE} of {totalCount} orders. Refine your filters to narrow results.
+                </div>
+              )}
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-20">Side</TableHead>
