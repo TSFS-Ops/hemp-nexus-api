@@ -9,6 +9,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { ConsoleOverview } from "@/components/dashboard/ConsoleOverview";
 import { SearchSection } from "@/components/dashboard/sections/SearchSection";
 import { MatchesSection } from "@/components/dashboard/sections/MatchesSection";
+import { OrderBookSection } from "@/components/dashboard/sections/OrderBookSection";
 import { DashboardSettings } from "@/components/dashboard/DashboardSettings";
 import { AccountSection } from "@/components/dashboard/AccountSection";
 import { ComplianceSection } from "@/components/dashboard/sections/ComplianceSection";
