@@ -155,6 +155,8 @@ Deno.serve(async (req) => {
         data: {
           match_id: matchId,
           documents: filtered,
+          truncated,
+          ...(truncated ? { warning: `Results limited to ${DOC_LIMIT} documents. Some records may not be shown.` } : {}),
         },
       }),
       {
