@@ -131,6 +131,10 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
         <DisputePanel matchId={match.id} orgId={match.org_id} />
       </TabsContent>
 
+      <TabsContent value="progress" className="mt-4">
+        <CompletionTracker matchId={match.id} orgId={match.org_id} />
+      </TabsContent>
+
       <TabsContent value="timeline" className="mt-4">
         <MatchTimeline matchId={match.id} />
       </TabsContent>
