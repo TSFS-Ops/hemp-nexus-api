@@ -39,8 +39,8 @@ const STAGE_ICONS: Record<StageId, React.ReactNode> = {
 
 function statusIcon(status: StageStatus) {
   switch (status) {
-    case "complete": return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-    case "in_progress": return <Clock className="h-5 w-5 text-blue-500 animate-pulse" />;
+    case "complete": return <CheckCircle2 className="h-5 w-5 text-success" />;
+    case "in_progress": return <Clock className="h-5 w-5 text-primary animate-pulse" />;
     case "blocked": return <AlertTriangle className="h-5 w-5 text-destructive" />;
     case "pending": return <Circle className="h-5 w-5 text-muted-foreground" />;
     case "not_started": return <Circle className="h-5 w-5 text-muted-foreground/40" />;
@@ -78,7 +78,7 @@ export function StageCard({ stage, userRole, onAction, defaultExpanded = false }
   const recommendedAction = stage.actions.find(a => a.isRecommended);
 
   return (
-    <Card className={stage.status === "blocked" ? "border-destructive/50" : stage.status === "complete" ? "border-green-500/30" : ""}>
+    <Card className={stage.status === "blocked" ? "border-destructive/50" : stage.status === "complete" ? "border-success/30" : ""}>
       <CardHeader className="pb-2 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -125,7 +125,7 @@ export function StageCard({ stage, userRole, onAction, defaultExpanded = false }
               {stage.substeps.map((sub, j) => (
                 <div key={j} className="flex items-start gap-2 text-sm">
                   {sub.done ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
                   ) : (
                     <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-0.5" />
                   )}

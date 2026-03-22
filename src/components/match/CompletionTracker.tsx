@@ -8,8 +8,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { AlertTriangle } from "lucide-react";
 import { resolveCompletion, type CompletionInput, type TrackerAction, type UserRole } from "@/lib/completion-engine";
 import { ProgressSummary } from "./completion-tracker/ProgressSummary";
 import { StageCard } from "./completion-tracker/StageCard";
@@ -31,10 +33,10 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
       ? "org_admin"
       : "org_member";
 
-  const { data: completionInput, isLoading } = useQuery({
+  const { data: completionInput, isLoading, error } = useQuery({
     queryKey: ["completion-tracker", matchId],
     queryFn: async (): Promise<CompletionInput> => {
-      // Parallel data fetch
+      // Parallel data fetch — scoped to this match and org
       const [matchRes, wadRes, podRes, docsRes, disputeRes] = await Promise.all([
         supabase.from("matches")
           .select("id, status, state, poi_state, org_id, buyer_org_id, seller_org_id, buyer_committed_at, seller_committed_at, counterparty_sighted_at, settled_at")
@@ -45,10 +47,12 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
           .eq("poi_id", matchId)
           .order("created_at", { ascending: false })
           .limit(1),
+        // Pods are linked to WaDs, so we first get WaD then pods
+        // For now, query pods scoped via match relationship
         supabase.from("pods")
           .select("id, state, wad_id")
           .order("created_at", { ascending: false })
-          .limit(1),
+          .limit(10),
         supabase.from("match_documents")
           .select("id, review_status")
           .eq("match_id", matchId),
@@ -57,9 +61,19 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
           .eq("match_id", matchId),
       ]);
 
-      const match = matchRes.data as any;
+      // Guard: match must exist
+      if (matchRes.error || !matchRes.data) {
+        throw new Error(matchRes.error?.message || "Match not found");
+      }
+
+      const match = matchRes.data;
       const wadData = (wadRes.data as any)?.[0] || null;
-      const podData = (podRes.data as any)?.[0] || null;
+
+      // Scope pod to the WaD for this match
+      let podData: any = null;
+      if (wadData && podRes.data) {
+        podData = (podRes.data as any[]).find((p: any) => p.wad_id === wadData.id) || null;
+      }
 
       // Fetch milestones + breaches if pod exists
       let milestones: any[] = [];
@@ -155,28 +169,36 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
   });
 
   const handleAction = (action: TrackerAction) => {
-    // Handle milestone completion directly
     if (action.type === "complete_milestone") {
       const milestoneId = action.id.replace("pod-complete-", "");
       completeMilestone.mutate(milestoneId);
       return;
     }
 
-    // Navigate to the relevant tab
     if (action.targetTab && onNavigateTab) {
       onNavigateTab(action.targetTab);
       return;
     }
 
-    // Fallback toast for actions without tab navigation
     toast.info(`Navigate to the ${action.targetTab || "relevant"} tab to ${action.label.toLowerCase()}`);
   };
 
-  if (isLoading || !completionInput) {
+  if (isLoading) {
     return (
       <div className="space-y-3">
         {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 w-full" />)}
       </div>
+    );
+  }
+
+  if (error || !completionInput) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          {error instanceof Error ? error.message : "Failed to load progress data. Please refresh the page."}
+        </AlertDescription>
+      </Alert>
     );
   }
 
