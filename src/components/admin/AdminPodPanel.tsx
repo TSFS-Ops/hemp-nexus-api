@@ -206,7 +206,7 @@ export function AdminPodPanel() {
         </TabsContent>
 
         <TabsContent value="breaches">
-          <BreachesTab breaches={breaches} />
+          <BreachesTab breaches={breaches} onRefresh={fetchData} />
         </TabsContent>
       </Tabs>
     </div>
