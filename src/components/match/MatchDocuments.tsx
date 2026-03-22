@@ -360,6 +360,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           sha256_hash: sha256Hash,
           file_size: selectedFile.size,
           mime_type: selectedFile.type,
+          magic_bytes_verified: !!detectedMime,
+          server_detected_mime: detectedMime || null,
           status: "uploaded",
           title: title || null,
           notes: notes || null,
