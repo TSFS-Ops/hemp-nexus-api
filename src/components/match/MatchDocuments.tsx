@@ -391,6 +391,10 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           title: title || null,
           notes: notes || null,
           visibility: visibility,
+          // Version chain: new standalone doc is its own root, version 1, current
+          root_document_id: docId,
+          version: 1,
+          is_current_version: true,
         });
 
       if (insertError) {
