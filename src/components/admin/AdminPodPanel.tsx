@@ -68,6 +68,25 @@ const MS_STATUS_COLOURS: Record<string, "default" | "secondary" | "destructive" 
   pending: "outline",
   completed: "default",
   deficient: "destructive",
+  breach_detected: "destructive",
+  breached: "destructive",
+  OPEN: "outline",
+};
+
+const BREACH_STATUS_COLOURS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  open: "destructive",
+  grace_period: "secondary",
+  finalised: "destructive",
+  resolved: "default",
+  remediated: "default",
+  dismissed: "outline",
+};
+
+const SEVERITY_COLOURS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  low: "outline",
+  medium: "secondary",
+  high: "destructive",
+  critical: "destructive",
 };
 
 export function AdminPodPanel() {
