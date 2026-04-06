@@ -67,26 +67,12 @@ const TOKEN_PACKAGES: Record<string, {
   label: string;
   pricePerCredit: string;
 }> = {
-  starter: { 
-    credits: 20, 
-    price_zar: 1799, 
-    price_cents: 179900, 
-    label: "Starter",
-    pricePerCredit: "89.95",
-  },
-  professional: { 
-    credits: 100, 
-    price_zar: 6299, 
-    price_cents: 629900, 
-    label: "Professional",
-    pricePerCredit: "62.99",
-  },
-  enterprise: { 
-    credits: 500, 
-    price_zar: 26999, 
-    price_cents: 2699900, 
-    label: "Enterprise",
-    pricePerCredit: "54.00",
+  single: { 
+    credits: 1, 
+    price_zar: 10, 
+    price_cents: 1000, 
+    label: "Proof-of-Intent",
+    pricePerCredit: "10.00",
   },
 };
 
