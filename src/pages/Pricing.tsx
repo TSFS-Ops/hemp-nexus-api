@@ -5,53 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { getConsoleUrl } from "@/lib/hostname";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 
-const packages = [
-  {
-    name: "Starter",
-    price: 1799,
-    credits: 20,
-    perCredit: "89.95",
-    description: "For small businesses testing the waters",
-    features: [
-      "20 Proof-of-Intent credits",
-      "Full API access",
-      "Email support",
-      "7-day refund on unused credits",
-    ],
-    popular: false,
-  },
-  {
-    name: "Professional",
-    price: 6299,
-    credits: 100,
-    perCredit: "62.99",
-    description: "For growing businesses with regular trading",
-    features: [
-      "100 Proof-of-Intent credits",
-      "Full API access",
-      "Priority email support",
-      "Webhook integrations",
-      "7-day refund on unused credits",
-    ],
-    popular: true,
-  },
-  {
-    name: "Enterprise",
-    price: 26999,
-    credits: 500,
-    perCredit: "54.00",
-    description: "For high-volume traders and institutions",
-    features: [
-      "500 Proof-of-Intent credits",
-      "Full API access",
-      "Dedicated support",
-      "Webhook integrations",
-      "Custom integrations",
-      "7-day refund on unused credits",
-    ],
-    popular: false,
-  },
-];
+const POI_PRICE_ZAR = 10;
 
 export default function Pricing() {
   const consoleAuthUrl = getConsoleUrl("/auth");
