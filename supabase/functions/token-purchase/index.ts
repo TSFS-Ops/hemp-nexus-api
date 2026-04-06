@@ -29,7 +29,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Zod schemas
 const purchaseSchema = z.object({
-  packageId: z.enum(["starter", "professional", "enterprise"]),
+  packageId: z.enum(["single"]),
   callbackUrl: z.string().url().optional(),
   cancelUrl: z.string().url().optional(),
 });
