@@ -32,10 +32,6 @@ const CREDIT_PACKAGES = [
   },
 ];
 
-// ==============================================
-// ANNUAL LICENCES (manual invoice)
-// ==============================================
-// Annual licences hidden until fully live
 
 // ==============================================
 // CHARGING ENTITY
