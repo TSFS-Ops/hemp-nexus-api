@@ -35,11 +35,7 @@ const CREDIT_PACKAGES = [
 // ==============================================
 // ANNUAL LICENCES (manual invoice)
 // ==============================================
-const LICENCE_TIERS = [
-  { name: 'Professional', price: '$25,000/year', description: 'Standard API access with SLA' },
-  { name: 'Institutional', price: '$75k–$150k/year', description: 'Enhanced limits and dedicated support' },
-  { name: 'Corridor / Network', price: '$250k+/year', description: 'Custom integration and white-label options' },
-];
+// Annual licences hidden until fully live
 
 // ==============================================
 // CHARGING ENTITY

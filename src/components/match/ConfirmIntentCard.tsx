@@ -29,7 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const CREDITS_REQUIRED = 500;
+const CREDITS_REQUIRED = 1;
 
 interface ConfirmIntentCardProps {
   onConfirm: () => void;
