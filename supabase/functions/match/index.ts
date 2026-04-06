@@ -314,8 +314,6 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POST /match/${matchId}/reveal-counterparty`);
 
-      // await enforceLicence(supabase, authCtx.orgId, endpointLabel);
-
       const { data: match, error: fetchError } = await supabase
         .from("matches")
         .select("*")
