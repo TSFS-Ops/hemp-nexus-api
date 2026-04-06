@@ -82,7 +82,6 @@ const TOKEN_PACKAGES: Record<string, {
 const REFUND_POLICY = {
   unusedCreditsRefundableDays: 7,
   consumedCreditsRefundable: false,
-  poiWadLicencesRefundable: false,
 };
 
 Deno.serve(async (req) => {
