@@ -283,7 +283,7 @@ async function checkAndTriggerLowBalanceWebhooks(
             orgId,
             currentBalance: newBalance,
             threshold,
-            minimumRequired: MINIMUM_TOKEN_BALANCE,
+            minimumRequired: DEFAULT_MINIMUM_TOKEN_BALANCE,
             warning: getWarningMessage(threshold, newBalance),
             urgency: getUrgencyLevel(newBalance),
           },
