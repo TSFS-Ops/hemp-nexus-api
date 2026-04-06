@@ -16,8 +16,6 @@ import {
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
-// Licence enforcement disabled until purchase flow is built (credits already gate actions)
-// import { enforceLicence } from "../_shared/licence-enforcement.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -128,8 +126,6 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POST /match/${matchId}/${action} (Confirm Intent)`);
 
-      // Licence gate disabled — credits (500/confirm) already gate this action commercially
-      // await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
       // --- Fetch match (read-only, for eligibility check & audit metadata) ---
       const { data: match, error: fetchError } = await supabase
@@ -318,8 +314,6 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POST /match/${matchId}/reveal-counterparty`);
 
-      // await enforceLicence(supabase, authCtx.orgId, endpointLabel);
-
       const { data: match, error: fetchError } = await supabase
         .from("matches")
         .select("*")
@@ -409,8 +403,6 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] POST /match/${matchId}/commit`);
-
-      // await enforceLicence(supabase, authCtx.orgId, endpointLabel);
 
       const { data: match, error: fetchError } = await supabase
         .from("matches")
