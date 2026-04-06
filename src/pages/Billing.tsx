@@ -22,31 +22,13 @@ import { cn } from "@/lib/utils";
 // ==============================================
 const CREDIT_PACKAGES = [
   { 
-    id: 'starter',
-    credits: 20, 
-    priceZar: 1799,
-    label: 'Starter',
-    pricePerCredit: '89.95',
-    description: 'For testing and small projects',
-    popular: false,
-  },
-  { 
-    id: 'professional',
-    credits: 100, 
-    priceZar: 6299,
-    label: 'Professional',
-    pricePerCredit: '62.99',
-    description: 'Best value for active users',
+    id: 'single',
+    credits: 1, 
+    priceZar: 10,
+    label: 'Proof-of-Intent',
+    pricePerCredit: '10.00',
+    description: 'R10 per POI — pay as you go',
     popular: true,
-  },
-  { 
-    id: 'enterprise',
-    credits: 500, 
-    priceZar: 26999,
-    label: 'Enterprise',
-    pricePerCredit: '54.00',
-    description: 'For high-volume operations',
-    popular: false,
   },
 ];
 
