@@ -440,62 +440,45 @@ export async function burnTokensForAction(
 ): Promise<TokenBurnResult> {
   const tokensToBurn = customAmount ?? ACTION_TOKEN_COSTS[actionType];
   
-  // Fetch current balance
-  const { data: currentBalanceData } = await supabase
-    .from("token_balances")
-    .select("balance")
-    .eq("org_id", orgId)
-    .single();
-  
-  if (!currentBalanceData) {
-    throw new ApiException(
-      "TOKEN_NOT_FOUND",
-      "Token balance not initialized. Contact support.",
-      500
-    );
+  // Skip burn for zero-cost actions
+  if (tokensToBurn === 0) {
+    const { data: bal } = await supabase
+      .from("token_balances")
+      .select("balance")
+      .eq("org_id", orgId)
+      .maybeSingle();
+    return { success: true, newBalance: bal?.balance || 0, ledgerEntryId: "" };
   }
-  
-  const previousBalance = currentBalanceData.balance;
-  const newBalance = Math.max(0, previousBalance - tokensToBurn);
-  
-  // Get the org's minimum_required from DB
-  const { data: balanceRecord } = await supabase
-    .from("token_balances")
-    .select("minimum_required")
-    .eq("org_id", orgId)
-    .maybeSingle();
-  const minRequired = balanceRecord?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
 
-  // Check if sufficient balance for this action
-  if (previousBalance < tokensToBurn + minRequired) {
+  // Use atomic DB function — single UPDATE ... WHERE balance >= amount
+  const { data: burnResult, error: burnError } = await supabase.rpc("atomic_token_burn", {
+    p_org_id: orgId,
+    p_amount: tokensToBurn,
+    p_reason: `action:${actionType}`,
+    p_reference_id: requestId,
+  });
+
+  if (burnError) {
+    console.error("Error in atomic_token_burn for action:", burnError);
+    throw new ApiException("TOKEN_BURN_FAILED", "Failed to burn tokens", 500);
+  }
+
+  if (!burnResult?.success) {
     throw new ApiException(
       "INSUFFICIENT_TOKEN_BALANCE",
-      `Insufficient tokens for ${actionType}. Required: ${tokensToBurn}, Available: ${previousBalance - minRequired}`,
+      `Insufficient tokens for ${actionType}. Required: ${tokensToBurn}, Available: ${burnResult?.current_balance ?? 0}`,
       402,
       {
         actionType,
         required: tokensToBurn,
-        available: previousBalance - minRequired,
-        minimumReserve: minRequired,
+        available: burnResult?.current_balance ?? 0,
       }
     );
   }
-  
-  // Update balance
-  const { error: updateError } = await supabase
-    .from("token_balances")
-    .update({ balance: newBalance })
-    .eq("org_id", orgId);
-  
-  if (updateError) {
-    console.error("Error burning tokens for action:", updateError);
-    throw new ApiException(
-      "TOKEN_BURN_FAILED",
-      "Failed to burn tokens",
-      500
-    );
-  }
-  
+
+  const previousBalance = burnResult.balance_before;
+  const newBalance = burnResult.balance_after;
+
   // Check if we crossed any low balance thresholds
   await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
   
@@ -526,6 +509,7 @@ export async function burnTokensForAction(
   
   if (ledgerError) {
     console.error("Error recording token ledger entry:", ledgerError);
+    console.error(`CRITICAL: Token burn of ${tokensToBurn} for action ${actionType} (org: ${orgId}) succeeded but ledger write failed. Request: ${requestId}`);
   }
   
   console.log(`[Token Metering] Burned ${tokensToBurn} tokens for ${actionType} (org: ${orgId})`);
