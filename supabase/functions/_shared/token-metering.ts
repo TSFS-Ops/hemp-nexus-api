@@ -23,17 +23,17 @@ const TOKENS_PER_CALL = 1;
 // ACTION-SPECIFIC TOKEN COSTS (from Price List)
 // ==============================================
 export const ACTION_TOKEN_COSTS = {
-  // Transaction lifecycle
-  'transaction_shell': 500,        // Create transaction shell
-  'manual_description': 250,       // "Other / Manual Description"
-  'document_upload': 50,           // Per document upload
-  'counterparty_sighting': 1500,   // Reveal counterparty identity
-  'buyer_commit': 1000,            // Buyer COMMIT
-  'seller_commit': 1000,           // Seller COMMIT
-  'declare_intent': 500,           // Declare intent (state transition)
+  // Transaction lifecycle — flat 1 credit per action until fully live
+  'transaction_shell': 1,
+  'manual_description': 1,
+  'document_upload': 0,
+  'counterparty_sighting': 1,
+  'buyer_commit': 1,
+  'seller_commit': 1,
+  'declare_intent': 1,
   
   // Generic/legacy
-  'api_call': 1,                   // Standard API call
+  'api_call': 0,
 } as const;
 
 export type ActionType = keyof typeof ACTION_TOKEN_COSTS;

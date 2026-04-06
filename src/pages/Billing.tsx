@@ -22,42 +22,20 @@ import { cn } from "@/lib/utils";
 // ==============================================
 const CREDIT_PACKAGES = [
   { 
-    id: 'starter',
-    credits: 20, 
-    priceZar: 1799,
-    label: 'Starter',
-    pricePerCredit: '89.95',
-    description: 'For testing and small projects',
-    popular: false,
-  },
-  { 
-    id: 'professional',
-    credits: 100, 
-    priceZar: 6299,
-    label: 'Professional',
-    pricePerCredit: '62.99',
-    description: 'Best value for active users',
+    id: 'single',
+    credits: 1, 
+    priceZar: 10,
+    label: 'Proof-of-Intent',
+    pricePerCredit: '10.00',
+    description: 'R10 per POI — pay as you go',
     popular: true,
-  },
-  { 
-    id: 'enterprise',
-    credits: 500, 
-    priceZar: 26999,
-    label: 'Enterprise',
-    pricePerCredit: '54.00',
-    description: 'For high-volume operations',
-    popular: false,
   },
 ];
 
 // ==============================================
 // ANNUAL LICENCES (manual invoice)
 // ==============================================
-const LICENCE_TIERS = [
-  { name: 'Professional', price: '$25,000/year', description: 'Standard API access with SLA' },
-  { name: 'Institutional', price: '$75k–$150k/year', description: 'Enhanced limits and dedicated support' },
-  { name: 'Corridor / Network', price: '$250k+/year', description: 'Custom integration and white-label options' },
-];
+// Annual licences hidden until fully live
 
 // ==============================================
 // CHARGING ENTITY
@@ -535,39 +513,6 @@ export default function Billing() {
 
         <Separator />
 
-        {/* Annual Licences */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle>Annual Licences</CardTitle>
-            </div>
-            <CardDescription>
-              For institutional access with priority support and custom terms
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              {LICENCE_TIERS.map((tier) => (
-                <div key={tier.name} className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold">{tier.name}</h4>
-                  <p className="text-2xl font-bold text-primary mt-1">{tier.price}</p>
-                  <p className="text-sm text-muted-foreground mt-2">{tier.description}</p>
-                </div>
-              ))}
-            </div>
-            <Alert className="mt-4">
-              <FileText className="h-4 w-4" />
-              <AlertDescription>
-                Licences are billed via manual invoice. Contact{" "}
-                <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">
-                  {CHARGING_ENTITY.supportEmail}
-                </a>{" "}
-                to discuss your requirements.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
 
         {/* Refund Policy */}
         <Card>
