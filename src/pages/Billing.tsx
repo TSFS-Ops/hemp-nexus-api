@@ -513,39 +513,6 @@ export default function Billing() {
 
         <Separator />
 
-        {/* Annual Licences */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle>Annual Licences</CardTitle>
-            </div>
-            <CardDescription>
-              For institutional access with priority support and custom terms
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              {LICENCE_TIERS.map((tier) => (
-                <div key={tier.name} className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold">{tier.name}</h4>
-                  <p className="text-2xl font-bold text-primary mt-1">{tier.price}</p>
-                  <p className="text-sm text-muted-foreground mt-2">{tier.description}</p>
-                </div>
-              ))}
-            </div>
-            <Alert className="mt-4">
-              <FileText className="h-4 w-4" />
-              <AlertDescription>
-                Licences are billed via manual invoice. Contact{" "}
-                <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">
-                  {CHARGING_ENTITY.supportEmail}
-                </a>{" "}
-                to discuss your requirements.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
 
         {/* Refund Policy */}
         <Card>
