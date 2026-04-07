@@ -277,14 +277,14 @@ export async function saveJurisdictionSelection(params: {
   escalationReason?: string | null;
   selectedBy?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("jurisdiction_selections")
     .upsert(
       {
         match_id: params.matchId,
         org_id: params.orgId,
         selected_jurisdiction: params.selectedJurisdiction,
-        surfaced_jurisdictions: params.surfacedJurisdictions as unknown as Record<string, unknown>,
+        surfaced_jurisdictions: params.surfacedJurisdictions,
         selection_method: params.selectionMethod,
         escalation_reason: params.escalationReason ?? null,
         selected_by: params.selectedBy ?? null,
