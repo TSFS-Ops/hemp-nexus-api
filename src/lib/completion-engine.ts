@@ -227,7 +227,7 @@ function derivePoi(input: CompletionInput): StageState {
   actions.push({
     id: "poi-confirm-intent",
     label: "Confirm Intent",
-    description: "Confirm your intent to proceed with this match. This burns 500 credits.",
+    description: "Confirm your intent to proceed with this match. This burns 1 credit (R10 ZAR).",
     type: "confirm_intent",
     targetTab: "details",
     allowed: canConfirm && !isDisputed,
