@@ -130,7 +130,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
                  <div className="space-y-1">
                    <p className="text-sm font-medium">Insufficient credits</p>
                    <p className="text-xs text-muted-foreground">
-                     You need {CREDITS_PER_ACTION} credit (R10) to proceed. Balance: {currentBalance}.
+                     You need {CREDITS_PER_ACTION} credit (R10 ZAR) to proceed. Balance: {currentBalance}.
                    </p>
                    <a href="/billing" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
                      <Coins className="h-3 w-3" /> Purchase credits
@@ -180,7 +180,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
                  <div className="rounded-md border border-border p-3 space-y-2 text-sm">
                    <div className="flex justify-between">
                      <span className="text-muted-foreground">Cost</span>
-                     <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit (R10)</span>
+                     <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit (R10 ZAR)</span>
                    </div>
                    <div className="flex justify-between">
                      <span className="text-muted-foreground">Your balance</span>
@@ -202,7 +202,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
              <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
              <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
                <Coins className="h-4 w-4 mr-2" />
-               Confirm — R10
+               Confirm — R10 ZAR
              </AlertDialogAction>
            </AlertDialogFooter>
         </AlertDialogContent>
