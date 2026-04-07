@@ -68,9 +68,9 @@ function MatchTypeBadge({ match }: { match: Match }) {
     return <Badge variant="outline" className="text-xs border-primary/40 text-primary">Unilateral</Badge>;
   }
   if (matchType === "bilateral") {
-    return <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-600">Bilateral</Badge>;
+    return <Badge variant="secondary" className="text-xs">Bilateral</Badge>;
   }
-  return null; // search = default, no badge needed
+  return null;
 }
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
