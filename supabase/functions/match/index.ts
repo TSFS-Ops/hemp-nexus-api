@@ -498,7 +498,7 @@ Deno.serve(async (req) => {
       if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // 1 credit for completion
-      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId);
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'transaction_complete', requestId, matchId);
 
       // --- ATOMIC STATE TRANSITION ---
       const completedAt = new Date().toISOString();
