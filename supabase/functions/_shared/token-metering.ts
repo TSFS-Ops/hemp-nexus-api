@@ -31,6 +31,7 @@ export const ACTION_TOKEN_COSTS = {
   'buyer_commit': 1,
   'seller_commit': 1,
   'declare_intent': 1,
+  'transaction_complete': 1,
   
   // Generic/legacy
   'api_call': 0,

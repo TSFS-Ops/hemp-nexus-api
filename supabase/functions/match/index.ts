@@ -98,14 +98,8 @@ Deno.serve(async (req) => {
     // Derive actor IDs once for use throughout the request
     const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
     
-    // Enforce token metering - burns 1 token per request
-    await enforceTokenMetering(
-      supabase,
-      authCtx.orgId,
-      actorApiKeyId,
-      "/match",
-      requestId
-    );
+    // NOTE: Token burns happen per-route via burnTokensForAction, NOT globally here.
+    // Each route (settle, reveal, commit, complete) burns exactly 1 credit.
 
     // Route: POST /match/:id/settle OR /match/:id/declare-intent
     // Both endpoints do the same thing: discovery → intent_declared (500 credits)
@@ -204,7 +198,7 @@ Deno.serve(async (req) => {
         throw eligibilityError;
       }
 
-      // Burn 500 tokens for intent declaration
+      // Burn 1 credit for intent declaration (flat R10 pricing)
       await burnTokensForAction(
         supabase, authCtx.orgId, actorApiKeyId,
         'declare_intent', requestId, matchId
@@ -302,7 +296,7 @@ Deno.serve(async (req) => {
     // ============================================
     // Route: POST /match/:id/reveal-counterparty
     // Transitions: intent_declared → counterparty_sighted
-    // Token Cost: 1,500 tokens
+    // Token Cost: 1 credit (flat R10 pricing)
     // ============================================
     if (req.method === "POST" && matchId && action === "reveal-counterparty") {
       const endpointLabel = "/match/:id/reveal-counterparty";
@@ -392,7 +386,7 @@ Deno.serve(async (req) => {
     // ============================================
     // Route: POST /match/:id/commit
     // Transitions: counterparty_sighted → committed
-    // Token Cost: 1,000 tokens + Finality Burn (50,000-150,000)
+    // Token Cost: 1 credit (flat R10 pricing)
     // ============================================
     if (req.method === "POST" && matchId && action === "commit") {
       const endpointLabel = "/match/:id/commit";
@@ -504,7 +498,7 @@ Deno.serve(async (req) => {
       if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // 1 credit for completion
-      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId);
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'transaction_complete', requestId, matchId);
 
       // --- ATOMIC STATE TRANSITION ---
       const completedAt = new Date().toISOString();

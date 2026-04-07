@@ -15,7 +15,6 @@ import { MatchNotes } from "@/components/match/MatchNotes";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
 import { DisputeBanner } from "@/components/match/DisputeBanner";
-import { ConfirmIntentCard } from "@/components/match/ConfirmIntentCard";
 import { StateProgressionCard } from "@/components/match/StateProgressionCard";
 import { CompletionTracker } from "@/components/match/CompletionTracker";
 import { useUrlTab } from "@/hooks/use-url-tab";
@@ -37,8 +36,6 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
   const [activeTab, setActiveTab] = useUrlTab("tab", "details", ALLOWED_TABS);
 
   const currentState = match.state || "discovery";
-  const showIntentCard = canConfirm && currentState === "discovery";
-  const showProgressionCard = currentState !== "discovery";
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -86,7 +83,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
       <TabsContent value="details" className="mt-4 space-y-4">
         <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setActiveTab("disputes")} />
         
-        {/* State Progression Card — always visible */}
+        {/* State Progression Card — handles all lifecycle actions including intent */}
         <StateProgressionCard
           match={match}
           onAction={onStateAction}
@@ -116,11 +113,6 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
             )}
           </CardContent>
         </Card>
-
-        {/* Legacy confirm intent card for discovery state */}
-        {showIntentCard && (
-          <ConfirmIntentCard onConfirm={onConfirm} loading={confirming} />
-        )}
       </TabsContent>
 
       <TabsContent value="documents" className="mt-4 space-y-4">
