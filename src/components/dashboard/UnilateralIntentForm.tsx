@@ -48,7 +48,7 @@ const INITIAL: UnilateralFormData = {
   quantity: "",
   unit: "MT",
   price: "",
-  currency: "USD",
+  currency: "ZAR",
   location: "",
   notes: "",
 };
