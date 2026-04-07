@@ -88,7 +88,7 @@ export function BilateralMatchForm() {
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("org_id, full_name")
+        .select("id, org_id, full_name")
         .eq("id", session.user.id)
         .maybeSingle();
 
@@ -199,7 +199,7 @@ export function BilateralMatchForm() {
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Warning */}
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
             <p className="text-sm text-muted-foreground">
               <strong>Bilateral mode:</strong> This creates a match record with a known counterparty.
