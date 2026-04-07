@@ -2661,8 +2661,8 @@ export type Database = {
       matches: {
         Row: {
           buyer_committed_at: string | null
-          buyer_id: string
-          buyer_name: string
+          buyer_id: string | null
+          buyer_name: string | null
           buyer_org_id: string | null
           commodity: string
           counterparty_sighted_at: string | null
@@ -2673,6 +2673,7 @@ export type Database = {
           finality_tokens_burned: number | null
           hash: string
           id: string
+          match_type: string
           metadata: Json | null
           org_id: string
           poi_state: string
@@ -2682,8 +2683,8 @@ export type Database = {
           quantity_amount: number | null
           quantity_unit: string | null
           seller_committed_at: string | null
-          seller_id: string
-          seller_name: string
+          seller_id: string | null
+          seller_name: string | null
           seller_org_id: string | null
           settled_at: string | null
           sighting_tokens_burned: number | null
@@ -2693,8 +2694,8 @@ export type Database = {
         }
         Insert: {
           buyer_committed_at?: string | null
-          buyer_id: string
-          buyer_name: string
+          buyer_id?: string | null
+          buyer_name?: string | null
           buyer_org_id?: string | null
           commodity: string
           counterparty_sighted_at?: string | null
@@ -2705,6 +2706,7 @@ export type Database = {
           finality_tokens_burned?: number | null
           hash: string
           id?: string
+          match_type?: string
           metadata?: Json | null
           org_id: string
           poi_state?: string
@@ -2714,8 +2716,8 @@ export type Database = {
           quantity_amount?: number | null
           quantity_unit?: string | null
           seller_committed_at?: string | null
-          seller_id: string
-          seller_name: string
+          seller_id?: string | null
+          seller_name?: string | null
           seller_org_id?: string | null
           settled_at?: string | null
           sighting_tokens_burned?: number | null
@@ -2725,8 +2727,8 @@ export type Database = {
         }
         Update: {
           buyer_committed_at?: string | null
-          buyer_id?: string
-          buyer_name?: string
+          buyer_id?: string | null
+          buyer_name?: string | null
           buyer_org_id?: string | null
           commodity?: string
           counterparty_sighted_at?: string | null
@@ -2737,6 +2739,7 @@ export type Database = {
           finality_tokens_burned?: number | null
           hash?: string
           id?: string
+          match_type?: string
           metadata?: Json | null
           org_id?: string
           poi_state?: string
@@ -2746,8 +2749,8 @@ export type Database = {
           quantity_amount?: number | null
           quantity_unit?: string | null
           seller_committed_at?: string | null
-          seller_id?: string
-          seller_name?: string
+          seller_id?: string | null
+          seller_name?: string | null
           seller_org_id?: string | null
           settled_at?: string | null
           sighting_tokens_burned?: number | null
