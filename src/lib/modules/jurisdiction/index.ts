@@ -250,7 +250,7 @@ export async function fetchJurisdictionSelection(
   matchId: string,
   orgId: string,
 ): Promise<JurisdictionSelection | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("jurisdiction_selections")
     .select("*")
     .eq("match_id", matchId)

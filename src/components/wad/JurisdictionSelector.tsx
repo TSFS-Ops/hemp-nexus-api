@@ -277,8 +277,8 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
             disabled={saving}
             className={`w-full text-left p-3 rounded-lg border transition-colors ${
               selectedCode === signal.code
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50 hover:bg-accent/50"
+                ? "border-primary bg-primary/10"
+                : "border-border hover:border-primary/50 hover:bg-muted"
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <div className="flex items-center justify-between">
