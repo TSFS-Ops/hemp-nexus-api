@@ -68,6 +68,7 @@ export default function Landing() {
       if (data.side) p.set("side", data.side);
       if (data.price) p.set("price", data.price);
       if (data.volume) p.set("volume", data.volume);
+      if (data.location) p.set("location", data.location);
       return p;
     };
 
@@ -84,6 +85,7 @@ export default function Landing() {
       side: data.side,
       price: data.price,
       volume: data.volume,
+      location: data.location,
     });
 
     setIsSearching(true);
