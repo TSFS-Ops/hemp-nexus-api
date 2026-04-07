@@ -27,56 +27,34 @@ export function AdminBehavioralKycLink() {
   const { data: rows, isLoading, refetch } = useQuery({
     queryKey: ["admin-behavioral-kyc-link", bandFilter],
     queryFn: async () => {
-      // Get all orgs with KYC status
-      const { data: orgs, error: orgErr } = await supabase
-        .from("organizations")
-        .select("id, name")
-        .limit(200);
-      if (orgErr) throw orgErr;
+      const { data, error } = await supabase.rpc("compute_all_behavioral_kyc_scores", {
+        p_days: 30,
+      });
+      if (error) throw error;
 
-      const { data: kycRows } = await supabase
-        .from("kyc_status")
-        .select("org_id, status, completeness_percentage");
+      const results: OrgKycRow[] = ((data as any[]) || [])
+        .filter((row: any) => bandFilter === "all" || row.behavioral_band === bandFilter)
+        .map((row: any) => {
+          const bBand = row.behavioral_band;
+          const kycPct = row.kyc_completeness ?? 0;
 
-      const kycMap = new Map(
-        (kycRows || []).map((k) => [k.org_id, k])
-      );
+          let flag: OrgKycRow["flag"] = "normal";
+          if (bBand === "high" && kycPct < 100) flag = "action_needed";
+          else if (bBand === "high" && kycPct >= 100) flag = "ready";
+          else if (bBand === "none") flag = "inactive";
 
-      // Compute behavioral scores via RPC
-      const results: OrgKycRow[] = [];
-      for (const org of orgs || []) {
-        const { data: scoreData } = await supabase.rpc("compute_behavioral_score", {
-          p_org_id: org.id,
-          p_days: 30,
+          return {
+            org_id: row.org_id,
+            org_name: row.org_name || row.org_id?.slice(0, 8),
+            kyc_status: row.kyc_status ?? "not_started",
+            kyc_completeness: kycPct,
+            behavioral_score: row.behavioral_score ?? 0,
+            behavioral_band: bBand,
+            total_signals: row.total_signals ?? 0,
+            views: row.views ?? 0,
+            flag,
+          };
         });
-
-        const score = scoreData as any;
-        const kyc = kycMap.get(org.id);
-        const bScore = score?.score ?? 0;
-        const bBand = score?.band ?? "none";
-        const kycStatus = kyc?.status ?? "not_started";
-        const kycPct = kyc?.completeness_percentage ?? 0;
-
-        // Flag logic: high engagement + incomplete KYC = action needed
-        let flag: OrgKycRow["flag"] = "normal";
-        if (bBand === "high" && kycPct < 100) flag = "action_needed";
-        else if (bBand === "high" && kycPct >= 100) flag = "ready";
-        else if (bBand === "none") flag = "inactive";
-
-        if (bandFilter !== "all" && bBand !== bandFilter) continue;
-
-        results.push({
-          org_id: org.id,
-          org_name: org.name || org.id.slice(0, 8),
-          kyc_status: kycStatus,
-          kyc_completeness: kycPct,
-          behavioral_score: bScore,
-          behavioral_band: bBand,
-          total_signals: score?.total_signals ?? 0,
-          views: score?.views ?? 0,
-          flag,
-        });
-      }
 
       // Sort: action_needed first, then by score desc
       results.sort((a, b) => {
@@ -92,9 +70,9 @@ export function AdminBehavioralKycLink() {
 
   const bandBadge = (band: string) => {
     switch (band) {
-      case "high": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">High</Badge>;
-      case "medium": return <Badge className="bg-blue-500/10 text-blue-700 border-blue-200">Medium</Badge>;
-      case "low": return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Low</Badge>;
+      case "high": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400">High</Badge>;
+      case "medium": return <Badge className="bg-blue-500/10 text-blue-700 border-blue-200 dark:text-blue-400">Medium</Badge>;
+      case "low": return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200 dark:text-amber-400">Low</Badge>;
       default: return <Badge variant="secondary">None</Badge>;
     }
   };
@@ -104,7 +82,7 @@ export function AdminBehavioralKycLink() {
       case "action_needed":
         return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />KYC Needed</Badge>;
       case "ready":
-        return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 gap-1"><ShieldCheck className="h-3 w-3" />Ready</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400 gap-1"><ShieldCheck className="h-3 w-3" />Ready</Badge>;
       case "inactive":
         return <Badge variant="secondary">Inactive</Badge>;
       default:
@@ -116,10 +94,10 @@ export function AdminBehavioralKycLink() {
   const readyCount = rows?.filter((r) => r.flag === "ready").length ?? 0;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Behavioural Score → KYC Link</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Behavioural Score → KYC Link</h2>
           <p className="text-muted-foreground mt-2">
             Orgs with high engagement but incomplete KYC are flagged for follow-up.
           </p>
@@ -170,7 +148,7 @@ export function AdminBehavioralKycLink() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{rows?.length ?? 0}</div>
-            <p className="text-xs text-muted-foreground">With behavioural data</p>
+            <p className="text-xs text-muted-foreground">Across all bands</p>
           </CardContent>
         </Card>
       </div>
@@ -205,7 +183,7 @@ export function AdminBehavioralKycLink() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold">{row.behavioral_score}</span>
-                          <Progress value={row.behavioral_score} className="w-16 h-2" />
+                          <Progress value={Number(row.behavioral_score)} className="w-16 h-2" />
                         </div>
                       </TableCell>
                       <TableCell>{bandBadge(row.behavioral_band)}</TableCell>
@@ -217,7 +195,7 @@ export function AdminBehavioralKycLink() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Progress value={row.kyc_completeness} className="w-16 h-2" />
+                          <Progress value={Number(row.kyc_completeness)} className="w-16 h-2" />
                           <span className="text-sm">{row.kyc_completeness}%</span>
                         </div>
                       </TableCell>

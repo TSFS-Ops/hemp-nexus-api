@@ -5323,6 +5323,21 @@ export type Database = {
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
       cleanup_old_auth_rate_limits: { Args: never; Returns: number }
+      compute_all_behavioral_kyc_scores: {
+        Args: { p_days?: number }
+        Returns: {
+          behavioral_band: string
+          behavioral_score: number
+          kyc_completeness: number
+          kyc_status: string
+          maybe_later: number
+          org_id: string
+          org_name: string
+          skips: number
+          total_signals: number
+          views: number
+        }[]
+      }
       compute_behavioral_score: {
         Args: { p_days?: number; p_org_id: string }
         Returns: Json
