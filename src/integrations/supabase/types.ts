@@ -524,7 +524,9 @@ export type Database = {
           id: string
           match_id: string | null
           metadata: Json | null
+          org_id: string | null
           session_id: string | null
+          user_id: string | null
         }
         Insert: {
           action_type: string
@@ -532,7 +534,9 @@ export type Database = {
           id?: string
           match_id?: string | null
           metadata?: Json | null
+          org_id?: string | null
           session_id?: string | null
+          user_id?: string | null
         }
         Update: {
           action_type?: string
@@ -540,7 +544,9 @@ export type Database = {
           id?: string
           match_id?: string | null
           metadata?: Json | null
+          org_id?: string | null
           session_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -555,6 +561,13 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavioral_signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -5310,6 +5323,10 @@ export type Database = {
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
       cleanup_old_auth_rate_limits: { Args: never; Returns: number }
+      compute_behavioral_score: {
+        Args: { p_days?: number; p_org_id: string }
+        Returns: Json
+      }
       ensure_user_profile: {
         Args: { p_email: string; p_user_id: string }
         Returns: Json
