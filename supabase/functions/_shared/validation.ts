@@ -2,15 +2,14 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { ApiException } from "./errors.ts";
 
 // Match endpoint validation
+const partySchema = z.object({
+  id: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(1).max(200),
+});
+
 export const matchSchema = z.object({
-  buyer: z.object({
-    id: z.string().trim().min(1).max(100),
-    name: z.string().trim().min(1).max(200),
-  }),
-  seller: z.object({
-    id: z.string().trim().min(1).max(100),
-    name: z.string().trim().min(1).max(200),
-  }),
+  buyer: partySchema.nullable().optional(),
+  seller: partySchema.nullable().optional(),
   commodity: z.string().trim().min(1).max(200),
   quantity: z.object({
     amount: z.number().positive(),
@@ -21,8 +20,15 @@ export const matchSchema = z.object({
     currency: z.string().length(3),
   }).nullable().optional(),
   terms: z.string().trim().min(1).max(1000).nullable().optional(),
-  metadata: z.record(z.unknown()).optional(), // Optional minimal extra data
-});
+  match_type: z.enum(["search", "bilateral", "unilateral"]).optional().default("search"),
+  metadata: z.record(z.unknown()).optional(),
+}).refine(
+  (data) => {
+    // At least one party is required
+    return data.buyer != null || data.seller != null;
+  },
+  { message: "At least one of buyer or seller must be provided" }
+);
 
 // Signal endpoint validation
 export const signalSchema = z.object({
