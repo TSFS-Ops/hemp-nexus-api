@@ -1,20 +1,39 @@
+## Multi-Jurisdiction WaD Path — Implementation Plan
 
-## End-to-End Platform Wiring Plan
+### What we're building
+The deterministic three-branch jurisdiction rule that David confirmed, which governs how the platform selects the documentary/WaD path when multiple jurisdiction signals are present.
 
-### Phase 1: Core Transaction Loop
-1. **State Progression UI + Token Burn** — Add Reveal, Commit, Complete action buttons to match detail page that call `safe_transition_match_state` and `atomic_token_burn`. Each action deducts 1 credit (R10 pricing).
-2. **Bid/Offer Persistence** — Wire the landing page BidOfferForm to write to `trade_orders` table on submit (post-auth), making interests visible and matchable.
-3. **Location in Search** — Add location field to the landing form and pass it through to the `search` edge function query.
+### Step 1: Jurisdiction Signal Derivation
+- Create `src/lib/modules/jurisdiction/` module
+- Derive jurisdiction signals from available pre-POI data:
+  - Entity `jurisdiction_code` (buyer + seller from `entities` table)
+  - Trade order location (from `trade_orders`)
+  - Match metadata (origin/destination if present)
+- Return a deduplicated list of "surfaced jurisdictions" with signal source labels
 
-### Phase 2: Counterparty & Visibility
-4. **Counterparty Visibility** — Update match detail UI to show counterparty identity and enable both sides to act on the shared workspace (RLS already supports this via `is_match_participant`).
+### Step 2: Database — Jurisdiction Selection Table
+- Add `jurisdiction_selections` table to record the user's choice with:
+  - `match_id`, `selected_jurisdiction`, `surfaced_jurisdictions` (JSONB), `selection_method` (auto/user_choice/escalated), `escalation_reason`, `selected_by`
+- This provides the audit trail David requires
 
-### Phase 3: Compliance Rails
-5. **Governance Doc Registry Seeding** — Seed `governance_doc_registry` with South Africa (ZA) jurisdiction rules so the WaD gate can validate mandatory documents.
-6. **UBO Verification Wiring** — Add "Verify Ownership" action to entity detail pages that calls the existing `ubo-verify` edge function.
+### Step 3: Three-Branch Logic
+- **Branch 1**: If exactly one unique jurisdiction signal → auto-select, record as `auto`
+- **Branch 2**: If multiple signals → show chooser UI (user picks from surfaced set only)
+- **Branch 3**: If chosen jurisdiction isn't in surfaced set OR no governance rules exist for it → block WaD, flag for manual governance review
 
-### Phase 4: Notifications
-7. **Email Notifications** — Build transactional email templates via `notification-dispatch` for key events: POI issued, match created, state transitions, breach alerts. Uses existing Resend integration.
+### Step 4: WaD Integration
+- Wire the jurisdiction selector into the WaD flow (before WaD creation)
+- WaD creation checks `jurisdiction_selections` for a valid, non-escalated selection
+- Governance doc lookup uses the selected jurisdiction instead of hardcoded ZA
 
-### Phase 5: QA
-8. **End-to-end walkthrough** — Verify the full Discovery → Intent → Reveal → Commit → Complete flow works with real token deductions and notifications.
+### Step 5: Jurisdiction Chooser UI
+- Add a `JurisdictionSelector` component to the WaD tab
+- Shows surfaced jurisdictions with source labels
+- Validates against governance_doc_registry before accepting
+- Escalation state shows "Pending Governance Review" banner
+
+### Files touched
+- **New**: `src/lib/modules/jurisdiction/index.ts` (derivation + three-branch logic)
+- **New**: `src/components/wad/JurisdictionSelector.tsx` (chooser UI)
+- **Modified**: `src/components/wad/WadModule.tsx` (wire jurisdiction gate)
+- **Migration**: `jurisdiction_selections` table with RLS
