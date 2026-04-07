@@ -787,16 +787,17 @@ Deno.serve(async (req) => {
           entity_id: match.id,
           metadata: {
             hash,
-            buyer_id: body.buyer.id,
-            buyer_name: body.buyer.name,
-            seller_id: body.seller.id,
-            seller_name: body.seller.name,
+            buyer_id: body.buyer?.id ?? null,
+            buyer_name: body.buyer?.name ?? null,
+            seller_id: body.seller?.id ?? null,
+            seller_name: body.seller?.name ?? null,
             commodity: body.commodity,
             quantity_amount: body.quantity?.amount ?? null,
             quantity_unit: body.quantity?.unit ?? null,
             price_amount: body.price?.amount ?? null,
             price_currency: body.price?.currency ?? null,
             terms: body.terms ?? null,
+            match_type: matchType,
             canonical_string: canonicalString
           }
         });
