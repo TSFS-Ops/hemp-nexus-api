@@ -132,6 +132,7 @@ export function BilateralMatchForm() {
             buyer,
             seller,
             commodity: form.commodity.trim(),
+            match_type: "bilateral",
             quantity: quantityAmount && !isNaN(quantityAmount) && quantityAmount > 0
               ? { amount: quantityAmount, unit: form.unit || "MT" }
               : null,
