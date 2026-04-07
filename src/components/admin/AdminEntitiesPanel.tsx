@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useSupabaseList } from "@/hooks/use-supabase-list";
 import { StatusBadge } from "@/components/ui/status-badge";
