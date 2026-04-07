@@ -47,7 +47,14 @@ type Match = Tables<"matches">;
 const PAGE_SIZE = 25;
 
 // Columns actually needed for the list view — avoids SELECT *
-const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, created_at, settled_at, hash, org_id" as const;
+const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id" as const;
+
+/** Returns display name for buyer/seller based on reveal state */
+function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string {
+  const state = (match as any).state || "discovery";
+  const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(state);
+  return isRevealed ? (match[field] || "—") : "••••••";
+}
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
@@ -499,11 +506,11 @@ export function MatchesList() {
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
                       <span className="text-muted-foreground text-xs">Buyer</span>
-                      <p className="truncate">{match.buyer_name}</p>
+                      <p className="truncate">{revealGuard(match, "buyer_name")}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Seller</span>
-                      <p className="truncate">{match.seller_name}</p>
+                      <p className="truncate">{revealGuard(match, "seller_name")}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Quantity</span>
@@ -569,8 +576,8 @@ export function MatchesList() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">{match.commodity}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{match.buyer_name}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{match.seller_name}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{revealGuard(match, "buyer_name")}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{revealGuard(match, "seller_name")}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}
                       </TableCell>
