@@ -36,6 +36,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
   const [activeTab, setActiveTab] = useUrlTab("tab", "details", ALLOWED_TABS);
 
   const currentState = match.state || "discovery";
+  const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(currentState);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
