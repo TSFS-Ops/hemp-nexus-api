@@ -27,6 +27,22 @@ interface LogBehavioralSignalParams {
   metadata?: Record<string, any>;
 }
 
+/** Cache current user's org_id for signal attribution */
+async function getCurrentOrgAndUser(): Promise<{ orgId: string | null; userId: string | null }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { orgId: null, userId: null };
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.id)
+      .single();
+    return { orgId: profile?.org_id ?? null, userId: user.id };
+  } catch {
+    return { orgId: null, userId: null };
+  }
+}
+
 /**
  * Log a non-binding behavioral signal
  * 
@@ -42,6 +58,7 @@ export async function logBehavioralSignal({
   try {
     // Generate a session ID if not provided
     const effectiveSessionId = sessionId || getOrCreateSessionId();
+    const { orgId, userId } = await getCurrentOrgAndUser();
 
     const { error } = await supabase
       .from('behavioral_signals')
@@ -49,12 +66,14 @@ export async function logBehavioralSignal({
         action_type: actionType,
         match_id: matchId || null,
         session_id: effectiveSessionId,
+        org_id: orgId,
+        user_id: userId,
         metadata: {
           ...metadata,
           timestamp: new Date().toISOString(),
           userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
         },
-      });
+      } as any);
 
     if (error) {
       console.error('Failed to log behavioral signal:', error);
