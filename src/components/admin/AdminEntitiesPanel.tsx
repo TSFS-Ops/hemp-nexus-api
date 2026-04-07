@@ -120,6 +120,7 @@ export function AdminEntitiesPanel() {
     }
   };
 
+  const filtered = entities.filter((e) => {
     if (!searchTerm) return true;
     return (
       e.legal_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
