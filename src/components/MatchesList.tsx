@@ -47,13 +47,30 @@ type Match = Tables<"matches">;
 const PAGE_SIZE = 25;
 
 // Columns actually needed for the list view — avoids SELECT *
-const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id" as const;
+const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type" as const;
 
 /** Returns display name for buyer/seller based on reveal state */
 function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string {
   const state = (match as any).state || "discovery";
+  const matchType = (match as any).match_type || "search";
+  // Unilateral intents have no counterparty on one side
+  if (match[field] === null || match[field] === undefined) {
+    return matchType === "unilateral" ? "— (open)" : "—";
+  }
   const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(state);
   return isRevealed ? (match[field] || "—") : "••••••";
+}
+
+/** Badge for match type */
+function MatchTypeBadge({ match }: { match: Match }) {
+  const matchType = (match as any).match_type || "search";
+  if (matchType === "unilateral") {
+    return <Badge variant="outline" className="text-xs border-primary/40 text-primary">Unilateral</Badge>;
+  }
+  if (matchType === "bilateral") {
+    return <Badge variant="secondary" className="text-xs">Bilateral</Badge>;
+  }
+  return null;
 }
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
@@ -575,7 +592,12 @@ export function MatchesList() {
                           disabled={!MatchState.canDo(match.status, "select_for_bulk")}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{match.commodity}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {match.commodity}
+                          <MatchTypeBadge match={match} />
+                        </div>
+                      </TableCell>
                       <TableCell className="hidden lg:table-cell">{revealGuard(match, "buyer_name")}</TableCell>
                       <TableCell className="hidden lg:table-cell">{revealGuard(match, "seller_name")}</TableCell>
                       <TableCell className="whitespace-nowrap">

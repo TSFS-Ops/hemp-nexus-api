@@ -1,21 +1,23 @@
 /**
- * BilateralMatchForm — Create a match with a known/offline counterparty.
- * 
- * This allows users to register a POI when they already have a counterparty
- * identified outside the platform (e.g., through direct negotiation).
+ * UnilateralIntentForm — Create a governed intent record without a named counterparty.
+ *
+ * This is the "market-maker" flow: a user declares intent to buy or sell,
+ * attracting liquidity from the market. The record is governed and sits
+ * clearly apart from a bilateral POI.
  */
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Handshake, AlertTriangle } from "lucide-react";
+import { Loader2, Megaphone, Info } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -29,56 +31,50 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface BilateralFormData {
-  counterpartyName: string;
-  counterpartyContact: string;
-  commodity: string;
+interface UnilateralFormData {
   side: "buyer" | "seller";
+  commodity: string;
   quantity: string;
   unit: string;
   price: string;
   currency: string;
-  terms: string;
   location: string;
+  notes: string;
 }
 
-const INITIAL_FORM: BilateralFormData = {
-  counterpartyName: "",
-  counterpartyContact: "",
-  commodity: "",
+const INITIAL: UnilateralFormData = {
   side: "buyer",
+  commodity: "",
   quantity: "",
   unit: "MT",
   price: "",
   currency: "USD",
-  terms: "",
   location: "",
+  notes: "",
 };
 
-export function BilateralMatchForm() {
-  const [form, setForm] = useState<BilateralFormData>(INITIAL_FORM);
+export function UnilateralIntentForm() {
+  const [form, setForm] = useState<UnilateralFormData>(INITIAL);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  const update = (field: keyof BilateralFormData, value: string) =>
+  const update = (field: keyof UnilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const canSubmit =
-    form.counterpartyName.trim().length >= 2 &&
-    form.commodity.trim().length >= 2;
+  const canSubmit = form.commodity.trim().length >= 2;
 
   const handleSubmitClick = () => {
     if (!canSubmit) {
-      toast.error("Please fill in counterparty name and commodity.");
+      toast.error("Please specify the commodity.");
       return;
     }
-    setShowConfirmDialog(true);
+    setShowConfirm(true);
   };
 
   const handleConfirm = async () => {
-    setShowConfirmDialog(false);
+    setShowConfirm(false);
     if (!session) {
       toast.error("Please sign in first.");
       return;
@@ -93,7 +89,7 @@ export function BilateralMatchForm() {
         .maybeSingle();
 
       if (!profile?.org_id) {
-        toast.error("Your account setup is incomplete. Please contact support@izenzo.co.za.");
+        toast.error("Account setup incomplete. Contact support@izenzo.co.za.");
         return;
       }
 
@@ -104,20 +100,17 @@ export function BilateralMatchForm() {
         .maybeSingle();
 
       const myName = org?.name || profile.full_name || "Your Organisation";
-      const counterpartyId = `bilateral_${crypto.randomUUID().slice(0, 12)}`;
-
       const quantityAmount = form.quantity ? parseFloat(form.quantity) : null;
       const priceAmount = form.price ? parseFloat(form.price) : null;
 
+      // Only one side is populated — the other is null (no counterparty)
       const buyer = form.side === "buyer"
         ? { id: profile.org_id, name: myName }
-        : { id: counterpartyId, name: form.counterpartyName.trim() };
+        : null;
 
       const seller = form.side === "seller"
         ? { id: profile.org_id, name: myName }
-        : { id: counterpartyId, name: form.counterpartyName.trim() };
-
-      const isDraft = (!quantityAmount || isNaN(quantityAmount)) && (!priceAmount || isNaN(priceAmount));
+        : null;
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
@@ -126,28 +119,24 @@ export function BilateralMatchForm() {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
-            "Idempotency-Key": `bilateral_${crypto.randomUUID()}`,
+            "Idempotency-Key": `unilateral_${crypto.randomUUID()}`,
           },
           body: JSON.stringify({
             buyer,
             seller,
             commodity: form.commodity.trim(),
-            match_type: "bilateral",
+            match_type: "unilateral",
             quantity: quantityAmount && !isNaN(quantityAmount) && quantityAmount > 0
               ? { amount: quantityAmount, unit: form.unit || "MT" }
               : null,
             price: priceAmount && !isNaN(priceAmount) && priceAmount > 0
               ? { amount: priceAmount, currency: form.currency || "USD" }
               : null,
-            terms: form.terms.trim() || null,
             metadata: {
-              source: "bilateral",
-              isDraft,
-              counterpartyContact: form.counterpartyContact.trim() || null,
+              source: "unilateral",
+              intent_side: form.side,
               location: form.location.trim() || null,
-              draftReason: isDraft
-                ? "Created as bilateral match — commercial terms to be confirmed."
-                : undefined,
+              notes: form.notes.trim() || null,
             },
           }),
         }
@@ -160,7 +149,7 @@ export function BilateralMatchForm() {
 
       const matchData = await response.json();
 
-      // Also persist as trade order
+      // Persist as trade order for order book visibility
       try {
         await supabase.from("trade_orders").insert({
           org_id: profile.org_id,
@@ -175,11 +164,11 @@ export function BilateralMatchForm() {
         // Non-critical
       }
 
-      toast.success("Bilateral match created. Add documents and confirm intent when ready.");
+      toast.success("Intent published. This record is now visible in your matches.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
-      console.error("Bilateral match creation error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create match.");
+      console.error("Unilateral intent creation error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create intent.");
     } finally {
       setIsSubmitting(false);
     }
@@ -190,77 +179,61 @@ export function BilateralMatchForm() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Handshake className="h-5 w-5" />
-            Create Bilateral Match
+            <Megaphone className="h-5 w-5" />
+            Publish Unilateral Intent
           </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Register a Proof-of-Intent with a counterparty you've already identified offline.
-            They will need to onboard to the platform to complete the bilateral flow.
-          </p>
+          <CardDescription>
+            Declare your intent to buy or sell without naming a counterparty.
+            This creates a governed intent record that can attract liquidity.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Warning */}
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-            <p className="text-sm text-muted-foreground">
-              <strong>Bilateral mode:</strong> This creates a match record with a known counterparty.
-              The counterparty's identity will not be visible until the <em>Reveal</em> stage.
-              Full bilateral confirmation requires both parties to be registered on the platform.
-            </p>
+          {/* Info banner */}
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>
+                <strong>Unilateral intent</strong> is a governed record that declares your
+                interest in a commodity without identifying a counterparty.
+              </p>
+              <p>
+                It sits apart from a bilateral POI but operates as a recognised intent record.
+                No credits are deducted at creation — only at lifecycle transitions{" "}
+                <Badge variant="outline" className="text-xs">R10 per action</Badge>.
+              </p>
+            </div>
           </div>
 
-          {/* Your role */}
+          {/* Side */}
           <div className="space-y-2">
-            <Label>Your role in this transaction</Label>
+            <Label>I want to</Label>
             <Select value={form.side} onValueChange={(v) => update("side", v as "buyer" | "seller")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="buyer">I am the Buyer</SelectItem>
-                <SelectItem value="seller">I am the Seller</SelectItem>
+                <SelectItem value="buyer">Buy (I am looking to source)</SelectItem>
+                <SelectItem value="seller">Sell (I have product available)</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Counterparty */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cp-name">Counterparty name *</Label>
-              <Input
-                id="cp-name"
-                placeholder="e.g. Boet Wilken Boerdery"
-                value={form.counterpartyName}
-                onChange={(e) => update("counterpartyName", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cp-contact">Counterparty contact</Label>
-              <Input
-                id="cp-contact"
-                placeholder="e.g. +27 83 444 1447"
-                value={form.counterpartyContact}
-                onChange={(e) => update("counterpartyContact", e.target.value)}
-              />
-            </div>
           </div>
 
           {/* Commodity & Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="commodity">Commodity / product *</Label>
+              <Label htmlFor="uni-commodity">Commodity / product *</Label>
               <Input
-                id="commodity"
+                id="uni-commodity"
                 placeholder="e.g. Non-GMO Food-Grade Soybeans"
                 value={form.commodity}
                 onChange={(e) => update("commodity", e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Location / jurisdiction</Label>
+              <Label htmlFor="uni-location">Location / jurisdiction</Label>
               <Input
-                id="location"
-                placeholder="e.g. Bultfontein, Free State, ZA"
+                id="uni-location"
+                placeholder="e.g. Free State, South Africa"
                 value={form.location}
                 onChange={(e) => update("location", e.target.value)}
               />
@@ -270,9 +243,9 @@ export function BilateralMatchForm() {
           {/* Quantity & Price */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="uni-quantity">Quantity</Label>
               <Input
-                id="quantity"
+                id="uni-quantity"
                 type="number"
                 placeholder="e.g. 100000"
                 value={form.quantity}
@@ -280,7 +253,7 @@ export function BilateralMatchForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
+              <Label htmlFor="uni-unit">Unit</Label>
               <Select value={form.unit} onValueChange={(v) => update("unit", v)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -295,9 +268,9 @@ export function BilateralMatchForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price per unit</Label>
+              <Label htmlFor="uni-price">Price per unit</Label>
               <Input
-                id="price"
+                id="uni-price"
                 type="number"
                 placeholder="e.g. 450"
                 value={form.price}
@@ -305,7 +278,7 @@ export function BilateralMatchForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="currency">Currency</Label>
+              <Label htmlFor="uni-currency">Currency</Label>
               <Select value={form.currency} onValueChange={(v) => update("currency", v)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -320,14 +293,14 @@ export function BilateralMatchForm() {
             </div>
           </div>
 
-          {/* Terms */}
+          {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="terms">Terms / notes (optional)</Label>
+            <Label htmlFor="uni-notes">Additional notes (optional)</Label>
             <Textarea
-              id="terms"
-              placeholder="e.g. CIF Durban, 90-day payment terms, SGS inspection required"
-              value={form.terms}
-              onChange={(e) => update("terms", e.target.value)}
+              id="uni-notes"
+              placeholder="e.g. Seeking consistent supply, 12-month offtake, delivery to Durban port"
+              value={form.notes}
+              onChange={(e) => update("notes", e.target.value)}
               rows={3}
             />
           </div>
@@ -341,32 +314,34 @@ export function BilateralMatchForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating…
+                Publishing…
               </>
             ) : (
               <>
-                <Handshake className="h-4 w-4 mr-2" />
-                Create Bilateral Match
+                <Megaphone className="h-4 w-4 mr-2" />
+                Publish Intent
               </>
             )}
           </Button>
         </CardContent>
       </Card>
 
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Create bilateral match?</AlertDialogTitle>
+            <AlertDialogTitle>Publish unilateral intent?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  This will create a draft match with <strong>{form.counterpartyName}</strong> for{" "}
+                  This will create a governed intent record declaring your interest to{" "}
+                  <strong>{form.side === "buyer" ? "buy" : "sell"}</strong>{" "}
                   <strong>{form.commodity}</strong>.
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li>No credits are deducted at creation — only at lifecycle transitions.</li>
-                  <li>The counterparty must onboard to complete the bilateral POI.</li>
-                  <li>You can add documents and terms before confirming intent.</li>
+                  <li>No counterparty is named — this is a market-maker signal.</li>
+                  <li>No credits are deducted at creation.</li>
+                  <li>Each lifecycle action costs R10 (1 credit).</li>
+                  <li>This record is separate from bilateral POIs.</li>
                 </ul>
               </div>
             </AlertDialogDescription>
@@ -374,7 +349,7 @@ export function BilateralMatchForm() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm}>
-              Create Match
+              Publish Intent
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

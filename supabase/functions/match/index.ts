@@ -695,13 +695,13 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Determine match type
+      const matchType = body.match_type || "search";
+
       // Build canonical JSON for hashing – only stable business fields.
-      // Metadata (searchQuery, coherenceScore, source, etc.) is volatile and
-      // MUST be excluded so the same buyer+seller+commodity is detected as a
-      // duplicate regardless of which search session created it.
       const canonical = {
-        buyer_id: body.buyer.id,
-        seller_id: body.seller.id,
+        buyer_id: body.buyer?.id || "__no_buyer__",
+        seller_id: body.seller?.id || "__no_seller__",
         commodity: (body.commodity || "").trim().toLowerCase(),
       };
 
@@ -750,16 +750,16 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Insert match
+      // Insert match — buyer/seller can be null for unilateral intents
       const { data: match, error: insertError } = await supabase
         .from("matches")
         .insert({
           org_id: authCtx.orgId,
           created_by: getCreatedBy(authCtx),
-          buyer_id: body.buyer.id,
-          buyer_name: body.buyer.name,
-          seller_id: body.seller.id,
-          seller_name: body.seller.name,
+          buyer_id: body.buyer?.id ?? null,
+          buyer_name: body.buyer?.name ?? null,
+          seller_id: body.seller?.id ?? null,
+          seller_name: body.seller?.name ?? null,
           commodity: body.commodity,
           quantity_amount: body.quantity?.amount ?? null,
           quantity_unit: body.quantity?.unit ?? null,
@@ -767,6 +767,7 @@ Deno.serve(async (req) => {
           price_currency: body.price?.currency ?? null,
           terms: body.terms ?? null,
           metadata: body.metadata || {},
+          match_type: matchType,
           hash,
           status: "matched"
         })
@@ -786,16 +787,17 @@ Deno.serve(async (req) => {
           entity_id: match.id,
           metadata: {
             hash,
-            buyer_id: body.buyer.id,
-            buyer_name: body.buyer.name,
-            seller_id: body.seller.id,
-            seller_name: body.seller.name,
+            buyer_id: body.buyer?.id ?? null,
+            buyer_name: body.buyer?.name ?? null,
+            seller_id: body.seller?.id ?? null,
+            seller_name: body.seller?.name ?? null,
             commodity: body.commodity,
             quantity_amount: body.quantity?.amount ?? null,
             quantity_unit: body.quantity?.unit ?? null,
             price_amount: body.price?.amount ?? null,
             price_currency: body.price?.currency ?? null,
             terms: body.terms ?? null,
+            match_type: matchType,
             canonical_string: canonicalString
           }
         });

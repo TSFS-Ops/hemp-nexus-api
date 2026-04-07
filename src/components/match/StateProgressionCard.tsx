@@ -127,15 +127,15 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
             {!hasEnough ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/5">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Insufficient credits</p>
-                  <p className="text-xs text-muted-foreground">
-                    You need {CREDITS_PER_ACTION} credit to proceed. Balance: {currentBalance}.
-                  </p>
-                  <a href="/billing" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                    <Coins className="h-3 w-3" /> Purchase credits
-                  </a>
-                </div>
+                 <div className="space-y-1">
+                   <p className="text-sm font-medium">Insufficient credits</p>
+                   <p className="text-xs text-muted-foreground">
+                     You need {CREDITS_PER_ACTION} credit (R10) to proceed. Balance: {currentBalance}.
+                   </p>
+                   <a href="/billing" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                     <Coins className="h-3 w-3" /> Purchase credits
+                   </a>
+                 </div>
               </div>
             ) : (
               <button
@@ -177,34 +177,34 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>{nextDescription}</p>
-                <div className="rounded-md border border-border p-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cost</span>
-                    <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Your balance</span>
-                    <span className="font-medium text-foreground">{currentBalance.toLocaleString()} credits</span>
-                  </div>
-                  <div className="border-t border-border my-1" />
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">After confirmation</span>
-                    <span className="font-medium text-foreground">{(currentBalance - CREDITS_PER_ACTION).toLocaleString()} credits</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
-              <Coins className="h-4 w-4 mr-2" />
-              Confirm — {CREDITS_PER_ACTION} credit
-            </AlertDialogAction>
-          </AlertDialogFooter>
+                 <div className="rounded-md border border-border p-3 space-y-2 text-sm">
+                   <div className="flex justify-between">
+                     <span className="text-muted-foreground">Cost</span>
+                     <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit (R10)</span>
+                   </div>
+                   <div className="flex justify-between">
+                     <span className="text-muted-foreground">Your balance</span>
+                     <span className="font-medium text-foreground">{currentBalance.toLocaleString()} credits</span>
+                   </div>
+                   <div className="border-t border-border my-1" />
+                   <div className="flex justify-between">
+                     <span className="text-muted-foreground">After confirmation</span>
+                     <span className="font-medium text-foreground">{(currentBalance - CREDITS_PER_ACTION).toLocaleString()} credits</span>
+                   </div>
+                 </div>
+                 <p className="text-xs text-muted-foreground">
+                   <strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.
+                 </p>
+               </div>
+             </AlertDialogDescription>
+           </AlertDialogHeader>
+           <AlertDialogFooter>
+             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+             <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
+               <Coins className="h-4 w-4 mr-2" />
+               Confirm — R10
+             </AlertDialogAction>
+           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </Card>
