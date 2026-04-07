@@ -116,23 +116,14 @@ export async function deriveJurisdictionSignals(matchId: string): Promise<Jurisd
   // 4. Check trade_orders for location-derived jurisdiction
   const { data: orders } = await supabase
     .from("trade_orders")
-    .select("location, metadata")
+    .select("location")
     .eq("org_id", match.org_id)
     .order("created_at", { ascending: false })
     .limit(5);
 
   if (orders) {
     for (const order of orders) {
-      const orderMeta = order.metadata as Record<string, unknown> | null;
-      if (orderMeta && typeof orderMeta.jurisdiction === "string") {
-        signals.push({
-          code: (orderMeta.jurisdiction as string).toUpperCase(),
-          source: "trade_order",
-          label: `Trade order: ${order.location || "Unknown location"}`,
-        });
-      }
-      // Attempt location-based derivation (South Africa locations)
-      if (order.location && !orderMeta?.jurisdiction) {
+      if (order.location) {
         const loc = order.location.toLowerCase();
         if (
           loc.includes("south africa") || loc.includes("free state") ||
@@ -271,7 +262,7 @@ export async function fetchJurisdictionSelection(
     return null;
   }
 
-  return data as JurisdictionSelection | null;
+  return (data as unknown as JurisdictionSelection) ?? null;
 }
 
 /**
