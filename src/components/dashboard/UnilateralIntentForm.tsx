@@ -340,7 +340,7 @@ export function UnilateralIntentForm() {
                 <ul className="text-sm space-y-1 list-disc list-inside">
                   <li>No counterparty is named — this is a market-maker signal.</li>
                   <li>No credits are deducted at creation.</li>
-                  <li>Each lifecycle action costs R10 (1 credit).</li>
+                  <li>Each lifecycle action costs R10 ZAR (1 credit).</li>
                   <li>This record is separate from bilateral POIs.</li>
                 </ul>
               </div>
