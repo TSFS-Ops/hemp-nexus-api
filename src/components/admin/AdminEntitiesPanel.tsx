@@ -83,7 +83,43 @@ export function AdminEntitiesPanel() {
     }
   };
 
-  const filtered = entities.filter((e) => {
+  const verifyUbo = async (entityId: string) => {
+    setVerifyingEntity(entityId);
+    try {
+      const resp = await supabase.functions.invoke("ubo-verify", {
+        body: { entity_id: entityId },
+      });
+
+      if (resp.error) {
+        const errMsg = typeof resp.error === "object" && "message" in resp.error
+          ? (resp.error as any).message
+          : String(resp.error);
+        toast.error(`UBO verification failed: ${errMsg}`);
+        return;
+      }
+
+      const result = resp.data;
+      if (result?.verification === "not_applicable") {
+        toast.info("Individual entities do not require UBO verification.");
+        return;
+      }
+
+      if (result?.is_complete && result?.all_verified) {
+        toast.success(`UBO verified — ${result.total_ownership_pct}% ownership confirmed across ${result.max_depth} layers.`);
+      } else if (result?.escalation_required) {
+        toast.warning(`Escalation required: ${result.escalation_reason}`);
+      } else {
+        toast.warning(`UBO incomplete — ${result?.total_ownership_pct ?? 0}% of 100% verified. Add missing UBO links.`);
+      }
+      refetch();
+    } catch (err) {
+      console.error("UBO verify error:", err);
+      toast.error("UBO verification failed");
+    } finally {
+      setVerifyingEntity(null);
+    }
+  };
+
     if (!searchTerm) return true;
     return (
       e.legal_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
