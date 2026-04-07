@@ -56,6 +56,29 @@ interface ParsedQuery {
   role: "buyer" | "seller";
 }
 
+/** Persist a bid/offer to the trade_orders table (fire-and-forget) */
+async function persistTradeOrder(
+  product: string,
+  ctx: { side?: "bid" | "offer"; price?: string; volume?: string; location?: string }
+) {
+  try {
+    const { data: profile } = await supabase.from("profiles").select("id, org_id").limit(1).maybeSingle();
+    if (!profile?.org_id) return;
+
+    await supabase.from("trade_orders").insert({
+      org_id: profile.org_id,
+      user_id: profile.id,
+      side: ctx.side || "bid",
+      product,
+      price: ctx.price ? parseFloat(ctx.price) || null : null,
+      volume: ctx.volume ? parseFloat(ctx.volume) || null : null,
+      location: ctx.location || null,
+    } as any);
+  } catch (err) {
+    console.warn("Failed to persist trade order:", err);
+  }
+}
+
 export default function CounterpartySearch() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
