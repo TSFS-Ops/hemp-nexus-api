@@ -54,7 +54,9 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const draft = isDraft(match);
   const contextItems = getMatchContext(match);
   const currentState = match.state || "discovery";
+  const matchType = (match as any).match_type || "search";
   const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(currentState);
+  const isUnilateral = matchType === "unilateral";
 
   return (
     <Card>
@@ -64,8 +66,18 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
               <MatchStatusBadge status={match.status} />
+              {matchType === "unilateral" && (
+                <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                  Unilateral Intent
+                </Badge>
+              )}
+              {matchType === "bilateral" && (
+                <Badge variant="secondary" className="text-xs">
+                  Bilateral
+                </Badge>
+              )}
               {draft && (
-                <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                <Badge variant="outline" className="text-xs border-destructive/50 text-destructive">
                   Draft — no commercial terms
                 </Badge>
               )}
@@ -90,7 +102,11 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
               <div>
                 <dt className="text-sm text-muted-foreground">Name</dt>
                 <dd className="font-medium">
-                  {isRevealed ? match.buyer_name : (
+                  {match.buyer_name == null ? (
+                    <span className="text-muted-foreground italic">
+                      {isUnilateral ? "Open — no buyer specified" : "—"}
+                    </span>
+                  ) : isRevealed ? match.buyer_name : (
                     <span className="text-muted-foreground italic">Hidden until counterparty reveal</span>
                   )}
                 </dd>
@@ -110,7 +126,11 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
               <div>
                 <dt className="text-sm text-muted-foreground">Name</dt>
                 <dd className="font-medium">
-                  {isRevealed ? match.seller_name : (
+                  {match.seller_name == null ? (
+                    <span className="text-muted-foreground italic">
+                      {isUnilateral ? "Open — no seller specified" : "—"}
+                    </span>
+                  ) : isRevealed ? match.seller_name : (
                     <span className="text-muted-foreground italic">Hidden until counterparty reveal</span>
                   )}
                 </dd>
