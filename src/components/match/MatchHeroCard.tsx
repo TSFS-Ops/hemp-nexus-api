@@ -53,6 +53,8 @@ function getMatchContext(match: Match): { label: string; value: string }[] {
 export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const draft = isDraft(match);
   const contextItems = getMatchContext(match);
+  const currentState = match.state || "discovery";
+  const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(currentState);
 
   return (
     <Card>
