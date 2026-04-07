@@ -27,7 +27,7 @@ const CREDIT_PACKAGES = [
     priceZar: 10,
     label: 'Proof-of-Intent',
     pricePerCredit: '10.00',
-    description: 'R10 per POI — pay as you go',
+    description: 'R10 ZAR per POI — pay as you go',
     popular: false,
   },
 ];
