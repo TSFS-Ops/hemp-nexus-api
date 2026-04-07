@@ -240,6 +240,7 @@ export function AdminEntitiesPanel() {
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Screening</TableHead>
+                    <TableHead className="text-right">UBO</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,6 +280,21 @@ export function AdminEntitiesPanel() {
                             <ShieldCheck className="h-3 w-3 mr-1" />
                           )}
                           Screen
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => verifyUbo(entity.id)}
+                          disabled={verifyingEntity === entity.id || entity.status === "archived"}
+                        >
+                          {verifyingEntity === entity.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <LinkIcon className="h-3 w-3 mr-1" />
+                          )}
+                          Verify
                         </Button>
                       </TableCell>
                     </TableRow>
