@@ -136,7 +136,7 @@ export default function CounterpartySearch() {
       // Map bid/offer side to search role: bid = buyer (looking for sellers), offer = seller (looking for buyers)
       const role = bidOfferContext.side === "offer" ? "seller" : bidOfferContext.side === "bid" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}) }
+        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(bidOfferContext.location ? { location: bidOfferContext.location } : {}) }
       });
 
       if (error) throw error;
@@ -145,6 +145,11 @@ export default function CounterpartySearch() {
         setResults(data.results || []);
         setMetrics(data.metrics || null);
         setParsedQuery(data.parsedQuery || null);
+
+        // Persist bid/offer as a trade order (fire-and-forget)
+        if (bidOfferContext.side) {
+          persistTradeOrder(query.trim(), bidOfferContext);
+        }
       } else {
         throw new Error(data.error || "Search failed");
       }
