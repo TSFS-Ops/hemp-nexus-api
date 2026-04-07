@@ -2086,6 +2086,64 @@ export type Database = {
         }
         Relationships: []
       }
+      jurisdiction_selections: {
+        Row: {
+          created_at: string
+          escalation_reason: string | null
+          id: string
+          match_id: string
+          org_id: string
+          selected_by: string | null
+          selected_jurisdiction: string
+          selection_method: string
+          surfaced_jurisdictions: Json
+        }
+        Insert: {
+          created_at?: string
+          escalation_reason?: string | null
+          id?: string
+          match_id: string
+          org_id: string
+          selected_by?: string | null
+          selected_jurisdiction: string
+          selection_method?: string
+          surfaced_jurisdictions?: Json
+        }
+        Update: {
+          created_at?: string
+          escalation_reason?: string | null
+          id?: string
+          match_id?: string
+          org_id?: string
+          selected_by?: string | null
+          selected_jurisdiction?: string
+          selection_method?: string
+          surfaced_jurisdictions?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurisdiction_selections_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "jurisdiction_selections_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jurisdiction_selections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kyc_documents: {
         Row: {
           created_at: string

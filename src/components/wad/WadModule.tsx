@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, FileCheck, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { WadStepper } from "./WadStepper";
+import { JurisdictionSelector } from "./JurisdictionSelector";
 import type { Tables } from "@/integrations/supabase/types";
 import {
   fetchActiveWad,
@@ -28,6 +29,8 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   const [creating, setCreating] = useState(false);
   const [gateFailures, setGateFailures] = useState<string[]>([]);
   const [userOrgId, setUserOrgId] = useState<string | null>(null);
+  const [jurisdictionSelected, setJurisdictionSelected] = useState(false);
+  const [selectedJurisdiction, setSelectedJurisdiction] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserOrg();
@@ -82,6 +85,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     }
   };
 
+  const handleJurisdictionComplete = (jurisdiction: string) => {
+    setJurisdictionSelected(true);
+    setSelectedJurisdiction(jurisdiction);
+  };
+
   // Derive consequence state from the module
   const state: ConsequenceState = deriveConsequenceState(wad, match.status ?? "", userOrgId);
 
@@ -124,60 +132,86 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     );
   }
 
-  // No WaD exists yet - show create button
+  // No WaD exists yet - show jurisdiction selector then create button
   if (state.uiStatus === "not_started") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            WaD (Without-a-Doubt)
-          </CardTitle>
-          <CardDescription>Create a sealed evidence bundle for this POI</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg space-y-3">
-            <p className="text-sm">
-              WaD creates an auditable, tamper-evident record that packages the full evidence trail
-              for this proof-of-intent. It includes:
-            </p>
-            <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Search query and match context</li>
-              <li>Confirm intent timestamps and parties</li>
-              <li>Document hashes and evidence bundle</li>
-              <li>Multi-party attestations</li>
-              <li>Cryptographic seal</li>
-            </ul>
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground italic">
-                <strong>Note:</strong> WaD is NOT a contract. No payment. No obligation.
-                It is an evidence-grade "proof bundle".
-              </p>
-            </div>
-          </div>
-          {gateFailures.length > 0 && (
-            <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
-              <p className="text-sm font-medium text-destructive flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                WaD creation blocked — {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
+      <div className="space-y-4">
+        {/* Jurisdiction selector — must be resolved before WaD creation */}
+        {userOrgId && (
+          <JurisdictionSelector
+            matchId={match.id}
+            orgId={userOrgId}
+            onSelectionComplete={handleJurisdictionComplete}
+          />
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              WaD (Without-a-Doubt)
+            </CardTitle>
+            <CardDescription>Create a sealed evidence bundle for this POI</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg space-y-3">
+              <p className="text-sm">
+                WaD creates an auditable, tamper-evident record that packages the full evidence trail
+                for this proof-of-intent. It includes:
               </p>
               <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
-                {gateFailures.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
+                <li>Search query and match context</li>
+                <li>Confirm intent timestamps and parties</li>
+                <li>Document hashes and evidence bundle</li>
+                <li>Multi-party attestations</li>
+                <li>Cryptographic seal</li>
               </ul>
-              <p className="text-xs text-muted-foreground mt-2">
-                Resolve the above issues and try again. Each gate must pass for the evidence bundle to be sealed.
-              </p>
+              {selectedJurisdiction && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Documentary path: <Badge variant="outline" className="text-xs">{selectedJurisdiction}</Badge>
+                  </p>
+                </div>
+              )}
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground italic">
+                  <strong>Note:</strong> WaD is NOT a contract. No payment. No obligation.
+                  It is an evidence-grade "proof bundle".
+                </p>
+              </div>
             </div>
-          )}
-          <Button onClick={handleCreateWad} disabled={creating} className="w-full">
-            {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <FileCheck className="h-4 w-4 mr-2" />
-            {gateFailures.length > 0 ? "Retry WaD Creation" : "Create WaD"}
-          </Button>
-        </CardContent>
-      </Card>
+            {gateFailures.length > 0 && (
+              <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
+                <p className="text-sm font-medium text-destructive flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  WaD creation blocked — {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
+                </p>
+                <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
+                  {gateFailures.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Resolve the above issues and try again. Each gate must pass for the evidence bundle to be sealed.
+                </p>
+              </div>
+            )}
+            <Button
+              onClick={handleCreateWad}
+              disabled={creating || !jurisdictionSelected}
+              className="w-full"
+            >
+              {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <FileCheck className="h-4 w-4 mr-2" />
+              {!jurisdictionSelected
+                ? "Select jurisdiction first"
+                : gateFailures.length > 0
+                  ? "Retry WaD Creation"
+                  : "Create WaD"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
