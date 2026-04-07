@@ -29,6 +29,7 @@ export function AdminEntitiesPanel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [screeningEntity, setScreeningEntity] = useState<string | null>(null);
   const [verifyingEntity, setVerifyingEntity] = useState<string | null>(null);
 
   const { data: entities = [], isLoading, isError, refetch } = useSupabaseList<Entity>("entities", {
