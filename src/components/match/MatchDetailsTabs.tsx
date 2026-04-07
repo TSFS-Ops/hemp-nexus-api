@@ -86,7 +86,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
       <TabsContent value="details" className="mt-4 space-y-4">
         <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setActiveTab("disputes")} />
         
-        {/* State Progression Card — always visible */}
+        {/* State Progression Card — handles all lifecycle actions including intent */}
         <StateProgressionCard
           match={match}
           onAction={onStateAction}
@@ -116,11 +116,6 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
             )}
           </CardContent>
         </Card>
-
-        {/* Legacy confirm intent card for discovery state */}
-        {showIntentCard && (
-          <ConfirmIntentCard onConfirm={onConfirm} loading={confirming} />
-        )}
       </TabsContent>
 
       <TabsContent value="documents" className="mt-4 space-y-4">
