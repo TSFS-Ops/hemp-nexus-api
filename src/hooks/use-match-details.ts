@@ -2,6 +2,7 @@
  * useMatchDetails — Data fetching & mutation hook for the Match Details page.
  *
  * Single Responsibility: owns all async state for one match (load, settle, error, retry).
+ * Supports the full V3 lifecycle: Discovery → Intent → Reveal → Commit → Complete.
  */
 
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -16,6 +17,26 @@ import type { Tables } from "@/integrations/supabase/types";
 export type Match = Tables<"matches">;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function handleApiError(err: unknown): never {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
+    throw new Error("Insufficient credits. Purchase more credits from the Billing page.");
+  }
+  if (msg.includes("ELIGIBILITY_FAILED") || msg.includes("eligibility")) {
+    throw new Error("Missing required data fields. All fields must be complete before proceeding.");
+  }
+  if (msg.includes("DISPUTE_ACTIVE") || msg.includes("dispute")) {
+    throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");
+  }
+  if (msg.includes("INVALID_STATE") || msg.includes("STATE_CONFLICT") || msg.includes("already")) {
+    throw new Error("This match is not in the correct state. Refresh the page to see the latest status.");
+  }
+  if (msg.includes("FORBIDDEN") || msg.includes("permission")) {
+    throw new Error("You do not have permission to modify this match.");
+  }
+  throw new Error(`Action failed: ${msg}. If this persists, contact support@izenzo.co.za.`);
+}
 
 export function useMatchDetails(matchId: string | undefined) {
   const navigate = useNavigate();
@@ -95,6 +116,7 @@ export function useMatchDetails(matchId: string | undefined) {
     if (matchId) fetchMatch();
   }, [matchId, fetchMatch]);
 
+  // ── Intent declaration (discovery → intent_declared) ──
   const { run: handleSettle, loading: confirming } = useAsyncAction(
     async () => {
       if (!match) return;
@@ -115,49 +137,72 @@ export function useMatchDetails(matchId: string | undefined) {
           idempotencyKey,
         });
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
-          throw new Error("Insufficient credits. Purchase more credits from the Billing page before confirming intent.");
-        }
-        if (msg.includes("ELIGIBILITY_FAILED") || msg.includes("eligibility")) {
-          // Extract denial reasons if present in the error body
-          let guidance = "This match is missing required data fields (e.g. buyer name, seller name, commodity, price, or quantity). All fields must be complete before you can confirm intent. This is not a credit issue — your credits are safe.";
-          try {
-            // Try to parse structured error details
-            const parsed = JSON.parse(msg.replace(/^.*?(\{.*)$/, '$1'));
-            if (parsed?.denialReasons?.length) {
-              guidance = `Cannot confirm intent — missing or invalid fields:\n• ${parsed.denialReasons.join('\n• ')}\n\nFix the match data and try again. Your credits have not been deducted.`;
-            }
-          } catch { /* use default guidance */ }
-          throw new Error(guidance);
-        }
-        if (msg.includes("DISPUTE_ACTIVE") || msg.includes("dispute")) {
-          throw new Error("Cannot confirm intent while an active dispute exists on this match. Resolve the dispute first, then try again.");
-        }
-        if (msg.includes("INVALID_STATE") || msg.includes("STATE_CONFLICT") || msg.includes("already")) {
-          throw new Error("This match has already been confirmed or is not in the correct state. Refresh the page to see the latest status.");
-        }
-        if (msg.includes("FORBIDDEN") || msg.includes("permission")) {
-          throw new Error("You do not have permission to confirm this match. It may belong to a different organisation.");
-        }
-        throw new Error(`Intent confirmation failed: ${msg}. If this persists, contact support@izenzo.co.za.`);
+        handleApiError(err);
       }
 
       if (!updated || !updated.id || !updated.status) {
-        throw new Error("Server returned an invalid confirmation response. Contact support@izenzo.co.za if credits were deducted.");
+        throw new Error("Server returned an invalid response. Contact support@izenzo.co.za if credits were deducted.");
       }
 
       if (mountedRef.current) {
         setMatch(updated);
-        // Invalidate balance caches so sidebar and confirm dialog show updated balance
         queryClient.invalidateQueries({ queryKey: ["token-balance"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
-        toast.success("Intent confirmed. 500 credits deducted. View the Proof tab for your evidence record.");
+        queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+        toast.success("Intent confirmed. 1 credit deducted.");
       }
     },
     {
       successMessage: undefined,
-      errorMessage: "Failed to confirm intent. Please try again or contact support@izenzo.co.za.",
+      errorMessage: "Failed to confirm intent. Please try again.",
+    }
+  );
+
+  // ── Generic state progression action ──
+  const { run: handleStateAction, loading: stateActionLoading } = useAsyncAction(
+    async (actionPath: string) => {
+      if (!match) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Your session has expired. Please sign in again.");
+        navigate("/auth");
+        return;
+      }
+
+      const idempotencyKey = generateIdempotencyKey(actionPath);
+
+      let updated: Match;
+      try {
+        updated = await apiFetch<Match>(`match/${match.id}/${actionPath}`, {
+          method: "POST",
+          idempotencyKey,
+        });
+      } catch (err: unknown) {
+        handleApiError(err);
+      }
+
+      if (!updated || !updated.id) {
+        throw new Error("Server returned an invalid response. Contact support@izenzo.co.za.");
+      }
+
+      if (mountedRef.current) {
+        setMatch(updated);
+        queryClient.invalidateQueries({ queryKey: ["token-balance"] });
+        queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
+        queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+
+        const labels: Record<string, string> = {
+          "reveal-counterparty": "Counterparty revealed. 1 credit deducted.",
+          "commit": "Deal committed. 1 credit deducted.",
+          "complete": "Transaction completed. Evidence record sealed.",
+        };
+        toast.success(labels[actionPath] || "Action completed.");
+      }
+    },
+    {
+      successMessage: undefined,
+      errorMessage: "Action failed. Please try again.",
     }
   );
 
@@ -167,7 +212,9 @@ export function useMatchDetails(matchId: string | undefined) {
     fetchError,
     isValidMatchId,
     confirming,
+    stateActionLoading,
     fetchMatch,
     handleSettle,
+    handleStateAction,
   };
 }

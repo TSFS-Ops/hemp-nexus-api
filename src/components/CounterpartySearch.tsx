@@ -56,6 +56,29 @@ interface ParsedQuery {
   role: "buyer" | "seller";
 }
 
+/** Persist a bid/offer to the trade_orders table (fire-and-forget) */
+async function persistTradeOrder(
+  product: string,
+  ctx: { side?: "bid" | "offer"; price?: string; volume?: string; location?: string }
+) {
+  try {
+    const { data: profile } = await supabase.from("profiles").select("id, org_id").limit(1).maybeSingle();
+    if (!profile?.org_id) return;
+
+    await supabase.from("trade_orders").insert({
+      org_id: profile.org_id,
+      user_id: profile.id,
+      side: ctx.side || "bid",
+      product,
+      price: ctx.price ? parseFloat(ctx.price) || null : null,
+      volume: ctx.volume ? parseFloat(ctx.volume) || null : null,
+      location: ctx.location || null,
+    } as any);
+  } catch (err) {
+    console.warn("Failed to persist trade order:", err);
+  }
+}
+
 export default function CounterpartySearch() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -65,6 +88,7 @@ export default function CounterpartySearch() {
   const initialSide = searchParams.get("side") as "bid" | "offer" | null;
   const initialPrice = searchParams.get("price") || "";
   const initialVolume = searchParams.get("volume") || "";
+  const initialLocation = searchParams.get("location") || "";
 
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
@@ -83,7 +107,8 @@ export default function CounterpartySearch() {
     side?: "bid" | "offer";
     price?: string;
     volume?: string;
-  }>({ side: initialSide || undefined, price: initialPrice, volume: initialVolume });
+    location?: string;
+  }>({ side: initialSide || undefined, price: initialPrice, volume: initialVolume, location: initialLocation });
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
@@ -134,7 +159,7 @@ export default function CounterpartySearch() {
       // Map bid/offer side to search role: bid = buyer (looking for sellers), offer = seller (looking for buyers)
       const role = bidOfferContext.side === "offer" ? "seller" : bidOfferContext.side === "bid" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}) }
+        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(bidOfferContext.location ? { location: bidOfferContext.location } : {}) }
       });
 
       if (error) throw error;
@@ -143,6 +168,11 @@ export default function CounterpartySearch() {
         setResults(data.results || []);
         setMetrics(data.metrics || null);
         setParsedQuery(data.parsedQuery || null);
+
+        // Persist bid/offer as a trade order (fire-and-forget)
+        if (bidOfferContext.side) {
+          persistTradeOrder(query.trim(), bidOfferContext);
+        }
       } else {
         throw new Error(data.error || "Search failed");
       }

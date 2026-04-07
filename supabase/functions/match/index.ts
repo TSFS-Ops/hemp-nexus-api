@@ -414,17 +414,9 @@ Deno.serve(async (req) => {
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
       if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
-      // Calculate transaction value for finality burn
-      const transactionValueUsd = (match.declared_value_usd || 
-        (match.price_amount * match.quantity_amount)) || 0;
-      const finalityBurn = calculateFinalityBurn(transactionValueUsd);
+      // Flat 1-credit cost for commit (R10 pricing model)
       const commitCost = ACTION_TOKEN_COSTS.buyer_commit;
-      const totalCost = commitCost + finalityBurn;
-
-      // Ensure sufficient tokens and burn (atomic via atomic_token_burn)
-      await ensureSufficientTokens(supabase, authCtx.orgId, totalCost);
       await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId);
-      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId, finalityBurn, { type: 'finality_burn', transactionValue: transactionValueUsd });
 
       // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
       const committedAt = new Date().toISOString();
@@ -437,8 +429,6 @@ Deno.serve(async (req) => {
           p_new_state: 'committed',
           p_update_fields: {
             buyer_committed_at: committedAt,
-            finality_tokens_burned: finalityBurn,
-            declared_value_usd: transactionValueUsd,
           },
         }
       );
@@ -461,10 +451,7 @@ Deno.serve(async (req) => {
         entity_id: matchId,
         metadata: {
           request_id: requestId,
-          commit_tokens_burned: commitCost,
-          finality_tokens_burned: finalityBurn,
-          total_tokens_burned: totalCost,
-          transaction_value_usd: transactionValueUsd,
+          tokens_burned: commitCost,
           previous_state: 'counterparty_sighted',
           new_state: 'committed',
         }
@@ -472,12 +459,98 @@ Deno.serve(async (req) => {
 
       await recordMatchEvent(
         supabase, matchId, match.org_id, "transaction.committed",
-        { commitCost, finalityBurn, totalCost, transactionValueUsd, state: 'committed' },
+        { commitCost, state: 'committed' },
         actorUserId, actorApiKeyId
       );
 
       triggerWebhooks(supabase, match.org_id, "transaction.committed", {
-        matchId, state: 'committed', commitTokens: commitCost, finalityTokens: finalityBurn, transactionValueUsd,
+        matchId, state: 'committed', commitTokens: commitCost,
+      }).catch(err => console.error(`Webhook error:`, err));
+
+      await logApiRequest({
+        supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+        endpoint: endpointLabel, method: "POST", statusCode: 200
+      });
+
+      return new Response(JSON.stringify(updated), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    // ============================================
+    // Route: POST /match/:id/complete
+    // Transitions: committed → completed
+    // Token Cost: 1 credit (flat R10 pricing)
+    // ============================================
+    if (req.method === "POST" && matchId && action === "complete") {
+      const endpointLabel = "/match/:id/complete";
+      
+      const uuidResult = uuidSchema.safeParse(matchId);
+      if (!uuidResult.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
+      console.log(`[${requestId}] POST /match/${matchId}/complete`);
+
+      const { data: match, error: fetchError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .maybeSingle();
+
+      if (fetchError) handleDatabaseError(fetchError, requestId);
+      if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
+      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+
+      // 1 credit for completion
+      await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'buyer_commit', requestId, matchId);
+
+      // --- ATOMIC STATE TRANSITION ---
+      const completedAt = new Date().toISOString();
+      const { data: transitionResult, error: transitionError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'committed',
+          p_new_state: 'completed',
+          p_update_fields: {},
+        }
+      );
+
+      if (transitionError) handleDatabaseError(transitionError, requestId);
+      if (!transitionResult?.success) {
+        const errCode = transitionResult?.error || 'TRANSITION_FAILED';
+        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+      }
+
+      const updated = transitionResult.match;
+
+      await supabase.from("audit_logs").insert({
+        org_id: match.org_id,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: "transaction.completed",
+        entity_type: "match",
+        entity_id: matchId,
+        metadata: {
+          request_id: requestId,
+          previous_state: 'committed',
+          new_state: 'completed',
+          completed_at: completedAt,
+        }
+      });
+
+      await recordMatchEvent(
+        supabase, matchId, match.org_id, "transaction.completed",
+        { state: 'completed', completedAt },
+        actorUserId, actorApiKeyId
+      );
+
+      triggerWebhooks(supabase, match.org_id, "transaction.completed", {
+        matchId, state: 'completed', completedAt,
       }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({

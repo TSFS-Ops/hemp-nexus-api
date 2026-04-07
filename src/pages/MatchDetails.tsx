@@ -22,8 +22,10 @@ export default function MatchDetails() {
     fetchError,
     isValidMatchId,
     confirming,
+    stateActionLoading,
     fetchMatch,
     handleSettle,
+    handleStateAction,
   } = useMatchDetails(matchId);
 
   const breadcrumbs = [
@@ -95,7 +97,6 @@ export default function MatchDetails() {
   }
 
   const isSettled = MatchState.isSettled(match.status);
-  const canConfirm = MatchState.canDo(match.status, "confirm_intent");
 
   return (
     <div className="space-y-6">
@@ -113,9 +114,11 @@ export default function MatchDetails() {
 
       <MatchDetailsTabs
         match={match}
-        canConfirm={canConfirm}
+        canConfirm={MatchState.canDo(match.state || "discovery", "confirm_intent")}
         confirming={confirming}
+        stateActionLoading={stateActionLoading}
         onConfirm={handleSettle}
+        onStateAction={handleStateAction}
         onRefresh={fetchMatch}
       />
     </div>

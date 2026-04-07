@@ -5,7 +5,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert, ListChecks } from "lucide-react";
+import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert, ListChecks, GitBranch } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
@@ -16,6 +16,7 @@ import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
 import { DisputeBanner } from "@/components/match/DisputeBanner";
 import { ConfirmIntentCard } from "@/components/match/ConfirmIntentCard";
+import { StateProgressionCard } from "@/components/match/StateProgressionCard";
 import { CompletionTracker } from "@/components/match/CompletionTracker";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import type { Match } from "@/hooks/use-match-details";
@@ -26,12 +27,18 @@ interface MatchDetailsTabsProps {
   match: Match;
   canConfirm: boolean;
   confirming: boolean;
+  stateActionLoading: boolean;
   onConfirm: () => void;
+  onStateAction: (action: string) => Promise<void>;
   onRefresh: () => void;
 }
 
-export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onRefresh }: MatchDetailsTabsProps) {
+export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoading, onConfirm, onStateAction, onRefresh }: MatchDetailsTabsProps) {
   const [activeTab, setActiveTab] = useUrlTab("tab", "details", ALLOWED_TABS);
+
+  const currentState = match.state || "discovery";
+  const showIntentCard = canConfirm && currentState === "discovery";
+  const showProgressionCard = currentState !== "discovery";
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -78,6 +85,14 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
 
       <TabsContent value="details" className="mt-4 space-y-4">
         <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setActiveTab("disputes")} />
+        
+        {/* State Progression Card — always visible */}
+        <StateProgressionCard
+          match={match}
+          onAction={onStateAction}
+          loading={stateActionLoading || confirming}
+        />
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Match Summary</CardTitle>
@@ -102,7 +117,8 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, onConfirm, onR
           </CardContent>
         </Card>
 
-        {canConfirm && (
+        {/* Legacy confirm intent card for discovery state */}
+        {showIntentCard && (
           <ConfirmIntentCard onConfirm={onConfirm} loading={confirming} />
         )}
       </TabsContent>
