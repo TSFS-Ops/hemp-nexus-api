@@ -65,6 +65,7 @@ export default function CounterpartySearch() {
   const initialSide = searchParams.get("side") as "bid" | "offer" | null;
   const initialPrice = searchParams.get("price") || "";
   const initialVolume = searchParams.get("volume") || "";
+  const initialLocation = searchParams.get("location") || "";
 
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
@@ -83,7 +84,8 @@ export default function CounterpartySearch() {
     side?: "bid" | "offer";
     price?: string;
     volume?: string;
-  }>({ side: initialSide || undefined, price: initialPrice, volume: initialVolume });
+    location?: string;
+  }>({ side: initialSide || undefined, price: initialPrice, volume: initialVolume, location: initialLocation });
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
