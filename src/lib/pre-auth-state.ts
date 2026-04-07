@@ -14,6 +14,7 @@ export interface PreAuthState {
   side?: "bid" | "offer";
   price?: string;
   volume?: string;
+  location?: string;
 }
 
 export function savePreAuthState(state: PreAuthState) {
