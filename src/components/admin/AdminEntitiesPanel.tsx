@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useSupabaseList } from "@/hooks/use-supabase-list";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -30,6 +30,7 @@ export function AdminEntitiesPanel() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [screeningEntity, setScreeningEntity] = useState<string | null>(null);
+  const [verifyingEntity, setVerifyingEntity] = useState<string | null>(null);
 
   const { data: entities = [], isLoading, isError, refetch } = useSupabaseList<Entity>("entities", {
     limit: 200,
@@ -79,6 +80,43 @@ export function AdminEntitiesPanel() {
       toast.error("Screening failed — check provider configuration");
     } finally {
       setScreeningEntity(null);
+    }
+  };
+
+  const verifyUbo = async (entityId: string) => {
+    setVerifyingEntity(entityId);
+    try {
+      const resp = await supabase.functions.invoke("ubo-verify", {
+        body: { entity_id: entityId },
+      });
+
+      if (resp.error) {
+        const errMsg = typeof resp.error === "object" && "message" in resp.error
+          ? (resp.error as any).message
+          : String(resp.error);
+        toast.error(`UBO verification failed: ${errMsg}`);
+        return;
+      }
+
+      const result = resp.data;
+      if (result?.verification === "not_applicable") {
+        toast.info("Individual entities do not require UBO verification.");
+        return;
+      }
+
+      if (result?.is_complete && result?.all_verified) {
+        toast.success(`UBO verified — ${result.total_ownership_pct}% ownership confirmed across ${result.max_depth} layers.`);
+      } else if (result?.escalation_required) {
+        toast.warning(`Escalation required: ${result.escalation_reason}`);
+      } else {
+        toast.warning(`UBO incomplete — ${result?.total_ownership_pct ?? 0}% of 100% verified. Add missing UBO links.`);
+      }
+      refetch();
+    } catch (err) {
+      console.error("UBO verify error:", err);
+      toast.error("UBO verification failed");
+    } finally {
+      setVerifyingEntity(null);
     }
   };
 
@@ -202,6 +240,7 @@ export function AdminEntitiesPanel() {
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Screening</TableHead>
+                    <TableHead className="text-right">UBO</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -241,6 +280,21 @@ export function AdminEntitiesPanel() {
                             <ShieldCheck className="h-3 w-3 mr-1" />
                           )}
                           Screen
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => verifyUbo(entity.id)}
+                          disabled={verifyingEntity === entity.id || entity.status === "archived"}
+                        >
+                          {verifyingEntity === entity.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <LinkIcon className="h-3 w-3 mr-1" />
+                          )}
+                          Verify
                         </Button>
                       </TableCell>
                     </TableRow>
