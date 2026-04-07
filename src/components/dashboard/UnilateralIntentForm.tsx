@@ -199,7 +199,7 @@ export function UnilateralIntentForm() {
               <p>
                 It sits apart from a bilateral POI but operates as a recognised intent record.
                 No credits are deducted at creation — only at lifecycle transitions{" "}
-                <Badge variant="outline" className="text-xs">R10 per action</Badge>.
+                <Badge variant="outline" className="text-xs">R10 ZAR per action</Badge>.
               </p>
             </div>
           </div>
