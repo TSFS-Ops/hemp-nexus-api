@@ -531,7 +531,7 @@ export default function CounterpartySearch() {
               <div>
                 <p className="font-medium text-foreground">Search for counterparties</p>
                 <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                  Enter a commodity, region, or company name above to find verified buyers and sellers. 
+                  Enter a commodity, region, or company name above to find registered buyers and sellers. 
                   Select one or more results to create a draft match.
                 </p>
               </div>
