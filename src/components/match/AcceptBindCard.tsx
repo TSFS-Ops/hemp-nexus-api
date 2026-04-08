@@ -34,9 +34,22 @@ interface AcceptBindCardProps {
 }
 
 export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
-  const { session, profile } = useAuth();
+  const { session } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ org_id: string; full_name: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    supabase
+      .from("profiles")
+      .select("org_id, full_name")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setUserProfile(data);
+      });
+  }, [session?.user?.id]);
 
   // Only show for unilateral matches
   const matchType = (match as any).match_type;
