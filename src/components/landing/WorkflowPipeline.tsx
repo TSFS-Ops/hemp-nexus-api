@@ -1,6 +1,6 @@
 /**
  * 6-step trade workflow pipeline - ultra-premium Bloomberg terminal style.
- * Clean header, no toggle. Emerald-highlighted Finalise step.
+ * Clean header, no toggle. Emerald-highlighted Sign Deal step.
  */
 
 import { ArrowRight, Search, ShieldCheck, Eye, FileText, CheckCircle2, Lock } from "lucide-react";
@@ -11,7 +11,7 @@ const PIPELINE_STEPS = [
   { label: "Initial Review", subtitle: "Assess & evaluate", Icon: Eye },
   { label: "Draft Request", subtitle: "Structure the deal", Icon: FileText },
   { label: "Commit", subtitle: "Confirm intent", Icon: CheckCircle2 },
-  { label: "Finalise", subtitle: "Signed Deal", Icon: Lock },
+  { label: "Sign Deal", subtitle: "Signed Deal", Icon: Lock },
 ];
 
 export function WorkflowPipeline() {
