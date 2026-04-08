@@ -429,6 +429,24 @@ export function UnilateralIntentForm() {
             </div>
           </div>
 
+          {/* Counterparty Email (optional invite) */}
+          <div className="space-y-2">
+            <Label htmlFor="uni-counterparty-email" className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5" />
+              Counterparty email (optional)
+            </Label>
+            <Input
+              id="uni-counterparty-email"
+              type="email"
+              placeholder="e.g. farmer@example.com — they'll receive an invite to review this POI"
+              value={form.counterpartyEmail}
+              onChange={(e) => update("counterpartyEmail", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              If provided, the counterparty will receive an email invitation to create an account and accept this intent, converting it into a bilateral POI.
+            </p>
+          </div>
+
           {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="uni-notes">Additional notes (optional)</Label>
