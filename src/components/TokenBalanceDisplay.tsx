@@ -15,18 +15,34 @@ interface TokenBalanceDisplayProps {
 export function TokenBalanceDisplay({ variant = "compact", className }: TokenBalanceDisplayProps) {
   const { session } = useAuth();
   
-  const { data: balance, isLoading } = useQuery({
-    queryKey: ["token-balance"],
+  // Fetch user's org_id first
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile-org", session?.user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("token_balances")
-        .select("balance, minimum_required")
-        .maybeSingle();
-      
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .single();
       if (error) throw error;
       return data;
     },
     enabled: !!session,
+  });
+
+  const { data: balance, isLoading } = useQuery({
+    queryKey: ["token-balance", userProfile?.org_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("token_balances")
+        .select("balance, minimum_required")
+        .eq("org_id", userProfile!.org_id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session && !!userProfile?.org_id,
     // Poll every 5 minutes instead of 30s — at 100x users the 30s poll
     // generates enormous read load. Balance updates on mutation via cache invalidation.
     refetchInterval: 5 * 60 * 1000,
