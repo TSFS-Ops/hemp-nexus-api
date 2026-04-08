@@ -105,13 +105,20 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
   const [showDialog, setShowDialog] = useState(false);
   const { session } = useAuth();
 
+  const matchType = (match as any).match_type || "search";
+  const isUnilateral = matchType === "unilateral";
+
   const currentState = match.state || "discovery";
   const currentIdx = MatchState.getStateIndex(currentState);
   const nextState = MatchState.getNextState(currentState);
-  const nextLabel = MatchState.getNextActionLabel(currentState);
-  const nextDescription = MatchState.getNextActionDescription(currentState);
+  const nextLabel = MatchState.getNextActionLabel(currentState, matchType);
+  const nextDescription = MatchState.getNextActionDescription(currentState, matchType);
   const actionPath = nextState ? MatchState.getTransitionAction(nextState) : null;
   const isTerminal = MatchState.isTerminal(currentState);
+
+  // For unilateral intents in intent_declared state, block progression until counterparty attached
+  const unilateralBlocked = isUnilateral && currentState === "intent_declared" &&
+    (match.buyer_name == null || match.seller_name == null);
 
   const checklist = useMemo(() => getFieldChecklist(match), [match]);
   const requiredMissing = checklist.filter(f => f.required && !f.filled);
