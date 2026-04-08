@@ -320,6 +320,7 @@ Deno.serve(async (req) => {
 
       // UNILATERAL GUARD: Cannot reveal counterparty if one side is missing
       if (match.match_type === "unilateral" && (match.buyer_id == null || match.seller_id == null)) {
+        console.error(`[${requestId}] SENTRY_BREADCRUMB: UNILATERAL_BLOCKED match_id=${matchId} org_id=${authCtx.orgId} missing_party=${match.buyer_id == null ? 'buyer' : 'seller'}`);
         throw new ApiException(
           "UNILATERAL_BLOCKED",
           "Cannot reveal counterparty on a unilateral intent. Both buyer and seller must be attached before proceeding.",
