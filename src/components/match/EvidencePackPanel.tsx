@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
@@ -24,6 +25,7 @@ import { downloadFile } from "@/lib/download-utils";
 interface EvidencePackPanelProps {
   matchId: string;
   matchStatus: string;
+  matchState?: string;
 }
 
 interface EvidencePackData {
@@ -54,9 +56,10 @@ interface EvidencePackData {
   canonical: Record<string, unknown>;
 }
 
-export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelProps) {
+export function EvidencePackPanel({ matchId, matchStatus, matchState }: EvidencePackPanelProps) {
   const [pack, setPack] = useState<EvidencePackData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [certLoading, setCertLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
@@ -65,6 +68,7 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
   } | null>(null);
 
   const isSettled = MatchState.isSettled(matchStatus);
+  const isCompleted = matchState === "completed";
 
   const generatePack = useCallback(async () => {
     try {
@@ -139,6 +143,46 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
     }
   }, [matchId]);
 
+  const downloadDealCertificate = useCallback(async () => {
+    try {
+      setCertLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to download the deal certificate.");
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deal-certificate/${matchId}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        if (response.status === 422) {
+          toast.error("Certificate is only available once the deal reaches Signed Deal state.");
+          return;
+        }
+        throw new Error(err.message || err.error || "Failed to generate certificate");
+      }
+
+      const html = await response.text();
+      downloadFile(html, `deal-certificate-${matchId}.html`, "text/html");
+      toast.success("Deal certificate downloaded.", {
+        description: "Open the HTML file in your browser to view the formatted certificate.",
+        duration: 6000,
+      });
+    } catch (error) {
+      console.error("Certificate download error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
+    } finally {
+      setCertLoading(false);
+    }
+  }, [matchId]);
+
   /**
    * Verification: regenerate the pack and compare hashes.
    * If they match, the data is untampered.
@@ -202,10 +246,42 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!isSettled && (
+        {!isSettled && !isCompleted && (
           <div className="flex items-center gap-2 p-3 rounded-md bg-muted text-muted-foreground text-sm">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>Evidence packs are available once intent has been confirmed.</span>
+          </div>
+        )}
+
+        {/* Deal Certificate - only available at Signed Deal (completed) state */}
+        {isCompleted && (
+          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-sm">Certificate of Signed Deal</span>
+              <Badge variant="secondary" className="text-[10px]">Sealed</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This deal has been cryptographically sealed. Download the institutional-grade certificate
+              containing partner identities, trade terms, and hash-chain integrity verification.
+            </p>
+            <Button
+              onClick={downloadDealCertificate}
+              disabled={certLoading}
+              className="w-full"
+            >
+              {certLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating certificate…
+                </>
+              ) : (
+                <>
+                  <Award className="h-4 w-4 mr-2" />
+                  Download Deal Certificate
+                </>
+              )}
+            </Button>
           </div>
         )}
 
