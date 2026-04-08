@@ -117,3 +117,6 @@ verify_jwt = false
 
 [functions.document-review]
 verify_jwt = false
+
+[functions.process-email-queue]
+verify_jwt = true
