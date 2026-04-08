@@ -27,6 +27,7 @@ import {
 
 export function AdminMatchesPanel() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -34,7 +35,7 @@ export function AdminMatchesPanel() {
   const ADMIN_MATCH_LIMIT = 100;
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-matches", statusFilter, search],
+    queryKey: ["admin-matches", statusFilter, typeFilter, search],
     queryFn: async () => {
       let query = supabase
         .from("matches")
@@ -44,6 +45,10 @@ export function AdminMatchesPanel() {
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
+      }
+
+      if (typeFilter !== "all") {
+        query = query.eq("match_type", typeFilter);
       }
 
       if (search) {
@@ -147,6 +152,17 @@ export function AdminMatchesPanel() {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="matched">Matched</SelectItem>
                 <SelectItem value="settled">Confirmed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="unilateral">Unilateral</SelectItem>
+                <SelectItem value="bilateral">Bilateral</SelectItem>
+                <SelectItem value="search">Search</SelectItem>
               </SelectContent>
             </Select>
           </div>
