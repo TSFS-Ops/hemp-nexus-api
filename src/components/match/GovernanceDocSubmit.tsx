@@ -269,6 +269,33 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
               </Select>
             </div>
 
+            <div>
+              <Label>Attach Document</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+                {selectedFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">PDF, PNG, or JPEG. Max 10 MB.</p>
+            </div>
+
             {error && (
               <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -276,9 +303,9 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
               </div>
             )}
 
-            <Button onClick={handleSubmit} disabled={submitting || !selectedRegistryId} className="w-full" size="sm">
+            <Button onClick={handleSubmit} disabled={submitting || !selectedRegistryId || !selectedFile} className="w-full" size="sm">
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <FileCheck className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               Submit Governance Document
             </Button>
           </div>
