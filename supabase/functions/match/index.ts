@@ -982,56 +982,36 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] PATCH accept-bind for match ${patchMatchId}`);
 
-      // Fetch the match
-      const { data: existingMatch, error: fetchErr } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("id", patchMatchId)
-        .maybeSingle();
+      // Atomic lock-check-bind via database function (prevents race conditions)
+      const { data: bindResult, error: bindErr } = await supabase.rpc("atomic_accept_bind", {
+        p_match_id: patchMatchId,
+        p_counterparty_org_id: counterparty.org_id,
+        p_counterparty_role: counterparty.role,
+        p_counterparty_name: counterparty.name,
+        p_caller_org_id: authCtx.orgId,
+      });
 
-      if (fetchErr) handleDatabaseError(fetchErr, requestId);
-      if (!existingMatch) {
-        throw new ApiException("NOT_FOUND", "Match not found", 404);
+      if (bindErr) handleDatabaseError(bindErr, requestId);
+
+      if (!bindResult?.success) {
+        const errorMap: Record<string, number> = {
+          NOT_FOUND: 404,
+          INVALID_TYPE: 400,
+          SELF_BIND: 403,
+          INVALID_ROLE: 400,
+          SLOT_TAKEN: 409,
+        };
+        throw new ApiException(
+          bindResult?.error || "BIND_FAILED",
+          bindResult?.message || "Failed to bind trading partner",
+          errorMap[bindResult?.error] || 500
+        );
       }
 
-      // Must be unilateral
-      if (existingMatch.match_type !== "unilateral") {
-        throw new ApiException("VALIDATION_ERROR", "Only unilateral matches can be converted via accept-bind", 400);
-      }
+      const updatedMatch = bindResult.match;
 
-      // Caller must NOT be the match creator (they're the trading partner)
-      if (existingMatch.org_id === authCtx.orgId) {
-        throw new ApiException("FORBIDDEN", "You cannot accept your own match", 403);
-      }
-
-      // Check the slot is actually open
-      const slotField = counterparty.role === "buyer" ? "buyer_org_id" : "seller_org_id";
-      if (existingMatch[slotField]) {
-        throw new ApiException("STATE_CONFLICT", `The ${counterparty.role} slot is already filled`, 409);
-      }
-
-      // Use safe_transition to atomically update
-      const updateFields: Record<string, any> = {};
-      if (counterparty.role === "buyer") {
-        updateFields.buyer_org_id = counterparty.org_id;
-        updateFields.buyer_name = counterparty.name;
-      } else {
-        updateFields.seller_org_id = counterparty.org_id;
-        updateFields.seller_name = counterparty.name;
-      }
-
-      // Update match_type and bind the trading partner
-      const { data: updatedMatch, error: updateErr } = await supabase
-        .from("matches")
-        .update({
-          ...updateFields,
-          match_type: "bilateral",
-        })
-        .eq("id", patchMatchId)
-        .select("*")
-        .single();
-
-      if (updateErr) handleDatabaseError(updateErr, requestId);
+      // Fetch the original match for webhook org_id context
+      const existingMatch = { org_id: updatedMatch.org_id };
 
       // Record the event in the hash chain
       await recordMatchEvent(
