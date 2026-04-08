@@ -110,20 +110,54 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Only PDF, PNG, or JPEG files are accepted.");
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setError("File must be under 10 MB.");
+      return;
+    }
+    setError(null);
+    setSelectedFile(file);
+  };
+
   const handleSubmit = async () => {
     if (!selectedRegistryId) {
       setError("Please select a document type.");
+      return;
+    }
+    if (!selectedFile) {
+      setError("Please attach a document file (PDF, PNG, or JPEG).");
       return;
     }
     setError(null);
     setSubmitting(true);
 
     try {
+      // 1. Upload file to storage
+      const ext = selectedFile.name.split(".").pop() || "pdf";
+      const storagePath = `governance/${orgId}/${matchId}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("match-documents")
+        .upload(storagePath, selectedFile, {
+          contentType: selectedFile.type,
+          upsert: false,
+        });
+
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+      // 2. Register governance doc with file path
       const { data, error: fnError } = await supabase.functions.invoke("governance-docs", {
         body: {
           registry_id: selectedRegistryId,
           deal_reference_id: matchId,
           deal_reference_type: "poi",
+          document_path: storagePath,
         },
       });
 
@@ -136,8 +170,10 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         throw new Error(data.error?.message || "Submission failed");
       }
 
-      toast.success("Governance document submitted for review");
+      toast.success("Governance document uploaded and submitted for review");
       setSelectedRegistryId("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to submit governance document";
