@@ -6,7 +6,7 @@
  * 2. Collapse without signed_payload → reject (400)
  * 3. Collapse from DRAFT state (bypass attempt) → reject (422)
  * 4. External submission + seal path when prerequisites pass
- * 5. Rate limiting demonstration
+ * 5. Rate limiting verification
  */
 
 const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;

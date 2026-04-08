@@ -316,7 +316,7 @@ export const MANUAL_TEST_CHECKLIST = [
     tests: [
       "Skip/view actions do NOT create audit logs",
       "Only Confirm Intent creates evidence records",
-      "Demo mode clearly indicates sandbox",
+      "Preview mode clearly indicates non-production environment",
     ],
   },
 ];

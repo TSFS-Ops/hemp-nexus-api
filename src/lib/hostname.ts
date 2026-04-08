@@ -1,7 +1,7 @@
 /**
  * Hostname detection utility for dual-face application routing
  * 
- * Public Face (www.izenzo.co.za): Landing, Demo, Docs
+ * Public Face (www.izenzo.co.za): Landing, Docs
  * Developer Console (api.trade.izenzo.co.za): Dashboard, API Keys, Logs, Admin
  */
 import { HOSTNAMES, ROUTES } from "@/lib/constants";
@@ -88,7 +88,7 @@ export function getPublicUrl(path: string = ''): string {
 
 /**
  * Routes that are only allowed on the public face (www.izenzo.co.za)
- * These show the product demo, search, and trade request
+ * These show the product search and trade request flows
  */
 export const PUBLIC_ONLY_ROUTES = [ROUTES.ROOT, ROUTES.DOCS];
 
