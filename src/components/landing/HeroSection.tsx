@@ -95,7 +95,7 @@ export function HeroSection({
           <div className="px-4 py-3 border-b border-border flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-verified" />
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              Enter your bid or offer details
+              Enter your search details
             </span>
           </div>
           <BidOfferForm onSearch={onSearch} isSearching={isSearching} isLocked={isFormLocked} />

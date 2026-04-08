@@ -1,8 +1,11 @@
 /**
  * OrderBookSection — Persistent order book view.
- * Shows all active bids and offers across the platform.
+ * Shows all active buyer and seller orders across the platform.
  * Users can create, cancel, and browse orders.
  */
+
+/** Map internal DB side values to user-facing labels */
+const SIDE_LABEL: Record<string, string> = { bid: "Buyer", offer: "Seller" };
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -126,7 +129,7 @@ export function OrderBookSection() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Order Book</h2>
           <p className="text-sm text-muted-foreground">
-            Browse and manage active bids and offers across the platform
+            Browse and manage active buyer and seller orders across the platform
           </p>
         </div>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
@@ -163,13 +166,13 @@ export function OrderBookSection() {
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
             <p className="text-2xl font-bold text-green-600">{bidCount}</p>
-            <p className="text-xs text-muted-foreground">Bids</p>
+            <p className="text-xs text-muted-foreground">Buyers</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
             <p className="text-2xl font-bold text-orange-600">{offerCount}</p>
-            <p className="text-xs text-muted-foreground">Offers</p>
+            <p className="text-xs text-muted-foreground">Sellers</p>
           </CardContent>
         </Card>
       </div>
@@ -186,8 +189,8 @@ export function OrderBookSection() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sides</SelectItem>
-                  <SelectItem value="bid">Bids Only</SelectItem>
-                  <SelectItem value="offer">Offers Only</SelectItem>
+                  <SelectItem value="bid">Buyers Only</SelectItem>
+                  <SelectItem value="offer">Sellers Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -237,7 +240,7 @@ export function OrderBookSection() {
               <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-20">Side</TableHead>
+                  <TableHead className="w-20">Role</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead className="text-right">Volume</TableHead>
@@ -253,7 +256,7 @@ export function OrderBookSection() {
                     <TableCell>
                       <Badge variant={order.side === "bid" ? "default" : "secondary"}
                              className={order.side === "bid" ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700 text-white"}>
-                        {order.side.toUpperCase()}
+                        {SIDE_LABEL[order.side] || order.side}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">{order.product}</TableCell>
@@ -333,14 +336,14 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label>Side</Label>
+        <Label>Role</Label>
         <Select value={side} onValueChange={(v) => setSide(v as "bid" | "offer")}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="bid">Bid (Buyer)</SelectItem>
-            <SelectItem value="offer">Offer (Seller)</SelectItem>
+            <SelectItem value="bid">Buyer</SelectItem>
+            <SelectItem value="offer">Seller</SelectItem>
           </SelectContent>
         </Select>
       </div>
