@@ -84,7 +84,7 @@ export function MarketWatchSidebar() {
         <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--lt-border)' }}>
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
           <span className="text-[12px] font-semibold tracking-tight" style={{ color: 'var(--lt-text)' }}>
-            Latest News
+            Latest News (Illustrative)
           </span>
           <ChevronUp className="h-3.5 w-3.5 ml-auto" style={{ color: 'var(--lt-text-dim)' }} />
         </div>
