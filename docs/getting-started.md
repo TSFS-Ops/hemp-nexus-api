@@ -134,7 +134,7 @@ Let's verify your API key works.
 
 **Using cURL** (Terminal):
 ```bash
-curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/healthz
+curl https://api.izenzo.co.za/functions/v1/healthz
 ```
 
 **Expected Response**:
@@ -148,7 +148,7 @@ curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/healthz
 ### Test Authentication
 
 ```bash
-curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals \
+curl https://api.izenzo.co.za/functions/v1/signals \
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 ```
 
@@ -171,7 +171,7 @@ A **signal** expresses your intent to buy or sell something.
 
 **cURL**:
 ```bash
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals \
+curl -X POST https://api.izenzo.co.za/functions/v1/signals \
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
@@ -187,7 +187,7 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals \
 **JavaScript**:
 ```javascript
 const response = await fetch(
-  'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals',
+  'https://api.izenzo.co.za/functions/v1/signals',
   {
     method: 'POST',
     headers: {
@@ -214,7 +214,7 @@ console.log('Signal ID:', data.signalId);
 import requests
 
 response = requests.post(
-    'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals',
+    'https://api.izenzo.co.za/functions/v1/signals',
     headers={
         'Authorization': 'Bearer YOUR_API_KEY_HERE',
         'Content-Type': 'application/json'
@@ -244,7 +244,7 @@ print(f"Signal ID: {data['signalId']}")
 ### Get Signal with Options
 
 ```bash
-curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals/YOUR_SIGNAL_ID \
+curl https://api.izenzo.co.za/functions/v1/signals/YOUR_SIGNAL_ID \
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 ```
 
@@ -258,7 +258,7 @@ A **match** records a trade agreement between buyer and seller with cryptographi
 
 **cURL**:
 ```bash
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \
+curl -X POST https://api.izenzo.co.za/functions/v1/match \
   -H "Authorization: Bearer YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: my-unique-order-123" \
@@ -303,7 +303,7 @@ The `hash` field is a SHA-256 hash of the trade details. This creates an **immut
 To signal interest in proceeding:
 
 ```bash
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/YOUR_MATCH_ID/settle \
+curl -X POST https://api.izenzo.co.za/functions/v1/match/YOUR_MATCH_ID/settle \
   -H "Authorization: Bearer YOUR_API_KEY_HERE"
 ```
 
@@ -428,7 +428,7 @@ All errors follow this format:
 
 ### Base URL
 ```
-https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
+https://api.izenzo.co.za/functions/v1
 ```
 
 ### Required Headers
