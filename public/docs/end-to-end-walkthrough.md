@@ -304,7 +304,7 @@ Produce a tamper-evident evidence bundle:
 
 ---
 
-### Step 15: Create WaD (Finalised Commitment) Certificate
+### Step 15: Create WaD (Signed Deal) Certificate
 
 The WaD layer enforces **7 deterministic hard-gates**:
 
@@ -355,7 +355,7 @@ With both attestations in place, seal the WaD:
 
 ### Step 18: Download Certificate
 
-Export the sealed finalised commitment certificate containing:
+Export the sealed signed deal certificate containing:
 - Transaction summary (commodity, quantity, price)
 - Party details (buyer + seller orgs)
 - Attestation records
@@ -439,7 +439,7 @@ Plus **negative tests** (Steps 15–20) that verify rejection paths:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    LAYER 5: Evidence                     │
-│         Evidence Pack v1 + Finalised Commitment Certificate               │
+│         Evidence Pack v1 + Signed Deal Certificate               │
 ├─────────────────────────────────────────────────────────┤
 │                  LAYER 4: Consequence                    │
 │        Collapse Engine + Append-Only Ledger              │

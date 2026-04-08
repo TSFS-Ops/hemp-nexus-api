@@ -1,7 +1,7 @@
 /**
  * POI State Machine - Single Source of Truth
  * 
- * Deterministic state machine for Confirmed Intent lifecycle.
+ * Deterministic state machine for Trade Request lifecycle.
  * All valid states and transitions are defined here.
  * No other file may define or override transition logic.
  */

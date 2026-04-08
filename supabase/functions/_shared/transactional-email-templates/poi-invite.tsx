@@ -35,15 +35,15 @@ const PoiInviteEmail = ({
   return (
     <Html lang="en" dir="ltr">
       <Head />
-      <Preview>A Confirmed Intent has been drafted for your review on {SITE_NAME}</Preview>
+      <Preview>A Trade Request has been drafted for your review on {SITE_NAME}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Text style={brand}>IZENZO</Text>
           <Hr style={divider} />
-          <Heading style={h1}>Confirmed Intent - Invitation</Heading>
+          <Heading style={h1}>Trade Request - Invitation</Heading>
           <Text style={text}>
             {senderName ? <><strong>{senderName}</strong> has</> : <>A trading partner has</>}{' '}
-            drafted a Confirmed Intent (POI) for your review regarding:
+            drafted a Trade Request (POI) for your review regarding:
           </Text>
           <Text style={terms}>{termsLine}</Text>
           <Text style={text}>

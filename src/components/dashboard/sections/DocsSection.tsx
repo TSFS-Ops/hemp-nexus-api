@@ -7,7 +7,7 @@ export function DocsSection() {
       <header>
         <h1 className="text-2xl font-semibold text-foreground mb-1">Overview</h1>
         <p className="text-muted-foreground">
-          Compliance Match API - confirmed intent for regulated B2B commerce
+          Compliance Match API - trade request for regulated B2B commerce
         </p>
       </header>
 
@@ -15,7 +15,7 @@ export function DocsSection() {
       <div className="p-4 border border-border rounded-lg bg-muted/30">
         <h3 className="font-medium text-foreground mb-2">What does this API do?</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Search for trading partners, record confirmed intent, and generate tamper-evident audit trails. 
+          Search for trading partners, record trade request, and generate tamper-evident audit trails. 
           <strong className="text-foreground"> Confirm Intent</strong> creates an information-only record - no payment, no contract, no legal obligation.
         </p>
       </div>

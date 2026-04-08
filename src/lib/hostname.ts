@@ -88,7 +88,7 @@ export function getPublicUrl(path: string = ''): string {
 
 /**
  * Routes that are only allowed on the public face (www.izenzo.co.za)
- * These show the product demo, search, and confirmed intent
+ * These show the product demo, search, and trade request
  */
 export const PUBLIC_ONLY_ROUTES = [ROUTES.ROOT, ROUTES.DOCS];
 

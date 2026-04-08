@@ -10,7 +10,7 @@
  * 6. Audit log is created for intent.confirmed
  * 7. Non-confirm actions do NOT create evidence records
  * 
- * This suite ensures the confirmed intent trail is working correctly.
+ * This suite ensures the trade request trail is working correctly.
  * 
  * Last updated: 11 January 2026
  */

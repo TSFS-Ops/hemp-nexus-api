@@ -64,7 +64,7 @@ export function DomainMismatch({ type, attemptedPath }: DomainMismatchProps) {
             </div>
             <CardTitle>Public Website</CardTitle>
             <CardDescription>
-              This content is part of the public Izenzo experience for search and confirmed intent.
+              This content is part of the public Izenzo experience for search and trade request.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

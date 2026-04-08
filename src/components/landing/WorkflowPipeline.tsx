@@ -9,9 +9,9 @@ const PIPELINE_STEPS = [
   { label: "Find Partner", subtitle: "Search & discover", Icon: Search },
   { label: "Identity Check", subtitle: "Verify & validate", Icon: ShieldCheck },
   { label: "Initial Review", subtitle: "Assess & evaluate", Icon: Eye },
-  { label: "Draft Intent", subtitle: "Structure the deal", Icon: FileText },
+  { label: "Draft Request", subtitle: "Structure the deal", Icon: FileText },
   { label: "Commit", subtitle: "Confirm intent", Icon: CheckCircle2 },
-  { label: "Finalise", subtitle: "Finalised Commitment", Icon: Lock },
+  { label: "Finalise", subtitle: "Signed Deal", Icon: Lock },
 ];
 
 export function WorkflowPipeline() {

@@ -74,7 +74,7 @@ export function PoiEventsTimeline({ matchId }: PoiEventsTimelineProps) {
           POI Activity Log
         </CardTitle>
         <CardDescription className="text-xs">
-          Confirmed Intent state transitions for this match
+          Trade Request state transitions for this match
         </CardDescription>
       </CardHeader>
       <CardContent>

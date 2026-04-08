@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-The Trade.Izenzo API currently provides a tamper-evident governance infrastructure for commercial trade matching: recording confirmed intention, verifying participant eligibility, maintaining immutable audit trails, and sealing evidence packs.
+The Trade.Izenzo API currently provides a tamper-evident governance infrastructure for commercial trade matching: recording trade requestion, verifying participant eligibility, maintaining immutable audit trails, and sealing evidence packs.
 
 This proposal extends that infrastructure to support **government programme governance** - enabling departments and agencies to demonstrate exactly how programme budgets translate into approved participants, verified milestones, and delivered outcomes.
 
@@ -42,7 +42,7 @@ The Trade.Izenzo Programme Governance Layer addresses this gap directly.
 
 ## 4. Core Capabilities
 
-### 4.1 Confirmed Intention
+### 4.1 Trade Requestion
 
 **Existing infrastructure (no new development required)**
 

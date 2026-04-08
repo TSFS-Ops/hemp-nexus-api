@@ -1,7 +1,7 @@
 /**
  * UAT Journey 1: New User → Sign Up → Onboard → Search → Match → Terms → Docs → Intent
  *
- * Exercises the full commercial lifecycle from first visit to confirmed intent.
+ * Exercises the full commercial lifecycle from first visit to trade request.
  * Uses in-memory Supabase client for vitest compatibility.
  */
 

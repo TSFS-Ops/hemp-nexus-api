@@ -1098,7 +1098,7 @@ Why it matters: In compliance and trade, you must be able to prove who did what 
 
 Who should do this: Anyone who has performed several actions.
 
-Before you start: You should have created matches, uploaded documents, and confirmed intent (or at least attempted to).
+Before you start: You should have created matches, uploaded documents, and trade request (or at least attempted to).
 
 Do this:
 1. Go to the Audit Logs section.
@@ -1375,7 +1375,7 @@ Pass or fail: Pass if the total is shown and pagination works. Fail if data is s
 
 Test name: Complete single-user journey
 
-What you are checking: Can one person go from sign-up to confirmed intent without anything breaking?
+What you are checking: Can one person go from sign-up to trade request without anything breaking?
 
 Why it matters: This proves the platform works as a complete product, not just a collection of separate features.
 

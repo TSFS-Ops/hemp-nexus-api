@@ -200,7 +200,7 @@ export async function triggerWebhooks(
 }
 
 // NOTE: notifyCounterpartyIntent function REMOVED per product requirement
-// This API records confirmed intent only - no outbound counterparty contact
+// This API records trade request only - no outbound counterparty contact
 // All counterparty communication is handled externally by the calling system
 
 /**

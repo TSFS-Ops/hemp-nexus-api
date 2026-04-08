@@ -54,7 +54,7 @@ export function Phase2Verification() {
     { id: "wad-create", category: "Commitment Module", name: "WaD creation from settled POI", status: "pending" },
     { id: "wad-attest", category: "Commitment Module", name: "WaD attestation works", status: "pending" },
     { id: "wad-seal", category: "Commitment Module", name: "WaD sealing generates hash", status: "pending" },
-    { id: "wad-certificate", category: "Commitment Module", name: "Sealed finalised commitment certificate downloadable", status: "pending" },
+    { id: "wad-certificate", category: "Commitment Module", name: "Sealed signed deal certificate downloadable", status: "pending" },
     { id: "wad-revoke", category: "Commitment Module", name: "WaD revocation requires reason", status: "pending" },
     { id: "wad-admin-logged", category: "Commitment Module", name: "Admin WaD access logged with reason", status: "pending" },
     

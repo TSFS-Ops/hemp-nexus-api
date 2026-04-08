@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * P3 WaD (Finalised Commitment) Edge Function - V3 Sprint 3
+ * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
  *
  * POST: Issue WaD for a COMPLETED POI - enforces 7 deterministic hard-gates.
  * GET:  List or get WaD by ID.

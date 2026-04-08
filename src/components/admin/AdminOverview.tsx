@@ -111,7 +111,7 @@ export function AdminOverview() {
       severity: "warning",
       icon: Clock,
       title: "Stalled unilateral intents",
-      description: `${s.stalledPois} draft intent${s.stalledPois !== 1 ? "s" : ""} without trading partner acceptance for over 48 hours.`,
+      description: `${s.stalledPois} draft request${s.stalledPois !== 1 ? "s" : ""} without trading partner acceptance for over 48 hours.`,
       count: s.stalledPois,
       href: ROUTES.ADMIN_DEALS + "?tab=matches",
       linkLabel: "Review stalled deals",

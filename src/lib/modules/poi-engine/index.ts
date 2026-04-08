@@ -1,7 +1,7 @@
 /**
  * POI Engine Module - Public API
  * 
- * Layer 3: Confirmed Intent lifecycle management.
+ * Layer 3: Trade Request lifecycle management.
  * Provides state machine validation, transition requests, and event queries.
  */
 

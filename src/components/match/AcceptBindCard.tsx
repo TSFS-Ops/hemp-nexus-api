@@ -2,7 +2,7 @@
  * AcceptBindCard - Shown to invited trading partners on a unilateral match.
  *
  * If the current user is NOT the match creator and the match is unilateral
- * with an empty buyer/seller slot, this card lets them "Accept & Bind",
+ * with an empty buyer/seller slot, this card lets them "Sign & Bind Deal",
  * converting the unilateral intent into a bilateral intent.
  */
 
@@ -127,7 +127,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       toast.success("You have accepted this intent. This is now a bilateral intent.");
       onAccepted();
     } catch (error) {
-      console.error("Accept & Bind error:", error);
+      console.error("Sign & Bind Deal error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to accept. Try again.");
     } finally {
       setIsSubmitting(false);
@@ -143,7 +143,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
             You've been invited to this intent
           </CardTitle>
           <CardDescription>
-            A trading partner has drafted a Confirmed Intent for{" "}
+            A trading partner has drafted a Trade Request for{" "}
             <strong>{match.commodity}</strong> and invited you to accept.
             Accepting binds you as the <Badge variant="outline" className="text-xs mx-1">{willBe}</Badge> and
             converts this into a formal bilateral intent.
@@ -185,7 +185,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Accept this Confirmed Intent?</AlertDialogTitle>
+            <AlertDialogTitle>Accept this Trade Request?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>

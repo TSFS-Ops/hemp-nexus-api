@@ -164,7 +164,7 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 - **[Documents]** Document versioning and superseding support
 - **[Documents]** Evidence pack includes document metadata and access history
 
-#### New Features - WaD (Finalised Commitment) Module
+#### New Features - WaD (Signed Deal) Module
 - **[WaD]** Sealed evidence bundle creation from settled POI
 - **[WaD]** Multi-step attestation: Summary → Evidence → Signatories → Review → Certificate
 - **[WaD]** Party attestation with explicit disclaimer checkbox and typed name
@@ -502,7 +502,7 @@ This release updates all terminology to clearly distinguish between **binding in
 - **[Security]** Rate limiting per organisation and endpoint
 - **[Security]** Row Level Security on all tables
 - **[Security]** Idempotency key support for POST endpoints
-- **[Security]** SHA-256 hashing for match confirmed intent
+- **[Security]** SHA-256 hashing for match trade request
 
 #### Database Schema
 - **[Database]** organisations table

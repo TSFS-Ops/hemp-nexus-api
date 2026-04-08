@@ -1,7 +1,7 @@
 /**
  * WaD State Machine - Single Source of Truth
  *
- * Defines all WaD (Finalised Commitment) statuses, valid transitions, and action guards.
+ * Defines all WaD (Signed Deal) statuses, valid transitions, and action guards.
  * Components MUST use these guards instead of inline `wad.status === "sealed"` checks.
  *
  * The backend enforces the 9 hard-gates for WaD issuance;

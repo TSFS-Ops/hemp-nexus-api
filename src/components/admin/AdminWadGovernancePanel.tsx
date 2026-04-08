@@ -88,7 +88,7 @@ export function AdminWadGovernancePanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">WaD Hard-Gates & Governance</h2>
           <p className="text-muted-foreground mt-1">
-            Finalised Commitment issuance with 7 deterministic hard-gate enforcement
+            Signed Deal issuance with 7 deterministic hard-gate enforcement
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
