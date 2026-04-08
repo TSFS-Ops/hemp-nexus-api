@@ -1,10 +1,9 @@
 /**
- * Landing page search outcomes - dark terminal style.
- * Unauthenticated users see a scanning animation then a prompt to sign in.
+ * Landing page search outcomes.
+ * Unauthenticated users see a prompt to sign in with institutional copy.
  */
 
 import { LogIn } from "lucide-react";
-import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
 interface SearchOutcomesProps {
   isSearching: boolean;
@@ -22,7 +21,7 @@ export function SearchOutcomes({
       <div style={{ borderTop: '1px solid var(--lt-border)' }}>
         <div className="px-3 py-2.5" style={{ backgroundColor: 'var(--lt-panel)' }}>
           <span className="text-[11px] font-mono uppercase tracking-wider animate-pulse" style={{ color: 'var(--lt-emerald)' }}>
-            Preparing your search…
+            Checking liquidity...
           </span>
         </div>
         {[1, 2, 3].map((i) => (
@@ -49,7 +48,7 @@ export function SearchOutcomes({
         </h3>
         <p className="text-[12px] font-medium leading-relaxed mb-5 max-w-md" style={{ color: 'var(--lt-text-muted)' }}>
           Counterparty search results are available to registered users.
-          Create a free account to search verified trading partners, create matches, and confirm intent.
+          Create a free account to find verified trading partners and submit trade requests.
         </p>
 
         <button
@@ -60,7 +59,7 @@ export function SearchOutcomes({
           style={{ backgroundColor: 'var(--lt-emerald-dark)', color: 'white' }}
         >
           <LogIn className="h-3.5 w-3.5" />
-          Sign in to search
+          Create Account to Search
         </button>
         <p className="text-[11px] font-mono mt-2.5 text-center tracking-wide" style={{ color: 'var(--lt-text-dim)' }}>
           No obligation. Free to create an account.

@@ -1,12 +1,12 @@
 /**
- * Bloomberg-style buyer/seller entry form - ultra-premium dark terminal aesthetic.
- * Pill-shaped toggles, borderless inputs with focus glow, rounded search button.
+ * Izenzo Action Desk - sovereign trade entry form.
+ * Clean 4-field layout: Product, Price, Quantity, Delivery Region.
+ * "Find Partners" CTA button.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Upload } from "lucide-react";
+import { Search } from "lucide-react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface BidOfferData {
   product: string;
@@ -154,48 +154,31 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </button>
       </div>
 
-      {/* Fields grid - borderless inputs with focus glow */}
+      {/* Fields grid: Product, Price, Quantity, Delivery Region */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <PremiumField
-          id="product" label="Product" required placeholder="Select product / asset"
+          id="product" label="Product" required placeholder="e.g. Soybeans, Copper"
           value={form.product} onChange={(v) => update("product", v)}
           disabled={disabled}
         />
         <PremiumField
-          id="price" label="Price" placeholder="Enter price (ZAR/USD)"
+          id="price" label="Price" placeholder="e.g. $495/MT"
           value={form.price} onChange={(v) => update("price", v)}
           disabled={disabled}
         />
         <PremiumField
-          id="volume" label="Quantity" placeholder="Enter quantity"
+          id="volume" label="Quantity" placeholder="e.g. 25,000 MT"
           value={form.volume} onChange={(v) => update("volume", v)}
           disabled={disabled}
         />
-        {/* Upload Docs - disabled */}
-        <div>
-          <label className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1" style={{ color: 'var(--lt-text-dim)' }}>
-            Upload Docs
-          </label>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className="w-full h-10 px-3 text-[13px] font-mono flex items-center gap-2 opacity-40 cursor-not-allowed rounded-lg"
-                  style={{ backgroundColor: '#111827', color: 'var(--lt-text-muted)' }}
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  <span>Add documents</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[220px] text-center">
-                <p className="text-xs">Document uploads are available inside the dashboard after you sign in.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        <PremiumField
+          id="location" label="Delivery Region" placeholder="e.g. Malawi, South Africa"
+          value={form.location} onChange={(v) => update("location", v)}
+          disabled={disabled}
+        />
       </div>
 
-      {/* Search button - rounded-full with emerald glow */}
+      {/* Find Partners button */}
       <div className="flex sm:justify-end">
         <button
           type="submit"
@@ -219,12 +202,12 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           {isSearching ? (
             <>
               <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Executing...
+              Searching...
             </>
           ) : (
             <>
               <Search className="h-3.5 w-3.5" />
-              Search
+              Find Partners
             </>
           )}
         </button>
