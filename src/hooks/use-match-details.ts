@@ -145,6 +145,11 @@ export function useMatchDetails(matchId: string | undefined) {
           idempotencyKey,
         });
       } catch (err: unknown) {
+        if (err instanceof StateConflictError || (err instanceof Error && (err.message.includes("STATE_CONFLICT") || err.message.includes("INVALID_STATE")))) {
+          toast.warning("This match has been updated by another action. Refreshing now…");
+          await fetchMatch();
+          return;
+        }
         handleApiError(err);
       }
 
@@ -187,6 +192,11 @@ export function useMatchDetails(matchId: string | undefined) {
           idempotencyKey,
         });
       } catch (err: unknown) {
+        if (err instanceof StateConflictError || (err instanceof Error && (err.message.includes("STATE_CONFLICT") || err.message.includes("INVALID_STATE")))) {
+          toast.warning("This match has been updated by another action. Refreshing now…");
+          await fetchMatch();
+          return;
+        }
         handleApiError(err);
       }
 
