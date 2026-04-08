@@ -56,9 +56,10 @@ interface EvidencePackData {
   canonical: Record<string, unknown>;
 }
 
-export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelProps) {
+export function EvidencePackPanel({ matchId, matchStatus, matchState }: EvidencePackPanelProps) {
   const [pack, setPack] = useState<EvidencePackData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [certLoading, setCertLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
@@ -67,6 +68,7 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
   } | null>(null);
 
   const isSettled = MatchState.isSettled(matchStatus);
+  const isCompleted = matchState === "completed";
 
   const generatePack = useCallback(async () => {
     try {
