@@ -52,9 +52,9 @@ export function MarketWatchSidebar() {
       <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between"
            style={{ borderBottom: '1px solid var(--lt-border)' }}>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--lt-emerald)' }} />
+         <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--lt-emerald)' }} />
           <span className="text-[12px] font-semibold tracking-tight" style={{ color: 'var(--lt-text)' }}>
-            Market Watch
+            Market Watch (Illustrative)
           </span>
         </div>
         <ChevronUp className="h-3.5 w-3.5" style={{ color: 'var(--lt-text-dim)' }} />
