@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
         throw eligibilityError;
       }
 
-      // Burn 1 credit for intent declaration (flat R10 pricing)
+      // FIX #3: Burn tokens, but refund if transition fails
       await burnTokensForAction(
         supabase, authCtx.orgId, actorApiKeyId,
         'declare_intent', requestId, matchId
@@ -222,10 +222,31 @@ Deno.serve(async (req) => {
 
       if (transitionError) handleDatabaseError(transitionError, requestId);
       if (!transitionResult?.success) {
+        // REFUND: State transition failed after tokens were burned — credit them back
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
         const errMsg = transitionResult?.message || 'State transition failed';
-        const status = errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
-        throw new ApiException(errCode, errMsg, status);
+        const statusCode = errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
+        try {
+          await supabase.rpc('atomic_token_credit', {
+            p_org_id: authCtx.orgId,
+            p_amount: ACTION_TOKEN_COSTS.declare_intent,
+            p_reason: 'refund_failed_transition',
+            p_reference_id: requestId,
+          });
+          console.warn(`[${requestId}] REFUND: ${ACTION_TOKEN_COSTS.declare_intent} tokens refunded after ${errCode}`);
+          await supabase.from("audit_logs").insert({
+            org_id: authCtx.orgId,
+            actor_user_id: actorUserId,
+            action: "token.refund",
+            entity_type: "match",
+            entity_id: matchId,
+            metadata: { request_id: requestId, reason: errCode, amount: ACTION_TOKEN_COSTS.declare_intent },
+          });
+        } catch (refundErr) {
+          // Critical: refund failed — log for manual reconciliation
+          console.error(`[${requestId}] CRITICAL: Token refund failed after transition error. Match: ${matchId}, Org: ${authCtx.orgId}, Amount: ${ACTION_TOKEN_COSTS.declare_intent}`, refundErr);
+        }
+        throw new ApiException(errCode, errMsg, statusCode);
       }
 
       const updated = transitionResult.match;
@@ -708,8 +729,38 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Determine match type
-      const matchType = body.match_type || "search";
+      // FIX #2: Validate match_type against allowlist — prevent injection of arbitrary types
+      const ALLOWED_MATCH_TYPES = ["search", "bilateral", "unilateral"];
+      const rawMatchType = body.match_type || "search";
+      if (!ALLOWED_MATCH_TYPES.includes(rawMatchType)) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          `Invalid match_type: "${rawMatchType}". Must be one of: ${ALLOWED_MATCH_TYPES.join(", ")}`,
+          400
+        );
+      }
+
+      // FIX #2b: Cross-validate match_type against payload shape
+      if (rawMatchType === "unilateral") {
+        const hasBuyer = body.buyer?.id != null;
+        const hasSeller = body.seller?.id != null;
+        if (hasBuyer && hasSeller) {
+          throw new ApiException(
+            "VALIDATION_ERROR",
+            "Unilateral intent must have exactly one party (buyer OR seller), not both. Use 'bilateral' or 'search' instead.",
+            400
+          );
+        }
+        if (!hasBuyer && !hasSeller) {
+          throw new ApiException(
+            "VALIDATION_ERROR",
+            "Unilateral intent must have at least one party (buyer or seller).",
+            400
+          );
+        }
+      }
+
+      const matchType = rawMatchType;
 
       // Build canonical JSON for hashing – only stable business fields.
       const canonical = {
