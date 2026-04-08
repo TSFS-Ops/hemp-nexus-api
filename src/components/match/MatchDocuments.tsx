@@ -124,7 +124,7 @@ const DOC_TYPES = [
 ];
 
 const VISIBILITY_OPTIONS = [
-  { value: "private", label: "Private", icon: Lock, description: "Only your organization" },
+  { value: "private", label: "Private", icon: Lock, description: "Only your organisation" },
   { value: "share_with_counterparty", label: "Share with Counterparty", icon: Users, description: "Both buyer and seller" },
 ];
 
@@ -346,7 +346,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
       const effectiveOrgId = sessionOrgId || orgId;
       if (!effectiveOrgId) {
-        toast.error("Could not determine organization");
+        toast.error("Could not determine organisation");
         return;
       }
 
@@ -644,7 +644,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 Documents
               </CardTitle>
               <CardDescription>
-                Upload and manage documents related to this POI. Documents are stored securely with explicit sharing controls.
+                Upload and manage documents related to this intent. Documents are stored securely with explicit sharing controls.
               </CardDescription>
             </div>
           </div>
@@ -737,7 +737,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {visibility === "private" 
-                    ? "Only your organization can view this document"
+                    ? "Only your organisation can view this document"
                     : "Both buyer and seller can view this document"}
                 </p>
               </div>
@@ -970,7 +970,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
           {/* Info text */}
           <p className="text-xs text-muted-foreground text-center">
-            Documents are stored per POI. Sharing is explicit and all access is logged for compliance.
+            Documents are stored per action. Sharing is explicit and all access is logged for compliance.
           </p>
         </CardContent>
       </Card>

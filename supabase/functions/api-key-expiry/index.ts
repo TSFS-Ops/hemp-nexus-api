@@ -10,7 +10,7 @@ import { ApiException, errorResponse } from "../_shared/errors.ts";
  * 2. Disables keys that have expired
  * 
  * SECURITY: This endpoint requires internal authentication via INTERNAL_CRON_KEY
- * to prevent unauthorized triggering.
+ * to prevent unauthorised triggering.
  */
 
 Deno.serve(async (req) => {
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       .from("api_keys")
       .select(`
         *,
-        organizations!inner(id, name),
+        organisations!inner(id, name),
         profiles!inner(id, email)
       `)
       .eq("status", "active")

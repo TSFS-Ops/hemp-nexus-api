@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
 
       const updated = transitionResult.match;
 
-      // Audit log - immutable proof-of-intent
+      // Audit log - immutable confirmed intent
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -645,7 +645,7 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
-      // Verify match belongs to authenticated user's organization
+      // Verify match belongs to authenticated user's organisation
       if (match.org_id !== authCtx.orgId) {
         throw new ApiException(
           "FORBIDDEN", 
@@ -872,7 +872,7 @@ Deno.serve(async (req) => {
 
       if (insertError) handleDatabaseError(insertError, requestId);
 
-      // Create audit log for match creation (immutable proof-of-intent)
+      // Create audit log for match creation (immutable confirmed intent)
       try {
         await supabase.from("audit_logs").insert({
           org_id: authCtx.orgId,
@@ -999,7 +999,7 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Only unilateral matches can be converted via accept-bind", 400);
       }
 
-      // Caller must NOT be the match creator (they're the counterparty)
+      // Caller must NOT be the match creator (they're the trading partner)
       if (existingMatch.org_id === authCtx.orgId) {
         throw new ApiException("FORBIDDEN", "You cannot accept your own match", 403);
       }
@@ -1020,7 +1020,7 @@ Deno.serve(async (req) => {
         updateFields.seller_name = counterparty.name;
       }
 
-      // Update match_type and bind the counterparty
+      // Update match_type and bind the trading partner
       const { data: updatedMatch, error: updateErr } = await supabase
         .from("matches")
         .update({

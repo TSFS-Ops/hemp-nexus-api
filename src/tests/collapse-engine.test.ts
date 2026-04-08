@@ -117,41 +117,41 @@ describe('Idempotency enforcement', () => {
 
 // ── Test 4: Post-collapse mutation is impossible ──
 describe('Post-collapse immutability', () => {
-  it('COLLAPSED is in IMMUTABLE_STATES', () => {
-    expect(IMMUTABLE_STATES).toContain('COLLAPSED');
+  it('COMPLETED is in IMMUTABLE_STATES', () => {
+    expect(IMMUTABLE_STATES).toContain('COMPLETED');
   });
 
-  it('COLLAPSED state only allows ANNULLED transition', () => {
-    const allowed = VALID_TRANSITIONS['COLLAPSED'];
+  it('COMPLETED state only allows ANNULLED transition', () => {
+    const allowed = VALID_TRANSITIONS['COMPLETED'];
     expect(allowed).toEqual(['ANNULLED']);
   });
 
-  it('isMutable returns false for COLLAPSED', () => {
-    expect(isMutable('COLLAPSED')).toBe(false);
+  it('isMutable returns false for COMPLETED', () => {
+    expect(isMutable('COMPLETED')).toBe(false);
   });
 
-  it('no state can transition to COLLAPSED except COLLAPSE_REQUESTED', () => {
+  it('no state can transition to COMPLETED except COMPLETION_REQUESTED', () => {
     const statesThatCanCollapse = Object.entries(VALID_TRANSITIONS)
-      .filter(([_, targets]) => targets.includes('COLLAPSED'))
+      .filter(([_, targets]) => targets.includes('COMPLETED'))
       .map(([state]) => state);
     
-    expect(statesThatCanCollapse).toEqual(['COLLAPSE_REQUESTED']);
+    expect(statesThatCanCollapse).toEqual(['COMPLETION_REQUESTED']);
   });
 
-  it('DRAFT → COLLAPSED is invalid', () => {
-    const error = validateTransition('DRAFT', 'COLLAPSED');
+  it('DRAFT → COMPLETED is invalid', () => {
+    const error = validateTransition('DRAFT', 'COMPLETED');
     expect(error).not.toBeNull();
     expect(error).toContain('not permitted');
   });
 
-  it('ELIGIBLE → COLLAPSED is invalid (must go through COLLAPSE_REQUESTED)', () => {
-    const error = validateTransition('ELIGIBLE', 'COLLAPSED');
+  it('ELIGIBLE → COMPLETED is invalid (must go through COMPLETION_REQUESTED)', () => {
+    const error = validateTransition('ELIGIBLE', 'COMPLETED');
     expect(error).not.toBeNull();
   });
 
   it('amendment requires ANNULLED + new collapse', () => {
-    // COLLAPSED → ANNULLED is allowed
-    const annulError = validateTransition('COLLAPSED', 'ANNULLED');
+    // COMPLETED → ANNULLED is allowed
+    const annulError = validateTransition('COMPLETED', 'ANNULLED');
     expect(annulError).toBeNull();
     
     // After ANNULLED, the record is sealed - a new collapse must be a new record
@@ -223,7 +223,7 @@ describe('Cryptographic controls', () => {
 
 // ── RPO/RTO contract ──
 describe('RPO/RTO requirements', () => {
-  it('collapse ledger RPO = 0 (synchronous write required before response)', () => {
+  it('completion ledger RPO = 0 (synchronous write required before response)', () => {
     // The edge function awaits the insert result before returning
     // This test documents the contract
     const rpo = 0;

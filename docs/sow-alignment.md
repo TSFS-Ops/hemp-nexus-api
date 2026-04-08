@@ -15,7 +15,7 @@
 | User enters commodity/product | ✅ | Signal creation flow |
 | Triggers external AI search | ✅ | Multi-search with data sources |
 | Displays ranked buyer/seller list | ✅ | Options with coherence scoring |
-| Selection of counterparties | ✅ | Match selection UI |
+| Selection of trading partners | ✅ | Match selection UI |
 | Notify selected parties | ✅ | Webhook notifications |
 | Confirm Intent flow | ✅ | Creates match record + evidence |
 | Auto-generate API key | ✅ | API key management |
@@ -38,7 +38,7 @@
 ### Implemented Admin Features
 
 1. **Matches Management** (`/admin/matches`)
-   - View all matches across organizations
+   - View all matches across organisations
    - Filter by status (Matched/Confirmed)
    - Evidence chain indicator
    - Export to CSV
@@ -73,9 +73,9 @@
    - View all org keys
    - Key history tracking
 
-7. **Users & Organizations** (`/admin/users-orgs`)
+7. **Users & Organisations** (`/admin/users-orgs`)
    - User management
-   - Organization management
+   - Organisation management
    - Role assignment
 
 8. **API Logs** (`/admin/logs`)

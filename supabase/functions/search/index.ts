@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       metadata: { query, parsed_product: product, parsed_location: effectiveLocation, signal_type: signalType },
     });
 
-    // ── 1. Counterparties table (Postgres full-text search) ──
+    // ── 1. Trading Partners table (Postgres full-text search) ──
     const tsQuery = product
       .split(/\s+/)
       .filter((w: string) => w.length > 1)
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
     if (tsQuery) {
       let cpQuery = supabase
-        .from("counterparties")
+        .from("trading partners")
         .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
         .textSearch("fts", tsQuery, { type: "plain", config: "english" })
         .neq("org_id", authCtx.orgId)
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     // If FTS returned nothing, try a simple ILIKE fallback
     if (counterpartyResults.length === 0 && product) {
       let fallbackQuery = supabase
-        .from("counterparties")
+        .from("trading partners")
         .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
         .neq("org_id", authCtx.orgId)
         .or(`company_name.ilike.%${product.replace(/[%_\\]/g, "")}%,description.ilike.%${product.replace(/[%_\\]/g, "")}%`)
@@ -122,9 +122,9 @@ Deno.serve(async (req) => {
       counterpartyResults = fallbackData || [];
     }
 
-    console.log(`[search] Counterparties table returned ${counterpartyResults.length} results`);
+    console.log(`[search] Trading Partners table returned ${counterpartyResults.length} results`);
 
-    // Map counterparties to search result shape
+    // Map trading partners to search result shape
     const cpResults = counterpartyResults.map((cp: any) => ({
       id: cp.id,
       title: cp.company_name,

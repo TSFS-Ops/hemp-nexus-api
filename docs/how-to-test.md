@@ -57,7 +57,7 @@ curl https://api.izenzo.co.za/functions/v1/signals \
 }
 ```
 
-If you get `401 Unauthorized`, check:
+If you get `401 Unauthorised`, check:
 - API key is correct
 - Key has not expired
 - Key has required scopes
@@ -601,7 +601,7 @@ wrk.headers["Content-Type"] = "application/json"
 
 ### Common Issues
 
-#### 401 Unauthorized
+#### 401 Unauthorised
 
 ```bash
 # Check API key
@@ -666,7 +666,7 @@ If tests continue to fail:
 
 1. Capture the `requestId` from error response
 2. Note the timestamp
-3. Include your organization ID
+3. Include your organisation ID
 4. Email support@izenzo.co.za
 
 ---

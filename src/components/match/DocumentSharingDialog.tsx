@@ -117,7 +117,7 @@ export function DocumentSharingDialog({
               <span className="font-medium">This document has been revoked</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Access to this document has been revoked. The file is retained for compliance purposes but is no longer accessible to counterparties.
+              Access to this document has been revoked. The file is retained for compliance purposes but is no longer accessible to trading partners.
             </p>
           </div>
         ) : showRevokeConfirm ? (
@@ -127,7 +127,7 @@ export function DocumentSharingDialog({
               <span className="font-medium">Confirm Revocation</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              This will immediately remove access for all counterparties. The file will remain stored for compliance but will no longer be visible to others.
+              This will immediately remove access for all trading partners. The file will remain stored for compliance but will no longer be visible to others.
             </p>
             <div className="space-y-2">
               <Label>Reason (optional)</Label>
@@ -173,7 +173,7 @@ export function DocumentSharingDialog({
                       Private
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Only your organization can view this document
+                      Only your organisation can view this document
                     </p>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export function DocumentSharingDialog({
                       Share with Counterparty
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Both buyer and seller organizations can view this document
+                      Both buyer and seller organisations can view this document
                     </p>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export function DocumentSharingDialog({
                       Share with Specific Roles
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Manually grant access to specific users or organizations
+                      Manually grant access to specific users or organisations
                     </p>
                     {visibility === "share_with_roles" && (
                       <Badge variant="secondary" className="mt-2">

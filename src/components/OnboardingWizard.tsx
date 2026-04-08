@@ -140,7 +140,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     {
       id: 3,
       title: "Run a Search",
-      description: "Find counterparties for your commodity",
+      description: "Find trading partners for your commodity",
       icon: Search,
       completed: currentStep > 3
     },
@@ -364,7 +364,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold">Welcome to Compliance Matching</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  This platform helps you find counterparties, record commercial intent, and generate tamper-evident evidence packs for compliance.
+                  This platform helps you find trading partners, record commercial intent, and generate tamper-evident evidence packs for compliance.
                 </p>
               </div>
               <div className="text-left space-y-3 max-w-md mx-auto">
@@ -372,7 +372,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 <div className="space-y-2">
                   {[
                     { num: "1", icon: Search, label: "Search", desc: "Find verified buyers or sellers by commodity, region, or company name." },
-                    { num: "2", icon: FileText, label: "Create Match", desc: "Select counterparties and create a draft match. No commercial terms are recorded yet." },
+                    { num: "2", icon: FileText, label: "Create Match", desc: "Select trading partners and create a draft match. No commercial terms are recorded yet." },
                     { num: "3", icon: Zap, label: "Confirm Intent", desc: "Add commercial terms, then signal your serious interest. This deducts 1 credit (R10 ZAR) and creates an audit record." },
                     { num: "4", icon: Key, label: "Evidence Pack", desc: "Download a tamper-evident evidence pack with cryptographic proof for your compliance records." },
                   ].map((s) => (
@@ -475,7 +475,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               <div className="space-y-2">
                 <h3 className="text-xl font-bold">Run Your First Search</h3>
                 <p className="text-muted-foreground">
-                  The fastest way to get started is to search for a counterparty. Try entering a commodity you trade (e.g. "chrome ore South Africa") on the Search page.
+                  The fastest way to get started is to search for a trading partner. Try entering a commodity you trade (e.g. "chrome ore South Africa") on the Search page.
                 </p>
               </div>
 
@@ -537,7 +537,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <div className="flex items-start gap-2">
                     <Search className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-medium text-foreground">Search for counterparties</span>
+                      <span className="font-medium text-foreground">Search for trading partners</span>
                       <p className="text-xs">Enter a commodity and region to find verified buyers or sellers.</p>
                     </div>
                   </div>
@@ -545,7 +545,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <div>
                       <span className="font-medium text-foreground">Create a draft match</span>
-                      <p className="text-xs">Select a counterparty and create a match. Add commercial terms on the match detail page.</p>
+                      <p className="text-xs">Select a trading partner and create a match. Add commercial terms on the match detail page.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">

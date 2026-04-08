@@ -1,7 +1,7 @@
 /**
  * POI State Machine - Single Source of Truth
  * 
- * Deterministic state machine for Proof-of-Intent lifecycle.
+ * Deterministic state machine for Confirmed Intent lifecycle.
  * All valid states and transitions are defined here.
  * No other file may define or override transition logic.
  */
@@ -10,8 +10,8 @@ export const POI_STATES = [
   'DRAFT',
   'PENDING_APPROVAL',
   'ELIGIBLE',
-  'COLLAPSE_REQUESTED',
-  'COLLAPSED',
+  'COMPLETION_REQUESTED',
+  'COMPLETED',
   'EXPIRED',
   'ANNULLED',
   'REJECTED',
@@ -23,7 +23,7 @@ export type PoiState = typeof POI_STATES[number];
 export const TERMINAL_STATES: PoiState[] = ['EXPIRED', 'REJECTED', 'ANNULLED'];
 
 /** Immutable states - no field mutations permitted */
-export const IMMUTABLE_STATES: PoiState[] = ['COLLAPSED', 'ANNULLED', 'EXPIRED', 'REJECTED'];
+export const IMMUTABLE_STATES: PoiState[] = ['COMPLETED', 'ANNULLED', 'EXPIRED', 'REJECTED'];
 
 /**
  * Valid state transitions.
@@ -32,9 +32,9 @@ export const IMMUTABLE_STATES: PoiState[] = ['COLLAPSED', 'ANNULLED', 'EXPIRED',
 export const VALID_TRANSITIONS: Record<PoiState, PoiState[]> = {
   DRAFT:              ['PENDING_APPROVAL', 'EXPIRED', 'REJECTED'],
   PENDING_APPROVAL:   ['ELIGIBLE', 'REJECTED', 'EXPIRED'],
-  ELIGIBLE:           ['COLLAPSE_REQUESTED', 'EXPIRED', 'REJECTED'],
-  COLLAPSE_REQUESTED: ['COLLAPSED', 'REJECTED'],
-  COLLAPSED:          ['ANNULLED'],
+  ELIGIBLE:           ['COMPLETION_REQUESTED', 'EXPIRED', 'REJECTED'],
+  COMPLETION_REQUESTED: ['COMPLETED', 'REJECTED'],
+  COMPLETED:          ['ANNULLED'],
   EXPIRED:            [],
   ANNULLED:           [],
   REJECTED:           [],
@@ -83,7 +83,7 @@ export function validateTransition(from: PoiState, to: PoiState): string | null 
 }
 
 /**
- * Check if a POI in the given state can have its fields mutated.
+ * Check if an intent in the given state can have its fields mutated.
  */
 export function isMutable(state: PoiState): boolean {
   return !IMMUTABLE_STATES.includes(state);

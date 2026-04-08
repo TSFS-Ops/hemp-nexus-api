@@ -13,6 +13,7 @@ import {
   Terminal,
   Blocks,
   Settings,
+  CheckCircle2,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -42,30 +43,30 @@ interface NavGroup {
 
 const sidebarGroups: NavGroup[] = [
   {
-    label: "OPERATIONS",
+    label: "TRADES",
     items: [
-      { title: "Overview", url: ROUTES.ADMIN, icon: Activity, exact: true },
-      { title: "Deals", url: ROUTES.ADMIN_DEALS, icon: GitCompare },
-      { title: "Order Book", url: ROUTES.ADMIN_ORDER_BOOK, icon: BookOpen },
+      { title: "Global Overview", url: ROUTES.ADMIN, icon: Activity, exact: true },
+      { title: "Active Requests", url: ROUTES.ADMIN_DEALS, icon: GitCompare },
+      { title: "Complete Deals", url: ROUTES.ADMIN_ORDER_BOOK, icon: CheckCircle2 },
     ],
   },
   {
-    label: "TRUST & INTEGRITY",
+    label: "VERIFICATION",
     items: [
-      { title: "Compliance", url: ROUTES.ADMIN_COMPLIANCE, icon: Scale },
+      { title: "Partner Checks", url: ROUTES.ADMIN_COMPLIANCE, icon: Scale },
       { title: "Audit Trail", url: ROUTES.ADMIN_AUDIT, icon: Shield },
       { title: "Evidence Ledger", url: ROUTES.ADMIN_LEDGER, icon: Blocks },
     ],
   },
   {
-    label: "ENTITIES",
+    label: "PARTNERS",
     items: [
       { title: "Users", url: ROUTES.ADMIN_USERS, icon: Users },
       { title: "Organisations", url: ROUTES.ADMIN_ORGS, icon: Building2 },
     ],
   },
   {
-    label: "DEVELOPER",
+    label: "TECHNICAL",
     items: [
       { title: "API Keys", url: ROUTES.ADMIN_API_KEYS, icon: Key },
       { title: "Webhooks", url: ROUTES.ADMIN_WEBHOOKS, icon: Webhook },
@@ -77,7 +78,6 @@ const sidebarGroups: NavGroup[] = [
     items: [
       { title: "Data Retention", url: ROUTES.ADMIN_DATA_GOVERNANCE, icon: Database },
       { title: "Policy Settings", url: ROUTES.ADMIN_SETTINGS, icon: Settings },
-      { title: "Overrides", url: ROUTES.ADMIN_OVERRIDES, icon: Wrench },
     ],
   },
 ];

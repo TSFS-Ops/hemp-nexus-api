@@ -19,7 +19,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
   const steps = [
     {
       number: "1",
-      title: "Search for a counterparty",
+      title: "Search for a trading partner",
       description: "Find verified buyers or sellers by commodity, region, or company name.",
       icon: Search,
       action: () => navigate(ROUTES.DASHBOARD_SEARCH),
@@ -28,10 +28,10 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
     {
       number: "2",
       title: "Create a match",
-      description: "Select one or more counterparties and create a match to begin the workflow.",
+      description: "Select one or more trading partners and create a match to begin the workflow.",
       icon: Handshake,
       action: () => navigate(ROUTES.DASHBOARD_SEARCH),
-      actionLabel: "Find counterparties",
+      actionLabel: "Find trading partners",
     },
     {
       number: "3",
@@ -62,7 +62,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
           Welcome to your Console
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-          You're all set up. Follow the steps below to complete your first counterparty workflow, or launch the guided setup wizard.
+          You're all set up. Follow the steps below to complete your first trading partner workflow, or launch the guided setup wizard.
         </p>
       </div>
 
@@ -266,7 +266,7 @@ export function ConsoleOverview() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">R10 per POI</p>
+            <p className="text-xs text-muted-foreground">R10 per action</p>
             {isBalanceCritical && (
               <p className="text-xs font-medium text-destructive mt-1">Top up now →</p>
             )}
@@ -347,7 +347,7 @@ export function ConsoleOverview() {
                 <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">Your next step: Run your first search</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Search for counterparties by commodity, region, or company name to find potential matches.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Search for trading partners by commodity, region, or company name to find potential matches.</p>
                   </div>
                   <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)}>
                     <Search className="h-3.5 w-3.5 mr-1.5" />
@@ -361,7 +361,7 @@ export function ConsoleOverview() {
                 <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">Your next step: Confirm intent on a match</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable proof-of-intent record.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable confirmed intent record.</p>
                   </div>
                   <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)}>
                     <Handshake className="h-3.5 w-3.5 mr-1.5" />
@@ -377,7 +377,7 @@ export function ConsoleOverview() {
             <h3 className="font-medium text-foreground mb-3">How it works</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               {[
-                { step: "1", label: "Search", desc: "Find counterparties" },
+                { step: "1", label: "Search", desc: "Find trading partners" },
                 { step: "2", label: "Match", desc: "Select & create" },
                 { step: "3", label: "Confirm", desc: "Signal intent" },
                 { step: "4", label: "Evidence", desc: "Download pack" },
@@ -397,7 +397,7 @@ export function ConsoleOverview() {
             <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="default" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
                 <Search className="h-3.5 w-3.5" />
-                Search counterparties
+                Search trading partners
               </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)} className="gap-2">
                 <FileText className="h-3.5 w-3.5" />

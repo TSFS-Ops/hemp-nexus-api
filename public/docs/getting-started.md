@@ -119,7 +119,7 @@ APIs let different software systems talk to each other automatically. Instead of
 
 2. **First Login Experience**
    - You'll see a welcome message
-   - An organization is automatically created for you
+   - An organisation is automatically created for you
    - Your role is set (admin if @izenzo.co.za email, buyer otherwise)
 
 3. **Dashboard Overview**
@@ -614,7 +614,7 @@ When your signal is created successfully, you'll get a response like this:
 
 ## 🚨 Common Mistakes and How to Fix Them
 
-### Mistake 1: "Unauthorized" Error
+### Mistake 1: "Unauthorised" Error
 
 **Error Message**:
 ```json
@@ -953,7 +953,7 @@ Content-Type: application/json
 ### Essential Status Codes
 - **200**: Success
 - **400**: Bad request (check your data)
-- **401**: Unauthorized (check your API key)
+- **401**: Unauthorised (check your API key)
 - **403**: Forbidden (check your scopes)
 - **429**: Rate limited (wait and retry)
 - **500**: Server error (contact support)

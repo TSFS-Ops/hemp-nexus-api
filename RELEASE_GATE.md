@@ -34,7 +34,7 @@ npx vitest run             # Unit + integration tests
 
 ## 3. Critical Flows (~4 min)
 
-### Counterparty Search
+### Trading Partner Search
 1. `/dashboard/search` → enter a known entity name → results appear
 2. Click a result → detail loads without error
 

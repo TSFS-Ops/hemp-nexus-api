@@ -11,7 +11,7 @@ import { cacheHeaders } from "../_shared/cache.ts";
  * 3. NOTIFICATIONS: Dispatch overdue/breach alerts via notification-dispatch
  * 4. ESCALATION: Escalate unresolved breaches past grace period
  * 4. ESCALATION: Escalate unresolved breaches past grace period
- * 5. STALE-UNILATERAL: Flag unilateral intents with no counterparty after N days
+ * 5. STALE-UNILATERAL: Flag unilateral intents with no trading partner after N days
  *
  * Designed to be called via pg_cron (daily at 3 AM UTC).
  * Deduplication: Uses breach_detected_at on milestones and unique index on breaches
@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
     const isServiceRole = authHeader.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "NEVER_MATCH");
 
     if (internalKey && providedKey !== internalKey && !isServiceRole) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Unauthorised" }), {
         status: 401,
         headers: { ...headers, "Content-Type": "application/json" },
       });
@@ -309,7 +309,7 @@ Deno.serve(async (req: Request) => {
     // ────────────────────────────────────────────
     const staleCutoff = new Date(Date.now() - STALE_UNILATERAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-    // Find unilateral intents older than threshold with no counterparty attached
+    // Find unilateral intents older than threshold with no trading partner attached
     const { data: staleIntents, error: staleErr } = await admin
       .from("matches")
       .select("id, org_id, commodity, state, created_at, buyer_id, seller_id")
@@ -347,7 +347,7 @@ Deno.serve(async (req: Request) => {
             body: {
               event_type: "unilateral.stale",
               subject: `Stale unilateral intent: ${intent.commodity}`,
-              message: `Unilateral intent for "${intent.commodity}" has been waiting ${ageDays} days with no counterparty. Consider following up or expiring.`,
+              message: `Unilateral intent for "${intent.commodity}" has been waiting ${ageDays} days with no trading partner. Consider following up or expiring.`,
               metadata: {
                 org_id: intent.org_id,
                 match_id: intent.id,

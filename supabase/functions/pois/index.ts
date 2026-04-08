@@ -5,11 +5,11 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * POI (Proof-of-Intent) Edge Function - V3 Sprint 2
+ * POI (Confirmed Intent) Edge Function - V3 Sprint 2
  *
  * POST: Issue a new POI. Requires active mutual interest and ≥50.1% probability.
  * GET:  List POIs or get by ID.
- * PATCH: Transition POI state (deterministic state machine).
+ * PATCH: Transition Intent state (deterministic state machine).
  *
  * Follows V3 SuccessEnvelope / ErrorEnvelope contract.
  */
@@ -20,8 +20,8 @@ const VALID_STATES = [
   "DRAFT",
   "PENDING_APPROVAL",
   "ELIGIBLE",
-  "COLLAPSE_REQUESTED",
-  "COLLAPSED",
+  "COMPLETION_REQUESTED",
+  "COMPLETED",
   "EXPIRED",
   "ANNULLED",
   "REJECTED",
@@ -30,15 +30,15 @@ const VALID_STATES = [
 const VALID_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["PENDING_APPROVAL", "EXPIRED", "REJECTED"],
   PENDING_APPROVAL: ["ELIGIBLE", "REJECTED", "EXPIRED"],
-  ELIGIBLE: ["COLLAPSE_REQUESTED", "EXPIRED", "REJECTED"],
-  COLLAPSE_REQUESTED: ["COLLAPSED", "REJECTED"],
-  COLLAPSED: ["ANNULLED"],
+  ELIGIBLE: ["COMPLETION_REQUESTED", "EXPIRED", "REJECTED"],
+  COMPLETION_REQUESTED: ["COMPLETED", "REJECTED"],
+  COMPLETED: ["ANNULLED"],
   EXPIRED: [],
   ANNULLED: [],
   REJECTED: [],
 };
 
-const IMMUTABLE_STATES = ["COLLAPSED", "ANNULLED", "EXPIRED", "REJECTED"];
+const IMMUTABLE_STATES = ["COMPLETED", "ANNULLED", "EXPIRED", "REJECTED"];
 
 const PoiCreateSchema = z.object({
   buyer_entity_id: z.string().uuid(),
@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
       if (!buyer) throw new ApiException("NOT_FOUND", "Buyer entity not found", 404);
       if (!seller) throw new ApiException("NOT_FOUND", "Seller entity not found", 404);
 
-      // Create POI in DRAFT state
+      // Draft Intent in DRAFT state
       const { data: poi, error } = await admin
         .from("pois")
         .insert({
@@ -249,7 +249,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Update POI state
+      // Update Intent state
       const { data: updated, error: updateErr } = await admin
         .from("pois")
         .update({ state: toState, last_activity_at: new Date().toISOString() })

@@ -5,13 +5,13 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * P3 WaD (Without-a-Doubt) Edge Function - V3 Sprint 3
+ * P3 WaD (Finalised Commitment) Edge Function - V3 Sprint 3
  *
- * POST: Issue WaD for a COLLAPSED POI - enforces 7 deterministic hard-gates.
+ * POST: Issue WaD for a COMPLETED POI - enforces 7 deterministic hard-gates.
  * GET:  List or get WaD by ID.
  *
  * Hard-Gates (all must pass):
- *  1. POI is in COLLAPSED state
+ *  1. POI is in COMPLETED state
  *  2. Both buyer & seller entities are ACTIVE
  *  3. UBO ownership is 100% for both parties
  *  4. Authority-to-Bind (ATB) is verified for both
@@ -90,21 +90,21 @@ Deno.serve(async (req: Request) => {
 
       if (!poi) throw new ApiException("NOT_FOUND", "POI not found", 404);
 
-      // Verify caller is party to the POI
+      // Verify caller is party to the intent
       if (poi.org_id !== orgId) {
-        throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this POI", 403);
+        throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this intent", 403);
       }
 
       // ── Run 7 Hard-Gates ──
       const gates: HardGateResult[] = [];
 
-      // Gate 1: POI state must be COLLAPSED
+      // Gate 1: Intent state must be COMPLETED
       gates.push({
         gate: "POI_STATE",
-        passed: poi.state === "COLLAPSED",
-        reason: poi.state === "COLLAPSED"
-          ? "POI is in COLLAPSED state"
-          : `POI is in ${poi.state} state - must be COLLAPSED`,
+        passed: poi.state === "COMPLETED",
+        reason: poi.state === "COMPLETED"
+          ? "POI is in COMPLETED state"
+          : `POI is in ${poi.state} state - must be COMPLETED`,
       });
 
       // Gate 2: Both entities must be ACTIVE or VERIFIED

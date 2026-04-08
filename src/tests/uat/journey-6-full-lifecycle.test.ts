@@ -8,7 +8,7 @@
  *  - Creates two orgs (buyer + seller) via signup
  *  - Creates API keys for both
  *  - Seeds trade approvals, DD approvals, BRD constraints
- *  - Creates a match, confirms intent, advances POI state, then collapses
+ *  - Creates a match, confirms intent, advances Intent state, then collapses
  *  - Verifies hash chains, audit logs, ledger entries, and idempotency
  */
 
@@ -178,7 +178,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
   // PHASE 3: SEARCH
   // ═══════════════════════════════════════════════════════════════
 
-  it("3.1 - Buyer searches for counterparties", async () => {
+  it("3.1 - Buyer searches for trading partners", async () => {
     const res = await fetch(`${BASE}/functions/v1/search`, {
       method: "POST",
       headers: {

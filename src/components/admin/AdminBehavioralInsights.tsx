@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 interface OrgInsight {
   org_id: string;
   org_name: string;
-  /** Average hours between POI draft and counterparty acceptance */
+  /** Average hours between POI draft and trading partner acceptance */
   avg_responsiveness_hours: number | null;
   /** Count of verified documents vs total uploaded */
   verified_docs: number;
@@ -182,7 +182,7 @@ export function AdminBehavioralInsights() {
         <CardHeader>
           <CardTitle>Organisation Behavioural Profile</CardTitle>
           <CardDescription>
-            Responsiveness Score measures time from POI draft to counterparty acceptance.
+            Responsiveness Score measures time from POI draft to trading partner acceptance.
             Document Integrity Score measures the ratio of verified vs unverified documents.
           </CardDescription>
         </CardHeader>

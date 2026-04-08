@@ -10,7 +10,7 @@ Compliance Matching API is a **B2B API platform** for verified trade intent in r
 
 1. **Developer Portal** - Manage API keys, test endpoints, view analytics
 2. **Compliance Matching API** - Create signals, record matches, track compliance events
-3. **Admin Dashboard** - Manage users, organizations, and system settings
+3. **Admin Dashboard** - Manage users, organisations, and system settings
 
 **Important Note**: This is an API platform with a developer portal, not an end-user marketplace. There are no buyer/seller listing pages, shopping carts, or public product catalogs.
 
@@ -31,7 +31,7 @@ This is the primary user journey for the platform.
 5. **Redirected** to login page
 
 **Why email verification?**  
-Prevents spam and ensures legitimate organizations only.
+Prevents spam and ensures legitimate organisations only.
 
 ---
 
@@ -41,7 +41,7 @@ Prevents spam and ensures legitimate organizations only.
 2. **Redirected** to Dashboard
 
 **What happens on first login?**
-- Auto-creates organization for your account
+- Auto-creates organisation for your account
 - Assigns you admin role
 - Shows welcome guide with onboarding steps
 
@@ -188,7 +188,7 @@ For production deployments, set up automated jobs:
 
 ---
 
-### 2. Admin Journey (User & Organization Management)
+### 2. Admin Journey (User & Organisation Management)
 
 Admins have additional capabilities for managing the platform.
 
@@ -203,9 +203,9 @@ Admins have additional capabilities for managing the platform.
 #### Manage Users
 
 1. **Navigate** to Admin Panel → Users tab
-2. **View** all users across organizations:
+2. **View** all users across organisations:
    - Email addresses
-   - Organization membership
+   - Organisation membership
    - Assigned roles
    - Account status
    - Registration dates
@@ -214,37 +214,37 @@ Admins have additional capabilities for managing the platform.
 
 **Actions Available**:
 - View user profile
-- Check organization membership
+- Check organisation membership
 - Review user roles
 - See account creation date
 
 ---
 
-#### Manage Organizations
+#### Manage Organisations
 
-1. **Navigate** to Admin Panel → Organizations tab
-2. **View** all organizations:
-   - Organization names
+1. **Navigate** to Admin Panel → Organisations tab
+2. **View** all organisations:
+   - Organisation names
    - Status (active/inactive)
    - SAHPRA verification status
    - License numbers
-3. **Edit** organization:
+3. **Edit** organisation:
    - Update SAHPRA license number
    - Change status (active/inactive)
 4. **Save** changes
 
-**Why manage organizations?**
+**Why manage organisations?**
 - Ensure compliance verification
 - Handle inactive accounts
 - Update regulatory information
-- Monitor organization health
+- Monitor organisation health
 
 ---
 
 #### Monitor System Health
 
 Admins can:
-- View all audit logs (cross-organization)
+- View all audit logs (cross-organisation)
 - Monitor API key expiry across orgs
 - Track webhook delivery failures
 - Review data source performance
@@ -323,7 +323,7 @@ If you forget your password:
 - Match creation and intent confirmation
 - Signal creation and selection
 - Webhook management
-- Organization changes
+- Organisation changes
 - Data source access
 
 **Audit Features**:
@@ -398,11 +398,11 @@ If you forget your password:
 ### Workflow 2: SAHPRA Verification
 
 ```
-1. Organization signs up
+1. Organisation signs up
    Email verification required
 
 2. Configure sandbox settings
-   Admin Panel → Organizations → Edit
+   Admin Panel → Organisations → Edit
    Enable/disable sandbox mode
 
 3. API key created
@@ -469,7 +469,7 @@ If you forget your password:
 **A**: 
 - API keys hashed with SHA-256
 - Row-Level Security on all tables
-- Organization-scoped data isolation
+- Organisation-scoped data isolation
 - Webhook signature verification
 - Immutable audit logs
 - Email verification required
@@ -487,7 +487,7 @@ If you forget your password:
 **A**: 
 - 7 days before: Email warning sent
 - On expiry date: Key automatically disabled
-- All attempts with expired key return 401 Unauthorized
+- All attempts with expired key return 401 Unauthorised
 - You can create new keys anytime
 
 ---

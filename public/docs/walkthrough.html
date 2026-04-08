@@ -394,10 +394,10 @@
     <li>No global or org-level freeze</li>
     <li>CAP partition health check (consistency first)</li>
     <li>Idempotency (duplicate → returns original)</li>
-    <li>POI state is ELIGIBLE or COLLAPSE_REQUESTED</li>
+    <li>Intent state is ELIGIBLE or COMPLETION_REQUESTED</li>
     <li>POI completion probability ≥ 50.1%</li>
   </ol>
-  <p><strong>Recorded:</strong> Append-only ledger entry · SHA-256 hash · NTP drift (hardened ≤1000ms) · POI state → <code>COLLAPSED</code></p>
+  <p><strong>Recorded:</strong> Append-only ledger entry · SHA-256 hash · NTP drift (hardened ≤1000ms) · Intent state → <code>COMPLETED</code></p>
   <div class="api-badge">POST /functions/v1/collapse</div>
 </div>
 
@@ -412,11 +412,11 @@
 </div>
 
 <div class="phase-card">
-  <h3><span class="step-num">15</span> Create WaD Certificate</h3>
-  <p>Without-a-Doubt layer enforces <strong>9 deterministic hard-gates</strong>:</p>
+  <h3><span class="step-num">15</span> Create Finalised Commitment Certificate</h3>
+  <p>Finalised Commitment layer enforces <strong>9 deterministic hard-gates</strong>:</p>
   <table>
     <tr><th>#</th><th>Gate</th><th>Requirement</th></tr>
-    <tr><td>1</td><td>POI state</td><td>COLLAPSED</td></tr>
+    <tr><td>1</td><td>Intent state</td><td>COMPLETED</td></tr>
     <tr><td>2</td><td>Entity status</td><td>VERIFIED</td></tr>
     <tr><td>3</td><td>UBO integrity</td><td>100% verified</td></tr>
     <tr><td>4</td><td>ATB records</td><td>Active &amp; verified</td></tr>
@@ -443,7 +443,7 @@
 
 <div class="phase-card">
   <h3><span class="step-num">18</span> Download Certificate</h3>
-  <p>Export sealed WaD certificate: transaction summary, party details, attestations, seal hash, ledger entry hash, evidence bundle.</p>
+  <p>Export sealed finalised commitment certificate: transaction summary, party details, attestations, seal hash, ledger entry hash, evidence bundle.</p>
   <div class="api-badge">GET /functions/v1/wad/{wadId}/certificate</div>
 </div>
 
@@ -461,7 +461,7 @@
     <tr><td>match.discovered</td><td>T+14s</td></tr>
     <tr><td>intent.declared</td><td>T+16s</td></tr>
     <tr><td>intent.confirmed</td><td>T+18s</td></tr>
-    <tr><td>poi.collapsed</td><td>T+20s</td></tr>
+    <tr><td>poi.completed</td><td>T+20s</td></tr>
     <tr><td>wad.created</td><td>T+22s</td></tr>
     <tr><td>wad.attested (×2)</td><td>T+24s</td></tr>
     <tr><td>wad.sealed</td><td>T+28s</td></tr>
@@ -498,13 +498,13 @@
 
 <div class="arch-diagram">┌─────────────────────────────────────────────────────────┐
 │                    LAYER 5: Evidence                     │
-│         Evidence Pack v1 + WaD Certificate               │
+│         Evidence Pack v1 + Finalised Commitment Certificate               │
 ├─────────────────────────────────────────────────────────┤
 │                  LAYER 4: Consequence                    │
 │        Collapse Engine + Append-Only Ledger              │
 ├─────────────────────────────────────────────────────────┤
 │                 LAYER 3: POI Engine                      │
-│     State Machine (DRAFT → COLLAPSED → ANNULLED)         │
+│     State Machine (DRAFT → COMPLETED → ANNULLED)         │
 │     Probability Calculator (≥50.1% threshold)            │
 ├─────────────────────────────────────────────────────────┤
 │               LAYER 2: Exploration                       │

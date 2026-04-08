@@ -60,7 +60,7 @@ WAF is an **infrastructure concern** - deploy at the CDN/gateway layer, not in a
 The collapse engine implements a **soft circuit breaker** via:
 1. **Partition health check** before every collapse write
 2. **Global freeze** via `admin_settings.collapse_freeze` (break-glass protocol)
-3. **Org-level freeze** via `organizations.frozen` flag
+3. **Org-level freeze** via `organisations.frozen` flag
 
 For a full circuit breaker (automatic trip on error threshold), implement at the API gateway level:
 ```yaml

@@ -37,7 +37,7 @@ interface User {
   email: string;
   full_name: string | null;
   org_id: string | null;
-  organization_name: string;
+  organisation_name: string;
   status: string;
   created_at: string;
   last_sign_in_at: string | null;
@@ -158,7 +158,7 @@ export default function UsersManagement() {
   const filteredUsers = users.filter((user) =>
     user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.organization_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    user.organisation_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getUserRoles = (user: User) => {
@@ -195,11 +195,11 @@ export default function UsersManagement() {
   };
 
   const exportToCSV = (usersToExport: User[]) => {
-    const headers = ["Email", "Name", "Organization", "Registered", "Last Sign In", "Email Verified", "Roles", "Status"];
+    const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status"];
     const rows = usersToExport.map((user) => [
       user.email,
       user.full_name || "",
-      user.organization_name,
+      user.organisation_name,
       user.created_at ? new Date(user.created_at).toISOString() : "",
       user.last_sign_in_at ? new Date(user.last_sign_in_at).toISOString() : "",
       user.email_confirmed_at ? "Yes" : "No",
@@ -239,7 +239,7 @@ export default function UsersManagement() {
       <CardHeader className="px-3 sm:px-6">
         <CardTitle>User Management</CardTitle>
         <CardDescription>
-          View and manage all users across organizations
+          View and manage all users across organisations
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 px-3 sm:px-6">
@@ -247,7 +247,7 @@ export default function UsersManagement() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by email, name, or organization..."
+              placeholder="Search by email, name, or organisation..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -318,7 +318,7 @@ export default function UsersManagement() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">{user.organization_name}</span>
+                    <span className="text-muted-foreground">{user.organisation_name}</span>
                     {getUserRoles(user) !== "-" && (
                       <Badge variant="outline" className="text-[10px]">
                         <Shield className="h-2.5 w-2.5 mr-0.5" />
@@ -365,7 +365,7 @@ export default function UsersManagement() {
                     </TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead className="hidden lg:table-cell">Organization</TableHead>
+                    <TableHead className="hidden lg:table-cell">Organisation</TableHead>
                     <TableHead className="hidden xl:table-cell">Registered</TableHead>
                     <TableHead className="hidden xl:table-cell">Last Sign In</TableHead>
                     <TableHead>Verified</TableHead>
@@ -387,7 +387,7 @@ export default function UsersManagement() {
                         </TableCell>
                         <TableCell className="font-mono text-xs max-w-[200px] truncate">{user.email}</TableCell>
                         <TableCell className="max-w-[120px] truncate">{user.full_name || "-"}</TableCell>
-                        <TableCell className="hidden lg:table-cell max-w-[120px] truncate">{user.organization_name}</TableCell>
+                        <TableCell className="hidden lg:table-cell max-w-[120px] truncate">{user.organisation_name}</TableCell>
                         <TableCell className="hidden xl:table-cell text-xs">
                           <Tooltip>
                             <TooltipTrigger>{formatDate(user.created_at)}</TooltipTrigger>

@@ -34,7 +34,7 @@ tags:
   - name: Interests
     description: Declared interest operations
   - name: POIs
-    description: Proof-of-Intent lifecycle
+    description: Confirmed Intent lifecycle
   - name: WaD
     description: Willing-and-Able Deal hard-gates
   - name: PoD
@@ -82,7 +82,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
     get:
       tags: [Entities]
       summary: List entities
@@ -124,7 +124,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessEnvelope'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
     patch:
       tags: [Entities]
       summary: Update an entity (admin only)
@@ -146,7 +146,7 @@ paths:
         '200':
           description: Entity updated
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
         '403':
           description: Admin role required
 
@@ -199,7 +199,7 @@ paths:
         '201':
           description: Interest declared
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
     get:
       tags: [Interests]
       summary: List interests
@@ -211,7 +211,7 @@ paths:
   /pois:
     post:
       tags: [POIs]
-      summary: Issue a Proof-of-Intent
+      summary: Issue a Confirmed Intent
       operationId: createPoi
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -239,7 +239,7 @@ paths:
   /pois/transition:
     post:
       tags: [POIs]
-      summary: Transition POI state
+      summary: Transition Intent state
       operationId: transitionPoi
       requestBody:
         required: true
@@ -265,7 +265,7 @@ paths:
       operationId: issueWad
       description: |
         Runs 7 deterministic hard-gates:
-        1. POI state = COLLAPSED
+        1. Intent state = COMPLETED
         2. Both entities ACTIVE
         3. UBO integrity verified
         4. Authority-to-Bind records present
@@ -415,7 +415,7 @@ paths:
         '201':
           description: Record created
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
         '403':
           description: Insufficient permissions
     get:
@@ -491,7 +491,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessEnvelope'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
         '403':
           description: Admin role required
 
@@ -518,7 +518,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
 
   /due-diligence:
     post:
@@ -552,7 +552,7 @@ paths:
         '200':
           description: Action completed
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
 
   /match:
     post:
@@ -595,7 +595,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
         '429':
           $ref: '#/components/responses/RateLimited'
 
@@ -616,7 +616,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
 
   /match/{id}/settle:
     post:
@@ -644,7 +644,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
 
   /matches:
     get:
@@ -681,7 +681,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MatchList'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
 
   /signals:
     post:
@@ -704,7 +704,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorised'
     get:
       tags: [Signals]
       summary: List signals
@@ -1348,7 +1348,7 @@ components:
             code: VALIDATION_ERROR
             message: "Validation failed: buyer.id is required"
             requestId: "550e8400-e29b-41d4-a716-446655440000"
-    Unauthorized:
+    Unauthorised:
       description: Missing or invalid authentication
       content:
         application/json:

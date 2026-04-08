@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
     });
 
     // ── Auth ─────────────────────────────────────────────────────────────
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get('Authorisation');
     if (!authHeader) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
+      return jsonResponse({ error: 'Unauthorised' }, 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -125,8 +125,8 @@ async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
     const userRoles = roles?.filter((r) => r.user_id === authUser.id) || [];
 
     let orgName = 'Unknown';
-    if (profile?.organizations) {
-      const org = profile.organizations;
+    if (profile?.organisations) {
+      const org = profile.organisations;
       if (Array.isArray(org) && org.length > 0) {
         orgName = org[0].name;
       } else if (typeof org === 'object' && 'name' in org) {
@@ -139,7 +139,7 @@ async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
       email: authUser.email,
       full_name: profile?.full_name || null,
       org_id: profile?.org_id || null,
-      organization_name: orgName,
+      organisation_name: orgName,
       status: profile?.status || 'unknown',
       created_at: authUser.created_at,
       last_sign_in_at: authUser.last_sign_in_at,

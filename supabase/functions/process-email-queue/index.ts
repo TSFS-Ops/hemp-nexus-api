@@ -91,10 +91,10 @@ Deno.serve(async (req) => {
     )
   }
 
-  const authHeader = req.headers.get('Authorization')
+  const authHeader = req.headers.get('Authorisation')
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
+      JSON.stringify({ error: 'Unauthorised' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     )
   }

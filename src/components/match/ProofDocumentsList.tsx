@@ -102,7 +102,7 @@ export function ProofDocumentsList({ matchId }: ProofDocumentsListProps) {
           <FileText className="h-4 w-4" />
           Supporting Documents
         </h3>
-        <p className="text-sm text-muted-foreground">No documents were uploaded for this proof of intent.</p>
+        <p className="text-sm text-muted-foreground">No documents were uploaded for this confirmed intent.</p>
       </div>
     );
   }

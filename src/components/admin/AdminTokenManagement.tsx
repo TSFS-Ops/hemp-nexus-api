@@ -35,7 +35,7 @@ import { format } from "date-fns";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
 
-interface Organization {
+interface Organisation {
   id: string;
   name: string;
   status: string;
@@ -48,7 +48,7 @@ interface TokenBalance {
   balance: number;
   minimum_required: number;
   updated_at: string;
-  organization?: Organization;
+  organisation?: Organisation;
 }
 
 export function AdminTokenManagement() {
@@ -72,7 +72,7 @@ export function AdminTokenManagement() {
 
       return (tokensRes.data || []).map((balance) => ({
         ...balance,
-        organization: orgsRes.data?.find((org) => org.id === balance.org_id),
+        organisation: orgsRes.data?.find((org) => org.id === balance.org_id),
       })) as TokenBalance[];
     },
   });
@@ -131,13 +131,13 @@ export function AdminTokenManagement() {
         await supabase.from("admin_audit_logs").insert({
           admin_user_id: session.user.id,
           action: "token_top_up",
-          target_type: "organization",
+          target_type: "organisation",
           target_id: selectedOrg.org_id,
           details: { amount },
         });
       }
 
-      toast.success(`Added ${amount.toLocaleString()} tokens to ${selectedOrg.organization?.name || 'organization'}`);
+      toast.success(`Added ${amount.toLocaleString()} tokens to ${selectedOrg.organisation?.name || 'organisation'}`);
       setIsDialogOpen(false);
       setTopUpAmount("");
       setSelectedOrg(null);
@@ -153,7 +153,7 @@ export function AdminTokenManagement() {
   };
 
   const filteredBalances = balances.filter((balance) => {
-    const orgName = balance.organization?.name?.toLowerCase() || "";
+    const orgName = balance.organisation?.name?.toLowerCase() || "";
     const query = searchQuery.toLowerCase();
     return orgName.includes(query) || balance.org_id.includes(query);
   });
@@ -171,7 +171,7 @@ export function AdminTokenManagement() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Credit Management</h2>
         <p className="text-muted-foreground mt-2">
-          Manage organization credit balances and top-ups
+          Manage organisation credit balances and top-ups
         </p>
       </div>
 
@@ -181,10 +181,10 @@ export function AdminTokenManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Coins className="h-5 w-5" />
-                Organization Balances
+                Organisation Balances
               </CardTitle>
               <CardDescription>
-                View and manage credit balances for all organizations
+                View and manage credit balances for all organisations
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
@@ -197,7 +197,7 @@ export function AdminTokenManagement() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search organizations..."
+              placeholder="Search organisations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -208,14 +208,14 @@ export function AdminTokenManagement() {
             <TableSkeleton rows={5} columns={6} />
           ) : filteredBalances.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No organizations found
+              No organisations found
             </div>
           ) : (
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Organization</TableHead>
+                    <TableHead>Organisation</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-right">Minimum Required</TableHead>
                     <TableHead>Status</TableHead>
@@ -231,7 +231,7 @@ export function AdminTokenManagement() {
                         <TableCell>
                           <div>
                             <div className="font-medium">
-                              {balance.organization?.name || "Unknown"}
+                              {balance.organisation?.name || "Unknown"}
                             </div>
                             <div className="text-xs text-muted-foreground font-mono">
                               {balance.org_id.slice(0, 8)}...
@@ -285,7 +285,7 @@ export function AdminTokenManagement() {
                               <DialogHeader>
                                 <DialogTitle>Add Tokens</DialogTitle>
                                 <DialogDescription>
-                                  Add tokens to {balance.organization?.name || "this organization"}
+                                  Add tokens to {balance.organisation?.name || "this organisation"}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4 py-4">

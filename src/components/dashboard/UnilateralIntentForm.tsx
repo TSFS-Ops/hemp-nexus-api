@@ -3,7 +3,7 @@
  *
  * This is the "market-maker" flow: a user declares intent to buy or sell,
  * attracting liquidity from the market. The record is governed and sits
- * clearly apart from a bilateral POI.
+ * clearly apart from a bilateral intent.
  */
 
 import { useState } from "react";
@@ -214,7 +214,7 @@ export function UnilateralIntentForm() {
         // Intent was created successfully - don't block the user
       }
 
-      // Send counterparty invite email if provided
+      // Send trading partner invite email if provided
       if (form.counterpartyEmail.trim()) {
         try {
           const siteUrl = window.location.origin;
@@ -235,10 +235,10 @@ export function UnilateralIntentForm() {
               },
             },
           });
-          toast.success("Invite sent to counterparty.", { duration: 4000 });
+          toast.success("Invite sent to trading partner.", { duration: 4000 });
         } catch (emailErr) {
-          console.error("Non-critical: counterparty invite email failed", emailErr);
-          toast.info("Intent published, but the invite email could not be sent. Share the link manually.");
+          console.error("Non-critical: trading partner invite email failed", emailErr);
+          toast.info("Trade request sent, but the invite email could not be sent. Share the link manually.");
         }
       }
 
@@ -246,7 +246,7 @@ export function UnilateralIntentForm() {
       setForm(INITIAL);
       setDraftText("");
 
-      toast.success("Intent published. This record is now visible in your matches.");
+      toast.success("Trade request sent. This record is now visible in your matches.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
       clearTimeout(timeoutId);
@@ -273,10 +273,10 @@ export function UnilateralIntentForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Megaphone className="h-5 w-5" />
-            Publish Unilateral Intent
+            Send Trade Request
           </CardTitle>
           <CardDescription>
-            Declare your intent to buy or sell without naming a counterparty.
+            Declare your intent to buy or sell without naming a trading partner.
             This creates a governed intent record that can attract liquidity.
           </CardDescription>
         </CardHeader>
@@ -287,21 +287,21 @@ export function UnilateralIntentForm() {
             <div className="text-sm text-muted-foreground space-y-1">
               <p>
                 <strong>Unilateral intent</strong> is a governed record that declares your
-                interest in a commodity without identifying a counterparty.
+                interest in a commodity without identifying a trading partner.
               </p>
               <p>
-                It sits apart from a bilateral POI but operates as a recognised intent record.
+                It sits apart from a bilateral intent but operates as a recognised intent record.
                 No credits are deducted at creation - only at lifecycle transitions{" "}
                 <Badge variant="outline" className="text-xs">R10 ZAR per action</Badge>.
               </p>
             </div>
           </div>
 
-          {/* ── Magic Draft ── */}
+          {/* ── AI Trade Drafter ── */}
           <div className="space-y-3 p-4 rounded-lg border border-accent/30 bg-accent/5">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Magic Draft</span>
+              <span className="text-sm font-semibold">AI Trade Drafter</span>
               <Badge variant="secondary" className="text-[10px]">AI</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -351,7 +351,7 @@ export function UnilateralIntentForm() {
 
                   toast.success(`Draft extracted. ${confidenceLabel}.`);
                 } catch (err) {
-                  console.error("Magic Draft error:", err);
+                  console.error("AI Trade Drafter error:", err);
                   toast.error(err instanceof Error ? err.message : "Failed to extract draft. Please fill the form manually.");
                 } finally {
                   setIsDrafting(false);
@@ -465,17 +465,17 @@ export function UnilateralIntentForm() {
           <div className="space-y-2">
             <Label htmlFor="uni-counterparty-email" className="flex items-center gap-2">
               <Mail className="h-3.5 w-3.5" />
-              Counterparty email (optional)
+              Trading partner email (optional)
             </Label>
             <Input
               id="uni-counterparty-email"
               type="email"
-              placeholder="e.g. farmer@example.com - they'll receive an invite to review this POI"
+              placeholder="e.g. farmer@example.com - they'll receive an invite to review this intent"
               value={form.counterpartyEmail}
               onChange={(e) => update("counterpartyEmail", e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              If provided, the counterparty will receive an email invitation to create an account and accept this intent, converting it into a bilateral POI.
+              If provided, the trading partner will receive an email invitation to create an account and accept this intent, converting it into a bilateral intent.
             </p>
           </div>
 
@@ -500,12 +500,12 @@ export function UnilateralIntentForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Publishing…
+                Sending…
               </>
             ) : (
               <>
                 <Megaphone className="h-4 w-4 mr-2" />
-                Publish Intent
+                Send Trade Request
               </>
             )}
           </Button>
@@ -515,7 +515,7 @@ export function UnilateralIntentForm() {
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Publish unilateral intent?</AlertDialogTitle>
+            <AlertDialogTitle>Send trade request?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
@@ -527,7 +527,7 @@ export function UnilateralIntentForm() {
                   <li>No counterparty is named - this is a market-maker signal.</li>
                   <li>No credits are deducted at creation.</li>
                   <li>Each lifecycle action costs R10 ZAR (1 credit).</li>
-                  <li>This record is separate from bilateral POIs.</li>
+                  <li>This record is separate from bilateral intents.</li>
                 </ul>
               </div>
             </AlertDialogDescription>
@@ -535,7 +535,7 @@ export function UnilateralIntentForm() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm}>
-              Publish Intent
+              Send Trade Request
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

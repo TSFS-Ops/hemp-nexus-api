@@ -69,7 +69,7 @@ By the end of this guide, you'll be able to:
 2. You'll see the Dashboard
 
 **What happens on first login**:
-- An organization is automatically created for you
+- An organisation is automatically created for you
 - You're assigned a default role
 - You're ready to create API keys
 
@@ -347,7 +347,7 @@ All errors follow this format:
 
 ## Common Errors
 
-### 401 Unauthorized
+### 401 Unauthorised
 
 ```json
 {
@@ -458,7 +458,7 @@ Content-Type: application/json
 | 201 | Created |
 | 204 | No Content (deleted) |
 | 400 | Bad Request |
-| 401 | Unauthorized |
+| 401 | Unauthorised |
 | 403 | Forbidden |
 | 404 | Not Found |
 | 429 | Rate Limited |

@@ -64,7 +64,7 @@ Created new endpoint: `GET /signals/:id/status`
 - Returns signal metadata without full options list
 - Includes options count for progress tracking
 - Indicates if search is complete based on status
-- Organization scoped (users only see their own signals)
+- Organisation scoped (users only see their own signals)
 
 ### Location
 `supabase/functions/signals/index.ts` lines 157-193
@@ -96,7 +96,7 @@ Created new endpoint: `GET /signals/:id/status`
 ## 4. ✅ Add Match Intent Confirmation Auth Check
 
 ### Implementation
-Added organization verification to match operations:
+Added organisation verification to match operations:
 
 1. **Confirm Intent Endpoint** (`POST /match/:id/settle`)
    - Verifies match belongs to authenticated user's org
@@ -111,7 +111,7 @@ Added organization verification to match operations:
    - Applied at query level for efficiency
 
 ### Security Benefits
-- Prevents unauthorized intent confirmation
+- Prevents unauthorised intent confirmation
 - Enforces org-level data isolation
 - Consistent authorization across all match operations
 
@@ -149,7 +149,7 @@ Complete UX overhaul with:
 
 5. **Enhanced Visuals**
    - Progress badges on completed tabs
-   - Better spacing and organization
+   - Better spacing and organisation
    - Responsive grid layouts
    - Improved empty state messaging
 
@@ -308,7 +308,7 @@ X-Webhook-Timestamp: ISO8601
 
 ### ✅ Signal Status Endpoint
 - [x] Endpoint responds with correct data
-- [x] Organization scoping works
+- [x] Organisation scoping works
 - [x] Options count accurate
 - [x] Search completion flag correct
 
@@ -322,7 +322,7 @@ X-Webhook-Timestamp: ISO8601
 - [x] Org verification on intent confirmation
 - [x] Org verification on get
 - [x] List filtered by org
-- [x] 403 on unauthorized access
+- [x] 403 on unauthorised access
 
 ### ✅ Dashboard UX
 - [x] Welcome card displays
@@ -399,7 +399,7 @@ All 7 recommended fixes have been **successfully implemented and tested**. The c
 ✅ Comprehensive scope validation across all endpoints
 ✅ Signal status tracking endpoint
 ✅ Secure API key masking in UI  
-✅ Organization-level auth checks for match operations
+✅ Organisation-level auth checks for match operations
 ✅ Guided onboarding flow with progress tracking
 ✅ Multi-window rate limiting with proper error handling
 ✅ Complete webhook delivery system with HMAC signatures

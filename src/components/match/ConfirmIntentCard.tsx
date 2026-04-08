@@ -104,12 +104,12 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
             <div className="space-y-2">
               <h4 className="font-semibold">Ready to Signal Intent?</h4>
               <p className="text-sm text-muted-foreground">
-                This records your interest so the counterparty can prepare terms. {CREDITS_REQUIRED} credits will be deducted.
+                This records your interest so the trading partner can prepare terms. {CREDITS_REQUIRED} credits will be deducted.
               </p>
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• <strong>Non-binding:</strong> No contract, payment, or legal obligation is created.</p>
                 <p>• <strong>Irreversible:</strong> Once confirmed, this cannot be undone. Credits are not refundable.</p>
-                <p>• <strong>What happens next:</strong> An immutable proof record is created. The counterparty is notified.</p>
+                <p>• <strong>What happens next:</strong> An immutable proof record is created. The trading partner is notified.</p>
               </div>
               {!balanceLoading && (
                 <p className="text-xs text-muted-foreground">
@@ -138,7 +138,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  This records your interest so the counterparty can begin preparing terms.
+                  This records your interest so the trading partner can begin preparing terms.
                 </p>
                 <div className="rounded-md border border-border p-3 space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -158,7 +158,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 <div className="text-xs text-muted-foreground space-y-1 p-3 rounded-md bg-muted/30">
                   <p><strong>Non-binding.</strong> No contract, payment, or legal obligation is created.</p>
                   <p><strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.</p>
-                  <p><strong>What happens next.</strong> An immutable proof-of-intent record is created. The counterparty will be able to see your interest and may begin preparing deal terms.</p>
+                  <p><strong>What happens next.</strong> An immutable confirmed intent record is created. The trading partner will be able to see your interest and may begin preparing deal terms.</p>
                 </div>
               </div>
             </AlertDialogDescription>

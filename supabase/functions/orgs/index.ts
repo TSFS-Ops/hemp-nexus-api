@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
 
-    // GET /orgs - List organizations
+    // GET /orgs - List organisations
     if (req.method === 'GET' && pathParts.length === 1) {
       const limit = parseInt(url.searchParams.get('limit') || '50');
       const status = url.searchParams.get('status');
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // POST /orgs - Create organization
+    // POST /orgs - Create organisation
     if (req.method === 'POST' && pathParts.length === 1) {
       const rawBody = await req.json();
       
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // GET /orgs/:id - Get organization
+    // GET /orgs/:id - Get organisation
     if (req.method === 'GET' && pathParts.length === 2) {
       const orgId = pathParts[1];
 
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // PATCH /orgs/:id - Update organization
+    // PATCH /orgs/:id - Update organisation
     if (req.method === 'PATCH' && pathParts.length === 2) {
       const orgId = pathParts[1];
       const rawUpdates = await req.json();
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // DELETE /orgs/:id - Delete organization
+    // DELETE /orgs/:id - Delete organisation
     if (req.method === 'DELETE' && pathParts.length === 2) {
       const orgId = pathParts[1];
 

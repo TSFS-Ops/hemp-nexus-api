@@ -45,7 +45,7 @@
    - [Webhooks](#webhooks)
    - [Data Sources](#data-sources)
    - [Consents](#consents)
-   - [Organizations](#organizations)
+   - [Organisations](#organisations)
    - [Audit Logs](#audit-logs)
 5. [Webhook Events](#webhook-events)
 6. [Best Practices](#best-practices)
@@ -96,7 +96,7 @@ API keys support scope-based access control:
 
 ## Token Metering
 
-All billable API endpoints consume **1 token per call**. Your organization must maintain a **minimum balance of 5,000 tokens** to make API calls.
+All billable API endpoints consume **1 token per call**. Your organisation must maintain a **minimum balance of 5,000 tokens** to make API calls.
 
 ### Billable Endpoints
 
@@ -149,7 +149,7 @@ See [Webhook Events](#webhook-events) for payload format.
 
 ## Rate Limiting
 
-Rate limits are enforced per organization and per endpoint.
+Rate limits are enforced per organisation and per endpoint.
 
 **Default Limits**:
 
@@ -577,10 +577,10 @@ Idempotency-Key: unique-key-123
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `buyer.id` | string | Yes | Buyer organization ID |
-| `buyer.name` | string | Yes | Buyer organization name |
-| `seller.id` | string | Yes | Seller organization ID |
-| `seller.name` | string | Yes | Seller organization name |
+| `buyer.id` | string | Yes | Buyer organisation ID |
+| `buyer.name` | string | Yes | Buyer organisation name |
+| `seller.id` | string | Yes | Seller organisation ID |
+| `seller.name` | string | Yes | Seller organisation name |
 | `commodity` | string | Yes | Product/service description |
 | `quantity.amount` | number | Yes | Quantity amount |
 | `quantity.unit` | string | Yes | Unit of measurement |
@@ -874,11 +874,11 @@ Content-Disposition: attachment; filename="evidence-pack-match_789.json"
 
 ### Reputation
 
-Calculate and retrieve organization reputation scores.
+Calculate and retrieve organisation reputation scores.
 
 #### POST /calculate-reputation
 
-Calculate reputation score for an organization.
+Calculate reputation score for an organisation.
 
 **Request**:
 ```http
@@ -912,7 +912,7 @@ Content-Type: application/json
 | `gold` | 50+ matches, 80%+ score |
 | `silver` | 25+ matches, 70%+ score |
 | `bronze` | 10+ matches, 60%+ score |
-| `new` | Default for new organizations |
+| `new` | Default for new organisations |
 
 ---
 
@@ -1147,13 +1147,13 @@ Revoke a consent.
 
 ---
 
-### Organizations
+### Organisations
 
-Manage organizations (admin only).
+Manage organisations (admin only).
 
 #### GET /orgs
 
-List all organizations.
+List all organisations.
 
 **Required Role**: `admin`
 
@@ -1161,7 +1161,7 @@ List all organizations.
 
 #### PATCH /orgs/:id
 
-Update an organization.
+Update an organisation.
 
 **Required Role**: `admin`
 
@@ -1241,11 +1241,11 @@ Authorization: Bearer sk_your_api_key
 | `match.settled` | Match intent confirmed |
 | `intent.confirmed` | Match intent confirmed (alias for match.settled) |
 | `intent.received` | Counterparty received intent notification |
-| `token.low_balance` | Organization token balance crossed warning threshold |
+| `token.low_balance` | Organisation token balance crossed warning threshold |
 
 ### Token Low Balance Event
 
-Triggered when your organization's token balance crosses a warning threshold (6,000, 5,500, or 5,001 tokens):
+Triggered when your organisation's token balance crosses a warning threshold (6,000, 5,500, or 5,001 tokens):
 
 ```json
 {
@@ -1378,8 +1378,8 @@ GET /functions/v1/match?limit=50&offset=100
 
 ### Row-Level Security (RLS)
 
-- All data is organization-scoped
-- Users can only access their organization's data
+- All data is organisation-scoped
+- Users can only access their organisation's data
 - Admin functions require admin role
 
 ### API Key Security

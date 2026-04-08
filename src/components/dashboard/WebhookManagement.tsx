@@ -301,7 +301,7 @@ export function WebhookManagement() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Your Endpoints</CardTitle>
-              <CardDescription>Manage webhook endpoints for your organization</CardDescription>
+              <CardDescription>Manage webhook endpoints for your organisation</CardDescription>
             </div>
             <Button onClick={fetchWebhooks} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />

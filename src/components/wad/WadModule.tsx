@@ -112,9 +112,9 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            WaD (Without-a-Doubt)
+            WaD (Finalised Commitment)
           </CardTitle>
-          <CardDescription>Sealed evidence bundle for this POI</CardDescription>
+          <CardDescription>Sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
@@ -123,7 +123,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <p className="font-medium">Intent must be confirmed first</p>
               <p className="text-sm text-muted-foreground">
                 {state.createBlockedReasons[0]?.reason ||
-                  "WaD can only be created after both parties have confirmed intent on this POI."}
+                  "WaD can only be created after both parties have confirmed intent on this intent."}
               </p>
             </div>
           </div>
@@ -149,15 +149,15 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              WaD (Without-a-Doubt)
+              WaD (Finalised Commitment)
             </CardTitle>
-            <CardDescription>Create a sealed evidence bundle for this POI</CardDescription>
+            <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg space-y-3">
               <p className="text-sm">
                 WaD creates an auditable, tamper-evident record that packages the full evidence trail
-                for this proof-of-intent. It includes:
+                for this confirmed intent. It includes:
               </p>
               <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Search query and match context</li>

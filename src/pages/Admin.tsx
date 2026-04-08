@@ -79,15 +79,15 @@ function AdminNotFound() {
   );
 }
 
-// ─── OPERATIONS ─────────────────────────────────────────────────────
+// ─── TRADES ─────────────────────────────────────────────────────────
 
 function DealsSection() {
   const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SectionHeader
-        title="Deals"
-        description="Pipeline progression, match lifecycle, and trade approval status."
+        title="Active Requests"
+        description="Trade requests in progress, match lifecycle tracking, and approval status."
         parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
       />
       <Tabs value={tab} onValueChange={setTab}>
@@ -111,8 +111,8 @@ function OrderBookSection() {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SectionHeader
-        title="Order Book"
-        description="Active buyer and seller signals across the platform."
+        title="Complete Deals"
+        description="Finalised trades, active buyer and seller signals across the platform."
         parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
       />
       <Tabs value={tab} onValueChange={setTab}>
@@ -129,15 +129,15 @@ function OrderBookSection() {
   );
 }
 
-// ─── TRUST & INTEGRITY ──────────────────────────────────────────────
+// ─── VERIFICATION ───────────────────────────────────────────────────
 
 function ComplianceSection() {
   const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SectionHeader
-        title="Compliance"
-        description="KYC/KYB verification status, risk assessment, and dispute resolution."
+        title="Partner Checks"
+        description="We check your trading partner's identity and authority to trade before you commit money."
         parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
       />
       <Tabs value={tab} onValueChange={setTab}>
@@ -179,7 +179,7 @@ function AuditSection() {
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            <TabsTrigger value="poi">POI History</TabsTrigger>
+            <TabsTrigger value="poi">Intent History</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
@@ -195,13 +195,13 @@ function LedgerSection() {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SectionHeader
         title="Evidence Ledger"
-        description="Cryptographic proof chain for all collapsed trades. Every entry is SHA-256 hashed and signature-verified."
+        description="Cryptographic proof chain for all completed trades. Every entry is SHA-256 hashed and signature-verified."
         parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
       />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
-            <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
+            <TabsTrigger value="ledger">Completion Ledger</TabsTrigger>
             <TabsTrigger value="signing-keys">Signing Keys</TabsTrigger>
             <TabsTrigger value="reputation">Reputation</TabsTrigger>
             <TabsTrigger value="risk-snapshots">Risk Snapshots</TabsTrigger>
@@ -216,7 +216,7 @@ function LedgerSection() {
   );
 }
 
-// ─── ENTITIES ───────────────────────────────────────────────────────
+// ─── PARTNERS ───────────────────────────────────────────────────────
 
 function UsersSection() {
   const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens"]);

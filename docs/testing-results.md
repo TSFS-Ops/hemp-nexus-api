@@ -171,17 +171,17 @@
 **Main Component**: `src/pages/Admin.tsx`
 **Sub-components**:
 - `UsersManagement.tsx`: View and manage users
-- `OrgsManagement.tsx`: View and update organizations
+- `OrgsManagement.tsx`: View and update organisations
 
 **Features**:
 1. **User Management**:
    - View all users with profiles
-   - See organization membership
+   - See organisation membership
    - View roles (admin, seller, broker, buyer, auditor)
    - Check account status
 
-2. **Organization Management**:
-   - View all organizations
+2. **Organisation Management**:
+   - View all organisations
    - Update org status (active/inactive)
    - Edit SAHPRA license numbers
    - View verification status
@@ -233,7 +233,7 @@
 ### Flow 4: Admin Operations ✅
 1. Login as admin user
 2. Navigate to Admin Panel
-3. View all users and organizations
+3. View all users and organisations
 4. Update org SAHPRA license
 5. Check audit logs for changes
 6. **Result**: All operations logged, changes persisted correctly
@@ -263,7 +263,7 @@
 1. `CronSetupInstructions.tsx` - Setup guide with SQL snippets
 2. `Admin.tsx` - Admin panel main page
 3. `UsersManagement.tsx` - User management interface
-4. `OrgsManagement.tsx` - Organization management interface
+4. `OrgsManagement.tsx` - Organisation management interface
 
 ### Documentation Created
 - `docs/cron-setup.md` - Complete cron job setup guide

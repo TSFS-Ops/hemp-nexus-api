@@ -169,7 +169,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Trade Approval enforcement for BOTH parties ──
-    for (const [label, oid] of [["Requesting org", org_id], ["Counterparty", counterparty_org_id]] as const) {
+    for (const [label, oid] of [["Requesting org", org_id], ["Trading Partner", counterparty_org_id]] as const) {
       const { data: approval } = await adminClient
         .from("trade_approvals")
         .select("status, valid_until, risk_band")
@@ -353,7 +353,7 @@ Deno.serve(async (req: Request) => {
     if (existing) {
       return new Response(
         JSON.stringify({
-          collapsed: true,
+          completed: true,
           idempotent: true,
           collapse_id: existing.id,
           payload_hash: existing.payload_hash,
@@ -364,7 +364,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── State machine check: POI must be in ELIGIBLE or COLLAPSE_REQUESTED state ──
+    // ── State machine check: POI must be in ELIGIBLE or COMPLETION_REQUESTED state ──
     if (match_id && UUID_RE.test(match_id)) {
       const { data: match } = await adminClient
         .from("matches")
@@ -373,11 +373,11 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (match) {
-        const allowed = ["ELIGIBLE", "COLLAPSE_REQUESTED"];
+        const allowed = ["ELIGIBLE", "COMPLETION_REQUESTED"];
         if (!allowed.includes(match.poi_state)) {
           throw new ApiException(
             "STATE_VIOLATION",
-            `Collapse not allowed from state ${match.poi_state}. Must be ELIGIBLE or COLLAPSE_REQUESTED.`,
+            `Collapse not allowed from state ${match.poi_state}. Must be ELIGIBLE or COMPLETION_REQUESTED.`,
             422,
             { currentState: match.poi_state }
           );
@@ -496,7 +496,7 @@ Deno.serve(async (req: Request) => {
         signature_key_id: signature_key_id || null,
         signature_valid: signatureValid,
         payload_hash: payloadHash,
-        poi_state: "COLLAPSED",
+        poi_state: "COMPLETED",
         metadata: metadata || {},
         actor_user_id: actorUserId || null,
         payload_ciphertext: body.payload_ciphertext || null,
@@ -529,7 +529,7 @@ Deno.serve(async (req: Request) => {
         if (raceExisting) {
           return new Response(
             JSON.stringify({
-              collapsed: true,
+              completed: true,
               idempotent: true,
               collapse_id: raceExisting.id,
               payload_hash: raceExisting.payload_hash,
@@ -549,14 +549,14 @@ Deno.serve(async (req: Request) => {
     if (match_id && UUID_RE.test(match_id)) {
       await adminClient
         .from("matches")
-        .update({ poi_state: "COLLAPSED" })
+        .update({ poi_state: "COMPLETED" })
         .eq("id", match_id);
 
       await adminClient.from("poi_events").insert({
         match_id,
         org_id,
-        from_state: "COLLAPSE_REQUESTED",
-        to_state: "COLLAPSED",
+        from_state: "COMPLETION_REQUESTED",
+        to_state: "COMPLETED",
         actor_user_id: actorUserId || null,
         actor_api_key_id: actorApiKeyId || null,
         reason: "Deterministic collapse via collapse engine",
@@ -574,7 +574,7 @@ Deno.serve(async (req: Request) => {
       org_id,
       actor_user_id: actorUserId || null,
       actor_api_key_id: actorApiKeyId || null,
-      action: "poi.collapsed",
+      action: "poi.completed",
       entity_type: "collapse_ledger",
       entity_id: record.id,
       metadata: {
@@ -592,12 +592,12 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({
-        collapsed: true,
+        completed: true,
         idempotent: false,
         collapse_id: record.id,
         payload_hash: payloadHash,
         signature_valid: signatureValid,
-        poi_state: "COLLAPSED",
+        poi_state: "COMPLETED",
         created_at: record.created_at,
       }),
       { status: 201, headers: { ...headers, "Content-Type": "application/json" } }

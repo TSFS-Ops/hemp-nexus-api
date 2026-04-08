@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 
     const isPartyOrg = userOrgId === matchOrgId || userOrgId === buyerOrgId || userOrgId === sellerOrgId;
     if (!isAdmin && !isPartyOrg) {
-      throw new ApiException("FORBIDDEN", "You do not have access to this POI", 403);
+      throw new ApiException("FORBIDDEN", "You do not have access to this intent", 403);
     }
 
     // Fetch documents for match - include version lineage fields

@@ -434,7 +434,7 @@ export default function Auth() {
           </Link>
           <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome</h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to manage counterparty searches, matches, and compliance records
+            Sign in to manage trading partner searches, matches, and compliance records
           </p>
         </div>
 
@@ -544,7 +544,7 @@ export default function Auth() {
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="p-3 bg-muted/40 border border-border rounded-md mb-4">
                 <p className="text-xs text-muted-foreground">
-                  Create an account to search for counterparties, confirm intent, and manage your compliance records.
+                  Create an account to search for trading partners, confirm intent, and manage your compliance records.
                 </p>
               </div>
               <div className="space-y-2">

@@ -92,7 +92,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
     apiKeyPlaintext = body.key;
   });
 
-  // ── Step 6: Run a counterparty search (long-running) ───────────
+  // ── Step 6: Run a trading partner search (long-running) ───────────
   it("1.6 - search returns results without error", async () => {
     const res = await fetch(`${BASE_URL}/functions/v1/search`, {
       method: "POST",

@@ -58,8 +58,8 @@ Both validate inputs: invalid tab values fall back to default; invalid sort valu
 ## 4. Intentionally Local State (Not URL-Driven)
 
 - **Search results** - derived from `?q=`, not stored in URL
-- **Selected checkboxes** (matches, counterparties) - ephemeral selection, ugly as URL params
-- **Dialogs / sheets / drawers** - settle confirm, demo confirm, similar counterparties, document sharing
+- **Selected checkboxes** (matches, trading partners) - ephemeral selection, ugly as URL params
+- **Dialogs / sheets / drawers** - settle confirm, demo confirm, similar trading partners, document sharing
 - **Form drafts** - in-progress edits to settings, deal terms, notes
 - **Pre-auth sessionStorage** (`src/lib/pre-auth-state.ts`) - stores selected counterparty IDs + pending action across auth. Complements (does not duplicate) URL-based `returnTo`
 
@@ -95,7 +95,7 @@ Both validate inputs: invalid tab values fall back to default; invalid sort valu
 
 6. **`CounterpartySearch` auto-searches on mount** if `?q=` is non-empty. The guard (`hasAutoSearched` + `initialQuery.trim()`) prevents duplicate calls, but if you restructure the component to re-mount (e.g., change the `key`), it will re-fire.
 
-7. **Pre-auth state (`pre-auth-state.ts`) uses sessionStorage**, scoped to the tab. It persists selected counterparties and pending actions across the auth redirect. URL-based `returnTo` handles the *destination*; sessionStorage handles the *intent payload*. Both are needed.
+7. **Pre-auth state (`pre-auth-state.ts`) uses sessionStorage**, scoped to the tab. It persists selected trading partners and pending actions across the auth redirect. URL-based `returnTo` handles the *destination*; sessionStorage handles the *intent payload*. Both are needed.
 
 ---
 

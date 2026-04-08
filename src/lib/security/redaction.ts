@@ -151,7 +151,7 @@ export function redactUser(
 }
 
 /**
- * Redact organization for non-admin display
+ * Redact organisation for non-admin display
  */
 export function redactOrg(
   org: Record<string, unknown>,

@@ -33,8 +33,8 @@ export const STATE_LABELS: Record<string, string> = {
 };
 
 export const STATE_DESCRIPTIONS: Record<string, string> = {
-  discovery: "A counterparty has been matched. Review and confirm your intent to proceed.",
-  intent_declared: "Intent has been confirmed. You can now reveal the counterparty identity.",
+  discovery: "A trading partner has been matched. Review and confirm your intent to proceed.",
+  intent_declared: "Intent has been confirmed. You can now reveal the trading partner identity.",
   counterparty_sighted: "Counterparty identity revealed. Both parties can now commit to the deal.",
   committed: "Both parties have committed. Complete the transaction to finalise.",
   completed: "Transaction completed. Evidence record sealed.",
@@ -190,13 +190,13 @@ export function getNextActionDescription(currentState: string, matchType?: strin
   if (matchType === "unilateral") {
     const descriptions: Record<string, string> = {
       discovery: "Formally declares your intent to the market. This creates a governed record. Non-binding.",
-      intent_declared: "This unilateral intent is awaiting a counterparty. Once a counterparty is attached, you can proceed to reveal.",
+      intent_declared: "This unilateral intent is awaiting a trading partner. Once a trading partner is attached, you can proceed to reveal.",
     };
     return descriptions[currentState] ?? null;
   }
   const descriptions: Record<string, string> = {
-    discovery: "Records your interest so the counterparty can prepare terms. Non-binding.",
-    intent_declared: "Reveals both party identities. The counterparty will see your organisation name.",
+    discovery: "Records your interest so the trading partner can prepare terms. Non-binding.",
+    intent_declared: "Reveals both party identities. The trading partner will see your organisation name.",
     counterparty_sighted: "Formally commits you to this deal. An evidence record is created.",
     committed: "Marks the transaction as completed. The full evidence pack is sealed.",
   };
@@ -236,7 +236,7 @@ export function statusLabel(statusOrState: string): string {
 export function statusDescription(statusOrState: string): string {
   if (STATE_DESCRIPTIONS[statusOrState]) return STATE_DESCRIPTIONS[statusOrState];
   const descriptions: Record<string, string> = {
-    matched: "A counterparty has been matched. Review and confirm your intent to proceed.",
+    matched: "A trading partner has been matched. Review and confirm your intent to proceed.",
     settled: "Intent has been confirmed and recorded. An evidence record has been created.",
     confirmed: "Intent has been confirmed and recorded. An evidence record has been created.",
     disputed: "A dispute has been raised on this match. Settlement is paused until resolved.",

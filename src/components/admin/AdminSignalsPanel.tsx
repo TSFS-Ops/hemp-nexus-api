@@ -62,7 +62,7 @@ export function AdminSignalsPanel() {
     const headers = ["ID", "Org", "Type", "Status", "Content", "Created At", "Expires At"];
     const rows = signals.map(s => [
       s.id,
-      (s as any).organizations?.name || s.org_id,
+      (s as any).organisations?.name || s.org_id,
       s.type,
       s.status,
       JSON.stringify(s.content),
@@ -96,7 +96,7 @@ export function AdminSignalsPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Signals Management</h2>
           <p className="text-muted-foreground mt-2">
-            View and manage all signals across organizations
+            View and manage all signals across organisations
           </p>
         </div>
         <div className="flex gap-2">
@@ -115,7 +115,7 @@ export function AdminSignalsPanel() {
         <CardHeader>
           <CardTitle>All Signals</CardTitle>
           <CardDescription>
-            Buyer and seller signals from all organizations
+            Buyer and seller signals from all organisations
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -176,7 +176,7 @@ export function AdminSignalsPanel() {
                     return (
                       <TableRow key={signal.id}>
                         <TableCell className="font-mono text-xs">
-                          {((signal as any).organizations?.name || signal.org_id).substring(0, 8)}...
+                          {((signal as any).organisations?.name || signal.org_id).substring(0, 8)}...
                         </TableCell>
                         <TableCell>{getTypeBadge(signal.type)}</TableCell>
                         <TableCell className="font-medium">
@@ -241,7 +241,7 @@ export function AdminSignalsPanel() {
                   <div className="mt-1"><StatusBadge status={selectedSignal.status} /></div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Organization</label>
+                  <label className="text-sm font-medium text-muted-foreground">Organisation</label>
                   <p className="font-mono text-xs">{selectedSignal.org_id}</p>
                 </div>
               </div>

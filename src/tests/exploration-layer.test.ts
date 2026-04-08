@@ -66,24 +66,24 @@ describe('Exploration layer is non-binding', () => {
 
 // ── Test 2: Collapse API rejects when prerequisites missing ──
 describe('POI collapse blocked without prerequisites', () => {
-  it('DRAFT → COLLAPSED is not a valid transition', () => {
-    const error = validateTransition('DRAFT', 'COLLAPSED');
+  it('DRAFT → COMPLETED is not a valid transition', () => {
+    const error = validateTransition('DRAFT', 'COMPLETED');
     expect(error).not.toBeNull();
     expect(error).toContain('not permitted');
   });
 
-  it('PENDING_APPROVAL → COLLAPSED is not valid', () => {
-    const error = validateTransition('PENDING_APPROVAL', 'COLLAPSED');
+  it('PENDING_APPROVAL → COMPLETED is not valid', () => {
+    const error = validateTransition('PENDING_APPROVAL', 'COMPLETED');
     expect(error).not.toBeNull();
   });
 
-  it('ELIGIBLE → COLLAPSED is not valid (must go through COLLAPSE_REQUESTED)', () => {
-    const error = validateTransition('ELIGIBLE', 'COLLAPSED');
+  it('ELIGIBLE → COMPLETED is not valid (must go through COMPLETION_REQUESTED)', () => {
+    const error = validateTransition('ELIGIBLE', 'COMPLETED');
     expect(error).not.toBeNull();
   });
 
-  it('only COLLAPSE_REQUESTED → COLLAPSED is valid', () => {
-    const error = validateTransition('COLLAPSE_REQUESTED', 'COLLAPSED');
+  it('only COMPLETION_REQUESTED → COMPLETED is valid', () => {
+    const error = validateTransition('COMPLETION_REQUESTED', 'COMPLETED');
     expect(error).toBeNull();
   });
 });
@@ -105,18 +105,18 @@ describe('No implicit POI creation from exploration', () => {
     expect(isCollapseAllowed(null)).toBe(false);
   });
 
-  it('COLLAPSED state is immutable - no field mutations possible', () => {
-    expect(IMMUTABLE_STATES).toContain('COLLAPSED');
+  it('COMPLETED state is immutable - no field mutations possible', () => {
+    expect(IMMUTABLE_STATES).toContain('COMPLETED');
     expect(IMMUTABLE_STATES).toContain('ANNULLED');
   });
 
-  it('only explicit COLLAPSE_REQUESTED state can transition to COLLAPSED', () => {
-    // Verify no other state can reach COLLAPSED
+  it('only explicit COMPLETION_REQUESTED state can transition to COMPLETED', () => {
+    // Verify no other state can reach COMPLETED
     const statesThatCanCollapse = Object.entries(VALID_TRANSITIONS)
-      .filter(([_, targets]) => targets.includes('COLLAPSED'))
+      .filter(([_, targets]) => targets.includes('COMPLETED'))
       .map(([state]) => state);
     
-    expect(statesThatCanCollapse).toEqual(['COLLAPSE_REQUESTED']);
+    expect(statesThatCanCollapse).toEqual(['COMPLETION_REQUESTED']);
   });
 });
 

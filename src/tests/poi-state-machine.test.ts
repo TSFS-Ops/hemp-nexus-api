@@ -17,10 +17,10 @@ import {
 } from "@/lib/modules/poi-engine/state-machine";
 
 describe("POI State Machine - Acceptance Tests", () => {
-  // ── Test 1: DRAFT → COLLAPSED must fail ──
-  describe("Test 1: Cannot skip states (DRAFT → COLLAPSED)", () => {
-    it("should reject a direct transition from DRAFT to COLLAPSED", () => {
-      const error = validateTransition("DRAFT", "COLLAPSED");
+  // ── Test 1: DRAFT → COMPLETED must fail ──
+  describe("Test 1: Cannot skip states (DRAFT → COMPLETED)", () => {
+    it("should reject a direct transition from DRAFT to COMPLETED", () => {
+      const error = validateTransition("DRAFT", "COMPLETED");
       expect(error).not.toBeNull();
       expect(error).toContain("not permitted");
     });
@@ -42,29 +42,29 @@ describe("POI State Machine - Acceptance Tests", () => {
     });
   });
 
-  // ── Test 2: COLLAPSED POI is immutable ──
-  describe("Test 2: COLLAPSED POI is immutable", () => {
-    it("should report COLLAPSED as not mutable", () => {
-      expect(isMutable("COLLAPSED")).toBe(false);
+  // ── Test 2: COMPLETED POI is immutable ──
+  describe("Test 2: COMPLETED POI is immutable", () => {
+    it("should report COMPLETED as not mutable", () => {
+      expect(isMutable("COMPLETED")).toBe(false);
     });
 
-    it("should only allow COLLAPSED → ANNULLED", () => {
-      const allowed = VALID_TRANSITIONS["COLLAPSED"];
+    it("should only allow COMPLETED → ANNULLED", () => {
+      const allowed = VALID_TRANSITIONS["COMPLETED"];
       expect(allowed).toEqual(["ANNULLED"]);
     });
 
-    it("should reject COLLAPSED → DRAFT", () => {
-      const error = validateTransition("COLLAPSED", "DRAFT");
+    it("should reject COMPLETED → DRAFT", () => {
+      const error = validateTransition("COMPLETED", "DRAFT");
       expect(error).not.toBeNull();
     });
 
-    it("should reject COLLAPSED → PENDING_APPROVAL", () => {
-      const error = validateTransition("COLLAPSED", "PENDING_APPROVAL");
+    it("should reject COMPLETED → PENDING_APPROVAL", () => {
+      const error = validateTransition("COMPLETED", "PENDING_APPROVAL");
       expect(error).not.toBeNull();
     });
 
-    it("should reject COLLAPSED → COLLAPSED (same state)", () => {
-      const error = validateTransition("COLLAPSED", "COLLAPSED");
+    it("should reject COMPLETED → COMPLETED (same state)", () => {
+      const error = validateTransition("COMPLETED", "COMPLETED");
       expect(error).not.toBeNull();
       expect(error).toContain("same state");
     });
@@ -72,8 +72,8 @@ describe("POI State Machine - Acceptance Tests", () => {
 
   // ── Test 3: ANNULLED flow ──
   describe("Test 3: ANNULLED flow", () => {
-    it("should allow COLLAPSED → ANNULLED", () => {
-      const error = validateTransition("COLLAPSED", "ANNULLED");
+    it("should allow COMPLETED → ANNULLED", () => {
+      const error = validateTransition("COMPLETED", "ANNULLED");
       expect(error).toBeNull();
     });
 
@@ -93,8 +93,8 @@ describe("POI State Machine - Acceptance Tests", () => {
       const path: [PoiState, PoiState][] = [
         ["DRAFT", "PENDING_APPROVAL"],
         ["PENDING_APPROVAL", "ELIGIBLE"],
-        ["ELIGIBLE", "COLLAPSE_REQUESTED"],
-        ["COLLAPSE_REQUESTED", "COLLAPSED"],
+        ["ELIGIBLE", "COMPLETION_REQUESTED"],
+        ["COMPLETION_REQUESTED", "COMPLETED"],
       ];
 
       for (const [from, to] of path) {
@@ -104,7 +104,7 @@ describe("POI State Machine - Acceptance Tests", () => {
     });
 
     it("should validate the annulment path after collapse", () => {
-      expect(validateTransition("COLLAPSED", "ANNULLED")).toBeNull();
+      expect(validateTransition("COMPLETED", "ANNULLED")).toBeNull();
     });
   });
 
@@ -120,14 +120,14 @@ describe("POI State Machine - Acceptance Tests", () => {
       expect(validateTransition("REJECTED", "DRAFT")).not.toBeNull();
     });
 
-    it("should have all POI states defined in transitions map", () => {
+    it("should have all Intent states defined in transitions map", () => {
       for (const state of POI_STATES) {
         expect(VALID_TRANSITIONS[state]).toBeDefined();
       }
     });
 
-    it("should ensure COLLAPSE_REQUESTED cannot bypass to ANNULLED", () => {
-      const error = validateTransition("COLLAPSE_REQUESTED", "ANNULLED");
+    it("should ensure COMPLETION_REQUESTED cannot bypass to ANNULLED", () => {
+      const error = validateTransition("COMPLETION_REQUESTED", "ANNULLED");
       expect(error).not.toBeNull();
     });
   });

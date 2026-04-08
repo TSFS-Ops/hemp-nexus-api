@@ -69,7 +69,7 @@ export default function Troubleshooting() {
       description: "Your API key doesn't have the required scopes for this operation.",
       causes: [
         "API key missing required scope (e.g., signals:write)",
-        "Attempting to access another organization's resources",
+        "Attempting to access another organisation's resources",
         "API key created with limited permissions"
       ],
       solutions: [
@@ -225,7 +225,7 @@ export default function Troubleshooting() {
     {
       category: "Integration",
       question: "Can I use the API from my localhost during development?",
-      answer: "Yes, the API supports CORS and can be called from localhost. Make sure your API key is included in the Authorization header as 'Bearer YOUR_API_KEY'."
+      answer: "Yes, the API supports CORS and can be called from localhost. Make sure your API key is included in the Authorisation header as 'Bearer YOUR_API_KEY'."
     },
     {
       category: "Integration",

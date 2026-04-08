@@ -27,7 +27,7 @@ interface ApiKeyData {
   created_at: string;
   last_used_at: string | null;
   expires_at: string | null;
-  organizations: { name: string } | null;
+  organisations: { name: string } | null;
   profiles: { email: string } | null;
 }
 
@@ -92,7 +92,7 @@ export function AdminApiKeys() {
         }
       }
 
-      // Fetch organization names
+      // Fetch organisation names
       let orgMap = new Map<string, string>();
       if (orgIds.length > 0) {
         const { data: orgs } = await supabase
@@ -105,7 +105,7 @@ export function AdminApiKeys() {
         }
       }
 
-      // Enrich keys with organization and profile data
+      // Enrich keys with organisation and profile data
       const keysWithDetails = (data || []).map(key => ({
         id: key.id,
         name: key.name,
@@ -114,7 +114,7 @@ export function AdminApiKeys() {
         created_at: key.created_at,
         last_used_at: key.last_used_at,
         expires_at: key.expires_at,
-        organizations: key.org_id ? { name: orgMap.get(key.org_id) || null } : null,
+        organisations: key.org_id ? { name: orgMap.get(key.org_id) || null } : null,
         profiles: key.created_by ? profileMap.get(key.created_by) || null : null,
       }));
 
@@ -158,7 +158,7 @@ export function AdminApiKeys() {
     const searchLower = searchTerm.toLowerCase();
     return (
       key.name.toLowerCase().includes(searchLower) ||
-      key.organizations?.name.toLowerCase().includes(searchLower) ||
+      key.organisations?.name.toLowerCase().includes(searchLower) ||
       key.profiles?.email.toLowerCase().includes(searchLower) ||
       key.id.toLowerCase().includes(searchLower)
     );
@@ -170,7 +170,7 @@ export function AdminApiKeys() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">API Keys Management</h2>
           <p className="text-muted-foreground mt-2">
-            Monitor and manage all API keys across organizations
+            Monitor and manage all API keys across organisations
           </p>
         </div>
         <Button onClick={fetchApiKeys} variant="outline" size="sm">
@@ -185,7 +185,7 @@ export function AdminApiKeys() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, organization, creator email, or key ID..."
+                placeholder="Search by name, organisation, creator email, or key ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -205,7 +205,7 @@ export function AdminApiKeys() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Organization</TableHead>
+                    <TableHead>Organisation</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Scopes</TableHead>
@@ -223,7 +223,7 @@ export function AdminApiKeys() {
                           {key.name}
                         </div>
                       </TableCell>
-                      <TableCell>{key.organizations?.name || "-"}</TableCell>
+                      <TableCell>{key.organisations?.name || "-"}</TableCell>
                       <TableCell className="text-xs">{key.profiles?.email || "-"}</TableCell>
                       <TableCell>
                         <Badge
