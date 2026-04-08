@@ -242,6 +242,10 @@ export function UnilateralIntentForm() {
         }
       }
 
+      // Reset form state so back-navigation shows a blank slate
+      setForm(INITIAL);
+      setDraftText("");
+
       toast.success("Intent published. This record is now visible in your matches.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
