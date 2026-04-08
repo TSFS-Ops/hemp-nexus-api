@@ -6,12 +6,13 @@
  * Each action costs 1 credit.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CheckCircle2, Circle, ArrowRight, Coins, AlertTriangle, Loader2,
+  Check, X, Info,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,54 @@ import {
 } from "@/components/ui/alert-dialog";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
+
+interface FieldCheck {
+  label: string;
+  filled: boolean;
+  required: boolean;
+  hint: string;
+}
+
+function getFieldChecklist(match: Match): FieldCheck[] {
+  return [
+    {
+      label: "Commodity",
+      filled: !!match.commodity,
+      required: true,
+      hint: "Set via Search or edit the match",
+    },
+    {
+      label: "Buyer name",
+      filled: !!match.buyer_name,
+      required: true,
+      hint: "Add via the Terms tab or match creation",
+    },
+    {
+      label: "Seller name",
+      filled: !!match.seller_name,
+      required: true,
+      hint: "Add via the Terms tab or match creation",
+    },
+    {
+      label: "Quantity",
+      filled: match.quantity_amount != null && match.quantity_amount > 0,
+      required: true,
+      hint: "Set quantity in the Terms tab",
+    },
+    {
+      label: "Price",
+      filled: match.price_amount != null && match.price_amount > 0,
+      required: true,
+      hint: "Set price in the Terms tab",
+    },
+    {
+      label: "Terms",
+      filled: !!match.terms,
+      required: false,
+      hint: "Optional — add payment/delivery terms",
+    },
+  ];
+}
 
 const CREDITS_PER_ACTION = 1;
 
@@ -42,6 +91,10 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
   const nextDescription = MatchState.getNextActionDescription(currentState);
   const actionPath = nextState ? MatchState.getTransitionAction(nextState) : null;
   const isTerminal = MatchState.isTerminal(currentState);
+
+  const checklist = useMemo(() => getFieldChecklist(match), [match]);
+  const requiredMissing = checklist.filter(f => f.required && !f.filled);
+  const allRequiredFilled = requiredMissing.length === 0;
 
   const { data: balance, refetch } = useQuery({
     queryKey: ["token-balance-progression"],
@@ -121,6 +174,43 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
           {MatchState.STATE_DESCRIPTIONS[currentState]}
         </p>
 
+        {/* Field readiness checklist */}
+        {!isTerminal && nextLabel && (
+          <div className="rounded-lg border border-border p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-muted-foreground shrink-0" />
+              <p className="text-sm font-medium">Readiness checklist</p>
+              <Badge variant={allRequiredFilled ? "default" : "secondary"} className="ml-auto text-[10px]">
+                {checklist.filter(f => f.filled).length}/{checklist.length} complete
+              </Badge>
+            </div>
+            <div className="grid gap-1.5">
+              {checklist.map((field) => (
+                <div key={field.label} className="flex items-center gap-2 text-sm">
+                  {field.filled ? (
+                    <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                  ) : (
+                    <X className={`h-3.5 w-3.5 shrink-0 ${field.required ? "text-destructive" : "text-muted-foreground"}`} />
+                  )}
+                  <span className={field.filled ? "text-muted-foreground" : "text-foreground"}>
+                    {field.label}
+                    {!field.required && <span className="text-muted-foreground text-xs ml-1">(optional)</span>}
+                  </span>
+                  {!field.filled && (
+                    <span className="text-xs text-muted-foreground ml-auto">{field.hint}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            {!allRequiredFilled && (
+              <p className="text-xs text-muted-foreground border-t border-border pt-2">
+                Complete the required fields above before proceeding. Go to the <strong>Terms</strong> tab to add missing data.
+                No credits will be charged until you proceed.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Next action CTA */}
         {!isTerminal && nextLabel && (
           <>
@@ -140,13 +230,18 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
             ) : (
               <button
                 onClick={handleConfirmClick}
-                disabled={loading}
+                disabled={loading || !allRequiredFilled}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Processing…
+                  </>
+                ) : !allRequiredFilled ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4" />
+                    Complete required fields first
                   </>
                 ) : (
                   <>
