@@ -33,7 +33,7 @@ const pythonExample = `import requests
 class IzenzoClient:
     def __init__(self, api_key: str, base_url: str = None):
         self.api_key = api_key
-        self.base_url = base_url or "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1"
+        self.base_url = base_url or "https://api.izenzo.co.za/functions/v1"
     
     def _headers(self):
         return {
@@ -80,7 +80,7 @@ match = client.create_match({
 print(f"Match created: {match['id']}")`;
 
 const curlExample = `# Create a match
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \\
+curl -X POST https://api.izenzo.co.za/functions/v1/match \\
   -H "X-API-Key: sk_your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -92,15 +92,15 @@ curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match \\
   }'
 
 # Get a match
-curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/{match_id} \\
+curl https://api.izenzo.co.za/functions/v1/match/{match_id} \\
   -H "X-API-Key: sk_your_api_key"
 
 # Confirm intent (non-binding)
-curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/match/{match_id}/settle \\
+curl -X POST https://api.izenzo.co.za/functions/v1/match/{match_id}/settle \\
   -H "X-API-Key: sk_your_api_key"
 
 # List matches
-curl "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/matches?limit=10&status=matched" \\
+curl "https://api.izenzo.co.za/functions/v1/matches?limit=10&status=matched" \\
   -H "X-API-Key: sk_your_api_key"`;
 
 
@@ -238,7 +238,7 @@ export function SdkDocumentation() {
           </Button>
           <Button variant="outline" size="sm" asChild>
             <a 
-              href="https://editor.swagger.io/?url=https://ugrfyhwlonlmlcmcpcdm.supabase.co/storage/v1/object/public/docs/openapi.yaml" 
+              href={`https://editor.swagger.io/?url=${window.location.origin}/openapi.yaml`} 
               target="_blank" 
               rel="noopener noreferrer"
             >

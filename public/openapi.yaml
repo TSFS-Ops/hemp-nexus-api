@@ -22,7 +22,7 @@ info:
     url: https://api.izenzo.co.za/terms
 
 servers:
-  - url: https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1
+  - url: https://api.izenzo.co.za/functions/v1
     description: Production
 
 security:
