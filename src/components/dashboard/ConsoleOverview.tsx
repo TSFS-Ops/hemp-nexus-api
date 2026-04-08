@@ -2,12 +2,13 @@ import { useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Key, Activity, FileText, BarChart3, Clock, Search, ArrowRight, BookOpen, Zap, Handshake, Play } from "lucide-react";
+import { Key, Activity, FileText, BarChart3, Clock, Search, ArrowRight, BookOpen, Zap, Handshake, Play, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeTime } from "@/lib/format";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 const OnboardingWizard = lazy(() => import("@/components/OnboardingWizard"));
 
@@ -123,6 +124,21 @@ export function ConsoleOverview() {
     }
   });
 
+  // Fetch token balance
+  const { data: tokenBalance } = useQuery({
+    queryKey: ["token-balance"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("token_balances")
+        .select("balance, minimum_required")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: stats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["console-overview-stats"],
     queryFn: async () => {
@@ -154,6 +170,10 @@ export function ConsoleOverview() {
     },
     enabled: !!session,
   });
+
+  const currentBalance = tokenBalance?.balance ?? 0;
+  const isBalanceLow = currentBalance <= 200;
+  const isBalanceCritical = currentBalance <= 50;
 
   const statCards = [
     { label: "Active API Keys", value: stats?.activeApiKeys ?? 0, icon: Key },
@@ -195,6 +215,54 @@ export function ConsoleOverview() {
             </a>
           </div>
         </div>
+      )}
+
+      {/* Credit Balance Card — prominent, client-requested */}
+      {!isError && tokenBalance && (
+        <Link
+          to="/billing"
+          className={cn(
+            "flex items-center justify-between p-4 rounded-lg border transition-colors hover:bg-accent/30",
+            isBalanceCritical
+              ? "border-destructive/50 bg-destructive/5"
+              : isBalanceLow
+                ? "border-amber-500/50 bg-amber-500/5"
+                : "border-primary/30 bg-primary/5"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full",
+              isBalanceCritical ? "bg-destructive/10" : isBalanceLow ? "bg-amber-500/10" : "bg-primary/10"
+            )}>
+              <Coins className={cn(
+                "h-5 w-5",
+                isBalanceCritical ? "text-destructive" : isBalanceLow ? "text-amber-600" : "text-primary"
+              )} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Credit Balance</p>
+              <p className={cn(
+                "text-2xl font-bold",
+                isBalanceCritical ? "text-destructive" : isBalanceLow ? "text-amber-600" : "text-foreground"
+              )}>
+                {currentBalance.toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">R10 per POI</p>
+            {isBalanceCritical && (
+              <p className="text-xs font-medium text-destructive mt-1">Top up now →</p>
+            )}
+            {isBalanceLow && !isBalanceCritical && (
+              <p className="text-xs font-medium text-amber-600 mt-1">Running low →</p>
+            )}
+            {!isBalanceLow && (
+              <p className="text-xs text-muted-foreground mt-1">Purchase credits →</p>
+            )}
+          </div>
+        </Link>
       )}
 
       {/* Stats Grid — only render when we have data or are loading (not on error) */}
