@@ -985,6 +985,62 @@ export type Database = {
           },
         ]
       }
+      counterparties: {
+        Row: {
+          company_name: string
+          contact_email: string | null
+          created_at: string
+          description: string | null
+          fts: unknown
+          id: string
+          jurisdiction: string | null
+          org_id: string
+          product_categories: string[] | null
+          registration_number: string | null
+          updated_at: string
+          verified: boolean
+          website: string | null
+        }
+        Insert: {
+          company_name: string
+          contact_email?: string | null
+          created_at?: string
+          description?: string | null
+          fts?: unknown
+          id?: string
+          jurisdiction?: string | null
+          org_id: string
+          product_categories?: string[] | null
+          registration_number?: string | null
+          updated_at?: string
+          verified?: boolean
+          website?: string | null
+        }
+        Update: {
+          company_name?: string
+          contact_email?: string | null
+          created_at?: string
+          description?: string | null
+          fts?: unknown
+          id?: string
+          jurisdiction?: string | null
+          org_id?: string
+          product_categories?: string[] | null
+          registration_number?: string | null
+          updated_at?: string
+          verified?: boolean
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counterparties_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_source_performance: {
         Row: {
           created_at: string
