@@ -181,6 +181,8 @@ Deno.serve(async (req) => {
       try {
         enforceEligibility(match);
       } catch (eligibilityError) {
+        const eligResult = evaluateEligibility(match);
+        console.error(`[${requestId}] SENTRY_BREADCRUMB: ELIGIBILITY_FAILED match_id=${matchId} org_id=${authCtx.orgId} match_type=${match.match_type || 'search'} failed_fields=${eligResult.failedFields.join(',')}`);
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
           actor_user_id: actorUserId,
@@ -191,8 +193,9 @@ Deno.serve(async (req) => {
           metadata: {
             request_id: requestId,
             reason: "eligibility_check_failed",
+            match_type: match.match_type || "search",
             error: eligibilityError instanceof ApiException ? eligibilityError.message : "Unknown error",
-            eligibility: formatEligibilityResponse(evaluateEligibility(match)),
+            eligibility: formatEligibilityResponse(eligResult),
           }
         });
         throw eligibilityError;
@@ -320,6 +323,7 @@ Deno.serve(async (req) => {
 
       // UNILATERAL GUARD: Cannot reveal counterparty if one side is missing
       if (match.match_type === "unilateral" && (match.buyer_id == null || match.seller_id == null)) {
+        console.error(`[${requestId}] SENTRY_BREADCRUMB: UNILATERAL_BLOCKED match_id=${matchId} org_id=${authCtx.orgId} missing_party=${match.buyer_id == null ? 'buyer' : 'seller'}`);
         throw new ApiException(
           "UNILATERAL_BLOCKED",
           "Cannot reveal counterparty on a unilateral intent. Both buyer and seller must be attached before proceeding.",

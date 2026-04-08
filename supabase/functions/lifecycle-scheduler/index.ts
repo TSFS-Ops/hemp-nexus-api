@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { triggerWebhooks } from "../_shared/webhooks.ts";
 
 /**
  * Lifecycle Scheduler — handles periodic tasks:
@@ -8,11 +9,15 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
  * 2. POD/BREACH: Auto-detect breached milestones (overdue) + 7-day grace period
  * 3. NOTIFICATIONS: Dispatch overdue/breach alerts via notification-dispatch
  * 4. ESCALATION: Escalate unresolved breaches past grace period
+ * 4. ESCALATION: Escalate unresolved breaches past grace period
+ * 5. STALE-UNILATERAL: Flag unilateral intents with no counterparty after N days
  *
  * Designed to be called via pg_cron (daily at 3 AM UTC).
  * Deduplication: Uses breach_detected_at on milestones and unique index on breaches
  * to prevent duplicate records on repeated runs.
  */
+
+const STALE_UNILATERAL_DAYS = 7;
 
 const BREACH_GRACE_DAYS = 7;
 const OVERDUE_SEVERITY_THRESHOLDS = {
@@ -280,6 +285,79 @@ Deno.serve(async (req: Request) => {
     results.notifications = {
       queued: notificationQueue.length,
       sent: notificationsSent,
+    };
+
+    // ────────────────────────────────────────────
+    // 5. STALE UNILATERAL INTENTS
+    // ────────────────────────────────────────────
+    const staleCutoff = new Date(Date.now() - STALE_UNILATERAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    // Find unilateral intents older than threshold with no counterparty attached
+    const { data: staleIntents, error: staleErr } = await admin
+      .from("matches")
+      .select("id, org_id, commodity, state, created_at, buyer_id, seller_id")
+      .eq("match_type", "unilateral")
+      .lt("created_at", staleCutoff)
+      .or("buyer_id.is.null,seller_id.is.null")
+      .not("state", "in", "(completed,cancelled)")
+      .limit(200);
+
+    let staleAuditCount = 0;
+    if (staleIntents && staleIntents.length > 0) {
+      for (const intent of staleIntents) {
+        const ageMs = now.getTime() - new Date(intent.created_at).getTime();
+        const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+
+        // Log to admin audit
+        await admin.from("admin_audit_logs").insert({
+          admin_user_id: "00000000-0000-0000-0000-000000000000",
+          action: "unilateral.stale_detected",
+          target_type: "match",
+          target_id: intent.id,
+          details: {
+            org_id: intent.org_id,
+            commodity: intent.commodity,
+            state: intent.state,
+            age_days: ageDays,
+            missing_party: intent.buyer_id == null ? "buyer" : "seller",
+          },
+        });
+        staleAuditCount++;
+
+        // Fire webhook
+        try {
+          await admin.functions.invoke("notification-dispatch", {
+            body: {
+              event_type: "unilateral.stale",
+              subject: `Stale unilateral intent: ${intent.commodity}`,
+              message: `Unilateral intent for "${intent.commodity}" has been waiting ${ageDays} days with no counterparty. Consider following up or expiring.`,
+              metadata: {
+                org_id: intent.org_id,
+                match_id: intent.id,
+                age_days: ageDays,
+                commodity: intent.commodity,
+              },
+            },
+          });
+        } catch {
+          // Non-critical
+        }
+
+        // Also fire org-level webhooks
+        triggerWebhooks(admin, intent.org_id, "unilateral.stale", {
+          match_id: intent.id,
+          commodity: intent.commodity,
+          age_days: ageDays,
+          state: intent.state,
+          missing_party: intent.buyer_id == null ? "buyer" : "seller",
+        }).catch(() => {});
+      }
+    }
+
+    results.stale_unilateral = {
+      detected: (staleIntents || []).length,
+      audited: staleAuditCount,
+      error: staleErr?.message || null,
     };
 
     // ── Audit ──

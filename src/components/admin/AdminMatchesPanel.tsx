@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import {
 
 export function AdminMatchesPanel() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -34,7 +35,7 @@ export function AdminMatchesPanel() {
   const ADMIN_MATCH_LIMIT = 100;
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-matches", statusFilter, search],
+    queryKey: ["admin-matches", statusFilter, typeFilter, search],
     queryFn: async () => {
       let query = supabase
         .from("matches")
@@ -44,6 +45,10 @@ export function AdminMatchesPanel() {
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
+      }
+
+      if (typeFilter !== "all") {
+        query = query.eq("match_type", typeFilter);
       }
 
       if (search) {
@@ -149,6 +154,17 @@ export function AdminMatchesPanel() {
                 <SelectItem value="settled">Confirmed</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="unilateral">Unilateral</SelectItem>
+                <SelectItem value="bilateral">Bilateral</SelectItem>
+                <SelectItem value="search">Search</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {isTruncated && (
@@ -165,25 +181,36 @@ export function AdminMatchesPanel() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Org</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Commodity</TableHead>
                     <TableHead>Buyer</TableHead>
                     <TableHead>Seller</TableHead>
                     <TableHead>Value</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Age</TableHead>
                     <TableHead>Evidence</TableHead>
-                    <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {matches.map((match) => (
-                    <TableRow key={match.id}>
+                  {matches.map((match) => {
+                    const matchType = (match as any).match_type || "search";
+                    const ageDays = Math.floor((Date.now() - new Date(match.created_at).getTime()) / (24 * 60 * 60 * 1000));
+                    const isStale = matchType === "unilateral" && ageDays >= 7 && (match.buyer_id == null || match.seller_id == null);
+                    return (
+                    <TableRow key={match.id} className={isStale ? "bg-amber-500/5" : ""}>
                       <TableCell className="font-mono text-xs">
                         {((match as any).organizations?.name || match.org_id).substring(0, 8)}...
                       </TableCell>
+                      <TableCell>
+                        <StatusBadge
+                          status={matchType === "unilateral" ? "warning" : matchType === "bilateral" ? "info" : "default"}
+                          label={matchType}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{match.commodity}</TableCell>
-                      <TableCell>{match.buyer_name}</TableCell>
-                      <TableCell>{match.seller_name}</TableCell>
+                      <TableCell>{match.buyer_name || <span className="text-muted-foreground italic">open</span>}</TableCell>
+                      <TableCell>{match.seller_name || <span className="text-muted-foreground italic">open</span>}</TableCell>
                       <TableCell>
                         {match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
@@ -191,9 +218,13 @@ export function AdminMatchesPanel() {
                         <MatchStatusBadge status={match.status} />
                       </TableCell>
                       <TableCell>
+                        <span className={isStale ? "text-amber-600 font-medium" : "text-muted-foreground"}>
+                          {ageDays}d
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
-                      <TableCell>{format(new Date(match.created_at), "MMM dd")}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -207,7 +238,9 @@ export function AdminMatchesPanel() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
+
                 </TableBody>
               </Table>
             </div>
