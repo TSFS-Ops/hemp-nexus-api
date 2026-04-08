@@ -168,7 +168,14 @@ export function getTransitionAction(targetState: string): string | null {
 }
 
 /** Get the action label for the next transition */
-export function getNextActionLabel(currentState: string): string | null {
+export function getNextActionLabel(currentState: string, matchType?: string): string | null {
+  if (matchType === "unilateral") {
+    const labels: Record<string, string> = {
+      discovery: "Declare Intent — 1 credit",
+      intent_declared: "Awaiting counterparty",
+    };
+    return labels[currentState] ?? null;
+  }
   const labels: Record<string, string> = {
     discovery: "Signal Intent — 1 credit",
     intent_declared: "Reveal Counterparty — 1 credit",
@@ -179,7 +186,14 @@ export function getNextActionLabel(currentState: string): string | null {
 }
 
 /** Get a description of what the next action does */
-export function getNextActionDescription(currentState: string): string | null {
+export function getNextActionDescription(currentState: string, matchType?: string): string | null {
+  if (matchType === "unilateral") {
+    const descriptions: Record<string, string> = {
+      discovery: "Formally declares your intent to the market. This creates a governed record. Non-binding.",
+      intent_declared: "This unilateral intent is awaiting a counterparty. Once a counterparty is attached, you can proceed to reveal.",
+    };
+    return descriptions[currentState] ?? null;
+  }
   const descriptions: Record<string, string> = {
     discovery: "Records your interest so the counterparty can prepare terms. Non-binding.",
     intent_declared: "Reveals both party identities. The counterparty will see your organisation name.",

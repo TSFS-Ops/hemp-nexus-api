@@ -32,25 +32,44 @@ interface FieldCheck {
 }
 
 function getFieldChecklist(match: Match): FieldCheck[] {
-  return [
+  const isUnilateral = (match as any).match_type === "unilateral";
+
+  const fields: FieldCheck[] = [
     {
       label: "Commodity",
       filled: !!match.commodity,
       required: true,
       hint: "Set via Search or edit the match",
     },
-    {
-      label: "Buyer name",
-      filled: !!match.buyer_name,
+  ];
+
+  if (!isUnilateral) {
+    fields.push(
+      {
+        label: "Buyer name",
+        filled: !!match.buyer_name,
+        required: true,
+        hint: "Add via the Terms tab or match creation",
+      },
+      {
+        label: "Seller name",
+        filled: !!match.seller_name,
+        required: true,
+        hint: "Add via the Terms tab or match creation",
+      },
+    );
+  } else {
+    // Unilateral: at least one party must be the declaring side
+    const hasDeclarer = !!match.buyer_name || !!match.seller_name;
+    fields.push({
+      label: "Declaring party",
+      filled: hasDeclarer,
       required: true,
-      hint: "Add via the Terms tab or match creation",
-    },
-    {
-      label: "Seller name",
-      filled: !!match.seller_name,
-      required: true,
-      hint: "Add via the Terms tab or match creation",
-    },
+      hint: "Set when creating the intent",
+    });
+  }
+
+  fields.push(
     {
       label: "Quantity",
       filled: match.quantity_amount != null && match.quantity_amount > 0,
@@ -69,7 +88,9 @@ function getFieldChecklist(match: Match): FieldCheck[] {
       required: false,
       hint: "Optional — add payment/delivery terms",
     },
-  ];
+  );
+
+  return fields;
 }
 
 const CREDITS_PER_ACTION = 1;
@@ -84,13 +105,20 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
   const [showDialog, setShowDialog] = useState(false);
   const { session } = useAuth();
 
+  const matchType = (match as any).match_type || "search";
+  const isUnilateral = matchType === "unilateral";
+
   const currentState = match.state || "discovery";
   const currentIdx = MatchState.getStateIndex(currentState);
   const nextState = MatchState.getNextState(currentState);
-  const nextLabel = MatchState.getNextActionLabel(currentState);
-  const nextDescription = MatchState.getNextActionDescription(currentState);
+  const nextLabel = MatchState.getNextActionLabel(currentState, matchType);
+  const nextDescription = MatchState.getNextActionDescription(currentState, matchType);
   const actionPath = nextState ? MatchState.getTransitionAction(nextState) : null;
   const isTerminal = MatchState.isTerminal(currentState);
+
+  // For unilateral intents in intent_declared state, block progression until counterparty attached
+  const unilateralBlocked = isUnilateral && currentState === "intent_declared" &&
+    (match.buyer_name == null || match.seller_name == null);
 
   const checklist = useMemo(() => getFieldChecklist(match), [match]);
   const requiredMissing = checklist.filter(f => f.required && !f.filled);
@@ -211,8 +239,22 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
           </div>
         )}
 
+        {/* Unilateral intent: awaiting counterparty */}
+        {unilateralBlocked && (
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Awaiting counterparty</p>
+              <p className="text-xs text-muted-foreground">
+                This is a unilateral intent record. The deal cannot progress further until a counterparty
+                is identified and attached. Once a counterparty responds, the lifecycle will resume.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Next action CTA */}
-        {!isTerminal && nextLabel && (
+        {!isTerminal && nextLabel && !unilateralBlocked && (
           <>
             {!hasEnough ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/5">

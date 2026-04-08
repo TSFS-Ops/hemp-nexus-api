@@ -318,6 +318,15 @@ Deno.serve(async (req) => {
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
       if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
+      // UNILATERAL GUARD: Cannot reveal counterparty if one side is missing
+      if (match.match_type === "unilateral" && (match.buyer_id == null || match.seller_id == null)) {
+        throw new ApiException(
+          "UNILATERAL_BLOCKED",
+          "Cannot reveal counterparty on a unilateral intent. Both buyer and seller must be attached before proceeding.",
+          422
+        );
+      }
+
       // Burn tokens BEFORE the atomic lock (token burn is itself atomic via atomic_token_burn)
       await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'counterparty_sighting', requestId, matchId);
 
