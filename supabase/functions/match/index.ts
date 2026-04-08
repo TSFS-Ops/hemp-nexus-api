@@ -374,8 +374,22 @@ Deno.serve(async (req) => {
       if (transitionError) handleDatabaseError(transitionError, requestId);
       if (!transitionResult?.success) {
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
-        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
-        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+        const statusCode = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        // REFUND: tokens burned but transition lost the race
+        try {
+          await supabase.rpc('refund_tokens_on_conflict', {
+            p_org_id: authCtx.orgId,
+            p_amount: ACTION_TOKEN_COSTS.counterparty_sighting,
+            p_match_id: matchId,
+            p_reason: errCode,
+            p_request_id: requestId,
+            p_actor_user_id: actorUserId,
+          });
+          console.warn(`[${requestId}] REFUND: ${ACTION_TOKEN_COSTS.counterparty_sighting} tokens refunded after ${errCode} on reveal`);
+        } catch (refundErr) {
+          console.error(`[${requestId}] CRITICAL: Token refund failed on reveal. Match: ${matchId}, Org: ${authCtx.orgId}`, refundErr);
+        }
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', statusCode);
       }
 
       const updated = transitionResult.match;
@@ -464,8 +478,21 @@ Deno.serve(async (req) => {
       if (transitionError) handleDatabaseError(transitionError, requestId);
       if (!transitionResult?.success) {
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
-        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
-        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+        const statusCode = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        try {
+          await supabase.rpc('refund_tokens_on_conflict', {
+            p_org_id: authCtx.orgId,
+            p_amount: commitCost,
+            p_match_id: matchId,
+            p_reason: errCode,
+            p_request_id: requestId,
+            p_actor_user_id: actorUserId,
+          });
+          console.warn(`[${requestId}] REFUND: ${commitCost} tokens refunded after ${errCode} on commit`);
+        } catch (refundErr) {
+          console.error(`[${requestId}] CRITICAL: Token refund failed on commit. Match: ${matchId}, Org: ${authCtx.orgId}`, refundErr);
+        }
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', statusCode);
       }
 
       const updated = transitionResult.match;
@@ -550,8 +577,21 @@ Deno.serve(async (req) => {
       if (transitionError) handleDatabaseError(transitionError, requestId);
       if (!transitionResult?.success) {
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
-        const status = errCode === 'STATE_CONFLICT' ? 409 : 400;
-        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', status);
+        const statusCode = errCode === 'STATE_CONFLICT' ? 409 : 400;
+        try {
+          await supabase.rpc('refund_tokens_on_conflict', {
+            p_org_id: authCtx.orgId,
+            p_amount: ACTION_TOKEN_COSTS.transaction_complete,
+            p_match_id: matchId,
+            p_reason: errCode,
+            p_request_id: requestId,
+            p_actor_user_id: actorUserId,
+          });
+          console.warn(`[${requestId}] REFUND: tokens refunded after ${errCode} on complete`);
+        } catch (refundErr) {
+          console.error(`[${requestId}] CRITICAL: Token refund failed on complete. Match: ${matchId}, Org: ${authCtx.orgId}`, refundErr);
+        }
+        throw new ApiException(errCode, transitionResult?.message || 'State transition failed', statusCode);
       }
 
       const updated = transitionResult.match;
