@@ -78,7 +78,7 @@ export function BulkConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>
             {isSettling
-              ? `Confirming intent…`
+              ? `Sending trade request…`
               : `Send trade request for ${matchCount} match${matchCount > 1 ? "es" : ""}?`}
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
