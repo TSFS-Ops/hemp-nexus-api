@@ -137,10 +137,11 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     setError(null);
     setSubmitting(true);
 
+    let storagePath = "";
     try {
       // 1. Upload file to storage
       const ext = selectedFile.name.split(".").pop() || "pdf";
-      const storagePath = `governance/${orgId}/${matchId}/${crypto.randomUUID()}.${ext}`;
+      storagePath = `governance/${orgId}/${matchId}/${crypto.randomUUID()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
@@ -176,6 +177,10 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
     } catch (err) {
+      // Clean up orphaned file if upload succeeded but registration failed
+      if (storagePath) {
+        supabase.storage.from("match-documents").remove([storagePath]).catch(() => {});
+      }
       const msg = err instanceof Error ? err.message : "Failed to submit governance document";
       setError(msg);
       toast.error(msg);
