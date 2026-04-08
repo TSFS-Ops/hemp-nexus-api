@@ -31,7 +31,7 @@ export function MarketSignalsPanel() {
           </span>
         </div>
         <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">
-          Indicative
+          Illustrative
         </span>
       </div>
 
@@ -66,7 +66,7 @@ export function MarketSignalsPanel() {
       {/* Footer */}
       <div className="px-3 py-1.5 border-t border-border">
         <p className="text-[8px] font-mono text-muted-foreground/25 uppercase tracking-widest">
-          Indicative pricing · Not financial advice
+          Illustrative pricing · Not live data · Not financial advice
         </p>
       </div>
     </div>

@@ -102,7 +102,7 @@ export function GovernancePanel({ isScanning = false }: GovernancePanelProps) {
       {/* Footer */}
       <div className="px-3 py-2 border-t border-border">
         <p className="text-[8px] font-mono text-muted-foreground/25 uppercase tracking-widest">
-          Indicative governance signals · Production environment
+          Illustrative only · Not live platform data
         </p>
       </div>
     </div>
