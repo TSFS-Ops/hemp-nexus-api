@@ -62,6 +62,14 @@
     --warning: 43 96% 56%;
     --warning-foreground: 0 0% 0%;
 
+    /* Trust Emerald - #059669 */
+    --emerald: 160 84% 29%;
+    --emerald-bright: 160 84% 39%;
+    --emerald-muted: 160 40% 94%;
+
+    /* Deep Slate - #0f172a */
+    --deep-slate: 222 47% 11%;
+
     /* Signal colors - #059669 for legible status text */
     --signal-verified: 160 84% 29%;
     --signal-pending: 43 96% 56%;
