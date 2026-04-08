@@ -286,6 +286,79 @@ Deno.serve(async (req: Request) => {
       sent: notificationsSent,
     };
 
+    // ────────────────────────────────────────────
+    // 5. STALE UNILATERAL INTENTS
+    // ────────────────────────────────────────────
+    const staleCutoff = new Date(Date.now() - STALE_UNILATERAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    // Find unilateral intents older than threshold with no counterparty attached
+    const { data: staleIntents, error: staleErr } = await admin
+      .from("matches")
+      .select("id, org_id, commodity, state, created_at, buyer_id, seller_id")
+      .eq("match_type", "unilateral")
+      .lt("created_at", staleCutoff)
+      .or("buyer_id.is.null,seller_id.is.null")
+      .not("state", "in", "(completed,cancelled)")
+      .limit(200);
+
+    let staleAuditCount = 0;
+    if (staleIntents && staleIntents.length > 0) {
+      for (const intent of staleIntents) {
+        const ageMs = now.getTime() - new Date(intent.created_at).getTime();
+        const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+
+        // Log to admin audit
+        await admin.from("admin_audit_logs").insert({
+          admin_user_id: "00000000-0000-0000-0000-000000000000",
+          action: "unilateral.stale_detected",
+          target_type: "match",
+          target_id: intent.id,
+          details: {
+            org_id: intent.org_id,
+            commodity: intent.commodity,
+            state: intent.state,
+            age_days: ageDays,
+            missing_party: intent.buyer_id == null ? "buyer" : "seller",
+          },
+        });
+        staleAuditCount++;
+
+        // Fire webhook
+        try {
+          await admin.functions.invoke("notification-dispatch", {
+            body: {
+              event_type: "unilateral.stale",
+              subject: `Stale unilateral intent: ${intent.commodity}`,
+              message: `Unilateral intent for "${intent.commodity}" has been waiting ${ageDays} days with no counterparty. Consider following up or expiring.`,
+              metadata: {
+                org_id: intent.org_id,
+                match_id: intent.id,
+                age_days: ageDays,
+                commodity: intent.commodity,
+              },
+            },
+          });
+        } catch {
+          // Non-critical
+        }
+
+        // Also fire org-level webhooks
+        triggerWebhooks(admin, intent.org_id, "unilateral.stale", {
+          match_id: intent.id,
+          commodity: intent.commodity,
+          age_days: ageDays,
+          state: intent.state,
+          missing_party: intent.buyer_id == null ? "buyer" : "seller",
+        }).catch(() => {});
+      }
+    }
+
+    results.stale_unilateral = {
+      detected: (staleIntents || []).length,
+      audited: staleAuditCount,
+      error: staleErr?.message || null,
+    };
+
     // ── Audit ──
     await admin.from("audit_logs").insert({
       org_id: "00000000-0000-0000-0000-000000000000",
