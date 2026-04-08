@@ -143,6 +143,46 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     }
   }, [matchId]);
 
+  const downloadDealCertificate = useCallback(async () => {
+    try {
+      setCertLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to download the deal certificate.");
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deal-certificate/${matchId}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        if (response.status === 422) {
+          toast.error("Certificate is only available once the deal reaches Signed Deal state.");
+          return;
+        }
+        throw new Error(err.message || err.error || "Failed to generate certificate");
+      }
+
+      const html = await response.text();
+      downloadFile(html, `deal-certificate-${matchId}.html`, "text/html");
+      toast.success("Deal certificate downloaded.", {
+        description: "Open the HTML file in your browser to view the formatted certificate.",
+        duration: 6000,
+      });
+    } catch (error) {
+      console.error("Certificate download error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
+    } finally {
+      setCertLoading(false);
+    }
+  }, [matchId]);
+
   /**
    * Verification: regenerate the pack and compare hashes.
    * If they match, the data is untampered.
