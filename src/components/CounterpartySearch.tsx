@@ -513,7 +513,7 @@ export default function CounterpartySearch() {
               <div>
                 <p className="font-medium text-foreground">No counterparties found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  No results matched your search for "{query}". Try broadening your query or using different terms.
+                  No registered counterparties matched "{query}". Try broadening your query, or use the Bilateral tab to create a match with a known counterparty.
                 </p>
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
