@@ -56,7 +56,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
   if (matchType !== "unilateral") return null;
 
   // Only show if the current user is NOT the match creator
-  if (!profile?.org_id || match.org_id === profile.org_id) return null;
+  if (!userProfile?.org_id || match.org_id === userProfile?.org_id) return null;
 
   // Check if there's an open slot for this user
   const buyerSlotOpen = !match.buyer_org_id;
@@ -68,7 +68,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
 
   const handleAccept = async () => {
     setShowConfirm(false);
-    if (!session || !profile?.org_id) {
+    if (!session || !userProfile?.org_id) {
       toast.error("Please sign in first.");
       return;
     }
@@ -84,10 +84,10 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       const { data: org } = await supabase
         .from("organizations")
         .select("name")
-        .eq("id", profile.org_id)
+        .eq("id", userProfile?.org_id)
         .maybeSingle();
 
-      const myName = org?.name || profile.full_name || "Organisation";
+      const myName = org?.name || userProfile?.full_name || "Organisation";
       const idempotencyKey = generateIdempotencyKey(`accept-bind-${match.id}`);
 
       // Call the match edge function to bind the counterparty
@@ -104,7 +104,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
             matchId: match.id,
             action: "accept-bind",
             counterparty: {
-              org_id: profile.org_id,
+              org_id: userProfile?.org_id,
               name: myName,
               role: buyerSlotOpen ? "buyer" : "seller",
             },
