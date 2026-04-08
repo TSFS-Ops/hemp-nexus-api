@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Megaphone, Info, Sparkles } from "lucide-react";
+import { Loader2, Megaphone, Info, Sparkles, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -40,6 +40,7 @@ interface UnilateralFormData {
   currency: string;
   location: string;
   notes: string;
+  counterpartyEmail: string;
 }
 
 const INITIAL: UnilateralFormData = {
@@ -51,6 +52,7 @@ const INITIAL: UnilateralFormData = {
   currency: "ZAR",
   location: "",
   notes: "",
+  counterpartyEmail: "",
 };
 
 export function UnilateralIntentForm() {
