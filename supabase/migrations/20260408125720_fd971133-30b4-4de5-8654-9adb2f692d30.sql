@@ -1,0 +1,1 @@
+ALTER TABLE public.governance_documents ADD COLUMN document_path text;
