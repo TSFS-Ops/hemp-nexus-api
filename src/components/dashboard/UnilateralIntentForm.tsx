@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Megaphone, Info } from "lucide-react";
+import { Loader2, Megaphone, Info, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -57,6 +57,8 @@ export function UnilateralIntentForm() {
   const [form, setForm] = useState<UnilateralFormData>(INITIAL);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [draftText, setDraftText] = useState("");
+  const [isDrafting, setIsDrafting] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
 
@@ -259,6 +261,81 @@ export function UnilateralIntentForm() {
                 <Badge variant="outline" className="text-xs">R10 ZAR per action</Badge>.
               </p>
             </div>
+          </div>
+
+          {/* ── Magic Draft ── */}
+          <div className="space-y-3 p-4 rounded-lg border border-accent/30 bg-accent/5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Magic Draft</span>
+              <Badge variant="secondary" className="text-[10px]">AI</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Paste an email, WhatsApp message, or rough notes and we'll extract the trade details automatically.
+            </p>
+            <Textarea
+              placeholder={'e.g. "Festus wants 25,000 MT of Soybeans from Malawi at $495/MT, delivery to Durban port by Q3"'}
+              value={draftText}
+              onChange={(e) => setDraftText(e.target.value)}
+              rows={3}
+              disabled={isDrafting}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={draftText.trim().length < 10 || isDrafting}
+              onClick={async () => {
+                setIsDrafting(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("draft-poi", {
+                    body: { rawText: draftText.trim() },
+                  });
+                  if (error) throw error;
+                  if (data?.error) {
+                    toast.error(data.error);
+                    return;
+                  }
+
+                  // Auto-fill form fields from AI extraction
+                  setForm((prev) => ({
+                    ...prev,
+                    side: data.side === "seller" ? "seller" : "buyer",
+                    commodity: data.commodity || prev.commodity,
+                    quantity: data.quantity || prev.quantity,
+                    unit: data.unit || prev.unit,
+                    price: data.price || prev.price,
+                    currency: data.currency || prev.currency,
+                    location: data.location || prev.location,
+                    notes: data.notes || prev.notes,
+                  }));
+
+                  const confidenceLabel =
+                    data.confidence === "high" ? "High confidence" :
+                    data.confidence === "medium" ? "Medium confidence — please review" :
+                    "Low confidence — please verify all fields";
+
+                  toast.success(`Draft extracted. ${confidenceLabel}.`);
+                } catch (err) {
+                  console.error("Magic Draft error:", err);
+                  toast.error(err instanceof Error ? err.message : "Failed to extract draft. Please fill the form manually.");
+                } finally {
+                  setIsDrafting(false);
+                }
+              }}
+            >
+              {isDrafting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Extracting…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  Extract from text
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Side */}
