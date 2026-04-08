@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
-import { SimilarTrading PartnersSheet } from "@/components/search/SimilarTrading PartnersSheet";
+import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
 import {
   AlertDialog,
@@ -639,7 +639,7 @@ export default function CounterpartySearch() {
         </AlertDialog>
 
         {/* Similar Trading Partners Sheet */}
-        <SimilarTrading PartnersSheet
+        <SimilarCounterpartiesSheet
           open={!!similarAnchor}
           onOpenChange={(open) => { if (!open) setSimilarAnchor(null); }}
           anchor={similarAnchor}

@@ -26,7 +26,7 @@ interface SimilarMatch {
   similarityScore: number;
 }
 
-interface SimilarTrading PartnersSheetProps {
+interface SimilarCounterpartiesSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   anchor: SearchResult | null;
@@ -83,13 +83,13 @@ function computeSimilarity(anchor: SearchResult, candidate: SearchResult): Simil
   return { result: candidate, reasons, similarityScore: Math.min(score, 1) };
 }
 
-export function SimilarTrading PartnersSheet({
+export function SimilarCounterpartiesSheet({
   open,
   onOpenChange,
   anchor,
   allResults,
   onSelect,
-}: SimilarTrading PartnersSheetProps) {
+}: SimilarCounterpartiesSheetProps) {
   if (!anchor) return null;
 
   const similar: SimilarMatch[] = allResults
