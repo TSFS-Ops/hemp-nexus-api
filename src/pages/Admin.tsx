@@ -169,7 +169,7 @@ function ComplianceSection() {
 function AuditSection() {
   const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Audit Trail"
         description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context."
@@ -182,8 +182,8 @@ function AuditSection() {
             <TabsTrigger value="poi">Intent History</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
-        <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
+        <TabsContent value="audit" className="mt-4 animate-section-enter"><AdminAuditLogs /></TabsContent>
+        <TabsContent value="poi" className="mt-4 animate-section-enter"><PoiStateHistory /></TabsContent>
       </Tabs>
     </div>
   );
@@ -192,7 +192,7 @@ function AuditSection() {
 function LedgerSection() {
   const [tab, setTab] = useUrlTab("tab", "ledger", ["ledger", "signing-keys", "reputation", "risk-snapshots"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Evidence Ledger"
         description="Cryptographic proof chain for all completed trades. Every entry is SHA-256 hashed and signature-verified."
@@ -207,10 +207,10 @@ function LedgerSection() {
             <TabsTrigger value="risk-snapshots">Risk Snapshots</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
-        <TabsContent value="signing-keys" className="mt-4"><AdminSigningKeysPanel /></TabsContent>
-        <TabsContent value="reputation" className="mt-4"><AdminReputationPanel /></TabsContent>
-        <TabsContent value="risk-snapshots" className="mt-4"><AdminRiskSnapshotsPanel /></TabsContent>
+        <TabsContent value="ledger" className="mt-4 animate-section-enter"><CollapseLedgerViewer /></TabsContent>
+        <TabsContent value="signing-keys" className="mt-4 animate-section-enter"><AdminSigningKeysPanel /></TabsContent>
+        <TabsContent value="reputation" className="mt-4 animate-section-enter"><AdminReputationPanel /></TabsContent>
+        <TabsContent value="risk-snapshots" className="mt-4 animate-section-enter"><AdminRiskSnapshotsPanel /></TabsContent>
       </Tabs>
     </div>
   );
