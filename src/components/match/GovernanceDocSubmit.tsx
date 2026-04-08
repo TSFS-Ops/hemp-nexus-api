@@ -1,0 +1,256 @@
+/**
+ * GovernanceDocSubmit — Submit governance documents for a match/POI.
+ * Calls the governance-docs edge function to register documents against
+ * the governance_doc_registry.
+ */
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Loader2, FileCheck, AlertCircle, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+
+interface RegistryEntry {
+  id: string;
+  doc_type: string;
+  category: string;
+  mandatory_flag: boolean;
+  jurisdiction_code: string;
+}
+
+interface GovernanceDoc {
+  id: string;
+  registry_id: string;
+  status: string;
+  created_at: string;
+  validated_at: string | null;
+  governance_doc_registry: {
+    doc_type: string;
+    category: string;
+    mandatory_flag: boolean;
+  } | null;
+}
+
+interface GovernanceDocSubmitProps {
+  matchId: string;
+  orgId: string;
+}
+
+export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps) {
+  const [registry, setRegistry] = useState<RegistryEntry[]>([]);
+  const [submitted, setSubmitted] = useState<GovernanceDoc[]>([]);
+  const [selectedRegistryId, setSelectedRegistryId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, [matchId, orgId]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load registry entries and already-submitted docs in parallel
+      const [regRes, docsRes] = await Promise.all([
+        supabase
+          .from("governance_doc_registry")
+          .select("id, doc_type, category, mandatory_flag, jurisdiction_code")
+          .eq("active", true)
+          .eq("org_id", orgId)
+          .order("category"),
+        supabase.functions.invoke("governance-docs", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deal_reference_id: matchId }),
+        }),
+      ]);
+
+      // Registry may be org-scoped, fallback to loading all
+      let regData = regRes.data || [];
+      if (regData.length === 0) {
+        const { data: allReg } = await supabase
+          .from("governance_doc_registry")
+          .select("id, doc_type, category, mandatory_flag, jurisdiction_code")
+          .eq("active", true)
+          .order("category")
+          .limit(50);
+        regData = allReg || [];
+      }
+
+      // Deduplicate by doc_type (registry may have multiple entries per org)
+      const seen = new Set<string>();
+      const dedupedRegistry = regData.filter((r) => {
+        if (seen.has(r.doc_type)) return false;
+        seen.add(r.doc_type);
+        return true;
+      });
+      setRegistry(dedupedRegistry);
+
+      // Parse submitted docs from edge function response
+      if (docsRes.data?.data) {
+        setSubmitted(docsRes.data.data);
+      } else if (Array.isArray(docsRes.data)) {
+        setSubmitted(docsRes.data);
+      }
+    } catch (err) {
+      console.error("Error loading governance data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedRegistryId) {
+      setError("Please select a document type.");
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("governance-docs", {
+        body: {
+          registry_id: selectedRegistryId,
+          deal_reference_id: matchId,
+          deal_reference_type: "poi",
+        },
+      });
+
+      if (fnError) {
+        const msg = typeof fnError === "object" && "message" in fnError ? (fnError as any).message : String(fnError);
+        throw new Error(msg);
+      }
+
+      if (data?.status === "ERROR") {
+        throw new Error(data.error?.message || "Submission failed");
+      }
+
+      toast.success("Governance document submitted for review");
+      setSelectedRegistryId("");
+      loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to submit governance document";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submittedRegistryIds = new Set(submitted.map((d) => d.registry_id));
+  const availableRegistry = registry.filter((r) => !submittedRegistryIds.has(r.id));
+  const mandatoryCount = registry.filter((r) => r.mandatory_flag).length;
+  const mandatorySubmitted = submitted.filter((d) => d.governance_doc_registry?.mandatory_flag).length;
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-6">
+          <div className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ShieldCheck className="h-5 w-5" />
+          Governance Documents
+        </CardTitle>
+        <CardDescription>
+          Submit required governance documents for this POI.
+          {mandatoryCount > 0 && (
+            <span className="block mt-1">
+              {mandatorySubmitted}/{mandatoryCount} mandatory documents submitted.
+            </span>
+          )}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Already submitted */}
+        {submitted.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wide">Submitted</Label>
+            {submitted.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
+                <div className="flex items-center gap-2">
+                  {doc.status === "validated" ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-yellow-500" />
+                  )}
+                  <span className="font-medium">
+                    {doc.governance_doc_registry?.doc_type?.replace(/_/g, " ") || "Document"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {doc.governance_doc_registry?.mandatory_flag && (
+                    <Badge variant="outline" className="text-xs">Required</Badge>
+                  )}
+                  <Badge variant={doc.status === "validated" ? "default" : "secondary"} className="text-xs">
+                    {doc.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Submit new */}
+        {availableRegistry.length > 0 ? (
+          <div className="space-y-3 pt-2 border-t">
+            <div>
+              <Label>Document Type</Label>
+              <Select value={selectedRegistryId} onValueChange={setSelectedRegistryId}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select governance document..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRegistry.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.doc_type.replace(/_/g, " ")}
+                      {r.mandatory_flag ? " (Required)" : ""}
+                      {" — "}
+                      {r.jurisdiction_code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-lg">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <Button onClick={handleSubmit} disabled={submitting || !selectedRegistryId} className="w-full" size="sm">
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <FileCheck className="h-4 w-4 mr-2" />
+              Submit Governance Document
+            </Button>
+          </div>
+        ) : registry.length > 0 ? (
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg text-sm">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>All governance documents have been submitted.</span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No governance document requirements found for your organisation. Contact your admin if this is unexpected.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
