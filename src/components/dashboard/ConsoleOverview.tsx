@@ -11,7 +11,7 @@ import { ROUTES } from "@/lib/constants";
 
 const OnboardingWizard = lazy(() => import("@/components/OnboardingWizard"));
 
-
+import { KYCStatusCard } from "@/components/dashboard/KYCStatusCard";
 function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
   const navigate = useNavigate();
 
@@ -219,6 +219,11 @@ export function ConsoleOverview() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* KYC Status — always visible when logged in */}
+      {!isError && !isLoading && (
+        <KYCStatusCard />
       )}
 
       {/* Last Activity */}

@@ -18,6 +18,14 @@ export type Match = Tables<"matches">;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Sentinel class so callers can detect state conflicts and auto-refetch */
+class StateConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StateConflictError";
+  }
+}
+
 function handleApiError(err: unknown): never {
   const msg = err instanceof Error ? err.message : String(err);
   if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
@@ -30,7 +38,7 @@ function handleApiError(err: unknown): never {
     throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");
   }
   if (msg.includes("INVALID_STATE") || msg.includes("STATE_CONFLICT") || msg.includes("already")) {
-    throw new Error("This match is not in the correct state. Refresh the page to see the latest status.");
+    throw new StateConflictError("This match has been updated by another action. Refreshing now…");
   }
   if (msg.includes("FORBIDDEN") || msg.includes("permission")) {
     throw new Error("You do not have permission to modify this match.");
@@ -137,6 +145,11 @@ export function useMatchDetails(matchId: string | undefined) {
           idempotencyKey,
         });
       } catch (err: unknown) {
+        if (err instanceof StateConflictError || (err instanceof Error && (err.message.includes("STATE_CONFLICT") || err.message.includes("INVALID_STATE")))) {
+          toast.warning("This match has been updated by another action. Refreshing now…");
+          await fetchMatch();
+          return;
+        }
         handleApiError(err);
       }
 
@@ -179,6 +192,11 @@ export function useMatchDetails(matchId: string | undefined) {
           idempotencyKey,
         });
       } catch (err: unknown) {
+        if (err instanceof StateConflictError || (err instanceof Error && (err.message.includes("STATE_CONFLICT") || err.message.includes("INVALID_STATE")))) {
+          toast.warning("This match has been updated by another action. Refreshing now…");
+          await fetchMatch();
+          return;
+        }
         handleApiError(err);
       }
 

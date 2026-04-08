@@ -6,6 +6,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Info, FileText, Shield, Clock, MessageSquare, FileSignature, ShieldAlert, ListChecks, GitBranch } from "lucide-react";
+import { PoiEventsTimeline } from "@/components/match/PoiEventsTimeline";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
@@ -146,8 +147,9 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
         <CompletionTracker matchId={match.id} orgId={match.org_id} onNavigateTab={setActiveTab} />
       </TabsContent>
 
-      <TabsContent value="timeline" className="mt-4">
+      <TabsContent value="timeline" className="mt-4 space-y-4">
         <MatchTimeline matchId={match.id} />
+        <PoiEventsTimeline matchId={match.id} />
       </TabsContent>
     </Tabs>
   );
