@@ -26,11 +26,11 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Verify the caller is authorized with LOVABLE_API_KEY
-  const authHeader = req.headers.get('Authorization')
+  // Verify the caller is authorised with LOVABLE_API_KEY
+  const authHeader = req.headers.get('Authorisation')
   const token = authHeader?.replace(/^Bearer\s+/i, '')
   if (token !== apiKey) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    return new Response(JSON.stringify({ error: 'Unauthorised' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

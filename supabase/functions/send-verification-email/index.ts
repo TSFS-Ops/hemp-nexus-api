@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       console.error("Missing or invalid authorization header");
       return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
+        JSON.stringify({ success: false, error: "Unauthorised" }),
         {
           status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (authError || !user) {
       console.error("Invalid JWT token:", authError?.message);
       return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
+        JSON.stringify({ success: false, error: "Unauthorised" }),
         {
           status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders },

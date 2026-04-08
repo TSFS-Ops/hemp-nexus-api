@@ -8,7 +8,7 @@
  * - Scrubs email addresses
  * - Scrubs phone numbers
  * - Scrubs API keys and tokens
- * - Scrubs Authorization headers
+ * - Scrubs Authorisation headers
  * - Redacts any field matching secret patterns
  */
 

@@ -214,7 +214,7 @@ Run non-binding pre-flight checks to verify readiness:
 - Organisation not frozen ✓
 - No global collapse freeze ✓
 
-**Result**: Pre-flight passes, POI state transitions to `ELIGIBLE`
+**Result**: Pre-flight passes, Intent state transitions to `ELIGIBLE`
 
 **API**: `POST /functions/v1/preflight`
 
@@ -259,7 +259,7 @@ The deterministic collapse engine executes the binding trade event.
 4. ✅ No global or org-level freeze
 5. ✅ CAP partition health check (consistency first)
 6. ✅ Idempotency (duplicate → returns original record)
-7. ✅ POI state is `ELIGIBLE` or `COLLAPSE_REQUESTED`
+7. ✅ Intent state is `ELIGIBLE` or `COMPLETION_REQUESTED`
 8. ✅ POI completion probability ≥ 50.1%
 
 **What is recorded**:
@@ -267,9 +267,9 @@ The deterministic collapse engine executes the binding trade event.
 - SHA-256 payload hash
 - NTP drift measurement (hardened if ≤1000ms)
 - Encrypted payload ciphertext (optional)
-- POI state → `COLLAPSED`
+- Intent state → `COMPLETED`
 
-**Result**: Immutable collapse record with `poi_state: "COLLAPSED"`
+**Result**: Immutable collapse record with `poi_state: "COMPLETED"`
 
 **API**: `POST /functions/v1/collapse`
 
@@ -304,13 +304,13 @@ Produce a tamper-evident evidence bundle:
 
 ---
 
-### Step 15: Create WaD (Without-a-Doubt) Certificate
+### Step 15: Create WaD (Finalised Commitment) Certificate
 
 The WaD layer enforces **7 deterministic hard-gates**:
 
 | # | Hard-Gate | Check |
 |---|-----------|-------|
-| 1 | POI state | Must be `COLLAPSED` |
+| 1 | Intent state | Must be `COMPLETED` |
 | 2 | Entity status | Must be `VERIFIED` |
 | 3 | UBO integrity | 100% verified ownership |
 | 4 | ATB records | Active and verified |
@@ -355,7 +355,7 @@ With both attestations in place, seal the WaD:
 
 ### Step 18: Download Certificate
 
-Export the sealed WaD certificate containing:
+Export the sealed finalised commitment certificate containing:
 - Transaction summary (commodity, quantity, price)
 - Party details (buyer + seller orgs)
 - Attestation records
@@ -382,7 +382,7 @@ Download the complete audit log for the trade lifecycle:
 | match.discovered | T+14s | System |
 | intent.declared | T+16s | Buyer |
 | intent.confirmed | T+18s | Seller |
-| poi.collapsed | T+20s | System |
+| poi.completed | T+20s | System |
 | wad.created | T+22s | System |
 | wad.attested | T+24s | Buyer |
 | wad.attested | T+26s | Seller |
@@ -428,7 +428,7 @@ Plus **negative tests** (Steps 15–20) that verify rejection paths:
 - Missing mandatory fields → 400
 - Invalid ECDSA signature → 400
 - Collapse before approvals → 422
-- Mutate collapsed record → exception
+- Mutate completed record → exception
 - Idempotency burst (500 requests) → only 1 record
 - Direct POI without eligibility → 422
 
@@ -439,13 +439,13 @@ Plus **negative tests** (Steps 15–20) that verify rejection paths:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    LAYER 5: Evidence                     │
-│         Evidence Pack v1 + WaD Certificate               │
+│         Evidence Pack v1 + Finalised Commitment Certificate               │
 ├─────────────────────────────────────────────────────────┤
 │                  LAYER 4: Consequence                    │
 │        Collapse Engine + Append-Only Ledger              │
 ├─────────────────────────────────────────────────────────┤
 │                 LAYER 3: POI Engine                      │
-│     State Machine (DRAFT → COLLAPSED → ANNULLED)         │
+│     State Machine (DRAFT → COMPLETED → ANNULLED)         │
 │     Probability Calculator (≥50.1% threshold)            │
 ├─────────────────────────────────────────────────────────┤
 │               LAYER 2: Exploration                       │

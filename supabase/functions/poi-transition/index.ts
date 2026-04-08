@@ -11,15 +11,15 @@ const corsHeaders = {
 const VALID_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["PENDING_APPROVAL", "EXPIRED", "REJECTED"],
   PENDING_APPROVAL: ["ELIGIBLE", "REJECTED", "EXPIRED"],
-  ELIGIBLE: ["COLLAPSE_REQUESTED", "EXPIRED", "REJECTED"],
-  COLLAPSE_REQUESTED: ["COLLAPSED", "REJECTED"],
-  COLLAPSED: ["ANNULLED"],
+  ELIGIBLE: ["COMPLETION_REQUESTED", "EXPIRED", "REJECTED"],
+  COMPLETION_REQUESTED: ["COMPLETED", "REJECTED"],
+  COMPLETED: ["ANNULLED"],
   EXPIRED: [],
   ANNULLED: [],
   REJECTED: [],
 };
 
-const IMMUTABLE_STATES = ["COLLAPSED", "ANNULLED", "EXPIRED", "REJECTED"];
+const IMMUTABLE_STATES = ["COMPLETED", "ANNULLED", "EXPIRED", "REJECTED"];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -190,9 +190,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Block collapse if approvals not complete ──
-    if (toState === "COLLAPSED") {
-      // Phase 1: check that state is COLLAPSE_REQUESTED (basic approval gate)
-      if (fromState !== "COLLAPSE_REQUESTED") {
+    if (toState === "COMPLETED") {
+      // Phase 1: check that state is COMPLETION_REQUESTED (basic approval gate)
+      if (fromState !== "COMPLETION_REQUESTED") {
         return new Response(
           JSON.stringify({ error: "Collapse blocked: approvals not complete" }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -241,7 +241,7 @@ Deno.serve(async (req: Request) => {
     if (updateError) {
       console.error("Failed to update match poi_state:", updateError);
       return new Response(
-        JSON.stringify({ error: "Failed to update POI state" }),
+        JSON.stringify({ error: "Failed to update Intent state" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

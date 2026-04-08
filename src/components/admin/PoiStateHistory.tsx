@@ -24,8 +24,8 @@ const STATE_COLOURS: Record<string, string> = {
   DRAFT: "bg-muted text-muted-foreground",
   PENDING_APPROVAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   ELIGIBLE: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  COLLAPSE_REQUESTED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  COLLAPSED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  COMPLETION_REQUESTED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   EXPIRED: "bg-secondary text-secondary-foreground",
   ANNULLED: "bg-destructive/10 text-destructive",
   REJECTED: "bg-destructive/10 text-destructive",
@@ -57,7 +57,7 @@ export function PoiStateHistory() {
       setEvents((data as unknown as PoiEvent[]) || []);
     } catch (err) {
       console.error("Failed to fetch POI history:", err);
-      toast.error("Failed to fetch POI state history");
+      toast.error("Failed to fetch Intent state history");
     } finally {
       setLoading(false);
     }

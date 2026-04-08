@@ -31,7 +31,7 @@ export default function Pricing() {
         <div className="max-w-md mx-auto px-4 sm:px-6">
           <Card className="border-primary shadow-lg">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-xl">Proof-of-Intent</CardTitle>
+              <CardTitle className="text-xl">Confirmed Intent</CardTitle>
               <CardDescription>Per transaction, pay as you go</CardDescription>
             </CardHeader>
             <CardContent>
@@ -40,7 +40,7 @@ export default function Pricing() {
                   <span className="text-5xl font-bold text-foreground">R{POI_PRICE_ZAR}</span>
                   <span className="text-muted-foreground">ZAR</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">per Proof-of-Intent</p>
+                <p className="text-sm text-muted-foreground mt-1">per Confirmed Intent</p>
               </div>
               <ul className="space-y-3">
                 {[

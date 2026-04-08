@@ -49,7 +49,7 @@ export function SearchOutcomes({
         </h3>
         <p className="text-[12px] font-medium leading-relaxed mb-5 max-w-md" style={{ color: 'var(--lt-text-muted)' }}>
           Counterparty search results are available to registered users.
-          Create a free account to search verified counterparties, create matches, and confirm intent.
+          Create a free account to search verified trading partners, create matches, and confirm intent.
         </p>
 
         <button

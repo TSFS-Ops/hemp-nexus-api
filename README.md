@@ -86,7 +86,7 @@ A **match** is a recorded trade agreement between a buyer and a seller. Each mat
 - **Price**: Amount and currency (e.g., 50000 EUR)
 - **Terms**: Commercial terms in plain language
 - **Metadata**: Optional fields like region, channel, notes
-- **Status**: Either `matched` (initial state) or `settled` (finalized)
+- **Status**: Either `matched` (initial state) or `settled` (finalised)
 - **Hash**: SHA-256 cryptographic proof of the match data
 - **Timestamps**: `created_at` and optionally `settled_at`
 
@@ -343,7 +343,7 @@ Revoke consent.
 
 ---
 
-### Organizations (Admin)
+### Organisations (Admin)
 
 See `supabase/functions/orgs/index.ts` for org management endpoints.
 
@@ -610,7 +610,7 @@ curl -H "X-API-Key: sk_your_api_key" https://...
 
 ### 2. JWT Tokens (User Sessions)
 
-Include a JWT token from Lovable Cloud Auth in the `Authorization` header:
+Include a JWT token from Lovable Cloud Auth in the `Authorisation` header:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" https://...
@@ -630,14 +630,14 @@ All endpoints are prefixed with `/v1`:
 
 ### Compliance (Ask-Once)
 - `POST /v1/compliance/documents` - Upload compliance document (PDF/JPG/PNG, max 10MB)
-- `GET /v1/compliance/status` - Get compliance status for organization
+- `GET /v1/compliance/status` - Get compliance status for organisation
 
-### Organizations & Users (Admin Only)
-- `GET /v1/orgs` - List organizations
-- `POST /v1/orgs` - Create organization
-- `GET /v1/orgs/:id` - Get organization
-- `PATCH /v1/orgs/:id` - Update organization
-- `DELETE /v1/orgs/:id` - Delete organization
+### Organisations & Users (Admin Only)
+- `GET /v1/orgs` - List organisations
+- `POST /v1/orgs` - Create organisation
+- `GET /v1/orgs/:id` - Get organisation
+- `PATCH /v1/orgs/:id` - Update organisation
+- `DELETE /v1/orgs/:id` - Delete organisation
 
 ### Orders
 - `GET /v1/orders` - List orders (filtered by org)
@@ -678,7 +678,7 @@ Set these in your Lovable Cloud backend settings:
 ## 📊 Database Schema
 
 Key tables:
-- `organizations` - Multi-tenant organizations
+- `organisations` - Multi-tenant organisations
 - `profiles` - User profiles (extends auth.users)
 - `user_roles` - Role-based access control (admin, seller, broker, buyer, auditor)
 - `api_keys` - API key management

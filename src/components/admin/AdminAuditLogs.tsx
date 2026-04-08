@@ -409,7 +409,7 @@ export function AdminAuditLogs() {
                   <p className="font-mono text-sm">{selectedLog.entity_id}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Organization</label>
+                  <label className="text-sm font-medium text-muted-foreground">Organisation</label>
                   <p className="font-mono text-sm">{selectedLog.org_id}</p>
                 </div>
               </div>

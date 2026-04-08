@@ -113,7 +113,7 @@ export default function Landing() {
             className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
             style={{ color: 'var(--lt-text)' }}
           >
-            Discover counterparties. Signal intent. Execute with confidence.
+            Discover trading partners. Signal intent. Execute with confidence.
           </h1>
           <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-lg" style={{ color: 'var(--lt-text-muted)' }}>
             Search for verified buyers and sellers, then progress toward compliant transactions.

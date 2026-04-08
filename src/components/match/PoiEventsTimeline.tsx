@@ -1,5 +1,5 @@
 /**
- * PoiEventsTimeline - Displays the POI state transition history for a match.
+ * PoiEventsTimeline - Displays the Intent state transition history for a match.
  * Fetches from poi_events table, ordered chronologically.
  */
 
@@ -19,8 +19,8 @@ const STATE_COLORS: Record<string, string> = {
   DRAFT: "bg-muted text-muted-foreground",
   PENDING_APPROVAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
   ELIGIBLE: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  COLLAPSE_REQUESTED: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  COLLAPSED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  COMPLETION_REQUESTED: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   ANNULLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   EXPIRED: "bg-muted text-muted-foreground",
   REJECTED: "bg-destructive/10 text-destructive",
@@ -74,7 +74,7 @@ export function PoiEventsTimeline({ matchId }: PoiEventsTimelineProps) {
           POI Activity Log
         </CardTitle>
         <CardDescription className="text-xs">
-          Proof-of-Intent state transitions for this match
+          Confirmed Intent state transitions for this match
         </CardDescription>
       </CardHeader>
       <CardContent>

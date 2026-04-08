@@ -1,6 +1,6 @@
 # Webhooks Documentation
 
-Webhooks allow you to receive real-time notifications when events occur in your organization.
+Webhooks allow you to receive real-time notifications when events occur in your organisation.
 
 ## Overview
 
@@ -9,7 +9,7 @@ When you register a webhook endpoint, the Compliance Matching API will send HTTP
 - Event type
 - Event data
 - Timestamp
-- Organization ID
+- Organisation ID
 - HMAC signature for verification
 
 ## Available Events
@@ -109,7 +109,7 @@ All webhook deliveries follow this format:
 
 ### Token Low Balance Payload
 
-The `token.low_balance` event is triggered when your organization's token balance crosses warning thresholds:
+The `token.low_balance` event is triggered when your organisation's token balance crosses warning thresholds:
 
 ```json
 {

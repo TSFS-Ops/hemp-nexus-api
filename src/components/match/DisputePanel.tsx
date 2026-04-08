@@ -265,7 +265,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Raising a dispute will notify the counterparty and may freeze settlement. This action is logged in the audit trail.
+                Raising a dispute will notify the trading partner and may freeze settlement. This action is logged in the audit trail.
               </AlertDescription>
             </Alert>
             <LoadingButton
@@ -397,7 +397,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                This will notify the counterparty and may freeze settlement until the dispute is resolved. This action is logged in the audit trail.
+                This will notify the trading partner and may freeze settlement until the dispute is resolved. This action is logged in the audit trail.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>

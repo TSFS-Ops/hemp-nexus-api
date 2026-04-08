@@ -1,7 +1,7 @@
 /**
  * Consequence Module - WaD Orchestration Layer
  *
- * This module is the single application-layer authority for WaD (Without-a-Doubt)
+ * This module is the single application-layer authority for WaD (Finalised Commitment)
  * workflow decisions. Components MUST use this module instead of inline WaD logic.
  *
  * - Pure logic (state derivation, role resolution) lives in ./logic.ts
@@ -187,7 +187,7 @@ export async function downloadCertificate(wadId: string): Promise<ConsequenceRes
 }
 
 /**
- * Fetch the full WaD chain for a POI (includes superseded/revoked records).
+ * Fetch the full WaD chain for an intent (includes superseded/revoked records).
  */
 export async function fetchWadChain(matchId: string): Promise<ConsequenceResult<WadRecord[]>> {
   try {

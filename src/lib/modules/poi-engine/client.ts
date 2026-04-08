@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { TransitionRequest, TransitionResult } from './state-machine';
 
 /**
- * Request a POI state transition via the backend edge function.
+ * Request a Intent state transition via the backend edge function.
  * All validation and audit logging happens server-side.
  */
 export async function requestTransition(
@@ -38,7 +38,7 @@ export async function requestTransition(
 }
 
 /**
- * Fetch the full state transition history for a POI (match).
+ * Fetch the full state transition history for an intent (match).
  */
 export async function getPoiHistory(matchId: string) {
   const { data, error } = await supabase

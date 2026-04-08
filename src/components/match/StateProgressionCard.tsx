@@ -246,8 +246,8 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
             <div className="space-y-1">
               <p className="text-sm font-medium">Awaiting counterparty</p>
               <p className="text-xs text-muted-foreground">
-                This is a unilateral intent record. The deal cannot progress further until a counterparty
-                is identified and attached. Once a counterparty responds, the lifecycle will resume.
+                This is a unilateral intent record. The deal cannot progress further until a trading partner
+                is identified and attached. Once a trading partner responds, the lifecycle will resume.
               </p>
             </div>
           </div>

@@ -50,13 +50,13 @@ export function Phase2Verification() {
     { id: "doc-access-logged", category: "Documents Module", name: "Document access is logged", status: "pending" },
     { id: "doc-sharing", category: "Documents Module", name: "Document sharing controls work", status: "pending" },
     
-    // WaD Module
-    { id: "wad-create", category: "WaD Module", name: "WaD creation from settled POI", status: "pending" },
-    { id: "wad-attest", category: "WaD Module", name: "WaD attestation works", status: "pending" },
-    { id: "wad-seal", category: "WaD Module", name: "WaD sealing generates hash", status: "pending" },
-    { id: "wad-certificate", category: "WaD Module", name: "Sealed WaD certificate downloadable", status: "pending" },
-    { id: "wad-revoke", category: "WaD Module", name: "WaD revocation requires reason", status: "pending" },
-    { id: "wad-admin-logged", category: "WaD Module", name: "Admin WaD access logged with reason", status: "pending" },
+    // Commitment Module
+    { id: "wad-create", category: "Commitment Module", name: "WaD creation from settled POI", status: "pending" },
+    { id: "wad-attest", category: "Commitment Module", name: "WaD attestation works", status: "pending" },
+    { id: "wad-seal", category: "Commitment Module", name: "WaD sealing generates hash", status: "pending" },
+    { id: "wad-certificate", category: "Commitment Module", name: "Sealed finalised commitment certificate downloadable", status: "pending" },
+    { id: "wad-revoke", category: "Commitment Module", name: "WaD revocation requires reason", status: "pending" },
+    { id: "wad-admin-logged", category: "Commitment Module", name: "Admin WaD access logged with reason", status: "pending" },
     
     // Logging
     { id: "audit-intent-confirmed", category: "Logging", name: "intent.confirmed in audit_logs", status: "pending" },
@@ -90,7 +90,7 @@ export function Phase2Verification() {
       // Note: RLS verification is done via the Supabase linter tool, not runtime RPC
       updateItem("rls-enabled", { 
         status: "passed",
-        details: "RLS enabled on: wads, wad_attestations, matches, signals, options, profiles, organizations, api_keys, audit_logs, match_documents, document_access_logs"
+        details: "RLS enabled on: wads, wad_attestations, matches, signals, options, profiles, organisations, api_keys, audit_logs, match_documents, document_access_logs"
       });
 
       // 2. Check views use security_invoker
@@ -185,7 +185,7 @@ export function Phase2Verification() {
       updateItem("doc-access-logged", { status: "passed", details: "document_access_logs table captures all access" });
       updateItem("doc-sharing", { status: "passed", details: "DocumentSharingDialog manages visibility and access grants" });
 
-      // WaD module
+      // commitment module
       updateItem("wad-create", { status: "passed", details: "WaD can be created from settled POI via edge function" });
       updateItem("wad-attest", { status: "passed", details: "Attestation with name, role, checkbox confirmation" });
       updateItem("wad-seal", { status: "passed", details: "Sealing generates SHA-256 seal_hash and ledger_entry_hash" });

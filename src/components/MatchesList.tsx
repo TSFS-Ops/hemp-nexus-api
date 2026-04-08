@@ -53,7 +53,7 @@ const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, sell
 function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string {
   const state = (match as any).state || "discovery";
   const matchType = (match as any).match_type || "search";
-  // Unilateral intents have no counterparty on one side
+  // Unilateral intents have no trading partner on one side
   if (match[field] === null || match[field] === undefined) {
     return matchType === "unilateral" ? "- (open)" : "-";
   }
@@ -721,11 +721,11 @@ export function MatchesList() {
             </div>
             <h3 className="font-semibold text-lg text-foreground mb-2">No matches yet</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-              Matches appear here when you create one from search results. Search for a counterparty, select them, and click "Create Match" to begin.
+              Matches appear here when you create one from search results. Search for a trading partner, select them, and click "Create Match" to begin.
             </p>
             <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
               <Search className="h-4 w-4" />
-              Search counterparties
+              Search trading partners
             </Button>
           </div>
         )}

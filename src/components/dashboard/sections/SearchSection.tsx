@@ -9,7 +9,7 @@ export function SearchSection() {
   return (
     <div className="space-y-5 sm:space-y-6">
       <SectionHeader
-        title="Find Counterparties"
+        title="Find Trading Partners"
         description="Search online, create a bilateral match, or publish a unilateral intent to attract liquidity"
       />
       <Tabs defaultValue="search">
@@ -20,7 +20,7 @@ export function SearchSection() {
           </TabsTrigger>
           <TabsTrigger value="bilateral" className="gap-1.5">
             <Handshake className="h-4 w-4" />
-            Bilateral (Known Counterparty)
+            Bilateral (Known Trading Partner)
           </TabsTrigger>
           <TabsTrigger value="unilateral" className="gap-1.5">
             <Megaphone className="h-4 w-4" />

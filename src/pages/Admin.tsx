@@ -179,7 +179,7 @@ function AuditSection() {
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            <TabsTrigger value="poi">POI History</TabsTrigger>
+            <TabsTrigger value="poi">Intent History</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
@@ -195,13 +195,13 @@ function LedgerSection() {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SectionHeader
         title="Evidence Ledger"
-        description="Cryptographic proof chain for all collapsed trades. Every entry is SHA-256 hashed and signature-verified."
+        description="Cryptographic proof chain for all completed trades. Every entry is SHA-256 hashed and signature-verified."
         parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
       />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
-            <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
+            <TabsTrigger value="ledger">Completion Ledger</TabsTrigger>
             <TabsTrigger value="signing-keys">Signing Keys</TabsTrigger>
             <TabsTrigger value="reputation">Reputation</TabsTrigger>
             <TabsTrigger value="risk-snapshots">Risk Snapshots</TabsTrigger>

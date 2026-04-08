@@ -1,6 +1,6 @@
 /**
  * AdminOverview - Action-first overview following the Stripe strategy.
- * Surfaces stalled POIs, KYC bottlenecks, and system alerts at the top.
+ * Surfaces stalled intents, KYC bottlenecks, and system alerts at the top.
  * Static counts are secondary. No decorative widgets.
  */
 import { Link } from "react-router-dom";
@@ -57,7 +57,7 @@ export function AdminOverview() {
         activeSignals,
         openDisputes,
       ] = await Promise.all([
-        // Stalled POIs: unilateral drafts older than 48h with no counterparty
+        // Stalled intents: unilateral drafts older than 48h with no trading partner
         supabase.from("matches").select("id", { count: "exact", head: true })
           .eq("status", "draft")
           .is("seller_org_id", null)
@@ -110,8 +110,8 @@ export function AdminOverview() {
     actions.push({
       severity: "warning",
       icon: Clock,
-      title: "Stalled unilateral POIs",
-      description: `${s.stalledPois} draft POI${s.stalledPois !== 1 ? "s" : ""} without counterparty acceptance for over 48 hours.`,
+      title: "Stalled unilateral intents",
+      description: `${s.stalledPois} draft intent${s.stalledPois !== 1 ? "s" : ""} without trading partner acceptance for over 48 hours.`,
       count: s.stalledPois,
       href: ROUTES.ADMIN_DEALS + "?tab=matches",
       linkLabel: "Review stalled deals",

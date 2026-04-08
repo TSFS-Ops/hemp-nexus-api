@@ -266,7 +266,7 @@ Before you start: A freshly verified account.
 Do this:
 1. Sign in for the first time.
 2. You should see a welcome screen or quickstart guide.
-3. Read through it. It should explain the main things you can do: search for counterparties, create a match, confirm your intent.
+3. Read through it. It should explain the main things you can do: search for trading partners, create a match, confirm your intent.
 4. Click "Skip" or "Dismiss" if available.
 5. You should now see the main dashboard.
 

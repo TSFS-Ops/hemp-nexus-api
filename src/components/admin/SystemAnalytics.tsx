@@ -19,8 +19,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface SystemStats {
   totalUsers: number;
   activeUsers: number;
-  totalOrganizations: number;
-  activeOrganizations: number;
+  totalOrganisations: number;
+  activeOrganisations: number;
   totalApiKeys: number;
   activeApiKeys: number;
   totalSignals: number;
@@ -88,8 +88,8 @@ export default function SystemAnalytics() {
       setStats({
         totalUsers: usersCount.count || 0,
         activeUsers: activeUsersCount.count || 0,
-        totalOrganizations: orgsCount.count || 0,
-        activeOrganizations: activeOrgsCount.count || 0,
+        totalOrganisations: orgsCount.count || 0,
+        activeOrganisations: activeOrgsCount.count || 0,
         totalApiKeys: apiKeysCount.count || 0,
         activeApiKeys: activeApiKeysCount.count || 0,
         totalSignals: signalsCount.count || 0,
@@ -143,9 +143,9 @@ export default function SystemAnalytics() {
       color: "text-blue-500",
     },
     {
-      title: "Organizations",
-      value: stats.totalOrganizations,
-      subtitle: `${stats.activeOrganizations} active`,
+      title: "Organisations",
+      value: stats.totalOrganisations,
+      subtitle: `${stats.activeOrganisations} active`,
       icon: Building2,
       color: "text-purple-500",
     },
@@ -159,7 +159,7 @@ export default function SystemAnalytics() {
     {
       title: "Sandbox Enabled",
       value: stats.sandboxOrgs,
-      subtitle: `${Math.round((stats.sandboxOrgs / stats.totalOrganizations) * 100)}% of orgs`,
+      subtitle: `${Math.round((stats.sandboxOrgs / stats.totalOrganisations) * 100)}% of orgs`,
       icon: Shield,
       color: "text-amber-500",
     },
@@ -215,7 +215,7 @@ export default function SystemAnalytics() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest system events across all organizations</CardDescription>
+          <CardDescription>Latest system events across all organisations</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

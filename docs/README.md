@@ -100,7 +100,7 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 ### API Keys (Your Digital Identity)
 **What it is**: A secret code that identifies your application to our system.
 
-**In everyday terms**: Like a key to your house-it proves you're authorized to enter. You include this key with every request to prove it's really you.
+**In everyday terms**: Like a key to your house-it proves you're authorised to enter. You include this key with every request to prove it's really you.
 
 **Why you need it**: Security. Without requiring keys, anyone could access or modify data. Keys let us track usage, enforce limits, and keep your data safe.
 
@@ -169,7 +169,7 @@ Read these sections in order:
 ### For Administrators: System Setup
 
 Follow this checklist:
-1. ✅ Create organization account
+1. ✅ Create organisation account
 2. ✅ Generate production API keys
 3. ✅ Set up webhook endpoints
 4. ✅ Configure automated jobs ([Cron Guide](./cron-setup.md))

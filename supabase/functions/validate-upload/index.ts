@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
     });
     const { data: { user }, error: authErr } = await userClient.auth.getUser();
     if (authErr || !user) {
-      return new Response(JSON.stringify({ blocked: false, error: "Unauthorized" }), { status: 401, headers });
+      return new Response(JSON.stringify({ blocked: false, error: "Unauthorised" }), { status: 401, headers });
     }
 
     const body = await req.json();

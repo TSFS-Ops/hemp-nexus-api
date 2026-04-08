@@ -63,7 +63,7 @@ Compliance Matching API is a modern B2B API platform built on **Supabase** (Post
 ┌─────────────────────────────────────────────────────────────────┐
 │                      PostgreSQL Database                         │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ organizations│  │   profiles   │  │  user_roles  │          │
+│  │ organisations│  │   profiles   │  │  user_roles  │          │
 │  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
 │  │  api_keys    │  │   signals    │  │   matches    │          │
 │  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
@@ -99,8 +99,8 @@ Compliance Matching API is a modern B2B API platform built on **Supabase** (Post
 
 ### Core Tables
 
-#### **organizations**
-Organization/company accounts.
+#### **organisations**
+Organisation/company accounts.
 
 ```sql
 - id (uuid, PK)
@@ -122,7 +122,7 @@ User profiles linked to Supabase Auth.
 
 ```sql
 - id (uuid, PK, references auth.users)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - email (text)
 - full_name (text)
 - status (text) - active/inactive
@@ -153,7 +153,7 @@ API authentication keys.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - name (text)
 - key_hash (text) - SHA-256 hash
 - scopes (text[])
@@ -175,7 +175,7 @@ Buyer/seller intent signals.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - type (enum: buyer/seller)
 - content (jsonb) - product, quantity, location, etc.
 - status (text) - active/expired
@@ -237,7 +237,7 @@ Recorded trade matches with cryptographic proof.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - buyer_id (text)
 - buyer_name (text)
 - seller_id (text)
@@ -266,7 +266,7 @@ Configured webhook destinations.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - url (text)
 - events (text[]) - subscribed event types
 - secret_hash (text) - SHA-256 of HMAC secret
@@ -286,7 +286,7 @@ Webhook delivery attempts and status.
 ```sql
 - id (uuid, PK)
 - webhook_endpoint_id (uuid, FK → webhook_endpoints)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - event_type (text)
 - payload (jsonb)
 - delivery_attempt (integer)
@@ -308,7 +308,7 @@ Immutable audit trail.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - actor_user_id (uuid, nullable)
 - actor_api_key_id (uuid, nullable)
 - action (text) - e.g., "match.created"
@@ -328,7 +328,7 @@ External data source connectors.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - name (text)
 - type (text) - marketplace/sheet/erp/registry/lab/web_search
 - config (jsonb) - connection details
@@ -346,7 +346,7 @@ Data sharing consent records.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - data_source_id (uuid, FK → data_sources)
 - granted_by (uuid)
 - granted_at (timestamp)
@@ -385,7 +385,7 @@ Rate limiting tracking.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - api_key_id (uuid, nullable)
 - endpoint (text)
 - request_count (integer)
@@ -403,7 +403,7 @@ Idempotency tracking for critical operations.
 
 ```sql
 - id (uuid, PK)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - idempotency_key (text)
 - endpoint (text)
 - request_hash (text) - hash of request body
@@ -425,7 +425,7 @@ Performance metrics for data sources.
 - id (uuid, PK)
 - data_source_id (uuid, FK → data_sources)
 - signal_id (uuid, FK → signals)
-- org_id (uuid, FK → organizations)
+- org_id (uuid, FK → organisations)
 - response_time_ms (integer)
 - options_returned (integer)
 - options_selected (integer)
@@ -440,7 +440,7 @@ Performance metrics for data sources.
 
 ## Edge Functions
 
-### Authentication & Authorization
+### Authentication & Authorisation
 
 **File**: `supabase/functions/_shared/auth.ts`
 
@@ -489,7 +489,7 @@ Uses Zod for request validation:
 - `webhookCreateSchema` - Webhook creation
 - `dataSourceCreateSchema` - Data source creation
 - `consentCreateSchema` - Consent grant
-- `orgCreateSchema`, `orgUpdateSchema` - Organization management
+- `orgCreateSchema`, `orgUpdateSchema` - Organisation management
 - `sahpraVerifySchema` - SAHPRA verification
 
 All schemas enforce:
@@ -588,16 +588,16 @@ Tracks data source effectiveness:
    - Last used tracking
 
 3. **Row Level Security (RLS)**
-   - Organization-scoped data isolation
+   - Organisation-scoped data isolation
    - Role-based access control
    - Security definer functions for role checks
 
 ---
 
-### Authorization Model
+### Authorisation Model
 
 ```
-User → Profile → Organization
+User → Profile → Organisation
   ↓
 Roles (admin, seller, broker, buyer, auditor)
   ↓
@@ -610,7 +610,7 @@ RLS Policies → Database Access
 
 ### Data Isolation
 
-- **Organization Level**: All resources scoped to org_id
+- **Organisation Level**: All resources scoped to org_id
 - **User Level**: Profiles linked to specific org
 - **API Key Level**: Keys inherit org from creator
 - **RLS Enforcement**: PostgreSQL policies enforce boundaries
@@ -637,7 +637,7 @@ RLS Policies → Database Access
 - API key creation/usage/revocation
 - Match creation/settlement
 - Signal creation/selection
-- Organization changes
+- Organisation changes
 - Webhook deliveries
 
 **Immutable Logs**:
@@ -925,7 +925,7 @@ Logged in `webhook_deliveries`:
 ### Compliance
 
 - Immutable audit trail for all actions
-- Organization-scoped data isolation
+- Organisation-scoped data isolation
 - SAHPRA license verification for regulated goods
 - SHA-256 hashing for match proof
 
@@ -935,7 +935,7 @@ Logged in `webhook_deliveries`:
 
 ### Common Issues
 
-**Issue**: 401 Unauthorized  
+**Issue**: 401 Unauthorised  
 **Cause**: Invalid/expired API key  
 **Fix**: Generate new key in Dashboard
 

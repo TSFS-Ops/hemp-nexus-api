@@ -122,7 +122,7 @@ export function CollapseLedgerViewer() {
   return (
     <div className="p-6 space-y-6">
       <header className="space-y-1">
-        <h2 className="text-2xl font-bold tracking-tight">Collapse Ledger</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Completion Ledger</h2>
         <p className="text-muted-foreground text-sm">
           Append-only ledger of all POI collapse events. Includes payload hash, signature status, idempotency, and state history.
         </p>

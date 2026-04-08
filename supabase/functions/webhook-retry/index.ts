@@ -9,7 +9,7 @@ import { ApiException, errorResponse } from "../_shared/errors.ts";
  * It should be called periodically via cron (e.g., every 5 minutes).
  * 
  * SECURITY: This endpoint requires internal authentication via INTERNAL_CRON_KEY
- * to prevent unauthorized triggering.
+ * to prevent unauthorised triggering.
  * 
  * Retry Strategy:
  * - Attempt 1: Immediate (handled in original delivery)

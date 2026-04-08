@@ -25,9 +25,9 @@ const CREDIT_PACKAGES = [
     id: 'single',
     credits: 1, 
     priceZar: 10,
-    label: 'Proof-of-Intent',
+    label: 'Confirmed Intent',
     pricePerCredit: '10.00',
-    description: 'R10 ZAR per POI - pay as you go',
+    description: 'R10 ZAR per action - pay as you go',
     popular: false,
   },
 ];

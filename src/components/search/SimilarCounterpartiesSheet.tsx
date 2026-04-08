@@ -26,7 +26,7 @@ interface SimilarMatch {
   similarityScore: number;
 }
 
-interface SimilarCounterpartiesSheetProps {
+interface SimilarTrading PartnersSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   anchor: SearchResult | null;
@@ -83,13 +83,13 @@ function computeSimilarity(anchor: SearchResult, candidate: SearchResult): Simil
   return { result: candidate, reasons, similarityScore: Math.min(score, 1) };
 }
 
-export function SimilarCounterpartiesSheet({
+export function SimilarTrading PartnersSheet({
   open,
   onOpenChange,
   anchor,
   allResults,
   onSelect,
-}: SimilarCounterpartiesSheetProps) {
+}: SimilarTrading PartnersSheetProps) {
   if (!anchor) return null;
 
   const similar: SimilarMatch[] = allResults
@@ -105,14 +105,14 @@ export function SimilarCounterpartiesSheet({
             Similar to {anchor.title}
           </SheetTitle>
           <SheetDescription className="text-xs">
-            Counterparties with similar characteristics, sectors, or data sources.
+            Trading Partners with similar characteristics, sectors, or data sources.
           </SheetDescription>
         </SheetHeader>
 
         {similar.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm text-muted-foreground">
-              No similar counterparties found in the current results.
+              No similar trading partners found in the current results.
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Try broadening your search to surface more candidates.

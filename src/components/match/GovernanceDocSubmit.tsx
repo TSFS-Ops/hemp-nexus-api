@@ -214,7 +214,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
           Governance Documents
         </CardTitle>
         <CardDescription>
-          Submit required governance documents for this POI.
+          Submit required governance documents for this intent.
           {mandatoryCount > 0 && (
             <span className="block mt-1">
               {mandatorySubmitted}/{mandatoryCount} mandatory documents submitted.

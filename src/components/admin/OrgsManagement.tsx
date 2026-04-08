@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Organization {
+interface Organisation {
   id: string;
   name: string;
   status: string;
@@ -28,7 +28,7 @@ interface Organization {
 }
 
 export default function OrgsManagement() {
-  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [orgs, setOrgs] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [totalCount, setTotalCount] = useState(0);
@@ -44,7 +44,7 @@ export default function OrgsManagement() {
     try {
       setLoading(true);
       
-      // Fetch organizations with count
+      // Fetch organisations with count
       const { data: orgsData, error: orgsError, count } = await supabase
         .from("organizations")
         .select("*", { count: "exact" })
@@ -119,9 +119,9 @@ export default function OrgsManagement() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Organization Management</CardTitle>
+        <CardTitle>Organisation Management</CardTitle>
         <CardDescription>
-          View and manage organizations and their verification status
+          View and manage organisations and their verification status
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -129,7 +129,7 @@ export default function OrgsManagement() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search organizations..."
+              placeholder="Search organisations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -216,7 +216,7 @@ export default function OrgsManagement() {
 
         {!loading && filteredOrgs.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            No organizations found matching your search
+            No organisations found matching your search
           </div>
         )}
       </CardContent>

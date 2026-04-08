@@ -290,7 +290,7 @@ export function AdminRetentionFlagsPanel() {
               <SelectContent>
                 <SelectItem value="all">All Record Types</SelectItem>
                 <SelectItem value="audit_logs">Audit Logs</SelectItem>
-                <SelectItem value="collapse_ledger">Collapse Ledger</SelectItem>
+                <SelectItem value="collapse_ledger">Completion Ledger</SelectItem>
                 <SelectItem value="match_events">Match Events</SelectItem>
                 <SelectItem value="matches">Matches</SelectItem>
                 <SelectItem value="screening_results">Screening Results</SelectItem>

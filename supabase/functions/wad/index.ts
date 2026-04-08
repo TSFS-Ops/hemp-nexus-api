@@ -131,16 +131,16 @@ Deno.serve(async (req) => {
       const userOrgId = authCtx.orgId;
       const partyCheck = poi.org_id === userOrgId || poi.buyer_org_id === userOrgId || poi.seller_org_id === userOrgId;
       if (!partyCheck && !isAdmin(authCtx)) {
-        throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this POI", 403);
+        throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this intent", 403);
       }
 
       if (poi.status !== "settled") {
         throw new ApiException("VALIDATION_ERROR", "POI must be confirmed before creating WaD", 400);
       }
 
-      // ── Hard-gate: POI state must be COLLAPSED ──
-      if (poi.poi_state !== "COLLAPSED") {
-        throw new ApiException("HARD_GATE_FAILED", `POI state must be COLLAPSED, currently: ${poi.poi_state}`, 422);
+      // ── Hard-gate: Intent state must be COMPLETED ──
+      if (poi.poi_state !== "COMPLETED") {
+        throw new ApiException("HARD_GATE_FAILED", `Intent state must be COMPLETED, currently: ${poi.poi_state}`, 422);
       }
 
       // ── Hard-gate: Screening recentness (within 30 days) + risk_band checks ──
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existingWad) {
-        throw new ApiException("CONFLICT", "Active WaD already exists for this POI", 409);
+        throw new ApiException("CONFLICT", "Active WaD already exists for this intent", 409);
       }
 
       // Fetch documents + events in parallel
@@ -515,8 +515,8 @@ Deno.serve(async (req) => {
 
       // ── Build PDF ──
       const pdfDoc = await PDFDocument.create();
-      pdfDoc.setTitle(`WaD Certificate - ${wadId}`);
-      pdfDoc.setSubject("Without-a-Doubt Certificate");
+      pdfDoc.setTitle(`Finalised Commitment Certificate - ${wadId}`);
+      pdfDoc.setSubject("Finalised Commitment Certificate");
       pdfDoc.setProducer("Izenzo Platform");
       pdfDoc.setCreator("Izenzo Platform");
       pdfDoc.setCreationDate(new Date());
@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
         color: rgb(0.1, 0.1, 0.1),
       });
       y -= 24;
-      page.drawText("Without-a-Doubt (WaD) - Sealed Evidence Record", {
+      page.drawText("Finalised Commitment (WaD) - Sealed Evidence Record", {
         x: MARGIN,
         y,
         size: 12,

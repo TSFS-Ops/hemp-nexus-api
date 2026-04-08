@@ -61,19 +61,19 @@ export default function Docs() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Hero Section */}
         <div className="mb-8 sm:mb-12 text-center">
-          <Badge variant="outline" className="mb-4">Proof-of-Intent API</Badge>
+          <Badge variant="outline" className="mb-4">Confirmed Intent API</Badge>
           <h1 className="text-2xl sm:text-4xl font-bold mb-4">
             B2B Trade Matching with Tamper-Evident Records
           </h1>
           <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-            An information-only API for regulated B2B matching. Search for counterparties, 
+            An information-only API for regulated B2B matching. Search for trading partners, 
             express interest, and create cryptographically-signed evidence records.
           </p>
           <Alert className="max-w-xl mx-auto border-amber-200 bg-amber-50 dark:bg-amber-950/50">
             <CheckCircle className="h-4 w-4 text-amber-600 shrink-0" />
             <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm text-left">
               <strong>No payments. No contracts. No legal obligation.</strong> This API only records 
-              proof-of-intent at a specific date/time.
+              confirmed intent at a specific date/time.
             </AlertDescription>
           </Alert>
         </div>
@@ -305,7 +305,7 @@ async function listMatches() {
                     <code className="font-mono text-sm">/match</code>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    List all matches for your organization.
+                    List all matches for your organisation.
                   </p>
                   
                   <h5 className="font-medium mb-2 text-sm">Query Parameters</h5>
@@ -611,7 +611,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   
   if (event.event === 'intent.confirmed') {
     console.log('Intent confirmed for match:', event.data.matchId);
-    // Notify your counterparty, update your CRM, etc.
+    // Notify your trading partner, update your CRM, etc.
   }
   
   res.status(200).send('OK');

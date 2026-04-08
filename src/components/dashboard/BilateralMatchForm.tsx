@@ -1,7 +1,7 @@
 /**
  * BilateralMatchForm - Create a match with a known/offline counterparty.
  * 
- * This allows users to register a POI when they already have a counterparty
+ * This allows users to register an intent when they already have a trading partner
  * identified outside the platform (e.g., through direct negotiation).
  */
 
@@ -194,7 +194,7 @@ export function BilateralMatchForm() {
             Create Bilateral Match
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Register a Proof-of-Intent with a counterparty you've already identified offline.
+            Register a Confirmed Intent with a trading partner you've already identified offline.
             They will need to onboard to the platform to complete the bilateral flow.
           </p>
         </CardHeader>
@@ -204,7 +204,7 @@ export function BilateralMatchForm() {
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
             <p className="text-sm text-muted-foreground">
               <strong>Bilateral mode:</strong> This creates a match record with a known counterparty.
-              The counterparty's identity will not be visible until the <em>Reveal</em> stage.
+              The trading partner's identity will not be visible until the <em>Reveal</em> stage.
               Full bilateral confirmation requires both parties to be registered on the platform.
             </p>
           </div>
@@ -365,7 +365,7 @@ export function BilateralMatchForm() {
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
                   <li>No credits are deducted at creation - only at lifecycle transitions.</li>
-                  <li>The counterparty must onboard to complete the bilateral POI.</li>
+                  <li>The trading partner must onboard to complete the bilateral intent.</li>
                   <li>You can add documents and terms before confirming intent.</li>
                 </ul>
               </div>

@@ -420,7 +420,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           <div>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              WaD (Without-a-Doubt)
+              WaD (Finalised Commitment)
             </CardTitle>
             <CardDescription>Sealed evidence bundle for POI</CardDescription>
           </div>

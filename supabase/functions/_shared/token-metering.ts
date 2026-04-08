@@ -83,7 +83,7 @@ export function isBillableEndpoint(endpoint: string): boolean {
 }
 
 /**
- * Check if an organization has sufficient token balance
+ * Check if an organisation has sufficient token balance
  */
 export async function checkTokenBalance(
   supabase: SupabaseClient,
@@ -584,7 +584,7 @@ export async function ensureSufficientTokens(
 }
 
 /**
- * Get token usage statistics for an organization
+ * Get token usage statistics for an organisation
  */
 export async function getTokenUsageStats(
   supabase: SupabaseClient,

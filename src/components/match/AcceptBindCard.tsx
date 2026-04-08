@@ -1,9 +1,9 @@
 /**
- * AcceptBindCard - Shown to invited counterparties on a unilateral match.
+ * AcceptBindCard - Shown to invited trading partners on a unilateral match.
  *
  * If the current user is NOT the match creator and the match is unilateral
  * with an empty buyer/seller slot, this card lets them "Accept & Bind",
- * converting the unilateral intent into a bilateral POI.
+ * converting the unilateral intent into a bilateral intent.
  */
 
 import { useState, useEffect } from "react";
@@ -90,7 +90,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       const myName = org?.name || userProfile?.full_name || "Organisation";
       const idempotencyKey = generateIdempotencyKey(`accept-bind-${match.id}`);
 
-      // Call the match edge function to bind the counterparty
+      // Call the match edge function to bind the trading partner
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
         {
@@ -124,7 +124,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       }
 
       queryClient.invalidateQueries({ queryKey: ["token-balance"] });
-      toast.success("You have accepted this intent. This is now a bilateral POI.");
+      toast.success("You have accepted this intent. This is now a bilateral intent.");
       onAccepted();
     } catch (error) {
       console.error("Accept & Bind error:", error);
@@ -140,13 +140,13 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Handshake className="h-5 w-5 text-primary" />
-            You've been invited to this POI
+            You've been invited to this intent
           </CardTitle>
           <CardDescription>
-            A counterparty has drafted a Proof of Intent for{" "}
+            A trading partner has drafted a Confirmed Intent for{" "}
             <strong>{match.commodity}</strong> and invited you to accept.
             Accepting binds you as the <Badge variant="outline" className="text-xs mx-1">{willBe}</Badge> and
-            converts this into a formal bilateral POI.
+            converts this into a formal bilateral intent.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -155,7 +155,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
             <div className="text-sm text-muted-foreground space-y-1">
               <p>By accepting, you acknowledge:</p>
               <ul className="list-disc list-inside space-y-0.5 text-xs">
-                <li>Your organisation will be bound as the {willBe.toLowerCase()} in this POI</li>
+                <li>Your organisation will be bound as the {willBe.toLowerCase()} in this intent</li>
                 <li>This action is recorded in the immutable audit trail</li>
                 <li>You can negotiate terms after acceptance via the Terms tab</li>
               </ul>
@@ -185,7 +185,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Accept this Proof of Intent?</AlertDialogTitle>
+            <AlertDialogTitle>Accept this Confirmed Intent?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
@@ -194,7 +194,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
                   <strong>{match.commodity}</strong>.
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li>This converts a unilateral intent into a bilateral POI.</li>
+                  <li>This converts a unilateral intent into a bilateral intent.</li>
                   <li>The action is cryptographically recorded and cannot be reversed.</li>
                   <li>Both parties can negotiate terms after binding.</li>
                 </ul>

@@ -27,7 +27,7 @@ export function SearchHeader({
       <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-          Find Counterparties
+          Find Trading Partners
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
           Enter a natural language query to discover trading partners
@@ -42,7 +42,7 @@ export function SearchHeader({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSearch()}
               className="pr-10 h-10 sm:h-9 text-sm"
-              aria-label="Search for counterparties"
+              aria-label="Search for trading partners"
             />
             <Globe className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>

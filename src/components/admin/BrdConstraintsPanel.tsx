@@ -52,7 +52,7 @@ export function BrdConstraintsPanel() {
     idempotency_mandatory: "Mandatory Idempotency Keys",
     signed_payload_required: "ECDSA Signed Payload Enforcement",
     partition_consistency: "CP Mode (Partition Rejection)",
-    append_only_ledger: "Append-Only Collapse Ledger",
+    append_only_ledger: "Append-Only Completion Ledger",
     minimum_retention_years: "Minimum Data Retention",
     hash_algorithm: "Hash Algorithm",
   };

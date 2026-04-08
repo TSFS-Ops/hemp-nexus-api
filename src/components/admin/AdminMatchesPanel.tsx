@@ -39,7 +39,7 @@ export function AdminMatchesPanel() {
     queryFn: async () => {
       let query = supabase
         .from("matches")
-        .select("*, organizations(name)", { count: "exact" })
+        .select("*, organisations(name)", { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(ADMIN_MATCH_LIMIT);
 
@@ -78,7 +78,7 @@ export function AdminMatchesPanel() {
 
     const rows = matches.map(m => [
       m.id,
-      (m as any).organizations?.name || m.org_id,
+      (m as any).organisations?.name || m.org_id,
       m.commodity,
       m.buyer_name,
       m.seller_name,
@@ -110,7 +110,7 @@ export function AdminMatchesPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Matches Management</h2>
           <p className="text-muted-foreground mt-2">
-            View and manage all matches across organizations
+            View and manage all matches across organisations
           </p>
         </div>
         <div className="flex gap-2">
@@ -129,7 +129,7 @@ export function AdminMatchesPanel() {
         <CardHeader>
           <CardTitle>All Matches</CardTitle>
           <CardDescription>
-            Matches from all organizations. Only "Confirm Intent" creates audit/evidence records.
+            Matches from all organisations. Only "Confirm Intent" creates audit/evidence records.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -200,7 +200,7 @@ export function AdminMatchesPanel() {
                     return (
                     <TableRow key={match.id} className={isStale ? "bg-amber-500/5" : ""}>
                       <TableCell className="font-mono text-xs">
-                        {((match as any).organizations?.name || match.org_id).substring(0, 8)}...
+                        {((match as any).organisations?.name || match.org_id).substring(0, 8)}...
                       </TableCell>
                       <TableCell>
                         <StatusBadge

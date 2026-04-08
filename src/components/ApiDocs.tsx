@@ -53,7 +53,7 @@ export default function ApiDocs() {
                   Authentication
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  All API requests require authentication using an API key in the Authorization header.
+                  All API requests require authentication using an API key in the Authorisation header.
                 </p>
                 
                 <Alert className="mb-4">
@@ -384,7 +384,7 @@ print(f"Match created: {match['match_id']}")`}
                     <Badge variant="outline" className="text-xs">Confirm Intent</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Confirm intent for a match. This signals serious interest to the counterparty.
+                    Confirm intent for a match. This signals serious interest to the trading partner.
                   </p>
                   
                   <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950">
@@ -471,7 +471,7 @@ console.log('Intent confirmed at:', result.settled_at);`}
                       is triggered when a user confirms intent. This is the only event that creates audit/evidence records.
                     </p>
                     <p>
-                      <code>credit.low_balance</code> is triggered when your organization's credit balance crosses 
+                      <code>credit.low_balance</code> is triggered when your organisation's credit balance crosses 
                       warning thresholds (6,000, 5,500, or 5,001 credits). Use this to set up automated top-up alerts.
                     </p>
                   </div>

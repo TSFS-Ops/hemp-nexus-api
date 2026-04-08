@@ -152,7 +152,7 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ## [1.6.0] - 2026-01-24
 
-### Phase 2: Documents & WaD Module
+### Phase 2: Documents & Commitment Module
 
 **Focus: Evidence-grade document management and sealed proof bundles.**
 
@@ -164,7 +164,7 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 - **[Documents]** Document versioning and superseding support
 - **[Documents]** Evidence pack includes document metadata and access history
 
-#### New Features - WaD (Without-a-Doubt) Module
+#### New Features - WaD (Finalised Commitment) Module
 - **[WaD]** Sealed evidence bundle creation from settled POI
 - **[WaD]** Multi-step attestation: Summary → Evidence → Signatories → Review → Certificate
 - **[WaD]** Party attestation with explicit disclaimer checkbox and typed name
@@ -216,7 +216,7 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 #### Documentation
 - **[Docs]** Updated all documentation to British English spelling
 - **[Docs]** Updated changelog with comprehensive history
-- **[Docs]** Fixed API header documentation (`X-API-Key` vs `Authorization`)
+- **[Docs]** Fixed API header documentation (`X-API-Key` vs `Authorisation`)
 - **[Docs]** Added last updated dates to all documentation
 
 #### Bug Fixes
@@ -403,9 +403,9 @@ This release updates all terminology to clearly distinguish between **binding in
 ## [1.1.0] - 2025-11-20
 
 ### Admin Panel
-- **[Admin]** Created admin panel with Users and Organizations management
-- **[Admin]** Added ability to view all users across organizations
-- **[Admin]** Added ability to update organization status and SAHPRA license numbers
+- **[Admin]** Created admin panel with Users and Organisations management
+- **[Admin]** Added ability to view all users across organisations
+- **[Admin]** Added ability to update organisation status and SAHPRA license numbers
 - **[Admin]** Implemented role-based access control (admin only)
 - **[Admin]** Added navigation from Dashboard to Admin panel
 
@@ -490,22 +490,22 @@ This release updates all terminology to clearly distinguish between **binding in
 - **[API]** `POST /consents` - Grant consent
 - **[API]** `DELETE /consents/:id` - Revoke consent
 
-#### Organizations (Admin)
-- **[API]** `GET /orgs` - List organizations
-- **[API]** `PATCH /orgs/:id` - Update organization
+#### Organisations (Admin)
+- **[API]** `GET /orgs` - List organisations
+- **[API]** `PATCH /orgs/:id` - Update organisation
 
 #### Audit Logs
 - **[API]** `GET /audit-logs` - Query audit logs with filtering
 
 #### Security Features
 - **[Security]** API key authentication with scope-based access
-- **[Security]** Rate limiting per organization and endpoint
+- **[Security]** Rate limiting per organisation and endpoint
 - **[Security]** Row Level Security on all tables
 - **[Security]** Idempotency key support for POST endpoints
-- **[Security]** SHA-256 hashing for match proof-of-intent
+- **[Security]** SHA-256 hashing for match confirmed intent
 
 #### Database Schema
-- **[Database]** organizations table
+- **[Database]** organisations table
 - **[Database]** profiles table with org association
 - **[Database]** user_roles table with enum types
 - **[Database]** api_keys table with hashed storage
@@ -527,7 +527,7 @@ This release updates all terminology to clearly distinguish between **binding in
 
 #### Authentication
 - **[Auth]** Email/password authentication
-- **[Auth]** Auto-creates organization on signup
+- **[Auth]** Auto-creates organisation on signup
 - **[Auth]** Role assignment based on email domain
 - **[Auth]** Session management with Supabase Auth
 

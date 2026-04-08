@@ -8,10 +8,10 @@ import { ArrowRight, ShieldCheck, Brain, Handshake, FileText, CheckCircle2, Lock
 const PIPELINE_STEPS = [
   { label: "KYC + AI", subtitle: "Verify identity", Icon: ShieldCheck },
   { label: "AI+ Analysis", subtitle: "Match & Score", Icon: Brain },
-  { label: "Counterparty Found", subtitle: "Review Options", Icon: Handshake },
-  { label: "Create POI", subtitle: "Structuring", Icon: FileText },
+  { label: "Partner Found", subtitle: "Review Options", Icon: Handshake },
+  { label: "Draft Intent", subtitle: "Structuring", Icon: FileText },
   { label: "Commit", subtitle: "to POI", Icon: CheckCircle2 },
-  { label: "WaD", subtitle: "Without-a-Doubt", Icon: Lock },
+  { label: "Finalised Commitment", subtitle: "Finalised Commitment", Icon: Lock },
 ];
 
 export function WorkflowPipeline() {

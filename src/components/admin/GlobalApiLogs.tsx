@@ -24,7 +24,7 @@ interface ApiLog {
   error_message: string | null;
   request_id: string | null;
   api_keys: { name: string } | null;
-  organizations: { name: string } | null;
+  organisations: { name: string } | null;
 }
 
 interface AuditLog {
@@ -35,7 +35,7 @@ interface AuditLog {
   created_at: string;
   org_id: string;
   metadata: Record<string, unknown> | null;
-  organizations?: { name: string } | null;
+  organisations?: { name: string } | null;
 }
 
 export function GlobalApiLogs() {
@@ -70,7 +70,7 @@ export function GlobalApiLogs() {
         .select(`
           *,
           api_keys (name),
-          organizations (name)
+          organisations (name)
         `, { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(API_LOG_LIMIT);
@@ -108,7 +108,7 @@ export function GlobalApiLogs() {
         .from("audit_logs")
         .select(`
           id, action, entity_type, entity_id, created_at, org_id, metadata,
-          organizations:org_id (name)
+          organisations:org_id (name)
         `, { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(BUSINESS_LOG_LIMIT);
@@ -144,7 +144,7 @@ export function GlobalApiLogs() {
       const headers = ["Timestamp", "Method", "Endpoint", "Status", "Response Time (ms)", "Organisation", "API Key", "Request ID", "Error"];
       const rows = filteredLogs.map(l => [
         new Date(l.created_at).toISOString(), l.method, l.endpoint, l.status_code,
-        l.response_time_ms, l.organizations?.name || "", l.api_keys?.name || "",
+        l.response_time_ms, l.organisations?.name || "", l.api_keys?.name || "",
         l.request_id || "", l.error_message || "",
       ]);
       downloadCSV(headers, rows, `api-logs-${new Date().toISOString().split('T')[0]}.csv`);
@@ -157,7 +157,7 @@ export function GlobalApiLogs() {
       if (businessLogs.length === 0) { toast.error("No events to export"); return; }
       const headers = ["Timestamp", "Organisation", "Action", "Entity Type", "Entity ID", "Hash", "Metadata"];
       const rows = businessLogs.map(l => [
-        new Date(l.created_at).toISOString(), l.organizations?.name || "", l.action,
+        new Date(l.created_at).toISOString(), l.organisations?.name || "", l.action,
         l.entity_type, l.entity_id || "",
         (l.metadata && typeof l.metadata === 'object' && 'hash' in l.metadata) ? String(l.metadata.hash) : "",
         JSON.stringify(l.metadata || {}),
@@ -204,7 +204,7 @@ export function GlobalApiLogs() {
       log.method.toLowerCase().includes(searchLower) ||
       log.request_id?.toLowerCase().includes(searchLower) ||
       log.api_keys?.name.toLowerCase().includes(searchLower) ||
-      log.organizations?.name.toLowerCase().includes(searchLower)
+      log.organisations?.name.toLowerCase().includes(searchLower)
     );
   });
 
@@ -349,7 +349,7 @@ export function GlobalApiLogs() {
                             {log.response_time_ms}ms
                           </TableCell>
                           <TableCell className="text-xs">
-                            {log.organizations?.name || "-"}
+                            {log.organisations?.name || "-"}
                           </TableCell>
                           <TableCell className="text-xs">
                             {log.api_keys?.name || "-"}
@@ -484,7 +484,7 @@ export function GlobalApiLogs() {
                             {format(new Date(log.created_at), "MMM dd, HH:mm:ss")}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {log.organizations?.name || "-"}
+                            {log.organisations?.name || "-"}
                           </TableCell>
                           <TableCell>{getActionBadge(log.action)}</TableCell>
                           <TableCell className="font-mono text-xs">

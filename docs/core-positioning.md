@@ -356,7 +356,7 @@ Each party now has independent copy
 - Generating proof
 - Providing audit trail
 
-**Integration point**: When deal is finalized, call `POST /match`
+**Integration point**: When deal is finalised, call `POST /match`
 
 ### Pattern 2: ERP Integration
 

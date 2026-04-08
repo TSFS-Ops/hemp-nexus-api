@@ -124,7 +124,7 @@ export function AdminDisputesPanel() {
         <div>
           <h3 className="text-lg font-semibold">Dispute Resolution</h3>
           <p className="text-sm text-muted-foreground">
-            Review and resolve disputes raised by counterparties. All decisions are audit logged.
+            Review and resolve disputes raised by trading partners. All decisions are audit logged.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()}>

@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
-import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
+import { SimilarTrading PartnersSheet } from "@/components/search/SimilarTrading PartnersSheet";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
 import {
   AlertDialog,
@@ -275,7 +275,7 @@ export default function CounterpartySearch() {
         .filter(Boolean) as SearchResult[];
 
       if (selectedItems.length === 0) {
-        toast.error("No valid counterparties selected");
+        toast.error("No valid trading partners selected");
         return;
       }
 
@@ -511,9 +511,9 @@ export default function CounterpartySearch() {
             <CardContent className="py-8 text-center space-y-3">
               <SearchX className="h-10 w-10 mx-auto text-muted-foreground" />
               <div>
-                <p className="font-medium text-foreground">No counterparties found</p>
+                <p className="font-medium text-foreground">No trading partners found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  No registered counterparties matched "{query}". Try broadening your query, or use the Bilateral tab to create a match with a known counterparty.
+                  No registered trading partners matched "{query}". Try broadening your query, or use the Bilateral tab to create a match with a known counterparty.
                 </p>
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
@@ -529,7 +529,7 @@ export default function CounterpartySearch() {
             <CardContent className="py-10 text-center space-y-4">
               <Search className="h-10 w-10 mx-auto text-muted-foreground" />
               <div>
-                <p className="font-medium text-foreground">Search for counterparties</p>
+                <p className="font-medium text-foreground">Search for trading partners</p>
                 <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
                   Enter a commodity, region, or company name above to find registered buyers and sellers. 
                   Select one or more results to create a draft match.
@@ -638,8 +638,8 @@ export default function CounterpartySearch() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Similar Counterparties Sheet */}
-        <SimilarCounterpartiesSheet
+        {/* Similar Trading Partners Sheet */}
+        <SimilarTrading PartnersSheet
           open={!!similarAnchor}
           onOpenChange={(open) => { if (!open) setSimilarAnchor(null); }}
           anchor={similarAnchor}

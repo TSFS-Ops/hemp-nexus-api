@@ -309,7 +309,7 @@ function derivePoi(input: CompletionInput): StageState {
 
   return {
     id: "poi",
-    label: "Proof of Intent (POI)",
+    label: "Confirmed Intent (POI)",
     status,
     detail,
     substeps,
@@ -342,7 +342,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     actions.push({
       id: "wad-create",
       label: "Create WaD",
-      description: "Start the Without-a-Doubt evidence bundle process. The system will validate 9 compliance gates.",
+      description: "Start the Finalised Commitment evidence bundle process. The system will validate 9 compliance gates.",
       type: "create_wad",
       targetTab: "wad",
       allowed: canCreate,

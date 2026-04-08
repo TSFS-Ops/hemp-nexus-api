@@ -195,7 +195,7 @@ export function CounterpartyResultCard({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Show counterparties similar to this one</p>
+                  <p>Show trading partners similar to this one</p>
                 </TooltipContent>
               </Tooltip>
             </div>

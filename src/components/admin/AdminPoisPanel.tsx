@@ -26,8 +26,8 @@ const STATE_COLOURS: Record<string, "default" | "secondary" | "destructive" | "o
   DRAFT: "secondary",
   PENDING_APPROVAL: "outline",
   ELIGIBLE: "default",
-  COLLAPSE_REQUESTED: "default",
-  COLLAPSED: "default",
+  COMPLETION_REQUESTED: "default",
+  COMPLETED: "default",
   EXPIRED: "destructive",
   ANNULLED: "destructive",
   REJECTED: "destructive",
@@ -68,9 +68,9 @@ export function AdminPoisPanel() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Proof-of-Intent (POI)</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Confirmed Intent</h2>
           <p className="text-muted-foreground mt-1">
-            POI lifecycle management - ≥50.1% probability threshold enforced
+            Intent lifecycle management - ≥50.1% probability threshold enforced
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
@@ -80,7 +80,7 @@ export function AdminPoisPanel() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {["DRAFT", "ELIGIBLE", "COLLAPSED", "EXPIRED"].map((state) => (
+        {["DRAFT", "ELIGIBLE", "COMPLETED", "EXPIRED"].map((state) => (
           <Card key={state}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{state}</CardTitle>
@@ -96,7 +96,7 @@ export function AdminPoisPanel() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            All POIs
+            All Intents
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -118,7 +118,7 @@ export function AdminPoisPanel() {
               {pois.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground">
-                    No POIs issued yet
+                    No intents created yet
                   </TableCell>
                 </TableRow>
               ) : (
