@@ -109,7 +109,7 @@ function DealsSection() {
 function OrderBookSection() {
   const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Complete Deals"
         description="Finalised trades, active buyer and seller signals across the platform."
@@ -122,8 +122,8 @@ function OrderBookSection() {
             <TabsTrigger value="interests">Interests</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="signals" className="mt-4"><AdminSignalsPanel /></TabsContent>
-        <TabsContent value="interests" className="mt-4"><AdminInterestsPanel /></TabsContent>
+        <TabsContent value="signals" className="mt-4 animate-section-enter"><AdminSignalsPanel /></TabsContent>
+        <TabsContent value="interests" className="mt-4 animate-section-enter"><AdminInterestsPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -134,7 +134,7 @@ function OrderBookSection() {
 function ComplianceSection() {
   const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Partner Checks"
         description="We check your trading partner's identity and authority to trade before you commit money."
@@ -153,14 +153,14 @@ function ComplianceSection() {
             <TabsTrigger value="insights">Behavioural Insights</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
-        <TabsContent value="disputes" className="mt-4"><AdminDisputesPanel /></TabsContent>
-        <TabsContent value="risk" className="mt-4"><AdminRiskPanel /></TabsContent>
-        <TabsContent value="kyc" className="mt-4"><AdminKycDocsPanel /></TabsContent>
-        <TabsContent value="screening" className="mt-4"><AdminScreeningRunsPanel /></TabsContent>
-        <TabsContent value="ubo" className="mt-4"><AdminUboPanel /></TabsContent>
-        <TabsContent value="behavioral-kyc" className="mt-4"><AdminBehavioralKycLink /></TabsContent>
-        <TabsContent value="insights" className="mt-4"><AdminBehavioralInsights /></TabsContent>
+        <TabsContent value="cases" className="mt-4 animate-section-enter"><AdminComplianceCasesPanel /></TabsContent>
+        <TabsContent value="disputes" className="mt-4 animate-section-enter"><AdminDisputesPanel /></TabsContent>
+        <TabsContent value="risk" className="mt-4 animate-section-enter"><AdminRiskPanel /></TabsContent>
+        <TabsContent value="kyc" className="mt-4 animate-section-enter"><AdminKycDocsPanel /></TabsContent>
+        <TabsContent value="screening" className="mt-4 animate-section-enter"><AdminScreeningRunsPanel /></TabsContent>
+        <TabsContent value="ubo" className="mt-4 animate-section-enter"><AdminUboPanel /></TabsContent>
+        <TabsContent value="behavioral-kyc" className="mt-4 animate-section-enter"><AdminBehavioralKycLink /></TabsContent>
+        <TabsContent value="insights" className="mt-4 animate-section-enter"><AdminBehavioralInsights /></TabsContent>
       </Tabs>
     </div>
   );
