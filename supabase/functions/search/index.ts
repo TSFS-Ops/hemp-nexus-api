@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { errorResponse } from "../_shared/errors.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -23,6 +24,15 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Rate limit: protect Postgres CPU from search spam
+    await checkRateLimit(
+      supabase,
+      authCtx.orgId,
+      authCtx.isApiKey ? authCtx.userId : null,
+      "/search",
+      "search"
+    );
 
     // Enforce token metering
     await enforceTokenMetering(
