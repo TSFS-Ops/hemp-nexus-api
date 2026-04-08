@@ -45,9 +45,14 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [submitted, setSubmitted] = useState<GovernanceDoc[]>([]);
   const [selectedRegistryId, setSelectedRegistryId] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"];
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
   useEffect(() => {
     loadData();
