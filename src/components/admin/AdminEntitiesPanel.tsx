@@ -325,6 +325,13 @@ export function AdminEntitiesPanel() {
           )}
         </CardContent>
       </Card>
+
+      <AuthorityBindDialog
+        open={bindDialogOpen}
+        onOpenChange={setBindDialogOpen}
+        companyEntity={bindTarget}
+        onSuccess={refetch}
+      />
     </div>
   );
 }
