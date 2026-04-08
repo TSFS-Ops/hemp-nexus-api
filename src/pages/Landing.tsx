@@ -9,8 +9,7 @@ import { TrustBadges } from "@/components/landing/TrustBadges";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
-const SCAN_DURATION_MS = 1200;
-const SCAN_TIMEOUT_MS = 8000;
+const REDIRECT_DELAY_MS = 300;
 
 export default function Landing() {
   const [isSearching, setIsSearching] = useState(false);
@@ -83,22 +82,12 @@ export default function Landing() {
       location: data.location,
     });
 
-    setIsSearching(true);
     setIsFormLocked(true);
     setHasSearched(true);
-    await new Promise((r) => setTimeout(r, SCAN_DURATION_MS));
-    setIsSearching(false);
+    await new Promise((r) => setTimeout(r, REDIRECT_DELAY_MS));
     setIsFormLocked(false);
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (!isSearching) return;
-    const timeout = setTimeout(() => {
-      setIsSearching(false);
-      setIsFormLocked(false);
-    }, SCAN_TIMEOUT_MS);
-    return () => clearTimeout(timeout);
-  }, [isSearching]);
 
   return (
     <div className="landing-terminal h-screen-safe flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--lt-bg)' }}>

@@ -8,7 +8,7 @@ const NON_BILLABLE_ENDPOINTS = [
   '/docs',
   '/openapi',
   '/auth',
-  '/demo',
+  '/public-preview',
   '/_shared',
   '/search', // Discovery is free per Work Program
 ];

@@ -244,7 +244,7 @@ function generateAdminEvidence(
  * @param match - The match data from database
  * @param events - The match events from database
  * @param documents - Optional documents attached to match
- * @param viewerRole - The role of the viewer (demo/client/admin/auditor)
+ * @param viewerRole - The role of the viewer (client/admin/auditor)
  * @param viewerOrgId - The org ID of the viewer (required for client role)
  * @returns Role-appropriate evidence pack
  */
