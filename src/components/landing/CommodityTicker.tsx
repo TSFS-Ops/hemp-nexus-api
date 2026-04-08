@@ -45,7 +45,7 @@ export function CommodityTicker() {
         style={{ backgroundColor: 'var(--lt-bg)', borderRight: '1px solid var(--lt-border)' }}
       >
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--lt-emerald)' }} />
+          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
           <span className="text-[10px] font-mono font-semibold uppercase tracking-wider" style={{ color: 'var(--lt-emerald)' }}>
             Markets (Illustrative)
           </span>

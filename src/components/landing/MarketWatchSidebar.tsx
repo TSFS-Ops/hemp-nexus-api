@@ -3,7 +3,7 @@
  * Distinct panel background, glowing emerald numbers, monospace prices.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowRight, ChevronUp, ChevronDown } from "lucide-react";
 
 const MARKET_DATA = [
@@ -22,23 +22,7 @@ const NEWS_ITEMS = [
 ];
 
 export function MarketWatchSidebar() {
-  const [prices, setPrices] = useState(MARKET_DATA);
-  const [tickIndex, setTickIndex] = useState(-1);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const idx = Math.floor(Math.random() * prices.length);
-      setTickIndex(idx);
-      setPrices(prev => prev.map((item, i) => {
-        if (i !== idx) return item;
-        const delta = (Math.random() - 0.5) * 2;
-        const newPrice = Math.max(0.01, item.price + delta);
-        return { ...item, price: Number(newPrice.toFixed(2)) };
-      }));
-      setTimeout(() => setTickIndex(-1), 300);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  const [prices] = useState(MARKET_DATA);
 
   return (
     <div
@@ -52,7 +36,7 @@ export function MarketWatchSidebar() {
       <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between"
            style={{ borderBottom: '1px solid var(--lt-border)' }}>
         <div className="flex items-center gap-2">
-         <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--lt-emerald)' }} />
+           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
           <span className="text-[12px] font-semibold tracking-tight" style={{ color: 'var(--lt-text)' }}>
             Market Watch (Illustrative)
           </span>
@@ -71,7 +55,7 @@ export function MarketWatchSidebar() {
             <span className="text-[12px] font-medium" style={{ color: 'var(--lt-text)' }}>{item.name}</span>
             <div className="flex items-center gap-3">
               <span
-                className={`text-[13px] font-mono font-semibold tabular-nums ${tickIndex === i ? 'animate-tick' : ''}`}
+                className="text-[13px] font-mono font-semibold tabular-nums"
                 style={{ color: 'var(--lt-text)' }}
               >
                 {item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -100,7 +84,7 @@ export function MarketWatchSidebar() {
         <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--lt-border)' }}>
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
           <span className="text-[12px] font-semibold tracking-tight" style={{ color: 'var(--lt-text)' }}>
-            Latest News
+            Latest News (Illustrative)
           </span>
           <ChevronUp className="h-3.5 w-3.5 ml-auto" style={{ color: 'var(--lt-text-dim)' }} />
         </div>
