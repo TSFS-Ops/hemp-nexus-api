@@ -3,6 +3,7 @@ import { webSearchSchema, validateInput } from "../_shared/validation.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { cached, cacheHeaders } from "../_shared/cache.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -27,14 +28,21 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Simple rate limiting: Check recent AI searches for this org
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { count: recentSearches } = await supabase
-      .from('audit_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', authCtx.orgId)
-      .eq('action', 'ai.web_search')
-      .gte('created_at', fiveMinutesAgo);
+    // Simple rate limiting: Check recent AI searches for this org (cached 30s to reduce DB load)
+    const recentSearches = await cached<number>(
+      `rate:web-search:${authCtx.orgId}`,
+      30,
+      async () => {
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const { count } = await supabase
+          .from('audit_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('org_id', authCtx.orgId)
+          .eq('action', 'ai.web_search')
+          .gte('created_at', fiveMinutesAgo);
+        return count ?? 0;
+      }
+    );
 
     if (recentSearches && recentSearches >= 10) {
       throw new ApiException(
@@ -204,7 +212,7 @@ Format each result as JSON:
         searchQueries: queries,
         requestId
       }),
-      { headers: { ...headers, "Content-Type": "application/json" } }
+      { headers: { ...headers, ...cacheHeaders("private-short"), "Content-Type": "application/json" } }
     );
 
   } catch (error) {
