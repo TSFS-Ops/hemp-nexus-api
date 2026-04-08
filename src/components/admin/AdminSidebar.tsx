@@ -95,8 +95,8 @@ export function AdminSidebar() {
     <Sidebar className="w-60" collapsible="icon">
       <SidebarHeader className="border-b border-border px-4 py-3">
         <Link to={ROUTES.ADMIN} className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
-            <span className="text-background font-bold text-[10px]">IZ</span>
+          <div className="h-7 w-7 rounded flex items-center justify-center" style={{ backgroundColor: 'hsl(160, 84%, 29%)' }}>
+            <span className="text-white font-bold text-[10px] font-mono">IZ</span>
           </div>
           <div>
             <h2 className="font-semibold text-sm text-foreground tracking-tight">Izenzo</h2>
@@ -119,13 +119,14 @@ export function AdminSidebar() {
                       <SidebarMenuButton asChild>
                         <Link
                           to={item.url}
-                          className={`flex items-center gap-2 text-[13px] ${
+                          className={`flex items-center gap-2 text-[13px] transition-all duration-150 ${
                             active
                               ? "bg-foreground text-background font-medium"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                           }`}
+                          style={active ? { borderLeft: '2px solid hsl(160, 84%, 29%)' } : {}}
                         >
-                          <item.icon className="h-4 w-4 shrink-0" />
+                          <item.icon className={`h-4 w-4 shrink-0 ${active ? '' : ''}`} style={active ? { color: 'hsl(160, 84%, 39%)' } : {}} />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
