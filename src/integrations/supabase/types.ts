@@ -5357,6 +5357,16 @@ export type Database = {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
       }
+      atomic_accept_bind: {
+        Args: {
+          p_caller_org_id: string
+          p_counterparty_name: string
+          p_counterparty_org_id: string
+          p_counterparty_role: string
+          p_match_id: string
+        }
+        Returns: Json
+      }
       atomic_token_burn: {
         Args: {
           p_amount: number
