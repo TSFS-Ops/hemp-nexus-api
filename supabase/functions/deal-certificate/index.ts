@@ -402,9 +402,17 @@ ${documents.length > 0 ? `
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
+  const startMs = Date.now();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
+
+  // Structured log helper
+  const log = (level: string, msg: string, meta: Record<string, unknown> = {}) => {
+    const entry = { level, msg, requestId, ts: new Date().toISOString(), elapsedMs: Date.now() - startMs, ...meta };
+    if (level === "error") console.error(JSON.stringify(entry));
+    else console.log(JSON.stringify(entry));
+  };
 
   try {
     const corsResponse = handleCors(req, allowedOrigins);
@@ -427,12 +435,15 @@ Deno.serve(async (req) => {
       throw new ApiException("BAD_REQUEST", "Valid match ID is required", 400);
     }
 
+    log("info", "Certificate generation started", { matchId });
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Authenticate caller
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+    log("info", "Authenticated", { matchId, orgId: authCtx.orgId });
 
     // Fetch match
     const { data: match, error: matchErr } = await supabase
@@ -453,9 +464,10 @@ Deno.serve(async (req) => {
       throw new ApiException("FORBIDDEN", "You do not have permission to access this deal", 403);
     }
 
-    // STATE MACHINE GUARD: Only allow certificate generation for completed deals
+    // STATE MACHINE GUARD
     const matchState = match.state || "discovery";
     if (matchState !== "completed") {
+      log("warn", "Certificate blocked by state guard", { matchId, currentState: matchState, orgId: authCtx.orgId });
       throw new ApiException(
         "STATE_GUARD",
         `Certificate generation requires a Signed Deal (completed state). Current state: ${matchState}`,
@@ -490,6 +502,8 @@ Deno.serve(async (req) => {
     const documents = docsRes.data || [];
     const collapseRecord = collapseRes.data?.[0] || null;
 
+    log("info", "Data fetched", { matchId, eventCount: events.length, docCount: documents.length, hasCollapse: !!collapseRecord });
+
     // Verify hash chain
     let chainValid = true;
     for (let i = 0; i < events.length; i++) {
@@ -497,11 +511,12 @@ Deno.serve(async (req) => {
       const expectedPrev = i === 0 ? null : events[i - 1].payload_hash;
       if (ev.previous_event_hash !== expectedPrev) {
         chainValid = false;
+        log("error", "Hash chain broken", { matchId, eventIndex: i, expected: expectedPrev, actual: ev.previous_event_hash });
         break;
       }
     }
 
-    // Build seal hash (canonical payload of the deal at signing time)
+    // Build seal hash
     const sealPayload = {
       match_id: match.id,
       buyer_name: match.buyer_name,
@@ -518,7 +533,6 @@ Deno.serve(async (req) => {
     };
     const sealHash = await sha256Hex(canonicalStringify(sealPayload));
 
-    // Ledger entry hash = SHA-256(previous_event_hash + seal_hash + signing_timestamp)
     const lastEvent = events.length > 0 ? events[events.length - 1] : null;
     const prevHash = lastEvent?.payload_hash || "genesis";
     const signingTimestamp = collapseRecord?.client_timestamp || match.settled_at || match.updated_at;
@@ -542,6 +556,12 @@ Deno.serve(async (req) => {
       sealHash, ledgerEntryHash, chainValid, generatedAt
     );
 
+    log("info", "Certificate generated successfully", {
+      matchId, orgId: authCtx.orgId, sealHash: sealHash.slice(0, 12) + "...",
+      chainValid, eventCount: events.length, docCount: documents.length,
+      totalMs: Date.now() - startMs,
+    });
+
     return new Response(html, {
       status: 200,
       headers: {
@@ -551,6 +571,26 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
-    return errorResponse(error, headers, requestId);
+    log("error", "Certificate generation failed", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack?.split("\n").slice(0, 3).join(" | ") : undefined,
+      totalMs: Date.now() - startMs,
+    });
+
+    // Graceful degradation: if it's a timeout or internal error, return a user-friendly response
+    if (error instanceof ApiException) {
+      return errorResponse(error, headers, requestId);
+    }
+
+    // For unexpected errors, return a polite degradation message
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: "GENERATION_DELAYED",
+        message: "Your deal is signed and sealed on the ledger. Certificate generation encountered a temporary issue. Please try downloading again in a few moments.",
+        requestId,
+      }),
+      { status: 503, headers: { ...headers, "Content-Type": "application/json", "Retry-After": "30" } }
+    );
   }
 });
