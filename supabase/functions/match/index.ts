@@ -1034,20 +1034,21 @@ Deno.serve(async (req) => {
       if (updateErr) handleDatabaseError(updateErr, requestId);
 
       // Record the event in the hash chain
-      await recordMatchEvent(supabase, {
-        matchId: patchMatchId,
-        orgId: authCtx.orgId,
-        eventType: "counterparty.bound",
-        eventData: {
+      await recordMatchEvent(
+        supabase,
+        patchMatchId,
+        authCtx.orgId,
+        "counterparty.bound",
+        {
           bound_org_id: counterparty.org_id,
           bound_name: counterparty.name,
           bound_role: counterparty.role,
           previous_match_type: "unilateral",
           new_match_type: "bilateral",
         },
-        actorUserId: actorUserId,
-        previousHash: existingMatch.event_chain_hash || null,
-      });
+        actorUserId,
+        actorApiKeyId
+      );
 
       // Audit log
       const { error: auditErr } = await supabase.from("audit_logs").insert({
