@@ -1,176 +1,275 @@
+/**
+ * AdminOverview - Action-first overview following the Stripe strategy.
+ * Surfaces stalled POIs, KYC bottlenecks, and system alerts at the top.
+ * Static counts are secondary. No decorative widgets.
+ */
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Users, Key, AlertTriangle, TrendingUp, FileText, Settings, GitCompare, Radio } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertTriangle,
+  Clock,
+  Shield,
+  Users,
+  GitCompare,
+  Key,
+  ArrowRight,
+  Activity,
+  FileWarning,
+  CheckCircle2,
+  Blocks,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MATCH_STATUS, RESOURCE_STATUS } from "@/lib/constants";
+import { MATCH_STATUS, RESOURCE_STATUS, ROUTES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
-interface OverviewStats {
-  totalUsers: number;
-  totalOrgs: number;
-  activeApiKeys: number;
-  recentErrors: number;
-  requestsToday: number;
-  totalMatches: number;
-  confirmedMatches: number;
-  activeSignals: number;
+interface ActionItem {
+  severity: "critical" | "warning" | "info";
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  count?: number;
+  href: string;
+  linkLabel: string;
 }
 
 export function AdminOverview() {
-  const { data: stats, isLoading: loading } = useQuery({
-    queryKey: ["admin-overview-stats"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-overview-v2"],
     queryFn: async () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const today = new Date();
+      const now = new Date();
+      const h48ago = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+      const h24ago = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      const today = new Date(now);
       today.setHours(0, 0, 0, 0);
 
       const [
-        { count: usersCount },
-        { count: orgsCount },
-        { count: keysCount },
-        { count: errorsCount },
-        { count: requestsCount },
-        { count: matchesCount },
-        { count: confirmedCount },
-        { count: signalsCount },
+        stalledPois,
+        kycPending,
+        recentErrors,
+        totalUsers,
+        totalOrgs,
+        totalMatches,
+        confirmedMatches,
+        activeKeys,
+        requestsToday,
+        activeSignals,
+        openDisputes,
       ] = await Promise.all([
+        // Stalled POIs: unilateral drafts older than 48h with no counterparty
+        supabase.from("matches").select("id", { count: "exact", head: true })
+          .eq("status", "draft")
+          .is("seller_org_id", null)
+          .lt("created_at", h48ago),
+        // KYC bottlenecks: orgs with no completed KYC
+        supabase.from("kyc_status").select("id", { count: "exact", head: true })
+          .neq("status", "verified"),
+        // System errors last 24h
+        supabase.from("api_request_logs").select("id", { count: "exact", head: true })
+          .gte("status_code", 500)
+          .gte("created_at", h24ago),
+        // Counts
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("organizations").select("id", { count: "exact", head: true }),
-        supabase.from("api_keys").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
-        supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("status_code", 400).gte("created_at", yesterday.toISOString()),
-        supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("matches").select("id", { count: "exact", head: true }),
         supabase.from("matches").select("id", { count: "exact", head: true }).eq("status", MATCH_STATUS.SETTLED),
+        supabase.from("api_keys").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
+        supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("signals").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
+        supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
       ]);
 
       return {
-        totalUsers: usersCount || 0,
-        totalOrgs: orgsCount || 0,
-        activeApiKeys: keysCount || 0,
-        recentErrors: errorsCount || 0,
-        requestsToday: requestsCount || 0,
-        totalMatches: matchesCount || 0,
-        confirmedMatches: confirmedCount || 0,
-        activeSignals: signalsCount || 0,
+        stalledPois: stalledPois.count ?? 0,
+        kycPending: kycPending.count ?? 0,
+        recentErrors: recentErrors.count ?? 0,
+        totalUsers: totalUsers.count ?? 0,
+        totalOrgs: totalOrgs.count ?? 0,
+        totalMatches: totalMatches.count ?? 0,
+        confirmedMatches: confirmedMatches.count ?? 0,
+        activeKeys: activeKeys.count ?? 0,
+        requestsToday: requestsToday.count ?? 0,
+        activeSignals: activeSignals.count ?? 0,
+        openDisputes: openDisputes.count ?? 0,
       };
     },
     staleTime: 30_000,
   });
 
-  const s = stats ?? { totalMatches: 0, confirmedMatches: 0, activeSignals: 0, totalUsers: 0, totalOrgs: 0, activeApiKeys: 0, recentErrors: 0, requestsToday: 0 };
+  const s = data ?? {
+    stalledPois: 0, kycPending: 0, recentErrors: 0, totalUsers: 0,
+    totalOrgs: 0, totalMatches: 0, confirmedMatches: 0, activeKeys: 0,
+    requestsToday: 0, activeSignals: 0, openDisputes: 0,
+  };
 
-  const statCards = [
-    { title: "Total Matches", value: s.totalMatches, icon: GitCompare, description: `${s.confirmedMatches} confirmed` },
-    { title: "Active Signals", value: s.activeSignals, icon: Radio, description: "Buyer/seller signals" },
-    { title: "Total Users", value: s.totalUsers, icon: Users, description: "Registered users" },
-    { title: "Organizations", value: s.totalOrgs, icon: Activity, description: "Active organizations" },
-    { title: "Active API Keys", value: s.activeApiKeys, icon: Key, description: "Currently active" },
-    { title: "Recent Errors", value: s.recentErrors, icon: AlertTriangle, description: "Last 24 hours", alert: s.recentErrors > 10 },
-    { title: "Requests Today", value: s.requestsToday, icon: TrendingUp, description: "API calls today" },
+  // Build action items dynamically
+  const actions: ActionItem[] = [];
+
+  if (s.stalledPois > 0) {
+    actions.push({
+      severity: "warning",
+      icon: Clock,
+      title: "Stalled unilateral POIs",
+      description: `${s.stalledPois} draft POI${s.stalledPois !== 1 ? "s" : ""} without counterparty acceptance for over 48 hours.`,
+      count: s.stalledPois,
+      href: ROUTES.ADMIN_DEALS + "?tab=matches",
+      linkLabel: "Review stalled deals",
+    });
+  }
+  if (s.kycPending > 0) {
+    actions.push({
+      severity: "warning",
+      icon: FileWarning,
+      title: "KYC verification pending",
+      description: `${s.kycPending} organisation${s.kycPending !== 1 ? "s" : ""} with incomplete identity verification.`,
+      count: s.kycPending,
+      href: ROUTES.ADMIN_COMPLIANCE + "?tab=kyc",
+      linkLabel: "Review KYC queue",
+    });
+  }
+  if (s.openDisputes > 0) {
+    actions.push({
+      severity: "critical",
+      icon: AlertTriangle,
+      title: "Open disputes",
+      description: `${s.openDisputes} unresolved dispute${s.openDisputes !== 1 ? "s" : ""} requiring admin intervention.`,
+      count: s.openDisputes,
+      href: ROUTES.ADMIN_COMPLIANCE + "?tab=disputes",
+      linkLabel: "Resolve disputes",
+    });
+  }
+  if (s.recentErrors > 10) {
+    actions.push({
+      severity: "critical",
+      icon: AlertTriangle,
+      title: "Elevated error rate",
+      description: `${s.recentErrors} server errors (5xx) in the last 24 hours. Investigate immediately.`,
+      count: s.recentErrors,
+      href: ROUTES.ADMIN_SYSTEM_LOGS,
+      linkLabel: "View system logs",
+    });
+  }
+
+  const severityStyles = {
+    critical: "border-destructive/40 bg-destructive/5",
+    warning: "border-amber-500/40 bg-amber-500/5",
+    info: "border-border",
+  };
+  const severityIconStyles = {
+    critical: "text-destructive",
+    warning: "text-amber-600",
+    info: "text-muted-foreground",
+  };
+
+  const counters = [
+    { label: "Matches", value: s.totalMatches, sub: `${s.confirmedMatches} settled`, icon: GitCompare, href: ROUTES.ADMIN_DEALS },
+    { label: "Signals", value: s.activeSignals, sub: "Active", icon: Activity, href: ROUTES.ADMIN_DEALS },
+    { label: "Users", value: s.totalUsers, sub: "Registered", icon: Users, href: ROUTES.ADMIN_USERS },
+    { label: "API Keys", value: s.activeKeys, sub: "Active", icon: Key, href: ROUTES.ADMIN_API_KEYS },
+    { label: "Requests", value: s.requestsToday, sub: "Today", icon: Blocks, href: ROUTES.ADMIN_SYSTEM_LOGS },
+    { label: "Orgs", value: s.totalOrgs, sub: "Registered", icon: Shield, href: ROUTES.ADMIN_ORGS },
   ];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-4 sm:p-6 space-y-6">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">API Platform Overview</h2>
-          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Loading statistics…</p>
+          <Skeleton className="h-7 w-48 mb-2" />
+          <Skeleton className="h-4 w-80" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2"><Skeleton className="h-4 w-24" /></CardHeader>
-              <CardContent><Skeleton className="h-8 w-16" /></CardContent>
-            </Card>
-          ))}
+        <div className="space-y-3">
+          {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-20" />)}
         </div>
       </div>
     );
   }
 
-  const quickActions = [
-    { to: "/admin/deals?tab=pipeline", icon: GitCompare, label: "Deal Pipeline" },
-    { to: "/admin/deals?tab=matches", icon: GitCompare, label: "Matches" },
-    { to: "/admin/audit", icon: FileText, label: "Audit Logs" },
-    { to: "/admin/api-keys", icon: Key, label: "API Keys" },
-    { to: "/admin/users-orgs", icon: Users, label: "Users & Orgs" },
-    { to: "/admin/compliance", icon: Settings, label: "Compliance" },
-    { to: "/admin/overrides", icon: Settings, label: "Overrides" },
-    { to: "/admin/settings", icon: Settings, label: "Settings" },
-  ];
-
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">API Platform Overview</h2>
-        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-          Monitor and manage your compliance matching API infrastructure
+    <div className="p-4 sm:p-6 space-y-6">
+      {/* Header */}
+      <header>
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+          Platform Overview
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Operational status and items requiring attention across the Izenzo platform.
         </p>
-      </div>
+      </header>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {statCards.map((stat) => (
-          <Card key={stat.title} className={stat.alert ? "border-destructive" : ""}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.alert ? "text-destructive" : "text-muted-foreground"}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Action Required Section */}
+      {actions.length > 0 ? (
+        <section>
+          <h2 className="text-xs font-semibold tracking-[0.08em] uppercase text-muted-foreground mb-3">
+            Action Required
+          </h2>
+          <div className="space-y-2">
+            {actions.map((action) => (
+              <Link
+                key={action.title}
+                to={action.href}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-lg border transition-colors hover:bg-accent/30",
+                  severityStyles[action.severity]
+                )}
+              >
+                <action.icon className={cn("h-5 w-5 mt-0.5 shrink-0", severityIconStyles[action.severity])} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-medium text-foreground">{action.title}</h3>
+                    {action.count != null && (
+                      <Badge variant="secondary" className="text-xs font-mono">
+                        {action.count}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
+                </div>
+                <span className="text-xs font-medium text-foreground shrink-0 flex items-center gap-1 mt-0.5">
+                  {action.linkLabel}
+                  <ArrowRight className="h-3 w-3" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+          <div>
+            <h3 className="text-sm font-medium text-foreground">All clear</h3>
+            <p className="text-xs text-muted-foreground">No items require immediate attention.</p>
+          </div>
+        </section>
+      )}
 
-      <Card>
-        <CardHeader className="px-4 sm:px-6">
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common administrative tasks</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 px-4 sm:px-6">
-          {quickActions.map((action) => (
+      {/* System Counters */}
+      <section>
+        <h2 className="text-xs font-semibold tracking-[0.08em] uppercase text-muted-foreground mb-3">
+          System Status
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {counters.map((c) => (
             <Link
-              key={action.to}
-              to={action.to}
-              className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+              key={c.label}
+              to={c.href}
+              className="p-4 rounded-lg border border-border bg-background hover:bg-accent/20 transition-colors group"
             >
-              <action.icon className="h-6 w-6 mb-2" />
-              <span className="text-sm font-medium">{action.label}</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{c.label}</span>
+                <c.icon className="h-3.5 w-3.5 text-muted-foreground/50" />
+              </div>
+              <p className="text-2xl font-semibold text-foreground font-mono tracking-tight">
+                {c.value.toLocaleString()}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{c.sub}</p>
             </Link>
           ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Intent Actions Summary</CardTitle>
-          <CardDescription>
-            Only "Confirm Intent" creates audit/evidence records. All other actions are non-binding.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-              <h4 className="font-semibold text-green-800 dark:text-green-200">Binding Actions</h4>
-              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                <strong>Confirm Intent</strong> - Creates audit record, evidence chain entry.
-                Signals serious interest (no legal obligation).
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-semibold">Non-Binding Actions</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Skip, Maybe Later, Not Now, Browse, View - No records created.
-                Purely behavioural signals for UX improvement.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

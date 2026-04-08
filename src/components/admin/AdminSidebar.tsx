@@ -2,13 +2,17 @@ import {
   Activity,
   Key,
   Users,
-  Settings,
+  Building2,
   Shield,
   GitCompare,
   Scale,
   Wrench,
-  Server,
   Database,
+  BookOpen,
+  Webhook,
+  Terminal,
+  Blocks,
+  Settings,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -16,6 +20,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,17 +28,58 @@ import {
 } from "@/components/ui/sidebar";
 import { ROUTES } from "@/lib/constants";
 
-const sidebarItems = [
-  { title: "Overview", url: ROUTES.ADMIN, icon: Activity, exact: true },
-  { title: "Deals", url: ROUTES.ADMIN_DEALS, icon: GitCompare },
-  { title: "Users & Orgs", url: ROUTES.ADMIN_USERS_ORGS, icon: Users },
-  { title: "Compliance", url: ROUTES.ADMIN_COMPLIANCE, icon: Scale },
-  { title: "Audit", url: ROUTES.ADMIN_AUDIT, icon: Shield },
-  { title: "Infrastructure", url: ROUTES.ADMIN_INFRASTRUCTURE, icon: Server },
-  { title: "Data Governance", url: ROUTES.ADMIN_DATA_GOVERNANCE, icon: Database },
-  { title: "API Keys", url: ROUTES.ADMIN_API_KEYS, icon: Key },
-  { title: "Overrides", url: ROUTES.ADMIN_OVERRIDES, icon: Wrench },
-  { title: "Settings", url: ROUTES.ADMIN_SETTINGS, icon: Settings },
+interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exact?: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const sidebarGroups: NavGroup[] = [
+  {
+    label: "OPERATIONS",
+    items: [
+      { title: "Overview", url: ROUTES.ADMIN, icon: Activity, exact: true },
+      { title: "Deals", url: ROUTES.ADMIN_DEALS, icon: GitCompare },
+      { title: "Order Book", url: ROUTES.ADMIN_ORDER_BOOK, icon: BookOpen },
+    ],
+  },
+  {
+    label: "TRUST & INTEGRITY",
+    items: [
+      { title: "Compliance", url: ROUTES.ADMIN_COMPLIANCE, icon: Scale },
+      { title: "Audit Trail", url: ROUTES.ADMIN_AUDIT, icon: Shield },
+      { title: "Evidence Ledger", url: ROUTES.ADMIN_LEDGER, icon: Blocks },
+    ],
+  },
+  {
+    label: "ENTITIES",
+    items: [
+      { title: "Users", url: ROUTES.ADMIN_USERS, icon: Users },
+      { title: "Organisations", url: ROUTES.ADMIN_ORGS, icon: Building2 },
+    ],
+  },
+  {
+    label: "DEVELOPER",
+    items: [
+      { title: "API Keys", url: ROUTES.ADMIN_API_KEYS, icon: Key },
+      { title: "Webhooks", url: ROUTES.ADMIN_WEBHOOKS, icon: Webhook },
+      { title: "System Logs", url: ROUTES.ADMIN_SYSTEM_LOGS, icon: Terminal },
+    ],
+  },
+  {
+    label: "GOVERNANCE",
+    items: [
+      { title: "Data Retention", url: ROUTES.ADMIN_DATA_GOVERNANCE, icon: Database },
+      { title: "Policy Settings", url: ROUTES.ADMIN_SETTINGS, icon: Settings },
+      { title: "Overrides", url: ROUTES.ADMIN_OVERRIDES, icon: Wrench },
+    ],
+  },
 ];
 
 export function AdminSidebar() {
@@ -50,38 +96,46 @@ export function AdminSidebar() {
       <SidebarHeader className="border-b border-border px-4 py-3">
         <Link to={ROUTES.ADMIN} className="flex items-center gap-2.5">
           <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
-            <span className="text-background font-bold text-[10px]">CM</span>
+            <span className="text-background font-bold text-[10px]">IZ</span>
           </div>
           <div>
-            <h2 className="font-semibold text-sm text-foreground">Compliance Match</h2>
-            <p className="text-xs text-muted-foreground">Admin</p>
+            <h2 className="font-semibold text-sm text-foreground tracking-tight">Izenzo</h2>
+            <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Platform Admin</p>
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="px-2 py-3">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {sidebarItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      to={item.url}
-                      className={`flex items-center gap-2 ${
-                        isActive(item.url, item.exact)
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted/50"
-                      }`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="px-2 py-2">
+        {sidebarGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase px-2 mb-0.5">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const active = isActive(item.url, item.exact);
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <Link
+                          to={item.url}
+                          className={`flex items-center gap-2 text-[13px] ${
+                            active
+                              ? "bg-foreground text-background font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );
