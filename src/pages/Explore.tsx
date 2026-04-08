@@ -171,6 +171,20 @@ export default function Explore() {
 
       if (matchError) throw matchError;
 
+      // Fire match notification email (fire-and-forget)
+      supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "match-notification",
+          recipientEmail: session?.user?.email,
+          idempotencyKey: `match-notify-${matchData.id}`,
+          templateData: {
+            commodity,
+            matchId: matchData.id,
+            counterpartyHint: selectedCounterparty.name,
+          },
+        },
+      }).catch(() => {});
+
       toast.success("POI created successfully — navigating to evidence pack");
       navigate(`/dashboard/matches/${matchData.id}`);
     } catch (err) {
