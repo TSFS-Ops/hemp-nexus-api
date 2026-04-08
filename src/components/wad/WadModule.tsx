@@ -112,7 +112,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            WaD (Finalised Commitment)
+            WaD (Signed Deal)
           </CardTitle>
           <CardDescription>Sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
@@ -123,7 +123,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <p className="font-medium">Intent must be confirmed first</p>
               <p className="text-sm text-muted-foreground">
                 {state.createBlockedReasons[0]?.reason ||
-                  "WaD can only be created after both parties have confirmed intent on this intent."}
+                  "WaD can only be created after both parties have trade request on this intent."}
               </p>
             </div>
           </div>
@@ -149,7 +149,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              WaD (Finalised Commitment)
+              WaD (Signed Deal)
             </CardTitle>
             <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
@@ -157,7 +157,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
             <div className="p-4 bg-muted rounded-lg space-y-3">
               <p className="text-sm">
                 WaD creates an auditable, tamper-evident record that packages the full evidence trail
-                for this confirmed intent. It includes:
+                for this trade request. It includes:
               </p>
               <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Search query and match context</li>

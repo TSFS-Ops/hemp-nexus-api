@@ -16,12 +16,12 @@ interface PoiIssuanceProps {
 const PoiIssuanceEmail = ({ matchId, commodity, poiState, issuedAt }: PoiIssuanceProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirmed Intent issued for {commodity || 'your match'}</Preview>
+    <Preview>Trade Request issued for {commodity || 'your match'}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirmed Intent Issued</Heading>
+        <Heading style={h1}>Trade Request Issued</Heading>
         <Text style={text}>
-          A binding Confirmed Intent (POI) has been recorded for your {commodity ? <strong>{commodity}</strong> : 'match'} on the {SITE_NAME} platform.
+          A binding Trade Request (POI) has been recorded for your {commodity ? <strong>{commodity}</strong> : 'match'} on the {SITE_NAME} platform.
         </Text>
         <Section style={detailBox}>
           {poiState && (

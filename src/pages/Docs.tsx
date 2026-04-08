@@ -61,7 +61,7 @@ export default function Docs() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Hero Section */}
         <div className="mb-8 sm:mb-12 text-center">
-          <Badge variant="outline" className="mb-4">Confirmed Intent API</Badge>
+          <Badge variant="outline" className="mb-4">Trade Request API</Badge>
           <h1 className="text-2xl sm:text-4xl font-bold mb-4">
             B2B Trade Matching with Tamper-Evident Records
           </h1>
@@ -73,7 +73,7 @@ export default function Docs() {
             <CheckCircle className="h-4 w-4 text-amber-600 shrink-0" />
             <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm text-left">
               <strong>No payments. No contracts. No legal obligation.</strong> This API only records 
-              confirmed intent at a specific date/time.
+              trade request at a specific date/time.
             </AlertDescription>
           </Alert>
         </div>

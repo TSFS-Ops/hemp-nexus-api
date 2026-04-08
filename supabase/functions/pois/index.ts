@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * POI (Confirmed Intent) Edge Function - V3 Sprint 2
+ * POI (Trade Request) Edge Function - V3 Sprint 2
  *
  * POST: Issue a new POI. Requires active mutual interest and ≥50.1% probability.
  * GET:  List POIs or get by ID.
@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
       if (!buyer) throw new ApiException("NOT_FOUND", "Buyer entity not found", 404);
       if (!seller) throw new ApiException("NOT_FOUND", "Seller entity not found", 404);
 
-      // Draft Intent in DRAFT state
+      // Draft Request in DRAFT state
       const { data: poi, error } = await admin
         .from("pois")
         .insert({

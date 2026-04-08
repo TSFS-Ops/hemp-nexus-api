@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
 
       const updated = transitionResult.match;
 
-      // Audit log - immutable confirmed intent
+      // Audit log - immutable trade request
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -872,7 +872,7 @@ Deno.serve(async (req) => {
 
       if (insertError) handleDatabaseError(insertError, requestId);
 
-      // Create audit log for match creation (immutable confirmed intent)
+      // Create audit log for match creation (immutable trade request)
       try {
         await supabase.from("audit_logs").insert({
           org_id: authCtx.orgId,
@@ -958,7 +958,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── PATCH /match - Accept & Bind (convert unilateral → bilateral) ──
+    // ── PATCH /match - Sign & Bind Deal (convert unilateral → bilateral) ──
     if (req.method === "PATCH") {
       const body = await req.json();
       const { matchId: patchMatchId, action: patchAction, counterparty, expected_state } = body;

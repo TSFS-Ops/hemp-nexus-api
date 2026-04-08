@@ -1,7 +1,7 @@
 /**
  * Consequence Module - WaD Orchestration Layer
  *
- * This module is the single application-layer authority for WaD (Finalised Commitment)
+ * This module is the single application-layer authority for WaD (Signed Deal)
  * workflow decisions. Components MUST use this module instead of inline WaD logic.
  *
  * - Pure logic (state derivation, role resolution) lives in ./logic.ts

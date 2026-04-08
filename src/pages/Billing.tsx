@@ -25,7 +25,7 @@ const CREDIT_PACKAGES = [
     id: 'single',
     credits: 1, 
     priceZar: 10,
-    label: 'Confirmed Intent',
+    label: 'Trade Request',
     pricePerCredit: '10.00',
     description: 'R10 ZAR per action - pay as you go',
     popular: false,

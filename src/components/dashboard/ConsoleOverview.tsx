@@ -194,7 +194,7 @@ export function ConsoleOverview() {
     { label: "Active API Keys", value: stats?.activeApiKeys ?? 0, icon: Key },
     { label: "Calls (24h)", value: stats?.callsLast24h ?? 0, icon: Activity },
     { label: "Calls (7d)", value: stats?.callsLast7d ?? 0, icon: BarChart3 },
-    { label: "Confirmed Intents", value: stats?.confirmedIntents ?? 0, icon: FileText },
+    { label: "Trade Requests", value: stats?.confirmedIntents ?? 0, icon: FileText },
   ];
 
   const hasZeroActivity = !isLoading && stats &&
@@ -361,7 +361,7 @@ export function ConsoleOverview() {
                 <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">Your next step: Confirm intent on a match</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable confirmed intent record.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable trade request record.</p>
                   </div>
                   <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)}>
                     <Handshake className="h-3.5 w-3.5 mr-1.5" />

@@ -158,7 +158,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 <div className="text-xs text-muted-foreground space-y-1 p-3 rounded-md bg-muted/30">
                   <p><strong>Non-binding.</strong> No contract, payment, or legal obligation is created.</p>
                   <p><strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.</p>
-                  <p><strong>What happens next.</strong> An immutable confirmed intent record is created. The trading partner will be able to see your interest and may begin preparing deal terms.</p>
+                  <p><strong>What happens next.</strong> An immutable trade request record is created. The trading partner will be able to see your interest and may begin preparing deal terms.</p>
                 </div>
               </div>
             </AlertDialogDescription>

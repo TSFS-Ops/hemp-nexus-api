@@ -210,7 +210,7 @@ function derivePoi(input: CompletionInput): StageState {
     detail = "An active dispute is blocking progress. Resolve it before continuing.";
   } else if (poiIssued) {
     status = "complete";
-    detail = "Both parties have confirmed intent - POI is issued";
+    detail = "Both parties have trade request - POI is issued";
   } else if (doneCount > 0) {
     status = "in_progress";
     detail = `${doneCount} of ${substeps.length} steps complete - current state: ${poiState}`;
@@ -309,7 +309,7 @@ function derivePoi(input: CompletionInput): StageState {
 
   return {
     id: "poi",
-    label: "Confirmed Intent (POI)",
+    label: "Trade Request (POI)",
     status,
     detail,
     substeps,
@@ -342,7 +342,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     actions.push({
       id: "wad-create",
       label: "Create WaD",
-      description: "Start the Finalised Commitment evidence bundle process. The system will validate 9 compliance gates.",
+      description: "Start the Signed Deal evidence bundle process. The system will validate 9 compliance gates.",
       type: "create_wad",
       targetTab: "wad",
       allowed: canCreate,

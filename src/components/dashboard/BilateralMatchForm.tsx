@@ -194,7 +194,7 @@ export function BilateralMatchForm() {
             Create Bilateral Match
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Register a Confirmed Intent with a trading partner you've already identified offline.
+            Register a Trade Request with a trading partner you've already identified offline.
             They will need to onboard to the platform to complete the bilateral flow.
           </p>
         </CardHeader>

@@ -71,7 +71,7 @@ const TOKEN_PACKAGES: Record<string, {
     credits: 1, 
     price_zar: 10, 
     price_cents: 1000, 
-    label: "Confirmed Intent",
+    label: "Trade Request",
     pricePerCredit: "10.00",
   },
 };

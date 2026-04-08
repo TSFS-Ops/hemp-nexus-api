@@ -173,8 +173,8 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
         <Alert className="mt-4">
           <Shield className="h-4 w-4" />
           <AlertDescription>
-            <strong>Confirmed Intent Trail:</strong> Match creation and settlement events are immutable audit records 
-            containing SHA-256 hashes of deal terms. These logs serve as verifiable confirmed intent and settlement.
+            <strong>Trade Request Trail:</strong> Match creation and settlement events are immutable audit records 
+            containing SHA-256 hashes of deal terms. These logs serve as verifiable trade request and settlement.
           </AlertDescription>
         </Alert>
       </CardHeader>

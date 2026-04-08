@@ -34,7 +34,7 @@ tags:
   - name: Interests
     description: Declared interest operations
   - name: POIs
-    description: Confirmed Intent lifecycle
+    description: Trade Request lifecycle
   - name: WaD
     description: Willing-and-Able Deal hard-gates
   - name: PoD
@@ -211,7 +211,7 @@ paths:
   /pois:
     post:
       tags: [POIs]
-      summary: Issue a Confirmed Intent
+      summary: Issue a Trade Request
       operationId: createPoi
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'

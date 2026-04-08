@@ -158,7 +158,7 @@ export function AdminWadPanel() {
             WaD Management
           </h2>
           <p className="text-muted-foreground mt-2">
-            View and manage all Finalised Commitment sealed evidence bundles
+            View and manage all Signed Deal sealed evidence bundles
           </p>
         </div>
         <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>

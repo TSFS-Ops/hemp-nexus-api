@@ -1,8 +1,8 @@
 /**
- * Finalised Commitment Certificate PDF - Unit Tests
+ * Signed Deal Certificate PDF - Unit Tests
  *
  * Tests certificate data assembly, state guards, access control logic,
- * and content correctness for the finalised commitment certificate generation flow.
+ * and content correctness for the signed deal certificate generation flow.
  */
 
 import { describe, it, expect } from "vitest";
@@ -132,7 +132,7 @@ const attestations: Attestation[] = [
 
 // ── Tests ──
 
-describe("Finalised Commitment Certificate", () => {
+describe("Signed Deal Certificate", () => {
   describe("Generation guard", () => {
     it("allows certificate for sealed WaD", () => {
       const result = canGenerateCertificate(sealedWad);

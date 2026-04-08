@@ -515,8 +515,8 @@ Deno.serve(async (req) => {
 
       // ── Build PDF ──
       const pdfDoc = await PDFDocument.create();
-      pdfDoc.setTitle(`Finalised Commitment Certificate - ${wadId}`);
-      pdfDoc.setSubject("Finalised Commitment Certificate");
+      pdfDoc.setTitle(`Signed Deal Certificate - ${wadId}`);
+      pdfDoc.setSubject("Signed Deal Certificate");
       pdfDoc.setProducer("Izenzo Platform");
       pdfDoc.setCreator("Izenzo Platform");
       pdfDoc.setCreationDate(new Date());
@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
         color: rgb(0.1, 0.1, 0.1),
       });
       y -= 24;
-      page.drawText("Finalised Commitment (WaD) - Sealed Evidence Record", {
+      page.drawText("Signed Deal (WaD) - Sealed Evidence Record", {
         x: MARGIN,
         y,
         size: 12,
