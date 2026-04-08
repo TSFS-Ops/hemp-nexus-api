@@ -243,7 +243,8 @@ export function AdminEntitiesPanel() {
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Screening</TableHead>
-                    <TableHead className="text-right">UBO</TableHead>
+                     <TableHead className="text-right">UBO</TableHead>
+                     <TableHead className="text-right">ATB</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -299,6 +300,22 @@ export function AdminEntitiesPanel() {
                           )}
                           Verify
                         </Button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {entity.entity_type === "COMPANY" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setBindTarget(entity);
+                              setBindDialogOpen(true);
+                            }}
+                            disabled={entity.status === "archived"}
+                          >
+                            <Link2 className="h-3 w-3 mr-1" />
+                            Bind
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
