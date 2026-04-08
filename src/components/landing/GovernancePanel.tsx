@@ -34,17 +34,15 @@ export function GovernancePanel({ isScanning = false }: GovernancePanelProps) {
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full transition-colors ${
-            isScanning ? "bg-primary animate-pulse" : "bg-signal-verified"
-          }`} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
           <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-muted-foreground">
-            Platform Activity
+            Platform Activity (Illustrative)
           </span>
         </div>
         <span className={`text-[9px] font-mono uppercase tracking-widest transition-colors ${
           isScanning ? "text-primary" : "text-muted-foreground/40"
         }`}>
-          {isScanning ? "Scanning" : "Live"}
+          {isScanning ? "Scanning" : "Sample"}
         </span>
       </div>
 
