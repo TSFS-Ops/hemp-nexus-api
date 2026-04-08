@@ -1,5 +1,5 @@
 /**
- * draft-poi — Agentic POI Drafter
+ * draft-poi - Agentic POI Drafter
  *
  * Accepts raw unstructured text (e.g. pasted email) and extracts
  * structured trade intent fields using Lovable AI (tool-calling).
@@ -88,7 +88,7 @@ serve(async (req) => {
             notes: {
               type: "string",
               description:
-                "Any remaining context not captured above — delivery terms, quality specs, timeline, etc. Leave empty string if nothing extra.",
+                "Any remaining context not captured above - delivery terms, quality specs, timeline, etc. Leave empty string if nothing extra.",
             },
             confidence: {
               type: "string",

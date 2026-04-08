@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 
 /**
- * validate-upload — Server-side magic-byte validation for any uploaded file.
+ * validate-upload - Server-side magic-byte validation for any uploaded file.
  *
  * Called AFTER a file has been stored in a bucket. Downloads the first 16 bytes,
  * runs magic-byte validation, and returns blocked/allowed verdict.
@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
       // Fail-closed: cannot read file → report blocked
       return new Response(JSON.stringify({
         blocked: true,
-        reason: "Could not verify file integrity — upload validation failed",
+        reason: "Could not verify file integrity - upload validation failed",
       }), { status: 200, headers });
     }
 

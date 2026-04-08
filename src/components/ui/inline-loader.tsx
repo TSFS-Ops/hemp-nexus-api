@@ -1,5 +1,5 @@
 /**
- * InlineLoader — Single source of truth for inline/section-level loading states.
+ * InlineLoader - Single source of truth for inline/section-level loading states.
  *
  * Replaces the 20+ scattered patterns of:
  *   <div className="text-center py-8 text-muted-foreground">

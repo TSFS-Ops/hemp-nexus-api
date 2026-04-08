@@ -27,7 +27,7 @@ const CREDIT_PACKAGES = [
     priceZar: 10,
     label: 'Proof-of-Intent',
     pricePerCredit: '10.00',
-    description: 'R10 ZAR per POI — pay as you go',
+    description: 'R10 ZAR per POI - pay as you go',
     popular: false,
   },
 ];
@@ -41,7 +41,7 @@ const CHARGING_ENTITY = {
   registration: "2018 / 331720 / 07",
   address: "44 Campbell Street, Port Alfred, South Africa",
   supportEmail: "support@izenzo.co.za",
-  vatNote: "No VAT charged — supplier not VAT registered in South Africa.",
+  vatNote: "No VAT charged - supplier not VAT registered in South Africa.",
 };
 
 export default function Billing() {
@@ -85,7 +85,7 @@ export default function Billing() {
     // (e.g. user closes checkout, Paystack redirects with just trxref)
     if (!status && reference) {
       verifyAttempted.current = true;
-      // Verify the transaction — it may have succeeded even without status=success
+      // Verify the transaction - it may have succeeded even without status=success
       (async () => {
         try {
           const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
@@ -324,7 +324,7 @@ export default function Billing() {
           description="Purchase credits to use the Compliance Matching API"
         />
 
-        {/* Payment cancellation banner — persists until dismissed */}
+        {/* Payment cancellation banner - persists until dismissed */}
         {paymentCancelled && (
           <Alert>
             <Info className="h-4 w-4" />
@@ -342,7 +342,7 @@ export default function Billing() {
           </Alert>
         )}
 
-        {/* Payment failure banner — persists until dismissed */}
+        {/* Payment failure banner - persists until dismissed */}
         {paymentFailure && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -495,7 +495,7 @@ export default function Billing() {
               <div className="mt-3 space-y-2 text-muted-foreground">
                 <p>Credits are usually applied within 30 seconds of payment. If they haven't appeared:</p>
                 <ol className="list-decimal list-inside space-y-1">
-                  <li>Refresh this page — your balance updates automatically.</li>
+                  <li>Refresh this page - your balance updates automatically.</li>
                   <li>Check your email for a Paystack receipt confirming the payment went through.</li>
                   <li>If the receipt shows "successful" but credits aren't here after 5 minutes, email <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">{CHARGING_ENTITY.supportEmail}</a> with your payment reference.</li>
                 </ol>

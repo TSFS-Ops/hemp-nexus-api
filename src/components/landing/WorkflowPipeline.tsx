@@ -1,5 +1,5 @@
 /**
- * 6-step KYC-to-WaD workflow pipeline — ultra-premium Bloomberg terminal style.
+ * 6-step KYC-to-WaD workflow pipeline - ultra-premium Bloomberg terminal style.
  * Clean header, no toggle. Emerald-highlighted WaD step.
  */
 
@@ -28,7 +28,7 @@ export function WorkflowPipeline() {
       <div className="flex items-center gap-2 mb-5">
         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
         <span className="text-[11px] font-mono uppercase tracking-wider font-semibold" style={{ color: 'var(--lt-text-muted)' }}>
-          How it works — From Discovery to Execution
+          How it works - From Discovery to Execution
         </span>
       </div>
 

@@ -1,5 +1,5 @@
 /**
- * API Integration Layer — Acceptance Tests
+ * API Integration Layer - Acceptance Tests
  *
  * Tests the full API key–driven lifecycle:
  * 1. Collapse with unapproved org → reject (422)
@@ -102,7 +102,7 @@ export async function testCollapseMissingSignedPayload(token: string): Promise<T
 export async function testCollapseFromDraftState(token: string): Promise<TestResult> {
   const name = 'Collapse from DRAFT state rejects';
   try {
-    // Use a match_id that would be in DRAFT state (non-existent is fine — the state check
+    // Use a match_id that would be in DRAFT state (non-existent is fine - the state check
     // only fires if a match exists, so we test with a fake UUID that may not exist)
     const res = await fetch(`${BASE_URL}/collapse`, {
       method: 'POST',
@@ -125,7 +125,7 @@ export async function testCollapseFromDraftState(token: string): Promise<TestRes
       }),
     });
 
-    // Should reject — either org mismatch (403), not approved (422), or state violation (422)
+    // Should reject - either org mismatch (403), not approved (422), or state violation (422)
     if (res.status === 403 || res.status === 422) {
       const body = await res.json();
       return { name, passed: true, message: `Correctly rejected (${res.status}): ${body.error || body.message}`, status: res.status };
@@ -271,7 +271,7 @@ export async function testCollapseWrongScope(apiKey: string): Promise<TestResult
 
     // If API key has collapse scope, it would fail for other reasons (which is also valid)
     if (res.status === 422 || res.status === 400) {
-      return { name, passed: true, message: `API key accepted but failed validation (${res.status}) — scope check passed`, status: res.status };
+      return { name, passed: true, message: `API key accepted but failed validation (${res.status}) - scope check passed`, status: res.status };
     }
 
     return { name, passed: false, message: `Unexpected status: ${res.status}`, status: res.status };

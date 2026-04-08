@@ -7,7 +7,7 @@ This document covers infrastructure-level concerns that sit outside application 
 ## 1. Cross-Region Replication & RPO=0
 
 ### Current State
-- The platform enforces **consistency over availability** (CAP theorem) — the collapse engine returns `503 Service Unavailable` if database connectivity is lost.
+- The platform enforces **consistency over availability** (CAP theorem) - the collapse engine returns `503 Service Unavailable` if database connectivity is lost.
 - The `/healthz` endpoint probes database write availability and reports partition state.
 
 ### Requirements for RPO=0
@@ -32,14 +32,14 @@ The `/healthz` endpoint includes a partition probe that:
 2. Enable PITR in Supabase dashboard under Database → Backups
 3. Configure WAL archiving retention (minimum 7 days recommended)
 4. Set up external health check monitoring at 30s intervals
-5. RTO ≤ 60 min depends on Supabase's disaster recovery SLA — confirm with support
+5. RTO ≤ 60 min depends on Supabase's disaster recovery SLA - confirm with support
 
 ---
 
 ## 2. WAF & Circuit Breaker
 
 ### Web Application Firewall (WAF)
-WAF is an **infrastructure concern** — deploy at the CDN/gateway layer, not in application code.
+WAF is an **infrastructure concern** - deploy at the CDN/gateway layer, not in application code.
 
 **Recommended deployment**:
 
@@ -111,8 +111,8 @@ Records exceeding the 7-year BRD retention requirement should be archived to col
 
 #### Step 1: Flag (Implemented)
 The `data-retention` edge function runs daily (cron scheduled at 2 AM UTC) and flags records in `retention_flags`:
-- `approaching_expiry` — within 90 days of the 7-year mark
-- `expired` — past the 7-year mark
+- `approaching_expiry` - within 90 days of the 7-year mark
+- `expired` - past the 7-year mark
 
 #### Step 2: Archive (To Implement)
 Create an archival edge function that:
@@ -122,7 +122,7 @@ Create an archival edge function that:
    b. Compute SHA-256 hash of the archive payload
    c. Upload to cold storage bucket with metadata
    d. Update `retention_flags.archived_at = now()`
-3. **Do NOT delete** the original record — mark it as archived
+3. **Do NOT delete** the original record - mark it as archived
 
 #### Step 3: Cold Storage Target
 
@@ -166,7 +166,7 @@ Per V3 spec IDV-001, integrate **Onfido** or equivalent for automated document v
 
 | Provider | Capability | Status |
 |----------|-----------|--------|
-| **Onfido** | ID document OCR, facial biometrics, liveness | Recommended — add `ONFIDO_API_KEY` secret |
+| **Onfido** | ID document OCR, facial biometrics, liveness | Recommended - add `ONFIDO_API_KEY` secret |
 | **Jumio** | Alternative IDV provider | Alternate |
 | **Veriff** | European-focused IDV | Regional option |
 
@@ -249,6 +249,6 @@ For sub-millisecond accuracy, integrate a dedicated NTP service:
 - [ ] Cold storage bucket created for archival
 - [ ] Alert channels configured for all metrics above
 - [ ] PDF service deployed and `PDF_SERVICE_URL` secret set
-- [ ] IDV provider integrated (Onfido) — Phase 2
-- [ ] SDK published to npm — Phase 2
-- [ ] 1M RPS load test executed — ops acceptance test
+- [ ] IDV provider integrated (Onfido) - Phase 2
+- [ ] SDK published to npm - Phase 2
+- [ ] 1M RPS load test executed - ops acceptance test

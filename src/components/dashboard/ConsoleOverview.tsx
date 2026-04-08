@@ -36,7 +36,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
     {
       number: "3",
       title: "Confirm intent",
-      description: "Signal your serious interest — no contract, no payment, just a verifiable audit record.",
+      description: "Signal your serious interest - no contract, no payment, just a verifiable audit record.",
       icon: Zap,
       action: () => navigate(ROUTES.DASHBOARD_MATCHES),
       actionLabel: "View matches",
@@ -100,7 +100,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
         </Button>
         <Button variant="outline" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
           <Search className="h-4 w-4" />
-          Skip — run a search now
+          Skip - run a search now
         </Button>
         <Button variant="ghost" onClick={() => navigate(ROUTES.DOCS)} className="gap-2">
           <BookOpen className="h-4 w-4" />
@@ -115,7 +115,7 @@ export function ConsoleOverview() {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  // Onboarding wizard state — auto-open for first-time users
+  // Onboarding wizard state - auto-open for first-time users
   const [wizardOpen, setWizardOpen] = useState(() => {
     try {
       return localStorage.getItem("onboarding_completed") !== "true";
@@ -169,7 +169,7 @@ export function ConsoleOverview() {
         supabase.from("api_request_logs").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
-      // Check for individual query errors — a partial failure must not look like zero activity
+      // Check for individual query errors - a partial failure must not look like zero activity
       const anyError = [apiKeys, logs24h, logs7d, matches, lastLog].find(r => r.error);
       if (anyError?.error) {
         throw new Error(anyError.error.message || "Failed to load console data");
@@ -210,16 +210,16 @@ export function ConsoleOverview() {
       <header>
         <h1 className="text-2xl font-semibold text-foreground mb-1">Console</h1>
         <p className="text-muted-foreground">
-          Your activity at a glance — search, match, and confirm intent
+          Your activity at a glance - search, match, and confirm intent
         </p>
       </header>
 
-      {/* Error state — distinct from zero-activity onboarding */}
+      {/* Error state - distinct from zero-activity onboarding */}
       {isError && (
         <div className="p-6 border border-destructive/30 rounded-lg bg-destructive/5 text-center">
           <p className="font-medium text-foreground mb-1">Couldn't load your activity</p>
           <p className="text-sm text-muted-foreground mb-4">
-            We had trouble fetching your console data. This is usually temporary — try refreshing.
+            We had trouble fetching your console data. This is usually temporary - try refreshing.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Button variant="outline" onClick={() => refetch()}>
@@ -232,7 +232,7 @@ export function ConsoleOverview() {
         </div>
       )}
 
-      {/* Credit Balance Card — prominent, client-requested */}
+      {/* Credit Balance Card - prominent, client-requested */}
       {!isError && tokenBalance && (
         <Link
           to="/billing"
@@ -280,7 +280,7 @@ export function ConsoleOverview() {
         </Link>
       )}
 
-      {/* Stats Grid — only render when we have data or are loading (not on error) */}
+      {/* Stats Grid - only render when we have data or are loading (not on error) */}
       {!isError && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat) => (
@@ -304,7 +304,7 @@ export function ConsoleOverview() {
         </div>
       )}
 
-      {/* KYC Status — always visible when logged in */}
+      {/* KYC Status - always visible when logged in */}
       {!isError && !isLoading && (
         <KYCStatusCard />
       )}
@@ -317,7 +317,7 @@ export function ConsoleOverview() {
         </div>
       )}
 
-      {/* Empty state or info block — only show onboarding when query SUCCEEDED with zero data */}
+      {/* Empty state or info block - only show onboarding when query SUCCEEDED with zero data */}
       {!isError && hasZeroActivity ? (
         <GettingStartedEmpty onStartWizard={() => setWizardOpen(true)} />
       ) : !isError && !hasZeroActivity && !isLoading ? (
@@ -392,7 +392,7 @@ export function ConsoleOverview() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Confirming intent records your interest — no contract, no payment, no legal obligation.
+              Confirming intent records your interest - no contract, no payment, no legal obligation.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="default" size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">

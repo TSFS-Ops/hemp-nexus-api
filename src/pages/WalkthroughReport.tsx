@@ -6,7 +6,7 @@ import { Download, Printer } from "lucide-react";
 
 const phases = [
   {
-    title: "Phase 1 — Entity Onboarding & Due Diligence (~2 min)",
+    title: "Phase 1 - Entity Onboarding & Due Diligence (~2 min)",
     steps: [
       "Create buyer and seller organisations",
       "Register entities, UBO ownership, and ATB records",
@@ -18,7 +18,7 @@ const phases = [
     ],
   },
   {
-    title: "Phase 2 — Discovery & Matching (~1.5 min)",
+    title: "Phase 2 - Discovery & Matching (~1.5 min)",
     steps: [
       "Create buyer and seller signals",
       "Run match discovery",
@@ -27,7 +27,7 @@ const phases = [
     ],
   },
   {
-    title: "Phase 3 — POI Lifecycle & Collapse (~2 min)",
+    title: "Phase 3 - POI Lifecycle & Collapse (~2 min)",
     steps: [
       "Run pre-flight checks",
       "Compute POI completion probability (must be ≥ 50.1%)",
@@ -35,7 +35,7 @@ const phases = [
     ],
   },
   {
-    title: "Phase 4 — Evidence & Final Output (~1.5 min)",
+    title: "Phase 4 - Evidence & Final Output (~1.5 min)",
     steps: [
       "Generate Evidence Pack v1",
       "Create WaD with hard-gate validations",
@@ -83,7 +83,7 @@ export default function WalkthroughReport() {
             Complete End-to-End Happy Path (5–8 min)
           </h1>
           <p className="text-muted-foreground">
-            Goal: prove the platform works as one integrated system — from onboarding to verification to evidence-backed output.
+            Goal: prove the platform works as one integrated system - from onboarding to verification to evidence-backed output.
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
             <span className="rounded-md border bg-background px-3 py-1">Duration: 5–8 min</span>

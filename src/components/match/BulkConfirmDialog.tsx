@@ -1,5 +1,5 @@
 /**
- * BulkConfirmDialog — Shows credit cost, current balance, and remaining
+ * BulkConfirmDialog - Shows credit cost, current balance, and remaining
  * balance before a bulk Confirm Intent action.
  *
  * Stays open during processing to show progress. Refetches balance on open.
@@ -166,7 +166,7 @@ export function BulkConfirmDialog({
             ) : (
               <>
                 <Coins className="h-4 w-4 mr-2" />
-                Confirm — deduct {totalCost.toLocaleString()} credits
+                Confirm - deduct {totalCost.toLocaleString()} credits
               </>
             )}
           </AlertDialogAction>

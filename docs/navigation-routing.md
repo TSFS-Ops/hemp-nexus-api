@@ -1,4 +1,4 @@
-# Navigation & Deep-Linking — Developer Notes
+# Navigation & Deep-Linking - Developer Notes
 
 > Internal reference for anyone modifying routing, URL state, or auth flow.
 
@@ -12,7 +12,7 @@
 |--------|--------|-----------|
 | Tab change (`useUrlTab`) | `replace` | Back exits the page, not rewinding tabs |
 | Filter / sort / search (`useUrlListParams`) | `replace` | Back exits the list, not rewinding filters |
-| Pagination | `replace` | Judgement call — revisit if users complain |
+| Pagination | `replace` | Judgement call - revisit if users complain |
 | Sidebar / breadcrumb / bottom-nav links | `push` | Real navigation steps |
 | Auth redirect (`RequireAuth` → `/auth?returnTo=`) | `replace` | Prevents protected URL leaking into history pre-auth |
 
@@ -27,7 +27,7 @@
 - Protocol-relative URLs (`//evil.com`)
 - Backslash tricks (`/\evil.com`)
 - Embedded protocols (`/javascript:...`)
-- Encoded variants — iteratively decodes up to 5 rounds to catch double/triple encoding
+- Encoded variants - iteratively decodes up to 5 rounds to catch double/triple encoding
 - CRLF injection and null bytes
 
 If validation fails, it returns `fallback`. Used in both `RequireAuth` and `Auth.tsx`.
@@ -48,8 +48,8 @@ If validation fails, it returns `fallback`. Used in both `RequireAuth` and `Auth
 | Auth return destination | query param | `?returnTo=/dashboard/matches/uuid` | `RequireAuth.tsx`, `Auth.tsx` |
 
 **Hooks to use:**
-- `useUrlTab(paramName, defaultValue, allowedValues)` — for Radix Tabs ↔ URL sync
-- `useUrlListParams(defaults)` — for multi-param list views (search, filter, sort, page)
+- `useUrlTab(paramName, defaultValue, allowedValues)` - for Radix Tabs ↔ URL sync
+- `useUrlListParams(defaults)` - for multi-param list views (search, filter, sort, page)
 
 Both validate inputs: invalid tab values fall back to default; invalid sort values are rejected; page is clamped to `>= 0`.
 
@@ -57,11 +57,11 @@ Both validate inputs: invalid tab values fall back to default; invalid sort valu
 
 ## 4. Intentionally Local State (Not URL-Driven)
 
-- **Search results** — derived from `?q=`, not stored in URL
-- **Selected checkboxes** (matches, counterparties) — ephemeral selection, ugly as URL params
-- **Dialogs / sheets / drawers** — settle confirm, demo confirm, similar counterparties, document sharing
-- **Form drafts** — in-progress edits to settings, deal terms, notes
-- **Pre-auth sessionStorage** (`src/lib/pre-auth-state.ts`) — stores selected counterparty IDs + pending action across auth. Complements (does not duplicate) URL-based `returnTo`
+- **Search results** - derived from `?q=`, not stored in URL
+- **Selected checkboxes** (matches, counterparties) - ephemeral selection, ugly as URL params
+- **Dialogs / sheets / drawers** - settle confirm, demo confirm, similar counterparties, document sharing
+- **Form drafts** - in-progress edits to settings, deal terms, notes
+- **Pre-auth sessionStorage** (`src/lib/pre-auth-state.ts`) - stores selected counterparty IDs + pending action across auth. Complements (does not duplicate) URL-based `returnTo`
 
 **Rule of thumb:** If it's meaningful to share or bookmark, put it in the URL. If it's ephemeral interaction state, keep it local.
 
@@ -83,13 +83,13 @@ Both validate inputs: invalid tab values fall back to default; invalid sort valu
 
 ## 6. Caveats for Future Developers
 
-1. **Never edit `supabase/client.ts` or `types.ts`** — auto-generated.
+1. **Never edit `supabase/client.ts` or `types.ts`** - auto-generated.
 
 2. **`useUrlTab` allowedValues must be kept in sync** with `<TabsTrigger value="...">`. If you add a tab, add it to the allowedValues array or the deep link will silently fall back to default.
 
-3. **`useUrlListParams` defaults object must be stable** — if you pass a new object reference every render, it will cause infinite re-renders. Define defaults as a module-level `const`.
+3. **`useUrlListParams` defaults object must be stable** - if you pass a new object reference every render, it will cause infinite re-renders. Define defaults as a module-level `const`.
 
-4. **`replace: true` is baked into both hooks.** If you ever need push semantics for a specific sub-state change, you'll need to fork the hook or add an option. Don't change the default — it will break back-button behaviour everywhere.
+4. **`replace: true` is baked into both hooks.** If you ever need push semantics for a specific sub-state change, you'll need to fork the hook or add an option. Don't change the default - it will break back-button behaviour everywhere.
 
 5. **Domain routing (`HostnameRouter.tsx`) runs before the React Router catch-all.** On production domains, a console-only route accessed from the public domain shows `DomainMismatch`, not `NotFound`. In preview mode (localhost / lovable.app), all routes are accessible.
 

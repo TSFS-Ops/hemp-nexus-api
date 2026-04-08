@@ -69,7 +69,7 @@ export function AdminEntitiesPanel() {
           : String(resp.error);
         // If the provider key is missing, surface that clearly
         if (errMsg.includes("not configured") || errMsg.includes("API key")) {
-          toast.error("Screening provider not configured — no stub results will be created.");
+          toast.error("Screening provider not configured - no stub results will be created.");
         } else {
           toast.error(`Screening failed: ${errMsg}`);
         }
@@ -80,7 +80,7 @@ export function AdminEntitiesPanel() {
       refetch();
     } catch (err) {
       console.error("Screening error:", err);
-      toast.error("Screening failed — check provider configuration");
+      toast.error("Screening failed - check provider configuration");
     } finally {
       setScreeningEntity(null);
     }
@@ -108,11 +108,11 @@ export function AdminEntitiesPanel() {
       }
 
       if (result?.is_complete && result?.all_verified) {
-        toast.success(`UBO verified — ${result.total_ownership_pct}% ownership confirmed across ${result.max_depth} layers.`);
+        toast.success(`UBO verified - ${result.total_ownership_pct}% ownership confirmed across ${result.max_depth} layers.`);
       } else if (result?.escalation_required) {
         toast.warning(`Escalation required: ${result.escalation_reason}`);
       } else {
-        toast.warning(`UBO incomplete — ${result?.total_ownership_pct ?? 0}% of 100% verified. Add missing UBO links.`);
+        toast.warning(`UBO incomplete - ${result?.total_ownership_pct ?? 0}% of 100% verified. Add missing UBO links.`);
       }
       refetch();
     } catch (err) {
@@ -264,7 +264,7 @@ export function AdminEntitiesPanel() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{entity.jurisdiction_code}</TableCell>
-                      <TableCell className="text-xs">{entity.registration_number || "—"}</TableCell>
+                      <TableCell className="text-xs">{entity.registration_number || "-"}</TableCell>
                       <TableCell>
                         <StatusBadge status={entity.status} />
                       </TableCell>

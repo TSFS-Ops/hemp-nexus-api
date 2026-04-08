@@ -207,7 +207,7 @@ export function OrgProfileForm() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" />Organisation Profile</CardTitle>
-          <CardDescription>KYB details for your organisation. Complete these once — they're used across compliance and trade workflows.</CardDescription>
+          <CardDescription>KYB details for your organisation. Complete these once - they're used across compliance and trade workflows.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

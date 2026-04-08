@@ -187,7 +187,7 @@ export function AdminDisputesPanel() {
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">
-                          {d.resolution_outcome ? d.resolution_outcome.slice(0, 30) + (d.resolution_outcome.length > 30 ? "…" : "") : "—"}
+                          {d.resolution_outcome ? d.resolution_outcome.slice(0, 30) + (d.resolution_outcome.length > 30 ? "…" : "") : "-"}
                         </span>
                       )}
                     </TableCell>
@@ -220,9 +220,9 @@ export function AdminDisputesPanel() {
               <Select value={resolution} onValueChange={setResolution}>
                 <SelectTrigger><SelectValue placeholder="Select outcome…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="resolved">Resolved — dispute closed, settlement may proceed</SelectItem>
-                  <SelectItem value="escalated">Escalated — requires Director-level review</SelectItem>
-                  <SelectItem value="under_review">Under Review — investigation in progress</SelectItem>
+                  <SelectItem value="resolved">Resolved - dispute closed, settlement may proceed</SelectItem>
+                  <SelectItem value="escalated">Escalated - requires Director-level review</SelectItem>
+                  <SelectItem value="under_review">Under Review - investigation in progress</SelectItem>
                 </SelectContent>
               </Select>
             </div>

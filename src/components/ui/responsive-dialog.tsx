@@ -1,5 +1,5 @@
 /**
- * ResponsiveDialog — renders as a bottom Drawer on mobile (<md) and a centered Dialog on desktop.
+ * ResponsiveDialog - renders as a bottom Drawer on mobile (<md) and a centered Dialog on desktop.
  * Drop-in replacement for Dialog + DialogContent in any component.
  *
  * Usage:

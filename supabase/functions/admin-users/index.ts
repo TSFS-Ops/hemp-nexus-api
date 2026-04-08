@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 // ── List Users ────────────────────────────────────────────────────────────
 
 async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
-  // GoTrue paginated fetch — loop until we get a partial page
+  // GoTrue paginated fetch - loop until we get a partial page
   const allUsers: any[] = [];
   const perPage = 1000;
   const maxPages = 10; // safety cap: 10,000 users max

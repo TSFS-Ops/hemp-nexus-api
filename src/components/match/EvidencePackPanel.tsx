@@ -174,9 +174,9 @@ export function EvidencePackPanel({ matchId, matchStatus }: EvidencePackPanelPro
       });
 
       if (hashesMatch) {
-        toast.success("Integrity verified — hashes match");
+        toast.success("Integrity verified - hashes match");
       } else {
-        toast.error("Hash mismatch detected — data may have been tampered with");
+        toast.error("Hash mismatch detected - data may have been tampered with");
       }
     } catch (error) {
       console.error("Verification error:", error);

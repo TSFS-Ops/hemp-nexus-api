@@ -12,11 +12,11 @@ import { supabase } from "./test-client";
 const TEST_EMAIL = `uat-export-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
 
-describe("Journey 5: Data export — matches and audit logs", () => {
+describe("Journey 5: Data export - matches and audit logs", () => {
   let orgId: string;
 
   // ── Setup ──────────────────────────────────────────────────────
-  it("5.1 — setup: create account", async () => {
+  it("5.1 - setup: create account", async () => {
     await supabase.auth.signUp({ email: TEST_EMAIL, password: PASSWORD });
     const { data } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
@@ -32,7 +32,7 @@ describe("Journey 5: Data export — matches and audit logs", () => {
   });
 
   // ── Step 1: generateCSV handles special characters (RFC 4180) ─
-  it("5.2 — CSV generation escapes commas, quotes, and newlines", () => {
+  it("5.2 - CSV generation escapes commas, quotes, and newlines", () => {
     const headers = ["Name", "Description", "Value"];
     const rows = [
       ["Acme Corp", 'Has "special" chars', "1,000"],
@@ -48,12 +48,12 @@ describe("Journey 5: Data export — matches and audit logs", () => {
     // Quoted fields
     expect(lines[1]).toContain('"Has ""special"" chars"');
     expect(lines[1]).toContain('"1,000"');
-    // Newline in field — wrapped in quotes
+    // Newline in field - wrapped in quotes
     expect(csv).toContain('"Line one\nLine two"');
   });
 
   // ── Step 2: Export matches query returns data ──────────────────
-  it("5.3 — matches query returns exportable data shape", async () => {
+  it("5.3 - matches query returns exportable data shape", async () => {
     const { data: matches, error } = await supabase
       .from("matches")
       .select("id, status, created_at, buyer_name, seller_name, commodity")
@@ -61,7 +61,7 @@ describe("Journey 5: Data export — matches and audit logs", () => {
       .limit(50);
 
     expect(error).toBeNull();
-    // New account may have 0 matches — that is valid
+    // New account may have 0 matches - that is valid
     expect(Array.isArray(matches)).toBe(true);
 
     if ((matches ?? []).length > 0) {
@@ -81,7 +81,7 @@ describe("Journey 5: Data export — matches and audit logs", () => {
   });
 
   // ── Step 3: Export audit logs query returns data ────────────────
-  it("5.4 — audit_logs query returns exportable data shape", async () => {
+  it("5.4 - audit_logs query returns exportable data shape", async () => {
     const { data: logs, error } = await supabase
       .from("audit_logs")
       .select("id, action, entity_type, entity_id, created_at")
@@ -102,14 +102,14 @@ describe("Journey 5: Data export — matches and audit logs", () => {
         l.created_at as string,
       ]);
       const csv = generateCSV(headers, rows);
-      // Verify no truncation — all rows present
+      // Verify no truncation - all rows present
       expect(csv.split("\n").length).toBe(rows.length + 1);
     }
     console.info(`[UAT 5.4] Exportable audit logs: ${(logs ?? []).length}`);
   });
 
-  // ── Step 4: Pagination — large export does not silently truncate
-  it("5.5 — paginated fetch retrieves beyond default 1000-row limit", async () => {
+  // ── Step 4: Pagination - large export does not silently truncate
+  it("5.5 - paginated fetch retrieves beyond default 1000-row limit", async () => {
     // This tests the pagination pattern, not necessarily real data volume
     const batchSize = 500;
     let allRows: Record<string, unknown>[] = [];

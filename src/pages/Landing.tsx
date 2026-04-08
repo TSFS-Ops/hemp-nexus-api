@@ -105,7 +105,7 @@ export default function Landing() {
       <AnimatedBackground />
       <PublicHeader />
 
-      {/* Main content — full width, centered */}
+      {/* Main content - full width, centered */}
       <div className="flex-1 overflow-y-auto relative z-10">
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-[860px] mx-auto">
           {/* Page header */}

@@ -162,12 +162,12 @@ export default function UsersManagement() {
   );
 
   const getUserRoles = (user: User) => {
-    if (!user.roles || user.roles.length === 0) return "—";
+    if (!user.roles || user.roles.length === 0) return "-";
     return user.roles.join(", ");
   };
 
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "—";
+    if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString();
   };
 
@@ -319,7 +319,7 @@ export default function UsersManagement() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="text-muted-foreground">{user.organization_name}</span>
-                    {getUserRoles(user) !== "—" && (
+                    {getUserRoles(user) !== "-" && (
                       <Badge variant="outline" className="text-[10px]">
                         <Shield className="h-2.5 w-2.5 mr-0.5" />
                         {getUserRoles(user)}
@@ -386,7 +386,7 @@ export default function UsersManagement() {
                           />
                         </TableCell>
                         <TableCell className="font-mono text-xs max-w-[200px] truncate">{user.email}</TableCell>
-                        <TableCell className="max-w-[120px] truncate">{user.full_name || "—"}</TableCell>
+                        <TableCell className="max-w-[120px] truncate">{user.full_name || "-"}</TableCell>
                         <TableCell className="hidden lg:table-cell max-w-[120px] truncate">{user.organization_name}</TableCell>
                         <TableCell className="hidden xl:table-cell text-xs">
                           <Tooltip>
@@ -414,12 +414,12 @@ export default function UsersManagement() {
                           )}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          {getUserRoles(user) !== "—" ? (
+                          {getUserRoles(user) !== "-" ? (
                             <Badge variant="outline" className="flex items-center gap-1 w-fit">
                               <Shield className="h-3 w-3" />
                               {getUserRoles(user)}
                             </Badge>
-                          ) : "—"}
+                          ) : "-"}
                         </TableCell>
                         <TableCell>
                           <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>

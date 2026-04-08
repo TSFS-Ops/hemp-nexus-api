@@ -70,7 +70,7 @@ export function AdminPoisPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Proof-of-Intent (POI)</h2>
           <p className="text-muted-foreground mt-1">
-            POI lifecycle management — ≥50.1% probability threshold enforced
+            POI lifecycle management - ≥50.1% probability threshold enforced
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>

@@ -1,5 +1,5 @@
 /**
- * Document Version Chain — Unit Tests
+ * Document Version Chain - Unit Tests
  *
  * Tests version lineage logic: version numbering, current-version identification,
  * chain building, and supersession rules.
@@ -162,7 +162,7 @@ describe("Document Version Chain", () => {
     it("a document cannot supersede itself", () => {
       const doc = makeDoc({ id: "doc-1", supersedes_document_id: "doc-1" });
       expect(doc.id).toBe(doc.supersedes_document_id);
-      // The edge function rejects this — test the rule
+      // The edge function rejects this - test the rule
       const isSelfReference = doc.id === doc.supersedes_document_id;
       expect(isSelfReference).toBe(true); // This would be rejected server-side
     });

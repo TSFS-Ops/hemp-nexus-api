@@ -1,5 +1,5 @@
 /**
- * useDraftPersistence — saves and restores form drafts to sessionStorage.
+ * useDraftPersistence - saves and restores form drafts to sessionStorage.
  *
  * - Data is saved on every change (debounced by caller)
  * - Data persists for the browser session (survives refresh, not tab close)
@@ -44,7 +44,7 @@ export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | n
           JSON.stringify({ data, savedAt: Date.now() })
         );
       } catch {
-        // Storage full — silently ignore
+        // Storage full - silently ignore
       }
     },
     [storageKey]

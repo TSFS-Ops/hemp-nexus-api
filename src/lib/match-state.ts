@@ -1,5 +1,5 @@
 /**
- * Match State Machine — Single Source of Truth
+ * Match State Machine - Single Source of Truth
  *
  * Two parallel state tracks:
  * 1. `status` (legacy): matched → settled → disputed → cancelled
@@ -171,16 +171,16 @@ export function getTransitionAction(targetState: string): string | null {
 export function getNextActionLabel(currentState: string, matchType?: string): string | null {
   if (matchType === "unilateral") {
     const labels: Record<string, string> = {
-      discovery: "Declare Intent — 1 credit",
+      discovery: "Declare Intent - 1 credit",
       intent_declared: "Awaiting counterparty",
     };
     return labels[currentState] ?? null;
   }
   const labels: Record<string, string> = {
-    discovery: "Signal Intent — 1 credit",
-    intent_declared: "Reveal Counterparty — 1 credit",
-    counterparty_sighted: "Commit to Deal — 1 credit",
-    committed: "Complete Transaction — 1 credit",
+    discovery: "Signal Intent - 1 credit",
+    intent_declared: "Reveal Counterparty - 1 credit",
+    counterparty_sighted: "Commit to Deal - 1 credit",
+    committed: "Complete Transaction - 1 credit",
   };
   return labels[currentState] ?? null;
 }

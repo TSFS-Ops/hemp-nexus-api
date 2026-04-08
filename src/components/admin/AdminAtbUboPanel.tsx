@@ -185,7 +185,7 @@ export function AdminAtbUboPanel() {
                             <Badge variant="outline" className={statusColour[record.status] || ""}>{record.status}</Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {record.expires_at ? new Date(record.expires_at).toLocaleDateString() : "—"}
+                            {record.expires_at ? new Date(record.expires_at).toLocaleDateString() : "-"}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {new Date(record.created_at).toLocaleDateString()}
@@ -224,7 +224,7 @@ export function AdminAtbUboPanel() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">UBO Ownership Links</CardTitle>
-              <CardDescription>Beneficial ownership chain — must total ≥100% per entity for WaD Gate #3</CardDescription>
+              <CardDescription>Beneficial ownership chain - must total ≥100% per entity for WaD Gate #3</CardDescription>
             </CardHeader>
             <CardContent>
               {uboLinks.length === 0 ? (

@@ -1,5 +1,5 @@
 /**
- * UnilateralIntentForm — Create a governed intent record without a named counterparty.
+ * UnilateralIntentForm - Create a governed intent record without a named counterparty.
  *
  * This is the "market-maker" flow: a user declares intent to buy or sell,
  * attracting liquidity from the market. The record is governed and sits
@@ -86,7 +86,7 @@ export function UnilateralIntentForm() {
 
     setIsSubmitting(true);
 
-    // FIX #4: Stable idempotency key derived from form content — survives page reload / retry
+    // FIX #4: Stable idempotency key derived from form content - survives page reload / retry
     const idempotencyKey = `unilateral_${session.user.id}_${form.commodity.trim().toLowerCase()}_${form.side}_${form.quantity || "0"}_${form.price || "0"}`;
 
     // FIX #4b: AbortController with timeout for network resilience
@@ -198,7 +198,7 @@ export function UnilateralIntentForm() {
 
       const matchData = await response.json();
 
-      // FIX #1: trade_order insert is non-critical — log failure but don't block
+      // FIX #1: trade_order insert is non-critical - log failure but don't block
       try {
         await supabase.from("trade_orders").insert({
           org_id: profile.org_id,
@@ -211,7 +211,7 @@ export function UnilateralIntentForm() {
         } as any);
       } catch (tradeOrderErr) {
         console.error("Non-critical: trade_order insert failed", tradeOrderErr);
-        // Intent was created successfully — don't block the user
+        // Intent was created successfully - don't block the user
       }
 
       // Send counterparty invite email if provided
@@ -291,7 +291,7 @@ export function UnilateralIntentForm() {
               </p>
               <p>
                 It sits apart from a bilateral POI but operates as a recognised intent record.
-                No credits are deducted at creation — only at lifecycle transitions{" "}
+                No credits are deducted at creation - only at lifecycle transitions{" "}
                 <Badge variant="outline" className="text-xs">R10 ZAR per action</Badge>.
               </p>
             </div>
@@ -346,8 +346,8 @@ export function UnilateralIntentForm() {
 
                   const confidenceLabel =
                     data.confidence === "high" ? "High confidence" :
-                    data.confidence === "medium" ? "Medium confidence — please review" :
-                    "Low confidence — please verify all fields";
+                    data.confidence === "medium" ? "Medium confidence - please review" :
+                    "Low confidence - please verify all fields";
 
                   toast.success(`Draft extracted. ${confidenceLabel}.`);
                 } catch (err) {
@@ -470,7 +470,7 @@ export function UnilateralIntentForm() {
             <Input
               id="uni-counterparty-email"
               type="email"
-              placeholder="e.g. farmer@example.com — they'll receive an invite to review this POI"
+              placeholder="e.g. farmer@example.com - they'll receive an invite to review this POI"
               value={form.counterpartyEmail}
               onChange={(e) => update("counterpartyEmail", e.target.value)}
             />
@@ -524,7 +524,7 @@ export function UnilateralIntentForm() {
                   <strong>{form.commodity}</strong>.
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li>No counterparty is named — this is a market-maker signal.</li>
+                  <li>No counterparty is named - this is a market-maker signal.</li>
                   <li>No credits are deducted at creation.</li>
                   <li>Each lifecycle action costs R10 ZAR (1 credit).</li>
                   <li>This record is separate from bilateral POIs.</li>

@@ -1,5 +1,5 @@
 /**
- * MatchStatusBadge — Canonical badge for match statuses.
+ * MatchStatusBadge - Canonical badge for match statuses.
  *
  * Replaces the repeated pattern of:
  *   <StatusBadge status={MatchState.isSettled(match.status) ? "confirmed" : match.status} />

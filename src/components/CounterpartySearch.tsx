@@ -332,7 +332,7 @@ export default function CounterpartySearch() {
                     const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
                     const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
                     return !hasValidPrice && !hasValidVolume
-                      ? "Created from search — commercial terms to be confirmed during negotiation."
+                      ? "Created from search - commercial terms to be confirmed during negotiation."
                       : undefined;
                   })(),
                   bidOfferSide: bidOfferContext.side || null,
@@ -375,7 +375,7 @@ export default function CounterpartySearch() {
       const total = created + duplicates + failed;
       if (failed === 0 && duplicates === 0) {
         if (created === 1 && lastMatchId) {
-          toast.success("Draft match created — add commercial terms and documents, then confirm intent.");
+          toast.success("Draft match created - add commercial terms and documents, then confirm intent.");
           navigate(`/dashboard/matches/${lastMatchId}`);
         } else {
           toast.success(`${created} draft matches created. Add commercial terms in each match before confirming intent.`);
@@ -385,7 +385,7 @@ export default function CounterpartySearch() {
         if (created > 0) {
           toast.success(`${created} new draft match${created > 1 ? "es" : ""} created. ${duplicates} already existed and were skipped.`);
         } else {
-          toast.info(`All ${duplicates} match${duplicates > 1 ? "es" : ""} already exist — no duplicates created. View them in your matches.`);
+          toast.info(`All ${duplicates} match${duplicates > 1 ? "es" : ""} already exist - no duplicates created. View them in your matches.`);
         }
         navigate("/dashboard/matches");
       } else if (created > 0 || duplicates > 0) {

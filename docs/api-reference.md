@@ -723,10 +723,10 @@ X-API-Key: sk_your_api_key
 
 **Notes**:
 - **Idempotent**: Calling multiple times returns the same result
-- **Not a contract**: This action only records interest — no payment or legal obligation
+- **Not a contract**: This action only records interest - no payment or legal obligation
 - Creates immutable audit log entry with cryptographic proof
 - Triggers `intent.confirmed` webhook event (also `match.settled` for backward compatibility)
-- **Only "Confirm Intent" creates evidence records** — all other actions (skip, maybe later, etc.) are non-binding behavioral signals
+- **Only "Confirm Intent" creates evidence records** - all other actions (skip, maybe later, etc.) are non-binding behavioral signals
 
 ### Eligibility Requirements
 
@@ -770,9 +770,9 @@ Before Confirm Intent can proceed, the match must pass eligibility validation. A
 | Action | Creates Records? | Creates Evidence? | Legal Meaning |
 |--------|-----------------|-------------------|---------------|
 | **Confirm Intent** | ✅ Yes | ✅ Yes | Signals serious interest (no contract/payment) |
-| Skip / Not Now | ❌ No | ❌ No | No meaning — exploration only |
-| Maybe Later | ❌ No | ❌ No | No meaning — exploration only |
-| Browse / View | ❌ No | ❌ No | No meaning — exploration only |
+| Skip / Not Now | ❌ No | ❌ No | No meaning - exploration only |
+| Maybe Later | ❌ No | ❌ No | No meaning - exploration only |
+| Browse / View | ❌ No | ❌ No | No meaning - exploration only |
 
 ---
 
@@ -1319,11 +1319,11 @@ After 4 failed attempts, events are moved to dead letter queue.
 
 ### Security
 
-1. **Store API keys securely** — Use environment variables, never commit to code
-2. **Use HTTPS only** — All API calls must use TLS
-3. **Verify webhook signatures** — Always validate incoming webhooks
-4. **Rotate keys regularly** — Set expiry dates and rotate before expiration
-5. **Use minimal scopes** — Only request permissions you need
+1. **Store API keys securely** - Use environment variables, never commit to code
+2. **Use HTTPS only** - All API calls must use TLS
+3. **Verify webhook signatures** - Always validate incoming webhooks
+4. **Rotate keys regularly** - Set expiry dates and rotate before expiration
+5. **Use minimal scopes** - Only request permissions you need
 
 ### Error Handling
 

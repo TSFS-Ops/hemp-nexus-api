@@ -4,7 +4,7 @@ import { ROUTES } from "@/lib/constants";
 import { ArrowLeft } from "lucide-react";
 
 /**
- * Lightweight 404 page — shown for unknown routes instead of silently
+ * Lightweight 404 page - shown for unknown routes instead of silently
  * redirecting to /, which hides navigation errors from both users and developers.
  */
 export default function NotFound() {

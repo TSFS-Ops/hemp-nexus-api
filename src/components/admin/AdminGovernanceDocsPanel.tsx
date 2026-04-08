@@ -83,7 +83,7 @@ export function AdminGovernanceDocsPanel() {
                     <TableCell><Badge variant="outline">{doc.deal_reference_type}</Badge></TableCell>
                     <TableCell>{statusBadge(doc.status)}</TableCell>
                     <TableCell>{doc.token_burned ? <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Yes</Badge> : <Badge variant="secondary">No</Badge>}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{doc.validated_at ? format(new Date(doc.validated_at), "dd MMM yyyy") : "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{doc.validated_at ? format(new Date(doc.validated_at), "dd MMM yyyy") : "-"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(doc.created_at), "dd MMM yyyy")}</TableCell>
                   </TableRow>
                 ))}

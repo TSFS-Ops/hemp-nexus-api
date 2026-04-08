@@ -1,5 +1,5 @@
 /**
- * StateProgressionCard — Shows the current lifecycle stage and the next action CTA.
+ * StateProgressionCard - Shows the current lifecycle stage and the next action CTA.
  *
  * Displays a horizontal stepper (Discovery → Intent → Reveal → Commit → Complete)
  * with the next action button that triggers the appropriate backend endpoint.
@@ -86,7 +86,7 @@ function getFieldChecklist(match: Match): FieldCheck[] {
       label: "Terms",
       filled: !!match.terms,
       required: false,
-      hint: "Optional — add payment/delivery terms",
+      hint: "Optional - add payment/delivery terms",
     },
   );
 
@@ -300,7 +300,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
           <div className="flex items-center gap-2 p-3 rounded-lg border border-green-500/40 bg-green-500/5">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             <p className="text-sm font-medium text-green-700">
-              Transaction completed — evidence record sealed.
+              Transaction completed - evidence record sealed.
             </p>
           </div>
         )}
@@ -310,7 +310,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{nextLabel?.replace(/ — .*/, "")}?</AlertDialogTitle>
+            <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "")}?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>{nextDescription}</p>
@@ -339,7 +339,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
              <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
              <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
                <Coins className="h-4 w-4 mr-2" />
-               Confirm — R10 ZAR
+               Confirm - R10 ZAR
              </AlertDialogAction>
            </AlertDialogFooter>
         </AlertDialogContent>

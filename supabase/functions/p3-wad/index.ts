@@ -5,9 +5,9 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * P3 WaD (Without-a-Doubt) Edge Function — V3 Sprint 3
+ * P3 WaD (Without-a-Doubt) Edge Function - V3 Sprint 3
  *
- * POST: Issue WaD for a COLLAPSED POI — enforces 7 deterministic hard-gates.
+ * POST: Issue WaD for a COLLAPSED POI - enforces 7 deterministic hard-gates.
  * GET:  List or get WaD by ID.
  *
  * Hard-Gates (all must pass):
@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
         passed: poi.state === "COLLAPSED",
         reason: poi.state === "COLLAPSED"
           ? "POI is in COLLAPSED state"
-          : `POI is in ${poi.state} state — must be COLLAPSED`,
+          : `POI is in ${poi.state} state - must be COLLAPSED`,
       });
 
       // Gate 2: Both entities must be ACTIVE or VERIFIED
@@ -343,7 +343,7 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // All gates passed — issue WaD
+      // All gates passed - issue WaD
       const { data: wad, error: wadError } = await admin
         .from("p3_wads")
         .insert({

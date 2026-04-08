@@ -1,5 +1,5 @@
 /**
- * UAT Journey 6: Full Lifecycle — Signup → Search → Match → Settle → Collapse
+ * UAT Journey 6: Full Lifecycle - Signup → Search → Match → Settle → Collapse
  *
  * The single most critical E2E test for the platform.
  * Proves the entire commercial lifecycle end-to-end against real edge functions.
@@ -68,13 +68,13 @@ async function signPayload(privateKey: CryptoKey, payload: string): Promise<stri
   return `${b64}:${payload}`;
 }
 
-describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle → Collapse", () => {
+describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle → Collapse", () => {
 
   // ═══════════════════════════════════════════════════════════════
   // PHASE 1: SIGNUP & PROVISIONING
   // ═══════════════════════════════════════════════════════════════
 
-  it("1.1 — Buyer signs up, profile & org auto-created", async () => {
+  it("1.1 - Buyer signs up, profile & org auto-created", async () => {
     const client = makeClient();
     const { data: signupData, error: signupErr } = await client.auth.signUp({
       email: BUYER_EMAIL,
@@ -102,7 +102,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     ctx.buyer = { client, userId, orgId: profile!.org_id, token, apiKey: "" };
   });
 
-  it("1.2 — Seller signs up, profile & org auto-created", async () => {
+  it("1.2 - Seller signs up, profile & org auto-created", async () => {
     const client = makeClient();
     await client.auth.signUp({ email: SELLER_EMAIL, password: PASSWORD });
     const { data: loginData } = await client.auth.signInWithPassword({
@@ -123,7 +123,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(ctx.buyer.orgId).not.toBe(ctx.seller.orgId);
   });
 
-  it("1.3 — Both users have correct roles (org_admin + org_member)", async () => {
+  it("1.3 - Both users have correct roles (org_admin + org_member)", async () => {
     for (const actor of [ctx.buyer, ctx.seller]) {
       const { data: roles } = await actor.client
         .from("user_roles")
@@ -139,7 +139,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 2: API KEYS
   // ═══════════════════════════════════════════════════════════════
 
-  it("2.1 — Buyer creates API key with required scopes", async () => {
+  it("2.1 - Buyer creates API key with required scopes", async () => {
     const res = await fetch(`${BASE}/functions/v1/api-keys`, {
       method: "POST",
       headers: {
@@ -157,7 +157,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     ctx.buyer.apiKey = body.key;
   });
 
-  it("2.2 — Seller creates API key", async () => {
+  it("2.2 - Seller creates API key", async () => {
     const res = await fetch(`${BASE}/functions/v1/api-keys`, {
       method: "POST",
       headers: {
@@ -178,7 +178,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 3: SEARCH
   // ═══════════════════════════════════════════════════════════════
 
-  it("3.1 — Buyer searches for counterparties", async () => {
+  it("3.1 - Buyer searches for counterparties", async () => {
     const res = await fetch(`${BASE}/functions/v1/search`, {
       method: "POST",
       headers: {
@@ -191,7 +191,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
       }),
     });
     const body = await res.json();
-    // Search may return results or fail due to external API limits — both acceptable
+    // Search may return results or fail due to external API limits - both acceptable
     if (res.ok) {
       expect(Array.isArray(body.results) || body.results === undefined).toBe(true);
     } else {
@@ -204,7 +204,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 4: MATCH CREATION
   // ═══════════════════════════════════════════════════════════════
 
-  it("4.1 — Buyer creates a match with full commercial terms", async () => {
+  it("4.1 - Buyer creates a match with full commercial terms", async () => {
     const idempotencyKey = `uat-match-${TS}`;
     const res = await fetch(`${BASE}/functions/v1/match`, {
       method: "POST",
@@ -231,7 +231,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     ctx.matchHash = body.hash;
   }, 15_000);
 
-  it("4.2 — Idempotent match creation returns same ID", async () => {
+  it("4.2 - Idempotent match creation returns same ID", async () => {
     const res = await fetch(`${BASE}/functions/v1/match`, {
       method: "POST",
       headers: {
@@ -254,7 +254,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(body.id).toBe(ctx.matchId);
   }, 15_000);
 
-  it("4.3 — Match appears in audit log", async () => {
+  it("4.3 - Match appears in audit log", async () => {
     const { data } = await ctx.buyer.client
       .from("audit_logs")
       .select("action, entity_id")
@@ -271,7 +271,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 5: CONFIRM INTENT (SETTLE)
   // ═══════════════════════════════════════════════════════════════
 
-  it("5.1 — Buyer confirms intent (burns 500 tokens)", async () => {
+  it("5.1 - Buyer confirms intent (burns 500 tokens)", async () => {
     const res = await fetch(`${BASE}/functions/v1/match/${ctx.matchId}/settle`, {
       method: "POST",
       headers: { "X-API-Key": ctx.buyer.apiKey },
@@ -286,11 +286,11 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     } else {
       // Acceptable: insufficient tokens (new org starts with 1000, match creation burns some)
       expect(["INSUFFICIENT_TOKENS", "insufficient_tokens"]).toContain(body.code);
-      console.warn(`[UAT 5.1] Settle failed: ${body.code} — ${body.message}`);
+      console.warn(`[UAT 5.1] Settle failed: ${body.code} - ${body.message}`);
     }
   }, 15_000);
 
-  it("5.2 — Repeat settle is idempotent (no double-burn)", async () => {
+  it("5.2 - Repeat settle is idempotent (no double-burn)", async () => {
     const res = await fetch(`${BASE}/functions/v1/match/${ctx.matchId}/settle`, {
       method: "POST",
       headers: { "X-API-Key": ctx.buyer.apiKey },
@@ -305,7 +305,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(body).toBeTruthy();
   }, 15_000);
 
-  it("5.3 — intent.confirmed audit log exists", async () => {
+  it("5.3 - intent.confirmed audit log exists", async () => {
     const { data } = await ctx.buyer.client
       .from("audit_logs")
       .select("action, metadata")
@@ -321,7 +321,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     } else {
       // If settle failed due to tokens, we should see intent.denied or just match.created
       expect(actions).toContain("match.created");
-      console.warn("[UAT 5.3] Intent not confirmed — likely insufficient tokens");
+      console.warn("[UAT 5.3] Intent not confirmed - likely insufficient tokens");
     }
   });
 
@@ -334,7 +334,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // B) Missing trade approval is caught
   // C) (If seeded) Full collapse succeeds with hash chain
 
-  it("6.1 — Collapse rejects missing mandatory fields", async () => {
+  it("6.1 - Collapse rejects missing mandatory fields", async () => {
     const res = await fetch(`${BASE}/functions/v1/collapse`, {
       method: "POST",
       headers: {
@@ -350,7 +350,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(body.message).toContain("Missing mandatory fields");
   });
 
-  it("6.2 — Collapse rejects mismatched org_id", async () => {
+  it("6.2 - Collapse rejects mismatched org_id", async () => {
     const res = await fetch(`${BASE}/functions/v1/collapse`, {
       method: "POST",
       headers: {
@@ -358,7 +358,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        org_id: ctx.seller.orgId, // WRONG — doesn't match API key
+        org_id: ctx.seller.orgId, // WRONG - doesn't match API key
         counterparty_org_id: ctx.buyer.orgId,
         asset_id: "COPPER",
         quantity: 100,
@@ -375,7 +375,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(body.code).toBe("FORBIDDEN");
   });
 
-  it("6.3 — Collapse rejects self-trade (same org as counterparty)", async () => {
+  it("6.3 - Collapse rejects self-trade (same org as counterparty)", async () => {
     const res = await fetch(`${BASE}/functions/v1/collapse`, {
       method: "POST",
       headers: {
@@ -401,7 +401,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(body.message).toContain("must differ");
   });
 
-  it("6.4 — Collapse rejects without trade approval", async () => {
+  it("6.4 - Collapse rejects without trade approval", async () => {
     const { keyPair, publicKeyJwk } = await generateKeyPair();
     const canonicalPayload = JSON.stringify({
       org_id: ctx.buyer.orgId,
@@ -444,7 +444,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 7: CROSS-ORG ISOLATION
   // ═══════════════════════════════════════════════════════════════
 
-  it("7.1 — Seller cannot see buyer's API keys", async () => {
+  it("7.1 - Seller cannot see buyer's API keys", async () => {
     const { data } = await ctx.seller.client
       .from("api_keys")
       .select("id")
@@ -453,7 +453,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(data?.length ?? 0).toBe(0);
   });
 
-  it("7.2 — Seller cannot see buyer's audit logs", async () => {
+  it("7.2 - Seller cannot see buyer's audit logs", async () => {
     const { data } = await ctx.seller.client
       .from("audit_logs")
       .select("id")
@@ -462,7 +462,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(data?.length ?? 0).toBe(0);
   });
 
-  it("7.3 — Seller can see the shared match (as participant)", async () => {
+  it("7.3 - Seller can see the shared match (as participant)", async () => {
     if (!ctx.matchId) return;
 
     const { data } = await ctx.seller.client
@@ -487,7 +487,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 8: PRIVILEGE ESCALATION GUARD
   // ═══════════════════════════════════════════════════════════════
 
-  it("8.1 — Non-admin cannot insert into user_roles", async () => {
+  it("8.1 - Non-admin cannot insert into user_roles", async () => {
     // Both test users are org_admin but NOT platform_admin or admin
     // The RESTRICTIVE policy should block INSERT
     const { error } = await ctx.buyer.client
@@ -498,14 +498,14 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
     expect(error!.code).toBe("42501"); // RLS violation
   });
 
-  it("8.2 — Non-admin cannot delete from user_roles", async () => {
+  it("8.2 - Non-admin cannot delete from user_roles", async () => {
     const { error, count } = await ctx.buyer.client
       .from("user_roles")
       .delete({ count: "exact" })
       .eq("user_id", ctx.buyer.userId)
       .eq("role", "org_member");
 
-    // RESTRICTIVE RLS silently filters — either error or 0 rows deleted
+    // RESTRICTIVE RLS silently filters - either error or 0 rows deleted
     // Both prove the policy works: the role still exists
     const { data: roles } = await ctx.buyer.client
       .from("user_roles")
@@ -519,7 +519,7 @@ describe("Journey 6: Full Lifecycle — Signup → Search → Match → Settle �
   // PHASE 9: TOKEN BALANCE VERIFICATION
   // ═══════════════════════════════════════════════════════════════
 
-  it("9.1 — Buyer token balance decreased from initial 1000", async () => {
+  it("9.1 - Buyer token balance decreased from initial 1000", async () => {
     const { data } = await ctx.buyer.client
       .from("token_balances")
       .select("balance")

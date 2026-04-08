@@ -2,7 +2,7 @@
 
 **Cross-industry REST API for verified trade intent**
 
-Compliance Matching API v1 is a sector-agnostic backend service that logs, matches, and settles verified trade intent between buyers and sellers, with comprehensive audit logs and compliance event tracking. The API is decoupled from any specific marketplace or frontend—it simply provides a reliable record-keeping layer for trade transactions.
+Compliance Matching API v1 is a sector-agnostic backend service that logs, matches, and settles verified trade intent between buyers and sellers, with comprehensive audit logs and compliance event tracking. The API is decoupled from any specific marketplace or frontend-it simply provides a reliable record-keeping layer for trade transactions.
 
 ---
 
@@ -465,7 +465,7 @@ The Compliance Matching API stores:
 - Options (summaries only, not raw data)
 - Audit logs
 
-We never hoard proprietary data—just links and summaries.
+We never hoard proprietary data-just links and summaries.
 
 ---
 

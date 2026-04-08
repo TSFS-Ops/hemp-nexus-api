@@ -10,7 +10,7 @@ import { supabase, BASE_URL } from "./test-client";
 const TEST_EMAIL = `uat-dispute-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
 
-describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => {
+describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
   let userId: string;
   let orgId: string;
   let accessToken: string;
@@ -19,7 +19,7 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
   let disputeId: string;
 
   // ── Setup: account + match ─────────────────────────────────────
-  it("3.1 — setup: creates account, API key, and match", async () => {
+  it("3.1 - setup: creates account, API key, and match", async () => {
     await supabase.auth.signUp({ email: TEST_EMAIL, password: PASSWORD });
     const { data } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
@@ -71,7 +71,7 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
   }, 15_000);
 
   // ── Step 1: Raise dispute ──────────────────────────────────────
-  it("3.2 — raises a dispute against the match", async () => {
+  it("3.2 - raises a dispute against the match", async () => {
     expect(matchId).toBeTruthy();
 
     const { data, error } = await supabase.from("disputes").insert({
@@ -88,7 +88,7 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
   });
 
   // ── Step 2: Settle blocked during open dispute ─────────────────
-  it("3.3 — settle is blocked by backend when an open dispute exists", async () => {
+  it("3.3 - settle is blocked by backend when an open dispute exists", async () => {
     expect(matchId).toBeTruthy();
 
     const res = await fetch(`${BASE_URL}/functions/v1/match/${matchId}/settle`, {
@@ -105,7 +105,7 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
   }, 15_000);
 
   // ── Step 3: Resolve the dispute ────────────────────────────────
-  it("3.4 — resolves the dispute with outcome", async () => {
+  it("3.4 - resolves the dispute with outcome", async () => {
     expect(disputeId).toBeTruthy();
 
     const { error } = await supabase
@@ -130,7 +130,7 @@ describe("Journey 3: Dispute lifecycle — raise → review → resolve", () => 
   });
 
   // ── Step 4: Dispute has audit trail ────────────────────────────
-  it("3.5 — audit log records dispute lifecycle events", async () => {
+  it("3.5 - audit log records dispute lifecycle events", async () => {
     expect(matchId).toBeTruthy();
 
     // The dispute creation trigger inserts into audit_logs

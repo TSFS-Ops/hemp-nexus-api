@@ -10,11 +10,11 @@ import { getHostType } from "@/lib/hostname";
 import { ROUTES } from "@/lib/constants";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 
-// Eagerly loaded — critical path
+// Eagerly loaded - critical path
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 
-// Lazy loaded — secondary routes (reduces initial bundle ~40%)
+// Lazy loaded - secondary routes (reduces initial bundle ~40%)
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const Docs = lazy(() => import("@/pages/Docs"));

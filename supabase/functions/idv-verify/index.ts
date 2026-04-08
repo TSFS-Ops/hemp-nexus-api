@@ -8,10 +8,10 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
  * IDV-001 & IDV-002: Identity/Company Verification
  *
  * Supports multiple providers via admin_settings key "idv_provider":
- *   - "onfido" — Onfido IDV API (requires ONFIDO_API_KEY)
- *   - "cipc"   — South African CIPC company registry (requires CIPC_API_KEY)
- *   - "companies_house" — UK Companies House (requires COMPANIES_HOUSE_API_KEY)
- *   - "stub"   — returns verified for dev/test
+ *   - "onfido" - Onfido IDV API (requires ONFIDO_API_KEY)
+ *   - "cipc"   - South African CIPC company registry (requires CIPC_API_KEY)
+ *   - "companies_house" - UK Companies House (requires COMPANIES_HOUSE_API_KEY)
+ *   - "stub"   - returns verified for dev/test
  *
  * POST: Submit verification request
  * GET:  Check verification status
@@ -24,7 +24,7 @@ interface VerificationResult {
   details: Record<string, unknown>;
 }
 
-// ── Provider: Onfido (stub — ready for real integration) ──
+// ── Provider: Onfido (stub - ready for real integration) ──
 async function verifyWithOnfido(entityId: string, entityType: string, name: string, docType?: string): Promise<VerificationResult> {
   const apiKey = Deno.env.get("ONFIDO_API_KEY");
   if (!apiKey) {
@@ -43,7 +43,7 @@ async function verifyWithOnfido(entityId: string, entityType: string, name: stri
   // Step 3: GET /checks/{id} → poll for result
   throw new ApiException(
     "PROVIDER_NOT_IMPLEMENTED",
-    "Onfido integration requires implementation. API key is configured — add the API call logic.",
+    "Onfido integration requires implementation. API key is configured - add the API call logic.",
     501,
     { provider: "onfido", api_key_configured: true }
   );
@@ -120,7 +120,7 @@ async function verifyWithStub(entityId: string, entityType: string, name: string
     provider: "stub",
     status: "verified",
     provider_reference: `stub-${entityId}`,
-    details: { name, entity_type: entityType, note: "Stub verification — dev/test only" },
+    details: { name, entity_type: entityType, note: "Stub verification - dev/test only" },
   };
 }
 

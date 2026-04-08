@@ -174,7 +174,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         await navigator.clipboard.writeText(data.key);
         toast.success("API key created and copied to clipboard!");
       } catch {
-        toast.success("API key created! Copy it from the field below — it won't be shown again.");
+        toast.success("API key created! Copy it from the field below - it won't be shown again.");
       }
       
       const timer = setTimeout(() => {
@@ -353,7 +353,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         {/* Step Content */}
         <div className="min-h-[300px] flex flex-col justify-center">
-          {/* Step 1: Welcome — Explain the platform workflow */}
+          {/* Step 1: Welcome - Explain the platform workflow */}
           {currentStep === 1 && (
             <div className="space-y-6 text-center">
               <div className="flex justify-center">
@@ -368,7 +368,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </p>
               </div>
               <div className="text-left space-y-3 max-w-md mx-auto">
-                <h4 className="font-semibold text-sm">How it works — 4 steps:</h4>
+                <h4 className="font-semibold text-sm">How it works - 4 steps:</h4>
                 <div className="space-y-2">
                   {[
                     { num: "1", icon: Search, label: "Search", desc: "Find verified buyers or sellers by commodity, region, or company name." },
@@ -400,7 +400,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button variant="ghost" onClick={handleSkip} className="w-full">
-                Skip — I'll explore on my own
+                Skip - I'll explore on my own
               </Button>
             </div>
           )}
@@ -469,7 +469,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* Step 3: Run a Search — guide them to the actual commercial action */}
+          {/* Step 3: Run a Search - guide them to the actual commercial action */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="space-y-2">
@@ -492,7 +492,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">3</span>
-                    <span>A draft match is created — no credits deducted, no commitment made.</span>
+                    <span>A draft match is created - no credits deducted, no commitment made.</span>
                   </div>
                 </div>
               </Card>
@@ -510,13 +510,13 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   Go to Search
                 </Button>
                 <Button variant="outline" onClick={() => setCurrentStep(4)} className="w-full">
-                  I'll search later — show me next steps
+                  I'll search later - show me next steps
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Step 4: Next Steps — Summary */}
+          {/* Step 4: Next Steps - Summary */}
           {currentStep === 4 && (
             <div className="space-y-6">
               <div className="text-center">
@@ -552,7 +552,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <div>
                       <span className="font-medium text-foreground">Confirm intent (1 credit = R10 ZAR)</span>
-                      <p className="text-xs">Signal your serious interest. This creates a hash-chained audit record — no contract, no legal obligation.</p>
+                      <p className="text-xs">Signal your serious interest. This creates a hash-chained audit record - no contract, no legal obligation.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">

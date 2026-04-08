@@ -1,4 +1,4 @@
-# Programme Governance Layer — Technical Proposal
+# Programme Governance Layer - Technical Proposal
 
 **Date:** 7 March 2026  
 **Version:** 1.0  
@@ -10,7 +10,7 @@
 
 The Trade.Izenzo API currently provides a tamper-evident governance infrastructure for commercial trade matching: recording proof of intention, verifying participant eligibility, maintaining immutable audit trails, and sealing evidence packs.
 
-This proposal extends that infrastructure to support **government programme governance** — enabling departments and agencies to demonstrate exactly how programme budgets translate into approved participants, verified milestones, and delivered outcomes.
+This proposal extends that infrastructure to support **government programme governance** - enabling departments and agencies to demonstrate exactly how programme budgets translate into approved participants, verified milestones, and delivered outcomes.
 
 The extension reuses approximately 70% of existing infrastructure (entities, authority verification, hash-chained event stores, evidence packs, compliance cases) and adds four new data models and three new API endpoints.
 
@@ -20,7 +20,7 @@ The extension reuses approximately 70% of existing infrastructure (entities, aut
 
 Across South Africa, government departments and agencies collectively return tens of billions of rand in unspent funds each year. A significant contributing factor is the inability to demonstrate clear delivery and accountability at each stage of programme implementation.
 
-Current reporting relies on manual submissions, spreadsheets, and PDF reports — none of which provide:
+Current reporting relies on manual submissions, spreadsheets, and PDF reports - none of which provide:
 
 - Cryptographically verifiable proof of participant eligibility
 - An immutable, timestamped record of approvals and disbursements
@@ -46,10 +46,10 @@ The Trade.Izenzo Programme Governance Layer addresses this gap directly.
 
 **Existing infrastructure (no new development required)**
 
-When a contractor or implementing agent is onboarded to a programme, their formal intent to participate is recorded as a **Signal** in the system. This creates an immutable, timestamped record — equivalent to a signed letter of intent, but cryptographically verifiable.
+When a contractor or implementing agent is onboarded to a programme, their formal intent to participate is recorded as a **Signal** in the system. This creates an immutable, timestamped record - equivalent to a signed letter of intent, but cryptographically verifiable.
 
-- `POST /signals` — records intent to participate
-- `POST /match/{id}/settle` — confirms intent (500-token governance burn)
+- `POST /signals` - records intent to participate
+- `POST /match/{id}/settle` - confirms intent (500-token governance burn)
 - Hash-chained `match_events` table provides tamper-evident timeline
 
 ### 4.2 Eligibility Verification
@@ -58,11 +58,11 @@ When a contractor or implementing agent is onboarded to a programme, their forma
 
 Before any funds move, the system verifies that participants have the authority and capability to receive them.
 
-- **Entity registration** (`POST /entities`) — registers the legal entity (contractor, agency, community organisation)
-- **UBO verification** (`POST /authority-bind`) — confirms beneficial ownership above 25% threshold
-- **Authority-to-Bind** (`POST /authority-bind`) — verifies the signatory has legal authority to act on behalf of the entity
-- **Sanctions & PEP screening** (`POST /entities` with `X-Action: screen`) — screens against sanctions and politically exposed persons lists
-- **Trade Approval gate** (`GET /trade-status`) — confirms the entity has passed all gates before participation is approved
+- **Entity registration** (`POST /entities`) - registers the legal entity (contractor, agency, community organisation)
+- **UBO verification** (`POST /authority-bind`) - confirms beneficial ownership above 25% threshold
+- **Authority-to-Bind** (`POST /authority-bind`) - verifies the signatory has legal authority to act on behalf of the entity
+- **Sanctions & PEP screening** (`POST /entities` with `X-Action: screen`) - screens against sanctions and politically exposed persons lists
+- **Trade Approval gate** (`GET /trade-status`) - confirms the entity has passed all gates before participation is approved
 
 ### 4.3 Immutable Audit Record
 
@@ -70,12 +70,12 @@ Before any funds move, the system verifies that participants have the authority 
 
 Every approval, document upload, status change, and milestone completion is recorded in an append-only event store with SHA-256 hash chaining.
 
-- `event_store` — append-only, mutation-proof (database trigger enforced)
-- `collapse_ledger` — cryptographically signed entries with NTP-synchronised timestamps
-- `audit_logs` — per-organisation audit trail with actor identification
-- `match_events` — hash-chained event timeline per engagement
+- `event_store` - append-only, mutation-proof (database trigger enforced)
+- `collapse_ledger` - cryptographically signed entries with NTP-synchronised timestamps
+- `audit_logs` - per-organisation audit trail with actor identification
+- `match_events` - hash-chained event timeline per engagement
 
-Database triggers (`prevent_event_store_mutation`, `prevent_collapse_ledger_mutation`) enforce immutability at the database level — no application code can alter historical records.
+Database triggers (`prevent_event_store_mutation`, `prevent_collapse_ledger_mutation`) enforce immutability at the database level - no application code can alter historical records.
 
 ### 4.4 Delivery Evidence *(New Development Required)*
 
@@ -162,7 +162,7 @@ The `fund_flows` table will be **append-only** (protected by the same database t
 
 ## 6. New API Endpoints
 
-### 6.1 `POST /programmes` — Create Programme
+### 6.1 `POST /programmes` - Create Programme
 
 ```json
 {
@@ -179,7 +179,7 @@ The `fund_flows` table will be **append-only** (protected by the same database t
 
 **Response:** Programme object with `id`, `status: "draft"`
 
-### 6.2 `POST /programmes/{id}/participants` — Add Participant
+### 6.2 `POST /programmes/{id}/participants` - Add Participant
 
 ```json
 {
@@ -190,18 +190,18 @@ The `fund_flows` table will be **append-only** (protected by the same database t
 
 The system automatically checks the entity's `trade_approval` status. If the entity has not passed the eligibility gate, the participant status remains `pending`.
 
-### 6.3 `POST /programmes/{id}/milestones` — Define Milestones
+### 6.3 `POST /programmes/{id}/milestones` - Define Milestones
 
 ```json
 {
   "participant_id": "uuid",
-  "name": "Complete borehole drilling — Ward 12",
+  "name": "Complete borehole drilling - Ward 12",
   "due_at": "2026-06-30T00:00:00Z",
   "budget_tranche": 3750000
 }
 ```
 
-### 6.4 `POST /fund-flow` — Record Fund Movement
+### 6.4 `POST /fund-flow` - Record Fund Movement
 
 ```json
 {
@@ -216,7 +216,7 @@ The system automatically checks the entity's `trade_approval` status. If the ent
 
 Each entry is SHA-256 hash-chained. The table is append-only.
 
-### 6.5 `GET /programmes/{id}/report` — Programme Accountability Report
+### 6.5 `GET /programmes/{id}/report` - Programme Accountability Report
 
 Returns a structured JSON report containing:
 
@@ -247,10 +247,10 @@ Returns a structured JSON report containing:
 ## 8. Security & Compliance
 
 - All new tables will have **Row-Level Security** policies scoped to `org_id`
-- `fund_flows` is **append-only** (database trigger enforced — no UPDATE or DELETE)
+- `fund_flows` is **append-only** (database trigger enforced - no UPDATE or DELETE)
 - All API endpoints require **API key or JWT authentication**
 - Every state transition records the **actor identity** (user or API key)
-- Hash chains enable **independent verification** — any auditor can recompute the chain
+- Hash chains enable **independent verification** - any auditor can recompute the chain
 
 ---
 
@@ -271,9 +271,9 @@ Returns a structured JSON report containing:
 
 The Programme Governance Layer is licensed as part of the Trade.Izenzo API platform. Institutional contracts can be structured as:
 
-- **Per-programme subscription** — annual fee per active programme
-- **Per-transaction metering** — token-based billing for API calls (existing model)
-- **Enterprise licence** — unlimited programmes for a department/agency
+- **Per-programme subscription** - annual fee per active programme
+- **Per-transaction metering** - token-based billing for API calls (existing model)
+- **Enterprise licence** - unlimited programmes for a department/agency
 
 ---
 

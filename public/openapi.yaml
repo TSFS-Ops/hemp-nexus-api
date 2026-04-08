@@ -109,7 +109,7 @@ paths:
           schema:
             type: string
             enum: ["true"]
-          description: Admin only — list across all organisations
+          description: Admin only - list across all organisations
         - name: limit
           in: query
           schema:
@@ -359,11 +359,11 @@ paths:
       operationId: authorityBind
       description: |
         Supports multiple actions via `action` field:
-        - `ubo_create` — Register a UBO link (person → company with ownership %)
-        - `ubo_verify` / `ubo_reject` — Verify or reject a UBO link
-        - `atb_create` — Create an Authority-to-Bind record
-        - `atb_verify` / `atb_reject` — Verify or reject an ATB record
-        - `check` — Validate WaD Gates #3 (UBO ≥ 100%) and #4 (active ATB)
+        - `ubo_create` - Register a UBO link (person → company with ownership %)
+        - `ubo_verify` / `ubo_reject` - Verify or reject a UBO link
+        - `atb_create` - Create an Authority-to-Bind record
+        - `atb_verify` / `atb_reject` - Verify or reject an ATB record
+        - `check` - Validate WaD Gates #3 (UBO ≥ 100%) and #4 (active ATB)
       requestBody:
         required: true
         content:
@@ -500,7 +500,7 @@ paths:
       tags: [Trade Approvals]
       summary: Get trade approval status
       operationId: getTradeStatus
-      description: Returns approval outcome only — no sensitive KYC data.
+      description: Returns approval outcome only - no sensitive KYC data.
       parameters:
         - name: org_id
           in: query
@@ -527,13 +527,13 @@ paths:
       operationId: dueDiligence
       description: |
         Multi-action endpoint supporting the full KYC lifecycle:
-        - `register_directors` — Register company directors
-        - `upload_kyc` — Upload KYC document metadata
-        - `run_screening` — Trigger IDV/sanctions screening
-        - `compute_score` — Calculate risk score
-        - `submit_approval` — Submit for multi-role approval
-        - `approve_reject` — Approve or reject an approval request
-        - `get_dossier` — Retrieve complete DD dossier
+        - `register_directors` - Register company directors
+        - `upload_kyc` - Upload KYC document metadata
+        - `run_screening` - Trigger IDV/sanctions screening
+        - `compute_score` - Calculate risk score
+        - `submit_approval` - Submit for multi-role approval
+        - `approve_reject` - Approve or reject an approval request
+        - `get_dossier` - Retrieve complete DD dossier
       requestBody:
         required: true
         content:

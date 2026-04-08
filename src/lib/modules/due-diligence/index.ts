@@ -1,5 +1,5 @@
 /**
- * Due Diligence Workspace — Layer 1 (Who)
+ * Due Diligence Workspace - Layer 1 (Who)
  * 
  * Module client for counterparty enablement and eligibility.
  * Provides typed API calls to the due-diligence edge function.

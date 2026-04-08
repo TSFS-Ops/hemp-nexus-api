@@ -109,9 +109,9 @@ export function AdminKycDocsPanel() {
                     <TableCell><Badge variant="outline">{doc.doc_type}</Badge></TableCell>
                     <TableCell className="font-mono text-xs">{doc.org_id.slice(0, 8)}…</TableCell>
                     <TableCell>{statusBadge(doc.status)}</TableCell>
-                    <TableCell className="text-sm">{doc.issuing_country || "—"}</TableCell>
+                    <TableCell className="text-sm">{doc.issuing_country || "-"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(doc.created_at), "dd MMM yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{doc.expiry_date ? format(new Date(doc.expiry_date), "dd MMM yyyy") : "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{doc.expiry_date ? format(new Date(doc.expiry_date), "dd MMM yyyy") : "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

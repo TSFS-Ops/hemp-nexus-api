@@ -47,7 +47,7 @@ const MatchNotificationEmail = ({ commodity, matchId, counterpartyHint }: MatchN
 export const template = {
   component: MatchNotificationEmail,
   subject: (data: Record<string, any>) =>
-    `New match: ${data.commodity || 'Interest'} — ${SITE_NAME}`,
+    `New match: ${data.commodity || 'Interest'} - ${SITE_NAME}`,
   displayName: 'Match notification',
   previewData: { commodity: 'Refined Sunflower Oil', matchId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', counterpartyHint: 'Acme Trading Ltd' },
 } satisfies TemplateEntry

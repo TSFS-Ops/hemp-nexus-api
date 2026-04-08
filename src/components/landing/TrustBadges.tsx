@@ -1,5 +1,5 @@
 /**
- * Trust badges — premium dark glass cards with emerald icons.
+ * Trust badges - premium dark glass cards with emerald icons.
  */
 
 import { ShieldCheck, Brain, FileCheck, ScrollText } from "lucide-react";

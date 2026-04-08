@@ -1,4 +1,4 @@
-# CI/CD Pipeline — Compliance Matching Platform
+# CI/CD Pipeline - Compliance Matching Platform
 # Runs on every push to main and every pull request.
 # Blocks deployment if any step fails.
 

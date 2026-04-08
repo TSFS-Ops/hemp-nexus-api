@@ -46,7 +46,7 @@ type Match = Tables<"matches">;
 
 const PAGE_SIZE = 25;
 
-// Columns actually needed for the list view — avoids SELECT *
+// Columns actually needed for the list view - avoids SELECT *
 const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type" as const;
 
 /** Returns display name for buyer/seller based on reveal state */
@@ -55,10 +55,10 @@ function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string 
   const matchType = (match as any).match_type || "search";
   // Unilateral intents have no counterparty on one side
   if (match[field] === null || match[field] === undefined) {
-    return matchType === "unilateral" ? "— (open)" : "—";
+    return matchType === "unilateral" ? "- (open)" : "-";
   }
   const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(state);
-  return isRevealed ? (match[field] || "—") : "••••••";
+  return isRevealed ? (match[field] || "-") : "••••••";
 }
 
 /** Badge for match type */
@@ -82,12 +82,12 @@ export function MatchesList() {
   const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
   const statusFilter = params.status;
   const commoditySearch = params.q;
-  // Validate sort — only allow known columns to prevent query errors
+  // Validate sort - only allow known columns to prevent query errors
   const VALID_SORTS = ["created_at", "commodity"] as const;
   const sortBy = (VALID_SORTS as readonly string[]).includes(params.sort)
     ? (params.sort as "created_at" | "commodity")
     : "created_at";
-  // Validate page — clamp to non-negative integer
+  // Validate page - clamp to non-negative integer
   const rawPage = parseInt(params.page, 10);
   const page = Number.isFinite(rawPage) && rawPage >= 0 ? rawPage : 0;
 
@@ -201,7 +201,7 @@ export function MatchesList() {
     refetchRef.current = refetch;
   }, [refetch]);
 
-  // Real-time subscription — scoped to org via RLS (server filters by policy)
+  // Real-time subscription - scoped to org via RLS (server filters by policy)
   useEffect(() => {
     const channel = supabase
       .channel('matches-changes')
@@ -217,7 +217,7 @@ export function MatchesList() {
           if (payload.eventType === 'INSERT') {
             toast.success('New match created');
           }
-          // Removed UPDATE toast — at 100x scale this creates toast storms
+          // Removed UPDATE toast - at 100x scale this creates toast storms
         }
       )
       .subscribe();
@@ -310,7 +310,7 @@ export function MatchesList() {
             const body = await res.json();
             const state = body?.state || body?.status;
             if (state === "intent_declared" || state === "settled") {
-              // Could be genuinely new or idempotent — either way, success
+              // Could be genuinely new or idempotent - either way, success
               succeeded++;
             } else {
               succeeded++;
@@ -531,11 +531,11 @@ export function MatchesList() {
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Quantity</span>
-                      <p>{match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}</p>
+                      <p>{match.quantity_amount ?? "-"} {match.quantity_unit ?? ""}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Price</span>
-                      <p>{match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}</p>
+                      <p>{match.price_currency} {match.price_amount?.toLocaleString() ?? "-"}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
@@ -601,10 +601,10 @@ export function MatchesList() {
                       <TableCell className="hidden lg:table-cell">{revealGuard(match, "buyer_name")}</TableCell>
                       <TableCell className="hidden lg:table-cell">{revealGuard(match, "seller_name")}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}
+                        {match.quantity_amount ?? "-"} {match.quantity_unit ?? ""}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {match.price_currency} {match.price_amount?.toLocaleString() ?? "—"}
+                        {match.price_currency} {match.price_amount?.toLocaleString() ?? "-"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">

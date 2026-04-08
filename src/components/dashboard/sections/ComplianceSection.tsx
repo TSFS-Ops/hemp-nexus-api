@@ -188,7 +188,7 @@ export function ComplianceSection() {
                         <TableCell className="font-medium">{e.legal_name}</TableCell>
                         <TableCell><Badge variant="outline" className="text-xs">{e.entity_type}</Badge></TableCell>
                         <TableCell>{e.jurisdiction_code}</TableCell>
-                        <TableCell className="text-sm font-mono">{e.registration_number || "—"}</TableCell>
+                        <TableCell className="text-sm font-mono">{e.registration_number || "-"}</TableCell>
                         <TableCell>{statusBadge(e.status)}</TableCell>
                       </TableRow>
                     ))}

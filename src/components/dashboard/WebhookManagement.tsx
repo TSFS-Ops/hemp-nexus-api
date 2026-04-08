@@ -136,7 +136,7 @@ export function WebhookManagement() {
       setUrl("");
       setSelectedEvents(new Set());
       
-      // Show secret inline if returned — never in a toast (it vanishes)
+      // Show secret inline if returned - never in a toast (it vanishes)
       if (result.secret) {
         setNewWebhookSecret(result.secret);
       }
@@ -290,7 +290,7 @@ export function WebhookManagement() {
               </Button>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setNewWebhookSecret(null)} className="text-xs">
-              I've saved it — dismiss
+              I've saved it - dismiss
             </Button>
           </AlertDescription>
         </Alert>

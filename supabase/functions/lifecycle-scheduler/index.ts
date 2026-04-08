@@ -4,7 +4,7 @@ import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
 
 /**
- * Lifecycle Scheduler — handles periodic tasks:
+ * Lifecycle Scheduler - handles periodic tasks:
  *
  * 1. INT-UNLOCK: Expire mutual interests after 30 days → revoke intelligence
  * 2. POD/BREACH: Auto-detect breached milestones (overdue) + 7-day grace period
@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
       error: signalErr?.message || null,
     };
 
-    // Expire stale draft matches — only update poi_state (avoid status constraint violation)
+    // Expire stale draft matches - only update poi_state (avoid status constraint violation)
     const { data: expiredMatches, error: matchErr } = await admin
       .from("matches")
       .update({ poi_state: "EXPIRED" })
@@ -165,7 +165,7 @@ Deno.serve(async (req: Request) => {
           .eq("id", ms.id)
           .is("breach_detected_at", null); // Double-guard against race conditions
 
-        // Create breach record — unique index prevents duplicates per milestone
+        // Create breach record - unique index prevents duplicates per milestone
         const { error: breachErr } = await admin.from("breaches").insert({
           org_id: ms.org_id,
           pod_id: ms.pod_id,
@@ -193,7 +193,7 @@ Deno.serve(async (req: Request) => {
             },
           });
         }
-        // If breach insert failed due to unique constraint, that's expected dedup — skip silently
+        // If breach insert failed due to unique constraint, that's expected dedup - skip silently
       }
     }
 
@@ -227,13 +227,13 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (milestone?.completed_at) {
-          // Remediated — close breach
+          // Remediated - close breach
           await admin.from("breaches")
             .update({ status: "remediated", resolved_at: nowIso, resolution_note: "Milestone completed during grace period" })
             .eq("id", breach.id);
           breachesRemediated++;
         } else {
-          // Not remediated — escalate to finalised, increase severity
+          // Not remediated - escalate to finalised, increase severity
           const escalatedSeverity = breach.severity === "low" ? "medium"
             : breach.severity === "medium" ? "high"
             : "critical";
@@ -256,7 +256,7 @@ Deno.serve(async (req: Request) => {
           // Queue escalation notification
           notificationQueue.push({
             event_type: "delivery.breach.escalated",
-            subject: `Breach escalated — grace period expired`,
+            subject: `Breach escalated - grace period expired`,
             message: `A breach on PoD ${breach.pod_id} has been escalated to "${escalatedSeverity}" severity after the ${BREACH_GRACE_DAYS}-day grace period expired without remediation.`,
             metadata: {
               org_id: breach.org_id,

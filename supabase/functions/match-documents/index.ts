@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       throw new ApiException("FORBIDDEN", "You do not have access to this POI", 403);
     }
 
-    // Fetch documents for match — include version lineage fields
+    // Fetch documents for match - include version lineage fields
     // Supabase default limit is 1000; use explicit limit and detect truncation
     const DOC_LIMIT = 1000;
     const { data: docs, error: docsError } = await supabase

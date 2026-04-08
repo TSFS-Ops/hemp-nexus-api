@@ -1,5 +1,5 @@
 /**
- * OrderBookSection — Persistent order book view.
+ * OrderBookSection - Persistent order book view.
  * Shows all active buyer and seller orders across the platform.
  * Users can create, cancel, and browse orders.
  */
@@ -40,7 +40,7 @@ interface TradeOrder {
   created_at: string;
 }
 
-/** Sanitise product filter — allow only safe characters to prevent ilike injection */
+/** Sanitise product filter - allow only safe characters to prevent ilike injection */
 function sanitiseProductFilter(raw: string): string {
   return raw.replace(/[%_\\]/g, "").replace(/[^a-zA-Z0-9\s\-.,()]/g, "").slice(0, 100);
 }
@@ -159,7 +159,7 @@ export function OrderBookSection() {
       <div className="grid grid-cols-3 gap-3">
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
-            <p className="text-2xl font-bold text-foreground">{orders?.length ?? "—"}</p>
+            <p className="text-2xl font-bold text-foreground">{orders?.length ?? "-"}</p>
             <p className="text-xs text-muted-foreground">Active Orders</p>
           </CardContent>
         </Card>
@@ -261,17 +261,17 @@ export function OrderBookSection() {
                     </TableCell>
                     <TableCell className="font-medium">{order.product}</TableCell>
                     <TableCell className="text-right font-mono text-sm">
-                      {order.price != null ? `${order.price_currency} ${Number(order.price).toLocaleString()}` : "—"}
+                      {order.price != null ? `${order.price_currency} ${Number(order.price).toLocaleString()}` : "-"}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
-                      {order.volume != null ? `${Number(order.volume).toLocaleString()} ${order.volume_unit}` : "—"}
+                      {order.volume != null ? `${Number(order.volume).toLocaleString()} ${order.volume_unit}` : "-"}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{order.location || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{order.location || "-"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(order.created_at), "dd MMM yyyy")}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {order.expires_at ? format(new Date(order.expires_at), "dd MMM yyyy") : "—"}
+                      {order.expires_at ? format(new Date(order.expires_at), "dd MMM yyyy") : "-"}
                     </TableCell>
                     <TableCell>
                       {order.org_id === orgId && (

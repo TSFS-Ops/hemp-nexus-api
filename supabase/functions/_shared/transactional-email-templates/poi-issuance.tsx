@@ -52,7 +52,7 @@ const PoiIssuanceEmail = ({ matchId, commodity, poiState, issuedAt }: PoiIssuanc
 export const template = {
   component: PoiIssuanceEmail,
   subject: (data: Record<string, any>) =>
-    `POI issued: ${data.commodity || 'Match'} — ${SITE_NAME}`,
+    `POI issued: ${data.commodity || 'Match'} - ${SITE_NAME}`,
   displayName: 'POI issuance',
   previewData: { matchId: 'a1b2c3d4-e5f6', commodity: 'Refined Sunflower Oil', poiState: 'intent_declared', issuedAt: '2026-04-08T12:00:00Z' },
 } satisfies TemplateEntry

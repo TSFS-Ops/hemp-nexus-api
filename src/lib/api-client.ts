@@ -108,7 +108,7 @@ export async function apiFetch<T = unknown>(
     headers["Idempotency-Key"] = idempotencyKey;
   }
 
-  // 15-second timeout guard — prevents indefinite hangs on slow/dead networks
+  // 15-second timeout guard - prevents indefinite hangs on slow/dead networks
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15_000);
 

@@ -8,10 +8,10 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
  * Configurable AML/Sanctions/PEP Screening Edge Function
  *
  * Supports multiple providers via admin_settings key "screening_provider":
- *   - "dilisense" (default) — real Dilisense API
- *   - "dow_jones" — stub ready for Dow Jones Factiva integration
- *   - "refinitiv" — stub ready for LSEG World-Check integration
- *   - "stub" — returns clear for dev/test environments
+ *   - "dilisense" (default) - real Dilisense API
+ *   - "dow_jones" - stub ready for Dow Jones Factiva integration
+ *   - "refinitiv" - stub ready for LSEG World-Check integration
+ *   - "stub" - returns clear for dev/test environments
  *
  * POST body:
  *   { org_id, screen_type: "individual"|"entity", name, fuzzy_search?: 1|2, dob?: string, gender?: string, entity_id?: uuid }
@@ -170,7 +170,7 @@ async function screenWithDilisense(
   };
 }
 
-// ── Provider: Dow Jones (stub — ready for real integration) ──
+// ── Provider: Dow Jones (stub - ready for real integration) ──
 async function screenWithDowJones(
   name: string, screenType: string, _fuzzySearch?: number, _dob?: string, _gender?: string
 ): Promise<ScreeningResult> {
@@ -191,7 +191,7 @@ async function screenWithDowJones(
   // Body: { name, type: screenType, ... }
   throw new ApiException(
     "PROVIDER_NOT_IMPLEMENTED",
-    "Dow Jones integration requires implementation. API key is configured — add the API call logic to complete setup.",
+    "Dow Jones integration requires implementation. API key is configured - add the API call logic to complete setup.",
     501,
     { provider: "dow_jones", api_key_configured: true }
   );
@@ -216,13 +216,13 @@ async function screenWithRefinitiv(
   // Endpoint: POST https://rms-world-check-one-api-pilot.thomsonreuters.com/v2/cases/screeningRequest
   throw new ApiException(
     "PROVIDER_NOT_IMPLEMENTED",
-    "Refinitiv World-Check integration requires implementation. API key is configured — add the API call logic to complete setup.",
+    "Refinitiv World-Check integration requires implementation. API key is configured - add the API call logic to complete setup.",
     501,
     { provider: "refinitiv", api_key_configured: true }
   );
 }
 
-// ── Provider: Stub (dev/test — always returns clear) ──
+// ── Provider: Stub (dev/test - always returns clear) ──
 async function screenWithStub(
   name: string, screenType: string
 ): Promise<ScreeningResult> {

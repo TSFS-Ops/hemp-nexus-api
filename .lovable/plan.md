@@ -1,4 +1,4 @@
-## Multi-Jurisdiction WaD Path — Implementation Plan
+## Multi-Jurisdiction WaD Path - Implementation Plan
 
 ### What we're building
 The deterministic three-branch jurisdiction rule that David confirmed, which governs how the platform selects the documentary/WaD path when multiple jurisdiction signals are present.
@@ -11,7 +11,7 @@ The deterministic three-branch jurisdiction rule that David confirmed, which gov
   - Match metadata (origin/destination if present)
 - Return a deduplicated list of "surfaced jurisdictions" with signal source labels
 
-### Step 2: Database — Jurisdiction Selection Table
+### Step 2: Database - Jurisdiction Selection Table
 - Add `jurisdiction_selections` table to record the user's choice with:
   - `match_id`, `selected_jurisdiction`, `surfaced_jurisdictions` (JSONB), `selection_method` (auto/user_choice/escalated), `escalation_reason`, `selected_by`
 - This provides the audit trail David requires

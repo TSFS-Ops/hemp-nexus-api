@@ -1,5 +1,5 @@
 /**
- * AuthorityBindDialog — Links a person entity to a company entity (ATB record)
+ * AuthorityBindDialog - Links a person entity to a company entity (ATB record)
  * or creates a UBO link. Calls the authority-bind edge function.
  */
 

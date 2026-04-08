@@ -1,5 +1,5 @@
 /**
- * Completion Engine — Deterministic Next-Action Resolver
+ * Completion Engine - Deterministic Next-Action Resolver
  *
  * Inspects match/WaD/PoD state and returns structured, role-aware actions.
  * This is a pure-logic module with no React or Supabase dependencies.
@@ -210,10 +210,10 @@ function derivePoi(input: CompletionInput): StageState {
     detail = "An active dispute is blocking progress. Resolve it before continuing.";
   } else if (poiIssued) {
     status = "complete";
-    detail = "Both parties have confirmed intent — POI is issued";
+    detail = "Both parties have confirmed intent - POI is issued";
   } else if (doneCount > 0) {
     status = "in_progress";
-    detail = `${doneCount} of ${substeps.length} steps complete — current state: ${poiState}`;
+    detail = `${doneCount} of ${substeps.length} steps complete - current state: ${poiState}`;
   } else {
     status = "pending";
     detail = "Awaiting counterparty commitment";
@@ -362,7 +362,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
       label: "Written Acknowledgement of Debt (WaD)",
       status: canCreate ? "pending" : "not_started",
       detail: canCreate
-        ? "Ready to create — POI is complete. Navigate to WaD tab to begin."
+        ? "Ready to create - POI is complete. Navigate to WaD tab to begin."
         : "Waiting for POI completion before WaD can be initiated",
       substeps,
       actions,
@@ -370,7 +370,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     };
   }
 
-  // WaD exists — derive from its state
+  // WaD exists - derive from its state
   const wadStatus = wad.state || wad.status || "draft";
   const isSealed = wadStatus === "sealed" || wadStatus === "ISSUED";
   const isDenied = wadStatus === "DENIED" || wadStatus === "denied";
@@ -444,7 +444,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     detail = `WaD denied: ${(wad.denial_reasons || []).join(", ") || "One or more gates failed"}. Fix the issues and retry.`;
   } else {
     status = "in_progress";
-    detail = `WaD in ${wadStatus} state — ${doneCount} of ${substeps.length} steps complete`;
+    detail = `WaD in ${wadStatus} state - ${doneCount} of ${substeps.length} steps complete`;
   }
 
   return {
@@ -500,7 +500,7 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
       label: "Proof of Delivery (PoD)",
       status: canCreate ? "pending" : "not_started",
       detail: canCreate
-        ? "Ready to create — WaD is sealed"
+        ? "Ready to create - WaD is sealed"
         : "Waiting for WaD to be sealed",
       substeps,
       actions,
@@ -541,15 +541,15 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
     let detail: string | undefined;
     if (isBreachDetected && !isDone) {
       detail = gracePast
-        ? "Breach finalised — grace period expired"
+        ? "Breach finalised - grace period expired"
         : graceEnds
-          ? `Breach detected — grace period ends ${graceEnds.toLocaleDateString()}`
+          ? `Breach detected - grace period ends ${graceEnds.toLocaleDateString()}`
           : "Breach detected";
     } else if (isOverdue) {
       const daysOverdue = Math.floor((Date.now() - new Date(ms.due_at!).getTime()) / (24 * 60 * 60 * 1000));
       detail = `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""}`;
     } else if (!isDone && hasDep && !depMet) {
-      detail = "Blocked — prerequisite milestone not yet complete";
+      detail = "Blocked - prerequisite milestone not yet complete";
     }
 
     substeps.push({
@@ -579,12 +579,12 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
       label: `Complete: ${ms.name}`,
       description: depMet
         ? "Mark this milestone as complete"
-        : `Blocked by prerequisite — complete the dependency first`,
+        : `Blocked by prerequisite - complete the dependency first`,
       type: "complete_milestone",
       targetTab: "progress",
       allowed: depMet && !isBreached,
       blockedReason: isBreached
-        ? "PoD is in breach state — resolve breaches first"
+        ? "PoD is in breach state - resolve breaches first"
         : !depMet
           ? "Prerequisite milestone must be completed first"
           : null,
@@ -617,10 +617,10 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
 
   if (isFinalised) {
     status = "complete";
-    detail = "All milestones complete — delivery finalised";
+    detail = "All milestones complete - delivery finalised";
   } else if (isBreached) {
     status = "blocked";
-    detail = `Breach detected — ${openBreaches.length} breach${openBreaches.length !== 1 ? "es" : ""} require resolution`;
+    detail = `Breach detected - ${openBreaches.length} breach${openBreaches.length !== 1 ? "es" : ""} require resolution`;
   } else {
     status = "in_progress";
     detail = `${completedMs.length} of ${milestones.length} milestones complete`;
@@ -723,7 +723,7 @@ function deriveEvidence(input: CompletionInput, poiStatus: StageStatus): StageSt
 
 /**
  * Resolve the full completion state for a match.
- * Pure function — no side effects.
+ * Pure function - no side effects.
  */
 export function resolveCompletion(input: CompletionInput): CompletionState {
   const poi = derivePoi(input);
@@ -755,9 +755,9 @@ export function resolveCompletion(input: CompletionInput): CompletionState {
   let summary: string;
 
   if (completedStages === stages.length) {
-    summary = "All stages complete — deal has reached finality";
+    summary = "All stages complete - deal has reached finality";
   } else if (blockedStages.length > 0) {
-    summary = `${blockedStages.length} stage${blockedStages.length > 1 ? "s" : ""} blocked — action required`;
+    summary = `${blockedStages.length} stage${blockedStages.length > 1 ? "s" : ""} blocked - action required`;
   } else if (recommended) {
     summary = `Next step: ${recommended.label}`;
   } else {

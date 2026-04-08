@@ -1,5 +1,5 @@
 /**
- * Due Diligence — Acceptance Tests
+ * Due Diligence - Acceptance Tests
  * 
  * Validates the DD workflow rules:
  * 1) Create org, upload docs, run screening, compute score
@@ -41,7 +41,7 @@ function isApprovalComplete(requiredRoles: string[], completedRoles: string[]): 
   return requiredRoles.every(r => completedRoles.includes(r));
 }
 
-describe("Due Diligence — Acceptance Tests", () => {
+describe("Due Diligence - Acceptance Tests", () => {
   // Test 1: Risk band determination
   describe("Test 1: Score and risk band computation", () => {
     it("should assign low band for score ≤ 30", () => {

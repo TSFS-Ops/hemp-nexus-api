@@ -158,7 +158,7 @@ export function BreakGlassPanel() {
         </CardHeader>
         <CardContent>
           <Badge variant={globalFrozen ? "destructive" : "default"} className="text-sm">
-            {globalFrozen ? "FROZEN — All collapse operations halted" : "ACTIVE — Collapse operations normal"}
+            {globalFrozen ? "FROZEN - All collapse operations halted" : "ACTIVE - Collapse operations normal"}
           </Badge>
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 /**
- * WaD Certificate PDF — Unit Tests
+ * WaD Certificate PDF - Unit Tests
  *
  * Tests certificate data assembly, state guards, access control logic,
  * and content correctness for the WaD certificate generation flow.
@@ -76,11 +76,11 @@ function assembleCertificateFields(
     sealed_at: wad.sealed_at,
     seal_hash: wad.seal_hash,
     ledger_entry_hash: wad.ledger_entry_hash,
-    commodity: poi?.commodity || "—",
-    quantity: `${poi?.quantity_amount ?? "—"} ${poi?.quantity_unit ?? ""}`.trim(),
-    price: `${poi?.price_currency ?? ""} ${poi?.price_amount ?? "—"}`.trim(),
-    buyer: poi?.buyer_name || "—",
-    seller: poi?.seller_name || "—",
+    commodity: poi?.commodity || "-",
+    quantity: `${poi?.quantity_amount ?? "-"} ${poi?.quantity_unit ?? ""}`.trim(),
+    price: `${poi?.price_currency ?? ""} ${poi?.price_amount ?? "-"}`.trim(),
+    buyer: poi?.buyer_name || "-",
+    seller: poi?.seller_name || "-",
     intent_confirmed: poi?.settled_at || null,
     attestation_count: attestations.length,
     attestations: attestations.map((a) => ({
@@ -194,10 +194,10 @@ describe("WaD Certificate", () => {
 
     it("handles missing POI data gracefully", () => {
       const cert = assembleCertificateFields(sealedWad, null, attestations);
-      expect(cert.commodity).toBe("—");
-      expect(cert.buyer).toBe("—");
-      expect(cert.seller).toBe("—");
-      expect(cert.quantity).toBe("—");
+      expect(cert.commodity).toBe("-");
+      expect(cert.buyer).toBe("-");
+      expect(cert.seller).toBe("-");
+      expect(cert.quantity).toBe("-");
       expect(cert.intent_confirmed).toBeNull();
     });
 
@@ -220,9 +220,9 @@ describe("WaD Certificate", () => {
       };
       const cert = assembleCertificateFields(sealedWad, partialPoi, []);
       expect(cert.commodity).toBe("Gold");
-      expect(cert.quantity).toBe("—");
-      expect(cert.price).toBe("ZAR —");
-      expect(cert.seller).toBe("—");
+      expect(cert.quantity).toBe("-");
+      expect(cert.price).toBe("ZAR -");
+      expect(cert.seller).toBe("-");
     });
   });
 

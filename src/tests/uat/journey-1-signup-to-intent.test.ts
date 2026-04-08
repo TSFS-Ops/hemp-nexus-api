@@ -19,7 +19,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   let matchId: string;
 
   // ── Step 1: Sign up ──────────────────────────────────────────────
-  it("1.1 — creates account with email + password", async () => {
+  it("1.1 - creates account with email + password", async () => {
     const { data, error } = await supabase.auth.signUp({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
@@ -30,7 +30,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 2: Sign in ────────────────────────────────────────────
-  it("1.2 — signs in and receives a session", async () => {
+  it("1.2 - signs in and receives a session", async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
@@ -41,7 +41,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 3: Profile & org auto-created ─────────────────────────
-  it("1.3 — profile and organisation exist after first login", async () => {
+  it("1.3 - profile and organisation exist after first login", async () => {
     const { data: profile, error: pErr } = await supabase
       .from("profiles")
       .select("id, org_id")
@@ -63,7 +63,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 4: Roles assigned ─────────────────────────────────────
-  it("1.4 — user has org_admin and org_member roles", async () => {
+  it("1.4 - user has org_admin and org_member roles", async () => {
     const { data: roles, error } = await supabase
       .from("user_roles")
       .select("role")
@@ -76,7 +76,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 5: Create API key ─────────────────────────────────────
-  it("1.5 — creates an API key via edge function", async () => {
+  it("1.5 - creates an API key via edge function", async () => {
     const res = await fetch(`${BASE_URL}/functions/v1/api-keys`, {
       method: "POST",
       headers: {
@@ -93,7 +93,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 6: Run a counterparty search (long-running) ───────────
-  it("1.6 — search returns results without error", async () => {
+  it("1.6 - search returns results without error", async () => {
     const res = await fetch(`${BASE_URL}/functions/v1/search`, {
       method: "POST",
       headers: {
@@ -106,19 +106,19 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
       }),
     });
 
-    // Search may return results or empty array — both valid
+    // Search may return results or empty array - both valid
     const body = await res.json();
     if (res.ok) {
       expect(Array.isArray(body.results) || body.results === undefined).toBe(true);
     } else {
-      // Search may fail due to external API limits — document and accept
+      // Search may fail due to external API limits - document and accept
       console.warn(`[UAT 1.6] Search returned ${res.status}: ${JSON.stringify(body).slice(0, 200)}`);
       expect(res.status).toBeLessThan(500);
     }
-  }, 30_000); // 30s timeout — search calls external APIs
+  }, 30_000); // 30s timeout - search calls external APIs
 
   // ── Step 7: Create a match ─────────────────────────────────────
-  it("1.7 — creates a match and receives id + hash", async () => {
+  it("1.7 - creates a match and receives id + hash", async () => {
     const res = await fetch(`${BASE_URL}/functions/v1/match`, {
       method: "POST",
       headers: {
@@ -146,7 +146,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   }, 15_000);
 
   // ── Step 8: Add deal terms ─────────────────────────────────────
-  it("1.8 — saves deal terms for the match", async () => {
+  it("1.8 - saves deal terms for the match", async () => {
     expect(matchId).toBeTruthy(); // guard against cascading null
 
     const { error } = await supabase.from("deal_terms").insert({
@@ -169,7 +169,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 9: Upload a document (metadata only) ──────────────────
-  it("1.9 — records a document upload against the match", async () => {
+  it("1.9 - records a document upload against the match", async () => {
     expect(matchId).toBeTruthy();
 
     const { error } = await supabase.from("match_documents").insert({
@@ -186,7 +186,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   });
 
   // ── Step 10: Confirm intent (settle) ───────────────────────────
-  it("1.10 — confirms intent via edge function", async () => {
+  it("1.10 - confirms intent via edge function", async () => {
     expect(matchId).toBeTruthy();
 
     const res = await fetch(`${BASE_URL}/functions/v1/match/${matchId}/settle`, {
@@ -205,7 +205,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   }, 15_000);
 
   // ── Step 11: Audit trail exists ────────────────────────────────
-  it("1.11 — audit log contains match.created event", async () => {
+  it("1.11 - audit log contains match.created event", async () => {
     expect(matchId).toBeTruthy();
 
     const { data, error } = await supabase

@@ -1,5 +1,5 @@
 /**
- * useDataFetch — Canonical hook for read operations with loading/error/empty states.
+ * useDataFetch - Canonical hook for read operations with loading/error/empty states.
  *
  * Eliminates the repeated pattern of:
  *   const [data, setData] = useState(null);

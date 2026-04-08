@@ -7,7 +7,7 @@ export function DocsSection() {
       <header>
         <h1 className="text-2xl font-semibold text-foreground mb-1">Overview</h1>
         <p className="text-muted-foreground">
-          Compliance Match API — proof-of-intent for regulated B2B commerce
+          Compliance Match API - proof-of-intent for regulated B2B commerce
         </p>
       </header>
 
@@ -16,7 +16,7 @@ export function DocsSection() {
         <h3 className="font-medium text-foreground mb-2">What does this API do?</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Search for counterparties, record proof-of-intent, and generate tamper-evident audit trails. 
-          <strong className="text-foreground"> Confirm Intent</strong> creates an information-only record — no payment, no contract, no legal obligation.
+          <strong className="text-foreground"> Confirm Intent</strong> creates an information-only record - no payment, no contract, no legal obligation.
         </p>
       </div>
 

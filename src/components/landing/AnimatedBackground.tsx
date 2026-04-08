@@ -1,5 +1,5 @@
 /**
- * Dark terminal animated background — faint dotted world map overlay,
+ * Dark terminal animated background - faint dotted world map overlay,
  * floating emerald orbs, and slow scan line. NO grid pattern.
  */
 
@@ -14,22 +14,22 @@ export function AnimatedBackground() {
         }}
       />
 
-      {/* World map dot pattern — faint, top-left quadrant */}
+      {/* World map dot pattern - faint, top-left quadrant */}
       <div
         className="absolute top-0 left-0 w-[70%] h-[60%] opacity-30 world-map-dots"
       />
 
-      {/* Floating orb 1 — emerald, top-left */}
+      {/* Floating orb 1 - emerald, top-left */}
       <div className="absolute top-[5%] left-[10%] w-[500px] h-[500px] rounded-full blur-[160px] opacity-[0.06] animate-orb-1"
         style={{ background: '#10B981' }}
       />
 
-      {/* Floating orb 2 — slate blue, mid-right */}
+      {/* Floating orb 2 - slate blue, mid-right */}
       <div className="absolute top-[35%] right-[5%] w-[400px] h-[400px] rounded-full blur-[140px] opacity-[0.04] animate-orb-2"
         style={{ background: '#1E40AF' }}
       />
 
-      {/* Floating orb 3 — emerald accent, bottom */}
+      {/* Floating orb 3 - emerald accent, bottom */}
       <div className="absolute bottom-[15%] left-[15%] w-[350px] h-[350px] rounded-full blur-[120px] opacity-[0.04] animate-orb-3"
         style={{ background: '#059669' }}
       />

@@ -452,7 +452,7 @@ export default function Auth() {
             <LogIn className="h-4 w-4" />
             <AlertDescription className="text-sm text-foreground">
               {searchParams.get("expired") === "1"
-                ? "Your session expired. Sign in again to continue where you left off — any unsaved form data has been preserved."
+                ? "Your session expired. Sign in again to continue where you left off - any unsaved form data has been preserved."
                 : "Sign in to continue where you left off. You'll be redirected back automatically."}
             </AlertDescription>
           </Alert>

@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 
 /**
- * Document Review Endpoint — Upload Docs Spec §4.4
+ * Document Review Endpoint - Upload Docs Spec §4.4
  *
  * Status transitions:
  *   uploaded → pending_review  (uploader or admin)
@@ -19,7 +19,7 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
  *   - reason: string (required for reject)
  *   - notes: string (optional verification notes)
  *
- * POST /document-review/:documentId/replace — Upload Docs Spec §4 Versioning
+ * POST /document-review/:documentId/replace - Upload Docs Spec §4 Versioning
  *   Creates a new version of the document. Prior version becomes read-only.
  *   Body:
  *   - new_document_id: UUID of the already-uploaded replacement document
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     const uploaderOrgId = doc.uploader_org_id || doc.org_id;
     const isUploader = uploaderOrgId === authCtx.orgId;
 
-    // ── POST /document-review/:id/replace — Versioning ──
+    // ── POST /document-review/:id/replace - Versioning ──
     if (req.method === "POST" && subAction === "replace") {
       if (!isUploader && !isAdmin) {
         throw new ApiException("FORBIDDEN", "Only the document uploader can replace a document", 403);
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
         throw new ApiException("STATE_CONFLICT", "Document was already superseded by another version", 422);
       }
 
-      // Update new document with version chain fields — verify with .select() for RLS truthfulness
+      // Update new document with version chain fields - verify with .select() for RLS truthfulness
       const { data: linkedRows, error: linkErr } = await supabase
         .from("match_documents")
         .update({
@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
       }), { status: 200, headers });
     }
 
-    // ── PATCH /document-review/:id — Status transitions ──
+    // ── PATCH /document-review/:id - Status transitions ──
     const body = await req.json();
     const { action, reason, notes: verificationNotes } = body;
 

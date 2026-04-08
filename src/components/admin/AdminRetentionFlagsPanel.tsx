@@ -199,7 +199,7 @@ export function AdminRetentionFlagsPanel() {
   };
 
   const actionBadge = (action: string | null) => {
-    if (!action) return <span className="text-muted-foreground text-xs">—</span>;
+    if (!action) return <span className="text-muted-foreground text-xs">-</span>;
     return <Badge variant="outline" className="text-xs">{ACTION_LABELS[action] || action}</Badge>;
   };
 
@@ -353,7 +353,7 @@ export function AdminRetentionFlagsPanel() {
                       <TableCell className="text-sm text-muted-foreground">
                         {f.enforcement_applied_at
                           ? format(new Date(f.enforcement_applied_at), "dd MMM yyyy")
-                          : "—"}
+                          : "-"}
                       </TableCell>
                       <TableCell>
                         {f.resolution_status ? (
@@ -361,7 +361,7 @@ export function AdminRetentionFlagsPanel() {
                             {f.resolution_status}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
+                          <span className="text-muted-foreground text-xs">-</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -428,10 +428,10 @@ export function AdminRetentionFlagsPanel() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="acknowledged">Acknowledged — action accepted</SelectItem>
-                    <SelectItem value="extended">Extended — retention period extended</SelectItem>
-                    <SelectItem value="dismissed">Dismissed — flag invalid</SelectItem>
-                    <SelectItem value="completed">Completed — action fully applied</SelectItem>
+                    <SelectItem value="acknowledged">Acknowledged - action accepted</SelectItem>
+                    <SelectItem value="extended">Extended - retention period extended</SelectItem>
+                    <SelectItem value="dismissed">Dismissed - flag invalid</SelectItem>
+                    <SelectItem value="completed">Completed - action fully applied</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

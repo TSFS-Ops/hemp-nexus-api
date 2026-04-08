@@ -1,5 +1,5 @@
 /**
- * PoiEventsTimeline — Displays the POI state transition history for a match.
+ * PoiEventsTimeline - Displays the POI state transition history for a match.
  * Fetches from poi_events table, ordered chronologically.
  */
 

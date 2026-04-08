@@ -200,7 +200,7 @@ export default function WebhookDeliveryLogs() {
                         <TableCell>{getStatusBadge(log)}</TableCell>
                         <TableCell className="text-xs hidden xl:table-cell">{log.delivery_attempt}</TableCell>
                         <TableCell className="text-xs text-muted-foreground max-w-xs truncate hidden xl:table-cell">
-                          {log.error_message || log.response_body || "—"}
+                          {log.error_message || log.response_body || "-"}
                         </TableCell>
                         <TableCell className="text-right">
                           {(log.error_message || !log.response_status_code || log.response_status_code >= 300) && (

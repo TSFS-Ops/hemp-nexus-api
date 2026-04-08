@@ -1,5 +1,5 @@
 /**
- * CodeBlock — Lightweight syntax-highlighted code block.
+ * CodeBlock - Lightweight syntax-highlighted code block.
  *
  * Uses prism-react-renderer (~12KB) instead of react-syntax-highlighter (~500KB).
  */

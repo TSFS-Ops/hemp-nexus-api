@@ -53,7 +53,7 @@ export function AdminReputationPanel() {
       case "good": return <Badge className="bg-blue-500/10 text-blue-700 border-blue-200">Good</Badge>;
       case "fair": return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Fair</Badge>;
       case "poor": return <Badge variant="destructive">Poor</Badge>;
-      default: return <Badge variant="secondary">{level || "—"}</Badge>;
+      default: return <Badge variant="secondary">{level || "-"}</Badge>;
     }
   };
 
@@ -92,11 +92,11 @@ export function AdminReputationPanel() {
                 {scores.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-mono text-xs">{s.org_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="font-semibold">{s.overall_score?.toFixed(1) ?? "—"}</TableCell>
+                    <TableCell className="font-semibold">{s.overall_score?.toFixed(1) ?? "-"}</TableCell>
                     <TableCell>{levelBadge(s.reputation_level)}</TableCell>
                     <TableCell>{s.total_matches_completed}</TableCell>
                     <TableCell>{s.total_matches_failed}</TableCell>
-                    <TableCell>{s.reliability_score?.toFixed(1) ?? "—"}</TableCell>
+                    <TableCell>{s.reliability_score?.toFixed(1) ?? "-"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(s.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                   </TableRow>
                 ))}

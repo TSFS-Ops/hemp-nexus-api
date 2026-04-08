@@ -117,7 +117,7 @@ export function AdminTokenManagement() {
           org_id: selectedOrg.org_id,
           endpoint: "admin-top-up",
           tokens_burned: -amount,
-          remaining_balance: selectedOrg.balance + amount, // approximate — ledger is the record of truth
+          remaining_balance: selectedOrg.balance + amount, // approximate - ledger is the record of truth
           outcome: "credit",
           metadata: {
             type: "admin_top_up",

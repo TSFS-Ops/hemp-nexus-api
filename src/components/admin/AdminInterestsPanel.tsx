@@ -136,7 +136,7 @@ export function AdminInterestsPanel() {
                         <TableCell className="font-mono text-xs">{i.from_entity_id.slice(0, 8)}…</TableCell>
                         <TableCell className="font-mono text-xs">{i.to_entity_id.slice(0, 8)}…</TableCell>
                         <TableCell><StatusBadge status={i.status} /></TableCell>
-                        <TableCell className="max-w-[200px] truncate">{i.context || "—"}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{i.context || "-"}</TableCell>
                         <TableCell>{format(new Date(i.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                       </TableRow>
                     ))

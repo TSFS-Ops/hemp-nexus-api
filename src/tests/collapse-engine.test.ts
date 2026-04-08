@@ -79,7 +79,7 @@ describe('ECDSA signature validation', () => {
   });
 });
 
-// ── Test 3: Idempotency — 500 identical requests → 1 record ──
+// ── Test 3: Idempotency - 500 identical requests → 1 record ──
 describe('Idempotency enforcement', () => {
   it('unique constraint ensures only 1 record per org_id + idempotency_key', () => {
     // Simulate the constraint check logic
@@ -154,7 +154,7 @@ describe('Post-collapse immutability', () => {
     const annulError = validateTransition('COLLAPSED', 'ANNULLED');
     expect(annulError).toBeNull();
     
-    // After ANNULLED, the record is sealed — a new collapse must be a new record
+    // After ANNULLED, the record is sealed - a new collapse must be a new record
     const annulledTransitions = VALID_TRANSITIONS['ANNULLED'];
     expect(annulledTransitions).toEqual([]);
   });
@@ -165,7 +165,7 @@ describe('CAP partition handling', () => {
   it('collapse endpoint returns 503 when partition detected', () => {
     // Simulate the partition response structure
     const partitionResponse = {
-      error: 'Service unavailable — partition state detected',
+      error: 'Service unavailable - partition state detected',
       partitionState: true,
       reason: 'Database connectivity issue: connection timeout',
     };
@@ -176,7 +176,7 @@ describe('CAP partition handling', () => {
 
   it('partition response includes reason', () => {
     const response = {
-      error: 'Service unavailable — partition state detected',
+      error: 'Service unavailable - partition state detected',
       partitionState: true,
       reason: 'Partition detected: ECONNREFUSED',
     };

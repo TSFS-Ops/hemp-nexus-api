@@ -129,7 +129,7 @@ export function TeamManagement() {
 
       if (error) throw error;
 
-      // 2. Send the invitation email (best-effort — don't block on failure)
+      // 2. Send the invitation email (best-effort - don't block on failure)
       let emailSent = false;
       const { data: orgData } = await supabase
         .from("organizations")
@@ -274,7 +274,7 @@ export function TeamManagement() {
             <TableBody>
               {members.map((m) => (
                 <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.full_name || "—"}</TableCell>
+                  <TableCell className="font-medium">{m.full_name || "-"}</TableCell>
                   <TableCell className="text-sm">{m.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">

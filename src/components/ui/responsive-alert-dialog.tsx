@@ -1,5 +1,5 @@
 /**
- * ResponsiveAlertDialog — AlertDialog on desktop, bottom Drawer on mobile.
+ * ResponsiveAlertDialog - AlertDialog on desktop, bottom Drawer on mobile.
  * Drop-in replacement for AlertDialog + AlertDialogContent.
  */
 

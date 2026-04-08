@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
       factors.push({ name: "intent_confirmed", weight: 0.15, score: 0, reason: "No match linked" });
     }
 
-    // Factor 7: Compliance cases (10% weight — inverted: open cases reduce probability)
+    // Factor 7: Compliance cases (10% weight - inverted: open cases reduce probability)
     if (orgIds.length > 0) {
       const { data: openCases } = await admin
         .from("compliance_cases")

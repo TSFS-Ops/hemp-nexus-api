@@ -1,5 +1,5 @@
 /**
- * POI State Machine — Single Source of Truth
+ * POI State Machine - Single Source of Truth
  * 
  * Deterministic state machine for Proof-of-Intent lifecycle.
  * All valid states and transitions are defined here.
@@ -19,10 +19,10 @@ export const POI_STATES = [
 
 export type PoiState = typeof POI_STATES[number];
 
-/** Terminal states — no forward transitions allowed */
+/** Terminal states - no forward transitions allowed */
 export const TERMINAL_STATES: PoiState[] = ['EXPIRED', 'REJECTED', 'ANNULLED'];
 
-/** Immutable states — no field mutations permitted */
+/** Immutable states - no field mutations permitted */
 export const IMMUTABLE_STATES: PoiState[] = ['COLLAPSED', 'ANNULLED', 'EXPIRED', 'REJECTED'];
 
 /**
@@ -91,7 +91,7 @@ export function isMutable(state: PoiState): boolean {
 
 /**
  * Check if collapse can proceed (must have all approvals).
- * This is a placeholder — the edge function enforces actual approval checks.
+ * This is a placeholder - the edge function enforces actual approval checks.
  */
 export function canCollapse(approvalsComplete: boolean): boolean {
   return approvalsComplete;

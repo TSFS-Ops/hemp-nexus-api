@@ -1,6 +1,6 @@
 # End-to-End Happy Path Walkthrough
 
-**Platform**: Trade iZenzo — Compliance Matching API  
+**Platform**: Trade iZenzo - Compliance Matching API  
 **Version**: V3 (Phase 3)  
 **Duration**: 5–8 minutes  
 **Date**: 2026-03-04  
@@ -9,7 +9,7 @@
 
 ## Purpose
 
-This document proves **the system works as a system** — not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.
+This document proves **the system works as a system** - not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.
 
 **Lifecycle summary**:  
 Onboard → Verify → Discover → Match → Confirm Intent → Collapse → Seal → Export Evidence
@@ -24,7 +24,7 @@ Onboard → Verify → Discover → Match → Confirm Intent → Collapse → Se
 
 ---
 
-## Phase 1 — Entity Onboarding & Due Diligence (~2 min)
+## Phase 1 - Entity Onboarding & Due Diligence (~2 min)
 
 ### Step 1: Create Organisations (Buyer + Seller)
 
@@ -54,9 +54,9 @@ For **each** organisation:
 **Hard-gate enforced**: UBO ownership must sum to ≥100% per entity. ATB must be verified.
 
 **APIs**:
-- `POST /functions/v1/entities` — Register company + person entities
-- `POST /functions/v1/entities` (with UBO link data) — Link beneficial owners
-- `POST /functions/v1/authority-bind` — Create ATB records
+- `POST /functions/v1/entities` - Register company + person entities
+- `POST /functions/v1/entities` (with UBO link data) - Link beneficial owners
+- `POST /functions/v1/authority-bind` - Create ATB records
 
 ---
 
@@ -128,7 +128,7 @@ Mark both organisations as **"Approved to Trade"**. This is a one-time certifica
 
 ---
 
-## Phase 2 — Discovery & Matching (~1.5 min)
+## Phase 2 - Discovery & Matching (~1.5 min)
 
 ### Step 8: Create Signals (Buy + Sell Intents)
 
@@ -203,7 +203,7 @@ Organisation B accepts the invite, confirming mutual intent.
 
 ---
 
-## Phase 3 — POI Lifecycle & Collapse (~2 min)
+## Phase 3 - POI Lifecycle & Collapse (~2 min)
 
 ### Step 12: Pre-flight Validation
 
@@ -275,7 +275,7 @@ The deterministic collapse engine executes the binding trade event.
 
 ---
 
-## Phase 4 — Evidence & Certification (~1.5 min)
+## Phase 4 - Evidence & Certification (~1.5 min)
 
 ### Step 14: Generate Evidence Pack v1
 
@@ -298,7 +298,7 @@ Produce a tamper-evident evidence bundle:
 }
 ```
 
-**Canonical JSON**: Sorted keys, no whitespace — ensures deterministic SHA-256 hashing.
+**Canonical JSON**: Sorted keys, no whitespace - ensures deterministic SHA-256 hashing.
 
 **API**: `POST /functions/v1/evidence-pack`
 

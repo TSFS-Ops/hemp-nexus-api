@@ -1,5 +1,5 @@
 /**
- * Bloomberg-style buyer/seller entry form — ultra-premium dark terminal aesthetic.
+ * Bloomberg-style buyer/seller entry form - ultra-premium dark terminal aesthetic.
  * Pill-shaped toggles, borderless inputs with focus glow, rounded search button.
  */
 
@@ -154,7 +154,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </button>
       </div>
 
-      {/* Fields grid — borderless inputs with focus glow */}
+      {/* Fields grid - borderless inputs with focus glow */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <PremiumField
           id="product" label="Product" required placeholder="Select product / asset"
@@ -171,7 +171,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           value={form.volume} onChange={(v) => update("volume", v)}
           disabled={disabled}
         />
-        {/* Upload Docs — disabled */}
+        {/* Upload Docs - disabled */}
         <div>
           <label className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1" style={{ color: 'var(--lt-text-dim)' }}>
             Upload Docs
@@ -195,7 +195,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       </div>
 
-      {/* Search button — rounded-full with emerald glow */}
+      {/* Search button - rounded-full with emerald glow */}
       <div className="flex sm:justify-end">
         <button
           type="submit"

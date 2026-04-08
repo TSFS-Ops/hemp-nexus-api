@@ -1,5 +1,5 @@
 /**
- * Probabilistic Exploration Layer — Layer 2 (Non-binding)
+ * Probabilistic Exploration Layer - Layer 2 (Non-binding)
  * 
  * Responsible for signal creation, option discovery, and shortlisting.
  * All activity in this layer is explicitly non-binding and exploratory.

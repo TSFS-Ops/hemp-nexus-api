@@ -19,7 +19,7 @@ Let's begin.
 
 ---
 
-## PART 1 — GETTING IN
+## PART 1 - GETTING IN
 
 ---
 
@@ -42,7 +42,7 @@ Do this:
 6. Click the sign-up button.
 7. You should see a message telling you to check your email.
 
-What good looks like: A message appears saying a verification email is on its way. You are not signed in yet — you need to verify first.
+What good looks like: A message appears saying a verification email is on its way. You are not signed in yet - you need to verify first.
 
 What bad looks like: You get an error. Or you are signed straight in without verifying your email. Or the password strength bar never appears.
 
@@ -121,7 +121,7 @@ Do this:
 2. Click "Sign Out."
 3. You should land on the home page or the sign-in page.
 4. Now type the dashboard address directly into the browser bar and press Enter.
-5. You should be sent back to the sign-in page — not the dashboard.
+5. You should be sent back to the sign-in page - not the dashboard.
 
 What good looks like: After signing out, you cannot reach any private page. The platform always sends you to sign in.
 
@@ -133,7 +133,7 @@ Pass or fail: Pass if you are blocked from private pages. Fail if you can still 
 
 ---
 
-## PART 2 — RECOVERING YOUR ACCOUNT
+## PART 2 - RECOVERING YOUR ACCOUNT
 
 ---
 
@@ -249,7 +249,7 @@ Pass or fail: Pass if you are warned, redirected, and returned to the right page
 
 ---
 
-## PART 3 — GETTING STARTED
+## PART 3 - GETTING STARTED
 
 ---
 
@@ -310,7 +310,7 @@ Pass or fail: Pass if the key is shown once and copies correctly. Fail otherwise
 
 ---
 
-## PART 4 — FINDING COUNTERPARTIES
+## PART 4 - FINDING COUNTERPARTIES
 
 ---
 
@@ -368,7 +368,7 @@ Pass or fail: Pass if you can navigate away and return without problems. Fail if
 
 ---
 
-## PART 5 — MATCHES
+## PART 5 - MATCHES
 
 ---
 
@@ -452,7 +452,7 @@ Pass or fail: Pass if all information is correct and all tabs work. Fail if anyt
 
 ---
 
-## PART 6 — DEAL TERMS
+## PART 6 - DEAL TERMS
 
 ---
 
@@ -529,7 +529,7 @@ Do this:
 4. Person B changes payment terms to "90 days" and clicks Save (without refreshing first).
 5. Both people refresh the page.
 
-What good looks like: Only one version is saved. Ideally, Person B was warned that the terms changed since they opened the page. At the very least, the saved record is consistent — not a mix of both edits.
+What good looks like: Only one version is saved. Ideally, Person B was warned that the terms changed since they opened the page. At the very least, the saved record is consistent - not a mix of both edits.
 
 What bad looks like: The record is a confusing mix of both edits. Or one person's work disappears without any warning.
 
@@ -539,7 +539,7 @@ Pass or fail: Pass if the record is consistent. Fail if it is corrupted or mixed
 
 ---
 
-## PART 7 — DOCUMENTS
+## PART 7 - DOCUMENTS
 
 ---
 
@@ -625,7 +625,7 @@ Pass or fail: Pass if sharing gives access and revoking takes it away. Fail if a
 
 ---
 
-## PART 8 — CONFIRMING INTENT
+## PART 8 - CONFIRMING INTENT
 
 ---
 
@@ -649,7 +649,7 @@ Do this:
 
 What good looks like: The match status changes to something like "intent declared." Your credit balance goes down. The audit log shows the action. The match timeline shows the event.
 
-What bad looks like: You get an error. Pay special attention if the error says "LICENCE_REQUIRED" — that means the platform's licence setup is not complete. Also check whether your credits were deducted even though the action failed.
+What bad looks like: You get an error. Pay special attention if the error says "LICENCE_REQUIRED" - that means the platform's licence setup is not complete. Also check whether your credits were deducted even though the action failed.
 
 If it fails, write down: The exact error. Your credit balance before and after.
 
@@ -712,7 +712,7 @@ Pass or fail: Pass if all are confirmed with correct records. Fail if any are le
 
 ---
 
-## PART 9 — CREDITS AND BILLING
+## PART 9 - CREDITS AND BILLING
 
 ---
 
@@ -876,7 +876,7 @@ Pass or fail: Pass if credits are added once. Fail if they are doubled.
 
 ---
 
-## PART 10 — DISPUTES
+## PART 10 - DISPUTES
 
 ---
 
@@ -939,7 +939,7 @@ Pass or fail: Pass if the dispute is resolved and the match can proceed. Fail ot
 
 ---
 
-## PART 11 — TEAMS AND PERMISSIONS
+## PART 11 - TEAMS AND PERMISSIONS
 
 ---
 
@@ -978,7 +978,7 @@ What you are checking: Can a regular team member see their organisation's data b
 
 Why it matters: People in different roles should have different levels of access. A junior staff member should not be able to delete API keys or manage the team.
 
-Who should do this: Two people — one admin, one regular member — in the same organisation.
+Who should do this: Two people - one admin, one regular member - in the same organisation.
 
 Before you start: An admin account and a member account.
 
@@ -1027,7 +1027,7 @@ Pass or fail: Pass if non-admin is blocked. Fail if they can see anything.
 
 ---
 
-## PART 12 — DATA EXPORTS
+## PART 12 - DATA EXPORTS
 
 ---
 
@@ -1086,7 +1086,7 @@ Pass or fail: Pass if the format is correct and it is honest about how many reco
 
 ---
 
-## PART 13 — AUDIT TRAIL
+## PART 13 - AUDIT TRAIL
 
 ---
 
@@ -1117,7 +1117,7 @@ Pass or fail: Pass if all important actions are recorded with enough detail. Fai
 
 ---
 
-## PART 14 — SECURITY AND ISOLATION
+## PART 14 - SECURITY AND ISOLATION
 
 ---
 
@@ -1139,7 +1139,7 @@ Do this:
 5. Write down the matches and data you can see.
 6. Confirm that nothing from Organisation Alpha is visible.
 7. Try typing the web address of one of Organisation Alpha's matches directly into the browser.
-8. You should get an error or be redirected — you should absolutely not see the match.
+8. You should get an error or be redirected - you should absolutely not see the match.
 
 What good looks like: Complete separation. Each organisation only sees its own data. Direct URL access to the other organisation's data is blocked.
 
@@ -1151,7 +1151,7 @@ Pass or fail: Pass if complete isolation is maintained. Fail if any data leaks a
 
 ---
 
-## PART 15 — WORKING TOGETHER
+## PART 15 - WORKING TOGETHER
 
 ---
 
@@ -1183,7 +1183,7 @@ Pass or fail: Pass if both can work simultaneously and see each other's changes.
 
 ---
 
-## PART 16 — WHAT HAPPENS WHEN THINGS GO WRONG
+## PART 16 - WHAT HAPPENS WHEN THINGS GO WRONG
 
 ---
 
@@ -1198,13 +1198,13 @@ Who should do this: Any signed-in user.
 Before you start: Sign in.
 
 Do this:
-1. Type a made-up match reference into the URL and press Enter. You should see a "not found" message — not a crash or blank page.
+1. Type a made-up match reference into the URL and press Enter. You should see a "not found" message - not a crash or blank page.
 2. Try to submit a form with required fields left empty. You should see messages on the empty fields.
-3. Turn off your internet and try to do something. You should see a network error message — not silence.
+3. Turn off your internet and try to do something. You should see a network error message - not silence.
 
 What good looks like: Every error shows a clear, specific message.
 
-What bad looks like: A blank screen. A crash. Or nothing at all — the action just silently fails.
+What bad looks like: A blank screen. A crash. Or nothing at all - the action just silently fails.
 
 If it fails, write down: Which scenario produced a bad result.
 
@@ -1216,7 +1216,7 @@ Test name: Empty pages
 
 What you are checking: When a section has no data yet, does the platform explain that?
 
-Why it matters: A completely blank area looks broken. A message like "No matches yet — create your first one" is helpful.
+Why it matters: A completely blank area looks broken. A message like "No matches yet - create your first one" is helpful.
 
 Who should do this: A new user, or test sections that have no data.
 
@@ -1369,7 +1369,7 @@ Pass or fail: Pass if the total is shown and pagination works. Fail if data is s
 
 ---
 
-## PART 17 — THE FULL JOURNEY
+## PART 17 - THE FULL JOURNEY
 
 ---
 
@@ -1519,7 +1519,7 @@ For every failed test, record:
 9. Whether you found a workaround.
 10. Whether it happens every time or only sometimes.
 
-Save screenshots in a folder called "Test Results — [Date]" and name each file after the test (e.g., "Confirming intent — error.png").
+Save screenshots in a folder called "Test Results - [Date]" and name each file after the test (e.g., "Confirming intent - error.png").
 
 ---
 
@@ -1527,10 +1527,10 @@ Save screenshots in a folder called "Test Results — [Date]" and name each file
 
 This platform handles trade compliance, commercial intent records, financial credits, audit trails, and dispute resolution. These are serious things with real consequences.
 
-A platform like this cannot be judged by how it looks. It must be judged by how it behaves — under normal conditions, under pressure, and when things go wrong.
+A platform like this cannot be judged by how it looks. It must be judged by how it behaves - under normal conditions, under pressure, and when things go wrong.
 
 This test pack exists to prove that behaviour. Every test checks a promise the platform makes: that records are accurate, that access is controlled, that money is handled correctly, and that there is always a trail of evidence.
 
-If every test in this pack passes, the platform can be trusted. If critical tests fail — especially around data isolation, credit accuracy, or audit completeness — those failures must be fixed before the platform is shown to clients.
+If every test in this pack passes, the platform can be trusted. If critical tests fail - especially around data isolation, credit accuracy, or audit completeness - those failures must be fixed before the platform is shown to clients.
 
 Trust is earned through proof, not polish. This is the proof.

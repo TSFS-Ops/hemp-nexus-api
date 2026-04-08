@@ -6,7 +6,7 @@ import { PageFooter } from "./PageFooter";
  * Canonical layout for all public-facing pages (Pricing, Docs, Walkthrough, etc.).
  * Provides consistent header, footer, and vertical spacing.
  * 
- * Pages supply content only — no layout boilerplate.
+ * Pages supply content only - no layout boilerplate.
  */
 interface PublicPageLayoutProps {
   children: ReactNode;

@@ -34,7 +34,7 @@ export function AdminBehavioralInsights() {
       );
       if (scoresErr) throw scoresErr;
 
-      // Fetch POI responsiveness data — time between unilateral creation and bilateral bind
+      // Fetch POI responsiveness data - time between unilateral creation and bilateral bind
       const { data: matches, error: matchErr } = await supabase
         .from("matches")
         .select("org_id, match_type, created_at, settled_at")
@@ -124,7 +124,7 @@ export function AdminBehavioralInsights() {
           Behavioural Insights
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          "Why vs. What" analysis — responsiveness patterns and document integrity per organisation.
+          "Why vs. What" analysis - responsiveness patterns and document integrity per organisation.
         </p>
       </div>
 
@@ -139,11 +139,11 @@ export function AdminBehavioralInsights() {
                 {orgs.length > 0
                   ? (() => {
                       const valid = orgs.filter(o => o.avg_responsiveness_hours !== null);
-                      if (valid.length === 0) return "—";
+                      if (valid.length === 0) return "-";
                       const avg = valid.reduce((s, o) => s + o.avg_responsiveness_hours!, 0) / valid.length;
                       return avg < 24 ? `${Math.round(avg)}h` : `${Math.round(avg / 24)}d`;
                     })()
-                  : "—"}
+                  : "-"}
               </p>
               <p className="text-xs text-muted-foreground">Draft → Accept time</p>
             </div>
@@ -158,7 +158,7 @@ export function AdminBehavioralInsights() {
                 {(() => {
                   const totalDocs = orgs.reduce((s, o) => s + o.total_docs, 0);
                   const verifiedDocs = orgs.reduce((s, o) => s + o.verified_docs, 0);
-                  return totalDocs > 0 ? `${Math.round((verifiedDocs / totalDocs) * 100)}%` : "—";
+                  return totalDocs > 0 ? `${Math.round((verifiedDocs / totalDocs) * 100)}%` : "-";
                 })()}
               </p>
               <p className="text-xs text-muted-foreground">Verified / Total</p>

@@ -1,5 +1,5 @@
 /**
- * Jurisdiction Module — Three-Branch Deterministic Rule
+ * Jurisdiction Module - Three-Branch Deterministic Rule
  *
  * Implements the confirmed jurisdiction selection logic for the WaD documentary path:
  *   Branch 1: One clear signal → auto-select
@@ -179,7 +179,7 @@ export function applyThreeBranchRule(signals: JurisdictionSignal[]): Jurisdictio
   const uniqueCodes = getUniqueCodes(signals);
 
   if (uniqueCodes.length === 0) {
-    // No signals at all — escalate
+    // No signals at all - escalate
     return {
       surfacedJurisdictions: deduped,
       branch: 3,

@@ -1,5 +1,5 @@
 /**
- * SectionHeader — Single source of truth for page/section title blocks.
+ * SectionHeader - Single source of truth for page/section title blocks.
  *
  * Replaces the 15+ scattered patterns of:
  *   <header className="space-y-1">

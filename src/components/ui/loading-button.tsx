@@ -1,5 +1,5 @@
 /**
- * LoadingButton — Canonical button with built-in loading spinner.
+ * LoadingButton - Canonical button with built-in loading spinner.
  *
  * Replaces the repeated pattern of:
  *   <Button disabled={loading} onClick={...}>

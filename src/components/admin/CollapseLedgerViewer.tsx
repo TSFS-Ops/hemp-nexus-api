@@ -260,7 +260,7 @@ export function CollapseLedgerViewer() {
                                   <TableRow key={evt.id}>
                                     <TableCell className="text-xs font-mono">{evt.from_state}</TableCell>
                                     <TableCell className="text-xs font-mono">{evt.to_state}</TableCell>
-                                    <TableCell className="text-xs">{evt.reason || "—"}</TableCell>
+                                    <TableCell className="text-xs">{evt.reason || "-"}</TableCell>
                                     <TableCell className="text-xs">{new Date(evt.created_at).toLocaleString()}</TableCell>
                                   </TableRow>
                                 ))}

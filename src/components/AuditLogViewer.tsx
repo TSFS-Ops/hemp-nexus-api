@@ -41,7 +41,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
   const [offset, setOffset] = useState(0);
 
   // NOTE: This component uses X-API-Key auth (for the API testing playground),
-  // not session auth — this is intentional and correct.
+  // not session auth - this is intentional and correct.
   const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
   const fetchAuditLogs = async () => {
@@ -389,7 +389,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                           </TableCell>
                           <TableCell className="font-mono text-xs hidden lg:table-cell">{log.entity_type}</TableCell>
                           <TableCell className="font-mono text-xs hidden lg:table-cell">
-                            {log.entity_id ? log.entity_id.substring(0, 8) : "—"}
+                            {log.entity_id ? log.entity_id.substring(0, 8) : "-"}
                           </TableCell>
                           <TableCell className="font-mono text-xs">
                             {hash ? (
@@ -400,7 +400,7 @@ export default function AuditLogViewer({ apiKey }: AuditLogViewerProps) {
                                 </code>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground hidden xl:table-cell">
