@@ -55,7 +55,7 @@ export function MarketWatchSidebar() {
             <span className="text-[12px] font-medium" style={{ color: 'var(--lt-text)' }}>{item.name}</span>
             <div className="flex items-center gap-3">
               <span
-                className={`text-[13px] font-mono font-semibold tabular-nums ${tickIndex === i ? 'animate-tick' : ''}`}
+                className="text-[13px] font-mono font-semibold tabular-nums"
                 style={{ color: 'var(--lt-text)' }}
               >
                 {item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
