@@ -84,7 +84,7 @@ function AdminNotFound() {
 function DealsSection() {
   const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Active Requests"
         description="Trade requests in progress, match lifecycle tracking, and approval status."
@@ -98,9 +98,9 @@ function DealsSection() {
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="pipeline" className="mt-4"><AdminDealPipelinePanel /></TabsContent>
-        <TabsContent value="matches" className="mt-4"><AdminMatchesPanel /></TabsContent>
-        <TabsContent value="approvals" className="mt-4"><AdminTradeApprovalsPanel /></TabsContent>
+        <TabsContent value="pipeline" className="mt-4 animate-section-enter"><AdminDealPipelinePanel /></TabsContent>
+        <TabsContent value="matches" className="mt-4 animate-section-enter"><AdminMatchesPanel /></TabsContent>
+        <TabsContent value="approvals" className="mt-4 animate-section-enter"><AdminTradeApprovalsPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -109,7 +109,7 @@ function DealsSection() {
 function OrderBookSection() {
   const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Complete Deals"
         description="Finalised trades, active buyer and seller signals across the platform."
@@ -122,8 +122,8 @@ function OrderBookSection() {
             <TabsTrigger value="interests">Interests</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="signals" className="mt-4"><AdminSignalsPanel /></TabsContent>
-        <TabsContent value="interests" className="mt-4"><AdminInterestsPanel /></TabsContent>
+        <TabsContent value="signals" className="mt-4 animate-section-enter"><AdminSignalsPanel /></TabsContent>
+        <TabsContent value="interests" className="mt-4 animate-section-enter"><AdminInterestsPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -134,7 +134,7 @@ function OrderBookSection() {
 function ComplianceSection() {
   const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Partner Checks"
         description="We check your trading partner's identity and authority to trade before you commit money."
@@ -153,14 +153,14 @@ function ComplianceSection() {
             <TabsTrigger value="insights">Behavioural Insights</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
-        <TabsContent value="disputes" className="mt-4"><AdminDisputesPanel /></TabsContent>
-        <TabsContent value="risk" className="mt-4"><AdminRiskPanel /></TabsContent>
-        <TabsContent value="kyc" className="mt-4"><AdminKycDocsPanel /></TabsContent>
-        <TabsContent value="screening" className="mt-4"><AdminScreeningRunsPanel /></TabsContent>
-        <TabsContent value="ubo" className="mt-4"><AdminUboPanel /></TabsContent>
-        <TabsContent value="behavioral-kyc" className="mt-4"><AdminBehavioralKycLink /></TabsContent>
-        <TabsContent value="insights" className="mt-4"><AdminBehavioralInsights /></TabsContent>
+        <TabsContent value="cases" className="mt-4 animate-section-enter"><AdminComplianceCasesPanel /></TabsContent>
+        <TabsContent value="disputes" className="mt-4 animate-section-enter"><AdminDisputesPanel /></TabsContent>
+        <TabsContent value="risk" className="mt-4 animate-section-enter"><AdminRiskPanel /></TabsContent>
+        <TabsContent value="kyc" className="mt-4 animate-section-enter"><AdminKycDocsPanel /></TabsContent>
+        <TabsContent value="screening" className="mt-4 animate-section-enter"><AdminScreeningRunsPanel /></TabsContent>
+        <TabsContent value="ubo" className="mt-4 animate-section-enter"><AdminUboPanel /></TabsContent>
+        <TabsContent value="behavioral-kyc" className="mt-4 animate-section-enter"><AdminBehavioralKycLink /></TabsContent>
+        <TabsContent value="insights" className="mt-4 animate-section-enter"><AdminBehavioralInsights /></TabsContent>
       </Tabs>
     </div>
   );
@@ -169,7 +169,7 @@ function ComplianceSection() {
 function AuditSection() {
   const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Audit Trail"
         description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context."
@@ -182,8 +182,8 @@ function AuditSection() {
             <TabsTrigger value="poi">Intent History</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
-        <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
+        <TabsContent value="audit" className="mt-4 animate-section-enter"><AdminAuditLogs /></TabsContent>
+        <TabsContent value="poi" className="mt-4 animate-section-enter"><PoiStateHistory /></TabsContent>
       </Tabs>
     </div>
   );
@@ -192,7 +192,7 @@ function AuditSection() {
 function LedgerSection() {
   const [tab, setTab] = useUrlTab("tab", "ledger", ["ledger", "signing-keys", "reputation", "risk-snapshots"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Evidence Ledger"
         description="Cryptographic proof chain for all completed trades. Every entry is SHA-256 hashed and signature-verified."
@@ -207,10 +207,10 @@ function LedgerSection() {
             <TabsTrigger value="risk-snapshots">Risk Snapshots</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
-        <TabsContent value="signing-keys" className="mt-4"><AdminSigningKeysPanel /></TabsContent>
-        <TabsContent value="reputation" className="mt-4"><AdminReputationPanel /></TabsContent>
-        <TabsContent value="risk-snapshots" className="mt-4"><AdminRiskSnapshotsPanel /></TabsContent>
+        <TabsContent value="ledger" className="mt-4 animate-section-enter"><CollapseLedgerViewer /></TabsContent>
+        <TabsContent value="signing-keys" className="mt-4 animate-section-enter"><AdminSigningKeysPanel /></TabsContent>
+        <TabsContent value="reputation" className="mt-4 animate-section-enter"><AdminReputationPanel /></TabsContent>
+        <TabsContent value="risk-snapshots" className="mt-4 animate-section-enter"><AdminRiskSnapshotsPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -221,7 +221,7 @@ function LedgerSection() {
 function UsersSection() {
   const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Users"
         description="Platform user accounts and credit balance management."
@@ -234,8 +234,8 @@ function UsersSection() {
             <TabsTrigger value="tokens">Credit Balances</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
-        <TabsContent value="tokens" className="mt-4"><AdminTokenManagement /></TabsContent>
+        <TabsContent value="users" className="mt-4 animate-section-enter"><UsersManagement /></TabsContent>
+        <TabsContent value="tokens" className="mt-4 animate-section-enter"><AdminTokenManagement /></TabsContent>
       </Tabs>
     </div>
   );
@@ -244,7 +244,7 @@ function UsersSection() {
 function OrgsSection() {
   const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Organisations"
         description="Registered organisations, legal entities, and proof-of-delivery tracking."
@@ -258,9 +258,9 @@ function OrgsSection() {
             <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
-        <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
-        <TabsContent value="pods" className="mt-4"><AdminPodPanel /></TabsContent>
+        <TabsContent value="orgs" className="mt-4 animate-section-enter"><OrgsManagement /></TabsContent>
+        <TabsContent value="entities" className="mt-4 animate-section-enter"><AdminEntitiesPanel /></TabsContent>
+        <TabsContent value="pods" className="mt-4 animate-section-enter"><AdminPodPanel /></TabsContent>
       </Tabs>
     </div>
   );

@@ -198,7 +198,7 @@ export function AdminMatchesPanel() {
                     const ageDays = Math.floor((Date.now() - new Date(match.created_at).getTime()) / (24 * 60 * 60 * 1000));
                     const isStale = matchType === "unilateral" && ageDays >= 7 && (match.buyer_id == null || match.seller_id == null);
                     return (
-                    <TableRow key={match.id} className={isStale ? "bg-amber-500/5" : ""}>
+                    <TableRow key={match.id} className={`tr-mechanical ${isStale ? "bg-amber-500/5" : ""}`}>
                       <TableCell className="font-mono text-xs">
                         {((match as any).organisations?.name || match.org_id).substring(0, 8)}...
                       </TableCell>

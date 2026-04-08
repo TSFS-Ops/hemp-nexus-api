@@ -20,7 +20,7 @@ export default function ApiDocs() {
             <CardTitle>API Documentation</CardTitle>
           </div>
           <CardDescription>
-            Complete reference for integrating with the Compliance Matching API
+            Complete reference for integrating with the Izenzo API
           </CardDescription>
         </CardHeader>
         <CardContent>

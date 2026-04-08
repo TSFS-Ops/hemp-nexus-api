@@ -92,6 +92,12 @@ export default {
           verified: "hsl(var(--signal-verified))",
           pending: "hsl(var(--signal-pending))",
         },
+        emerald: {
+          DEFAULT: "hsl(var(--emerald))",
+          bright: "hsl(var(--emerald-bright))",
+          muted: "hsl(var(--emerald-muted))",
+        },
+        "deep-slate": "hsl(var(--deep-slate))",
         graphite: "hsl(var(--graphite))",
         "surface-sidebar": "hsl(var(--surface-sidebar))",
       },
@@ -135,6 +141,14 @@ export default {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "section-enter": {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "ledger-pulse": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.6" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -143,6 +157,8 @@ export default {
         "slide-in-right": "slide-in-right 0.2s ease-out",
         shimmer: "shimmer 1.5s infinite",
         ticker: "ticker 60s linear infinite",
+        "section-enter": "section-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "ledger-pulse": "ledger-pulse 2s ease-in-out 1",
       },
     },
   },

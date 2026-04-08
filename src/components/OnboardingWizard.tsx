@@ -362,7 +362,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Welcome to Compliance Matching</h3>
+                <h3 className="text-2xl font-bold">Welcome to Izenzo</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
                   This platform helps you find trading partners, record commercial intent, and generate tamper-evident evidence packs for compliance.
                 </p>

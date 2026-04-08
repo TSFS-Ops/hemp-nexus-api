@@ -61,12 +61,12 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     <Sidebar className="border-r border-border">
       <SidebarHeader className="border-b border-border px-4 py-3">
         <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
-            <span className="text-background font-bold text-[10px]">CM</span>
+          <div className="h-7 w-7 rounded flex items-center justify-center" style={{ backgroundColor: 'hsl(160, 84%, 29%)' }}>
+            <span className="text-white font-bold text-[10px] font-mono">IZ</span>
           </div>
           <div>
-            <h2 className="font-semibold text-sm text-foreground">Compliance Match</h2>
-            <p className="text-xs text-muted-foreground">Console</p>
+            <h2 className="font-semibold text-sm text-foreground tracking-tight">Izenzo</h2>
+            <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Console</p>
           </div>
         </Link>
       </SidebarHeader>

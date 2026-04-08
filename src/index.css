@@ -62,6 +62,14 @@
     --warning: 43 96% 56%;
     --warning-foreground: 0 0% 0%;
 
+    /* Trust Emerald - #059669 */
+    --emerald: 160 84% 29%;
+    --emerald-bright: 160 84% 39%;
+    --emerald-muted: 160 40% 94%;
+
+    /* Deep Slate - #0f172a */
+    --deep-slate: 222 47% 11%;
+
     /* Signal colors - #059669 for legible status text */
     --signal-verified: 160 84% 29%;
     --signal-pending: 43 96% 56%;
@@ -246,6 +254,32 @@
   .delay-300 { animation-delay: 300ms; }
   .delay-400 { animation-delay: 400ms; }
   .delay-500 { animation-delay: 500ms; }
+
+  /* Mechanical table row hover - emerald focus indicator */
+  .tr-mechanical,
+  [data-admin-table] tbody tr {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    border-left: 2px solid transparent;
+  }
+  .tr-mechanical:hover,
+  [data-admin-table] tbody tr:hover {
+    background-color: hsl(var(--emerald-muted));
+    border-left-color: hsl(var(--emerald));
+  }
+
+  /* Gradient card surfaces */
+  .card-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--card)) 0%,
+      hsl(var(--surface-sunken)) 100%
+    );
+  }
+
+  /* Ledger shimmer - cryptographic verification indicator */
+  .ledger-verify {
+    animation: ledger-pulse 2s ease-in-out 1;
+  }
 
   /* Copper bottom-border focus line */
   .focus-copper-line {

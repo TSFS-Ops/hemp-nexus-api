@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e4e4e7;">
               <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">Trade Izenzo</h1>
-              <p style="margin: 8px 0 0; font-size: 14px; color: #71717a;">Compliance Matching Platform</p>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #71717a;">Trade Infrastructure</p>
             </td>
           </tr>
           

@@ -321,7 +321,7 @@ export default function Billing() {
       <div className="space-y-6">
         <SectionHeader
           title="API Credits"
-          description="Purchase credits to use the Compliance Matching API"
+          description="Purchase credits to use the Izenzo trade infrastructure"
         />
 
         {/* Payment cancellation banner - persists until dismissed */}
