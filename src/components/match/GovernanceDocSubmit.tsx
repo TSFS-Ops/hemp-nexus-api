@@ -4,14 +4,15 @@
  * the governance_doc_registry.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileCheck, AlertCircle, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, FileCheck, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface RegistryEntry {
@@ -44,9 +45,14 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [submitted, setSubmitted] = useState<GovernanceDoc[]>([]);
   const [selectedRegistryId, setSelectedRegistryId] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"];
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
   useEffect(() => {
     loadData();
@@ -104,20 +110,54 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Only PDF, PNG, or JPEG files are accepted.");
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setError("File must be under 10 MB.");
+      return;
+    }
+    setError(null);
+    setSelectedFile(file);
+  };
+
   const handleSubmit = async () => {
     if (!selectedRegistryId) {
       setError("Please select a document type.");
+      return;
+    }
+    if (!selectedFile) {
+      setError("Please attach a document file (PDF, PNG, or JPEG).");
       return;
     }
     setError(null);
     setSubmitting(true);
 
     try {
+      // 1. Upload file to storage
+      const ext = selectedFile.name.split(".").pop() || "pdf";
+      const storagePath = `governance/${orgId}/${matchId}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("match-documents")
+        .upload(storagePath, selectedFile, {
+          contentType: selectedFile.type,
+          upsert: false,
+        });
+
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+      // 2. Register governance doc with file path
       const { data, error: fnError } = await supabase.functions.invoke("governance-docs", {
         body: {
           registry_id: selectedRegistryId,
           deal_reference_id: matchId,
           deal_reference_type: "poi",
+          document_path: storagePath,
         },
       });
 
@@ -130,8 +170,10 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         throw new Error(data.error?.message || "Submission failed");
       }
 
-      toast.success("Governance document submitted for review");
+      toast.success("Governance document uploaded and submitted for review");
       setSelectedRegistryId("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to submit governance document";
@@ -227,6 +269,33 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
               </Select>
             </div>
 
+            <div>
+              <Label>Attach Document</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+                {selectedFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">PDF, PNG, or JPEG. Max 10 MB.</p>
+            </div>
+
             {error && (
               <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -234,9 +303,9 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
               </div>
             )}
 
-            <Button onClick={handleSubmit} disabled={submitting || !selectedRegistryId} className="w-full" size="sm">
+            <Button onClick={handleSubmit} disabled={submitting || !selectedRegistryId || !selectedFile} className="w-full" size="sm">
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <FileCheck className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               Submit Governance Document
             </Button>
           </div>

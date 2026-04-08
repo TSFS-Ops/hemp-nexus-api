@@ -1984,6 +1984,7 @@ export type Database = {
           created_at: string
           deal_reference_id: string
           deal_reference_type: string
+          document_path: string | null
           id: string
           org_id: string
           registry_id: string
@@ -1995,6 +1996,7 @@ export type Database = {
           created_at?: string
           deal_reference_id: string
           deal_reference_type: string
+          document_path?: string | null
           id?: string
           org_id: string
           registry_id: string
@@ -2006,6 +2008,7 @@ export type Database = {
           created_at?: string
           deal_reference_id?: string
           deal_reference_type?: string
+          document_path?: string | null
           id?: string
           org_id?: string
           registry_id?: string

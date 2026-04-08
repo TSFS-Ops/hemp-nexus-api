@@ -17,6 +17,7 @@ const GovDocCreateSchema = z.object({
   registry_id: z.string().uuid(),
   deal_reference_id: z.string().uuid(),
   deal_reference_type: z.enum(["poi", "wad"]),
+  document_path: z.string().min(1).max(500).optional(),
 });
 
 const GovDocValidateSchema = z.object({
@@ -78,15 +79,18 @@ Deno.serve(async (req: Request) => {
         throw new ApiException("CONFLICT", "Governance document already submitted for this deal", 409);
       }
 
-      const { data: govDoc, error } = await admin
-        .from("governance_documents")
-        .insert({
+      const insertPayload: Record<string, unknown> = {
           org_id: orgId,
           registry_id: parsed.registry_id,
           deal_reference_id: parsed.deal_reference_id,
           deal_reference_type: parsed.deal_reference_type,
           status: "pending",
-        })
+        };
+      if (parsed.document_path) insertPayload.document_path = parsed.document_path;
+
+      const { data: govDoc, error } = await admin
+        .from("governance_documents")
+        .insert(insertPayload)
         .select()
         .single();
 
