@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon } from "lucide-react";
+import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSupabaseList } from "@/hooks/use-supabase-list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { AuthorityBindDialog } from "./AuthorityBindDialog";
 
 interface Entity {
   id: string;
@@ -31,6 +32,8 @@ export function AdminEntitiesPanel() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [screeningEntity, setScreeningEntity] = useState<string | null>(null);
   const [verifyingEntity, setVerifyingEntity] = useState<string | null>(null);
+  const [bindDialogOpen, setBindDialogOpen] = useState(false);
+  const [bindTarget, setBindTarget] = useState<Entity | null>(null);
 
   const { data: entities = [], isLoading, isError, refetch } = useSupabaseList<Entity>("entities", {
     limit: 200,
