@@ -255,6 +255,30 @@
   .delay-400 { animation-delay: 400ms; }
   .delay-500 { animation-delay: 500ms; }
 
+  /* Mechanical table row hover - emerald focus indicator */
+  .tr-mechanical {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    border-left: 2px solid transparent;
+  }
+  .tr-mechanical:hover {
+    background-color: hsl(var(--emerald-muted));
+    border-left-color: hsl(var(--emerald));
+  }
+
+  /* Gradient card surfaces */
+  .card-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--card)) 0%,
+      hsl(var(--surface-sunken)) 100%
+    );
+  }
+
+  /* Ledger shimmer - cryptographic verification indicator */
+  .ledger-verify {
+    animation: ledger-pulse 2s ease-in-out 1;
+  }
+
   /* Copper bottom-border focus line */
   .focus-copper-line {
     position: relative;
