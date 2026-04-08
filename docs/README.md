@@ -147,13 +147,13 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 
 2. **Test the Connection** (1 minute)
    ```bash
-   curl https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/healthz \
+   curl https://api.izenzo.co.za/functions/v1/healthz \
      -H "Authorization: Bearer YOUR_API_KEY"
    ```
 
 3. **Create Your First Signal** (2 minutes)
    ```bash
-   curl -X POST https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/signals \
+   curl -X POST https://api.izenzo.co.za/functions/v1/signals \
      -H "Authorization: Bearer YOUR_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"product":"Test Product","quantity":100,"unit":"units"}'

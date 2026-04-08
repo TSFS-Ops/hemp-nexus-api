@@ -15,7 +15,7 @@
  * Last updated: 11 January 2026
  */
 
-const BASE_URL = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
+const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 interface TestResult {
   passed: boolean;

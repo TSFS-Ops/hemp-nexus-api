@@ -194,7 +194,9 @@ export interface IzenzoClientConfig {
   timeout?: number;
 }
 
-const DEFAULT_BASE_URL = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1';
+const DEFAULT_BASE_URL = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL
+  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
+  : 'https://YOUR_PROJECT_REF.supabase.co/functions/v1';
 const DEFAULT_TIMEOUT = 30000;
 
 /**

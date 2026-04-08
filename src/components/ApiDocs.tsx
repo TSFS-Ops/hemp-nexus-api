@@ -9,7 +9,7 @@ import ApiPlayground from "./ApiPlayground";
 import GettingStartedGuide from "./GettingStartedGuide";
 
 export default function ApiDocs() {
-  const baseUrl = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
+  const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
   return (
     <div className="space-y-6">

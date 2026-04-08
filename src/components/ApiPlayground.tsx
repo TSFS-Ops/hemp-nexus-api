@@ -78,7 +78,7 @@ export default function ApiPlayground() {
   const [webhookEvents, setWebhookEvents] = useState("signal.created,match.created");
   const [webhookSecret, setWebhookSecret] = useState("your_webhook_secret");
 
-  const baseUrl = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
+  const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
   const copyResponse = () => {
     if (response) {
