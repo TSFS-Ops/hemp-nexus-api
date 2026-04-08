@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AdminApiKeys } from "@/components/admin/AdminApiKeys";
 import { AdminSettings } from "@/components/admin/AdminSettings";
@@ -225,7 +226,7 @@ function AdminContent() {
               </Link>
             </Button>
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto pb-20 md:pb-0">
             <Routes>
               <Route path="/" element={<AdminOverview />} />
               <Route path="/deals" element={<DealsSection />} />
@@ -241,6 +242,7 @@ function AdminContent() {
             </Routes>
           </main>
         </div>
+        <AdminMobileNav />
       </div>
     </SidebarProvider>
   );
