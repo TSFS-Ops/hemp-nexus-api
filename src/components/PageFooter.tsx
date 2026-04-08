@@ -29,7 +29,7 @@ export function PageFooter() {
             © {new Date().getFullYear()} Starfair162 (Pty) Ltd t/a Izenzo. All rights reserved.
           </p>
           <p className="text-[9px] font-mono text-muted-foreground/30 tracking-wide">
-            No VAT charged — supplier not VAT registered in South Africa.
+            No VAT charged - supplier not VAT registered in South Africa.
           </p>
         </div>
       </div>

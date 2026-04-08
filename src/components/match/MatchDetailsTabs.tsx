@@ -1,5 +1,5 @@
 /**
- * MatchDetailsTabs — Tabbed navigation for match sub-sections.
+ * MatchDetailsTabs - Tabbed navigation for match sub-sections.
  * Tab state synced to ?tab= query param for deep-linking.
  */
 
@@ -86,7 +86,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
       <TabsContent value="details" className="mt-4 space-y-4">
         <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setActiveTab("disputes")} />
         
-        {/* State Progression Card — handles all lifecycle actions including intent */}
+        {/* State Progression Card - handles all lifecycle actions including intent */}
         <StateProgressionCard
           match={match}
           onAction={onStateAction}
@@ -103,8 +103,8 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
               <div><span className="text-muted-foreground">Status:</span> <MatchStatusBadge status={match.status} /></div>
               <div><span className="text-muted-foreground">Buyer:</span> <span className="font-medium">{isRevealed ? match.buyer_name : <span className="italic text-muted-foreground">Hidden until reveal</span>}</span></div>
               <div><span className="text-muted-foreground">Seller:</span> <span className="font-medium">{isRevealed ? match.seller_name : <span className="italic text-muted-foreground">Hidden until reveal</span>}</span></div>
-              <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{match.quantity_amount ?? "—"} {match.quantity_unit ?? ""}</span></div>
-              <div><span className="text-muted-foreground">Price:</span> <span className="font-medium">{match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}</span></div>
+              <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{match.quantity_amount ?? "-"} {match.quantity_unit ?? ""}</span></div>
+              <div><span className="text-muted-foreground">Price:</span> <span className="font-medium">{match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "-"}</span></div>
               <div><span className="text-muted-foreground">Total Value:</span> <span className="font-medium">{match.price_currency ?? ""} {((match.price_amount ?? 0) * (match.quantity_amount ?? 0)).toLocaleString()}</span></div>
               <div><span className="text-muted-foreground">Hash:</span> <span className="font-mono text-xs">{match.hash}</span></div>
             </div>

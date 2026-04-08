@@ -97,7 +97,7 @@ export function AdminSigningKeysPanel() {
                     <TableCell className="font-mono text-xs">{key.org_id.slice(0, 8)}…</TableCell>
                     <TableCell>{statusBadge(key.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(key.created_at), "dd MMM yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{key.revoked_at ? format(new Date(key.revoked_at), "dd MMM yyyy") : "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{key.revoked_at ? format(new Date(key.revoked_at), "dd MMM yyyy") : "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

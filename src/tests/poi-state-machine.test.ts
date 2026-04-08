@@ -1,5 +1,5 @@
 /**
- * POI State Machine — Acceptance Tests
+ * POI State Machine - Acceptance Tests
  * 
  * These tests validate the deterministic state machine rules
  * as specified in the P-3 Phase 1 requirements.
@@ -16,7 +16,7 @@ import {
   type PoiState,
 } from "@/lib/modules/poi-engine/state-machine";
 
-describe("POI State Machine — Acceptance Tests", () => {
+describe("POI State Machine - Acceptance Tests", () => {
   // ── Test 1: DRAFT → COLLAPSED must fail ──
   describe("Test 1: Cannot skip states (DRAFT → COLLAPSED)", () => {
     it("should reject a direct transition from DRAFT to COLLAPSED", () => {

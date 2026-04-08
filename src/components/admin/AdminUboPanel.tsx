@@ -87,9 +87,9 @@ export function AdminUboPanel() {
                           <TableCell className="font-medium">{d.full_name}</TableCell>
                           <TableCell><Badge variant="outline">{d.role}</Badge></TableCell>
                           <TableCell className="font-mono text-xs">{d.org_id.slice(0, 8)}…</TableCell>
-                          <TableCell className="text-sm">{d.nationality || "—"}</TableCell>
+                          <TableCell className="text-sm">{d.nationality || "-"}</TableCell>
                           <TableCell>{d.is_pep ? <Badge variant="destructive">PEP</Badge> : <Badge variant="secondary">No</Badge>}</TableCell>
-                          <TableCell>{d.ownership_percentage != null ? `${d.ownership_percentage}%` : "—"}</TableCell>
+                          <TableCell>{d.ownership_percentage != null ? `${d.ownership_percentage}%` : "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -113,12 +113,12 @@ export function AdminUboPanel() {
                           <TableCell className="font-mono text-xs">{u.person_entity_id.slice(0, 8)}…</TableCell>
                           <TableCell className="font-mono text-xs">{u.company_entity_id.slice(0, 8)}…</TableCell>
                           <TableCell className="font-semibold">{u.ownership_percentage}%</TableCell>
-                          <TableCell><Badge variant="outline">{u.verification_method || "—"}</Badge></TableCell>
+                          <TableCell><Badge variant="outline">{u.verification_method || "-"}</Badge></TableCell>
                           <TableCell>
                             {u.status === "verified" ? <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Verified</Badge> : <Badge variant="secondary">{u.status}</Badge>}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {u.verified_at ? format(new Date(u.verified_at), "dd MMM yyyy") : "—"}
+                            {u.verified_at ? format(new Date(u.verified_at), "dd MMM yyyy") : "-"}
                           </TableCell>
                         </TableRow>
                       ))}

@@ -63,7 +63,7 @@ async function buildOwnershipTree(
     const isVerified = link.status === "verified" && !!link.verified_at;
 
     if (entity.entity_type === "company" || entity.entity_type === "corporate") {
-      // Recursive: this owner is itself a company — traverse deeper
+      // Recursive: this owner is itself a company - traverse deeper
       const sub = await buildOwnershipTree(admin, entity.id, orgId, depth + 1, visited);
       nodes.push({
         entityId: entity.id,
@@ -79,7 +79,7 @@ async function buildOwnershipTree(
       // Weighted contribution: this company's total natural person ownership
       totalPct += Number(link.ownership_percentage) * (sub.totalPct / 100);
     } else {
-      // Natural person — terminal node
+      // Natural person - terminal node
       totalPct += Number(link.ownership_percentage);
       nodes.push({
         entityId: entity.id,

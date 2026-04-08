@@ -1,10 +1,10 @@
 /**
- * V3 Deal Pipeline — Integration Tests (Sprint 8)
+ * V3 Deal Pipeline - Integration Tests (Sprint 8)
  *
  * Validates the end-to-end flow:
  *   Entities → ATB/UBO → Due Diligence → Trade Approval → PoD → Compliance
  *
- * These are structural/contract tests — they validate SDK types,
+ * These are structural/contract tests - they validate SDK types,
  * request shapes, and response parsing without hitting live endpoints.
  */
 
@@ -30,7 +30,7 @@ function envelopeResponse(data: unknown, status = 200) {
   );
 }
 
-describe("V3 SDK — Entities Resource", () => {
+describe("V3 SDK - Entities Resource", () => {
   let client: IzenzoClient;
   beforeEach(() => {
     client = new IzenzoClient("sk_test_key");
@@ -61,7 +61,7 @@ describe("V3 SDK — Entities Resource", () => {
   });
 });
 
-describe("V3 SDK — Authority Resource", () => {
+describe("V3 SDK - Authority Resource", () => {
   let client: IzenzoClient;
   beforeEach(() => {
     client = new IzenzoClient("sk_test_key");
@@ -90,7 +90,7 @@ describe("V3 SDK — Authority Resource", () => {
   });
 });
 
-describe("V3 SDK — Trade Approvals Resource", () => {
+describe("V3 SDK - Trade Approvals Resource", () => {
   let client: IzenzoClient;
   beforeEach(() => {
     client = new IzenzoClient("sk_test_key");
@@ -115,7 +115,7 @@ describe("V3 SDK — Trade Approvals Resource", () => {
   });
 });
 
-describe("V3 SDK — PoDs Resource", () => {
+describe("V3 SDK - PoDs Resource", () => {
   let client: IzenzoClient;
   beforeEach(() => {
     client = new IzenzoClient("sk_test_key");
@@ -144,7 +144,7 @@ describe("V3 SDK — PoDs Resource", () => {
   });
 });
 
-describe("V3 SDK — Compliance Cases Resource", () => {
+describe("V3 SDK - Compliance Cases Resource", () => {
   let client: IzenzoClient;
   beforeEach(() => {
     client = new IzenzoClient("sk_test_key");
@@ -171,7 +171,7 @@ describe("V3 SDK — Compliance Cases Resource", () => {
   });
 });
 
-describe("V3 SDK — Client instantiation", () => {
+describe("V3 SDK - Client instantiation", () => {
   it("exposes all V3 resources", () => {
     const client = new IzenzoClient("sk_test");
     expect(client.entities).toBeDefined();

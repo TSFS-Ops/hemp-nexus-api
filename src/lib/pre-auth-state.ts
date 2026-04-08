@@ -21,7 +21,7 @@ export function savePreAuthState(state: PreAuthState) {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(state));
   } catch {
-    // Storage full or blocked — degrade gracefully
+    // Storage full or blocked - degrade gracefully
   }
 }
 

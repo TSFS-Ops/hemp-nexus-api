@@ -1,5 +1,5 @@
 /**
- * AdminPodPanel — Full admin UI for Proof-of-Delivery management.
+ * AdminPodPanel - Full admin UI for Proof-of-Delivery management.
  * Covers pod creation, milestone CRUD with dependency sequencing,
  * breach monitoring, and milestone completion workflow.
  */
@@ -250,7 +250,7 @@ function PodsTab({ pods, milestones, onRefresh }: { pods: Pod[]; milestones: Pod
                     <span className="text-sm">{doneCount}/{podMs.length}</span>
                   </TableCell>
                   <TableCell>{format(new Date(p.created_at), "dd MMM yyyy HH:mm")}</TableCell>
-                  <TableCell>{p.finalised_at ? format(new Date(p.finalised_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
+                  <TableCell>{p.finalised_at ? format(new Date(p.finalised_at), "dd MMM yyyy HH:mm") : "-"}</TableCell>
                   <TableCell>
                     {p.state === "IN_PROGRESS" && (
                       <Dialog open={showAddMilestone === p.id} onOpenChange={(open) => setShowAddMilestone(open ? p.id : null)}>
@@ -376,10 +376,10 @@ function MilestonesTab({ milestones, pods, onRefresh }: { milestones: PodMilesto
                         {daysOverdue}d overdue
                       </Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground/50">—</span>
+                      <span className="text-xs text-muted-foreground/50">-</span>
                     )}
                   </TableCell>
-                  <TableCell>{m.completed_at ? format(new Date(m.completed_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
+                  <TableCell>{m.completed_at ? format(new Date(m.completed_at), "dd MMM yyyy HH:mm") : "-"}</TableCell>
                   <TableCell>
                     {isCompletable && (
                       <Button
@@ -512,7 +512,7 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
                   </TableCell>
                   <TableCell className="text-xs">{format(new Date(b.detected_at), "dd MMM yyyy HH:mm")}</TableCell>
                   <TableCell className="text-xs">
-                    {b.notification_sent_at ? format(new Date(b.notification_sent_at), "dd MMM HH:mm") : "—"}
+                    {b.notification_sent_at ? format(new Date(b.notification_sent_at), "dd MMM HH:mm") : "-"}
                   </TableCell>
                   <TableCell>
                     <Dialog open={resolving === b.id} onOpenChange={(open) => { setResolving(open ? b.id : null); setResolutionNote(""); }}>
@@ -537,8 +537,8 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="resolved">Resolved — issue has been fixed</SelectItem>
-                                <SelectItem value="dismissed">Dismissed — breach was invalid</SelectItem>
+                                <SelectItem value="resolved">Resolved - issue has been fixed</SelectItem>
+                                <SelectItem value="dismissed">Dismissed - breach was invalid</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -599,10 +599,10 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
                     </TableCell>
                     <TableCell className="text-xs">{format(new Date(b.detected_at), "dd MMM yyyy")}</TableCell>
                     <TableCell className="text-xs">
-                      {b.resolved_at ? format(new Date(b.resolved_at), "dd MMM yyyy HH:mm") : "—"}
+                      {b.resolved_at ? format(new Date(b.resolved_at), "dd MMM yyyy HH:mm") : "-"}
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                      {b.resolution_note || "—"}
+                      {b.resolution_note || "-"}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -35,11 +35,11 @@ All notable changes to the Compliance Matching API are documented here.
 **Focus: Extend the TypeScript SDK with all V3 deal-pipeline resources and add comprehensive contract tests.**
 
 #### SDK Extension (`izenzo-sdk.ts`)
-- **[Entities]** `client.entities.create()`, `.list()`, `.update()`, `.screen()` — full CRUD + screening stub
-- **[Authority]** `client.authority.createUbo()`, `.createAtb()`, `.checkGates()` — ATB/UBO management with gate validation
-- **[Trade Approvals]** `client.tradeApprovals.getStatus()`, `.issue()`, `.revoke()` — approval lifecycle
-- **[PoDs]** `client.pods.create()`, `.list()`, `.completeMilestone()`, `.recordBreach()`, `.finalise()` — delivery tracking with idempotency
-- **[Compliance]** `client.complianceCases.open()`, `.list()`, `.decide()` — compliance case lifecycle
+- **[Entities]** `client.entities.create()`, `.list()`, `.update()`, `.screen()` - full CRUD + screening stub
+- **[Authority]** `client.authority.createUbo()`, `.createAtb()`, `.checkGates()` - ATB/UBO management with gate validation
+- **[Trade Approvals]** `client.tradeApprovals.getStatus()`, `.issue()`, `.revoke()` - approval lifecycle
+- **[PoDs]** `client.pods.create()`, `.list()`, `.completeMilestone()`, `.recordBreach()`, `.finalise()` - delivery tracking with idempotency
+- **[Compliance]** `client.complianceCases.open()`, `.list()`, `.decide()` - compliance case lifecycle
 
 #### Integration Tests (`v3-deal-pipeline.test.ts`)
 - 11 contract tests covering all V3 SDK resources
@@ -53,10 +53,10 @@ All notable changes to the Compliance Matching API are documented here.
 **Focus: Complete API documentation with all V3 paths and update SDK examples for the deal pipeline.**
 
 #### OpenAPI Spec (`public/openapi.yaml`)
-- **[Authority]** Added `/authority-bind` (POST + GET) — UBO/ATB CRUD with gate-check action
-- **[Trade Approvals]** Added `/trade-approval` (POST) — issue/revoke/renew actions
-- **[Trade Status]** Added `/trade-status` (GET) — public approval status endpoint
-- **[Due Diligence]** Added `/due-diligence` (POST) — multi-action KYC lifecycle
+- **[Authority]** Added `/authority-bind` (POST + GET) - UBO/ATB CRUD with gate-check action
+- **[Trade Approvals]** Added `/trade-approval` (POST) - issue/revoke/renew actions
+- **[Trade Status]** Added `/trade-status` (GET) - public approval status endpoint
+- **[Due Diligence]** Added `/due-diligence` (POST) - multi-action KYC lifecycle
 - **[Schemas]** Added `TradeStatus` response schema
 - **[Tags]** Added Authority, Trade Approvals, Due Diligence tag groups
 - **[Version]** Bumped spec version to 2.0.0
@@ -79,7 +79,7 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 
 ### Enterprise-Grade Rebuild (Phases 1–10)
 
-**Focus: Complete platform rebuild for production readiness — schema, auth, billing, security, and code quality.**
+**Focus: Complete platform rebuild for production readiness - schema, auth, billing, security, and code quality.**
 
 #### Phase 1: Foundation (Schema + Auth + Roles)
 - **[Auth]** Expanded `app_role` enum: `platform_admin`, `org_admin`, `org_member`
@@ -113,8 +113,8 @@ This project follows semantic versioning: `MAJOR.MINOR.PATCH`
 - **[Billing]** Dual-path reliability: webhook + client-side `/verify` fallback
 
 #### Phase 6: Developer Console
-- **[API]** Fixed API key auth — JWT users manage keys without scope check
-- **[API]** Fixed audit-logs — console users no longer burn tokens viewing logs
+- **[API]** Fixed API key auth - JWT users manage keys without scope check
+- **[API]** Fixed audit-logs - console users no longer burn tokens viewing logs
 - **[UI]** Dashboard migrated from legacy `useToast` to `sonner`
 - **[Docs]** DocsSection with overview, key concepts, and quick examples
 

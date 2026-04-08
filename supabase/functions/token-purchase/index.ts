@@ -1,12 +1,12 @@
 /**
- * token-purchase — Edge function for credit purchasing via Paystack.
+ * token-purchase - Edge function for credit purchasing via Paystack.
  *
  * ROUTES:
- *   POST /token-purchase         — Initiate a Paystack checkout (authenticated)
- *   POST /token-purchase/verify  — Client-side verify + credit fallback (authenticated)
- *   POST /token-purchase/webhook — Paystack webhook receiver (signature-verified, no auth)
- *   GET  /token-purchase/packages — List available credit packages (public)
- *   GET  /token-purchase/entity   — Billing entity info (public)
+ *   POST /token-purchase         - Initiate a Paystack checkout (authenticated)
+ *   POST /token-purchase/verify  - Client-side verify + credit fallback (authenticated)
+ *   POST /token-purchase/webhook - Paystack webhook receiver (signature-verified, no auth)
+ *   GET  /token-purchase/packages - List available credit packages (public)
+ *   GET  /token-purchase/entity   - Billing entity info (public)
  *
  * PAYSTACK WEBHOOK CONFIGURATION:
  *   URL: https://<project-ref>.supabase.co/functions/v1/token-purchase/webhook
@@ -17,7 +17,7 @@
  *   All balance changes use the atomic_token_credit() RPC (UPDATE balance = balance + amount).
  *   No read-then-write patterns remain. Idempotency is enforced by:
  *   1. Soft check: SELECT on token_ledger WHERE request_id = reference
- *   2. Hard check: UNIQUE INDEX on token_ledger(request_id) — catches TOCTOU races
+ *   2. Hard check: UNIQUE INDEX on token_ledger(request_id) - catches TOCTOU races
  *   If both webhook and verify race, the loser's INSERT fails, and its atomic credit is reversed.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -53,7 +53,7 @@ const CHARGING_ENTITY = {
   address: "44 Campbell Street, Port Alfred, South Africa",
   vatStatus: "Not VAT-registered",
   supportEmail: "support@izenzo.co.za",
-  invoiceNote: "No VAT charged — supplier not VAT registered in South Africa.",
+  invoiceNote: "No VAT charged - supplier not VAT registered in South Africa.",
 };
 
 // ==============================================
@@ -124,18 +124,18 @@ Deno.serve(async (req) => {
     }
 
     // ==============================================
-    // POST /verify — client-side fallback to credit after Paystack redirect.
+    // POST /verify - client-side fallback to credit after Paystack redirect.
     //
-    // ARCHITECTURE NOTE — Dual-path crediting safety:
+    // ARCHITECTURE NOTE - Dual-path crediting safety:
     //   Both webhook (charge.success) and verify can credit.
     //   Safety is guaranteed by TWO independent guards:
     //   1. Soft guard: SELECT on token_ledger WHERE request_id = reference
-    //      (catches 99.9% of duplicates — fast, cheap)
+    //      (catches 99.9% of duplicates - fast, cheap)
     //   2. Hard guard: UNIQUE INDEX on token_ledger(request_id) WHERE request_id IS NOT NULL
-    //      (catches the TOCTOU race — if both paths pass the SELECT simultaneously,
+    //      (catches the TOCTOU race - if both paths pass the SELECT simultaneously,
     //       the second INSERT fails with a unique constraint violation)
     //   3. Balance mutation is atomic: UPDATE ... SET balance = balance + amount
-    //      via the atomic_token_credit() RPC — no read-then-write.
+    //      via the atomic_token_credit() RPC - no read-then-write.
     //
     // WHY BOTH PATHS CAN CREDIT:
     //   Paystack webhooks can be delayed, fail, or arrive after the user
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
 
       const newBalance = creditResult?.new_balance ?? 0;
 
-      // Insert ledger entry — unique index on request_id is the hard idempotency guard.
+      // Insert ledger entry - unique index on request_id is the hard idempotency guard.
       // If webhook already inserted this reference, this INSERT fails and we return alreadyCredited.
       const { error: ledgerError } = await supabase.from("token_ledger").insert({
         org_id: orgId,
@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
           );
         }
         console.error(`[Verify] Ledger insert failed:`, ledgerError);
-        // Balance was credited but ledger failed — log for manual reconciliation
+        // Balance was credited but ledger failed - log for manual reconciliation
         await supabase.from("admin_risk_items").insert({
           title: `Ledger write failure: ${reference}`,
           description: `Credits (${credits}) were added to org ${orgId} but the ledger entry failed. Manual reconciliation required.`,
@@ -625,7 +625,7 @@ async function handleChargeSuccess(
       });
       return;
     }
-    // Ledger write failed but balance was credited — create risk item
+    // Ledger write failed but balance was credited - create risk item
     console.error(`[Webhook] Ledger insert failed:`, ledgerError);
     await supabase.from("admin_risk_items").insert({
       title: `Webhook ledger failure: ${reference}`,

@@ -125,7 +125,7 @@ export async function checkRateLimit(
 ): Promise<void> {
   const limits = scope && SCOPE_LIMITS[scope] ? SCOPE_LIMITS[scope] : DEFAULT_LIMITS;
 
-  // Circuit breaker check — if tripped, reject immediately
+  // Circuit breaker check - if tripped, reject immediately
   const cbKey = `${orgId}:${endpoint}`;
   const cbState = circuitBreakerState.get(cbKey);
   if (cbState) {
@@ -138,7 +138,7 @@ export async function checkRateLimit(
         { retryAfter: Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000) }
       );
     }
-    // Cooldown expired — reset
+    // Cooldown expired - reset
     circuitBreakerState.delete(cbKey);
   }
 

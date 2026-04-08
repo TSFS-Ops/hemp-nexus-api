@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Interests Edge Function — V3 Sprint 2
+ * Interests Edge Function - V3 Sprint 2
  *
  * POST: Declare interest from one entity to another (30-day expiry).
  *       Automatically detects mutual interest when reciprocal exists.

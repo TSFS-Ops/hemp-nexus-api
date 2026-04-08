@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       
       // Idempotent return if already confirmed
       if (currentState === 'intent_declared' || match.status === 'settled') {
-        console.log(`[${requestId}] Intent already confirmed — returning idempotently`);
+        console.log(`[${requestId}] Intent already confirmed - returning idempotently`);
         await logApiRequest({
           supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
           endpoint: endpointLabel, method: "POST", statusCode: 200,
@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
 
       const updated = transitionResult.match;
 
-      // Audit log — immutable proof-of-intent
+      // Audit log - immutable proof-of-intent
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -761,7 +761,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // FIX #2: Validate match_type against allowlist — prevent injection of arbitrary types
+      // FIX #2: Validate match_type against allowlist - prevent injection of arbitrary types
       const ALLOWED_MATCH_TYPES = ["search", "bilateral", "unilateral"];
       const rawMatchType = body.match_type || "search";
       if (!ALLOWED_MATCH_TYPES.includes(rawMatchType)) {
@@ -846,7 +846,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Insert match — buyer/seller can be null for unilateral intents
+      // Insert match - buyer/seller can be null for unilateral intents
       const { data: match, error: insertError } = await supabase
         .from("matches")
         .insert({
@@ -958,7 +958,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── PATCH /match — Accept & Bind (convert unilateral → bilateral) ──
+    // ── PATCH /match - Accept & Bind (convert unilateral → bilateral) ──
     if (req.method === "PATCH") {
       const body = await req.json();
       const { matchId: patchMatchId, action: patchAction, counterparty, expected_state } = body;

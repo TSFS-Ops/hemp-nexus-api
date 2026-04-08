@@ -515,7 +515,7 @@ Deno.serve(async (req) => {
 
       // ── Build PDF ──
       const pdfDoc = await PDFDocument.create();
-      pdfDoc.setTitle(`WaD Certificate — ${wadId}`);
+      pdfDoc.setTitle(`WaD Certificate - ${wadId}`);
       pdfDoc.setSubject("Without-a-Doubt Certificate");
       pdfDoc.setProducer("Izenzo Platform");
       pdfDoc.setCreator("Izenzo Platform");
@@ -593,8 +593,8 @@ Deno.serve(async (req) => {
           font: helvetica,
           color: grayscale(0.5),
         });
-        p.drawText("Izenzo — Governed Infrastructure for Trade and Compliance", {
-          x: PAGE_W - MARGIN - helvetica.widthOfTextAtSize("Izenzo — Governed Infrastructure for Trade and Compliance", 7),
+        p.drawText("Izenzo - Governed Infrastructure for Trade and Compliance", {
+          x: PAGE_W - MARGIN - helvetica.widthOfTextAtSize("Izenzo - Governed Infrastructure for Trade and Compliance", 7),
           y: footerY,
           size: 7,
           font: helvetica,
@@ -641,7 +641,7 @@ Deno.serve(async (req) => {
         });
         y -= SMALL_LINE_H;
         y = drawWrapped(
-          value || "—",
+          value || "-",
           MARGIN,
           y,
           CONTENT_W,
@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
         color: rgb(0.1, 0.1, 0.1),
       });
       y -= 24;
-      page.drawText("Without-a-Doubt (WaD) — Sealed Evidence Record", {
+      page.drawText("Without-a-Doubt (WaD) - Sealed Evidence Record", {
         x: MARGIN,
         y,
         size: 12,
@@ -688,22 +688,22 @@ Deno.serve(async (req) => {
       drawField("WaD Identifier", wadId, true);
       drawField("POI Identifier", wad.poi_id, true);
       drawField("Certificate Status", "SEALED");
-      drawField("Issued", wad.sealed_at ? new Date(wad.sealed_at).toUTCString() : "—");
+      drawField("Issued", wad.sealed_at ? new Date(wad.sealed_at).toUTCString() : "-");
       drawField("Generated", new Date(generatedAt).toUTCString());
 
       // ── Transaction Summary ──
       drawSectionHeader("Transaction Summary");
-      drawField("Commodity", poi?.commodity || "—");
-      drawField("Quantity", `${poi?.quantity_amount ?? "—"} ${poi?.quantity_unit ?? ""}`);
-      drawField("Price", `${poi?.price_currency ?? ""} ${poi?.price_amount ?? "—"}`);
-      drawField("Intent Confirmed", poi?.settled_at ? new Date(poi.settled_at).toUTCString() : "—");
+      drawField("Commodity", poi?.commodity || "-");
+      drawField("Quantity", `${poi?.quantity_amount ?? "-"} ${poi?.quantity_unit ?? ""}`);
+      drawField("Price", `${poi?.price_currency ?? ""} ${poi?.price_amount ?? "-"}`);
+      drawField("Intent Confirmed", poi?.settled_at ? new Date(poi.settled_at).toUTCString() : "-");
 
       // ── Parties ──
       drawSectionHeader("Parties");
-      drawField("Buyer", poi?.buyer_name || "—");
-      drawField("Buyer Organisation", wad.buyer_org_id || "—", true);
-      drawField("Seller", poi?.seller_name || "—");
-      drawField("Seller Organisation", wad.seller_org_id || "—", true);
+      drawField("Buyer", poi?.buyer_name || "-");
+      drawField("Buyer Organisation", wad.buyer_org_id || "-", true);
+      drawField("Seller", poi?.seller_name || "-");
+      drawField("Seller Organisation", wad.seller_org_id || "-", true);
 
       // ── Attestations ──
       drawSectionHeader("Attestations");
@@ -713,7 +713,7 @@ Deno.serve(async (req) => {
         for (const att of attestations) {
           const roleLabel = att.role.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
           drawField(
-            `${roleLabel} — ${att.attested_name}`,
+            `${roleLabel} - ${att.attested_name}`,
             `Attested: ${new Date(att.attested_at).toUTCString()}`
           );
           y = drawWrapped(
@@ -732,8 +732,8 @@ Deno.serve(async (req) => {
 
       // ── Cryptographic Seal ──
       drawSectionHeader("Cryptographic Verification");
-      drawField("Seal Hash (SHA-256)", wad.seal_hash || "—", true);
-      drawField("Ledger Entry Hash", wad.ledger_entry_hash || "—", true);
+      drawField("Seal Hash (SHA-256)", wad.seal_hash || "-", true);
+      drawField("Ledger Entry Hash", wad.ledger_entry_hash || "-", true);
       if (wad.prev_ledger_entry_hash) {
         drawField("Previous Ledger Hash", wad.prev_ledger_entry_hash, true);
       }
@@ -749,7 +749,7 @@ Deno.serve(async (req) => {
         if (evidence?.documents?.length > 0) {
           for (const doc of evidence.documents.slice(0, 10)) {
             const docLabel = doc.title || doc.doc_type || "Document";
-            const hashShort = doc.sha256_hash ? doc.sha256_hash.substring(0, 24) + "…" : "—";
+            const hashShort = doc.sha256_hash ? doc.sha256_hash.substring(0, 24) + "…" : "-";
             drawField(docLabel, `Hash: ${hashShort}`, true);
           }
           if (evidence.documents.length > 10) {

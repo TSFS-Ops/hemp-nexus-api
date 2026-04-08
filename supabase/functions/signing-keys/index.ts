@@ -5,11 +5,11 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Signing Keys Management — ECDSA P-256 Key Registry
+ * Signing Keys Management - ECDSA P-256 Key Registry
  *
- * POST   — Register a new public key
- * GET    — List org's signing keys
- * PATCH  — Revoke or rotate a key
+ * POST   - Register a new public key
+ * GET    - List org's signing keys
+ * PATCH  - Revoke or rotate a key
  */
 
 const RegisterKeySchema = z.object({
@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
       } catch {
         throw new ApiException(
           "VALIDATION_ERROR",
-          "Invalid ECDSA P-256 public key — could not import",
+          "Invalid ECDSA P-256 public key - could not import",
           400
         );
       }

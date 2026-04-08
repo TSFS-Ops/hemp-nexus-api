@@ -139,7 +139,7 @@ APIs let different software systems talk to each other automatically. Instead of
 
 4. **Take a moment to explore**
    - Click through each tab
-   - Don't worry about breaking anything—you're just looking!
+   - Don't worry about breaking anything-you're just looking!
 
 ---
 
@@ -147,7 +147,7 @@ APIs let different software systems talk to each other automatically. Instead of
 
 **Why?** API keys are how you authenticate (prove who you are) when making API calls.
 
-**Analogy**: An API key is like a key card for a hotel room—it identifies you and grants access.
+**Analogy**: An API key is like a key card for a hotel room-it identifies you and grants access.
 
 #### Understanding API Keys
 
@@ -312,7 +312,7 @@ APIs let different software systems talk to each other automatically. Instead of
 
 ## 🔥 Your First API Call
 
-Now let's create your first signal—a request to buy or sell something.
+Now let's create your first signal-a request to buy or sell something.
 
 ### Understanding Signals
 

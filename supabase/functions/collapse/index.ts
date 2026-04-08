@@ -275,7 +275,7 @@ Deno.serve(async (req: Request) => {
       if (!constraint) {
         throw new ApiException(
           "GOVERNANCE_VIOLATION",
-          `BRD constraint '${key}' not found. Collapse rejected — protocol integrity cannot be verified.`,
+          `BRD constraint '${key}' not found. Collapse rejected - protocol integrity cannot be verified.`,
           503,
           { missingConstraint: key }
         );
@@ -291,7 +291,7 @@ Deno.serve(async (req: Request) => {
       if (!constraint.locked) {
         throw new ApiException(
           "GOVERNANCE_VIOLATION",
-          `BRD constraint '${key}' is unlocked. Collapse rejected — all core constraints must be locked.`,
+          `BRD constraint '${key}' is unlocked. Collapse rejected - all core constraints must be locked.`,
           503,
           { constraint: key, locked: false }
         );
@@ -329,12 +329,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── CAP partition check — consistency first ──
+    // ── CAP partition check - consistency first ──
     const partition = await checkPartitionHealth(adminClient);
     if (!partition.healthy) {
       return new Response(
         JSON.stringify({
-          error: "Service unavailable — partition state detected",
+          error: "Service unavailable - partition state detected",
           partitionState: true,
           reason: partition.reason,
         }),
@@ -358,7 +358,7 @@ Deno.serve(async (req: Request) => {
           collapse_id: existing.id,
           payload_hash: existing.payload_hash,
           created_at: existing.created_at,
-          message: "Duplicate request — returning original collapse record",
+          message: "Duplicate request - returning original collapse record",
         }),
         { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
       );
@@ -405,7 +405,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Look up the public key from the server-side registry — never trust client-supplied keys
+    // Look up the public key from the server-side registry - never trust client-supplied keys
     const { data: registeredKey, error: keyLookupErr } = await adminClient
       .from("signing_keys")
       .select("id, public_key_jwk, status, algorithm")
@@ -534,7 +534,7 @@ Deno.serve(async (req: Request) => {
               collapse_id: raceExisting.id,
               payload_hash: raceExisting.payload_hash,
               created_at: raceExisting.created_at,
-              message: "Duplicate request — returning original collapse record",
+              message: "Duplicate request - returning original collapse record",
             }),
             { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
           );

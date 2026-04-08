@@ -1,5 +1,5 @@
 /**
- * StageCard — Renders a single completion stage with status, substeps, and actions.
+ * StageCard - Renders a single completion stage with status, substeps, and actions.
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

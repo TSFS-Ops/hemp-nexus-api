@@ -1,5 +1,5 @@
 /**
- * CompletionTracker — Actionable workflow surface for POI → WaD → PoD → Evidence.
+ * CompletionTracker - Actionable workflow surface for POI → WaD → PoD → Evidence.
  *
  * Uses the deterministic completion-engine to derive stages, actions, and blocked reasons.
  * Actions navigate to the relevant tab in MatchDetailsTabs.
@@ -36,7 +36,7 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
   const { data: completionInput, isLoading, error } = useQuery({
     queryKey: ["completion-tracker", matchId],
     queryFn: async (): Promise<CompletionInput> => {
-      // Parallel data fetch — scoped to this match and org
+      // Parallel data fetch - scoped to this match and org
       const [matchRes, wadRes, podRes, docsRes, disputeRes] = await Promise.all([
         supabase.from("matches")
           .select("id, status, state, poi_state, org_id, buyer_org_id, seller_org_id, buyer_committed_at, seller_committed_at, counterparty_sighted_at, settled_at")
@@ -158,7 +158,7 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
         .eq("status", "pending")
         .select();
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error("Milestone could not be completed — it may already be done or blocked by a dependency");
+      if (!data || data.length === 0) throw new Error("Milestone could not be completed - it may already be done or blocked by a dependency");
       return data;
     },
     onSuccess: () => {

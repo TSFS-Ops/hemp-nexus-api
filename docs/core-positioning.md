@@ -32,7 +32,7 @@ The API acts as a **neutral notary layer** that:
 
 Think of it as **"blockchain-style proof without the blockchain"**: you get cryptographic integrity and verifiable timelines without running a full decentralised ledger.
 
-**Important Clarification**: The system provides independent verification **independent of either party's internal system**, not "without a central authority." The API itself is the trusted neutral authority—but neither trading party needs to trust the other's records, since both can verify against the neutral log and their own webhook copies.
+**Important Clarification**: The system provides independent verification **independent of either party's internal system**, not "without a central authority." The API itself is the trusted neutral authority-but neither trading party needs to trust the other's records, since both can verify against the neutral log and their own webhook copies.
 
 ---
 
@@ -121,7 +121,7 @@ Any party with either:
 - The original payload, OR
 - The hash sent via webhook/export
 
-...can independently verify integrity. The system provides tamper-evident logs, not magic—but that's exactly what compliance requires.
+...can independently verify integrity. The system provides tamper-evident logs, not magic-but that's exactly what compliance requires.
 
 ---
 
@@ -131,7 +131,7 @@ Matches occur in two ways, but the **core use case** for this API is very simple
 
 ### Workflow 1 – Direct Match Recording (Primary Use Case)
 
-This is the **1-line API** flow—the core value proposition.
+This is the **1-line API** flow-the core value proposition.
 
 **When to use this**: When two parties have already agreed terms (via email, WhatsApp, phone, in-person negotiation, etc.)
 
@@ -195,7 +195,7 @@ This is the **1-line API** flow—the core value proposition.
 
 4. **Once both sides agree**, the result is recorded as a match via `POST /match` (same as Workflow 1)
 
-**Key Point**: Even in the discovery flow, the **final match recording** uses the same tamper-evident proof mechanism. Discovery is just a way to get to the agreement—the API's core value is in the proof, not the discovery.
+**Key Point**: Even in the discovery flow, the **final match recording** uses the same tamper-evident proof mechanism. Discovery is just a way to get to the agreement-the API's core value is in the proof, not the discovery.
 
 ---
 
@@ -235,7 +235,7 @@ Examples: Pharmaceuticals, medical devices, industrial chemicals, financial inst
 
 ### The 3-Second Pitch
 
-**"When you need cryptographic proof that a trade agreement happened, we provide a neutral, tamper-evident record both parties—and regulators—can verify."**
+**"When you need cryptographic proof that a trade agreement happened, we provide a neutral, tamper-evident record both parties-and regulators-can verify."**
 
 ### Why Not Just Use Internal Systems?
 

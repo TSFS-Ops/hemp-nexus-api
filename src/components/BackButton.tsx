@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Canonical back button. Uses browser history if available, falls back to a specified route.
- * DO NOT duplicate ArrowLeft + "Back to…" patterns in page files — use this component.
+ * DO NOT duplicate ArrowLeft + "Back to…" patterns in page files - use this component.
  */
 interface BackButtonProps {
   /** Fallback route when there's no browser history (default: "/dashboard") */

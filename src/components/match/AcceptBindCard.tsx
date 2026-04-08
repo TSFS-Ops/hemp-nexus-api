@@ -1,5 +1,5 @@
 /**
- * AcceptBindCard — Shown to invited counterparties on a unilateral match.
+ * AcceptBindCard - Shown to invited counterparties on a unilateral match.
  *
  * If the current user is NOT the match creator and the match is unilateral
  * with an empty buyer/seller slot, this card lets them "Accept & Bind",

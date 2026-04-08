@@ -1,5 +1,5 @@
 /**
- * Discovery Intelligence Module — Client API
+ * Discovery Intelligence Module - Client API
  * 
  * Layer: INTEL (above TRUST, below TRADE)
  * 
@@ -200,7 +200,7 @@ export const discoveryIntel = {
       return {
         passed: false,
         status: "UNKNOWN",
-        reason: "No eligibility snapshot found — run evaluation first",
+        reason: "No eligibility snapshot found - run evaluation first",
       };
     }
   },

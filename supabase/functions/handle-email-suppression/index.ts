@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
   const normalizedEmail = payload.email.toLowerCase()
 
-  // 1. Upsert to suppressed_emails (idempotent — safe for retries)
+  // 1. Upsert to suppressed_emails (idempotent - safe for retries)
   const { error: suppressError } = await supabase
     .from('suppressed_emails')
     .upsert(
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     })
 
   if (insertError) {
-    // Non-fatal — log and continue. The suppression was already recorded.
+    // Non-fatal - log and continue. The suppression was already recorded.
     console.warn('Failed to insert email_send_log', {
       error: insertError,
     })
@@ -151,9 +151,9 @@ function mapReasonToStatus(
 function mapReasonToMessage(reason: string): string {
   switch (reason) {
     case 'bounce':
-      return 'Permanent bounce — email address is invalid or rejected'
+      return 'Permanent bounce - email address is invalid or rejected'
     case 'complaint':
-      return 'Spam complaint — recipient marked email as spam'
+      return 'Spam complaint - recipient marked email as spam'
     case 'unsubscribe':
       return 'Recipient unsubscribed'
     default:

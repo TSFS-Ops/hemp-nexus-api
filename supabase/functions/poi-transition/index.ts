@@ -246,7 +246,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 3. Audit log — MANDATORY: failure must propagate as HTTP 500
+    // 3. Audit log - MANDATORY: failure must propagate as HTTP 500
     const { error: auditError } = await adminClient.from("audit_logs").insert({
       org_id: matchRow.org_id,
       actor_user_id: user.id,
@@ -264,7 +264,7 @@ Deno.serve(async (req: Request) => {
     if (auditError) {
       console.error("CRITICAL: Audit log insert failed for POI transition:", auditError);
       return new Response(
-        JSON.stringify({ error: "Audit log failed — transition recorded but audit trail incomplete", code: "AUDIT_LOG_ERROR" }),
+        JSON.stringify({ error: "Audit log failed - transition recorded but audit trail incomplete", code: "AUDIT_LOG_ERROR" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

@@ -61,7 +61,7 @@ import { DocumentAccessLogs } from "./DocumentAccessLogs";
 import { listMatchDocuments } from "@/lib/match-documents-client";
 import { apiFetch } from "@/lib/api-client";
 
-/** Detect MIME from first bytes of a file — client-side magic-byte check */
+/** Detect MIME from first bytes of a file - client-side magic-byte check */
 const MAGIC_SIGS: [string, number[]][] = [
   ["application/pdf", [0x25, 0x50, 0x44, 0x46]],
   ["image/png", [0x89, 0x50, 0x4E, 0x47]],
@@ -128,7 +128,7 @@ const VISIBILITY_OPTIONS = [
   { value: "share_with_counterparty", label: "Share with Counterparty", icon: Users, description: "Both buyer and seller" },
 ];
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB — compliance-grade cap, enforced server-side via bucket config
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB - compliance-grade cap, enforced server-side via bucket config
 const ALLOWED_TYPES = [
   "application/pdf",
   "image/jpeg",
@@ -233,17 +233,17 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
     "image/jpeg": [[0xFF, 0xD8, 0xFF]],
     "image/png": [[0x89, 0x50, 0x4E, 0x47]],
-    // Office Open XML (docx, xlsx) — PK zip header
+    // Office Open XML (docx, xlsx) - PK zip header
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [[0x50, 0x4B, 0x03, 0x04]],
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [[0x50, 0x4B, 0x03, 0x04]],
-    // Legacy Office — OLE compound file
+    // Legacy Office - OLE compound file
     "application/msword": [[0xD0, 0xCF, 0x11, 0xE0]],
     "application/vnd.ms-excel": [[0xD0, 0xCF, 0x11, 0xE0]],
   };
 
   const validateMagicBytes = async (file: File): Promise<boolean> => {
     const signatures = MAGIC_BYTES[file.type];
-    if (!signatures) return true; // No signature to check — allow (MIME already validated)
+    if (!signatures) return true; // No signature to check - allow (MIME already validated)
     const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     return signatures.some(sig =>
       sig.every((byte, i) => header[i] === byte)
@@ -393,7 +393,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         if (validateResult.blocked) {
           // Clean up orphaned file
           await supabase.storage.from("match-documents").remove([storagePath]);
-          setError(validateResult.reason || "Server rejected this file — content does not match declared type.");
+          setError(validateResult.reason || "Server rejected this file - content does not match declared type.");
           setUploading(false);
           return;
         }

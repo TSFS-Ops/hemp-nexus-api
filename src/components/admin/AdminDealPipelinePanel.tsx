@@ -57,7 +57,7 @@ export function AdminDealPipelinePanel() {
       const { data: orgs } = await supabase.from("organizations").select("id, name").order("name").limit(500);
       if (!orgs) return;
 
-      // Parallel fetch of all related data — with limits to prevent full table scans
+      // Parallel fetch of all related data - with limits to prevent full table scans
       const [entitiesRes, uboRes, atbRes, ddRes, approvalsRes, collapseRes, matchesRes] = await Promise.all([
         supabase.from("entities").select("org_id, id").eq("status", "active").limit(2000),
         supabase.from("ubo_links").select("org_id, company_entity_id, ownership_percentage, status").limit(2000),

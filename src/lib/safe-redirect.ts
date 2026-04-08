@@ -26,7 +26,7 @@ export function getSafeReturnTo(
   // Block embedded protocols (javascript:, data:, etc.) in raw form
   if (/[^/]*:/i.test(raw.slice(1).split("/")[0])) return fallback;
 
-  // Decode and re-check — catches %2F%2F, %5C, encoded protocols
+  // Decode and re-check - catches %2F%2F, %5C, encoded protocols
   try {
     // Fully decode (handles double-encoding)
     let decoded = raw;
@@ -43,7 +43,7 @@ export function getSafeReturnTo(
     if (decoded.includes("\\")) return fallback;
     if (/[^/]*:/i.test(decoded.slice(1).split("/")[0])) return fallback;
   } catch {
-    // Malformed encoding — reject
+    // Malformed encoding - reject
     return fallback;
   }
 

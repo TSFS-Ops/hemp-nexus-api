@@ -220,11 +220,11 @@ export function AdminTradeApprovalsPanel() {
                               {a.risk_band}
                             </Badge>
                           ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
+                            <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {a.approved_at ? new Date(a.approved_at).toLocaleDateString() : "—"}
+                          {a.approved_at ? new Date(a.approved_at).toLocaleDateString() : "-"}
                         </TableCell>
                         <TableCell className="text-xs">
                           {a.valid_until ? (
@@ -232,7 +232,7 @@ export function AdminTradeApprovalsPanel() {
                               {new Date(a.valid_until).toLocaleDateString()}
                               {isExpired && " (expired)"}
                             </span>
-                          ) : "—"}
+                          ) : "-"}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">

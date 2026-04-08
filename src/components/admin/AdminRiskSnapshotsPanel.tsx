@@ -84,7 +84,7 @@ export function AdminRiskSnapshotsPanel() {
                     <TableCell className="font-semibold">{s.risk_score.toFixed(1)}</TableCell>
                     <TableCell>{bandBadge(s.risk_band)}</TableCell>
                     <TableCell className="text-xs max-w-[150px] truncate">
-                      {typeof s.inputs === "object" && s.inputs ? Object.keys(s.inputs).length + " factors" : "—"}
+                      {typeof s.inputs === "object" && s.inputs ? Object.keys(s.inputs).length + " factors" : "-"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(s.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                   </TableRow>

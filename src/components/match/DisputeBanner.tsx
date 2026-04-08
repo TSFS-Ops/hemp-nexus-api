@@ -1,5 +1,5 @@
 /**
- * DisputeBanner — Prominent alert shown on the Details tab when
+ * DisputeBanner - Prominent alert shown on the Details tab when
  * an open or escalated dispute exists on the match.
  */
 

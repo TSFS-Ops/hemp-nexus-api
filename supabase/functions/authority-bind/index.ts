@@ -5,7 +5,7 @@ import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Authority-to-Bind & UBO Edge Function — Sprint 6
+ * Authority-to-Bind & UBO Edge Function - Sprint 6
  *
  * Manages:
  * - Authority records (ATB): who can legally bind a company entity
@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
       const body = await req.json();
       const { entity_id_a, entity_id_b } = GateCheckSchema.parse(body);
 
-      // Gate #3: UBO integrity — check 100% ownership for both entities
+      // Gate #3: UBO integrity - check 100% ownership for both entities
       const checkUbo = async (entityId: string) => {
         const { data: links } = await admin
           .from("ubo_links")
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
 
       const [uboA, uboB] = await Promise.all([checkUbo(entity_id_a), checkUbo(entity_id_b)]);
 
-      // Gate #4: ATB — check verified authority records exist
+      // Gate #4: ATB - check verified authority records exist
       const checkAtb = async (entityId: string) => {
         const { data: records } = await admin
           .from("authority_records")

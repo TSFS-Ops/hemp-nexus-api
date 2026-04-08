@@ -1,5 +1,5 @@
 /**
- * RequireAuth — Single source of truth for authenticated route guards.
+ * RequireAuth - Single source of truth for authenticated route guards.
  *
  * Redirects unauthenticated users to /auth?returnTo=<current-path>
  * instead of rendering sign-in UI at the protected URL.

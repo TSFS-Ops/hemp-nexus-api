@@ -1,5 +1,5 @@
 /**
- * Retention Enforcement — Unit Tests
+ * Retention Enforcement - Unit Tests
  *
  * Tests retention lifecycle state model, enforcement action mapping,
  * duplicate prevention, and resolution logic.

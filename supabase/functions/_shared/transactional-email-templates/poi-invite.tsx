@@ -40,7 +40,7 @@ const PoiInviteEmail = ({
         <Container style={container}>
           <Text style={brand}>IZENZO</Text>
           <Hr style={divider} />
-          <Heading style={h1}>Proof of Intent — Invitation</Heading>
+          <Heading style={h1}>Proof of Intent - Invitation</Heading>
           <Text style={text}>
             {senderName ? <><strong>{senderName}</strong> has</> : <>A counterparty has</>}{' '}
             drafted a Proof of Intent (POI) for your review regarding:
@@ -69,7 +69,7 @@ const PoiInviteEmail = ({
 export const template = {
   component: PoiInviteEmail,
   subject: (data: Record<string, any>) =>
-    `POI drafted for your review: ${data.commodity || 'Trade Intent'} — ${SITE_NAME}`,
+    `POI drafted for your review: ${data.commodity || 'Trade Intent'} - ${SITE_NAME}`,
   displayName: 'POI counterparty invite',
   previewData: {
     commodity: 'Non-GMO Soybeans',

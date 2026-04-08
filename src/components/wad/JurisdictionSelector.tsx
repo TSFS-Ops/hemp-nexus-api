@@ -1,9 +1,9 @@
 /**
- * JurisdictionSelector — Three-branch jurisdiction chooser for the WaD documentary path.
+ * JurisdictionSelector - Three-branch jurisdiction chooser for the WaD documentary path.
  *
- * Branch 1: Auto-selected (one clear signal) — shows confirmation
- * Branch 2: Multiple signals — user picks from surfaced set
- * Branch 3: Escalation — conflict or missing rules, blocked
+ * Branch 1: Auto-selected (one clear signal) - shows confirmation
+ * Branch 2: Multiple signals - user picks from surfaced set
+ * Branch 3: Escalation - conflict or missing rules, blocked
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -215,7 +215,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-amber-600" />
-            Jurisdiction — Pending Governance Review
+            Jurisdiction - Pending Governance Review
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -254,7 +254,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
     );
   }
 
-  // Branch 2: Multiple signals — user chooses
+  // Branch 2: Multiple signals - user chooses
   return (
     <Card>
       <CardHeader className="pb-3">

@@ -1,5 +1,5 @@
 /**
- * Sentry initialization — structured error tracking with context metadata.
+ * Sentry initialization - structured error tracking with context metadata.
  *
  * Captures:
  * - Unhandled exceptions with component stack traces
@@ -15,7 +15,7 @@ const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
 export function initSentry() {
   if (!SENTRY_DSN) {
-    console.info("[Sentry] No DSN configured — error tracking disabled");
+    console.info("[Sentry] No DSN configured - error tracking disabled");
     return;
   }
 

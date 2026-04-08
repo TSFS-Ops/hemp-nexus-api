@@ -24,7 +24,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
   let memberToken: string;
 
   // ── Setup: Create admin account ────────────────────────────────
-  it("2.1 — admin signs up and receives org_admin role", async () => {
+  it("2.1 - admin signs up and receives org_admin role", async () => {
     await supabase.auth.signUp({ email: ADMIN_EMAIL, password: PASSWORD });
     const { data } = await supabase.auth.signInWithPassword({
       email: ADMIN_EMAIL,
@@ -49,7 +49,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
   });
 
   // ── Step 1: Admin sends invite ─────────────────────────────────
-  it("2.2 — admin creates an invite for a new member", async () => {
+  it("2.2 - admin creates an invite for a new member", async () => {
     const res = await fetch(`${BASE_URL}/functions/v1/invites`, {
       method: "POST",
       headers: {
@@ -73,7 +73,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
   }, 15_000);
 
   // ── Step 2: Member signs up ────────────────────────────────────
-  it("2.3 — member signs up independently", async () => {
+  it("2.3 - member signs up independently", async () => {
     await supabase.auth.signUp({ email: MEMBER_EMAIL, password: PASSWORD });
     const { data } = await supabase.auth.signInWithPassword({
       email: MEMBER_EMAIL,
@@ -85,7 +85,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
   });
 
   // ── Step 3: Verify auto-assigned roles ─────────────────────────
-  it("2.4 — new member has auto-assigned org_member and org_admin roles", async () => {
+  it("2.4 - new member has auto-assigned org_member and org_admin roles", async () => {
     // Sign back in as admin to read
     await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: PASSWORD });
 
@@ -106,7 +106,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
   });
 
   // ── Step 4: Member cannot access admin routes ──────────────────
-  it("2.5 — member cannot call platform-admin-only edge functions", async () => {
+  it("2.5 - member cannot call platform-admin-only edge functions", async () => {
     const { data: memberSession } = await supabase.auth.signInWithPassword({
       email: MEMBER_EMAIL,
       password: PASSWORD,
@@ -118,14 +118,14 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
       headers: { Authorization: `Bearer ${memberToken}` },
     });
 
-    // Should be 403 or 401 — member is org_admin but NOT platform_admin
+    // Should be 403 or 401 - member is org_admin but NOT platform_admin
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThan(500);
     await res.text();
   });
 
   // ── Step 5: Audit log query succeeds ───────────────────────────
-  it("2.6 — admin_audit_logs query succeeds without error", async () => {
+  it("2.6 - admin_audit_logs query succeeds without error", async () => {
     await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: PASSWORD });
 
     const { data: logs, error } = await supabase

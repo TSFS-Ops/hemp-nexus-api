@@ -27,11 +27,11 @@ describe('Exploration layer is non-binding', () => {
       { id: '1', signalId: 's1', what: 'Cashews', howMuch: 100, unit: 'MT', score: 0.8, source: 'test' },
     ];
 
-    // canProceedToIntent is a read-only function — returns boolean, no side effects
+    // canProceedToIntent is a read-only function - returns boolean, no side effects
     const canProceed = canProceedToIntent(options);
     expect(canProceed).toBe(true);
     
-    // scoreOption is pure — no database writes
+    // scoreOption is pure - no database writes
     const score = scoreOption(options[0]);
     expect(score).toBeGreaterThan(0);
     expect(score).toBeLessThanOrEqual(1);
@@ -99,13 +99,13 @@ describe('No implicit POI creation from exploration', () => {
     expect(typeof scoreOption).toBe('function');
     expect(typeof isCollapseAllowed).toBe('function');
     
-    // Call with empty/null inputs — should never throw or create records
+    // Call with empty/null inputs - should never throw or create records
     expect(canProceedToIntent([])).toBe(false);
     expect(scoreOption({ id: '', signalId: '', what: '', howMuch: 0, unit: '', source: '' })).toBeLessThanOrEqual(1);
     expect(isCollapseAllowed(null)).toBe(false);
   });
 
-  it('COLLAPSED state is immutable — no field mutations possible', () => {
+  it('COLLAPSED state is immutable - no field mutations possible', () => {
     expect(IMMUTABLE_STATES).toContain('COLLAPSED');
     expect(IMMUTABLE_STATES).toContain('ANNULLED');
   });

@@ -1,5 +1,5 @@
 /**
- * useAsyncAction — Canonical hook for mutation operations.
+ * useAsyncAction - Canonical hook for mutation operations.
  *
  * Eliminates the repeated pattern of:
  *   const [loading, setLoading] = useState(false);

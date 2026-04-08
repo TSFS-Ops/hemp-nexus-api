@@ -168,11 +168,11 @@ export function AdminWadGovernancePanel() {
                         <TableCell>
                           <Badge variant={WAD_STATE_COLOURS[w.state] || "secondary"}>{w.state}</Badge>
                         </TableCell>
-                        <TableCell>{w.issued_at ? format(new Date(w.issued_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
+                        <TableCell>{w.issued_at ? format(new Date(w.issued_at), "dd MMM yyyy HH:mm") : "-"}</TableCell>
                         <TableCell className="max-w-[250px] truncate text-xs">
                           {w.denial_reasons
                             ? (w.denial_reasons as any[]).map((d: any) => d.gate).join(", ")
-                            : "—"}
+                            : "-"}
                         </TableCell>
                         <TableCell>{format(new Date(w.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                       </TableRow>
@@ -217,7 +217,7 @@ export function AdminWadGovernancePanel() {
                         </TableCell>
                         <TableCell>{d.token_burned ? "Yes" : "No"}</TableCell>
                         <TableCell>
-                          {d.validated_at ? format(new Date(d.validated_at), "dd MMM yyyy HH:mm") : "—"}
+                          {d.validated_at ? format(new Date(d.validated_at), "dd MMM yyyy HH:mm") : "-"}
                         </TableCell>
                         <TableCell>{format(new Date(d.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                       </TableRow>

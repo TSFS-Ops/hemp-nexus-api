@@ -1,5 +1,5 @@
 /**
- * Landing page search outcomes — dark terminal style.
+ * Landing page search outcomes - dark terminal style.
  * Unauthenticated users see a scanning animation then a prompt to sign in.
  */
 

@@ -91,7 +91,7 @@ export default function Dashboard() {
                 <div className="text-center py-12 space-y-3">
                   <p className="text-lg font-semibold text-foreground">Couldn't load your organisation</p>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    We had trouble loading your organisation profile. This may be a temporary issue — try refreshing. If the problem persists, contact{" "}
+                    We had trouble loading your organisation profile. This may be a temporary issue - try refreshing. If the problem persists, contact{" "}
                     <a href="mailto:support@izenzo.co.za" className="underline font-medium">support@izenzo.co.za</a>.
                   </p>
                   <Button variant="outline" size="sm" onClick={() => window.location.reload()}>

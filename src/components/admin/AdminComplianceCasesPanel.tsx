@@ -138,7 +138,7 @@ export function AdminComplianceCasesPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Compliance Cases</h2>
           <p className="text-muted-foreground mt-1">
-            Entity compliance case management — blocks WaD issuance when open
+            Entity compliance case management - blocks WaD issuance when open
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
@@ -192,8 +192,8 @@ export function AdminComplianceCasesPanel() {
                   <TableCell>
                     <Badge variant={STATUS_COLOURS[c.status] || "secondary"}>{c.status}</Badge>
                   </TableCell>
-                  <TableCell className="max-w-[250px] truncate">{c.decision_notes || "—"}</TableCell>
-                  <TableCell>{c.decided_at ? format(new Date(c.decided_at), "dd MMM yyyy HH:mm") : "—"}</TableCell>
+                  <TableCell className="max-w-[250px] truncate">{c.decision_notes || "-"}</TableCell>
+                  <TableCell>{c.decided_at ? format(new Date(c.decided_at), "dd MMM yyyy HH:mm") : "-"}</TableCell>
                   <TableCell>{format(new Date(c.created_at), "dd MMM yyyy HH:mm")}</TableCell>
                   <TableCell>
                     {(c.status === "open" || c.status === "escalated") && (
@@ -218,7 +218,7 @@ export function AdminComplianceCasesPanel() {
           <DialogHeader>
             <DialogTitle>Resolve Compliance Case</DialogTitle>
             <DialogDescription>
-              Case {actionCase?.id.slice(0, 8)}… — Entity {actionCase?.entity_id.slice(0, 8)}…
+              Case {actionCase?.id.slice(0, 8)}… - Entity {actionCase?.entity_id.slice(0, 8)}…
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -227,9 +227,9 @@ export function AdminComplianceCasesPanel() {
               <Select value={actionType} onValueChange={setActionType}>
                 <SelectTrigger><SelectValue placeholder="Select outcome…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cleared">Cleared — no compliance issue</SelectItem>
-                  <SelectItem value="blocked">Blocked — entity barred from trading</SelectItem>
-                  <SelectItem value="escalated">Escalated — requires senior review</SelectItem>
+                  <SelectItem value="cleared">Cleared - no compliance issue</SelectItem>
+                  <SelectItem value="blocked">Blocked - entity barred from trading</SelectItem>
+                  <SelectItem value="escalated">Escalated - requires senior review</SelectItem>
                 </SelectContent>
               </Select>
             </div>

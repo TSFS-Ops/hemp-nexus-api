@@ -43,7 +43,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
       return data;
     },
     enabled: !!session && !!userProfile?.org_id,
-    // Poll every 5 minutes instead of 30s — at 100x users the 30s poll
+    // Poll every 5 minutes instead of 30s - at 100x users the 30s poll
     // generates enormous read load. Balance updates on mutation via cache invalidation.
     refetchInterval: 5 * 60 * 1000,
   });

@@ -47,7 +47,7 @@ export default function Pricing() {
                   "Full API access",
                   "Webhook integrations",
                   "Email support",
-                  "All prices in ZAR — no hidden fees",
+                  "All prices in ZAR - no hidden fees",
                 ].map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />

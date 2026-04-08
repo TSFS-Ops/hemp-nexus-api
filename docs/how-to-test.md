@@ -73,11 +73,11 @@ The dashboard includes automated smoke tests that verify core functionality.
 **Location**: Dashboard → Testing → Smoke Tests
 
 **What It Tests**:
-1. ✅ Create Match — Creates a test match
-2. ✅ Verify Match Hash — Confirms SHA-256 hash calculation
-3. ✅ Verify Audit Log — Checks audit trail creation
-4. ✅ Confirm Intent — Tests settlement (interest only)
-5. ✅ Verify Intent Audit — Confirms settlement audit log
+1. ✅ Create Match - Creates a test match
+2. ✅ Verify Match Hash - Confirms SHA-256 hash calculation
+3. ✅ Verify Audit Log - Checks audit trail creation
+4. ✅ Confirm Intent - Tests settlement (interest only)
+5. ✅ Verify Intent Audit - Confirms settlement audit log
 
 **How to Run**:
 1. Navigate to the Testing tab
@@ -90,7 +90,7 @@ The dashboard includes automated smoke tests that verify core functionality.
 | Status | Meaning |
 |--------|---------|
 | ✅ PASSED | Test succeeded |
-| ❌ FAILED | Test failed — see error message |
+| ❌ FAILED | Test failed - see error message |
 | ⏳ RUNNING | Test in progress |
 
 ### API Playground

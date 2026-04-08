@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Compliance Cases Edge Function — V3 Sprint 4
+ * Compliance Cases Edge Function - V3 Sprint 4
  *
  * POST:  Open a compliance case against an entity.
  * GET:   List compliance cases for org.

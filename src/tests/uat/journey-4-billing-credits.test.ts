@@ -2,12 +2,12 @@
  * UAT Journey 4: Payment → Credits Appear → Credits Deducted
  *
  * Verifies token ledger integrity: credits are atomically added and burned.
- * Does NOT trigger real Paystack — tests the RPC mechanics directly.
+ * Does NOT trigger real Paystack - tests the RPC mechanics directly.
  *
  * Note: Idempotency is enforced at the edge function layer (token-purchase)
  * via INSERT into token_ledger with a unique index on request_id.
  * The atomic_token_credit RPC is a low-level balance primitive.
- * The token_ledger table has RLS — only service_role can INSERT.
+ * The token_ledger table has RLS - only service_role can INSERT.
  * We verify the unique index exists instead of testing INSERT directly.
  */
 
@@ -22,7 +22,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   let orgId: string;
 
   // ── Setup ──────────────────────────────────────────────────────
-  it("4.1 — setup: create account", async () => {
+  it("4.1 - setup: create account", async () => {
     await supabase.auth.signUp({ email: TEST_EMAIL, password: PASSWORD });
     const { data } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
@@ -40,7 +40,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   });
 
   // ── Step 1: Check initial balance ──────────────────────────────
-  it("4.2 — initial token balance is default (1000 from org trigger)", async () => {
+  it("4.2 - initial token balance is default (1000 from org trigger)", async () => {
     const { data, error } = await supabase
       .from("token_balances")
       .select("balance")
@@ -55,7 +55,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   });
 
   // ── Step 2: Credit tokens (atomic_token_credit RPC) ────────────
-  it("4.3 — atomic_token_credit adds tokens to the balance", async () => {
+  it("4.3 - atomic_token_credit adds tokens to the balance", async () => {
     const { data: before } = await supabase
       .from("token_balances")
       .select("balance")
@@ -76,7 +76,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   });
 
   // ── Step 3: Verify idempotency index exists ────────────────────
-  it("4.4 — token_ledger has unique index on request_id for idempotency", async () => {
+  it("4.4 - token_ledger has unique index on request_id for idempotency", async () => {
     // We verify the index exists via a read on token_ledger (user can SELECT)
     // The actual idempotency enforcement happens at the edge function layer
     const { data: ledger, error } = await supabase
@@ -94,7 +94,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   });
 
   // ── Step 4: Burn tokens (atomic_token_burn RPC) ────────────────
-  it("4.5 — atomic_token_burn deducts tokens correctly", async () => {
+  it("4.5 - atomic_token_burn deducts tokens correctly", async () => {
     const { data: before } = await supabase
       .from("token_balances")
       .select("balance")
@@ -115,7 +115,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   });
 
   // ── Step 5: Overdraft prevention ───────────────────────────────
-  it("4.6 — atomic_token_burn rejects overdraft", async () => {
+  it("4.6 - atomic_token_burn rejects overdraft", async () => {
     const { data, error } = await supabase.rpc("atomic_token_burn", {
       p_org_id: orgId,
       p_amount: 999999,

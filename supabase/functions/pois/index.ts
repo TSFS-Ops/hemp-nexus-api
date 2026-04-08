@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * POI (Proof-of-Intent) Edge Function — V3 Sprint 2
+ * POI (Proof-of-Intent) Edge Function - V3 Sprint 2
  *
  * POST: Issue a new POI. Requires active mutual interest and ≥50.1% probability.
  * GET:  List POIs or get by ID.

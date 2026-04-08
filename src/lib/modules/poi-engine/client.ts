@@ -1,5 +1,5 @@
 /**
- * POI Engine Client — Frontend API for state transitions and history.
+ * POI Engine Client - Frontend API for state transitions and history.
  */
 
 import { supabase } from '@/integrations/supabase/client';

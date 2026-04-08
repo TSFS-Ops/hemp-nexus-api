@@ -46,7 +46,7 @@ const BATCH_SIZE = 200;
 // Conservative: compliance-critical records default to 'archive', not deletion
 const DEFAULT_ACTIONS: Record<string, string> = {
   audit_logs: "retain",           // Never delete audit records, mark as retained
-  collapse_ledger: "retain",      // Immutable ledger — retain
+  collapse_ledger: "retain",      // Immutable ledger - retain
   match_events: "archive",        // Archive event history
   matches: "archive",             // Archive match records
   screening_results: "archive",   // Archive screening history
@@ -165,7 +165,7 @@ Deno.serve(async (req: Request) => {
 
         if (dryRun) continue;
 
-        // Check if already actioned — prevent duplicate enforcement
+        // Check if already actioned - prevent duplicate enforcement
         const { data: existing } = await admin
           .from("retention_flags")
           .select("id, retention_status, enforcement_applied_at")
@@ -174,7 +174,7 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (existing) {
-          // Already enforced or resolved — don't re-process
+          // Already enforced or resolved - don't re-process
           if (["archived", "quarantined", "retained", "resolved", "deleted", "pending_deletion"].includes(existing.retention_status)) {
             result.skipped_already_actioned++;
             continue;

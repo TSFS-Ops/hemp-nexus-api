@@ -76,7 +76,7 @@ async function executeOsintCrawl(
   const results: Record<string, unknown> = {};
 
   if (!searchApiKey) {
-    // No API key configured — return zeros instead of fake data
+    // No API key configured - return zeros instead of fake data
     newsCount = 0;
     socialCount = 0;
     webCount = 0;
@@ -256,7 +256,7 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ crawl_id: crawlRun.id, entity_id: parsed.entity_id })),
       });
 
-      // Execute crawl (synchronous for now — can be async in production)
+      // Execute crawl (synchronous for now - can be async in production)
       try {
         const crawlResult = await executeOsintCrawl(
           parsed.entity_name,

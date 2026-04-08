@@ -1,5 +1,5 @@
 /**
- * Completion Engine Tests — Deterministic next-action resolver
+ * Completion Engine Tests - Deterministic next-action resolver
  */
 
 import { describe, it, expect } from "vitest";
@@ -199,7 +199,7 @@ describe("resolveCompletion", () => {
     }));
     const wadCreate = result.stages[1].actions.find(a => a.type === "create_wad");
     expect(wadCreate!.requiredRole).toBe("org_admin");
-    // Action is "allowed" by state but role check is separate — UI blocks it
+    // Action is "allowed" by state but role check is separate - UI blocks it
   });
 
   it("overall progress reflects stage completion", () => {

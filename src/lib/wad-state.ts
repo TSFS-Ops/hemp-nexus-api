@@ -1,5 +1,5 @@
 /**
- * WaD State Machine — Single Source of Truth
+ * WaD State Machine - Single Source of Truth
  *
  * Defines all WaD (Without-a-Doubt) statuses, valid transitions, and action guards.
  * Components MUST use these guards instead of inline `wad.status === "sealed"` checks.

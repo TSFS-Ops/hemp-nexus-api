@@ -1,4 +1,4 @@
-# Caching Strategy — Compliance Matching Platform
+# Caching Strategy - Compliance Matching Platform
 
 ## Architecture
 
@@ -35,6 +35,6 @@ Applied via `_shared/cache.ts` utility:
 
 ## What Breaks at 10,000 Concurrent Users
 
-1. **Database connection pool** — Supabase has a connection limit. The `count: "exact"` queries are the most expensive. Mitigation: `head: true` for count-only queries.
-2. **Edge function cold starts** — First request per isolate is slower. Mitigation: `/healthz` endpoint for warm-up.
-3. **Token balance hot row** — `atomic_token_burn` uses `UPDATE...WHERE` which serializes under high write contention for the same org. Acceptable: each org's balance is independent.
+1. **Database connection pool** - Supabase has a connection limit. The `count: "exact"` queries are the most expensive. Mitigation: `head: true` for count-only queries.
+2. **Edge function cold starts** - First request per isolate is slower. Mitigation: `/healthz` endpoint for warm-up.
+3. **Token balance hot row** - `atomic_token_burn` uses `UPDATE...WHERE` which serializes under high write contention for the same org. Acceptable: each org's balance is independent.

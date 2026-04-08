@@ -1,5 +1,5 @@
 /**
- * PageContainer — Single source of truth for page-level max-width and padding.
+ * PageContainer - Single source of truth for page-level max-width and padding.
  *
  * Replaces the scattered patterns of:
  *   <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">

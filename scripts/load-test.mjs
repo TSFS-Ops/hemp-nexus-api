@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Load Test Script — Compliance Matching Platform
+ * Load Test Script - Compliance Matching Platform
  *
  * Simulates concurrent users hitting critical endpoints.
  * Usage:

@@ -136,7 +136,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   if (state.uiStatus === "not_started") {
     return (
       <div className="space-y-4">
-        {/* Jurisdiction selector — must be resolved before WaD creation */}
+        {/* Jurisdiction selector - must be resolved before WaD creation */}
         {userOrgId && (
           <JurisdictionSelector
             matchId={match.id}
@@ -184,7 +184,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
                 <p className="text-sm font-medium text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  WaD creation blocked — {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
+                  WaD creation blocked - {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
                 </p>
                 <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
                   {gateFailures.map((f, i) => (

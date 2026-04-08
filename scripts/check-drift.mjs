@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Drift Guard — detects layout/footer/back-button drift in page files.
+ * Drift Guard - detects layout/footer/back-button drift in page files.
  *
  * Run:  node scripts/check-drift.mjs
  * Or:   npm run check:drift

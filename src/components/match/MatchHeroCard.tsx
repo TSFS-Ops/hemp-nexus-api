@@ -1,5 +1,5 @@
 /**
- * MatchHeroCard — Top-level match summary card with buyer/seller/price info.
+ * MatchHeroCard - Top-level match summary card with buyer/seller/price info.
  *
  * Single Responsibility: display-only presentation of core match data.
  * Handles draft matches (null quantity/price) gracefully.
@@ -78,7 +78,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
               )}
               {draft && (
                 <Badge variant="outline" className="text-xs border-destructive/50 text-destructive">
-                  Draft — no commercial terms
+                  Draft - no commercial terms
                 </Badge>
               )}
               <span className="text-sm text-muted-foreground font-mono">
@@ -104,7 +104,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
                 <dd className="font-medium">
                   {match.buyer_name == null ? (
                     <span className="text-muted-foreground italic">
-                      {isUnilateral ? "Open — no buyer specified" : "—"}
+                      {isUnilateral ? "Open - no buyer specified" : "-"}
                     </span>
                   ) : isRevealed ? match.buyer_name : (
                     <span className="text-muted-foreground italic">Hidden until counterparty reveal</span>
@@ -128,7 +128,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
                 <dd className="font-medium">
                   {match.seller_name == null ? (
                     <span className="text-muted-foreground italic">
-                      {isUnilateral ? "Open — no seller specified" : "—"}
+                      {isUnilateral ? "Open - no seller specified" : "-"}
                     </span>
                   ) : isRevealed ? match.seller_name : (
                     <span className="text-muted-foreground italic">Hidden until counterparty reveal</span>
@@ -164,7 +164,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             <div>
               <h3 className="font-semibold mb-4">Quantity</h3>
               <p className="text-2xl font-bold">
-                {match.quantity_amount ?? "—"} <span className="text-base font-normal text-muted-foreground">{match.quantity_unit ?? ""}</span>
+                {match.quantity_amount ?? "-"} <span className="text-base font-normal text-muted-foreground">{match.quantity_unit ?? ""}</span>
               </p>
             </div>
             <div>

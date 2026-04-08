@@ -1,5 +1,5 @@
 /**
- * ConfirmIntentCard — CTA card for declaring intent on a match.
+ * ConfirmIntentCard - CTA card for declaring intent on a match.
  *
  * Includes a confirmation dialog showing credit cost and current balance
  * before the irreversible action fires. Refetches balance when dialog opens.
@@ -122,9 +122,9 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 onClick={handleConfirmClick}
                 loading={loading}
                 size="lg"
-                loadingText="Processing — do not close this page…"
+                loadingText="Processing - do not close this page…"
               >
-                Signal Intent — {CREDITS_REQUIRED} credits
+                Signal Intent - {CREDITS_REQUIRED} credits
               </LoadingButton>
             </div>
           </div>
@@ -164,10 +164,10 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel — no credits deducted</AlertDialogCancel>
+            <AlertDialogCancel disabled={loading}>Cancel - no credits deducted</AlertDialogCancel>
             <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
               <Coins className="h-4 w-4 mr-2" />
-              Confirm — deduct {CREDITS_REQUIRED} credits
+              Confirm - deduct {CREDITS_REQUIRED} credits
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

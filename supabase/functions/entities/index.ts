@@ -5,7 +5,7 @@ import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Entities Edge Function — V3 Sprint 5
+ * Entities Edge Function - V3 Sprint 5
  *
  * POST:   Create entity (INDIVIDUAL or COMPANY)
  * GET:    List entities or get by ID (org-scoped or admin cross-org)

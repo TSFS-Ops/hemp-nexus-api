@@ -1,5 +1,5 @@
 /**
- * Discovery Intelligence (INTEL) Layer — Unit Tests
+ * Discovery Intelligence (INTEL) Layer - Unit Tests
  * 
  * Tests the DISC-003 Public Presence Score formula,
  * DISC-006 Eligibility Scoring logic, and gate enforcement rules.
@@ -123,7 +123,7 @@ const FULL_PASS_SIGNALS: EligibilitySignals = {
 };
 
 describe("DISC-006: Eligibility Scoring", () => {
-  it("PASS — fully qualified entity scores ≥ 65", () => {
+  it("PASS - fully qualified entity scores ≥ 65", () => {
     const result = computeEligibility(FULL_PASS_SIGNALS);
     // 20+5+20+10+8+7+5+5 = 80
     expect(result.score).toBe(80);
@@ -132,37 +132,37 @@ describe("DISC-006: Eligibility Scoring", () => {
     expect(result.review_reasons).toHaveLength(0);
   });
 
-  it("FAIL — confirmed sanctions match is a hard fail regardless of score", () => {
+  it("FAIL - confirmed sanctions match is a hard fail regardless of score", () => {
     const result = computeEligibility({ ...FULL_PASS_SIGNALS, sanctions_status: "CONFIRMED_MATCH" });
     expect(result.status).toBe("FAIL");
     expect(result.hard_fail_reasons).toContain("SANCTIONS_STATUS == CONFIRMED_MATCH");
   });
 
-  it("FAIL — id_verified=false is a hard fail", () => {
+  it("FAIL - id_verified=false is a hard fail", () => {
     const result = computeEligibility({ ...FULL_PASS_SIGNALS, id_verified: false });
     expect(result.status).toBe("FAIL");
     expect(result.hard_fail_reasons).toContain("ID_VERIFIED == FALSE");
   });
 
-  it("FAIL — company_exists=false is a hard fail", () => {
+  it("FAIL - company_exists=false is a hard fail", () => {
     const result = computeEligibility({ ...FULL_PASS_SIGNALS, company_exists: false });
     expect(result.status).toBe("FAIL");
     expect(result.hard_fail_reasons).toContain("COMPANY_EXISTS == FALSE");
   });
 
-  it("REVIEW — potential sanctions match triggers review", () => {
+  it("REVIEW - potential sanctions match triggers review", () => {
     const result = computeEligibility({ ...FULL_PASS_SIGNALS, sanctions_status: "POTENTIAL_MATCH" });
     expect(result.status).toBe("REVIEW");
     expect(result.review_reasons).toContain("SANCTIONS_STATUS == POTENTIAL_MATCH");
   });
 
-  it("REVIEW — low entity confidence triggers review", () => {
+  it("REVIEW - low entity confidence triggers review", () => {
     const result = computeEligibility({ ...FULL_PASS_SIGNALS, entity_match_confidence: 0.55 });
     expect(result.status).toBe("REVIEW");
     expect(result.review_reasons[0]).toContain("ENTITY_MATCH_CONFIDENCE < 0.70");
   });
 
-  it("REVIEW — score between 45-64 triggers review", () => {
+  it("REVIEW - score between 45-64 triggers review", () => {
     const result = computeEligibility({
       ...FULL_PASS_SIGNALS,
       contact_verified: false,
@@ -177,7 +177,7 @@ describe("DISC-006: Eligibility Scoring", () => {
     expect(result.status).toBe("FAIL");
   });
 
-  it("REVIEW — score exactly 45 is REVIEW", () => {
+  it("REVIEW - score exactly 45 is REVIEW", () => {
     const result = computeEligibility({
       ...FULL_PASS_SIGNALS,
       contact_verified: false,
@@ -192,7 +192,7 @@ describe("DISC-006: Eligibility Scoring", () => {
     expect(result.status).toBe("REVIEW");
   });
 
-  it("PASS — score exactly 65 is PASS", () => {
+  it("PASS - score exactly 65 is PASS", () => {
     const result = computeEligibility({
       ...FULL_PASS_SIGNALS,
       operating_footprint_score: 5,

@@ -1,5 +1,5 @@
 /**
- * KYCStatusCard — Shows the current organisation's KYC completion status.
+ * KYCStatusCard - Shows the current organisation's KYC completion status.
  * Fetches from kyc_status table scoped to the user's org.
  */
 
@@ -85,7 +85,7 @@ export function KYCStatusCard() {
     );
   }
 
-  if (isError) return null; // Fail silently — non-critical card
+  if (isError) return null; // Fail silently - non-critical card
 
   const status = kycStatus?.status || "not_started";
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.not_started;

@@ -93,8 +93,8 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
           options = result.options || [];
           console.log(`[${signalId}] Received ${options.length} options from ${dataSource.name}`);
         } else {
-          // Non-HTTP sources without an endpoint cannot produce real results — skip
-          console.log(`[${signalId}] Skipping non-HTTP data source "${dataSource.name}" — no endpoint configured`);
+          // Non-HTTP sources without an endpoint cannot produce real results - skip
+          console.log(`[${signalId}] Skipping non-HTTP data source "${dataSource.name}" - no endpoint configured`);
           continue;
         }
 
@@ -178,7 +178,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
     });
 
     if (!searchResponse.ok) {
-      console.error(`[${signalId}] Web search failed: ${searchResponse.status} — returning empty results (no synthetic data)`);
+      console.error(`[${signalId}] Web search failed: ${searchResponse.status} - returning empty results (no synthetic data)`);
       return;
     }
 
@@ -261,7 +261,7 @@ async function executeWebSearch(signalId: string, signal: any, supabase: any) {
 
       console.log(`[${signalId}] Inserted ${insertedCount}/${searchData.results.length} web-discovered options`);
     } else {
-      console.log(`[${signalId}] Web search returned no results — no synthetic fallback`);
+      console.log(`[${signalId}] Web search returned no results - no synthetic fallback`);
     }
   } catch (error) {
     console.error(`[${signalId}] Web search execution failed:`, error);

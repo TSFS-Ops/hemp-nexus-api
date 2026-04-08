@@ -49,7 +49,7 @@ Deno.test("intel-crawl: POST with invalid body returns 400", async () => {
   });
   const status = res.status;
   await res.text();
-  // Should fail validation (missing entity_id) — 400 or auth error
+  // Should fail validation (missing entity_id) - 400 or auth error
   assertEquals(status >= 400, true);
 });
 

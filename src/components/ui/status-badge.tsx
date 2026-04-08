@@ -1,5 +1,5 @@
 /**
- * StatusBadge — Single source of truth for status→visual mapping.
+ * StatusBadge - Single source of truth for status→visual mapping.
  *
  * Replaces 8+ ad-hoc statusBadge/statusColour functions scattered
  * across admin panels and match views.

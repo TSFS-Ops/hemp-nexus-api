@@ -1,5 +1,5 @@
 /**
- * POI Engine Module — Public API
+ * POI Engine Module - Public API
  * 
  * Layer 3: Proof-of-Intent lifecycle management.
  * Provides state machine validation, transition requests, and event queries.

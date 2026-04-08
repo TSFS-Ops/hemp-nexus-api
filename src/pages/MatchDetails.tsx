@@ -1,5 +1,5 @@
 /**
- * MatchDetails Page — Thin orchestrator with breadcrumb back-navigation.
+ * MatchDetails Page - Thin orchestrator with breadcrumb back-navigation.
  */
 
 import { useParams, Link } from "react-router-dom";

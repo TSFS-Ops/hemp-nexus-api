@@ -4,7 +4,7 @@ import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 
 /**
- * Trade Status endpoint — returns only approval outcome, not sensitive KYC data.
+ * Trade Status endpoint - returns only approval outcome, not sensitive KYC data.
  * Supports both JWT and API key authentication.
  */
 Deno.serve(async (req: Request) => {

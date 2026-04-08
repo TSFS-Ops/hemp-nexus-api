@@ -1,5 +1,5 @@
 /**
- * Evidence Pack Generator — Layer 5
+ * Evidence Pack Generator - Layer 5
  * 
  * Responsible for assembling complete evidence bundles from
  * POI events, documents, WaD seals, and audit logs.

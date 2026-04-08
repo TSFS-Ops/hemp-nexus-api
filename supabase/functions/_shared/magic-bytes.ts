@@ -17,11 +17,11 @@ const SIGNATURES: MagicSignature[] = [
   { mime: "image/png", bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] },
   // JPEG
   { mime: "image/jpeg", bytes: [0xFF, 0xD8, 0xFF] },
-  // GIF (blocked — included for detection)
+  // GIF (blocked - included for detection)
   { mime: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] },
   // ZIP (also DOCX, XLSX, PPTX)
   { mime: "application/zip", bytes: [0x50, 0x4B, 0x03, 0x04] },
-  // DOCX/XLSX/PPTX are ZIP-based — detected as zip then refined
+  // DOCX/XLSX/PPTX are ZIP-based - detected as zip then refined
   // TIFF (little-endian)
   { mime: "image/tiff", bytes: [0x49, 0x49, 0x2A, 0x00] },
   // TIFF (big-endian)
@@ -30,7 +30,7 @@ const SIGNATURES: MagicSignature[] = [
   { mime: "image/bmp", bytes: [0x42, 0x4D] },
   // WebP
   { mime: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 },
-  // XML (for SVG detection — <?xml)
+  // XML (for SVG detection - <?xml)
   { mime: "text/xml", bytes: [0x3C, 0x3F, 0x78, 0x6D, 0x6C] },
 ];
 
@@ -70,7 +70,7 @@ export interface MagicByteResult {
 
 /**
  * Detect MIME type from raw file bytes (first 16 bytes minimum).
- * Returns null if no signature matches — falls back to client MIME.
+ * Returns null if no signature matches - falls back to client MIME.
  */
 export function detectMimeFromBytes(headerBytes: Uint8Array): string | null {
   for (const sig of SIGNATURES) {
@@ -88,7 +88,7 @@ export function detectMimeFromBytes(headerBytes: Uint8Array): string | null {
   }
 
   // Check for ZIP-based Office formats by looking deeper
-  // (ZIP signature already detected — refinement happens via client MIME)
+  // (ZIP signature already detected - refinement happens via client MIME)
   return null;
 }
 
@@ -137,7 +137,7 @@ export function validateMagicBytes(
   // Check if detected MIME matches client MIME (or is compatible)
   let clientMimeMatch = true;
   if (detectedMime) {
-    // ZIP-based formats: client says docx/xlsx but magic says zip — that's fine
+    // ZIP-based formats: client says docx/xlsx but magic says zip - that's fine
     if (detectedMime === "application/zip" && clientMime.includes("openxmlformats")) {
       clientMimeMatch = true;
     } else if (detectedMime !== clientMime) {

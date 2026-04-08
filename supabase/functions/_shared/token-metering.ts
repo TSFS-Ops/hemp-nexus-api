@@ -23,7 +23,7 @@ const TOKENS_PER_CALL = 1;
 // ACTION-SPECIFIC TOKEN COSTS (from Price List)
 // ==============================================
 export const ACTION_TOKEN_COSTS = {
-  // Transaction lifecycle — flat 1 credit per action until fully live
+  // Transaction lifecycle - flat 1 credit per action until fully live
   'transaction_shell': 1,
   'manual_description': 1,
   'document_upload': 0,
@@ -173,7 +173,7 @@ export async function burnTokens(
   let previousBalance = 0;
   
   if (tokensToBurn > 0) {
-    // Use atomic DB function — single UPDATE ... WHERE balance >= amount
+    // Use atomic DB function - single UPDATE ... WHERE balance >= amount
     const { data: burnResult, error: burnError } = await supabase.rpc("atomic_token_burn", {
       p_org_id: orgId,
       p_amount: tokensToBurn,
@@ -201,7 +201,7 @@ export async function burnTokens(
     // Check if we crossed any low balance thresholds
     await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
   } else {
-    // Blocked outcome — just get the current balance for the ledger entry
+    // Blocked outcome - just get the current balance for the ledger entry
     const { data: currentBalance } = await supabase
       .from("token_balances")
       .select("balance")
@@ -231,7 +231,7 @@ export async function burnTokens(
   
   if (ledgerError) {
     console.error("Error recording token ledger entry:", ledgerError);
-    // If we burned tokens but ledger write failed, this is a critical integrity issue — log it
+    // If we burned tokens but ledger write failed, this is a critical integrity issue - log it
     if (tokensToBurn > 0) {
       console.error(`CRITICAL: Token burn of ${tokensToBurn} for org ${orgId} succeeded but ledger write failed. Request: ${requestId}`);
     }
@@ -451,7 +451,7 @@ export async function burnTokensForAction(
     return { success: true, newBalance: bal?.balance || 0, ledgerEntryId: "" };
   }
 
-  // Use atomic DB function — single UPDATE ... WHERE balance >= amount
+  // Use atomic DB function - single UPDATE ... WHERE balance >= amount
   const { data: burnResult, error: burnError } = await supabase.rpc("atomic_token_burn", {
     p_org_id: orgId,
     p_amount: tokensToBurn,

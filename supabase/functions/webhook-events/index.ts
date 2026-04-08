@@ -5,13 +5,13 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 /**
- * §21 — Webhook Events Polling Fallback
+ * §21 - Webhook Events Polling Fallback
  * 
  * GET /webhook-events
- *   ?since=<ISO timestamp>  — events after this timestamp (default: 24h ago)
- *   ?event_type=<type>      — filter by event type
- *   ?limit=<n>              — max results (default 100, max 500)
- *   ?cursor=<id>            — pagination cursor (last event ID from previous page)
+ *   ?since=<ISO timestamp>  - events after this timestamp (default: 24h ago)
+ *   ?event_type=<type>      - filter by event type
+ *   ?limit=<n>              - max results (default 100, max 500)
+ *   ?cursor=<id>            - pagination cursor (last event ID from previous page)
  *
  * Returns webhook events for the authenticated org, ordered by created_at ASC.
  * This serves as a fallback for consumers whose webhook delivery fails.

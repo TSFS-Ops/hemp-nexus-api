@@ -1,5 +1,5 @@
 /**
- * useSupabaseList — Replaces the repeated pattern of:
+ * useSupabaseList - Replaces the repeated pattern of:
  *   const [items, setItems] = useState<T[]>([]);
  *   const [loading, setLoading] = useState(true);
  *   useEffect(() => { fetchData(); }, []);

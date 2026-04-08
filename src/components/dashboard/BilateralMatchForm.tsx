@@ -1,5 +1,5 @@
 /**
- * BilateralMatchForm — Create a match with a known/offline counterparty.
+ * BilateralMatchForm - Create a match with a known/offline counterparty.
  * 
  * This allows users to register a POI when they already have a counterparty
  * identified outside the platform (e.g., through direct negotiation).
@@ -146,7 +146,7 @@ export function BilateralMatchForm() {
               counterpartyContact: form.counterpartyContact.trim() || null,
               location: form.location.trim() || null,
               draftReason: isDraft
-                ? "Created as bilateral match — commercial terms to be confirmed."
+                ? "Created as bilateral match - commercial terms to be confirmed."
                 : undefined,
             },
           }),
@@ -364,7 +364,7 @@ export function BilateralMatchForm() {
                   <strong>{form.commodity}</strong>.
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li>No credits are deducted at creation — only at lifecycle transitions.</li>
+                  <li>No credits are deducted at creation - only at lifecycle transitions.</li>
                   <li>The counterparty must onboard to complete the bilateral POI.</li>
                   <li>You can add documents and terms before confirming intent.</li>
                 </ul>

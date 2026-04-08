@@ -1,5 +1,5 @@
 /**
- * notification-dispatch — Backend consumer for admin notification settings.
+ * notification-dispatch - Backend consumer for admin notification settings.
  * Called by lifecycle events (breach detection, compliance cases, etc.)
  * to dispatch email/Slack alerts based on saved admin_settings.
  *

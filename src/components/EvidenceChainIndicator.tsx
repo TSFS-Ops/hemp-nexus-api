@@ -23,13 +23,13 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
   const { data: status, isLoading, isError, error } = useQuery({
     queryKey: ["evidence-chain", matchId],
     queryFn: async () => {
-      // 1. Input validation — reject non-UUID before any network call
+      // 1. Input validation - reject non-UUID before any network call
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(matchId)) {
         return { eventCount: 0, chainValid: false, hasIntentConfirmed: false, errorType: null };
       }
 
-      // 2. Auth check — surface expired/missing session explicitly
+      // 2. Auth check - surface expired/missing session explicitly
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new ChainVerificationError("auth_expired", "Please sign in to verify evidence chain");
@@ -55,7 +55,7 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       } catch (fetchError) {
         clearTimeout(timeoutId);
         if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
-          throw new ChainVerificationError("timeout", "Verification timed out — check your connection");
+          throw new ChainVerificationError("timeout", "Verification timed out - check your connection");
         }
         throw new ChainVerificationError("network", "Unable to reach verification service");
       } finally {
@@ -65,7 +65,7 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
       // 4. HTTP error handling with specific messages per status
       if (!response.ok) {
         if (response.status === 401) {
-          throw new ChainVerificationError("auth_expired", "Session expired — please sign in again");
+          throw new ChainVerificationError("auth_expired", "Session expired - please sign in again");
         }
         if (response.status === 402) {
           throw new ChainVerificationError("insufficient_tokens", "Insufficient credits for verification");
@@ -74,12 +74,12 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
           return { eventCount: 0, chainValid: true, hasIntentConfirmed: false, errorType: null };
         }
         if (response.status === 429) {
-          throw new ChainVerificationError("rate_limited", "Too many requests — try again shortly");
+          throw new ChainVerificationError("rate_limited", "Too many requests - try again shortly");
         }
         throw new ChainVerificationError("server", `Verification failed (${response.status})`);
       }
 
-      // 5. Safe JSON parsing — protects against truncated/corrupted responses
+      // 5. Safe JSON parsing - protects against truncated/corrupted responses
       let pack: Record<string, unknown>;
       try {
         pack = await response.json();
@@ -105,7 +105,7 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     },
     staleTime: 5 * 60 * 1000,
     retry: (failureCount, err) => {
-      // Don't retry auth or token errors — they won't self-resolve
+      // Don't retry auth or token errors - they won't self-resolve
       if (err instanceof ChainVerificationError) {
         if (["auth_expired", "insufficient_tokens", "rate_limited"].includes(err.type)) {
           return false;
@@ -127,7 +127,7 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
     );
   }
 
-  // ── Error state — previously missing, caused silent failures ──
+  // ── Error state - previously missing, caused silent failures ──
   if (isError) {
     const errType = error instanceof ChainVerificationError ? error.type : "unknown";
     const errMsg = error instanceof ChainVerificationError ? error.message : "Verification unavailable";

@@ -1,5 +1,5 @@
 /**
- * useUnsavedChanges — warns users before they leave a page with unsaved form data.
+ * useUnsavedChanges - warns users before they leave a page with unsaved form data.
  *
  * Handles:
  * - Browser tab close / refresh (beforeunload)

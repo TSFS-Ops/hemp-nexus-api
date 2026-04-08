@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * PoD (Proof-of-Delivery) Edge Function — V3 Sprint 4
+ * PoD (Proof-of-Delivery) Edge Function - V3 Sprint 4
  *
  * POST /pods:           Create PoD from an ISSUED WaD, with milestone definitions.
  * GET  /pods:           List PoDs for org.
@@ -222,13 +222,13 @@ Deno.serve(async (req: Request) => {
         if (dep && dep.status !== "completed") {
           throw new ApiException(
             "PRECONDITION_FAILED",
-            `Cannot complete "${milestone.name}" — prerequisite "${dep.name}" must be completed first`,
+            `Cannot complete "${milestone.name}" - prerequisite "${dep.name}" must be completed first`,
             412
           );
         }
       }
 
-      // Atomic update with status guard — prevents double-completion under concurrency.
+      // Atomic update with status guard - prevents double-completion under concurrency.
       // If another request completes this milestone between our SELECT and UPDATE,
       // the WHERE clause prevents a second mutation.
       const { data: updated, error } = await admin

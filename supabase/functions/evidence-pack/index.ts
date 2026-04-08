@@ -8,7 +8,7 @@ import { enforceTokenMetering } from "../_shared/token-metering.ts";
 
 /**
  * Deterministic canonical JSON serialisation.
- * Keys sorted recursively, no whitespace — ensures identical hash on regeneration.
+ * Keys sorted recursively, no whitespace - ensures identical hash on regeneration.
  */
 function canonicalStringify(obj: unknown): string {
   if (obj === null || obj === undefined) return "null";
@@ -167,7 +167,7 @@ th{background:#f5f5f5}
 <tr><th>Status</th><td>${m.status}</td></tr>
 <tr><th>POI State</th><td>${m.poi_state}</td></tr>
 <tr><th>Created</th><td>${m.created_at}</td></tr>
-<tr><th>Settled</th><td>${m.settled_at || "—"}</td></tr>
+<tr><th>Settled</th><td>${m.settled_at || "-"}</td></tr>
 <tr><th>Match Hash</th><td class="hash">${m.hash}</td></tr>
 </table>
 
@@ -178,12 +178,12 @@ ${
 <tr><th>Collapse ID</th><td>${canonical.collapse.id}</td></tr>
 <tr><th>Payload Hash</th><td class="hash">${canonical.collapse.payload_hash}</td></tr>
 <tr><th>Signature Valid</th><td><span class="badge ${canonical.collapse.signature_valid ? "pass" : "fail"}">${canonical.collapse.signature_valid ? "YES" : "NO"}</span></td></tr>
-<tr><th>Key ID</th><td>${canonical.collapse.signature_key_id || "—"}</td></tr>
+<tr><th>Key ID</th><td>${canonical.collapse.signature_key_id || "-"}</td></tr>
 <tr><th>Client Timestamp</th><td>${canonical.collapse.client_timestamp}</td></tr>
 <tr><th>Server Timestamp</th><td>${canonical.collapse.created_at}</td></tr>
-<tr><th>NTP Source</th><td>${canonical.collapse.ntp_source || "—"}</td></tr>
-<tr><th>NTP Drift (ms)</th><td>${canonical.collapse.ntp_drift_ms ?? "—"}</td></tr>
-<tr><th>Timestamp Metadata</th><td><pre style="font-size:10px;margin:0;white-space:pre-wrap">${canonical.collapse.timestamp_source_metadata ? JSON.stringify(canonical.collapse.timestamp_source_metadata, null, 2) : "—"}</pre></td></tr>
+<tr><th>NTP Source</th><td>${canonical.collapse.ntp_source || "-"}</td></tr>
+<tr><th>NTP Drift (ms)</th><td>${canonical.collapse.ntp_drift_ms ?? "-"}</td></tr>
+<tr><th>Timestamp Metadata</th><td><pre style="font-size:10px;margin:0;white-space:pre-wrap">${canonical.collapse.timestamp_source_metadata ? JSON.stringify(canonical.collapse.timestamp_source_metadata, null, 2) : "-"}</pre></td></tr>
 </table>`
     : ""
 }
@@ -407,7 +407,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // JSON response — includes metadata envelope + canonical payload + hash
+    // JSON response - includes metadata envelope + canonical payload + hash
     const envelope = {
       metadata: {
         packId: crypto.randomUUID(),

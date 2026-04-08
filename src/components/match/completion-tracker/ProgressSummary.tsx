@@ -1,5 +1,5 @@
 /**
- * ProgressSummary — Overall deal progress bar and recommended next action.
+ * ProgressSummary - Overall deal progress bar and recommended next action.
  */
 
 import { Card, CardContent } from "@/components/ui/card";

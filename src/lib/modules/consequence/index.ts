@@ -1,5 +1,5 @@
 /**
- * Consequence Module — WaD Orchestration Layer
+ * Consequence Module - WaD Orchestration Layer
  *
  * This module is the single application-layer authority for WaD (Without-a-Doubt)
  * workflow decisions. Components MUST use this module instead of inline WaD logic.
@@ -33,7 +33,7 @@ export type {
 
 import type { WadRecord, ConsequenceResult } from "./logic";
 
-// ─── Orchestration — WaD Lifecycle ──────────────────────────────────
+// ─── Orchestration - WaD Lifecycle ──────────────────────────────────
 
 /**
  * Fetch the active (non-terminal) WaD for a match/POI.

@@ -1,5 +1,5 @@
 /**
- * FullPageLoader — Single source of truth for full-screen loading states.
+ * FullPageLoader - Single source of truth for full-screen loading states.
  *
  * Replaces the 8+ scattered patterns of:
  *   <div className="flex items-center justify-center min-h-screen">

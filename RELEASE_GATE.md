@@ -1,4 +1,4 @@
-# Release Gate — 15-Minute Pre-Ship Checklist
+# Release Gate - 15-Minute Pre-Ship Checklist
 
 > Run this before every production publish. A single ❌ in **Blockers** halts the release.
 

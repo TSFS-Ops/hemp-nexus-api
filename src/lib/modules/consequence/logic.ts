@@ -1,5 +1,5 @@
 /**
- * Consequence Module — Pure Logic (no browser/supabase dependencies)
+ * Consequence Module - Pure Logic (no browser/supabase dependencies)
  *
  * This file contains all deterministic state derivation and helper functions
  * that can be tested without browser APIs. The main index.ts re-exports these
@@ -98,7 +98,7 @@ export function deriveConsequenceState(
 
     return {
       uiStatus: canCreate ? "not_started" : "blocked",
-      statusLabel: canCreate ? "Ready to create" : "Blocked — prerequisites not met",
+      statusLabel: canCreate ? "Ready to create" : "Blocked - prerequisites not met",
       wad: null,
       canCreate,
       createBlockedReasons,
@@ -162,8 +162,8 @@ export function deriveConsequenceState(
 function mapUiStatusToLabel(status: ConsequenceUiStatus): string {
   const labels: Record<ConsequenceUiStatus, string> = {
     not_started: "Ready to create",
-    blocked: "Blocked — prerequisites not met",
-    draft: "Draft — awaiting attestations",
+    blocked: "Blocked - prerequisites not met",
+    draft: "Draft - awaiting attestations",
     awaiting_attestations: "Awaiting remaining attestation",
     ready_to_seal: "Ready to seal",
     sealed: "Sealed",

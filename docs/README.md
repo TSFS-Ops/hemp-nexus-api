@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-01-24
 
-Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively—whether you're a developer, business user, or administrator.
+Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively-whether you're a developer, business user, or administrator.
 
 ---
 
@@ -18,7 +18,7 @@ Think of this as a **secure digital handshake system** for businesses in regulat
 ### Why This Exists
 **The Problem**: In regulated industries, companies need to prove they only trade with verified, licensed partners. Manual verification is slow, error-prone, and doesn't scale.
 
-**Our Solution**: An API platform that automates verification, records agreements, and provides cryptographic proof—all in real-time.
+**Our Solution**: An API platform that automates verification, records agreements, and provides cryptographic proof-all in real-time.
 
 ### Who This Is For
 - **Software developers** building marketplace or ERP systems
@@ -100,7 +100,7 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 ### API Keys (Your Digital Identity)
 **What it is**: A secret code that identifies your application to our system.
 
-**In everyday terms**: Like a key to your house—it proves you're authorized to enter. You include this key with every request to prove it's really you.
+**In everyday terms**: Like a key to your house-it proves you're authorized to enter. You include this key with every request to prove it's really you.
 
 **Why you need it**: Security. Without requiring keys, anyone could access or modify data. Keys let us track usage, enforce limits, and keep your data safe.
 

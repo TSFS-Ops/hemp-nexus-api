@@ -5,7 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Governance Documents Edge Function — V3 Sprint 3
+ * Governance Documents Edge Function - V3 Sprint 3
  *
  * POST: Submit governance document for a deal, validates against registry.
  *       Burns tokens when validated (fixed_token_burn_amount from registry).
@@ -145,11 +145,11 @@ Deno.serve(async (req: Request) => {
 
       const burnAmount = (govDoc as any).governance_doc_registry?.fixed_token_burn_amount || 0;
 
-      // Token burn if required — uses atomic DB function to prevent race conditions
+      // Token burn if required - uses atomic DB function to prevent race conditions
       if (burnAmount > 0) {
-        // Idempotent burn check — skip if already burned for this doc
+        // Idempotent burn check - skip if already burned for this doc
         if (govDoc.token_burned) {
-          // Already burned — skip
+          // Already burned - skip
         } else {
           const { data: burnResult, error: burnError } = await admin.rpc("atomic_token_burn", {
             p_org_id: govDoc.org_id,

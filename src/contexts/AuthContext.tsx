@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Periodic session health check ──
   // Catches the case where the refresh token itself expires after inactivity.
-  // The Supabase SDK does NOT fire onAuthStateChange in this scenario — API
+  // The Supabase SDK does NOT fire onAuthStateChange in this scenario - API
   // calls simply fail with 401 and pages "become unavailable."
   // Every 60 seconds, if we think we have a user, we verify the session is
   // still valid. If it's gone, we trigger the same expiry flow.
@@ -193,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         if (error || !currentSession) {
-          // Session is genuinely gone — trigger expiry
+          // Session is genuinely gone - trigger expiry
           hadUserRef.current = false;
           setUser(null);
           setSession(null);
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 4000);
         }
       } catch {
-        // Network error — don't treat as session expiry, just skip
+        // Network error - don't treat as session expiry, just skip
       }
     }, HEALTH_CHECK_INTERVAL);
 

@@ -1,5 +1,5 @@
 /**
- * GovernanceDocSubmit — Submit governance documents for a match/POI.
+ * GovernanceDocSubmit - Submit governance documents for a match/POI.
  * Calls the governance-docs edge function to register documents against
  * the governance_doc_registry.
  */
@@ -266,7 +266,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                     <SelectItem key={r.id} value={r.id}>
                       {r.doc_type.replace(/_/g, " ")}
                       {r.mandatory_flag ? " (Required)" : ""}
-                      {" — "}
+                      {" - "}
                       {r.jurisdiction_code}
                     </SelectItem>
                   ))}

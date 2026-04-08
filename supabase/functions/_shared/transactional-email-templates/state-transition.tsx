@@ -59,7 +59,7 @@ const StateTransitionEmail = ({ matchId, commodity, fromState, toState }: StateT
 export const template = {
   component: StateTransitionEmail,
   subject: (data: Record<string, any>) =>
-    `Match update: ${STATE_LABELS[data.toState] || data.toState || 'Status changed'} — ${SITE_NAME}`,
+    `Match update: ${STATE_LABELS[data.toState] || data.toState || 'Status changed'} - ${SITE_NAME}`,
   displayName: 'State transition',
   previewData: { matchId: 'a1b2c3d4-e5f6', commodity: 'Crude Soybean Oil', fromState: 'matched', toState: 'intent_declared' },
 } satisfies TemplateEntry

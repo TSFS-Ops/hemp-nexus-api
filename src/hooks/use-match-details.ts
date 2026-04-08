@@ -1,5 +1,5 @@
 /**
- * useMatchDetails — Data fetching & mutation hook for the Match Details page.
+ * useMatchDetails - Data fetching & mutation hook for the Match Details page.
  *
  * Single Responsibility: owns all async state for one match (load, settle, error, retry).
  * Supports the full V3 lifecycle: Discovery → Intent → Reveal → Commit → Complete.
@@ -32,7 +32,7 @@ function handleApiError(err: unknown): never {
     throw new Error("Insufficient credits. Purchase more credits from the Billing page.");
   }
   if (msg.includes("ELIGIBILITY_FAILED") || msg.includes("eligibility")) {
-    throw new Error("Missing required data fields (buyer, seller, quantity, or price). Complete these in the Terms tab before proceeding. No credits were deducted — your credits are safe.");
+    throw new Error("Missing required data fields (buyer, seller, quantity, or price). Complete these in the Terms tab before proceeding. No credits were deducted - your credits are safe.");
   }
   if (msg.includes("DISPUTE_ACTIVE") || msg.includes("dispute")) {
     throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");

@@ -287,7 +287,7 @@ export function LogsSection() {
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                           {log.metadata && typeof log.metadata === 'object' && 'hash' in log.metadata
                             ? String(log.metadata.hash).substring(0, 12) + "..."
-                            : "—"}
+                            : "-"}
                         </td>
                         <td className="px-4 py-3 text-right">
                           {(log.action === "intent.confirmed" || log.action === "match.created") && log.entity_id && (
@@ -396,7 +396,7 @@ export function LogsSection() {
                           {log.response_time_ms}ms
                         </td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                          {log.request_id ? log.request_id.substring(0, 8) : "—"}
+                          {log.request_id ? log.request_id.substring(0, 8) : "-"}
                         </td>
                       </tr>
                     ))}

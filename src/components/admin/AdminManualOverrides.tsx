@@ -166,7 +166,7 @@ export function AdminManualOverrides() {
     force_status: { label: "Force Match Status", icon: ShieldCheck, description: "Override a match's status to a specific value." },
     rerun_screening: { label: "Re-run Screening", icon: RefreshCw, description: "Force re-run sanctions/PEP screening on an entity." },
     regenerate_evidence: { label: "Regenerate Evidence Pack", icon: RotateCcw, description: "Force regeneration of the evidence pack for a match." },
-    void_match: { label: "Void Match", icon: XCircle, description: "Void a match entirely — removes it from active workflows." },
+    void_match: { label: "Void Match", icon: XCircle, description: "Void a match entirely - removes it from active workflows." },
   };
 
   return (
@@ -260,10 +260,10 @@ export function AdminManualOverrides() {
             To investigate a user's account or view their data, use the tools available on this page:
           </p>
           <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-            <li><strong>Users & Orgs</strong> — view user profiles, roles, and organisation membership</li>
-            <li><strong>Audit Trail</strong> — search for specific user actions by actor ID</li>
-            <li><strong>Matches</strong> — look up matches by ID to see full state history</li>
-            <li><strong>Manual Override</strong> — correct data issues with a mandatory reason</li>
+            <li><strong>Users & Orgs</strong> - view user profiles, roles, and organisation membership</li>
+            <li><strong>Audit Trail</strong> - search for specific user actions by actor ID</li>
+            <li><strong>Matches</strong> - look up matches by ID to see full state history</li>
+            <li><strong>Manual Override</strong> - correct data issues with a mandatory reason</li>
           </ul>
           <p className="text-xs text-muted-foreground">
             User impersonation (view-as) is not available. All investigations use admin-level access with full audit logging.

@@ -212,7 +212,7 @@ export function AdminMatchesPanel() {
                       <TableCell>{match.buyer_name || <span className="text-muted-foreground italic">open</span>}</TableCell>
                       <TableCell>{match.seller_name || <span className="text-muted-foreground italic">open</span>}</TableCell>
                       <TableCell>
-                        {match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}
+                        {match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "-"}
                       </TableCell>
                       <TableCell>
                         <MatchStatusBadge status={match.status} />
@@ -277,7 +277,7 @@ export function AdminMatchesPanel() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Value</label>
-                  <p>{selectedMatch.price_currency ?? ""} {selectedMatch.price_amount?.toLocaleString() ?? "—"}</p>
+                  <p>{selectedMatch.price_currency ?? ""} {selectedMatch.price_amount?.toLocaleString() ?? "-"}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Buyer</label>
@@ -314,7 +314,7 @@ export function AdminMatchesPanel() {
                     <strong>Intent confirmed</strong> at {format(new Date(selectedMatch.settled_at), "PPpp")}
                   </p>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    This signals serious interest — no contract, payment, or legal obligation.
+                    This signals serious interest - no contract, payment, or legal obligation.
                   </p>
                 </div>
               )}

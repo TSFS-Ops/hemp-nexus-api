@@ -5,7 +5,7 @@ import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
- * Trade Approval Edge Function — Sprint 7
+ * Trade Approval Edge Function - Sprint 7
  *
  * Manages the "Approved to Trade" status that the collapse engine enforces.
  * Links DD risk scores → approval decision → collapse eligibility.
@@ -287,7 +287,7 @@ Deno.serve(async (req: Request) => {
         }));
         const { error: notifErr } = await admin.from("notifications").insert(notificationRows);
         if (notifErr) {
-          // Log but do not block approval issuance — notifications are non-transactional.
+          // Log but do not block approval issuance - notifications are non-transactional.
           // Record failure in audit log for operational visibility.
           console.error("Approval notification delivery failed:", notifErr.message);
           await admin.from("audit_logs").insert({
@@ -297,7 +297,7 @@ Deno.serve(async (req: Request) => {
           }).catch(() => { /* best-effort audit */ });
         }
       } else {
-        // No approvers found — log for operational awareness
+        // No approvers found - log for operational awareness
         console.warn(`No users with roles [${rolesToNotify.join(", ")}] found for org ${parsed.org_id}`);
       }
 

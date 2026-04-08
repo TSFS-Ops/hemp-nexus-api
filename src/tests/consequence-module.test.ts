@@ -1,5 +1,5 @@
 /**
- * Consequence Module — Unit Tests
+ * Consequence Module - Unit Tests
  *
  * Tests the deterministic state derivation, action availability,
  * blocked reason logic, role resolution, and supersession helpers.
@@ -44,7 +44,7 @@ const makeWad = (overrides: Partial<WadRecord> = {}): WadRecord => ({
 
 // ── Tests ──
 
-describe("Consequence Module — deriveConsequenceState", () => {
+describe("Consequence Module - deriveConsequenceState", () => {
   describe("No WaD exists", () => {
     it("returns not_started when match is settled", () => {
       const state = deriveConsequenceState(null, "settled", "org-buyer");
@@ -113,7 +113,7 @@ describe("Consequence Module — deriveConsequenceState", () => {
     });
   });
 
-  describe("Both attested — ready to seal", () => {
+  describe("Both attested - ready to seal", () => {
     it("shows ready_to_seal", () => {
       const wad = makeWad({
         attestations: [
@@ -173,7 +173,7 @@ describe("Consequence Module — deriveConsequenceState", () => {
   describe("Status labels", () => {
     it("returns correct labels for each status", () => {
       expect(deriveConsequenceState(null, "settled", null).statusLabel).toBe("Ready to create");
-      expect(deriveConsequenceState(null, "discovery", null).statusLabel).toBe("Blocked — prerequisites not met");
+      expect(deriveConsequenceState(null, "discovery", null).statusLabel).toBe("Blocked - prerequisites not met");
       expect(deriveConsequenceState(makeWad(), "settled", null).statusLabel).toContain("Draft");
       expect(deriveConsequenceState(makeWad({ status: "sealed" }), "settled", null).statusLabel).toBe("Sealed");
       expect(deriveConsequenceState(makeWad({ status: "revoked" }), "settled", null).statusLabel).toBe("Revoked");
@@ -197,7 +197,7 @@ describe("Consequence Module — deriveConsequenceState", () => {
   });
 });
 
-describe("Consequence Module — resolveAttestationRole", () => {
+describe("Consequence Module - resolveAttestationRole", () => {
   it("returns buyer_signatory for buyer org", () => {
     expect(resolveAttestationRole("org-buyer", "org-buyer", "org-seller")).toBe("buyer_signatory");
   });
@@ -215,7 +215,7 @@ describe("Consequence Module — resolveAttestationRole", () => {
   });
 });
 
-describe("Consequence Module — hasSupersessionHistory", () => {
+describe("Consequence Module - hasSupersessionHistory", () => {
   it("returns false for empty list", () => {
     expect(hasSupersessionHistory([])).toBe(false);
   });
