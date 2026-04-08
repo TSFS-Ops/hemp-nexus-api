@@ -95,7 +95,7 @@ export function AdminBehavioralInsights() {
         if (!d.org_id || !orgMap.has(d.org_id)) continue;
         const entry = orgMap.get(d.org_id)!;
         entry.total_docs++;
-        if (d.verified) entry.verified_docs++;
+        if (d.verified_at) entry.verified_docs++;
       }
 
       return Array.from(orgMap.values())
