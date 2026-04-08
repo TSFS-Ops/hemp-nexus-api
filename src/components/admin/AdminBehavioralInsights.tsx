@@ -42,10 +42,10 @@ export function AdminBehavioralInsights() {
         .limit(500);
       if (matchErr) throw matchErr;
 
-      // Fetch document verification stats per org
+      // Fetch document verification stats per org (verified_at != null means verified)
       const { data: docs, error: docErr } = await supabase
         .from("match_documents")
-        .select("org_id, verified")
+        .select("org_id, verified_at")
         .limit(1000);
       if (docErr) throw docErr;
 
