@@ -105,6 +105,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    try {
     // ── IDOR enforcement: caller must belong to the match's org ──
     if (matchRow.org_id !== callerOrgId) {
       return new Response(
@@ -275,6 +276,11 @@ Deno.serve(async (req: Request) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+    } finally {
+      if (hasLock) {
+        await adminClient.rpc("release_lifecycle_lock");
+      }
+    }
   } catch (err) {
     console.error("POI transition error:", err);
     return new Response(
