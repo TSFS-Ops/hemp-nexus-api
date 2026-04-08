@@ -45,7 +45,7 @@ export const SENSITIVE_HEADERS = [
   'x-auth-token', 'x-access-token',
 ] as const;
 
-export type ViewerRole = 'demo' | 'client' | 'admin' | 'auditor';
+export type ViewerRole = 'public' | 'client' | 'admin' | 'auditor';
 
 // ============= Redaction Utilities =============
 
@@ -124,21 +124,21 @@ export function redactMatch(
   viewerRole: ViewerRole = 'client',
   viewerOrgId?: string
 ): Record<string, unknown> {
-  if (viewerRole === 'demo') {
+  if (viewerRole === 'public') {
     return {
       id: '00000000-0000-0000-0000-000000000000',
       status: match.status || 'matched',
-      commodity: 'Sample Commodity',
-      quantity_amount: 1000,
-      quantity_unit: 'kg',
+      commodity: 'Commodity',
+      quantity_amount: 0,
+      quantity_unit: 'MT',
       price_amount: REDACTED,
       price_currency: 'USD',
-      buyer_name: 'Demo Buyer Corp',
-      seller_name: 'Demo Seller Ltd',
+      buyer_name: 'Alpha Trading Group',
+      seller_name: 'Global Supply Partners',
       buyer_id: '***-****',
       seller_id: '***-****',
       created_at: new Date().toISOString(),
-      hash: '[DEMO_HASH]',
+      hash: '[RESTRICTED]',
     };
   }
 
@@ -264,31 +264,31 @@ export interface EvidencePack {
   };
 }
 
-function generateDemoEvidence(): EvidencePack {
+function generatePublicEvidence(): EvidencePack {
   const now = new Date();
   return {
     match_id: '00000000-0000-0000-0000-000000000000',
     status: 'settled',
-    match_hash: 'demo_hash_abc123def456',
+    match_hash: 'restricted_preview',
     sensitivity_level: 'public',
     generated_at: now.toISOString(),
-    generated_for_role: 'demo',
+    generated_for_role: 'public',
     match_summary: {
-      commodity: 'Sample Agricultural Product',
-      quantity: { amount: 1000, unit: 'MT' },
-      price: { amount: '[DEMO]', currency: 'USD' },
-      buyer: { name: 'Demo Buyer Corporation' },
-      seller: { name: 'Demo Seller Limited' },
+      commodity: 'Agricultural Product',
+      quantity: { amount: 0, unit: 'MT' },
+      price: { amount: '[RESTRICTED]', currency: 'USD' },
+      buyer: { name: 'Alpha Trading Group' },
+      seller: { name: 'Global Supply Partners' },
       created_at: now.toISOString(),
     },
     event_timeline: [
-      { event_type: 'match.created', created_at: now.toISOString(), payload_hash: 'demo_event_001' },
+      { event_type: 'match.created', created_at: now.toISOString(), payload_hash: 'event_preview_001' },
     ],
     chain_verification: {
       is_valid: true,
       event_count: 1,
-      first_event_hash: 'demo_event_001',
-      last_event_hash: 'demo_event_001',
+      first_event_hash: 'event_preview_001',
+      last_event_hash: 'event_preview_001',
     },
   };
 }
@@ -299,8 +299,8 @@ export function generateEvidencePack(
   viewerRole: ViewerRole,
   viewerOrgId?: string
 ): EvidencePack {
-  if (viewerRole === 'demo' || !match) {
-    return generateDemoEvidence();
+  if (viewerRole === 'public' || !match) {
+    return generatePublicEvidence();
   }
 
   const now = new Date();

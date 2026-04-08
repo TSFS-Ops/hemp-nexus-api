@@ -83,7 +83,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name: "UAT Key", scopes: ["search", "match", "evidence"] }),
+      body: JSON.stringify({ name: "Standard Access", scopes: ["search", "match", "evidence"] }),
     });
 
     expect(res.ok).toBe(true);

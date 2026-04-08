@@ -20,7 +20,7 @@ Onboard → Verify → Discover → Match → Confirm Intent → Collapse → Se
 
 - A running instance of the platform (e.g. `https://compliance-matching.lovable.app`)
 - Admin access (first user is auto-assigned `org_admin` + `org_member`)
-- The Checkpoint Demo harness at `/admin/checkpoint-2026-04-16` (optional, for automated execution)
+- The Checkpoint harness at `/admin/checkpoint-2026-04-16` (optional, for automated execution)
 
 ---
 
@@ -419,7 +419,7 @@ After completing the walkthrough, verify:
 
 ## Automated Execution
 
-The **Checkpoint Demo Harness** (`/admin/checkpoint-2026-04-16`) automates this entire walkthrough in two modes:
+The **Checkpoint Harness** (`/admin/checkpoint-2026-04-16`) automates this entire walkthrough in two modes:
 
 1. **DD Only** (Steps 1–7): Entity onboarding and due diligence verification
 2. **Full Lifecycle** (Steps 1–14): Complete happy path through collapse + evidence

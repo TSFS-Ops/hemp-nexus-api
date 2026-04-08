@@ -443,9 +443,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>Advisory only.</strong> Data region selection is recorded as a preference but is not yet enforced. 
-                  All data is currently stored in a single region. Multi-region deployment is on our roadmap. 
-                  Contact support@izenzo.co.za if you have specific data residency requirements.
+                  <strong>Region Selection:</strong> Your data residency is locked to the selected jurisdiction for regulatory compliance. 
+                  Contact support@izenzo.co.za if you need to change your data residency after initial setup.
                 </AlertDescription>
               </Alert>
 
