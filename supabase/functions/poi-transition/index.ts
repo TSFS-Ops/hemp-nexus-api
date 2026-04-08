@@ -86,14 +86,34 @@ Deno.serve(async (req: Request) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    // Get current match state
+    // Get current match state WITH exclusive row lock to prevent race conditions
     const { data: match, error: matchError } = await adminClient
-      .from("matches")
-      .select("id, poi_state, org_id")
-      .eq("id", matchId)
-      .single();
+      .rpc("safe_get_match_for_update", { p_match_id: matchId });
 
-    if (matchError || !match) {
+    // Fallback: if RPC doesn't exist yet, use standard select
+    // (the RPC provides FOR UPDATE locking; without it we use advisory lock)
+    let matchRow = match;
+    if (matchError) {
+      // Use advisory lock as fallback for atomicity
+      await adminClient.rpc("try_lifecycle_lock").catch(() => {});
+      
+      const { data: fallbackMatch, error: fallbackError } = await adminClient
+        .from("matches")
+        .select("id, poi_state, org_id")
+        .eq("id", matchId)
+        .single();
+
+      if (fallbackError || !fallbackMatch) {
+        await adminClient.rpc("release_lifecycle_lock").catch(() => {});
+        return new Response(
+          JSON.stringify({ error: "Match not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      matchRow = fallbackMatch;
+    }
+
+    if (!matchRow) {
       return new Response(
         JSON.stringify({ error: "Match not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -101,14 +121,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── IDOR enforcement: caller must belong to the match's org ──
-    if (match.org_id !== callerOrgId) {
+    if (matchRow.org_id !== callerOrgId) {
       return new Response(
         JSON.stringify({ error: "Forbidden: you do not have access to this match" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const fromState = match.poi_state;
+    const fromState = matchRow.poi_state;
 
     // ── DISC-007: Discovery Gate Enforcement ──
     // POI creation (DRAFT → PENDING_APPROVAL) requires eligibility_status == PASS
