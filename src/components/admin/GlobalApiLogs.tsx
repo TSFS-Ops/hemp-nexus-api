@@ -70,7 +70,7 @@ export function GlobalApiLogs() {
         .select(`
           *,
           api_keys (name),
-          organisations (name)
+          organizations (name)
         `, { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(API_LOG_LIMIT);
@@ -108,7 +108,7 @@ export function GlobalApiLogs() {
         .from("audit_logs")
         .select(`
           id, action, entity_type, entity_id, created_at, org_id, metadata,
-          organisations:org_id (name)
+          organizations:org_id (name)
         `, { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(BUSINESS_LOG_LIMIT);
