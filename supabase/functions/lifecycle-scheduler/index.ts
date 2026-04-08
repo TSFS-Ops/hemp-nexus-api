@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
+import { cacheHeaders } from "../_shared/cache.ts";
 
 /**
  * Lifecycle Scheduler — handles periodic tasks:
@@ -372,7 +373,7 @@ Deno.serve(async (req: Request) => {
       success: true,
       timestamp: nowIso,
       results,
-    }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+    }), { status: 200, headers: { ...headers, ...cacheHeaders("no-cache"), "Content-Type": "application/json" } });
   } catch (err) {
     console.error("Lifecycle scheduler error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
