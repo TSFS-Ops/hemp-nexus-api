@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
@@ -24,6 +25,7 @@ import { downloadFile } from "@/lib/download-utils";
 interface EvidencePackPanelProps {
   matchId: string;
   matchStatus: string;
+  matchState?: string;
 }
 
 interface EvidencePackData {
