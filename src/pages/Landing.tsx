@@ -1,15 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
 import { BidOfferForm, type BidOfferData } from "@/components/landing/BidOfferForm";
 import { SearchOutcomes } from "@/components/landing/SearchOutcomes";
-import { MarketWatchSidebar } from "@/components/landing/MarketWatchSidebar";
 import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
-
 import { TrustBadges } from "@/components/landing/TrustBadges";
-import { CommodityTicker } from "@/components/landing/CommodityTicker";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -62,7 +58,6 @@ export default function Landing() {
     setLastQuery(queryString);
     setLastFormData(data);
 
-    // Build structured URL params so the dashboard search can use price/volume/side
     const buildSearchParams = () => {
       const p = new URLSearchParams({ q: queryString });
       if (data.side) p.set("side", data.side);
@@ -110,77 +105,45 @@ export default function Landing() {
       <AnimatedBackground />
       <PublicHeader />
 
-      {/* Main content */}
-      <div className="flex-1 flex min-h-0 relative z-10">
-        {/* Left: Main content area — 70% */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[960px]">
-            {/* Page header — reduced from billboard to header */}
-            <h1
-              className="tracking-tighter max-w-none mb-1 leading-[1.08] text-[1rem] sm:text-[1.25rem] lg:text-[1.5rem] font-semibold whitespace-normal lg:whitespace-nowrap"
-              style={{ color: 'var(--lt-text)' }}
-            >
-              Discover counterparties. Signal intent. Execute with confidence.
-            </h1>
+      {/* Main content — full width, centered */}
+      <div className="flex-1 overflow-y-auto relative z-10">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-[860px] mx-auto">
+          {/* Page header */}
+          <h1
+            className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
+            style={{ color: 'var(--lt-text)' }}
+          >
+            Discover counterparties. Signal intent. Execute with confidence.
+          </h1>
+          <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-lg" style={{ color: 'var(--lt-text-muted)' }}>
+            Search for verified buyers and sellers, then progress toward compliant transactions.
+          </p>
 
-
-            {/* Search form — interactive teaser */}
-            <div
-              className="mb-5 rounded-2xl overflow-hidden"
-              style={{
-                backgroundColor: '#131823',
-                border: '1px solid var(--lt-border)',
-              }}
-            >
-              <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
-              <SearchOutcomes
-                isSearching={isSearching}
-                hasSearched={hasSearched}
-                onSignIn={navigateToAuth}
-              />
-            </div>
-
-            {/* 6-step workflow pipeline */}
-            <div className="mb-5">
-              <WorkflowPipeline />
-            </div>
-
-            {/* Single CTA — replaces POI toggle + Proceed with WaD */}
-            <div className="mb-8">
-              <button
-                onClick={() => {
-                  if (isAuthenticated) {
-                    window.location.assign("/dashboard");
-                  } else {
-                    navigateToAuth();
-                  }
-                }}
-                className="w-full sm:w-auto px-8 h-11 font-mono text-[11px] uppercase tracking-wider font-semibold
-                         transition-all active:scale-[0.98] rounded-full flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: 'var(--lt-emerald-dark)',
-                  color: 'white',
-                  boxShadow: '0 0 24px rgba(5, 150, 105, 0.3)',
-                }}
-              >
-                {isAuthenticated ? 'Go to Dashboard' : 'Create Account to Execute Trade'}
-                <span className="text-[13px]">→</span>
-              </button>
-            </div>
-
-            {/* Trust badges — below the fold */}
-            <TrustBadges />
+          {/* Search form */}
+          <div
+            className="mb-6 rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: '#131823',
+              border: '1px solid var(--lt-border)',
+            }}
+          >
+            <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
+            <SearchOutcomes
+              isSearching={isSearching}
+              hasSearched={hasSearched}
+              onSignIn={navigateToAuth}
+            />
           </div>
-        </div>
 
-        {/* Right: Bloomberg sidebar — hidden on mobile */}
-        <div className="hidden lg:block w-[300px] xl:w-[320px] flex-shrink-0">
-          <MarketWatchSidebar />
+          {/* 6-step workflow pipeline */}
+          <div className="mb-6">
+            <WorkflowPipeline />
+          </div>
+
+          {/* Trust badges */}
+          <TrustBadges />
         </div>
       </div>
-
-      {/* Bottom: Live Markets ticker */}
-      <CommodityTicker />
     </div>
   );
 }
