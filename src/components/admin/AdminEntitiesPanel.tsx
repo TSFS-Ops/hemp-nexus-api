@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon } from "lucide-react";
+import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSupabaseList } from "@/hooks/use-supabase-list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { AuthorityBindDialog } from "./AuthorityBindDialog";
 
 interface Entity {
   id: string;
@@ -31,6 +32,8 @@ export function AdminEntitiesPanel() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [screeningEntity, setScreeningEntity] = useState<string | null>(null);
   const [verifyingEntity, setVerifyingEntity] = useState<string | null>(null);
+  const [bindDialogOpen, setBindDialogOpen] = useState(false);
+  const [bindTarget, setBindTarget] = useState<Entity | null>(null);
 
   const { data: entities = [], isLoading, isError, refetch } = useSupabaseList<Entity>("entities", {
     limit: 200,
@@ -240,7 +243,8 @@ export function AdminEntitiesPanel() {
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Screening</TableHead>
-                    <TableHead className="text-right">UBO</TableHead>
+                     <TableHead className="text-right">UBO</TableHead>
+                     <TableHead className="text-right">ATB</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -297,6 +301,22 @@ export function AdminEntitiesPanel() {
                           Verify
                         </Button>
                       </TableCell>
+                      <TableCell className="text-right">
+                        {entity.entity_type === "COMPANY" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setBindTarget(entity);
+                              setBindDialogOpen(true);
+                            }}
+                            disabled={entity.status === "archived"}
+                          >
+                            <Link2 className="h-3 w-3 mr-1" />
+                            Bind
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -305,6 +325,13 @@ export function AdminEntitiesPanel() {
           )}
         </CardContent>
       </Card>
+
+      <AuthorityBindDialog
+        open={bindDialogOpen}
+        onOpenChange={setBindDialogOpen}
+        companyEntity={bindTarget}
+        onSuccess={refetch}
+      />
     </div>
   );
 }

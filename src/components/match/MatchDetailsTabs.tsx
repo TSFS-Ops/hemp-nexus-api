@@ -12,6 +12,7 @@ import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { WadModule } from "@/components/wad/WadModule";
 import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchNotes } from "@/components/match/MatchNotes";
+import { GovernanceDocSubmit } from "@/components/match/GovernanceDocSubmit";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { DisputePanel } from "@/components/match/DisputePanel";
 import { DisputeBanner } from "@/components/match/DisputeBanner";
@@ -132,7 +133,8 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
         <EvidencePackPanel matchId={match.id} matchStatus={match.status} />
       </TabsContent>
 
-      <TabsContent value="wad" className="mt-4">
+      <TabsContent value="wad" className="mt-4 space-y-4">
+        <GovernanceDocSubmit matchId={match.id} orgId={match.org_id} />
         <WadModule match={match} onWadCreated={onRefresh} />
       </TabsContent>
 
