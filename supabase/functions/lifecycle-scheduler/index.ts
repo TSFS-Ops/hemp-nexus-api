@@ -65,7 +65,21 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     const nowIso = now.toISOString();
 
-    // ────────────────────────────────────────────
+    // CONCURRENCY GUARD: Advisory lock prevents duplicate scheduler runs
+    const { data: lockAcquired, error: lockErr } = await admin.rpc('try_lifecycle_lock');
+    if (lockErr || !lockAcquired) {
+      console.warn("[lifecycle-scheduler] Another instance is already running. Skipping.");
+      return new Response(JSON.stringify({
+        success: false,
+        reason: "CONCURRENT_RUN_BLOCKED",
+        message: "Another lifecycle-scheduler instance is already running.",
+      }), { status: 200, headers: { ...headers, ...cacheHeaders("no-cache"), "Content-Type": "application/json" } });
+    }
+
+    // Ensure lock is released even on error
+    const releaseLock = async () => {
+      try { await admin.rpc('release_lifecycle_lock'); } catch { /* best-effort */ }
+    };
     // 1. INT-UNLOCK: Expire mutual interests > 30 days
     // ────────────────────────────────────────────
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();

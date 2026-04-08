@@ -222,29 +222,21 @@ Deno.serve(async (req) => {
 
       if (transitionError) handleDatabaseError(transitionError, requestId);
       if (!transitionResult?.success) {
-        // REFUND: State transition failed after tokens were burned — credit them back
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
         const errMsg = transitionResult?.message || 'State transition failed';
         const statusCode = errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
         try {
-          await supabase.rpc('atomic_token_credit', {
+          await supabase.rpc('refund_tokens_on_conflict', {
             p_org_id: authCtx.orgId,
             p_amount: ACTION_TOKEN_COSTS.declare_intent,
-            p_reason: 'refund_failed_transition',
-            p_reference_id: requestId,
+            p_match_id: matchId,
+            p_reason: errCode,
+            p_request_id: requestId,
+            p_actor_user_id: actorUserId,
           });
-          console.warn(`[${requestId}] REFUND: ${ACTION_TOKEN_COSTS.declare_intent} tokens refunded after ${errCode}`);
-          await supabase.from("audit_logs").insert({
-            org_id: authCtx.orgId,
-            actor_user_id: actorUserId,
-            action: "token.refund",
-            entity_type: "match",
-            entity_id: matchId,
-            metadata: { request_id: requestId, reason: errCode, amount: ACTION_TOKEN_COSTS.declare_intent },
-          });
+          console.warn(`[${requestId}] REFUND: ${ACTION_TOKEN_COSTS.declare_intent} tokens refunded after ${errCode} on declare-intent`);
         } catch (refundErr) {
-          // Critical: refund failed — log for manual reconciliation
-          console.error(`[${requestId}] CRITICAL: Token refund failed after transition error. Match: ${matchId}, Org: ${authCtx.orgId}, Amount: ${ACTION_TOKEN_COSTS.declare_intent}`, refundErr);
+          console.error(`[${requestId}] CRITICAL: Token refund failed on declare-intent. Match: ${matchId}, Org: ${authCtx.orgId}`, refundErr);
         }
         throw new ApiException(errCode, errMsg, statusCode);
       }
