@@ -223,7 +223,7 @@ export function AdminCoherencePanel() {
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <p className="text-sm">
               <strong>Dynamic Threshold (θ):</strong> The match threshold adjusts based on user behavior, 
-              Confirm Intent outcomes, and real-world match accuracy. Higher θ = stricter matching, 
+              Trade Request outcomes, and real-world match accuracy. Higher θ = stricter matching, 
               Lower θ = broader discovery.
             </p>
           </div>

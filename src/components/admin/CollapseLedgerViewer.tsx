@@ -225,7 +225,7 @@ export function CollapseLedgerViewer() {
                         <p className="font-mono text-[10px] break-all">{record.org_id}</p>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-muted-foreground">Counterparty Org ID</span>
+                        <span className="text-muted-foreground">Trading Partner Org ID</span>
                         <p className="font-mono text-[10px] break-all">{record.counterparty_org_id}</p>
                       </div>
                     </div>

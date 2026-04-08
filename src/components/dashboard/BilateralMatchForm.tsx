@@ -1,5 +1,5 @@
 /**
- * BilateralMatchForm - Create a match with a known/offline counterparty.
+ * BilateralMatchForm - Create a match with a known/offline trading partner.
  * 
  * This allows users to register an intent when they already have a trading partner
  * identified outside the platform (e.g., through direct negotiation).
@@ -71,7 +71,7 @@ export function BilateralMatchForm() {
 
   const handleSubmitClick = () => {
     if (!canSubmit) {
-      toast.error("Please fill in counterparty name and commodity.");
+      toast.error("Please fill in trading partner name and commodity.");
       return;
     }
     setShowConfirmDialog(true);
@@ -175,7 +175,7 @@ export function BilateralMatchForm() {
         // Non-critical
       }
 
-      toast.success("Bilateral match created. Add documents and confirm intent when ready.");
+      toast.success("Bilateral match created. Add documents and send a trade request when ready.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
       console.error("Bilateral match creation error:", error);
@@ -203,7 +203,7 @@ export function BilateralMatchForm() {
           <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
             <p className="text-sm text-muted-foreground">
-              <strong>Bilateral mode:</strong> This creates a match record with a known counterparty.
+              <strong>Bilateral mode:</strong> This creates a match record with a known trading partner.
               The trading partner's identity will not be visible until the <em>Reveal</em> stage.
               Full bilateral confirmation requires both parties to be registered on the platform.
             </p>
@@ -223,10 +223,10 @@ export function BilateralMatchForm() {
             </Select>
           </div>
 
-          {/* Counterparty */}
+          {/* Trading Partner */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cp-name">Counterparty name *</Label>
+              <Label htmlFor="cp-name">Trading partner name *</Label>
               <Input
                 id="cp-name"
                 placeholder="e.g. Boet Wilken Boerdery"
@@ -235,7 +235,7 @@ export function BilateralMatchForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cp-contact">Counterparty contact</Label>
+              <Label htmlFor="cp-contact">Trading partner contact</Label>
               <Input
                 id="cp-contact"
                 placeholder="e.g. +27 83 444 1447"

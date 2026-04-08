@@ -92,7 +92,7 @@ export function AdminBehavioralAnalytics() {
               <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                 This panel shows soft actions (skip, maybe later, view, etc.) that help improve UX.
                 These actions have <strong>no legal meaning</strong> and do NOT create audit records or evidence chains.
-                Only "Confirm Intent" creates binding records.
+                Only "Send Trade Request" creates binding records.
               </p>
             </div>
           </div>

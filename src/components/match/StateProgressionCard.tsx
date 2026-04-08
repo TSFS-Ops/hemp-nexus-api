@@ -116,7 +116,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
   const actionPath = nextState ? MatchState.getTransitionAction(nextState) : null;
   const isTerminal = MatchState.isTerminal(currentState);
 
-  // For unilateral intents in intent_declared state, block progression until counterparty attached
+  // For unilateral intents in intent_declared state, block progression until trading partner attached
   const unilateralBlocked = isUnilateral && currentState === "intent_declared" &&
     (match.buyer_name == null || match.seller_name == null);
 
@@ -239,12 +239,12 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
           </div>
         )}
 
-        {/* Unilateral intent: awaiting counterparty */}
+        {/* Unilateral intent: awaiting trading partner */}
         {unilateralBlocked && (
           <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
             <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="space-y-1">
-              <p className="text-sm font-medium">Awaiting counterparty</p>
+              <p className="text-sm font-medium">Awaiting trading partner</p>
               <p className="text-xs text-muted-foreground">
                 This is a unilateral intent record. The deal cannot progress further until a trading partner
                 is identified and attached. Once a trading partner responds, the lifecycle will resume.

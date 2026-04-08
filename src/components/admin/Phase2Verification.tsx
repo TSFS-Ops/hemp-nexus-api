@@ -25,15 +25,15 @@ export function Phase2Verification() {
     { id: "auth-flow", category: "User Journey", name: "Sign in flow works", status: "pending" },
     { id: "api-key-create", category: "User Journey", name: "API key creation works", status: "pending" },
     { id: "search-works", category: "User Journey", name: "Search returns results", status: "pending" },
-    { id: "confirm-intent", category: "User Journey", name: "Confirm Intent creates audit log", status: "pending" },
+    { id: "confirm-intent", category: "User Journey", name: "Send Trade Request creates audit log", status: "pending" },
     { id: "console-logs", category: "User Journey", name: "Console UI shows audit logs", status: "pending" },
     { id: "admin-logs", category: "User Journey", name: "Admin panel shows API logs", status: "pending" },
     
     // POI Detail Page
-    { id: "poi-details-tab", category: "POI Detail", name: "Details tab loads", status: "pending" },
-    { id: "poi-proof-tab", category: "POI Detail", name: "Proof tab (Timeline) loads", status: "pending" },
-    { id: "poi-docs-tab", category: "POI Detail", name: "Documents tab loads", status: "pending" },
-    { id: "poi-wad-tab", category: "POI Detail", name: "WaD tab loads", status: "pending" },
+    { id: "poi-details-tab", category: "Intent Detail", name: "Details tab loads", status: "pending" },
+    { id: "poi-proof-tab", category: "Intent Detail", name: "Proof tab (Timeline) loads", status: "pending" },
+    { id: "poi-docs-tab", category: "Intent Detail", name: "Documents tab loads", status: "pending" },
+    { id: "poi-wad-tab", category: "Intent Detail", name: "Signed Deal tab loads", status: "pending" },
     
     // Security Checks
     { id: "rls-enabled", category: "Security", name: "RLS enabled on all user tables", status: "pending" },
@@ -51,16 +51,16 @@ export function Phase2Verification() {
     { id: "doc-sharing", category: "Documents Module", name: "Document sharing controls work", status: "pending" },
     
     // Commitment Module
-    { id: "wad-create", category: "Commitment Module", name: "WaD creation from settled POI", status: "pending" },
-    { id: "wad-attest", category: "Commitment Module", name: "WaD attestation works", status: "pending" },
-    { id: "wad-seal", category: "Commitment Module", name: "WaD sealing generates hash", status: "pending" },
+    { id: "wad-create", category: "Commitment Module", name: "Signed Deal creation from settled intent", status: "pending" },
+    { id: "wad-attest", category: "Commitment Module", name: "Signed Deal attestation works", status: "pending" },
+    { id: "wad-seal", category: "Commitment Module", name: "Signed Deal sealing generates hash", status: "pending" },
     { id: "wad-certificate", category: "Commitment Module", name: "Sealed signed deal certificate downloadable", status: "pending" },
-    { id: "wad-revoke", category: "Commitment Module", name: "WaD revocation requires reason", status: "pending" },
-    { id: "wad-admin-logged", category: "Commitment Module", name: "Admin WaD access logged with reason", status: "pending" },
+    { id: "wad-revoke", category: "Commitment Module", name: "Signed Deal revocation requires reason", status: "pending" },
+    { id: "wad-admin-logged", category: "Commitment Module", name: "Admin Signed Deal access logged with reason", status: "pending" },
     
     // Logging
     { id: "audit-intent-confirmed", category: "Logging", name: "intent.confirmed in audit_logs", status: "pending" },
-    { id: "audit-wad-events", category: "Logging", name: "WaD events in audit_logs", status: "pending" },
+    { id: "audit-wad-events", category: "Logging", name: "Signed Deal events in audit_logs", status: "pending" },
     { id: "audit-doc-events", category: "Logging", name: "Document events in audit_logs", status: "pending" },
   ];
 
@@ -151,7 +151,7 @@ export function Phase2Verification() {
         .limit(10);
       updateItem("audit-wad-events", {
         status: "passed",
-        details: `WaD logging implemented: wad.created, wad.attested, wad.sealed, wad.downloaded, wad.revoked, admin.wad.accessed`
+        details: `Signed Deal logging implemented: wad.created, wad.attested, wad.sealed, wad.downloaded, wad.revoked, admin.wad.accessed`
       });
 
       // 8. Check document events
@@ -186,7 +186,7 @@ export function Phase2Verification() {
       updateItem("doc-sharing", { status: "passed", details: "DocumentSharingDialog manages visibility and access grants" });
 
       // commitment module
-      updateItem("wad-create", { status: "passed", details: "WaD can be created from settled POI via edge function" });
+      updateItem("wad-create", { status: "passed", details: "Signed Deal can be created from settled intent via edge function" });
       updateItem("wad-attest", { status: "passed", details: "Attestation with name, role, checkbox confirmation" });
       updateItem("wad-seal", { status: "passed", details: "Sealing generates SHA-256 seal_hash and ledger_entry_hash" });
       updateItem("wad-certificate", { status: "passed", details: "JSON certificate with disclaimer downloadable" });
@@ -226,7 +226,7 @@ export function Phase2Verification() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Phase 2 Verification</h2>
           <p className="text-muted-foreground mt-2">
-            System verification checklist for Documents, WaD, and Confirm Intent flows
+            System verification checklist for Documents, Signed Deal, and Trade Request flows
           </p>
         </div>
         <Button onClick={runVerification} disabled={running}>

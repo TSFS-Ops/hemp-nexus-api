@@ -373,7 +373,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   {[
                     { num: "1", icon: Search, label: "Search", desc: "Find verified buyers or sellers by commodity, region, or company name." },
                     { num: "2", icon: FileText, label: "Create Match", desc: "Select trading partners and create a draft match. No commercial terms are recorded yet." },
-                    { num: "3", icon: Zap, label: "Confirm Intent", desc: "Add commercial terms, then signal your serious interest. This deducts 1 credit (R10 ZAR) and creates an audit record." },
+                    { num: "3", icon: Zap, label: "Send Trade Request", desc: "Add commercial terms, then signal your serious interest. This deducts 1 credit (R10 ZAR) and creates an audit record." },
                     { num: "4", icon: Key, label: "Evidence Pack", desc: "Download a tamper-evident evidence pack with cryptographic proof for your compliance records." },
                   ].map((s) => (
                     <div key={s.num} className="flex items-start gap-3 p-2 rounded-md">
@@ -499,7 +499,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>No charges yet.</strong> Creating a draft match is free. Credits are only deducted when you explicitly confirm intent on the match detail page.
+                  <strong>No charges yet.</strong> Creating a draft match is free. Credits are only deducted when you explicitly send a trade request on the match detail page.
                 </AlertDescription>
               </Alert>
 
@@ -550,7 +550,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <div className="flex items-start gap-2">
                     <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-medium text-foreground">Confirm intent (1 credit = R10 ZAR)</span>
+                      <span className="font-medium text-foreground">Send trade request (1 credit = R10 ZAR)</span>
                       <p className="text-xs">Signal your serious interest. This creates a hash-chained audit record - no contract, no legal obligation.</p>
                     </div>
                   </div>

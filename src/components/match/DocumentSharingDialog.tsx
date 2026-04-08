@@ -183,7 +183,7 @@ export function DocumentSharingDialog({
                   <div className="flex-1">
                     <Label htmlFor="counterparty" className="flex items-center gap-2 cursor-pointer">
                       <Users className="h-4 w-4" />
-                      Share with Counterparty
+                      Share with Trading Partner
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
                       Both buyer and seller organisations can view this document

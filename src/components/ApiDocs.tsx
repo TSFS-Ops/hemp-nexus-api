@@ -282,7 +282,7 @@ const signal = await response.json();`}
               <div>
                 <h3 className="text-lg font-semibold mb-2">Match Recording API</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Record trade matches and confirm intent between buyers and sellers.
+                  Record trade matches and send trade requests between buyers and sellers.
                 </p>
 
                 <Separator className="my-4" />
@@ -376,15 +376,15 @@ print(f"Match created: {match['match_id']}")`}
 
                 <Separator className="my-4" />
 
-                {/* POST /match/:id/settle - Confirm Intent */}
+                {/* POST /match/:id/settle - Send Trade Request */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="bg-green-600">POST</Badge>
                     <code className="text-sm">/match/:id/settle</code>
-                    <Badge variant="outline" className="text-xs">Confirm Intent</Badge>
+                    <Badge variant="outline" className="text-xs">Send Trade Request</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Confirm intent for a match. This signals serious interest to the trading partner.
+                    Send a trade request for a match. This signals serious interest to the trading partner.
                   </p>
                   
                   <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950">
@@ -399,7 +399,7 @@ print(f"Match created: {match['match_id']}")`}
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2">Eligibility Requirements</h4>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Before Confirm Intent can proceed, the match must pass eligibility validation:
+                      Before a Trade Request can proceed, the match must pass eligibility validation:
                     </p>
                     <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
                       <li>buyer_id, buyer_name - must be non-empty strings</li>

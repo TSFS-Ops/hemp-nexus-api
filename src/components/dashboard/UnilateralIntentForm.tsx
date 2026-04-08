@@ -1,5 +1,5 @@
 /**
- * UnilateralIntentForm - Create a governed intent record without a named counterparty.
+ * UnilateralIntentForm - Create a governed intent record without a named trading partner.
  *
  * This is the "market-maker" flow: a user declares intent to buy or sell,
  * attracting liquidity from the market. The record is governed and sits
@@ -461,14 +461,14 @@ export function UnilateralIntentForm() {
             </div>
           </div>
 
-          {/* Counterparty Email (optional invite) */}
+          {/* Trading Partner Email (optional invite) */}
           <div className="space-y-2">
-            <Label htmlFor="uni-counterparty-email" className="flex items-center gap-2">
+            <Label htmlFor="uni-partner-email" className="flex items-center gap-2">
               <Mail className="h-3.5 w-3.5" />
               Trading partner email (optional)
             </Label>
             <Input
-              id="uni-counterparty-email"
+              id="uni-partner-email"
               type="email"
               placeholder="e.g. farmer@example.com - they'll receive an invite to review this intent"
               value={form.counterpartyEmail}
@@ -524,7 +524,7 @@ export function UnilateralIntentForm() {
                   <strong>{form.commodity}</strong>.
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
-                  <li>No counterparty is named - this is a market-maker signal.</li>
+                  <li>No trading partner is named - this is a market-maker signal.</li>
                   <li>No credits are deducted at creation.</li>
                   <li>Each lifecycle action costs R10 ZAR (1 credit).</li>
                   <li>This record is separate from bilateral intents.</li>

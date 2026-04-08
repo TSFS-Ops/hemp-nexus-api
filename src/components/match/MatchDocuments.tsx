@@ -118,14 +118,14 @@ const DOC_TYPES = [
   { value: "contract", label: "Contract" },
   { value: "shipping", label: "Shipping Document" },
   { value: "compliance", label: "Compliance Document" },
-  { value: "license", label: "License / Permit" },
+  { value: "license", label: "Licence / Permit" },
   { value: "quality_report", label: "Quality Report" },
   { value: "other", label: "Other" },
 ];
 
 const VISIBILITY_OPTIONS = [
   { value: "private", label: "Private", icon: Lock, description: "Only your organisation" },
-  { value: "share_with_counterparty", label: "Share with Counterparty", icon: Users, description: "Both buyer and seller" },
+  { value: "share_with_counterparty", label: "Share with Trading Partner", icon: Users, description: "Both buyer and seller" },
 ];
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB - compliance-grade cap, enforced server-side via bucket config

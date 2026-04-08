@@ -1,5 +1,5 @@
 /**
- * ConfirmIntentCard - CTA card for declaring intent on a match.
+ * ConfirmIntentCard - CTA card for sending a trade request on a match.
  *
  * Includes a confirmation dialog showing credit cost and current balance
  * before the irreversible action fires. Refetches balance when dialog opens.
@@ -102,7 +102,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <h4 className="font-semibold">Ready to Signal Intent?</h4>
+              <h4 className="font-semibold">Ready to Send a Trade Request?</h4>
               <p className="text-sm text-muted-foreground">
                 This records your interest so the trading partner can prepare terms. {CREDITS_REQUIRED} credits will be deducted.
               </p>
@@ -124,7 +124,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 size="lg"
                 loadingText="Processing - do not close this page…"
               >
-                Signal Intent - {CREDITS_REQUIRED} credits
+                Send Trade Request - {CREDITS_REQUIRED} credits
               </LoadingButton>
             </div>
           </div>
@@ -134,7 +134,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Signal intent for this match?</AlertDialogTitle>
+            <AlertDialogTitle>Send a trade request for this match?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>

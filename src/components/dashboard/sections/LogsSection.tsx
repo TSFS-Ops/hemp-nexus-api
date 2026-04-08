@@ -252,7 +252,7 @@ export function LogsSection() {
             <div className="border border-border rounded-lg p-8 text-center text-muted-foreground">
               <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No activity events found</p>
-              <p className="text-sm mt-1">Confirm intent to generate proof events</p>
+              <p className="text-sm mt-1">Send a trade request to generate proof events</p>
             </div>
           ) : (
             <div className="border border-border rounded-lg overflow-hidden">

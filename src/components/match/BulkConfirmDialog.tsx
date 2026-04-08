@@ -1,6 +1,6 @@
 /**
  * BulkConfirmDialog - Shows credit cost, current balance, and remaining
- * balance before a bulk Confirm Intent action.
+ * balance before a bulk Trade Request action.
  *
  * Stays open during processing to show progress. Refetches balance on open.
  */
@@ -79,7 +79,7 @@ export function BulkConfirmDialog({
           <AlertDialogTitle>
             {isSettling
               ? `Confirming intent…`
-              : `Confirm intent for ${matchCount} match${matchCount > 1 ? "es" : ""}?`}
+              : `Send trade request for ${matchCount} match${matchCount > 1 ? "es" : ""}?`}
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-4">

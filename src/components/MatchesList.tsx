@@ -356,7 +356,7 @@ export function MatchesList() {
       setShowSettleDialog(false);
     } catch (error: any) {
       console.error("Error confirming intent:", error);
-      toast.error("Failed to confirm intent");
+      toast.error("Failed to send trade request");
     } finally {
       setIsSettling(false);
     }

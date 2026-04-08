@@ -129,7 +129,7 @@ export function AdminMatchesPanel() {
         <CardHeader>
           <CardTitle>All Matches</CardTitle>
           <CardDescription>
-            Matches from all organisations. Only "Confirm Intent" creates audit/evidence records.
+            Matches from all organisations. Only "Send Trade Request" creates audit/evidence records.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -6,7 +6,7 @@ export function MatchesSection() {
     <div className="space-y-5 sm:space-y-6">
       <SectionHeader
         title="Your Matches"
-        description="Review matches, confirm intent, and download evidence packs"
+        description="Review matches, send trade requests, and download evidence packs"
       />
       <MatchesList />
     </div>

@@ -214,7 +214,7 @@ export default function CounterpartySearch() {
 
   const handleCreateMatchClick = () => {
     if (selectedResults.size === 0) {
-      toast.error("Please select at least one counterparty");
+      toast.error("Please select at least one trading partner");
       return;
     }
     setShowDraftDialog(true);
@@ -375,10 +375,10 @@ export default function CounterpartySearch() {
       const total = created + duplicates + failed;
       if (failed === 0 && duplicates === 0) {
         if (created === 1 && lastMatchId) {
-          toast.success("Draft match created - add commercial terms and documents, then confirm intent.");
+          toast.success("Draft match created - add commercial terms and documents, then send a trade request.");
           navigate(`/dashboard/matches/${lastMatchId}`);
         } else {
-          toast.success(`${created} draft matches created. Add commercial terms in each match before confirming intent.`);
+          toast.success(`${created} draft matches created. Add commercial terms in each match before sending a trade request.`);
           navigate("/dashboard/matches");
         }
       } else if (failed === 0) {
@@ -398,7 +398,7 @@ export default function CounterpartySearch() {
         toast.error("All match creation attempts failed. Please try again or contact support at support@izenzo.co.za.");
       }
     } catch (error) {
-      console.error("Start POI error:", error);
+      console.error("Start intent error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to create matches. Please try again.");
     } finally {
       setIsConfirming(false);
@@ -513,7 +513,7 @@ export default function CounterpartySearch() {
               <div>
                 <p className="font-medium text-foreground">No trading partners found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  No registered trading partners matched "{query}". Try broadening your query, or use the Bilateral tab to create a match with a known counterparty.
+                  No registered trading partners matched "{query}". Try broadening your query, or use the Bilateral tab to create a match with a known trading partner.
                 </p>
               </div>
               <div className="text-xs text-muted-foreground space-y-1">

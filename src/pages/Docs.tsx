@@ -86,7 +86,7 @@ export default function Docs() {
               Quick Start
             </CardTitle>
             <CardDescription>
-              Get started with the Confirm Intent flow in 3 steps
+              Get started with the Trade Request flow in 3 steps
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -122,7 +122,7 @@ export default function Docs() {
                 2
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold mb-2">Confirm Intent</h4>
+                <h4 className="font-semibold mb-2">Send Trade Request</h4>
                 <p className="text-sm text-muted-foreground mb-3">
                   When ready, confirm interest to create an immutable evidence record.
                 </p>
@@ -345,13 +345,13 @@ async function listMatches() {
             </Card>
           </TabsContent>
 
-          {/* Confirm Intent Tab */}
+          {/* Trade Request Tab */}
           <TabsContent value="confirm">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5" />
-                  Confirm Intent
+                  Send Trade Request
                 </CardTitle>
                 <CardDescription>
                   Signal serious interest and create tamper-evident audit records
@@ -373,7 +373,7 @@ async function listMatches() {
                     <code className="font-mono text-sm">/match/:id/settle</code>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Confirm intent for a match. This is idempotent - calling it multiple times 
+                    Send a trade request for a match. This is idempotent - calling it multiple times 
                     returns the same result.
                   </p>
                 </div>
@@ -389,9 +389,9 @@ async function listMatches() {
                   <h4 className="font-semibold mb-2">Python Example</h4>
                   <CodeBlock language="python" code={`import requests
 
-def confirm_intent(match_id: str, api_key: str):
+def send_trade_request(match_id: str, api_key: str):
     """
-    Confirm intent for a match.
+    Send a trade request for a match.
     
     This creates an immutable audit record proving that at this
     moment in time, serious interest was expressed.
@@ -415,14 +415,14 @@ def confirm_intent(match_id: str, api_key: str):
         raise Exception(f"Error: {response.status_code} - {response.text}")
 
 # Usage
-match = confirm_intent("your-match-id", "your-api-key")`} />
+match = send_trade_request("your-match-id", "your-api-key")`} />
                 </div>
 
                 <div>
                   <h4 className="font-semibold mb-2">Node.js Example</h4>
-                  <CodeBlock language="javascript" code={`async function confirmIntent(matchId, apiKey) {
+                  <CodeBlock language="javascript" code={`async function sendTradeRequest(matchId, apiKey) {
   /**
-   * Confirm intent for a match.
+   * Send a trade request for a match.
    * 
    * Creates an immutable audit record proving interest
    * was expressed at this specific date/time.
@@ -451,7 +451,7 @@ match = confirm_intent("your-match-id", "your-api-key")`} />
 }
 
 // Usage
-confirmIntent('your-match-id', 'your-api-key')
+sendTradeRequest('your-match-id', 'your-api-key')
   .then(match => console.log('Confirmed:', match.id))
   .catch(err => console.error(err));`} />
                 </div>
@@ -476,7 +476,7 @@ confirmIntent('your-match-id', 'your-api-key')
                 </div>
 
                 <div className="bg-muted/50 p-4 rounded-lg border">
-                  <h4 className="font-semibold mb-2">What Happens When You Confirm Intent</h4>
+                  <h4 className="font-semibold mb-2">What Happens When You Send a Trade Request</h4>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-4 w-4 mt-0.5 text-primary" />
@@ -496,7 +496,7 @@ confirmIntent('your-match-id', 'your-api-key')
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-4 w-4 mt-0.5 text-primary" />
-                      <span>Counterparty receives real-time notification of your interest</span>
+                      <span>Trading partner receives real-time notification of your interest</span>
                     </li>
                   </ul>
                 </div>

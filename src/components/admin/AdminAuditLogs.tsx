@@ -155,7 +155,7 @@ export function AdminAuditLogs() {
               <h4 className="font-semibold text-green-800 dark:text-green-200">Binding Actions Only</h4>
               <p className="text-sm text-green-700 dark:text-green-300 mt-1">
                 This log contains only <strong>binding actions</strong> that create legal intent records.
-                "Confirm Intent" actions appear here. Soft actions (skip, maybe later) are tracked 
+                "Send Trade Request" actions appear here. Soft actions (skip, maybe later) are tracked 
                 separately in Behavioural Analytics and do NOT appear in this audit trail.
               </p>
             </div>

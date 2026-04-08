@@ -59,12 +59,12 @@ export function AdminWadPanel() {
     setRevoking(false);
 
     if (result.success) {
-      toast.success("WaD revoked");
+      toast.success("Signed Deal revoked");
       setRevokeWadId(null);
       setRevokeReason("");
       queryClient.invalidateQueries({ queryKey: ["admin-wads"] });
     } else {
-      toast.error(result.error || "Failed to revoke WaD");
+      toast.error(result.error || "Failed to revoke Signed Deal");
     }
   };
 
@@ -119,7 +119,7 @@ export function AdminWadPanel() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `WaD-Certificate-${wadId.substring(0, 8)}.pdf`;
+      a.download = `Izenzo-Certificate-${wadId.substring(0, 8)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -178,7 +178,7 @@ export function AdminWadPanel() {
           <div className="flex gap-4 mb-4">
             <div className="flex-1">
               <Input
-                placeholder="Search by WaD ID or POI ID..."
+                placeholder="Search by certificate ID or intent ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -202,14 +202,14 @@ export function AdminWadPanel() {
             <TableSkeleton rows={5} columns={6} />
           ) : filteredWads.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No WaDs found
+              No certificates found
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>WaD ID</TableHead>
-                  <TableHead>POI ID</TableHead>
+                  <TableHead>Certificate ID</TableHead>
+                  <TableHead>Intent ID</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Sealed At</TableHead>
                   <TableHead>Created</TableHead>
@@ -295,7 +295,7 @@ export function AdminWadPanel() {
                             <DialogHeader>
                               <DialogTitle className="flex items-center gap-2 text-destructive">
                                 <XCircle className="h-5 w-5" />
-                                Revoke WaD
+                                Revoke Signed Deal
                               </DialogTitle>
                               <DialogDescription>
                                 This action cannot be undone. The WaD will be marked as revoked but not deleted.
@@ -305,7 +305,7 @@ export function AdminWadPanel() {
                               <Label htmlFor="revoke-reason">Revocation Reason (required)</Label>
                               <Textarea
                                 id="revoke-reason"
-                                placeholder="Explain why this WaD is being revoked..."
+                                placeholder="Explain why this Signed Deal is being revoked..."
                                 value={revokeReason}
                                 onChange={(e) => setRevokeReason(e.target.value)}
                                 className="mt-2"
@@ -321,7 +321,7 @@ export function AdminWadPanel() {
                                 disabled={revoking || !revokeReason.trim()}
                               >
                                 {revoking && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                Revoke WaD
+                                Revoke Signed Deal
                               </Button>
                             </DialogFooter>
                           </DialogContent>

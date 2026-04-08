@@ -107,7 +107,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
                       {isUnilateral ? "Open - no buyer specified" : "-"}
                     </span>
                   ) : isRevealed ? match.buyer_name : (
-                    <span className="text-muted-foreground italic">Hidden until counterparty reveal</span>
+                    <span className="text-muted-foreground italic">Hidden until trading partner reveal</span>
                   )}
                 </dd>
               </div>
@@ -131,7 +131,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
                       {isUnilateral ? "Open - no seller specified" : "-"}
                     </span>
                   ) : isRevealed ? match.seller_name : (
-                    <span className="text-muted-foreground italic">Hidden until counterparty reveal</span>
+                    <span className="text-muted-foreground italic">Hidden until trading partner reveal</span>
                   )}
                 </dd>
               </div>
