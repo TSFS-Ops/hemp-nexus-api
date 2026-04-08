@@ -86,29 +86,35 @@ Deno.serve(async (req: Request) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
+    // Acquire advisory lock to prevent concurrent POI transitions on the same match
+    const { error: lockError } = await adminClient.rpc("try_lifecycle_lock");
+    const hasLock = !lockError;
+
     // Get current match state
-    const { data: match, error: matchError } = await adminClient
+    const { data: matchRow, error: matchError } = await adminClient
       .from("matches")
       .select("id, poi_state, org_id")
       .eq("id", matchId)
       .single();
 
-    if (matchError || !match) {
+    if (matchError || !matchRow) {
+      if (hasLock) await adminClient.rpc("release_lifecycle_lock");
       return new Response(
         JSON.stringify({ error: "Match not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    try {
     // ── IDOR enforcement: caller must belong to the match's org ──
-    if (match.org_id !== callerOrgId) {
+    if (matchRow.org_id !== callerOrgId) {
       return new Response(
         JSON.stringify({ error: "Forbidden: you do not have access to this match" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const fromState = match.poi_state;
+    const fromState = matchRow.poi_state;
 
     // ── DISC-007: Discovery Gate Enforcement ──
     // POI creation (DRAFT → PENDING_APPROVAL) requires eligibility_status == PASS
@@ -117,7 +123,7 @@ Deno.serve(async (req: Request) => {
       const { data: entities } = await adminClient
         .from("entities")
         .select("id")
-        .eq("org_id", match.org_id)
+        .eq("org_id", matchRow.org_id)
         .limit(10);
 
       if (entities && entities.length > 0) {
@@ -127,7 +133,7 @@ Deno.serve(async (req: Request) => {
             .from("discovery_eligibility_snapshots")
             .select("eligibility_status, expires_at")
             .eq("entity_id", entity.id)
-            .eq("org_id", match.org_id)
+            .eq("org_id", matchRow.org_id)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -145,7 +151,7 @@ Deno.serve(async (req: Request) => {
         if (!discoveryPassed) {
           // Emit blocked event
           await adminClient.from("event_store").insert({
-            org_id: match.org_id,
+            org_id: matchRow.org_id,
             domain: "intel",
             aggregate_type: "gate",
             aggregate_id: matchId,
@@ -203,7 +209,7 @@ Deno.serve(async (req: Request) => {
       .from("poi_events")
       .insert({
         match_id: matchId,
-        org_id: match.org_id,
+        org_id: matchRow.org_id,
         from_state: fromState,
         to_state: toState,
         actor_user_id: user.id,
@@ -235,9 +241,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 3. Audit log
-    await adminClient.from("audit_logs").insert({
-      org_id: match.org_id,
+    // 3. Audit log — MANDATORY: failure must propagate as HTTP 500
+    const { error: auditError } = await adminClient.from("audit_logs").insert({
+      org_id: matchRow.org_id,
       actor_user_id: user.id,
       action: `poi.transition.${fromState.toLowerCase()}_to_${toState.toLowerCase()}`,
       entity_type: "match",
@@ -249,6 +255,14 @@ Deno.serve(async (req: Request) => {
         poi_event_id: event.id,
       },
     });
+
+    if (auditError) {
+      console.error("CRITICAL: Audit log insert failed for POI transition:", auditError);
+      return new Response(
+        JSON.stringify({ error: "Audit log failed — transition recorded but audit trail incomplete", code: "AUDIT_LOG_ERROR" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({
@@ -262,6 +276,11 @@ Deno.serve(async (req: Request) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+    } finally {
+      if (hasLock) {
+        await adminClient.rpc("release_lifecycle_lock");
+      }
+    }
   } catch (err) {
     console.error("POI transition error:", err);
     return new Response(
