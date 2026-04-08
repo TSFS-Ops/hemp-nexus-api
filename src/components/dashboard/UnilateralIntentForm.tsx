@@ -214,6 +214,34 @@ export function UnilateralIntentForm() {
         // Intent was created successfully — don't block the user
       }
 
+      // Send counterparty invite email if provided
+      if (form.counterpartyEmail.trim()) {
+        try {
+          const siteUrl = window.location.origin;
+          const acceptUrl = `${siteUrl}/auth?redirect=/dashboard/matches/${matchData.id}`;
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "poi-invite",
+              recipientEmail: form.counterpartyEmail.trim(),
+              idempotencyKey: `poi-invite-${matchData.id}`,
+              templateData: {
+                commodity: form.commodity.trim(),
+                quantity: form.quantity || undefined,
+                unit: form.unit || undefined,
+                price: form.price || undefined,
+                currency: form.currency || undefined,
+                senderName: myName,
+                acceptUrl,
+              },
+            },
+          });
+          toast.success("Invite sent to counterparty.", { duration: 4000 });
+        } catch (emailErr) {
+          console.error("Non-critical: counterparty invite email failed", emailErr);
+          toast.info("Intent published, but the invite email could not be sent. Share the link manually.");
+        }
+      }
+
       toast.success("Intent published. This record is now visible in your matches.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
