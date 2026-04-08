@@ -130,7 +130,7 @@ export default function Troubleshooting() {
       ],
       solutions: [
         "Check your internet connection",
-        "Verify the API base URL is correct: https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1",
+        "Verify the API base URL is correct — it should match your project's backend URL under /functions/v1",
         "Check if your network/firewall allows HTTPS requests",
         "Try the request from a different network"
       ],

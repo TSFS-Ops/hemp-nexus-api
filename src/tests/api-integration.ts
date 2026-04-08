@@ -9,7 +9,7 @@
  * 5. Rate limiting demonstration
  */
 
-const BASE_URL = 'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1';
+const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 interface TestResult {
   name: string;
