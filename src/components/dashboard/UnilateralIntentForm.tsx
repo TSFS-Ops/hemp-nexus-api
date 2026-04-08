@@ -57,6 +57,8 @@ export function UnilateralIntentForm() {
   const [form, setForm] = useState<UnilateralFormData>(INITIAL);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [draftText, setDraftText] = useState("");
+  const [isDrafting, setIsDrafting] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
 
