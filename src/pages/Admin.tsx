@@ -221,7 +221,7 @@ function LedgerSection() {
 function UsersSection() {
   const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Users"
         description="Platform user accounts and credit balance management."
@@ -234,8 +234,8 @@ function UsersSection() {
             <TabsTrigger value="tokens">Credit Balances</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
-        <TabsContent value="tokens" className="mt-4"><AdminTokenManagement /></TabsContent>
+        <TabsContent value="users" className="mt-4 animate-section-enter"><UsersManagement /></TabsContent>
+        <TabsContent value="tokens" className="mt-4 animate-section-enter"><AdminTokenManagement /></TabsContent>
       </Tabs>
     </div>
   );
@@ -244,7 +244,7 @@ function UsersSection() {
 function OrgsSection() {
   const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Organisations"
         description="Registered organisations, legal entities, and proof-of-delivery tracking."
@@ -258,9 +258,9 @@ function OrgsSection() {
             <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
-        <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
-        <TabsContent value="pods" className="mt-4"><AdminPodPanel /></TabsContent>
+        <TabsContent value="orgs" className="mt-4 animate-section-enter"><OrgsManagement /></TabsContent>
+        <TabsContent value="entities" className="mt-4 animate-section-enter"><AdminEntitiesPanel /></TabsContent>
+        <TabsContent value="pods" className="mt-4 animate-section-enter"><AdminPodPanel /></TabsContent>
       </Tabs>
     </div>
   );
