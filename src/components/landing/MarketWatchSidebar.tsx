@@ -3,7 +3,7 @@
  * Distinct panel background, glowing emerald numbers, monospace prices.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowRight, ChevronUp, ChevronDown } from "lucide-react";
 
 const MARKET_DATA = [
