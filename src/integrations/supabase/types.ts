@@ -4136,6 +4136,42 @@ export type Database = {
           },
         ]
       }
+      storage_deletion_queue: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          error_message: string | null
+          file_path: string
+          id: string
+          scheduled_for: string
+          source_record_id: string | null
+          source_table: string
+          status: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          error_message?: string | null
+          file_path: string
+          id?: string
+          scheduled_for?: string
+          source_record_id?: string | null
+          source_table: string
+          status?: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          error_message?: string | null
+          file_path?: string
+          id?: string
+          scheduled_for?: string
+          source_record_id?: string | null
+          source_table?: string
+          status?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
