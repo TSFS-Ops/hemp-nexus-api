@@ -1,15 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
-import { multiProviderSearch, generateEnhancedQueries } from "../_shared/multi-search.ts";
-import { generateEmbedding, cosineSimilarity } from "../_shared/embeddings.ts";
-import { 
-  generateEnrichedQueries, 
-  mergeResults, 
-  calculateMetrics, 
-  scoreCoherence,
-  type DiscoveryResult,
-} from "../_shared/discovery-engine.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { errorResponse } from "../_shared/errors.ts";
 
@@ -21,22 +12,19 @@ Deno.serve(async (req) => {
 
   const corsResponse = handleCors(req, allowedOrigins);
   if (corsResponse) return corsResponse;
-  
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Authenticate request
+
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    
-    // SECURITY: Require 'search' scope for API key access
     if (authCtx.isApiKey) {
-      requireScope(authCtx, 'search');
+      requireScope(authCtx, "search");
     }
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // Enforce token metering - burns 1 token per request
+
+    // Enforce token metering
     await enforceTokenMetering(
       supabase,
       authCtx.orgId,
@@ -46,7 +34,7 @@ Deno.serve(async (req) => {
     );
 
     const rawBody = await req.json();
-    const { query, role, limit = 20 } = rawBody;
+    const { query, role, limit = 20, location: filterLocation } = rawBody;
 
     if (!query || typeof query !== "string") {
       return new Response(
@@ -55,101 +43,118 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine signal type from role or parse from query
+    // Parse intent
     let signalType: "buyer" | "seller" = role === "seller" ? "seller" : "buyer";
     const lowerQuery = query.toLowerCase();
     if (lowerQuery.includes("buyer") || lowerQuery.includes("looking for") || lowerQuery.includes("want to buy")) {
-      signalType = "seller"; // Looking for buyers = I am seller
+      signalType = "seller";
     } else if (lowerQuery.includes("seller") || lowerQuery.includes("supplier") || lowerQuery.includes("want to sell")) {
-      signalType = "buyer"; // Looking for sellers = I am buyer
+      signalType = "buyer";
     }
 
-    // Parse product and location from natural language query
     const { product, location } = parseNaturalLanguageQuery(query);
-    console.log(`[search] Parsed: product="${product}", location="${location}", role=${signalType}`);
+    const effectiveLocation = filterLocation || location;
+    console.log(`[search] Parsed: product="${product}", location="${effectiveLocation}", role=${signalType}`);
 
-    // Log audit
+    // Audit: search started
     await supabase.from("audit_logs").insert({
       org_id: authCtx.orgId,
       actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
       actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
       action: "search_initiated",
       entity_type: "search",
-      metadata: {
-        query,
-        parsed_product: product,
-        parsed_location: location,
-        signal_type: signalType,
-        timestamp: new Date().toISOString(),
-      },
+      metadata: { query, parsed_product: product, parsed_location: effectiveLocation, signal_type: signalType },
     });
 
-    // Generate query embedding for semantic matching
-    const queryEmbedding = await generateEmbedding(query);
-    console.log(`[search] Query embedding: ${queryEmbedding ? 'success' : 'failed'}`);
+    // ── 1. Counterparties table (Postgres full-text search) ──
+    const tsQuery = product
+      .split(/\s+/)
+      .filter((w: string) => w.length > 1)
+      .map((w: string) => w.replace(/[^a-zA-Z0-9]/g, ""))
+      .filter(Boolean)
+      .join(" & ");
 
-    // Create a mock signal object for query generation
-    const mockSignal = {
-      type: signalType,
-      content: {
-        product,
-        location,
-        what: product,
+    let counterpartyResults: any[] = [];
+
+    if (tsQuery) {
+      let cpQuery = supabase
+        .from("counterparties")
+        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
+        .textSearch("fts", tsQuery, { type: "plain", config: "english" })
+        .neq("org_id", authCtx.orgId)
+        .limit(limit);
+
+      if (effectiveLocation) {
+        cpQuery = cpQuery.ilike("jurisdiction", `%${effectiveLocation.replace(/[%_\\]/g, "")}%`);
       }
-    };
 
-    // Generate baseline queries
-    const baselineQueries = generateEnhancedQueries(mockSignal);
-    // Add the original query
-    baselineQueries.unshift(query);
-    console.log(`[search] Generated ${baselineQueries.length} baseline queries`);
-
-    // Perform baseline search
-    const baselineResults = await multiProviderSearch(baselineQueries.slice(0, 5));
-    const baselineCount = baselineResults.length;
-    console.log(`[search] Baseline search returned ${baselineCount} results`);
-
-    // Generate enriched queries using 12% engine
-    const enrichedQueryData = generateEnrichedQueries(product, location, signalType, baselineQueries);
-    console.log(`[search] 12% Engine generated ${enrichedQueryData.length} enriched queries`);
-
-    // Perform enriched search
-    let enrichedResults: DiscoveryResult[] = [];
-    if (enrichedQueryData.length > 0) {
-      const enrichedQueries = enrichedQueryData.map(eq => eq.query);
-      const rawEnrichedResults = await multiProviderSearch(enrichedQueries.slice(0, 3));
-      
-      enrichedResults = rawEnrichedResults.map((r, idx) => {
-        const queryIdx = Math.floor(idx / Math.max(1, rawEnrichedResults.length / enrichedQueryData.length));
-        const reason = enrichedQueryData[Math.min(queryIdx, enrichedQueryData.length - 1)]?.reason || "12% engine discovery";
-        return {
-          id: crypto.randomUUID(),
-          title: r.title,
-          url: r.url,
-          description: r.description,
-          source: r.source,
-          is_enriched: true,
-          enrichment_reason: reason,
-          confidence_score: 0.55,
-          metadata: { search_query: enrichedQueries[Math.min(queryIdx, enrichedQueries.length - 1)] }
-        };
-      });
-      console.log(`[search] 12% Engine found ${enrichedResults.length} additional results`);
+      const { data: cpData, error: cpError } = await cpQuery;
+      if (cpError) {
+        console.error("[search] Counterparty FTS error:", cpError.message);
+      }
+      counterpartyResults = cpData || [];
     }
 
-    // Merge and deduplicate results
-    const mergedResults = mergeResults(baselineResults, enrichedResults);
-    console.log(`[search] Merged to ${mergedResults.length} total results`);
+    // If FTS returned nothing, try a simple ILIKE fallback
+    if (counterpartyResults.length === 0 && product) {
+      let fallbackQuery = supabase
+        .from("counterparties")
+        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
+        .neq("org_id", authCtx.orgId)
+        .or(`company_name.ilike.%${product.replace(/[%_\\]/g, "")}%,description.ilike.%${product.replace(/[%_\\]/g, "")}%`)
+        .limit(limit);
 
-    // ── Order Book Augmentation ──────────────────────────────────
-    // Query active trade_orders that match the product/location and opposite side
+      if (effectiveLocation) {
+        fallbackQuery = fallbackQuery.ilike("jurisdiction", `%${effectiveLocation.replace(/[%_\\]/g, "")}%`);
+      }
+
+      const { data: fallbackData } = await fallbackQuery;
+      counterpartyResults = fallbackData || [];
+    }
+
+    console.log(`[search] Counterparties table returned ${counterpartyResults.length} results`);
+
+    // Map counterparties to search result shape
+    const cpResults = counterpartyResults.map((cp: any) => ({
+      id: cp.id,
+      title: cp.company_name,
+      description: [
+        cp.description,
+        cp.jurisdiction ? `Jurisdiction: ${cp.jurisdiction}` : null,
+        cp.registration_number ? `Reg: ${cp.registration_number}` : null,
+        cp.product_categories?.length > 0 ? `Products: ${cp.product_categories.join(", ")}` : null,
+      ].filter(Boolean).join(" · "),
+      url: cp.website || "#",
+      source: cp.verified ? "verified_registry" : "counterparty_registry",
+      score: cp.verified ? 0.9 : 0.7,
+      isEnriched: false,
+      enrichmentReason: null,
+      whySurfaced: "Matched from counterparty registry via full-text search",
+      coherence: {
+        score: cp.verified ? 0.95 : 0.7,
+        passed: true,
+        factors: [
+          ...(cp.verified ? ["Verified entity"] : []),
+          ...(cp.jurisdiction ? [`Jurisdiction: ${cp.jurisdiction}`] : []),
+          ...(cp.product_categories?.length > 0 ? ["Product match"] : []),
+        ],
+      },
+      metadata: {
+        org_id: cp.org_id,
+        contact_email: cp.contact_email,
+        verified: cp.verified,
+        registration_number: cp.registration_number,
+      },
+    }));
+
+    // ── 2. Order Book Augmentation ──
     const orderSide = signalType === "buyer" ? "offer" : "bid";
     let orderBookQuery = supabase
       .from("trade_orders")
       .select("id, side, product, price, price_currency, volume, volume_unit, location, org_id, created_at, expires_at")
       .eq("status", "active")
       .eq("side", orderSide)
-      .neq("org_id", authCtx.orgId) // exclude self-matches
+      .neq("org_id", authCtx.orgId)
       .limit(20);
 
     if (product) {
@@ -157,7 +162,6 @@ Deno.serve(async (req) => {
     }
 
     const { data: orderBookHits } = await orderBookQuery;
-    // Filter out expired orders (server-side, since Supabase doesn't support OR-with-null easily)
     const validOrders = (orderBookHits || []).filter((o: any) =>
       !o.expires_at || new Date(o.expires_at) > new Date()
     );
@@ -169,34 +173,24 @@ Deno.serve(async (req) => {
         o.volume != null ? `${Number(o.volume).toLocaleString()} ${o.volume_unit}` : null,
         o.location,
       ].filter(Boolean).join(" · "),
-      url: null,
+      url: "#",
       source: "order_book",
-      is_enriched: false,
-      is_order_book: true,
-      confidence_score: 0.8,
-      metadata: {
-        order_id: o.id,
-        org_id: o.org_id,
-        side: o.side,
-        price: o.price,
-        volume: o.volume,
-        location: o.location,
-      },
+      score: 0.8,
+      isEnriched: false,
+      enrichmentReason: null,
+      whySurfaced: "Active order on the platform order book",
+      coherence: { score: 0.85, passed: true, factors: ["Active order", "Product match"] },
+      metadata: { order_id: o.id, org_id: o.org_id, side: o.side, price: o.price, volume: o.volume, location: o.location },
     }));
-    console.log(`[search] Order book matched ${orderBookResults.length} active orders (${(orderBookHits || []).length - validOrders.length} expired filtered)`);
 
-    // Calculate discovery metrics
-    const metrics = calculateMetrics(baselineCount, mergedResults);
-    console.log(`[search] Uplift: ${metrics.uplift_pct.toFixed(1)}%`);
+    console.log(`[search] Order book matched ${orderBookResults.length} active orders`);
 
-    // Score and rank results with embeddings (includes web + order book)
-    const allResults = [...mergedResults, ...orderBookResults];
-    const scoredResults = await scoreResults(allResults.slice(0, limit), queryEmbedding, mockSignal);
+    // ── 3. Merge, sort, return ──
+    const allResults = [...cpResults, ...orderBookResults];
+    allResults.sort((a, b) => b.score - a.score);
+    const finalResults = allResults.slice(0, limit);
 
-    // Sort by score descending
-    scoredResults.sort((a, b) => b.score - a.score);
-
-    // Log audit completion
+    // Audit: search completed
     await supabase.from("audit_logs").insert({
       org_id: authCtx.orgId,
       actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
@@ -205,11 +199,9 @@ Deno.serve(async (req) => {
       entity_type: "search",
       metadata: {
         query,
-        baseline_count: baselineCount,
-        enriched_count: metrics.enriched_count,
-        uplift_pct: metrics.uplift_pct,
-        results_returned: scoredResults.length,
-        timestamp: new Date().toISOString(),
+        counterparty_count: cpResults.length,
+        order_book_count: orderBookResults.length,
+        results_returned: finalResults.length,
       },
     });
 
@@ -217,19 +209,18 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         query,
-        parsedQuery: { product, location, role: signalType },
-        results: scoredResults,
+        parsedQuery: { product, location: effectiveLocation, role: signalType },
+        results: finalResults,
         metrics: {
-          baselineCount,
-          enrichedCount: metrics.enriched_count,
-          upliftPct: Math.round(metrics.uplift_pct * 10) / 10,
-          enrichmentReasons: metrics.enrichment_reasons,
+          baselineCount: cpResults.length,
+          enrichedCount: 0,
+          upliftPct: 0,
+          enrichmentReasons: {},
           orderBookMatches: orderBookResults.length,
-        }
+        },
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("[search] Error:", error);
     return errorResponse(error instanceof Error ? error : new Error("Unknown error"), requestId, headers);
@@ -237,15 +228,12 @@ Deno.serve(async (req) => {
 });
 
 function parseNaturalLanguageQuery(query: string): { product: string; location: string } {
-  const lowerQuery = query.toLowerCase();
-  
-  // Common location indicators
   const locationPatterns = [
     /\bin\s+([a-zA-Z\s]+?)(?:\s+for|\s+with|\s*$)/i,
     /\bfrom\s+([a-zA-Z\s]+?)(?:\s+for|\s+with|\s*$)/i,
     /\bto\s+([a-zA-Z\s]+?)(?:\s+for|\s+with|\s*$)/i,
   ];
-  
+
   let location = "";
   for (const pattern of locationPatterns) {
     const match = query.match(pattern);
@@ -254,70 +242,14 @@ function parseNaturalLanguageQuery(query: string): { product: string; location: 
       break;
     }
   }
-  
-  // Common product extraction - remove noise words
+
   let product = query
     .replace(/\b(buyers?|sellers?|suppliers?|for|in|from|to|looking|want|need|find|get)\b/gi, " ")
     .replace(new RegExp(location, "gi"), "")
     .replace(/\s+/g, " ")
     .trim();
-  
-  // If product is empty, use the whole query
-  if (!product) {
-    product = query;
-  }
-  
-  return { product, location };
-}
 
-async function scoreResults(
-  results: any[],
-  queryEmbedding: number[] | null,
-  signal: any
-): Promise<any[]> {
-  const scored = [];
-  
-  for (const result of results) {
-    let score = result.confidence_score || 0.5;
-    
-    // Semantic similarity scoring
-    if (queryEmbedding) {
-      const resultText = `${result.title} ${result.description}`;
-      const resultEmbedding = await generateEmbedding(resultText);
-      if (resultEmbedding) {
-        const similarity = cosineSimilarity(queryEmbedding, resultEmbedding);
-        score = 0.3 + (similarity * 0.7); // Scale to 0.3-1.0
-      }
-    }
-    
-    // Coherence scoring
-    const coherence = scoreCoherence(signal, {
-      what: signal.content.product,
-      where_location: result.location || "",
-      metadata: result.metadata || {},
-    });
-    
-    // Combine scores
-    const finalScore = (score * 0.7) + (coherence.score * 0.3);
-    
-    scored.push({
-      id: result.id || crypto.randomUUID(),
-      title: result.title,
-      description: result.description,
-      url: result.url,
-      source: result.source,
-      score: Math.round(finalScore * 100) / 100,
-      isEnriched: result.is_enriched || false,
-      enrichmentReason: result.enrichment_reason || null,
-      whySurfaced: result.is_enriched ? result.enrichment_reason : "Baseline AI search",
-      coherence: {
-        score: coherence.score,
-        passed: coherence.passed,
-        factors: coherence.factors,
-      },
-      metadata: result.metadata || {},
-    });
-  }
-  
-  return scored;
+  if (!product) product = query;
+
+  return { product, location };
 }
