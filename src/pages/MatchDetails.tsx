@@ -12,6 +12,7 @@ import * as MatchState from "@/lib/match-state";
 import { useMatchDetails } from "@/hooks/use-match-details";
 import { MatchHeroCard } from "@/components/match/MatchHeroCard";
 import { MatchDetailsTabs } from "@/components/match/MatchDetailsTabs";
+import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { ROUTES } from "@/lib/constants";
 
 export default function MatchDetails() {
@@ -110,6 +111,7 @@ export default function MatchDetails() {
         </Button>
       </div>
 
+      <AcceptBindCard match={match} onAccepted={fetchMatch} />
       <MatchHeroCard match={match} isSettled={isSettled} />
 
       <MatchDetailsTabs

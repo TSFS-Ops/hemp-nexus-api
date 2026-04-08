@@ -958,6 +958,136 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── PATCH /match — Accept & Bind (convert unilateral → bilateral) ──
+    if (req.method === "PATCH") {
+      const body = await req.json();
+      const { matchId: patchMatchId, action: patchAction, counterparty, expected_state } = body;
+
+      if (patchAction !== "accept-bind") {
+        throw new ApiException("VALIDATION_ERROR", "Unknown PATCH action", 400);
+      }
+
+      const matchUuid = uuidSchema.safeParse(patchMatchId);
+      if (!matchUuid.success) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
+      if (!counterparty?.org_id || !counterparty?.role || !counterparty?.name) {
+        throw new ApiException("VALIDATION_ERROR", "counterparty.org_id, role, and name are required", 400);
+      }
+
+      if (!["buyer", "seller"].includes(counterparty.role)) {
+        throw new ApiException("VALIDATION_ERROR", "counterparty.role must be buyer or seller", 400);
+      }
+
+      console.log(`[${requestId}] PATCH accept-bind for match ${patchMatchId}`);
+
+      // Fetch the match
+      const { data: existingMatch, error: fetchErr } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", patchMatchId)
+        .maybeSingle();
+
+      if (fetchErr) handleDatabaseError(fetchErr, requestId);
+      if (!existingMatch) {
+        throw new ApiException("NOT_FOUND", "Match not found", 404);
+      }
+
+      // Must be unilateral
+      if (existingMatch.match_type !== "unilateral") {
+        throw new ApiException("VALIDATION_ERROR", "Only unilateral matches can be converted via accept-bind", 400);
+      }
+
+      // Caller must NOT be the match creator (they're the counterparty)
+      if (existingMatch.org_id === authCtx.orgId) {
+        throw new ApiException("FORBIDDEN", "You cannot accept your own match", 403);
+      }
+
+      // Check the slot is actually open
+      const slotField = counterparty.role === "buyer" ? "buyer_org_id" : "seller_org_id";
+      if (existingMatch[slotField]) {
+        throw new ApiException("STATE_CONFLICT", `The ${counterparty.role} slot is already filled`, 409);
+      }
+
+      // Use safe_transition to atomically update
+      const updateFields: Record<string, any> = {};
+      if (counterparty.role === "buyer") {
+        updateFields.buyer_org_id = counterparty.org_id;
+        updateFields.buyer_name = counterparty.name;
+      } else {
+        updateFields.seller_org_id = counterparty.org_id;
+        updateFields.seller_name = counterparty.name;
+      }
+
+      // Update match_type and bind the counterparty
+      const { data: updatedMatch, error: updateErr } = await supabase
+        .from("matches")
+        .update({
+          ...updateFields,
+          match_type: "bilateral",
+        })
+        .eq("id", patchMatchId)
+        .select("*")
+        .single();
+
+      if (updateErr) handleDatabaseError(updateErr, requestId);
+
+      // Record the event in the hash chain
+      await recordMatchEvent(
+        supabase,
+        patchMatchId,
+        authCtx.orgId,
+        "counterparty.bound",
+        {
+          bound_org_id: counterparty.org_id,
+          bound_name: counterparty.name,
+          bound_role: counterparty.role,
+          previous_match_type: "unilateral",
+          new_match_type: "bilateral",
+        },
+        actorUserId,
+        actorApiKeyId
+      );
+
+      // Audit log
+      const { error: auditErr } = await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: "match.accept_bind",
+        entity_type: "match",
+        entity_id: patchMatchId,
+        metadata: {
+          bound_org_id: counterparty.org_id,
+          bound_role: counterparty.role,
+          request_id: requestId,
+        },
+      });
+
+      if (auditErr) {
+        console.error(`[${requestId}] AUDIT_LOG_ERROR:`, auditErr);
+        throw new ApiException("AUDIT_LOG_ERROR", "Failed to record audit trail", 500);
+      }
+
+      // Trigger webhooks
+      triggerWebhooks(supabase, existingMatch.org_id, "match.counterparty_bound", {
+        matchId: patchMatchId,
+        boundOrgId: counterparty.org_id,
+        boundRole: counterparty.role,
+      }).catch(err => console.error(`Webhook trigger error:`, err));
+
+      await logApiRequest({
+        supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+        endpoint: "PATCH /match (accept-bind)", method: "PATCH", statusCode: 200,
+      });
+
+      return new Response(JSON.stringify(updatedMatch), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     // Method not allowed
     throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
 

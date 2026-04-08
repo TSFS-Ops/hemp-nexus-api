@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Megaphone, Info, Sparkles } from "lucide-react";
+import { Loader2, Megaphone, Info, Sparkles, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -40,6 +40,7 @@ interface UnilateralFormData {
   currency: string;
   location: string;
   notes: string;
+  counterpartyEmail: string;
 }
 
 const INITIAL: UnilateralFormData = {
@@ -51,6 +52,7 @@ const INITIAL: UnilateralFormData = {
   currency: "ZAR",
   location: "",
   notes: "",
+  counterpartyEmail: "",
 };
 
 export function UnilateralIntentForm() {
@@ -210,6 +212,34 @@ export function UnilateralIntentForm() {
       } catch (tradeOrderErr) {
         console.error("Non-critical: trade_order insert failed", tradeOrderErr);
         // Intent was created successfully — don't block the user
+      }
+
+      // Send counterparty invite email if provided
+      if (form.counterpartyEmail.trim()) {
+        try {
+          const siteUrl = window.location.origin;
+          const acceptUrl = `${siteUrl}/auth?redirect=/dashboard/matches/${matchData.id}`;
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "poi-invite",
+              recipientEmail: form.counterpartyEmail.trim(),
+              idempotencyKey: `poi-invite-${matchData.id}`,
+              templateData: {
+                commodity: form.commodity.trim(),
+                quantity: form.quantity || undefined,
+                unit: form.unit || undefined,
+                price: form.price || undefined,
+                currency: form.currency || undefined,
+                senderName: myName,
+                acceptUrl,
+              },
+            },
+          });
+          toast.success("Invite sent to counterparty.", { duration: 4000 });
+        } catch (emailErr) {
+          console.error("Non-critical: counterparty invite email failed", emailErr);
+          toast.info("Intent published, but the invite email could not be sent. Share the link manually.");
+        }
       }
 
       toast.success("Intent published. This record is now visible in your matches.");
@@ -425,6 +455,24 @@ export function UnilateralIntentForm() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Counterparty Email (optional invite) */}
+          <div className="space-y-2">
+            <Label htmlFor="uni-counterparty-email" className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5" />
+              Counterparty email (optional)
+            </Label>
+            <Input
+              id="uni-counterparty-email"
+              type="email"
+              placeholder="e.g. farmer@example.com — they'll receive an invite to review this POI"
+              value={form.counterpartyEmail}
+              onChange={(e) => update("counterpartyEmail", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              If provided, the counterparty will receive an email invitation to create an account and accept this intent, converting it into a bilateral POI.
+            </p>
           </div>
 
           {/* Notes */}
