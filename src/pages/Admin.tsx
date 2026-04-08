@@ -1,4 +1,4 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -35,35 +35,61 @@ import { AdminRiskSnapshotsPanel } from "@/components/admin/AdminRiskSnapshotsPa
 import { AdminScreeningRunsPanel } from "@/components/admin/AdminScreeningRunsPanel";
 import { AdminUboPanel } from "@/components/admin/AdminUboPanel";
 import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
+import { AdminSignalsPanel } from "@/components/admin/AdminSignalsPanel";
+import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { useLocation, Navigate } from "react-router-dom";
 
-/** Admin-level catch-all for unknown sub-routes */
+// ─── Section Headers ────────────────────────────────────────────────
+function SectionHeader({ title, description, parents }: { title: string; description: string; parents?: { label: string; href: string }[] }) {
+  return (
+    <div className="space-y-1">
+      {parents && <Breadcrumbs items={[...parents, { label: title }]} />}
+      <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+// ─── GOV.UK Empty State ─────────────────────────────────────────────
+function SystemEmpty({ icon: Icon, heading, description }: { icon: React.ComponentType<{ className?: string }>; heading: string; description: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <Icon className="h-10 w-10 text-muted-foreground/30 mb-4" />
+      <h3 className="text-base font-medium text-foreground mb-1">{heading}</h3>
+      <p className="text-sm text-muted-foreground max-w-sm">{description}</p>
+    </div>
+  );
+}
+
 function AdminNotFound() {
   return (
     <div className="p-6 text-center py-16">
       <p className="text-4xl font-bold text-muted-foreground/30 mb-3">404</p>
-      <h2 className="text-lg font-semibold text-foreground mb-1">Admin page not found</h2>
-      <p className="text-sm text-muted-foreground mb-4">This admin section doesn't exist.</p>
+      <h2 className="text-lg font-semibold text-foreground mb-1">Page not found</h2>
+      <p className="text-sm text-muted-foreground mb-4">This admin section does not exist.</p>
       <Button variant="outline" size="sm" asChild>
         <Link to={ROUTES.ADMIN}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Admin Overview
+          Back to Overview
         </Link>
       </Button>
     </div>
   );
 }
 
-/** Deals: Pipeline + Matches + Approvals */
+// ─── OPERATIONS ─────────────────────────────────────────────────────
+
 function DealsSection() {
   const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Deals" }]} />
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Deals</h2>
+      <SectionHeader
+        title="Deals"
+        description="Pipeline progression, match lifecycle, and trade approval status."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
@@ -80,38 +106,40 @@ function DealsSection() {
   );
 }
 
-/** Users & Orgs: Users + Orgs + Entities */
-function UsersOrgsSection() {
-  const [tab, setTab] = useUrlTab("tab", "users", ["users", "orgs", "entities", "tokens"]);
+function OrderBookSection() {
+  const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Users & Orgs" }]} />
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Users & Organisations</h2>
+      <SectionHeader
+        title="Order Book"
+        description="Active buyer and seller signals across the platform."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="orgs">Organisations</TabsTrigger>
-            <TabsTrigger value="entities">Entities</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="signals">Signals</TabsTrigger>
+            <TabsTrigger value="interests">Interests</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
-        <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
-        <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
-        <TabsContent value="tokens" className="mt-4"><AdminTokenManagement /></TabsContent>
+        <TabsContent value="signals" className="mt-4"><AdminSignalsPanel /></TabsContent>
+        <TabsContent value="interests" className="mt-4"><AdminInterestsPanel /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
-/** Compliance: Cases + Risk + KYC + Screening + UBO */
-function AdminComplianceSection() {
+// ─── TRUST & INTEGRITY ──────────────────────────────────────────────
+
+function ComplianceSection() {
   const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Compliance" }]} />
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Compliance</h2>
+      <SectionHeader
+        title="Compliance"
+        description="KYC/KYB verification status, risk assessment, and dispute resolution."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
@@ -121,7 +149,7 @@ function AdminComplianceSection() {
             <TabsTrigger value="kyc">KYC Docs</TabsTrigger>
             <TabsTrigger value="screening">Screening</TabsTrigger>
             <TabsTrigger value="ubo">UBO</TabsTrigger>
-            <TabsTrigger value="behavioral-kyc">Score → KYC</TabsTrigger>
+            <TabsTrigger value="behavioral-kyc">Score to KYC</TabsTrigger>
             <TabsTrigger value="insights">Behavioural Insights</TabsTrigger>
           </TabsList>
         </div>
@@ -138,76 +166,164 @@ function AdminComplianceSection() {
   );
 }
 
-/** Audit: Logs + POI History + Collapse Ledger + API Logs */
 function AuditSection() {
-  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi", "ledger", "api"]);
+  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Audit" }]} />
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Audit Trail</h2>
+      <SectionHeader
+        title="Audit Trail"
+        description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
             <TabsTrigger value="poi">POI History</TabsTrigger>
-            <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
-            <TabsTrigger value="api">API Logs</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="audit" className="mt-4"><AdminAuditLogs /></TabsContent>
         <TabsContent value="poi" className="mt-4"><PoiStateHistory /></TabsContent>
-        <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
-        <TabsContent value="api" className="mt-4"><GlobalApiLogs /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
-/** Infrastructure: Signing Keys + Reputation + PoD */
-function InfrastructureSection() {
-  const [tab, setTab] = useUrlTab("tab", "signing-keys", ["signing-keys", "reputation", "pods", "risk-snapshots"]);
+function LedgerSection() {
+  const [tab, setTab] = useUrlTab("tab", "ledger", ["ledger", "signing-keys", "reputation", "risk-snapshots"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Infrastructure" }]} />
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Infrastructure</h2>
+      <SectionHeader
+        title="Evidence Ledger"
+        description="Cryptographic proof chain for all collapsed trades. Every entry is SHA-256 hashed and signature-verified."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
+            <TabsTrigger value="ledger">Collapse Ledger</TabsTrigger>
             <TabsTrigger value="signing-keys">Signing Keys</TabsTrigger>
             <TabsTrigger value="reputation">Reputation</TabsTrigger>
-            <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
             <TabsTrigger value="risk-snapshots">Risk Snapshots</TabsTrigger>
           </TabsList>
         </div>
+        <TabsContent value="ledger" className="mt-4"><CollapseLedgerViewer /></TabsContent>
         <TabsContent value="signing-keys" className="mt-4"><AdminSigningKeysPanel /></TabsContent>
         <TabsContent value="reputation" className="mt-4"><AdminReputationPanel /></TabsContent>
-        <TabsContent value="pods" className="mt-4"><AdminPodPanel /></TabsContent>
         <TabsContent value="risk-snapshots" className="mt-4"><AdminRiskSnapshotsPanel /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
-/** Data Governance: Governance Docs + Retention + Settings */
-function DataGovernanceSection() {
-  const [tab, setTab] = useUrlTab("tab", "governance-docs", ["governance-docs", "retention"]);
+// ─── ENTITIES ───────────────────────────────────────────────────────
+
+function UsersSection() {
+  const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Data Governance" }]} />
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Data Governance</h2>
+      <SectionHeader
+        title="Users"
+        description="Platform user accounts and credit balance management."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
-            <TabsTrigger value="governance-docs">Governance Documents</TabsTrigger>
-            <TabsTrigger value="retention">Retention Enforcement</TabsTrigger>
+            <TabsTrigger value="users">User Accounts</TabsTrigger>
+            <TabsTrigger value="tokens">Credit Balances</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="governance-docs" className="mt-4"><AdminGovernanceDocsPanel /></TabsContent>
-        <TabsContent value="retention" className="mt-4"><AdminRetentionFlagsPanel /></TabsContent>
+        <TabsContent value="users" className="mt-4"><UsersManagement /></TabsContent>
+        <TabsContent value="tokens" className="mt-4"><AdminTokenManagement /></TabsContent>
       </Tabs>
     </div>
   );
 }
+
+function OrgsSection() {
+  const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods"]);
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <SectionHeader
+        title="Organisations"
+        description="Registered organisations, legal entities, and proof-of-delivery tracking."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <Tabs value={tab} onValueChange={setTab}>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="orgs">Organisations</TabsTrigger>
+            <TabsTrigger value="entities">Legal Entities</TabsTrigger>
+            <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="orgs" className="mt-4"><OrgsManagement /></TabsContent>
+        <TabsContent value="entities" className="mt-4"><AdminEntitiesPanel /></TabsContent>
+        <TabsContent value="pods" className="mt-4"><AdminPodPanel /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── DEVELOPER ──────────────────────────────────────────────────────
+
+function WebhooksSection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <SectionHeader
+        title="Webhooks"
+        description="Event delivery endpoints and retry status for all organisations."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <SystemEmpty
+        icon={ArrowLeft}
+        heading="No webhook endpoints configured"
+        description="Webhook endpoints are managed per-organisation from the console dashboard."
+      />
+    </div>
+  );
+}
+
+function SystemLogsSection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <SectionHeader
+        title="System Logs"
+        description="API request logs, error rates, and edge function execution history."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <GlobalApiLogs />
+    </div>
+  );
+}
+
+// ─── GOVERNANCE ─────────────────────────────────────────────────────
+
+function DataGovernanceSection() {
+  const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs"]);
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <SectionHeader
+        title="Data Retention"
+        description="Managing 7-year immutable hold cycles for POPIA compliance. Records are never permanently deleted."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <Tabs value={tab} onValueChange={setTab}>
+        <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="retention">Retention Enforcement</TabsTrigger>
+            <TabsTrigger value="governance-docs">Governance Documents</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="retention" className="mt-4"><AdminRetentionFlagsPanel /></TabsContent>
+        <TabsContent value="governance-docs" className="mt-4"><AdminGovernanceDocsPanel /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── Layout ─────────────────────────────────────────────────────────
 
 function AdminContent() {
   return (
@@ -220,7 +336,7 @@ function AdminContent() {
           <header className="h-12 sm:h-14 border-b flex items-center px-3 sm:px-4 bg-background justify-between sticky top-0 z-10 safe-area-top">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="touch-target hidden md:flex" />
-              <h1 className="text-base sm:text-lg font-semibold truncate">Admin</h1>
+              <h1 className="text-sm font-medium text-muted-foreground tracking-wide uppercase">Admin</h1>
             </div>
             <Button variant="outline" size="sm" asChild>
               <Link to={ROUTES.DASHBOARD}>
@@ -231,16 +347,29 @@ function AdminContent() {
           </header>
           <main className="flex-1 overflow-auto pb-20 md:pb-0">
             <Routes>
+              {/* OPERATIONS */}
               <Route path="/" element={<AdminOverview />} />
               <Route path="/deals" element={<DealsSection />} />
-              <Route path="/users-orgs" element={<UsersOrgsSection />} />
-              <Route path="/compliance" element={<AdminComplianceSection />} />
+              <Route path="/order-book" element={<OrderBookSection />} />
+              {/* TRUST & INTEGRITY */}
+              <Route path="/compliance" element={<ComplianceSection />} />
               <Route path="/audit" element={<AuditSection />} />
+              <Route path="/ledger" element={<LedgerSection />} />
+              {/* ENTITIES */}
+              <Route path="/users" element={<UsersSection />} />
+              <Route path="/orgs" element={<OrgsSection />} />
+              {/* DEVELOPER */}
               <Route path="/api-keys" element={<AdminApiKeys />} />
-              <Route path="/infrastructure" element={<InfrastructureSection />} />
+              <Route path="/webhooks" element={<WebhooksSection />} />
+              <Route path="/system-logs" element={<SystemLogsSection />} />
+              {/* GOVERNANCE */}
               <Route path="/data-governance" element={<DataGovernanceSection />} />
-              <Route path="/overrides" element={<AdminManualOverrides />} />
               <Route path="/settings" element={<AdminSettings />} />
+              <Route path="/overrides" element={<AdminManualOverrides />} />
+              {/* Legacy redirects */}
+              <Route path="/users-orgs" element={<Navigate to={ROUTES.ADMIN_USERS} replace />} />
+              <Route path="/infrastructure" element={<Navigate to={ROUTES.ADMIN_LEDGER} replace />} />
+              {/* 404 */}
               <Route path="*" element={<AdminNotFound />} />
             </Routes>
           </main>
