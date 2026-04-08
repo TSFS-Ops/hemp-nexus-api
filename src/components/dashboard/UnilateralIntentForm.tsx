@@ -81,11 +81,31 @@ export function UnilateralIntentForm() {
     }
 
     setIsSubmitting(true);
+
+    // FIX #4: Stable idempotency key derived from form content — survives page reload / retry
+    const idempotencyKey = `unilateral_${session.user.id}_${form.commodity.trim().toLowerCase()}_${form.side}_${form.quantity || "0"}_${form.price || "0"}`;
+
+    // FIX #4b: AbortController with timeout for network resilience
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000); // 30s timeout
+
     try {
+      // FIX #5: Check session freshness before making the request
+      const { data: { session: freshSession }, error: refreshErr } = await supabase.auth.getSession();
+      if (refreshErr || !freshSession) {
+        toast.error("Your session has expired. Please sign in again.", {
+          action: {
+            label: "Sign in",
+            onClick: () => navigate("/auth?returnTo=/dashboard&expired=1"),
+          },
+        });
+        return;
+      }
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, org_id, full_name")
-        .eq("id", session.user.id)
+        .eq("id", freshSession.user.id)
         .maybeSingle();
 
       if (!profile?.org_id) {
@@ -103,7 +123,6 @@ export function UnilateralIntentForm() {
       const quantityAmount = form.quantity ? parseFloat(form.quantity) : null;
       const priceAmount = form.price ? parseFloat(form.price) : null;
 
-      // Only one side is populated — the other is null (no counterparty)
       const buyer = form.side === "buyer"
         ? { id: profile.org_id, name: myName }
         : null;
@@ -117,9 +136,9 @@ export function UnilateralIntentForm() {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${freshSession.access_token}`,
             "Content-Type": "application/json",
-            "Idempotency-Key": `unilateral_${crypto.randomUUID()}`,
+            "Idempotency-Key": idempotencyKey,
           },
           body: JSON.stringify({
             buyer,
@@ -139,17 +158,43 @@ export function UnilateralIntentForm() {
               notes: form.notes.trim() || null,
             },
           }),
+          signal: controller.signal,
         }
       );
 
+      clearTimeout(timeoutId);
+
+      // FIX #5b: Handle specific HTTP error codes with actionable messages
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          toast.error("Session expired. Please sign in again.", {
+            action: {
+              label: "Sign in",
+              onClick: () => navigate("/auth?returnTo=/dashboard&expired=1"),
+            },
+          });
+          return;
+        }
+        if (response.status === 409) {
+          toast.info("This intent already exists. Redirecting to your matches.");
+          navigate(ROUTES.DASHBOARD_MATCHES);
+          return;
+        }
+        if (response.status === 422) {
+          toast.error(err.message || "Validation failed. Check your inputs and try again.");
+          return;
+        }
+        if (response.status === 429) {
+          toast.error("Too many requests. Please wait a moment and try again.");
+          return;
+        }
         throw new Error(err.message || err.error || `HTTP ${response.status}`);
       }
 
       const matchData = await response.json();
 
-      // Persist as trade order for order book visibility
+      // FIX #1: trade_order insert is non-critical — log failure but don't block
       try {
         await supabase.from("trade_orders").insert({
           org_id: profile.org_id,
@@ -160,13 +205,25 @@ export function UnilateralIntentForm() {
           volume: quantityAmount && !isNaN(quantityAmount) ? quantityAmount : null,
           location: form.location.trim() || null,
         } as any);
-      } catch {
-        // Non-critical
+      } catch (tradeOrderErr) {
+        console.error("Non-critical: trade_order insert failed", tradeOrderErr);
+        // Intent was created successfully — don't block the user
       }
 
       toast.success("Intent published. This record is now visible in your matches.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
+      clearTimeout(timeoutId);
+
+      // FIX #4c: Distinguish abort (timeout) from other errors
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast.error(
+          "Request timed out. Your intent may have been created. Check your matches before retrying.",
+          { duration: 8000 }
+        );
+        return;
+      }
+
       console.error("Unilateral intent creation error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to create intent.");
     } finally {
