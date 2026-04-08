@@ -5388,6 +5388,18 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      refund_tokens_on_conflict: {
+        Args: {
+          p_actor_user_id?: string
+          p_amount: number
+          p_match_id: string
+          p_org_id: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      release_lifecycle_lock: { Args: never; Returns: undefined }
       reset_auth_rate_limit: {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
@@ -5411,6 +5423,7 @@ export type Database = {
         }
         Returns: Json
       }
+      try_lifecycle_lock: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role:
