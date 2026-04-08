@@ -1,5 +1,5 @@
 /**
- * Bloomberg-style bid/offer entry form — ultra-premium dark terminal aesthetic.
+ * Bloomberg-style buyer/seller entry form — ultra-premium dark terminal aesthetic.
  * Pill-shaped toggles, borderless inputs with focus glow, rounded search button.
  */
 
@@ -126,7 +126,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       )}
 
-      {/* BID / OFFER pill toggle */}
+      {/* BUYER / SELLER pill toggle */}
       <div className="inline-flex rounded-full p-1" style={{ backgroundColor: '#0D1220', border: '1px solid var(--lt-border)' }}>
         <button
           type="button"
