@@ -32,25 +32,44 @@ interface FieldCheck {
 }
 
 function getFieldChecklist(match: Match): FieldCheck[] {
-  return [
+  const isUnilateral = (match as any).match_type === "unilateral";
+
+  const fields: FieldCheck[] = [
     {
       label: "Commodity",
       filled: !!match.commodity,
       required: true,
       hint: "Set via Search or edit the match",
     },
-    {
-      label: "Buyer name",
-      filled: !!match.buyer_name,
+  ];
+
+  if (!isUnilateral) {
+    fields.push(
+      {
+        label: "Buyer name",
+        filled: !!match.buyer_name,
+        required: true,
+        hint: "Add via the Terms tab or match creation",
+      },
+      {
+        label: "Seller name",
+        filled: !!match.seller_name,
+        required: true,
+        hint: "Add via the Terms tab or match creation",
+      },
+    );
+  } else {
+    // Unilateral: at least one party must be the declaring side
+    const hasDeclarer = !!match.buyer_name || !!match.seller_name;
+    fields.push({
+      label: "Declaring party",
+      filled: hasDeclarer,
       required: true,
-      hint: "Add via the Terms tab or match creation",
-    },
-    {
-      label: "Seller name",
-      filled: !!match.seller_name,
-      required: true,
-      hint: "Add via the Terms tab or match creation",
-    },
+      hint: "Set when creating the intent",
+    });
+  }
+
+  fields.push(
     {
       label: "Quantity",
       filled: match.quantity_amount != null && match.quantity_amount > 0,
@@ -69,7 +88,9 @@ function getFieldChecklist(match: Match): FieldCheck[] {
       required: false,
       hint: "Optional — add payment/delivery terms",
     },
-  ];
+  );
+
+  return fields;
 }
 
 const CREDITS_PER_ACTION = 1;
