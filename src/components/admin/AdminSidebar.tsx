@@ -126,7 +126,7 @@ export function AdminSidebar() {
                           }`}
                           style={active ? { borderLeft: '2px solid hsl(160, 84%, 29%)' } : {}}
                         >
-                          <item.icon className={`h-4 w-4 shrink-0 ${active ? '' : ''}`} style={active ? { color: 'hsl(160, 84%, 39%)' } : {}} />
+                          <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-success' : ''}`} />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
