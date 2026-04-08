@@ -48,8 +48,19 @@ function scanFile(filePath) {
   const lines = content.split("\n");
   const violations = [];
 
+  // Allowlisted patterns: API payload keys, HTML IDs, and DB enum values
+  const ALLOWLIST = [
+    /counterparty:\s*\{/,                    // JSON payload key in API calls
+    /value="share_with_counterparty"/,       // DB enum value
+    /id="counterparty"/,                     // HTML element ID
+    /htmlFor="counterparty"/,                // HTML label association
+  ];
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    // Skip allowlisted lines
+    if (ALLOWLIST.some((al) => al.test(line))) continue;
 
     for (const [pattern, label, fix] of BANNED_TERMS) {
       pattern.lastIndex = 0;

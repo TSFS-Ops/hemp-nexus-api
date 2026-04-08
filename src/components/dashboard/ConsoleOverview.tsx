@@ -35,7 +35,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
     },
     {
       number: "3",
-      title: "Confirm intent",
+      title: "Send trade request",
       description: "Signal your serious interest - no contract, no payment, just a verifiable audit record.",
       icon: Zap,
       action: () => navigate(ROUTES.DASHBOARD_MATCHES),
@@ -210,7 +210,7 @@ export function ConsoleOverview() {
       <header>
         <h1 className="text-2xl font-semibold text-foreground mb-1">Console</h1>
         <p className="text-muted-foreground">
-          Your activity at a glance - search, match, and confirm intent
+          Your activity at a glance - search, match, and send trade requests
         </p>
       </header>
 
@@ -360,7 +360,7 @@ export function ConsoleOverview() {
               return (
                 <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Your next step: Confirm intent on a match</p>
+                    <p className="text-sm font-medium text-foreground">Your next step: Send a trade request on a match</p>
                     <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable trade request record.</p>
                   </div>
                   <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)}>

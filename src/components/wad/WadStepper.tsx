@@ -103,7 +103,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     setSealing(false);
 
     if (result.success) {
-      toast.success("WaD sealed successfully");
+      toast.success("Signed Deal sealed successfully");
       onUpdate();
     } else {
       toast.error(result.error || "Failed to seal");
@@ -116,7 +116,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     setDownloading(false);
 
     if (result.success && result.data) {
-      triggerBlobDownload(result.data, `WaD-Certificate-${wad.id.substring(0, 8)}.pdf`);
+      triggerBlobDownload(result.data, `Izenzo-Certificate-${wad.id.substring(0, 8)}.pdf`);
       toast.success("Certificate downloaded");
     } else {
       toast.error(result.error || "Failed to download certificate");

@@ -47,7 +47,7 @@ export function SearchOutcomes({
           Sign in to view results
         </h3>
         <p className="text-[12px] font-medium leading-relaxed mb-5 max-w-md" style={{ color: 'var(--lt-text-muted)' }}>
-          Counterparty search results are available to registered users.
+          Trading partner search results are available to registered users.
           Create a free account to find verified trading partners and submit trade requests.
         </p>
 

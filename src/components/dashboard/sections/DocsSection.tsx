@@ -16,7 +16,7 @@ export function DocsSection() {
         <h3 className="font-medium text-foreground mb-2">What does this API do?</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Search for trading partners, record trade request, and generate tamper-evident audit trails. 
-          <strong className="text-foreground"> Confirm Intent</strong> creates an information-only record - no payment, no contract, no legal obligation.
+          <strong className="text-foreground"> Send Trade Request</strong> creates an information-only record - no payment, no contract, no legal obligation.
         </p>
       </div>
 
@@ -83,11 +83,11 @@ export function DocsSection() {
         </div>
       </div>
 
-      {/* Confirm Intent Behaviour */}
+      {/* Trade Request Behaviour */}
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Confirm Intent behaviour:</strong> Records interest between parties. Creates tamper-evident evidence with SHA-256 hash. 
+          <strong>Trade Request behaviour:</strong> Records interest between parties. Creates tamper-evident evidence with SHA-256 hash. 
           Does not create payment, contract, or legal obligation. Required fields must be present or request is rejected (HTTP 422).
         </AlertDescription>
       </Alert>

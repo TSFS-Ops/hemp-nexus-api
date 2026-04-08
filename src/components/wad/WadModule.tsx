@@ -56,7 +56,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       if (result.success) {
         setWad(result.data ?? null);
       } else {
-        console.error("Error fetching WaD:", result.error);
+        console.error("Error fetching Signed Deal:", result.error);
       }
     } finally {
       setLoading(false);
@@ -72,13 +72,13 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       if (result.success && result.data) {
         setWad(result.data);
         setGateFailures([]);
-        toast.success("WaD created successfully");
+        toast.success("Signed Deal created successfully");
         onWadCreated?.();
       } else {
         if (result.gateFailures?.length) {
           setGateFailures(result.gateFailures);
         }
-        toast.error(result.error || "Failed to create WaD");
+        toast.error(result.error || "Failed to create Signed Deal");
       }
     } finally {
       setCreating(false);
@@ -123,7 +123,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <p className="font-medium">Intent must be confirmed first</p>
               <p className="text-sm text-muted-foreground">
                 {state.createBlockedReasons[0]?.reason ||
-                  "WaD can only be created after both parties have trade request on this intent."}
+                  "Signed Deal can only be created after both parties have sent a trade request on this intent."}
               </p>
             </div>
           </div>
@@ -161,7 +161,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               </p>
               <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Search query and match context</li>
-                <li>Confirm intent timestamps and parties</li>
+                <li>Trade request timestamps and parties</li>
                 <li>Document hashes and evidence bundle</li>
                 <li>Multi-party attestations</li>
                 <li>Cryptographic seal</li>
@@ -206,8 +206,8 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               {!jurisdictionSelected
                 ? "Select jurisdiction first"
                 : gateFailures.length > 0
-                  ? "Retry WaD Creation"
-                  : "Create WaD"}
+                  ? "Retry Signed Deal Creation"
+                  : "Create Signed Deal"}
             </Button>
           </CardContent>
         </Card>

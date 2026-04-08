@@ -56,7 +56,7 @@ export function PoiStateHistory() {
       if (error) throw error;
       setEvents((data as unknown as PoiEvent[]) || []);
     } catch (err) {
-      console.error("Failed to fetch POI history:", err);
+      console.error("Failed to fetch intent history:", err);
       toast.error("Failed to fetch Intent state history");
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export function PoiStateHistory() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
-          POI State Transition History
+          Intent State Transition History
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -79,7 +79,7 @@ export function PoiStateHistory() {
             onChange={(e) => setMatchId(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && fetchHistory()}
             className="font-mono text-sm"
-            aria-label="Match ID for POI history lookup"
+            aria-label="Match ID for intent history lookup"
           />
           <Button onClick={fetchHistory} disabled={loading}>
             {loading ? (

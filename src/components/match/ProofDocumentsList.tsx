@@ -27,7 +27,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   contract: "Contract",
   shipping: "Shipping Document",
   compliance: "Compliance Document",
-  license: "License / Permit",
+  license: "Licence / Permit",
   quality_report: "Quality Report",
   other: "Other",
 };
