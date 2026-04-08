@@ -84,7 +84,7 @@ function AdminNotFound() {
 function DealsSection() {
   const [tab, setTab] = useUrlTab("tab", "pipeline", ["pipeline", "matches", "approvals"]);
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Active Requests"
         description="Trade requests in progress, match lifecycle tracking, and approval status."
@@ -98,9 +98,9 @@ function DealsSection() {
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="pipeline" className="mt-4"><AdminDealPipelinePanel /></TabsContent>
-        <TabsContent value="matches" className="mt-4"><AdminMatchesPanel /></TabsContent>
-        <TabsContent value="approvals" className="mt-4"><AdminTradeApprovalsPanel /></TabsContent>
+        <TabsContent value="pipeline" className="mt-4 animate-section-enter"><AdminDealPipelinePanel /></TabsContent>
+        <TabsContent value="matches" className="mt-4 animate-section-enter"><AdminMatchesPanel /></TabsContent>
+        <TabsContent value="approvals" className="mt-4 animate-section-enter"><AdminTradeApprovalsPanel /></TabsContent>
       </Tabs>
     </div>
   );
