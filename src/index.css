@@ -256,11 +256,13 @@
   .delay-500 { animation-delay: 500ms; }
 
   /* Mechanical table row hover - emerald focus indicator */
-  .tr-mechanical {
+  .tr-mechanical,
+  [data-admin-table] tbody tr {
     transition: background-color 0.15s ease, border-color 0.15s ease;
     border-left: 2px solid transparent;
   }
-  .tr-mechanical:hover {
+  .tr-mechanical:hover,
+  [data-admin-table] tbody tr:hover {
     background-color: hsl(var(--emerald-muted));
     border-left-color: hsl(var(--emerald));
   }
