@@ -6,12 +6,13 @@
  * Each action costs 1 credit.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CheckCircle2, Circle, ArrowRight, Coins, AlertTriangle, Loader2,
+  Check, X, Info,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,54 @@ import {
 } from "@/components/ui/alert-dialog";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
+
+interface FieldCheck {
+  label: string;
+  filled: boolean;
+  required: boolean;
+  hint: string;
+}
+
+function getFieldChecklist(match: Match): FieldCheck[] {
+  return [
+    {
+      label: "Commodity",
+      filled: !!match.commodity,
+      required: true,
+      hint: "Set via Search or edit the match",
+    },
+    {
+      label: "Buyer name",
+      filled: !!match.buyer_name,
+      required: true,
+      hint: "Add via the Terms tab or match creation",
+    },
+    {
+      label: "Seller name",
+      filled: !!match.seller_name,
+      required: true,
+      hint: "Add via the Terms tab or match creation",
+    },
+    {
+      label: "Quantity",
+      filled: match.quantity != null && match.quantity > 0,
+      required: true,
+      hint: "Set quantity in the Terms tab",
+    },
+    {
+      label: "Price",
+      filled: match.price != null && match.price > 0,
+      required: true,
+      hint: "Set price in the Terms tab",
+    },
+    {
+      label: "Terms",
+      filled: !!match.terms,
+      required: false,
+      hint: "Optional — add payment/delivery terms",
+    },
+  ];
+}
 
 const CREDITS_PER_ACTION = 1;
 
