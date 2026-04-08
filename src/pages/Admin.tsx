@@ -30,6 +30,7 @@ import { AdminReputationPanel } from "@/components/admin/AdminReputationPanel";
 import { AdminRetentionFlagsPanel } from "@/components/admin/AdminRetentionFlagsPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminBehavioralKycLink } from "@/components/admin/AdminBehavioralKycLink";
+import { AdminBehavioralInsights } from "@/components/admin/AdminBehavioralInsights";
 import { AdminRiskSnapshotsPanel } from "@/components/admin/AdminRiskSnapshotsPanel";
 import { AdminScreeningRunsPanel } from "@/components/admin/AdminScreeningRunsPanel";
 import { AdminUboPanel } from "@/components/admin/AdminUboPanel";
@@ -106,7 +107,7 @@ function UsersOrgsSection() {
 
 /** Compliance: Cases + Risk + KYC + Screening + UBO */
 function AdminComplianceSection() {
-  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc"]);
+  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Breadcrumbs items={[{ label: "Admin", href: ROUTES.ADMIN }, { label: "Compliance" }]} />
@@ -121,6 +122,7 @@ function AdminComplianceSection() {
             <TabsTrigger value="screening">Screening</TabsTrigger>
             <TabsTrigger value="ubo">UBO</TabsTrigger>
             <TabsTrigger value="behavioral-kyc">Score → KYC</TabsTrigger>
+            <TabsTrigger value="insights">Behavioural Insights</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="cases" className="mt-4"><AdminComplianceCasesPanel /></TabsContent>
@@ -130,6 +132,7 @@ function AdminComplianceSection() {
         <TabsContent value="screening" className="mt-4"><AdminScreeningRunsPanel /></TabsContent>
         <TabsContent value="ubo" className="mt-4"><AdminUboPanel /></TabsContent>
         <TabsContent value="behavioral-kyc" className="mt-4"><AdminBehavioralKycLink /></TabsContent>
+        <TabsContent value="insights" className="mt-4"><AdminBehavioralInsights /></TabsContent>
       </Tabs>
     </div>
   );
