@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const callerOrgId = callerProfile.org_id;
+
+    // Rate limit: protect lock contention and DB writes
+    const rlClient = createClient(supabaseUrl, serviceKey);
+    await checkRateLimit(rlClient, callerOrgId, null, "/poi-transition", "match");
 
     const body = await req.json();
     const { matchId, toState, reason, metadata } = body;
