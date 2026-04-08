@@ -92,6 +92,10 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
   const actionPath = nextState ? MatchState.getTransitionAction(nextState) : null;
   const isTerminal = MatchState.isTerminal(currentState);
 
+  const checklist = useMemo(() => getFieldChecklist(match), [match]);
+  const requiredMissing = checklist.filter(f => f.required && !f.filled);
+  const allRequiredFilled = requiredMissing.length === 0;
+
   const { data: balance, refetch } = useQuery({
     queryKey: ["token-balance-progression"],
     queryFn: async () => {
