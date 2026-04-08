@@ -1,28 +1,26 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Search, Handshake, BookOpen, MoreHorizontal, Settings, Building2, ShieldCheck, Coins } from "lucide-react";
+import { Activity, GitCompare, Users, Scale, Shield, MoreHorizontal, Server, Database, Key, Wrench, Settings } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-const navItems = [
-  { path: ROUTES.DASHBOARD, label: "Overview", icon: LayoutDashboard, exact: true },
-  { path: ROUTES.DASHBOARD_SEARCH, label: "Search", icon: Search },
-  { path: ROUTES.DASHBOARD_MATCHES, label: "Matches", icon: Handshake },
-  { path: ROUTES.DASHBOARD_ORDER_BOOK, label: "Orders", icon: BookOpen },
+const primaryItems = [
+  { path: ROUTES.ADMIN, label: "Overview", icon: Activity, exact: true },
+  { path: ROUTES.ADMIN_DEALS, label: "Deals", icon: GitCompare },
+  { path: ROUTES.ADMIN_USERS_ORGS, label: "Users", icon: Users },
+  { path: ROUTES.ADMIN_COMPLIANCE, label: "Compliance", icon: Scale },
 ];
 
 const moreItems = [
-  { path: ROUTES.DASHBOARD_SETTINGS, label: "Settings", icon: Settings },
-  { path: ROUTES.DASHBOARD_ACCOUNT, label: "Organisation", icon: Building2 },
-  { path: ROUTES.DASHBOARD_COMPLIANCE, label: "Compliance", icon: ShieldCheck },
-  { path: ROUTES.BILLING, label: "Credits", icon: Coins },
+  { path: ROUTES.ADMIN_AUDIT, label: "Audit", icon: Shield },
+  { path: ROUTES.ADMIN_INFRASTRUCTURE, label: "Infrastructure", icon: Server },
+  { path: ROUTES.ADMIN_DATA_GOVERNANCE, label: "Data Governance", icon: Database },
+  { path: ROUTES.ADMIN_API_KEYS, label: "API Keys", icon: Key },
+  { path: ROUTES.ADMIN_OVERRIDES, label: "Overrides", icon: Wrench },
+  { path: ROUTES.ADMIN_SETTINGS, label: "Settings", icon: Settings },
 ];
 
-/**
- * Bottom tab bar for dashboard on small screens (< md).
- * Hidden on md+ where the sidebar is visible.
- */
-export function MobileBottomNav() {
+export function AdminMobileNav() {
   const { pathname } = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -36,7 +34,7 @@ export function MobileBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border safe-area-bottom">
       <div className="flex items-stretch" style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}>
-        {navItems.map((item) => {
+        {primaryItems.map((item) => {
           const active = isActive(item.path, item.exact);
           return (
             <Link
@@ -52,7 +50,6 @@ export function MobileBottomNav() {
           );
         })}
 
-        {/* More button → sheet with remaining items */}
         <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
           <SheetTrigger asChild>
             <button
@@ -66,7 +63,7 @@ export function MobileBottomNav() {
           </SheetTrigger>
           <SheetContent side="bottom" className="pb-safe">
             <SheetHeader>
-              <SheetTitle>More</SheetTitle>
+              <SheetTitle>Admin Sections</SheetTitle>
             </SheetHeader>
             <div className="grid grid-cols-2 gap-2 py-4">
               {moreItems.map((item) => {
