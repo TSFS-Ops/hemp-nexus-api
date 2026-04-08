@@ -239,8 +239,22 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
           </div>
         )}
 
+        {/* Unilateral intent: awaiting counterparty */}
+        {unilateralBlocked && (
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Awaiting counterparty</p>
+              <p className="text-xs text-muted-foreground">
+                This is a unilateral intent record. The deal cannot progress further until a counterparty
+                is identified and attached. Once a counterparty responds, the lifecycle will resume.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Next action CTA */}
-        {!isTerminal && nextLabel && (
+        {!isTerminal && nextLabel && !unilateralBlocked && (
           <>
             {!hasEnough ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/5">
