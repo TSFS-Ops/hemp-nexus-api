@@ -91,18 +91,18 @@ export default function Landing() {
       <AnimatedBackground />
       <PublicHeader />
 
-      {/* Main content - full width, centered */}
+      {/* Main content */}
       <div className="flex-1 overflow-y-auto relative z-10">
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-[860px] mx-auto">
-          {/* Page header */}
+          {/* Hero headline */}
           <h1
             className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
             style={{ color: 'var(--lt-text)' }}
           >
-            Discover trading partners. Signal intent. Execute with confidence.
+            Global Trade, Governed. From Discovery to Signed Deal.
           </h1>
           <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-lg" style={{ color: 'var(--lt-text-muted)' }}>
-            Search for verified buyers and sellers, then progress toward compliant transactions.
+            Search for verified buyers and sellers, then progress toward compliant, signed transactions.
           </p>
 
           {/* Search form */}
