@@ -107,7 +107,7 @@ async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
   while (true) {
     const { data: batch } = await supabaseAdmin
       .from('profiles')
-      .select('id, email, full_name, org_id, status, created_at, organisations(name)')
+      .select('id, email, full_name, org_id, status, created_at, organizations(name)')
       .range(profileOffset, profileOffset + profilePageSize - 1);
     if (!batch || batch.length === 0) break;
     allProfiles.push(...batch);
@@ -185,7 +185,7 @@ async function handleLookupProfiles(
 
   const orgIds = [...new Set(profiles?.map((p) => p.org_id) ?? [])];
   const { data: orgs } = await supabaseAdmin
-    .from('organisations')
+    .from('organizations')
     .select('id, name')
     .in('id', orgIds);
 

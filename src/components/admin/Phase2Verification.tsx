@@ -90,7 +90,7 @@ export function Phase2Verification() {
       // Note: RLS verification is done via the Supabase linter tool, not runtime RPC
       updateItem("rls-enabled", { 
         status: "passed",
-        details: "RLS enabled on: wads, wad_attestations, matches, signals, options, profiles, organisations, api_keys, audit_logs, match_documents, document_access_logs"
+        details: "RLS enabled on: wads, wad_attestations, matches, signals, options, profiles, organizations, api_keys, audit_logs, match_documents, document_access_logs"
       });
 
       // 2. Check views use security_invoker

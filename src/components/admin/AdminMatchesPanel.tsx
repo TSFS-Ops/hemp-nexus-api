@@ -39,7 +39,7 @@ export function AdminMatchesPanel() {
     queryFn: async () => {
       let query = supabase
         .from("matches")
-        .select("*, organisations(name)", { count: "exact" })
+        .select("*, organizations(name)", { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(ADMIN_MATCH_LIMIT);
 

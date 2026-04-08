@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       const status = url.searchParams.get('status');
 
       let query = supabase
-        .from('organisations')
+        .from('organizations')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       const { name, status } = validatedData;
 
       const { data, error } = await supabase
-        .from('organisations')
+        .from('organizations')
         .insert({ name, status: status || 'active' })
         .select()
         .single();
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       const orgId = pathParts[1];
 
       const { data, error } = await supabase
-        .from('organisations')
+        .from('organizations')
         .select('*')
         .eq('id', orgId)
         .single();
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       }
 
       const { data, error } = await supabase
-        .from('organisations')
+        .from('organizations')
         .update(updates)
         .eq('id', orgId)
         .select()
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
       const orgId = pathParts[1];
 
       const { error } = await supabase
-        .from('organisations')
+        .from('organizations')
         .delete()
         .eq('id', orgId);
 

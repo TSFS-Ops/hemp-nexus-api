@@ -35,7 +35,7 @@ export function AdminSignalsPanel() {
     queryFn: async () => {
       let query = supabase
         .from("signals")
-        .select("*, organisations(name)")
+        .select("*, organizations(name)")
         .order("created_at", { ascending: false })
         .limit(100);
 
