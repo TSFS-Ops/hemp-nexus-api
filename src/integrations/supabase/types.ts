@@ -5367,6 +5367,19 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_seal_deal: {
+        Args: {
+          p_actor_api_key_id?: string
+          p_actor_user_id: string
+          p_collapse_payload?: Json
+          p_event_data: Json
+          p_event_type: string
+          p_expected_state: string
+          p_match_id: string
+          p_org_id: string
+        }
+        Returns: Json
+      }
       atomic_token_burn: {
         Args: {
           p_amount: number
