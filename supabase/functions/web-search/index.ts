@@ -3,6 +3,7 @@ import { webSearchSchema, validateInput } from "../_shared/validation.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { cached, cacheHeaders } from "../_shared/cache.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
