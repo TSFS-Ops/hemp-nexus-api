@@ -8,11 +8,15 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
  * 2. POD/BREACH: Auto-detect breached milestones (overdue) + 7-day grace period
  * 3. NOTIFICATIONS: Dispatch overdue/breach alerts via notification-dispatch
  * 4. ESCALATION: Escalate unresolved breaches past grace period
+ * 4. ESCALATION: Escalate unresolved breaches past grace period
+ * 5. STALE-UNILATERAL: Flag unilateral intents with no counterparty after N days
  *
  * Designed to be called via pg_cron (daily at 3 AM UTC).
  * Deduplication: Uses breach_detected_at on milestones and unique index on breaches
  * to prevent duplicate records on repeated runs.
  */
+
+const STALE_UNILATERAL_DAYS = 7;
 
 const BREACH_GRACE_DAYS = 7;
 const OVERDUE_SEVERITY_THRESHOLDS = {
