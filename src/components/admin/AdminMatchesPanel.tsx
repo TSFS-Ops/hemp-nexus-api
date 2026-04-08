@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -181,25 +181,36 @@ export function AdminMatchesPanel() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Org</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Commodity</TableHead>
                     <TableHead>Buyer</TableHead>
                     <TableHead>Seller</TableHead>
                     <TableHead>Value</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Age</TableHead>
                     <TableHead>Evidence</TableHead>
-                    <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {matches.map((match) => (
-                    <TableRow key={match.id}>
+                  {matches.map((match) => {
+                    const matchType = (match as any).match_type || "search";
+                    const ageDays = Math.floor((Date.now() - new Date(match.created_at).getTime()) / (24 * 60 * 60 * 1000));
+                    const isStale = matchType === "unilateral" && ageDays >= 7 && (match.buyer_id == null || match.seller_id == null);
+                    return (
+                    <TableRow key={match.id} className={isStale ? "bg-amber-500/5" : ""}>
                       <TableCell className="font-mono text-xs">
                         {((match as any).organizations?.name || match.org_id).substring(0, 8)}...
                       </TableCell>
+                      <TableCell>
+                        <StatusBadge
+                          status={matchType === "unilateral" ? "warning" : matchType === "bilateral" ? "info" : "default"}
+                          label={matchType}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{match.commodity}</TableCell>
-                      <TableCell>{match.buyer_name}</TableCell>
-                      <TableCell>{match.seller_name}</TableCell>
+                      <TableCell>{match.buyer_name || <span className="text-muted-foreground italic">open</span>}</TableCell>
+                      <TableCell>{match.seller_name || <span className="text-muted-foreground italic">open</span>}</TableCell>
                       <TableCell>
                         {match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "—"}
                       </TableCell>
@@ -207,9 +218,13 @@ export function AdminMatchesPanel() {
                         <MatchStatusBadge status={match.status} />
                       </TableCell>
                       <TableCell>
+                        <span className={isStale ? "text-amber-600 font-medium" : "text-muted-foreground"}>
+                          {ageDays}d
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
-                      <TableCell>{format(new Date(match.created_at), "MMM dd")}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
