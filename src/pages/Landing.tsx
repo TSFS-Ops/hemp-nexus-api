@@ -12,10 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 const REDIRECT_DELAY_MS = 300;
 
 export default function Landing() {
-  const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
-  const [lastFormData, setLastFormData] = useState<BidOfferData | null>(null);
   const [isFormLocked, setIsFormLocked] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
@@ -55,7 +53,6 @@ export default function Landing() {
   const handleSearch = useCallback(async (data: BidOfferData) => {
     const queryString = [data.product, data.location].filter(Boolean).join(" ");
     setLastQuery(queryString);
-    setLastFormData(data);
 
     const buildSearchParams = () => {
       const p = new URLSearchParams({ q: queryString });
@@ -116,9 +113,9 @@ export default function Landing() {
               border: '1px solid var(--lt-border)',
             }}
           >
-            <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
+            <BidOfferForm onSearch={handleSearch} isSearching={false} isLocked={isFormLocked} />
             <SearchOutcomes
-              isSearching={isSearching}
+              isSearching={false}
               hasSearched={hasSearched}
               onSignIn={navigateToAuth}
             />
