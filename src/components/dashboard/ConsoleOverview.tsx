@@ -124,18 +124,33 @@ export function ConsoleOverview() {
     }
   });
 
-  // Fetch token balance
-  const { data: tokenBalance } = useQuery({
-    queryKey: ["token-balance"],
+  // Fetch the user's org_id first, then their token balance
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile-org", session?.user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("token_balances")
-        .select("balance, minimum_required")
-        .maybeSingle();
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .single();
       if (error) throw error;
       return data;
     },
     enabled: !!session,
+  });
+
+  const { data: tokenBalance } = useQuery({
+    queryKey: ["token-balance", userProfile?.org_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("token_balances")
+        .select("balance, minimum_required")
+        .eq("org_id", userProfile!.org_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session && !!userProfile?.org_id,
     refetchInterval: 5 * 60 * 1000,
   });
 
