@@ -53,13 +53,13 @@ function getFieldChecklist(match: Match): FieldCheck[] {
     },
     {
       label: "Quantity",
-      filled: match.quantity != null && match.quantity > 0,
+      filled: match.quantity_amount != null && match.quantity_amount > 0,
       required: true,
       hint: "Set quantity in the Terms tab",
     },
     {
       label: "Price",
-      filled: match.price != null && match.price > 0,
+      filled: match.price_amount != null && match.price_amount > 0,
       required: true,
       hint: "Set price in the Terms tab",
     },
