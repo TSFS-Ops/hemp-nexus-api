@@ -124,6 +124,21 @@ export function ConsoleOverview() {
     }
   });
 
+  // Fetch token balance
+  const { data: tokenBalance } = useQuery({
+    queryKey: ["token-balance"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("token_balances")
+        .select("balance, minimum_required")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: stats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["console-overview-stats"],
     queryFn: async () => {
@@ -155,6 +170,10 @@ export function ConsoleOverview() {
     },
     enabled: !!session,
   });
+
+  const currentBalance = tokenBalance?.balance ?? 0;
+  const isBalanceLow = currentBalance <= 200;
+  const isBalanceCritical = currentBalance <= 50;
 
   const statCards = [
     { label: "Active API Keys", value: stats?.activeApiKeys ?? 0, icon: Key },
