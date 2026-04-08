@@ -38,6 +38,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Terminology guard
+        run: node scripts/terminology-guard.mjs
+
       - name: Typecheck
         run: bunx tsc --noEmit
 

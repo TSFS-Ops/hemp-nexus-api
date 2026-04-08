@@ -16,6 +16,7 @@ const DEFAULT_LIMITS: RateLimitConfig = {
 
 // Scope-specific rate limits
 const SCOPE_LIMITS: Record<string, RateLimitConfig> = {
+  "search": { requestsPerMinute: 10, requestsPerHour: 100, requestsPerDay: 500 },
   "signals:write": { requestsPerMinute: 30, requestsPerHour: 500, requestsPerDay: 5000 },
   "match": { requestsPerMinute: 20, requestsPerHour: 300, requestsPerDay: 3000 },
   "collapse": { requestsPerMinute: 10, requestsPerHour: 100, requestsPerDay: 1000 },
