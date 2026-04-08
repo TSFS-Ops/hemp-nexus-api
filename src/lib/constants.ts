@@ -38,15 +38,27 @@ export const ROUTES = {
   DASHBOARD_ACCOUNT: '/dashboard/account',
   DASHBOARD_COMPLIANCE: '/dashboard/compliance',
   ADMIN: '/admin',
+  // OPERATIONS
   ADMIN_DEALS: '/admin/deals',
-  ADMIN_USERS_ORGS: '/admin/users-orgs',
+  ADMIN_ORDER_BOOK: '/admin/order-book',
+  // TRUST & INTEGRITY
   ADMIN_COMPLIANCE: '/admin/compliance',
   ADMIN_AUDIT: '/admin/audit',
+  ADMIN_LEDGER: '/admin/ledger',
+  // ENTITIES
+  ADMIN_USERS: '/admin/users',
+  ADMIN_ORGS: '/admin/orgs',
+  // DEVELOPER
   ADMIN_API_KEYS: '/admin/api-keys',
-  ADMIN_OVERRIDES: '/admin/overrides',
-  ADMIN_INFRASTRUCTURE: '/admin/infrastructure',
+  ADMIN_WEBHOOKS: '/admin/webhooks',
+  ADMIN_SYSTEM_LOGS: '/admin/system-logs',
+  // GOVERNANCE
   ADMIN_DATA_GOVERNANCE: '/admin/data-governance',
   ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_OVERRIDES: '/admin/overrides',
+  // Legacy aliases
+  ADMIN_USERS_ORGS: '/admin/users',
+  ADMIN_INFRASTRUCTURE: '/admin/infrastructure',
   PRICING: '/pricing',
   BILLING: '/billing',
   DOCS: '/docs',
