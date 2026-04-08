@@ -80,6 +80,8 @@ Deno.serve(async (req: Request) => {
     const releaseLock = async () => {
       try { await admin.rpc('release_lifecycle_lock'); } catch { /* best-effort */ }
     };
+
+    // ────────────────────────────────────────────
     // 1. INT-UNLOCK: Expire mutual interests > 30 days
     // ────────────────────────────────────────────
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
