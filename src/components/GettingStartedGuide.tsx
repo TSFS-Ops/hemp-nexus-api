@@ -53,7 +53,7 @@ export default function GettingStartedGuide() {
           <CardTitle>Getting Started Tutorial</CardTitle>
         </div>
         <CardDescription>
-          Step-by-step guide to integrate with the Compliance Matching API
+          Step-by-step guide to integrate with the Izenzo API
         </CardDescription>
       </CardHeader>
       <CardContent>

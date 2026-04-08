@@ -32,7 +32,7 @@ export function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [general, setGeneral] = useState<GeneralSettings>({
-    siteName: "Compliance Match",
+    siteName: "Izenzo",
     maintenanceMode: false,
     allowNewRegistrations: true,
   });

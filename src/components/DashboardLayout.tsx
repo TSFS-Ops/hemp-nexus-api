@@ -25,7 +25,7 @@ export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
                 <SidebarTrigger className="touch-target" />
               </div>
               <div className="md:hidden text-sm font-semibold text-foreground truncate">
-                Compliance Match
+                Izenzo
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
                 <NotificationBell />
