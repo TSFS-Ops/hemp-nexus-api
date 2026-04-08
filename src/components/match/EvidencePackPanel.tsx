@@ -246,10 +246,42 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!isSettled && (
+        {!isSettled && !isCompleted && (
           <div className="flex items-center gap-2 p-3 rounded-md bg-muted text-muted-foreground text-sm">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>Evidence packs are available once intent has been confirmed.</span>
+          </div>
+        )}
+
+        {/* Deal Certificate - only available at Signed Deal (completed) state */}
+        {isCompleted && (
+          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-sm">Certificate of Signed Deal</span>
+              <Badge variant="secondary" className="text-[10px]">Sealed</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This deal has been cryptographically sealed. Download the institutional-grade certificate
+              containing partner identities, trade terms, and hash-chain integrity verification.
+            </p>
+            <Button
+              onClick={downloadDealCertificate}
+              disabled={certLoading}
+              className="w-full"
+            >
+              {certLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating certificate…
+                </>
+              ) : (
+                <>
+                  <Award className="h-4 w-4 mr-2" />
+                  Download Deal Certificate
+                </>
+              )}
+            </Button>
           </div>
         )}
 
