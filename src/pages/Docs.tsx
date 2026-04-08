@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 
-const API_BASE_URL = "https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1";
+const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 function CodeBlock({ code, language = "bash" }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);

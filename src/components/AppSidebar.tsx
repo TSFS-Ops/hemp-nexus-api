@@ -1,4 +1,4 @@
-import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen } from "lucide-react";
+import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen, Coins } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -32,6 +32,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_SETTINGS, title: "Settings", icon: Settings },
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
+  { path: ROUTES.BILLING, title: "Credits", icon: Coins },
 ];
 
 export function AppSidebar({ isAdmin }: AppSidebarProps) {

@@ -1,12 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Search, Handshake, Settings } from "lucide-react";
+import { LayoutDashboard, Search, Handshake, BookOpen, MoreHorizontal } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
+import { useState } from "react";
+import { Settings, Building2, ShieldCheck, Coins } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
   { path: ROUTES.DASHBOARD, label: "Overview", icon: LayoutDashboard, exact: true },
   { path: ROUTES.DASHBOARD_SEARCH, label: "Search", icon: Search },
   { path: ROUTES.DASHBOARD_MATCHES, label: "Matches", icon: Handshake },
+  { path: ROUTES.DASHBOARD_ORDER_BOOK, label: "Orders", icon: BookOpen },
+];
+
+const moreItems = [
   { path: ROUTES.DASHBOARD_SETTINGS, label: "Settings", icon: Settings },
+  { path: ROUTES.DASHBOARD_ACCOUNT, label: "Organisation", icon: Building2 },
+  { path: ROUTES.DASHBOARD_COMPLIANCE, label: "Compliance", icon: ShieldCheck },
+  { path: ROUTES.BILLING, label: "Credits", icon: Coins },
 ];
 
 /**

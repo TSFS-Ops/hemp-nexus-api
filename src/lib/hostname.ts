@@ -123,7 +123,6 @@ export function isRouteAllowed(pathname: string): boolean {
     return (
       pathname === ROUTES.ROOT ||
       pathname === ROUTES.DOCS ||
-      pathname === ROUTES.DOCS ||
       pathname === ROUTES.PRICING ||
       pathname === ROUTES.AUTH
     );
