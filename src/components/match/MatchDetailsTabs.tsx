@@ -131,7 +131,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
       </TabsContent>
 
       <TabsContent value="evidence" className="mt-4">
-        <EvidencePackPanel matchId={match.id} matchStatus={match.status} />
+        <EvidencePackPanel matchId={match.id} matchStatus={match.status} matchState={currentState} />
       </TabsContent>
 
       <TabsContent value="wad" className="mt-4 space-y-4">
