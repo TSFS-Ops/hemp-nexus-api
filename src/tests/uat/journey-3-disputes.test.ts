@@ -42,7 +42,7 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name: "Dispute UAT Key", scopes: ["search", "match"] }),
+      body: JSON.stringify({ name: "Production Key", scopes: ["search", "match"] }),
     });
     const keyBody = await keyRes.json();
     apiKey = keyBody.key;

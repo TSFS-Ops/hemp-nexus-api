@@ -1461,7 +1461,7 @@ Before limited live testing, these must pass:
 - Empty pages
 - Loading indicators
 
-Before a serious client demonstration, add these:
+Before a client presentation, add these:
 - Password reset (request and completion)
 - Duplicate match prevention
 - Document upload

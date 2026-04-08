@@ -50,7 +50,7 @@ npx vitest run             # Unit + integration tests
 ### Admin (requires admin account)
 1. `/admin` → Overview tab loads with stats
 2. Switch to Entities, Matches, Audit tabs → data loads or shows empty state
-3. Checkpoint demo → "DD Only" mode completes without errors
+3. Checkpoint verification -> "DD Only" mode completes without errors
 
 **Blocker:** Search returns unhandled error. Match detail crashes. File upload bypasses validation.
 
