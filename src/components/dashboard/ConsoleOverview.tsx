@@ -2,12 +2,13 @@ import { useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Key, Activity, FileText, BarChart3, Clock, Search, ArrowRight, BookOpen, Zap, Handshake, Play } from "lucide-react";
+import { Key, Activity, FileText, BarChart3, Clock, Search, ArrowRight, BookOpen, Zap, Handshake, Play, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeTime } from "@/lib/format";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 const OnboardingWizard = lazy(() => import("@/components/OnboardingWizard"));
 
