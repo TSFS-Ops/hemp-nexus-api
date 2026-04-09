@@ -140,6 +140,9 @@ export function BreakGlassPanel() {
       setActionType("");
       setReason("");
       setTargetOrgId("");
+      setReauthPassword("");
+      setReauthError("");
+      setConfirmOpen(false);
       fetchActions();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Failed to execute action";
