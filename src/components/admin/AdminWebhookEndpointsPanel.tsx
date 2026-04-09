@@ -37,11 +37,13 @@ export function AdminWebhookEndpointsPanel() {
     try {
       const eventsArr = formData.events.split(",").map(e => e.trim()).filter(Boolean);
       if (editing) {
-        const { error } = await supabase.from("webhook_endpoints").update({ url: formData.url, events: eventsArr, active: formData.active }).eq("id", editing.id);
+        const { error } = await supabase.from("webhook_endpoints").update({ url: formData.url, events: eventsArr }).eq("id", editing.id);
         if (error) throw error;
         toast.success("Endpoint updated");
       } else {
-        const { error } = await supabase.from("webhook_endpoints").insert({ url: formData.url, org_id: formData.org_id, events: eventsArr, active: formData.active });
+        // Generate a placeholder secret hash for the webhook
+        const secretHash = crypto.randomUUID().replace(/-/g, '');
+        const { error } = await supabase.from("webhook_endpoints").insert({ url: formData.url, org_id: formData.org_id, events: eventsArr, secret_hash: secretHash });
         if (error) throw error;
         toast.success("Endpoint created");
       }
