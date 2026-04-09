@@ -39,6 +39,8 @@ export function BreakGlassPanel() {
   const [actionType, setActionType] = useState("");
   const [reason, setReason] = useState("");
   const [targetOrgId, setTargetOrgId] = useState("");
+  const [reauthPassword, setReauthPassword] = useState("");
+  const [reauthError, setReauthError] = useState("");
 
   const fetchActions = useCallback(async () => {
     try {
