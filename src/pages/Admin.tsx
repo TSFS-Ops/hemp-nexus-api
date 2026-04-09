@@ -187,23 +187,25 @@ function ComplianceSection() {
 }
 
 function AuditSection() {
-  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi"]);
+  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi", "events", "doc-access", "attestations"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Audit Trail"
-        description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Audit Trail" description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
             <TabsTrigger value="poi">Intent History</TabsTrigger>
+            <TabsTrigger value="events">Event Store</TabsTrigger>
+            <TabsTrigger value="doc-access">Document Access</TabsTrigger>
+            <TabsTrigger value="attestations">Attestations</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="audit" className="mt-4 animate-section-enter"><AdminAuditLogs /></TabsContent>
         <TabsContent value="poi" className="mt-4 animate-section-enter"><PoiStateHistory /></TabsContent>
+        <TabsContent value="events" className="mt-4 animate-section-enter"><AdminEventStorePanel /></TabsContent>
+        <TabsContent value="doc-access" className="mt-4 animate-section-enter"><AdminDocumentAccessPanel /></TabsContent>
+        <TabsContent value="attestations" className="mt-4 animate-section-enter"><AdminAttestationsPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -239,48 +241,46 @@ function LedgerSection() {
 // ─── PARTNERS ───────────────────────────────────────────────────────
 
 function UsersSection() {
-  const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens"]);
+  const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens", "purchases", "notifications"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Users"
-        description="Platform user accounts and credit balance management."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Users" description="Platform user accounts and credit balance management." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="users">User Accounts</TabsTrigger>
             <TabsTrigger value="tokens">Credit Balances</TabsTrigger>
+            <TabsTrigger value="purchases">Transactions</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="users" className="mt-4 animate-section-enter"><UsersManagement /></TabsContent>
         <TabsContent value="tokens" className="mt-4 animate-section-enter"><AdminTokenManagement /></TabsContent>
+        <TabsContent value="purchases" className="mt-4 animate-section-enter"><AdminTokenPurchasesPanel /></TabsContent>
+        <TabsContent value="notifications" className="mt-4 animate-section-enter"><AdminNotificationsPanel /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
 function OrgsSection() {
-  const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods"]);
+  const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods", "partners"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Organisations"
-        description="Registered organisations, legal entities, and proof-of-delivery tracking."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Organisations" description="Registered organisations, legal entities, and proof-of-delivery tracking." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="orgs">Organisations</TabsTrigger>
             <TabsTrigger value="entities">Legal Entities</TabsTrigger>
             <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
+            <TabsTrigger value="partners">Trading Partners</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="orgs" className="mt-4 animate-section-enter"><OrgsManagement /></TabsContent>
         <TabsContent value="entities" className="mt-4 animate-section-enter"><AdminEntitiesPanel /></TabsContent>
         <TabsContent value="pods" className="mt-4 animate-section-enter"><AdminPodPanel /></TabsContent>
+        <TabsContent value="partners" className="mt-4 animate-section-enter"><AdminTradingPartnersPanel /></TabsContent>
       </Tabs>
     </div>
   );
