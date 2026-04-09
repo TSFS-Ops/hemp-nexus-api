@@ -37,6 +37,22 @@ import { AdminUboPanel } from "@/components/admin/AdminUboPanel";
 import { AdminPodPanel } from "@/components/admin/AdminPodPanel";
 import { AdminSignalsPanel } from "@/components/admin/AdminSignalsPanel";
 import { AdminInterestsPanel } from "@/components/admin/AdminInterestsPanel";
+import { AdminConsentsPanel } from "@/components/admin/AdminConsentsPanel";
+import { AdminDataSourcesPanel } from "@/components/admin/AdminDataSourcesPanel";
+import { AdminAuthorityRecordsPanel } from "@/components/admin/AdminAuthorityRecordsPanel";
+import { AdminBreachesPanel } from "@/components/admin/AdminBreachesPanel";
+import { AdminTradingPartnersPanel } from "@/components/admin/AdminTradingPartnersPanel";
+import { AdminEmailLogsPanel } from "@/components/admin/AdminEmailLogsPanel";
+import { AdminTokenPurchasesPanel } from "@/components/admin/AdminTokenPurchasesPanel";
+import { AdminWebhookEndpointsPanel } from "@/components/admin/AdminWebhookEndpointsPanel";
+import { AdminDocumentAccessPanel } from "@/components/admin/AdminDocumentAccessPanel";
+import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
+import { AdminTradeOrdersPanel } from "@/components/admin/AdminTradeOrdersPanel";
+import { AdminApprovalThresholdsPanel } from "@/components/admin/AdminApprovalThresholdsPanel";
+import { AdminAttestationsPanel } from "@/components/admin/AdminAttestationsPanel";
+import { AdminNotificationsPanel } from "@/components/admin/AdminNotificationsPanel";
+import { AdminLicencesPanel } from "@/components/admin/AdminLicencesPanel";
+import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -107,7 +123,7 @@ function DealsSection() {
 }
 
 function OrderBookSection() {
-  const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests"]);
+  const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests", "orders"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
@@ -120,10 +136,12 @@ function OrderBookSection() {
           <TabsList className="w-max">
             <TabsTrigger value="signals">Signals</TabsTrigger>
             <TabsTrigger value="interests">Interests</TabsTrigger>
+            <TabsTrigger value="orders">Trade Orders</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="signals" className="mt-4 animate-section-enter"><AdminSignalsPanel /></TabsContent>
         <TabsContent value="interests" className="mt-4 animate-section-enter"><AdminInterestsPanel /></TabsContent>
+        <TabsContent value="orders" className="mt-4 animate-section-enter"><AdminTradeOrdersPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -132,14 +150,10 @@ function OrderBookSection() {
 // ─── VERIFICATION ───────────────────────────────────────────────────
 
 function ComplianceSection() {
-  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
+  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "atb", "breaches", "licences", "behavioral-kyc", "insights"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Partner Checks"
-        description="We check your trading partner's identity and authority to trade before you commit money."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Partner Checks" description="We check your trading partner's identity and authority to trade before you commit money." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
@@ -149,6 +163,9 @@ function ComplianceSection() {
             <TabsTrigger value="kyc">KYC Docs</TabsTrigger>
             <TabsTrigger value="screening">Screening</TabsTrigger>
             <TabsTrigger value="ubo">UBO</TabsTrigger>
+            <TabsTrigger value="atb">Authority to Bind</TabsTrigger>
+            <TabsTrigger value="breaches">Breaches</TabsTrigger>
+            <TabsTrigger value="licences">Licences</TabsTrigger>
             <TabsTrigger value="behavioral-kyc">Score to KYC</TabsTrigger>
             <TabsTrigger value="insights">Behavioural Insights</TabsTrigger>
           </TabsList>
@@ -159,6 +176,9 @@ function ComplianceSection() {
         <TabsContent value="kyc" className="mt-4 animate-section-enter"><AdminKycDocsPanel /></TabsContent>
         <TabsContent value="screening" className="mt-4 animate-section-enter"><AdminScreeningRunsPanel /></TabsContent>
         <TabsContent value="ubo" className="mt-4 animate-section-enter"><AdminUboPanel /></TabsContent>
+        <TabsContent value="atb" className="mt-4 animate-section-enter"><AdminAuthorityRecordsPanel /></TabsContent>
+        <TabsContent value="breaches" className="mt-4 animate-section-enter"><AdminBreachesPanel /></TabsContent>
+        <TabsContent value="licences" className="mt-4 animate-section-enter"><AdminLicencesPanel /></TabsContent>
         <TabsContent value="behavioral-kyc" className="mt-4 animate-section-enter"><AdminBehavioralKycLink /></TabsContent>
         <TabsContent value="insights" className="mt-4 animate-section-enter"><AdminBehavioralInsights /></TabsContent>
       </Tabs>
@@ -167,23 +187,25 @@ function ComplianceSection() {
 }
 
 function AuditSection() {
-  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi"]);
+  const [tab, setTab] = useUrlTab("tab", "audit", ["audit", "poi", "events", "doc-access", "attestations"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Audit Trail"
-        description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Audit Trail" description="Immutable record of all platform actions. Every mutation is logged with actor, timestamp, and context." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
             <TabsTrigger value="poi">Intent History</TabsTrigger>
+            <TabsTrigger value="events">Event Store</TabsTrigger>
+            <TabsTrigger value="doc-access">Document Access</TabsTrigger>
+            <TabsTrigger value="attestations">Attestations</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="audit" className="mt-4 animate-section-enter"><AdminAuditLogs /></TabsContent>
         <TabsContent value="poi" className="mt-4 animate-section-enter"><PoiStateHistory /></TabsContent>
+        <TabsContent value="events" className="mt-4 animate-section-enter"><AdminEventStorePanel /></TabsContent>
+        <TabsContent value="doc-access" className="mt-4 animate-section-enter"><AdminDocumentAccessPanel /></TabsContent>
+        <TabsContent value="attestations" className="mt-4 animate-section-enter"><AdminAttestationsPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -219,48 +241,46 @@ function LedgerSection() {
 // ─── PARTNERS ───────────────────────────────────────────────────────
 
 function UsersSection() {
-  const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens"]);
+  const [tab, setTab] = useUrlTab("tab", "users", ["users", "tokens", "purchases", "notifications"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Users"
-        description="Platform user accounts and credit balance management."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Users" description="Platform user accounts and credit balance management." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="users">User Accounts</TabsTrigger>
             <TabsTrigger value="tokens">Credit Balances</TabsTrigger>
+            <TabsTrigger value="purchases">Transactions</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="users" className="mt-4 animate-section-enter"><UsersManagement /></TabsContent>
         <TabsContent value="tokens" className="mt-4 animate-section-enter"><AdminTokenManagement /></TabsContent>
+        <TabsContent value="purchases" className="mt-4 animate-section-enter"><AdminTokenPurchasesPanel /></TabsContent>
+        <TabsContent value="notifications" className="mt-4 animate-section-enter"><AdminNotificationsPanel /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
 function OrgsSection() {
-  const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods"]);
+  const [tab, setTab] = useUrlTab("tab", "orgs", ["orgs", "entities", "pods", "partners"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Organisations"
-        description="Registered organisations, legal entities, and proof-of-delivery tracking."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Organisations" description="Registered organisations, legal entities, and proof-of-delivery tracking." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
             <TabsTrigger value="orgs">Organisations</TabsTrigger>
             <TabsTrigger value="entities">Legal Entities</TabsTrigger>
             <TabsTrigger value="pods">Proof of Delivery</TabsTrigger>
+            <TabsTrigger value="partners">Trading Partners</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="orgs" className="mt-4 animate-section-enter"><OrgsManagement /></TabsContent>
         <TabsContent value="entities" className="mt-4 animate-section-enter"><AdminEntitiesPanel /></TabsContent>
         <TabsContent value="pods" className="mt-4 animate-section-enter"><AdminPodPanel /></TabsContent>
+        <TabsContent value="partners" className="mt-4 animate-section-enter"><AdminTradingPartnersPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -271,29 +291,22 @@ function OrgsSection() {
 function WebhooksSection() {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <SectionHeader
-        title="Webhooks"
-        description="Event delivery endpoints and retry status for all organisations."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
-      <SystemEmpty
-        icon={ArrowLeft}
-        heading="No webhook endpoints configured"
-        description="Webhook endpoints are managed per-organisation from the console dashboard."
-      />
+      <SectionHeader title="Webhooks" description="Event delivery endpoints and retry status for all organisations." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
+      <AdminWebhookEndpointsPanel />
     </div>
   );
 }
 
 function SystemLogsSection() {
+  const [tab, setTab] = useUrlTab("tab", "api", ["api", "emails"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <SectionHeader
-        title="System Logs"
-        description="API request logs, error rates, and edge function execution history."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
-      <GlobalApiLogs />
+      <SectionHeader title="System Logs" description="API request logs, email delivery, and edge function execution history." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList><TabsTrigger value="api">API Logs</TabsTrigger><TabsTrigger value="emails">Email Logs</TabsTrigger></TabsList>
+        <TabsContent value="api" className="mt-4"><GlobalApiLogs /></TabsContent>
+        <TabsContent value="emails" className="mt-4"><AdminEmailLogsPanel /></TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -301,23 +314,27 @@ function SystemLogsSection() {
 // ─── GOVERNANCE ─────────────────────────────────────────────────────
 
 function DataGovernanceSection() {
-  const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs"]);
+  const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <SectionHeader
-        title="Data Retention"
-        description="Managing 7-year immutable hold cycles for POPIA compliance. Records are never permanently deleted."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Data Governance" description="Retention enforcement, consent management, and emergency protocols." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
-            <TabsTrigger value="retention">Retention Enforcement</TabsTrigger>
-            <TabsTrigger value="governance-docs">Governance Documents</TabsTrigger>
+            <TabsTrigger value="retention">Retention</TabsTrigger>
+            <TabsTrigger value="governance-docs">Gov Docs</TabsTrigger>
+            <TabsTrigger value="consents">Consents</TabsTrigger>
+            <TabsTrigger value="data-sources">Data Sources</TabsTrigger>
+            <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
+            <TabsTrigger value="break-glass">Break-Glass</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="retention" className="mt-4"><AdminRetentionFlagsPanel /></TabsContent>
         <TabsContent value="governance-docs" className="mt-4"><AdminGovernanceDocsPanel /></TabsContent>
+        <TabsContent value="consents" className="mt-4"><AdminConsentsPanel /></TabsContent>
+        <TabsContent value="data-sources" className="mt-4"><AdminDataSourcesPanel /></TabsContent>
+        <TabsContent value="thresholds" className="mt-4"><AdminApprovalThresholdsPanel /></TabsContent>
+        <TabsContent value="break-glass" className="mt-4"><BreakGlassPanel /></TabsContent>
       </Tabs>
     </div>
   );

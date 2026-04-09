@@ -39,6 +39,8 @@ export function BreakGlassPanel() {
   const [actionType, setActionType] = useState("");
   const [reason, setReason] = useState("");
   const [targetOrgId, setTargetOrgId] = useState("");
+  const [reauthPassword, setReauthPassword] = useState("");
+  const [reauthError, setReauthError] = useState("");
 
   const fetchActions = useCallback(async () => {
     try {
@@ -77,6 +79,11 @@ export function BreakGlassPanel() {
       return;
     }
 
+    if (!reauthPassword) {
+      setReauthError("Password re-entry is required for break-glass actions");
+      return;
+    }
+
     const needsTarget = ["freeze_org", "unfreeze_org", "freeze_api_keys", "unfreeze_api_keys"].includes(actionType);
     if (needsTarget && !targetOrgId) {
       toast.error("Target organisation ID is required for this action");
@@ -85,6 +92,26 @@ export function BreakGlassPanel() {
 
     try {
       setExecuting(true);
+      setReauthError("");
+
+      // Re-authenticate the user before executing
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error("Unable to verify identity. Please sign in again.");
+        return;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: reauthPassword,
+      });
+
+      if (authError) {
+        setReauthError("Password verification failed. Action blocked.");
+        toast.error("Re-authentication failed. Break-glass action denied.");
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
@@ -113,6 +140,9 @@ export function BreakGlassPanel() {
       setActionType("");
       setReason("");
       setTargetOrgId("");
+      setReauthPassword("");
+      setReauthError("");
+      setConfirmOpen(false);
       fetchActions();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Failed to execute action";
@@ -243,6 +273,22 @@ export function BreakGlassPanel() {
                   <span className="text-muted-foreground">Reason:</span>
                   <p className="mt-0.5">{reason}</p>
                 </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="reauth-password" className="text-sm font-medium text-foreground">
+                  Re-enter your password to confirm identity
+                </Label>
+                <Input
+                  id="reauth-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={reauthPassword}
+                  onChange={(e) => { setReauthPassword(e.target.value); setReauthError(""); }}
+                  className={reauthError ? "border-destructive" : ""}
+                />
+                {reauthError && (
+                  <p className="text-xs text-destructive">{reauthError}</p>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 This action will be permanently recorded in the append-only break-glass log and cannot be undone.
