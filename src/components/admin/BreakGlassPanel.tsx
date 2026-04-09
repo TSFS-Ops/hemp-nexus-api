@@ -274,6 +274,22 @@ export function BreakGlassPanel() {
                   <p className="mt-0.5">{reason}</p>
                 </div>
               </div>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="reauth-password" className="text-sm font-medium text-foreground">
+                  Re-enter your password to confirm identity
+                </Label>
+                <Input
+                  id="reauth-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={reauthPassword}
+                  onChange={(e) => { setReauthPassword(e.target.value); setReauthError(""); }}
+                  className={reauthError ? "border-destructive" : ""}
+                />
+                {reauthError && (
+                  <p className="text-xs text-destructive">{reauthError}</p>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 This action will be permanently recorded in the append-only break-glass log and cannot be undone.
               </p>
