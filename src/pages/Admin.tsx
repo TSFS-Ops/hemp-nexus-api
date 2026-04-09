@@ -291,29 +291,22 @@ function OrgsSection() {
 function WebhooksSection() {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <SectionHeader
-        title="Webhooks"
-        description="Event delivery endpoints and retry status for all organisations."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
-      <SystemEmpty
-        icon={ArrowLeft}
-        heading="No webhook endpoints configured"
-        description="Webhook endpoints are managed per-organisation from the console dashboard."
-      />
+      <SectionHeader title="Webhooks" description="Event delivery endpoints and retry status for all organisations." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
+      <AdminWebhookEndpointsPanel />
     </div>
   );
 }
 
 function SystemLogsSection() {
+  const [tab, setTab] = useUrlTab("tab", "api", ["api", "emails"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <SectionHeader
-        title="System Logs"
-        description="API request logs, error rates, and edge function execution history."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
-      <GlobalApiLogs />
+      <SectionHeader title="System Logs" description="API request logs, email delivery, and edge function execution history." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList><TabsTrigger value="api">API Logs</TabsTrigger><TabsTrigger value="emails">Email Logs</TabsTrigger></TabsList>
+        <TabsContent value="api" className="mt-4"><GlobalApiLogs /></TabsContent>
+        <TabsContent value="emails" className="mt-4"><AdminEmailLogsPanel /></TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -321,23 +314,27 @@ function SystemLogsSection() {
 // ─── GOVERNANCE ─────────────────────────────────────────────────────
 
 function DataGovernanceSection() {
-  const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs"]);
+  const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <SectionHeader
-        title="Data Retention"
-        description="Managing 7-year immutable hold cycles for POPIA compliance. Records are never permanently deleted."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Data Governance" description="Retention enforcement, consent management, and emergency protocols." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
-            <TabsTrigger value="retention">Retention Enforcement</TabsTrigger>
-            <TabsTrigger value="governance-docs">Governance Documents</TabsTrigger>
+            <TabsTrigger value="retention">Retention</TabsTrigger>
+            <TabsTrigger value="governance-docs">Gov Docs</TabsTrigger>
+            <TabsTrigger value="consents">Consents</TabsTrigger>
+            <TabsTrigger value="data-sources">Data Sources</TabsTrigger>
+            <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
+            <TabsTrigger value="break-glass">Break-Glass</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="retention" className="mt-4"><AdminRetentionFlagsPanel /></TabsContent>
         <TabsContent value="governance-docs" className="mt-4"><AdminGovernanceDocsPanel /></TabsContent>
+        <TabsContent value="consents" className="mt-4"><AdminConsentsPanel /></TabsContent>
+        <TabsContent value="data-sources" className="mt-4"><AdminDataSourcesPanel /></TabsContent>
+        <TabsContent value="thresholds" className="mt-4"><AdminApprovalThresholdsPanel /></TabsContent>
+        <TabsContent value="break-glass" className="mt-4"><BreakGlassPanel /></TabsContent>
       </Tabs>
     </div>
   );
