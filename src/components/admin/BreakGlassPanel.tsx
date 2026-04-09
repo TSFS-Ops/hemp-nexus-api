@@ -79,6 +79,11 @@ export function BreakGlassPanel() {
       return;
     }
 
+    if (!reauthPassword) {
+      setReauthError("Password re-entry is required for break-glass actions");
+      return;
+    }
+
     const needsTarget = ["freeze_org", "unfreeze_org", "freeze_api_keys", "unfreeze_api_keys"].includes(actionType);
     if (needsTarget && !targetOrgId) {
       toast.error("Target organisation ID is required for this action");
@@ -87,6 +92,26 @@ export function BreakGlassPanel() {
 
     try {
       setExecuting(true);
+      setReauthError("");
+
+      // Re-authenticate the user before executing
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error("Unable to verify identity. Please sign in again.");
+        return;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: reauthPassword,
+      });
+
+      if (authError) {
+        setReauthError("Password verification failed. Action blocked.");
+        toast.error("Re-authentication failed. Break-glass action denied.");
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
