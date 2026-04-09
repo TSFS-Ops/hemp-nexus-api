@@ -123,7 +123,7 @@ function DealsSection() {
 }
 
 function OrderBookSection() {
-  const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests"]);
+  const [tab, setTab] = useUrlTab("tab", "signals", ["signals", "interests", "orders"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
@@ -136,10 +136,12 @@ function OrderBookSection() {
           <TabsList className="w-max">
             <TabsTrigger value="signals">Signals</TabsTrigger>
             <TabsTrigger value="interests">Interests</TabsTrigger>
+            <TabsTrigger value="orders">Trade Orders</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="signals" className="mt-4 animate-section-enter"><AdminSignalsPanel /></TabsContent>
         <TabsContent value="interests" className="mt-4 animate-section-enter"><AdminInterestsPanel /></TabsContent>
+        <TabsContent value="orders" className="mt-4 animate-section-enter"><AdminTradeOrdersPanel /></TabsContent>
       </Tabs>
     </div>
   );
@@ -148,14 +150,10 @@ function OrderBookSection() {
 // ─── VERIFICATION ───────────────────────────────────────────────────
 
 function ComplianceSection() {
-  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "behavioral-kyc", "insights"]);
+  const [tab, setTab] = useUrlTab("tab", "cases", ["cases", "disputes", "risk", "kyc", "screening", "ubo", "atb", "breaches", "licences", "behavioral-kyc", "insights"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
-      <SectionHeader
-        title="Partner Checks"
-        description="We check your trading partner's identity and authority to trade before you commit money."
-        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
-      />
+      <SectionHeader title="Partner Checks" description="We check your trading partner's identity and authority to trade before you commit money." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
           <TabsList className="w-max">
@@ -165,6 +163,9 @@ function ComplianceSection() {
             <TabsTrigger value="kyc">KYC Docs</TabsTrigger>
             <TabsTrigger value="screening">Screening</TabsTrigger>
             <TabsTrigger value="ubo">UBO</TabsTrigger>
+            <TabsTrigger value="atb">Authority to Bind</TabsTrigger>
+            <TabsTrigger value="breaches">Breaches</TabsTrigger>
+            <TabsTrigger value="licences">Licences</TabsTrigger>
             <TabsTrigger value="behavioral-kyc">Score to KYC</TabsTrigger>
             <TabsTrigger value="insights">Behavioural Insights</TabsTrigger>
           </TabsList>
@@ -175,6 +176,9 @@ function ComplianceSection() {
         <TabsContent value="kyc" className="mt-4 animate-section-enter"><AdminKycDocsPanel /></TabsContent>
         <TabsContent value="screening" className="mt-4 animate-section-enter"><AdminScreeningRunsPanel /></TabsContent>
         <TabsContent value="ubo" className="mt-4 animate-section-enter"><AdminUboPanel /></TabsContent>
+        <TabsContent value="atb" className="mt-4 animate-section-enter"><AdminAuthorityRecordsPanel /></TabsContent>
+        <TabsContent value="breaches" className="mt-4 animate-section-enter"><AdminBreachesPanel /></TabsContent>
+        <TabsContent value="licences" className="mt-4 animate-section-enter"><AdminLicencesPanel /></TabsContent>
         <TabsContent value="behavioral-kyc" className="mt-4 animate-section-enter"><AdminBehavioralKycLink /></TabsContent>
         <TabsContent value="insights" className="mt-4 animate-section-enter"><AdminBehavioralInsights /></TabsContent>
       </Tabs>
