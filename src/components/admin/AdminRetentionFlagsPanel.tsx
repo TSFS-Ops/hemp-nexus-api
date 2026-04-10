@@ -38,6 +38,9 @@ interface RetentionFlag {
   resolved_at: string | null;
   last_scan_at: string | null;
   org_id: string | null;
+  archive_storage_path: string | null;
+  archive_hash: string | null;
+  archive_size_bytes: number | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof Clock }> = {
