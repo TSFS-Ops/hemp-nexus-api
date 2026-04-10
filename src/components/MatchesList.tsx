@@ -610,6 +610,7 @@ export function MatchesList() {
                         <div className="flex items-center gap-2">
                           {match.commodity}
                           <MatchTypeBadge match={match} />
+                          <MatchRoleBadge match={match} orgId={userOrgId} />
                         </div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{revealGuard(match, "buyer_name")}</TableCell>
