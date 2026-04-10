@@ -6,7 +6,8 @@
  * clearly apart from a bilateral intent.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +72,9 @@ export function UnilateralIntentForm() {
 
   const update = (field: keyof UnilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const isDirty = useMemo(() => form.commodity.trim().length > 0 || form.quantity.length > 0 || form.price.length > 0 || form.location.length > 0, [form]);
+  useUnsavedChanges(isDirty && !isSubmitting);
 
   const canSubmit = form.commodity.trim().length >= 2;
 
