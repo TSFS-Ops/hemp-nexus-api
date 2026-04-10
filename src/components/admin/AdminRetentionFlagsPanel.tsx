@@ -210,6 +210,33 @@ export function AdminRetentionFlagsPanel() {
     }
   };
 
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const triggerArchival = async () => {
+    setTriggeringArchive(true);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("cold-storage-archive", {
+        method: "POST",
+      });
+      if (invokeErr) throw invokeErr;
+      const result = data as { processed?: number; failed?: number };
+      toast.success(
+        `Cold storage archival complete: ${result?.processed ?? 0} records archived, ${result?.failed ?? 0} failed`
+      );
+      fetchFlags();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to trigger archival");
+    } finally {
+      setTriggeringArchive(false);
+    }
+  };
+
   const statusBadge = (status: string) => {
     const config = STATUS_CONFIG[status];
     if (!config) return <Badge variant="secondary">{status}</Badge>;
