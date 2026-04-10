@@ -720,10 +720,13 @@ Deno.serve(async (req) => {
         throw new ApiException("PAYLOAD_TOO_LARGE", "Request body exceeds maximum size of 1MB", 413);
       }
 
-      // Check for idempotency key
+      // Require idempotency key (prevents duplicate match creation on retry/double-click)
       const idempotencyKey = req.headers.get("idempotency-key");
-      
-      if (idempotencyKey) {
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+
+      {
         // Check if this idempotency key was already processed
         const { data: existingKey, error: keyError } = await supabase
           .from("idempotency_keys")
