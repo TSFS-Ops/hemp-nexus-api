@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search } from "lucide-react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import { CommoditySelect } from "@/components/ui/commodity-select";
 
 export interface BidOfferData {
   product: string;
@@ -156,11 +157,23 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
 
       {/* Fields grid: Product, Price, Quantity, Delivery Region */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <PremiumField
-          id="product" label="Product" required placeholder="e.g. Soybeans, Copper"
-          value={form.product} onChange={(v) => update("product", v)}
-          disabled={disabled}
-        />
+        <div>
+          <label
+            htmlFor="product"
+            className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
+            style={{ color: 'var(--lt-text-dim)' }}
+          >
+            Product<span className="ml-0.5" style={{ color: 'var(--lt-emerald)' }}>*</span>
+          </label>
+          <CommoditySelect
+            id="product"
+            value={form.product}
+            onChange={(v) => update("product", v)}
+            disabled={disabled}
+            placeholder="e.g. Soybeans, Copper"
+            variant="landing"
+          />
+        </div>
         <PremiumField
           id="price" label="Price" placeholder="e.g. $495/MT"
           value={form.price} onChange={(v) => update("price", v)}

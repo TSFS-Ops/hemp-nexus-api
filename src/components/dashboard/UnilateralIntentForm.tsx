@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Megaphone, Info, Sparkles, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { CommoditySelect } from "@/components/ui/commodity-select";
 import { ROUTES } from "@/lib/constants";
 import {
   AlertDialog,
@@ -396,11 +397,11 @@ export function UnilateralIntentForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="uni-commodity">Commodity / product *</Label>
-              <Input
+              <CommoditySelect
                 id="uni-commodity"
-                placeholder="e.g. Non-GMO Food-Grade Soybeans"
                 value={form.commodity}
-                onChange={(e) => update("commodity", e.target.value)}
+                onChange={(v) => update("commodity", v)}
+                placeholder="e.g. Non-GMO Food-Grade Soybeans"
               />
             </div>
             <div className="space-y-2">
