@@ -440,6 +440,9 @@ export function UnilateralIntentForm() {
                 Country where the commodity will be delivered.
               </p>
             </div>
+          </div>
+
+          {/* Quantity & Price */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="uni-quantity">Quantity</Label>
