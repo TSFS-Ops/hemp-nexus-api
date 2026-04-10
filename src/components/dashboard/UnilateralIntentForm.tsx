@@ -286,6 +286,8 @@ export function UnilateralIntentForm() {
       }
 
       // Reset form state so back-navigation shows a blank slate
+      clearDraft();
+      setDraftRestored(false);
       setForm(INITIAL);
       setDraftText("");
 

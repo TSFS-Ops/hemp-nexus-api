@@ -218,6 +218,8 @@ export function BilateralMatchForm() {
         // Non-critical
       }
 
+      clearDraft();
+      setDraftRestored(false);
       toast.success("Bilateral match created. Add documents and send a trade request when ready.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
