@@ -9,17 +9,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye, Plus, Edit } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const NOTIF_LIMIT = 200;
 
 export function AdminNotificationsPanel() {
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data, error, count } = await supabase.from("notifications").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(NOTIF_LIMIT);
     if (error) toast.error(error.message);
-    else setNotifications(data || []);
+    else {
+      setNotifications(data || []);
+      setTotalCount(count ?? data?.length ?? 0);
+    }
     setLoading(false);
   }, []);
 
@@ -29,6 +36,7 @@ export function AdminNotificationsPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={notifications} totalCount={totalCount} limit={NOTIF_LIMIT} />
       <p className="text-sm text-muted-foreground">{notifications.length} notification(s) | {notifications.filter(n => !n.read).length} unread</p>
       <Card><CardContent className="p-0">
         <Table>
