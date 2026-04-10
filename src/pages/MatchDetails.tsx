@@ -107,7 +107,14 @@ export default function MatchDetails() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Breadcrumbs items={breadcrumbs} />
+        <div className="flex items-center gap-3">
+          <Breadcrumbs items={breadcrumbs} />
+          {matchRole && matchRole !== "creator" && (
+            <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+              You: {matchRole === "buyer" ? "Buyer" : "Seller"}
+            </Badge>
+          )}
+        </div>
         <Button variant="ghost" size="sm" asChild>
           <Link to={ROUTES.DASHBOARD_MATCHES}>
             <ArrowLeft className="h-4 w-4 mr-1" />
