@@ -15,6 +15,7 @@ import { MatchHeroCard } from "@/components/match/MatchHeroCard";
 import { MatchDetailsTabs } from "@/components/match/MatchDetailsTabs";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { ROUTES } from "@/lib/constants";
+import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 
 export default function MatchDetails() {
   const { matchId } = useParams<{ matchId: string }>();
