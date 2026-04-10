@@ -263,7 +263,7 @@ export function AdminRetentionFlagsPanel() {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -297,6 +297,16 @@ export function AdminRetentionFlagsPanel() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <HardDrive className="h-4 w-4" />
+              Cold Storage
+            </div>
+            <p className="text-2xl font-bold mt-1">{archiveStats.count}</p>
+            <p className="text-xs text-muted-foreground">{formatBytes(archiveStats.totalBytes)} stored</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <CheckCircle2 className="h-4 w-4" />
               Resolved
             </div>
@@ -309,13 +319,31 @@ export function AdminRetentionFlagsPanel() {
       {/* Main Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Data Retention Enforcement
-          </CardTitle>
-          <CardDescription>
-            Records evaluated against the 7-year retention policy. Actions are enforced automatically; review and resolution require admin approval.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Data Retention Enforcement
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Records evaluated against the 7-year retention policy. Actions are enforced automatically; review and resolution require admin approval.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={triggerArchival}
+              disabled={triggeringArchive}
+              className="shrink-0"
+            >
+              {triggeringArchive ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <HardDrive className="h-4 w-4 mr-2" />
+              )}
+              Run Archival
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
