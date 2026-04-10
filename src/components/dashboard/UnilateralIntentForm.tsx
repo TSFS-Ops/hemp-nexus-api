@@ -41,6 +41,8 @@ interface UnilateralFormData {
   location: string;
   notes: string;
   counterpartyEmail: string;
+  originCountry: string;
+  destinationCountry: string;
 }
 
 const INITIAL: UnilateralFormData = {
@@ -53,6 +55,8 @@ const INITIAL: UnilateralFormData = {
   location: "",
   notes: "",
   counterpartyEmail: "",
+  originCountry: "",
+  destinationCountry: "",
 };
 
 export function UnilateralIntentForm() {
@@ -155,6 +159,8 @@ export function UnilateralIntentForm() {
             price: priceAmount && !isNaN(priceAmount) && priceAmount > 0
               ? { amount: priceAmount, currency: form.currency || "USD" }
               : null,
+            origin_country: form.originCountry.trim() || null,
+            destination_country: form.destinationCountry.trim() || null,
             metadata: {
               source: "unilateral",
               intent_side: form.side,
