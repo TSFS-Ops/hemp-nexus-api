@@ -121,6 +121,10 @@ export function BreakGlassPanel() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
+        if (err.code === "REAUTH_FAILED" || err.code === "REAUTH_REQUIRED") {
+          setReauthError(err.message || "Password verification failed. Action blocked.");
+          return;
+        }
         throw new Error(err.message || "Failed to execute");
       }
 
