@@ -14,6 +14,7 @@ import {
   Blocks,
   Settings,
   CheckCircle2,
+  Landmark,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -76,6 +77,7 @@ const sidebarGroups: NavGroup[] = [
   {
     label: "GOVERNANCE",
     items: [
+      { title: "Programmes", url: ROUTES.ADMIN_PROGRAMMES, icon: Landmark },
       { title: "Data Retention", url: ROUTES.ADMIN_DATA_GOVERNANCE, icon: Database },
       { title: "Policy Settings", url: ROUTES.ADMIN_SETTINGS, icon: Settings },
     ],

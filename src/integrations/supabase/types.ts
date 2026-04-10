@@ -1958,6 +1958,76 @@ export type Database = {
           },
         ]
       }
+      fund_flows: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          flow_type: string
+          id: string
+          idempotency_key: string
+          milestone_id: string | null
+          participant_id: string
+          payload_hash: string
+          previous_hash: string | null
+          programme_id: string
+          recorded_by: string | null
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          flow_type: string
+          id?: string
+          idempotency_key: string
+          milestone_id?: string | null
+          participant_id: string
+          payload_hash: string
+          previous_hash?: string | null
+          programme_id: string
+          recorded_by?: string | null
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          flow_type?: string
+          id?: string
+          idempotency_key?: string
+          milestone_id?: string | null
+          participant_id?: string
+          payload_hash?: string
+          previous_hash?: string | null
+          programme_id?: string
+          recorded_by?: string | null
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fund_flows_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "programme_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_flows_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "programme_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_flows_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_doc_registry: {
         Row: {
           active: boolean
@@ -3639,6 +3709,170 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_milestones: {
+        Row: {
+          budget_tranche: number
+          completed_at: string | null
+          created_at: string
+          due_at: string
+          evidence_document_id: string | null
+          id: string
+          name: string
+          participant_id: string
+          programme_id: string
+          status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          budget_tranche?: number
+          completed_at?: string | null
+          created_at?: string
+          due_at: string
+          evidence_document_id?: string | null
+          id?: string
+          name: string
+          participant_id: string
+          programme_id: string
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          budget_tranche?: number
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string
+          evidence_document_id?: string | null
+          id?: string
+          name?: string
+          participant_id?: string
+          programme_id?: string
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_milestones_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "programme_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_milestones_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_participants: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          entity_id: string
+          id: string
+          programme_id: string
+          role: string
+          status: string
+          trade_approval_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          entity_id: string
+          id?: string
+          programme_id: string
+          role?: string
+          status?: string
+          trade_approval_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          entity_id?: string
+          id?: string
+          programme_id?: string
+          role?: string
+          status?: string
+          trade_approval_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_participants_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_participants_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programmes: {
+        Row: {
+          budget_allocated: number
+          budget_committed: number
+          budget_disbursed: number
+          created_at: string
+          department: string
+          fiscal_year: string
+          id: string
+          name: string
+          objectives: Json | null
+          org_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget_allocated?: number
+          budget_committed?: number
+          budget_disbursed?: number
+          created_at?: string
+          department: string
+          fiscal_year: string
+          id?: string
+          name: string
+          objectives?: Json | null
+          org_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_allocated?: number
+          budget_committed?: number
+          budget_disbursed?: number
+          created_at?: string
+          department?: string
+          fiscal_year?: string
+          id?: string
+          name?: string
+          objectives?: Json | null
+          org_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programmes_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

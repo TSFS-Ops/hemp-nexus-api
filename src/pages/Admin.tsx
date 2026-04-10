@@ -53,6 +53,7 @@ import { AdminAttestationsPanel } from "@/components/admin/AdminAttestationsPane
 import { AdminNotificationsPanel } from "@/components/admin/AdminNotificationsPanel";
 import { AdminLicencesPanel } from "@/components/admin/AdminLicencesPanel";
 import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
+import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -313,6 +314,20 @@ function SystemLogsSection() {
 
 // ─── GOVERNANCE ─────────────────────────────────────────────────────
 
+function ProgrammesSection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
+      <SectionHeader
+        title="Programme Governance"
+        description="Government programme budgets, participant eligibility, milestone tracking, and hash-chained fund flows."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <AdminProgrammesPanel />
+    </div>
+  );
+}
+
+
 function DataGovernanceSection() {
   const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
@@ -381,6 +396,7 @@ function AdminContent() {
               <Route path="/system-logs" element={<SystemLogsSection />} />
               {/* GOVERNANCE */}
               <Route path="/data-governance" element={<DataGovernanceSection />} />
+              <Route path="/programmes" element={<ProgrammesSection />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
               {/* Legacy redirects */}
