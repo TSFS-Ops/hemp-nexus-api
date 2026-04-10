@@ -685,21 +685,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 </p>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="docType">Document Type *</Label>
-                <Select value={docType} onValueChange={setDocType} disabled={uploading}>
-                  <SelectTrigger id="docType">
-                    <SelectValue placeholder="Select type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOC_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* doc_type is auto-defaulted to "other" — no dropdown needed */}
 
               <div className="space-y-2">
                 <Label htmlFor="title">Title (optional)</Label>
