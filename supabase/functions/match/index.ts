@@ -241,20 +241,59 @@ Deno.serve(async (req) => {
         throw new ApiException(errCode, errMsg, statusCode);
       }
 
-      const updated = transitionResult.match;
+      // ── Chain transition: intent_declared → counterparty_sighted ──
+      const sightedAt = new Date().toISOString();
+      const { data: revealResult, error: revealError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'intent_declared',
+          p_new_state: 'counterparty_sighted',
+          p_update_fields: { counterparty_sighted_at: sightedAt },
+        }
+      );
+      if (revealError) handleDatabaseError(revealError, requestId);
+      if (!revealResult?.success) {
+        console.error(`[${requestId}] Chain reveal failed: ${revealResult?.error}`);
+      }
 
-      // Audit log - immutable trade request
+      // ── Chain transition: counterparty_sighted → committed ──
+      const committedAt = new Date().toISOString();
+      const { data: commitResult, error: commitError } = await supabase.rpc(
+        'safe_transition_match_state',
+        {
+          p_match_id: matchId,
+          p_org_id: authCtx.orgId,
+          p_expected_state: 'counterparty_sighted',
+          p_new_state: 'committed',
+          p_update_fields: { buyer_committed_at: committedAt },
+        }
+      );
+      if (commitError) handleDatabaseError(commitError, requestId);
+
+      // Fetch the final state of the match after all transitions
+      const { data: finalMatch, error: finalFetchError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .single();
+      if (finalFetchError) handleDatabaseError(finalFetchError, requestId);
+      const updated = finalMatch;
+
+      // Audit log - POI generation (single consolidated entry)
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
           actor_user_id: actorUserId,
           actor_api_key_id: actorApiKeyId,
-          action: "intent.confirmed",
+          action: "poi.generated",
           entity_type: "match",
           entity_id: matchId,
           metadata: {
             request_id: requestId,
             confirmed_at: now,
+            committed_at: committedAt,
             hash: match.hash,
             buyer_id: match.buyer_id,
             seller_id: match.seller_id,
@@ -265,20 +304,21 @@ Deno.serve(async (req) => {
             price_currency: match.price_currency,
             tokens_burned: ACTION_TOKEN_COSTS.declare_intent,
             previous_state: currentState,
-            new_state: 'intent_declared',
-            note: "Intent confirmation signals interest only - no payment or legal obligation created"
+            new_state: updated?.state || 'committed',
+            note: "POI generated - single credit charge. Discovery → Committed in one step."
           }
         });
 
         await recordMatchEvent(
-          supabase, matchId, match.org_id, "intent.confirmed",
+          supabase, matchId, match.org_id, "poi.generated",
           {
             confirmedAt: now,
+            committedAt,
             hash: match.hash,
             commodity: match.commodity,
             tokensCharged: ACTION_TOKEN_COSTS.declare_intent,
-            state: 'intent_declared',
-            note: "Signals serious interest - no legal obligation"
+            state: updated?.state || 'committed',
+            note: "POI generated with single R10 credit charge"
           },
           actorUserId, actorApiKeyId
         );
@@ -287,13 +327,13 @@ Deno.serve(async (req) => {
         throw new ApiException("AUDIT_LOG_ERROR", "Failed to create audit trail", 500);
       }
 
-      console.log(`[${requestId}] Intent confirmed successfully`);
+      console.log(`[${requestId}] POI generated successfully (discovery → committed)`);
 
       // Trigger webhooks
-      triggerWebhooks(supabase, match.org_id, "intent.confirmed", {
-        matchId, hash: match.hash, confirmedAt: now,
+      triggerWebhooks(supabase, match.org_id, "poi.generated", {
+        matchId, hash: match.hash, confirmedAt: now, committedAt,
         commodity: match.commodity, quantity: match.quantity_amount,
-        note: "Intent confirmation signals interest only - no payment or legal obligation"
+        note: "POI generated - no payment or legal obligation"
       }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
