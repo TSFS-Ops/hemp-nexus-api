@@ -44,6 +44,7 @@ export function AdminSettings() {
   });
   const [notifications, setNotifications] = useState<NotificationSettings>({
     emailAlerts: true,
+    alertEmail: "",
     slackWebhook: "",
     alertThreshold: 10,
   });
