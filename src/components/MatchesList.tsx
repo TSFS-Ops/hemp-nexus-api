@@ -47,7 +47,7 @@ type Match = Tables<"matches">;
 const PAGE_SIZE = 25;
 
 // Columns actually needed for the list view - avoids SELECT *
-const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type" as const;
+const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type, buyer_org_id, seller_org_id" as const;
 
 /** Returns display name for buyer/seller based on reveal state */
 function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string {
