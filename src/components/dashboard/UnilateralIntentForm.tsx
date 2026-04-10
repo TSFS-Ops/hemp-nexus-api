@@ -6,7 +6,7 @@
  * clearly apart from a bilateral intent.
  */
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useNavigate } from "react-router-dom";
