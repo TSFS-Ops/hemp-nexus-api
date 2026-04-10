@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
         console.error("[search] Counterparty FTS error:", cpError.message);
       }
       counterpartyResults = cpData || [];
+      ftsResultCount = counterpartyResults.length;
     }
 
     // If FTS returned nothing, try a simple ILIKE fallback
