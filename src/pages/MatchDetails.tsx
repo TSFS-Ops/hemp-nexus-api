@@ -4,6 +4,7 @@
 
 import { useParams, Link } from "react-router-dom";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { LoadingButton } from "@/components/ui/loading-button";
