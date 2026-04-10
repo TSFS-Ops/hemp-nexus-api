@@ -24,6 +24,7 @@ interface ApiSettings {
 
 interface NotificationSettings {
   emailAlerts: boolean;
+  alertEmail: string;
   slackWebhook: string;
   alertThreshold: number;
 }
