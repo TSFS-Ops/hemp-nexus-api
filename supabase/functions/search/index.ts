@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
     });
 
     // ── 1. Trading Partners table (Postgres full-text search) ──
+    const parseTokens = tsQuery ? tsQuery.split(" & ").length : 0;
     const tsQuery = product
       .split(/\s+/)
       .filter((w: string) => w.length > 1)
