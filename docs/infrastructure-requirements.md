@@ -249,7 +249,7 @@ For sub-millisecond accuracy, integrate a dedicated NTP service:
 - [ ] WAF enabled at CDN layer with rules for `/functions/v1/collapse`
 - [ ] Health check monitoring configured (30s interval)
 - [ ] Database PITR enabled (Supabase Pro)
-- [ ] Cold storage bucket created for archival
+- [x] Cold storage bucket created and archival pipeline operational
 - [ ] Alert channels configured for all metrics above
 - [ ] PDF service deployed and `PDF_SERVICE_URL` secret set
 - [ ] IDV provider integrated (Onfido) - Phase 2
