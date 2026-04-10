@@ -94,6 +94,24 @@ export function AdminRetentionFlagsPanel() {
       );
       setStats(Object.fromEntries(countResults));
 
+      // Fetch archive stats (count + total size of cold-stored records)
+      const { count: archivedCount } = await supabase
+        .from("retention_flags")
+        .select("id", { count: "exact", head: true })
+        .not("archive_storage_path", "is", null);
+
+      // Sum archive sizes — fetch actual values for summation
+      const { data: archiveSizeData } = await supabase
+        .from("retention_flags")
+        .select("archive_size_bytes")
+        .not("archive_storage_path", "is", null)
+        .not("archive_size_bytes", "is", null)
+        .limit(1000);
+
+      const totalBytes = (archiveSizeData || []).reduce(
+        (sum, r) => sum + (r.archive_size_bytes || 0), 0
+      );
+      setArchiveStats({ count: archivedCount ?? 0, totalBytes });
       // Count query
       let countQ = supabase.from("retention_flags").select("id", { count: "exact", head: true });
       if (statusFilter !== "all") countQ = countQ.eq("retention_status", statusFilter);
