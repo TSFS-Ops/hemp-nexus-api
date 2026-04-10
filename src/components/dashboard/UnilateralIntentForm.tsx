@@ -414,7 +414,32 @@ export function UnilateralIntentForm() {
             </div>
           </div>
 
-          {/* Quantity & Price */}
+          {/* Origin & Destination Country (jurisdiction signals) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="uni-origin-country">Origin country</Label>
+              <Input
+                id="uni-origin-country"
+                placeholder="e.g. ZA, GB, US"
+                value={form.originCountry}
+                onChange={(e) => update("originCountry", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Country where the commodity originates (ISO code or name).
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="uni-dest-country">Destination country</Label>
+              <Input
+                id="uni-dest-country"
+                placeholder="e.g. ZA, GB, US"
+                value={form.destinationCountry}
+                onChange={(e) => update("destinationCountry", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Country where the commodity will be delivered.
+              </p>
+            </div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="uni-quantity">Quantity</Label>
