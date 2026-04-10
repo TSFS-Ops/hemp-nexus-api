@@ -75,7 +75,8 @@ export function AdminRetentionFlagsPanel() {
   const [resolveAction, setResolveAction] = useState("acknowledged");
   const [resolving, setResolving] = useState(false);
   const [stats, setStats] = useState<Record<string, number>>({});
-
+  const [archiveStats, setArchiveStats] = useState<{ count: number; totalBytes: number }>({ count: 0, totalBytes: 0 });
+  const [triggeringArchive, setTriggeringArchive] = useState(false);
   const fetchFlags = useCallback(async () => {
     setLoading(true);
     setError(null);
