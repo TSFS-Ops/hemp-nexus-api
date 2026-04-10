@@ -15,35 +15,43 @@ export const MATCH_STATUSES = ["matched", "settled", "disputed", "cancelled"] as
 export type MatchStatusValue = (typeof MATCH_STATUSES)[number];
 
 // ─── V3 Lifecycle States ────────────────────────────────────────────
-export const MATCH_STATES = [
+// Internal DB states (kept for backward compat)
+export const MATCH_STATES_INTERNAL = [
   "discovery",
   "intent_declared",
   "counterparty_sighted",
   "committed",
   "completed",
 ] as const;
-export type MatchStateValue = (typeof MATCH_STATES)[number];
+
+// Simplified visual states (what users see)
+export const MATCH_STATES = [
+  "discovery",
+  "committed",       // = "POI Generated"
+  "completed",
+] as const;
+export type MatchStateValue = (typeof MATCH_STATES_INTERNAL)[number];
 
 export const STATE_LABELS: Record<string, string> = {
   discovery: "Discovery",
-  intent_declared: "Intent Declared",
-  counterparty_sighted: "Counterparty Revealed",
-  committed: "Committed",
+  intent_declared: "POI Generated",
+  counterparty_sighted: "POI Generated",
+  committed: "POI Generated",
   completed: "Completed",
 };
 
 export const STATE_DESCRIPTIONS: Record<string, string> = {
-  discovery: "A trading partner has been matched. Review and confirm your intent to proceed.",
-  intent_declared: "Intent has been confirmed. You can now reveal the trading partner identity.",
-  counterparty_sighted: "Counterparty identity revealed. Both parties can now commit to the deal.",
-  committed: "Both parties have committed. Complete the transaction to finalise.",
+  discovery: "A trading partner has been matched. Review details and generate the Proof of Intent.",
+  intent_declared: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
+  counterparty_sighted: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
+  committed: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
   completed: "Transaction completed. Evidence record sealed.",
 };
 
 // ─── Valid state transitions ────────────────────────────────────────
 const VALID_STATE_TRANSITIONS: Record<string, string[]> = {
-  discovery: ["intent_declared"],
-  intent_declared: ["counterparty_sighted"],
+  discovery: ["committed"],         // Single step: Generate POI
+  intent_declared: ["committed"],   // Legacy compat
   counterparty_sighted: ["committed"],
   committed: ["completed"],
   completed: [],
@@ -159,10 +167,11 @@ export function getNextState(currentState: string): string | null {
 /** Get the API action path for a state transition */
 export function getTransitionAction(targetState: string): string | null {
   const map: Record<string, string> = {
+    committed: "generate-poi",     // Single action: discovery → committed
+    completed: "complete",
+    // Legacy compat
     intent_declared: "settle",
     counterparty_sighted: "reveal-counterparty",
-    committed: "commit",
-    completed: "complete",
   };
   return map[targetState] ?? null;
 }
@@ -171,16 +180,14 @@ export function getTransitionAction(targetState: string): string | null {
 export function getNextActionLabel(currentState: string, matchType?: string): string | null {
   if (matchType === "unilateral") {
     const labels: Record<string, string> = {
-      discovery: "Declare Intent - 1 credit",
+      discovery: "Generate POI - 1 credit",
       intent_declared: "Awaiting counterparty",
     };
     return labels[currentState] ?? null;
   }
   const labels: Record<string, string> = {
-    discovery: "Signal Intent - 1 credit",
-    intent_declared: "Reveal Counterparty - 1 credit",
-    counterparty_sighted: "Commit to Deal - 1 credit",
-    committed: "Complete Transaction - 1 credit",
+    discovery: "Generate POI - 1 credit",
+    committed: "Complete Transaction",
   };
   return labels[currentState] ?? null;
 }
@@ -189,16 +196,14 @@ export function getNextActionLabel(currentState: string, matchType?: string): st
 export function getNextActionDescription(currentState: string, matchType?: string): string | null {
   if (matchType === "unilateral") {
     const descriptions: Record<string, string> = {
-      discovery: "Formally declares your intent to the market. This creates a governed record. Non-binding.",
-      intent_declared: "This unilateral intent is awaiting a trading partner. Once a trading partner is attached, you can proceed to reveal.",
+      discovery: "Generates a Proof of Intent record for this trade. 1 credit (R10) will be charged. Non-binding.",
+      intent_declared: "This unilateral intent is awaiting a trading partner.",
     };
     return descriptions[currentState] ?? null;
   }
   const descriptions: Record<string, string> = {
-    discovery: "Records your interest so the trading partner can prepare terms. Non-binding.",
-    intent_declared: "Reveals both party identities. The trading partner will see your organisation name.",
-    counterparty_sighted: "Formally commits you to this deal. An evidence record is created.",
-    committed: "Marks the transaction as completed. The full evidence pack is sealed.",
+    discovery: "Generates a Proof of Intent (POI) record for this trade. 1 credit (R10) will be charged. Non-binding.",
+    committed: "Marks the transaction as completed. The full evidence pack is sealed. No additional charge.",
   };
   return descriptions[currentState] ?? null;
 }
@@ -245,8 +250,11 @@ export function statusDescription(statusOrState: string): string {
   return descriptions[statusOrState] ?? "";
 }
 
-/** Get the step index (0-based) for a given state */
+/** Get the step index (0-based) for the simplified 3-step visual stepper */
 export function getStateIndex(state: string): number {
-  const idx = MATCH_STATES.indexOf(state as MatchStateValue);
-  return idx >= 0 ? idx : 0;
+  // Map all internal states to the 3-step visual: 0=Discovery, 1=POI Generated, 2=Completed
+  if (state === "discovery") return 0;
+  if (state === "completed") return 2;
+  // intent_declared, counterparty_sighted, committed all map to step 1 (POI Generated)
+  return 1;
 }

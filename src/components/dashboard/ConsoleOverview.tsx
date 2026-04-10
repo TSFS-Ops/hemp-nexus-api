@@ -379,8 +379,8 @@ export function ConsoleOverview() {
               {[
                 { step: "1", label: "Search", desc: "Find trading partners" },
                 { step: "2", label: "Match", desc: "Select & create" },
-                { step: "3", label: "Confirm", desc: "Signal intent" },
-                { step: "4", label: "Evidence", desc: "Download pack" },
+                { step: "3", label: "POI", desc: "Generate proof" },
+                { step: "4", label: "WaD", desc: "Seal evidence" },
               ].map((s) => (
                 <div key={s.step} className="text-center p-3 rounded-md bg-background border border-border">
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mb-1">

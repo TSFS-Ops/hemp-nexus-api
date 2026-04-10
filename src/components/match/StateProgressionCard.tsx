@@ -1,9 +1,9 @@
 /**
  * StateProgressionCard - Shows the current lifecycle stage and the next action CTA.
  *
- * Displays a horizontal stepper (Discovery → Intent → Reveal → Commit → Complete)
+ * Displays a horizontal stepper (Discovery → POI Generated → Completed)
  * with the next action button that triggers the appropriate backend endpoint.
- * Each action costs 1 credit.
+ * POI generation costs 1 credit (R10). Completion is free.
  */
 
 import { useState, useMemo } from "react";

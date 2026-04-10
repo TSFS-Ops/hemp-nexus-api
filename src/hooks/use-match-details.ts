@@ -162,7 +162,7 @@ export function useMatchDetails(matchId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: ["token-balance"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
-        toast.success("Intent confirmed. 1 credit deducted.");
+        toast.success("POI generated. 1 credit deducted.");
       }
     },
     {
@@ -211,8 +211,9 @@ export function useMatchDetails(matchId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
 
         const labels: Record<string, string> = {
-          "reveal-counterparty": "Counterparty revealed. 1 credit deducted.",
-          "commit": "Deal committed. 1 credit deducted.",
+          "generate-poi": "POI generated. 1 credit deducted.",
+          "reveal-counterparty": "Counterparty revealed.",
+          "commit": "Deal committed.",
           "complete": "Transaction completed. Evidence record sealed.",
         };
         toast.success(labels[actionPath] || "Action completed.");
