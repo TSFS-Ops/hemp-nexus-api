@@ -74,6 +74,18 @@ function MatchTypeBadge({ match }: { match: Match }) {
   return null;
 }
 
+/** Badge showing the user's role in a match */
+function MatchRoleBadge({ match, orgId }: { match: Match; orgId: string | null }) {
+  const role = getMatchRole(orgId, match as any);
+  if (!role || role === "creator") return null;
+  const labels: Record<string, string> = { buyer: "You: Buyer", seller: "You: Seller" };
+  return (
+    <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+      {labels[role]}
+    </Badge>
+  );
+}
+
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
 const BULK_FAILED_KEY = "izenzo_bulk_failed_ids";
