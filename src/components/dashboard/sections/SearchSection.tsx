@@ -1,10 +1,7 @@
 import CounterpartySearch from "@/components/CounterpartySearch";
-import { BilateralMatchForm } from "@/components/dashboard/BilateralMatchForm";
-import { UnilateralIntentForm } from "@/components/dashboard/UnilateralIntentForm";
 import { SectionHeader } from "@/components/ui/section-header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Handshake, Megaphone, CheckCircle2, Lock } from "lucide-react";
+import { Search, CheckCircle2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DEAL_STEPS = [
@@ -20,7 +17,7 @@ export function SearchSection() {
     <div className="space-y-5 sm:space-y-6">
       <SectionHeader
         title="Find Trading Partners"
-        description="Search online, create a bilateral match, or publish a unilateral intent to attract liquidity"
+        description="Search for counterparties to begin a deal"
       />
 
       {/* Deal flow stepper — shows user is on Step 1 */}
@@ -65,31 +62,8 @@ export function SearchSection() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="search">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="search" className="gap-1.5">
-            <Search className="h-4 w-4" />
-            Online Search
-          </TabsTrigger>
-          <TabsTrigger value="bilateral" className="gap-1.5">
-            <Handshake className="h-4 w-4" />
-            Bilateral (Known Trading Partner)
-          </TabsTrigger>
-          <TabsTrigger value="unilateral" className="gap-1.5">
-            <Megaphone className="h-4 w-4" />
-            Unilateral Intent
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="search" className="mt-4">
-          <CounterpartySearch />
-        </TabsContent>
-        <TabsContent value="bilateral" className="mt-4">
-          <BilateralMatchForm />
-        </TabsContent>
-        <TabsContent value="unilateral" className="mt-4">
-          <UnilateralIntentForm />
-        </TabsContent>
-      </Tabs>
+      {/* Single unified search — no more separate tabs */}
+      <CounterpartySearch />
     </div>
   );
 }
