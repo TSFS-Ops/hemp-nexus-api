@@ -314,6 +314,20 @@ function SystemLogsSection() {
 
 // ─── GOVERNANCE ─────────────────────────────────────────────────────
 
+function ProgrammesSection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
+      <SectionHeader
+        title="Programme Governance"
+        description="Government programme budgets, participant eligibility, milestone tracking, and hash-chained fund flows."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <AdminProgrammesPanel />
+    </div>
+  );
+}
+
+
 function DataGovernanceSection() {
   const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
