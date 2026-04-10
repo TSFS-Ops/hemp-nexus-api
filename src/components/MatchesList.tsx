@@ -92,6 +92,7 @@ const BULK_FAILED_KEY = "izenzo_bulk_failed_ids";
 
 export function MatchesList() {
   const navigate = useNavigate();
+  const userOrgId = useUserOrg();
   const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
   const statusFilter = params.status;
   const commoditySearch = params.q;
