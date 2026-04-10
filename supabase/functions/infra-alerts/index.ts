@@ -199,13 +199,14 @@ Deno.serve(async (req) => {
 
   // Log alerts to admin_audit_logs
   for (const alert of alerts) {
-    await supabase.from("admin_audit_logs").insert({
+    const { error: auditErr } = await supabase.from("admin_audit_logs").insert({
       admin_user_id: null,
       action: `infra.alert.${alert.severity}`,
       target_type: "metric",
-      target_id: alert.metric,
+      target_id: null,
       details: alert,
-    }).then(() => {}, (err: unknown) => console.error("Audit log insert failed:", err));
+    });
+    if (auditErr) console.error("Audit log insert failed:", auditErr.message);
   }
 
   // Fetch notification settings for email dispatch
