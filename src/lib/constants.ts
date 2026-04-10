@@ -56,6 +56,7 @@ export const ROUTES = {
   // GOVERNANCE
   ADMIN_DATA_GOVERNANCE: '/admin/data-governance',
   ADMIN_PROGRAMMES: '/admin/programmes',
+  ADMIN_HEALTH: '/admin/health',
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_OVERRIDES: '/admin/overrides',
   // Legacy aliases

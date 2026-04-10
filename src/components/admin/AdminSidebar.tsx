@@ -15,6 +15,7 @@ import {
   Settings,
   CheckCircle2,
   Landmark,
+  HeartPulse,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -72,6 +73,7 @@ const sidebarGroups: NavGroup[] = [
       { title: "API Keys", url: ROUTES.ADMIN_API_KEYS, icon: Key },
       { title: "Webhooks", url: ROUTES.ADMIN_WEBHOOKS, icon: Webhook },
       { title: "System Logs", url: ROUTES.ADMIN_SYSTEM_LOGS, icon: Terminal },
+      { title: "Health Monitor", url: ROUTES.ADMIN_HEALTH, icon: HeartPulse },
     ],
   },
   {
