@@ -58,8 +58,7 @@ function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string 
   if (match[field] === null || match[field] === undefined) {
     return matchType === "unilateral" ? "- (open)" : "-";
   }
-  const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(state);
-  return isRevealed ? (match[field] || "-") : "••••••";
+  return match[field] || "-";
 }
 
 /** Badge for match type */

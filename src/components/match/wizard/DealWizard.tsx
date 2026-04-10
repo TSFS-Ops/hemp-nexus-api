@@ -175,7 +175,7 @@ export function DealWizard({
 // ─── Step 1: Search (Complete) ──────────────────────────────────────
 
 function StepSearch({ match }: { match: Match }) {
-  const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(match.state || "discovery");
+  const isRevealed = true; // Names are always visible per client requirement
 
   return (
     <Card className="border-primary/20">

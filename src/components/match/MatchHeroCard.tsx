@@ -55,7 +55,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const contextItems = getMatchContext(match);
   const currentState = match.state || "discovery";
   const matchType = (match as any).match_type || "search";
-  const isRevealed = ["counterparty_sighted", "committed", "completed"].includes(currentState);
+  const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
 
   return (
