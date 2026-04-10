@@ -54,6 +54,7 @@ export const ROUTES = {
   ADMIN_SYSTEM_LOGS: '/admin/system-logs',
   // GOVERNANCE
   ADMIN_DATA_GOVERNANCE: '/admin/data-governance',
+  ADMIN_PROGRAMMES: '/admin/programmes',
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_OVERRIDES: '/admin/overrides',
   // Legacy aliases
