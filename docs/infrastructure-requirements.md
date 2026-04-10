@@ -114,32 +114,35 @@ The `data-retention` edge function runs daily (cron scheduled at 2 AM UTC) and f
 - `approaching_expiry` - within 90 days of the 7-year mark
 - `expired` - past the 7-year mark
 
-#### Step 2: Archive (To Implement)
-Create an archival edge function that:
-1. Queries `retention_flags WHERE flag_type = 'expired' AND archived_at IS NULL`
+#### Step 2: Archive (Implemented)
+The `cold-storage-archive` edge function runs on-demand (admin trigger) or weekly via cron:
+1. Queries `retention_flags WHERE retention_status IN ('archived', 'quarantined') AND archive_storage_path IS NULL`
 2. For each record:
-   a. Export the full record as JSON (including all related records)
-   b. Compute SHA-256 hash of the archive payload
-   c. Upload to cold storage bucket with metadata
-   d. Update `retention_flags.archived_at = now()`
-3. **Do NOT delete** the original record - mark it as archived
+   a. Fetches the full source record plus related sub-records (e.g., match_events, deal_terms for matches)
+   b. Builds a deterministic JSON archive payload with metadata envelope
+   c. Computes SHA-256 hash of the archive payload
+   d. Uploads to `archived-records` private storage bucket
+   e. Updates `retention_flags` with `archive_storage_path`, `archive_hash`, `archive_size_bytes`
+   f. Writes an audit log entry
+3. **Does NOT delete** the original record — only records the archive location
+4. Idempotent: skips records that already have `archive_storage_path` set
+5. Optimistic concurrency guard prevents duplicate writes
 
 #### Step 3: Cold Storage Target
 
+Currently using **Supabase Storage** (private `archived-records` bucket). Migration to S3 Glacier is a future infrastructure decision when volume justifies it.
+
 | Option | Pros | Cons |
 |--------|------|------|
-| **Supabase Storage** (private bucket) | Simple, same platform | Not true cold storage, costs more at scale |
+| **Supabase Storage** (current) | Simple, same platform, instant retrieval | Not true cold storage, costs more at scale |
 | **AWS S3 Glacier** | Cheapest long-term, compliance-ready | Separate infra, retrieval latency |
 | **GCS Coldline** | Good balance of cost and access time | Separate infra |
-| **Azure Blob Archive** | Compliance certifications | Retrieval can take hours |
-
-**Recommended**: Start with a private Supabase Storage bucket (`archived-records`), migrate to S3 Glacier when volume justifies it.
 
 #### Step 4: Retrieval
-Archived records should be retrievable via:
-- Admin panel search (queries `retention_flags` + fetches from cold storage)
-- API endpoint with admin-only access
-- Maximum retrieval SLA: 24 hours for Glacier, instant for Supabase Storage
+Archived records are viewable via:
+- Admin panel → Data Retention Enforcement → "Cold Storage" column (hover for path, hash, size)
+- Direct storage bucket access via service_role
+- Maximum retrieval SLA: instant (Supabase Storage)
 
 ---
 
