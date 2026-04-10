@@ -182,12 +182,8 @@ export function AdminEntitiesPanel() {
           <CardTitle className="text-lg">Entities</CardTitle>
           <CardDescription>
             All registered legal entities across the platform
-            {(entities as any).__totalCount > (entities as any).__limit && (
-              <span className="block mt-1 text-destructive">
-                Showing {entities.length} of {(entities as any).__totalCount} entities. Only the most recent {(entities as any).__limit} are displayed.
-              </span>
-            )}
           </CardDescription>
+          <TruncationBanner data={entities} totalCount={isTruncated ? totalCount : undefined} limit={queryLimit} />
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
