@@ -5,29 +5,40 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Eye } from "lucide-react";
+import { Loader2, Eye, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+
+const ATTESTATION_LIMIT = 200;
 
 export function AdminAttestationsPanel() {
   const [attestations, setAttestations] = useState<any[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("attestations").select("*").order("signed_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setAttestations(data || []);
+    const [countRes, dataRes] = await Promise.all([
+      supabase.from("attestations").select("id", { count: "exact", head: true }),
+      supabase.from("attestations").select("*").order("signed_at", { ascending: false }).limit(ATTESTATION_LIMIT),
+    ]);
+    setTotal(countRes.count);
+    if (dataRes.error) toast.error(dataRes.error.message);
+    else setAttestations(dataRes.data || []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{attestations.length} attestation(s)</p>
+      {total !== null && attestations.length >= ATTESTATION_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {attestations.length} of {total} attestations. Results are capped at {ATTESTATION_LIMIT}.</AlertDescription></Alert>
+      )}
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow>

@@ -6,8 +6,9 @@
  * clearly apart from a bilateral intent.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,8 +68,39 @@ export function UnilateralIntentForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [draftText, setDraftText] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
+
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const getCurrentData = useCallback((): UnilateralFormData | null => {
+    const f = formRef.current;
+    if (!f.commodity && !f.quantity && !f.price && !f.location) return null;
+    return f;
+  }, []);
+
+  const { restoreDraft, saveDraft, clearDraft } = useDraftPersistence<UnilateralFormData>("unilateral-intent", getCurrentData);
+
+  const draftInitialised = useRef(false);
+  useEffect(() => {
+    if (draftInitialised.current) return;
+    draftInitialised.current = true;
+    const draft = restoreDraft();
+    if (draft) {
+      setForm(draft);
+      setDraftRestored(true);
+    }
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (!draftInitialised.current) return;
+    const f = form;
+    if (f.commodity || f.quantity || f.price || f.location) {
+      saveDraft(f);
+    }
+  }, [form, saveDraft]);
 
   const update = (field: keyof UnilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -254,6 +286,8 @@ export function UnilateralIntentForm() {
       }
 
       // Reset form state so back-navigation shows a blank slate
+      clearDraft();
+      setDraftRestored(false);
       setForm(INITIAL);
       setDraftText("");
 
@@ -292,6 +326,21 @@ export function UnilateralIntentForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Draft restored notice */}
+          {draftRestored && (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <span className="text-sm text-muted-foreground">
+                Draft restored from your previous session.
+              </span>
+              <button
+                type="button"
+                onClick={() => { clearDraft(); setDraftRestored(false); setForm(INITIAL); setDraftText(""); }}
+                className="text-sm text-primary underline hover:opacity-80"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           {/* Info banner */}
           <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
             <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />

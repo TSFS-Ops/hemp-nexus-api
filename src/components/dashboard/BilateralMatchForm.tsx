@@ -5,8 +5,9 @@
  * identified outside the platform (e.g., through direct negotiation).
  */
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,8 +66,39 @@ export function BilateralMatchForm() {
   const [form, setForm] = useState<BilateralFormData>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
+
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const getCurrentData = useCallback((): BilateralFormData | null => {
+    const f = formRef.current;
+    if (!f.counterpartyName && !f.commodity && !f.quantity) return null;
+    return f;
+  }, []);
+
+  const { restoreDraft, saveDraft, clearDraft } = useDraftPersistence<BilateralFormData>("bilateral-match", getCurrentData);
+
+  const draftInitialised = useRef(false);
+  useEffect(() => {
+    if (draftInitialised.current) return;
+    draftInitialised.current = true;
+    const draft = restoreDraft();
+    if (draft) {
+      setForm(draft);
+      setDraftRestored(true);
+    }
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (!draftInitialised.current) return;
+    const f = form;
+    if (f.counterpartyName || f.commodity || f.quantity) {
+      saveDraft(f);
+    }
+  }, [form, saveDraft]);
 
   const update = (field: keyof BilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -186,6 +218,8 @@ export function BilateralMatchForm() {
         // Non-critical
       }
 
+      clearDraft();
+      setDraftRestored(false);
       toast.success("Bilateral match created. Add documents and send a trade request when ready.");
       navigate(`${ROUTES.DASHBOARD_MATCHES}/${matchData.id}`);
     } catch (error) {
@@ -210,6 +244,21 @@ export function BilateralMatchForm() {
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Draft restored notice */}
+          {draftRestored && (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <span className="text-sm text-muted-foreground">
+                Draft restored from your previous session.
+              </span>
+              <button
+                type="button"
+                onClick={() => { clearDraft(); setDraftRestored(false); setForm(INITIAL_FORM); }}
+                className="text-sm text-primary underline hover:opacity-80"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           {/* Warning */}
           <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />

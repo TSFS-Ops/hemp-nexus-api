@@ -3,18 +3,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+
+const EMAIL_LOG_LIMIT = 200;
 
 export function AdminEmailLogsPanel() {
   const [logs, setLogs] = useState<any[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("email_send_log").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setLogs(data || []);
+    const [countRes, dataRes] = await Promise.all([
+      supabase.from("email_send_log").select("id", { count: "exact", head: true }),
+      supabase.from("email_send_log").select("*").order("created_at", { ascending: false }).limit(EMAIL_LOG_LIMIT),
+    ]);
+    setTotal(countRes.count);
+    if (dataRes.error) toast.error(dataRes.error.message);
+    else setLogs(dataRes.data || []);
     setLoading(false);
   }, []);
 
@@ -27,6 +35,9 @@ export function AdminEmailLogsPanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{logs.length} email(s) | {logs.filter(l => l.status === "failed").length} failed</p>
+      {total !== null && logs.length >= EMAIL_LOG_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {logs.length} of {total} emails. Results are capped at {EMAIL_LOG_LIMIT}.</AlertDescription></Alert>
+      )}
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow>

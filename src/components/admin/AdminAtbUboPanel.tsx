@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, Users, FileCheck, AlertTriangle, Loader2, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 
 interface AuthorityRecord {
@@ -45,12 +46,18 @@ export function AdminAtbUboPanel() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [atbTotal, setAtbTotal] = useState<number | null>(null);
+  const [uboTotal, setUboTotal] = useState<number | null>(null);
+  const ATB_LIMIT = 200;
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [atbRes, uboRes] = await Promise.all([
-        supabase.from("authority_records").select("*").order("created_at", { ascending: false }).limit(200),
-        supabase.from("ubo_links").select("*").order("created_at", { ascending: false }).limit(200),
+      const [atbRes, uboRes, atbCount, uboCount] = await Promise.all([
+        supabase.from("authority_records").select("*").order("created_at", { ascending: false }).limit(ATB_LIMIT),
+        supabase.from("ubo_links").select("*").order("created_at", { ascending: false }).limit(ATB_LIMIT),
+        supabase.from("authority_records").select("id", { count: "exact", head: true }),
+        supabase.from("ubo_links").select("id", { count: "exact", head: true }),
       ]);
 
       if (atbRes.error) throw atbRes.error;
@@ -58,6 +65,8 @@ export function AdminAtbUboPanel() {
 
       setAtbRecords(atbRes.data || []);
       setUboLinks((uboRes.data as unknown as UboLink[]) || []);
+      setAtbTotal(atbCount.count);
+      setUboTotal(uboCount.count);
     } catch (err) {
       console.error("Failed to fetch ATB/UBO data:", err);
       toast.error("Failed to load data");
@@ -112,6 +121,12 @@ export function AdminAtbUboPanel() {
 
   return (
     <div className="p-6 space-y-6">
+      {atbTotal !== null && atbRecords.length >= ATB_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {atbRecords.length} of {atbTotal} authority records. Results are capped at {ATB_LIMIT}.</AlertDescription></Alert>
+      )}
+      {uboTotal !== null && uboLinks.length >= ATB_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {uboLinks.length} of {uboTotal} UBO links. Results are capped at {ATB_LIMIT}.</AlertDescription></Alert>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Authority & Ownership</h2>

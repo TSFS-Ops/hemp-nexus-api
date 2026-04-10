@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, RefreshCw, Loader2 } from "lucide-react";
+import { Users, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
@@ -65,6 +66,10 @@ export function AdminUboPanel() {
       </CardHeader>
       <CardContent>
         {loading ? <InlineLoader message="Loading UBO data…" /> : (
+          <>
+            {(directors.length >= QUERY_LIMIT_ADMIN || ubos.length >= QUERY_LIMIT_ADMIN || ownerships.length >= QUERY_LIMIT_ADMIN) && (
+              <Alert className="mb-4"><AlertTriangle className="h-4 w-4" /><AlertDescription>One or more tabs may be truncated at {QUERY_LIMIT_ADMIN} rows. Use filters to narrow results.</AlertDescription></Alert>
+            )}
           <Tabs defaultValue="directors">
             <TabsList>
               <TabsTrigger value="directors">Directors ({directors.length})</TabsTrigger>
@@ -153,6 +158,7 @@ export function AdminUboPanel() {
               )}
             </TabsContent>
           </Tabs>
+          </>
         )}
       </CardContent>
     </Card>
