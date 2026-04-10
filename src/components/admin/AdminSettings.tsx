@@ -278,6 +278,7 @@ export function AdminSettings() {
                   Infrastructure alerts are sent to this address. Defaults to ops@izenzo.co.za if empty.
                 </p>
               </div>
+              <div className="space-y-2">
                 <Label htmlFor="slackWebhook">Slack Webhook URL</Label>
                 <Input
                   id="slackWebhook"
