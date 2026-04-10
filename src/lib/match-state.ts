@@ -253,8 +253,11 @@ export function statusDescription(statusOrState: string): string {
   return descriptions[statusOrState] ?? "";
 }
 
-/** Get the step index (0-based) for a given state */
+/** Get the step index (0-based) for the simplified 3-step visual stepper */
 export function getStateIndex(state: string): number {
-  const idx = MATCH_STATES.indexOf(state as MatchStateValue);
-  return idx >= 0 ? idx : 0;
+  // Map all internal states to the 3-step visual: 0=Discovery, 1=POI Generated, 2=Completed
+  if (state === "discovery") return 0;
+  if (state === "completed") return 2;
+  // intent_declared, counterparty_sighted, committed all map to step 1 (POI Generated)
+  return 1;
 }
