@@ -1,0 +1,55 @@
+{
+  "name": "@izenzo/sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for the Izenzo Trade API — matches, signals, entities, compliance, and governance",
+  "license": "MIT",
+  "author": "Izenzo <engineering@izenzo.co.za>",
+  "homepage": "https://izenzo.co.za",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/izenzo/sdk.git"
+  },
+  "keywords": [
+    "izenzo",
+    "trade",
+    "compliance",
+    "kyc",
+    "api",
+    "sdk",
+    "typescript"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false
+}
