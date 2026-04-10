@@ -102,14 +102,14 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <h4 className="font-semibold">Ready to Send a Trade Request?</h4>
+              <h4 className="font-semibold">Ready to Generate POI?</h4>
               <p className="text-sm text-muted-foreground">
-                This records your interest so the trading partner can prepare terms. {CREDITS_REQUIRED} credits will be deducted.
+                This generates a Proof of Intent record for this trade. {CREDITS_REQUIRED} credit (R10) will be deducted.
               </p>
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• <strong>Non-binding:</strong> No contract, payment, or legal obligation is created.</p>
                 <p>• <strong>Irreversible:</strong> Once confirmed, this cannot be undone. Credits are not refundable.</p>
-                <p>• <strong>What happens next:</strong> An immutable proof record is created. The trading partner is notified.</p>
+                <p>• <strong>What happens next:</strong> An immutable POI record is created. The trading partner is notified.</p>
               </div>
               {!balanceLoading && (
                 <p className="text-xs text-muted-foreground">
@@ -124,7 +124,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 size="lg"
                 loadingText="Processing - do not close this page…"
               >
-                Send Trade Request - {CREDITS_REQUIRED} credits
+                Generate POI - {CREDITS_REQUIRED} credit
               </LoadingButton>
             </div>
           </div>
@@ -134,11 +134,11 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Send a trade request for this match?</AlertDialogTitle>
+            <AlertDialogTitle>Generate POI for this match?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  This records your interest so the trading partner can begin preparing terms.
+                  This generates a Proof of Intent (POI) record. 1 credit (R10) will be charged.
                 </p>
                 <div className="rounded-md border border-border p-3 space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -158,7 +158,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 <div className="text-xs text-muted-foreground space-y-1 p-3 rounded-md bg-muted/30">
                   <p><strong>Non-binding.</strong> No contract, payment, or legal obligation is created.</p>
                   <p><strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.</p>
-                  <p><strong>What happens next.</strong> An immutable trade request record is created. The trading partner will be able to see your interest and may begin preparing deal terms.</p>
+                  <p><strong>What happens next.</strong> An immutable POI record is created. The trading partner is notified and can view the intent.</p>
                 </div>
               </div>
             </AlertDialogDescription>
@@ -167,7 +167,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
             <AlertDialogCancel disabled={loading}>Cancel - no credits deducted</AlertDialogCancel>
             <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
               <Coins className="h-4 w-4 mr-2" />
-              Confirm - deduct {CREDITS_REQUIRED} credits
+              Confirm - deduct {CREDITS_REQUIRED} credit (R10)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
