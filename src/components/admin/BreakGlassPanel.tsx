@@ -94,27 +94,14 @@ export function BreakGlassPanel() {
       setExecuting(true);
       setReauthError("");
 
-      // Re-authenticate the user before executing
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        toast.error("Unable to verify identity. Please sign in again.");
-        return;
-      }
-
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: reauthPassword,
-      });
-
-      if (authError) {
-        setReauthError("Password verification failed. Action blocked.");
-        toast.error("Re-authentication failed. Break-glass action denied.");
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        toast.error("Session expired. Please sign in again.");
+        return;
+      }
 
+      // Send password to the server for server-side verification.
+      // The edge function verifies identity via GoTrue before executing.
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/break-glass`,
         {
@@ -127,6 +114,7 @@ export function BreakGlassPanel() {
             action_type: actionType,
             reason,
             target_org_id: needsTarget ? targetOrgId : undefined,
+            reauth_password: reauthPassword,
           }),
         }
       );
