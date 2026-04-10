@@ -80,7 +80,7 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
                 Insufficient credits
               </h4>
               <p className="text-sm text-muted-foreground">
-                You need {CREDITS_REQUIRED} credits to signal intent. Your current balance is {currentBalance.toLocaleString()} credits.
+                You need {CREDITS_REQUIRED} credit to generate POI. Your current balance is {currentBalance.toLocaleString()} credits.
               </p>
             </div>
             <a
