@@ -146,6 +146,232 @@ function ProgrammeList({ onSelect }: { onSelect: (id: string) => void }) {
   );
 }
 
+// ─── Add Participant Dialog ─────────────────────────────────────────
+
+function AddParticipantDialog({ programmeId }: { programmeId: string }) {
+  const [open, setOpen] = useState(false);
+  const [entityId, setEntityId] = useState("");
+  const [role, setRole] = useState("contractor");
+  const queryClient = useQueryClient();
+
+  const { data: entities } = useQuery({
+    queryKey: ["entities-for-programme"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("entities").select("id, legal_name, entity_type").order("legal_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("programme_participants").insert({
+        programme_id: programmeId,
+        entity_id: entityId,
+        role,
+        status: "pending",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-programme-participants", programmeId] });
+      setOpen(false);
+      setEntityId("");
+      setRole("contractor");
+      toast.success("Participant added");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="mb-3"><Plus className="h-3.5 w-3.5 mr-1" /> Add Participant</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Add Participant</DialogTitle></DialogHeader>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
+          <div>
+            <Label>Entity</Label>
+            <Select value={entityId} onValueChange={setEntityId}>
+              <SelectTrigger><SelectValue placeholder="Select entity…" /></SelectTrigger>
+              <SelectContent>
+                {entities?.map((e: any) => (
+                  <SelectItem key={e.id} value={e.id}>{e.legal_name} ({e.entity_type})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Role</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="contractor">Contractor</SelectItem>
+                <SelectItem value="implementing_agent">Implementing Agent</SelectItem>
+                <SelectItem value="beneficiary">Beneficiary</SelectItem>
+                <SelectItem value="oversight">Oversight</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" className="w-full" disabled={!entityId || mutation.isPending}>
+            {mutation.isPending ? "Adding…" : "Add Participant"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Add Milestone Dialog ───────────────────────────────────────────
+
+function AddMilestoneDialog({ programmeId, participants }: { programmeId: string; participants: any[] }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [participantId, setParticipantId] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [budgetTranche, setBudgetTranche] = useState("");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("programme_milestones").insert({
+        programme_id: programmeId,
+        participant_id: participantId,
+        name,
+        due_at: new Date(dueAt).toISOString(),
+        budget_tranche: parseFloat(budgetTranche) || 0,
+        status: "pending",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-programme-milestones", programmeId] });
+      setOpen(false);
+      setName("");
+      setParticipantId("");
+      setDueAt("");
+      setBudgetTranche("");
+      toast.success("Milestone created");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="mb-3"><Plus className="h-3.5 w-3.5 mr-1" /> Add Milestone</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Add Milestone</DialogTitle></DialogHeader>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
+          <div><Label>Milestone Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
+          <div>
+            <Label>Participant</Label>
+            <Select value={participantId} onValueChange={setParticipantId}>
+              <SelectTrigger><SelectValue placeholder="Select participant…" /></SelectTrigger>
+              <SelectContent>
+                {participants.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.entities?.legal_name || p.entity_id?.slice(0, 8)} ({p.role})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Due Date</Label><Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} required /></div>
+          <div><Label>Budget Tranche (ZAR)</Label><Input type="number" value={budgetTranche} onChange={(e) => setBudgetTranche(e.target.value)} /></div>
+          <Button type="submit" className="w-full" disabled={!name || !participantId || !dueAt || mutation.isPending}>
+            {mutation.isPending ? "Creating…" : "Create Milestone"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Record Fund Flow Dialog ────────────────────────────────────────
+
+function RecordFundFlowDialog({ programmeId, participants }: { programmeId: string; participants: any[] }) {
+  const [open, setOpen] = useState(false);
+  const [participantId, setParticipantId] = useState("");
+  const [flowType, setFlowType] = useState("allocation");
+  const [amount, setAmount] = useState("");
+  const [reference, setReference] = useState("");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const idempotencyKey = `ff_${programmeId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+      const { data, error } = await supabase.functions.invoke("programmes", {
+        method: "POST",
+        body: {
+          participant_id: participantId,
+          flow_type: flowType,
+          amount: parseFloat(amount),
+          reference: reference || undefined,
+          idempotency_key: idempotencyKey,
+        },
+        headers: { "x-programme-id": programmeId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-programme-fund-flows", programmeId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-programme", programmeId] });
+      setOpen(false);
+      setParticipantId("");
+      setFlowType("allocation");
+      setAmount("");
+      setReference("");
+      toast.success("Fund flow recorded");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="mb-3"><Plus className="h-3.5 w-3.5 mr-1" /> Record Fund Flow</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Record Fund Flow</DialogTitle></DialogHeader>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
+          <div>
+            <Label>Participant</Label>
+            <Select value={participantId} onValueChange={setParticipantId}>
+              <SelectTrigger><SelectValue placeholder="Select participant…" /></SelectTrigger>
+              <SelectContent>
+                {participants.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.entities?.legal_name || p.entity_id?.slice(0, 8)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Flow Type</Label>
+            <Select value={flowType} onValueChange={setFlowType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="allocation">Allocation</SelectItem>
+                <SelectItem value="commitment">Commitment</SelectItem>
+                <SelectItem value="disbursement">Disbursement</SelectItem>
+                <SelectItem value="return">Return</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Amount (ZAR)</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required min="0.01" step="0.01" /></div>
+          <div><Label>Reference (optional)</Label><Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="e.g. PO-2025-001" /></div>
+          <Button type="submit" className="w-full" disabled={!participantId || !amount || mutation.isPending}>
+            {mutation.isPending ? "Recording…" : "Record Fund Flow"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Programme Detail ───────────────────────────────────────────────
 
 function ProgrammeDetail({ programmeId, onBack }: { programmeId: string; onBack: () => void }) {
