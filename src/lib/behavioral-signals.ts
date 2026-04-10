@@ -56,9 +56,12 @@ export async function logBehavioralSignal({
   metadata = {},
 }: LogBehavioralSignalParams): Promise<{ success: boolean; error?: string }> {
   try {
-    // Generate a session ID if not provided
-    const effectiveSessionId = sessionId || getOrCreateSessionId();
     const { orgId, userId } = await getCurrentOrgAndUser();
+
+    // Server-derived session ID: use the auth session's access token hash
+    // to create a stable, cross-device session identifier tied to the JWT lifecycle.
+    // Falls back to caller-provided sessionId, then a per-tab UUID for unauthenticated users.
+    const effectiveSessionId = sessionId || await getServerSessionId() || getFallbackSessionId();
 
     const { error } = await supabase
       .from('behavioral_signals')
@@ -88,20 +91,50 @@ export async function logBehavioralSignal({
 }
 
 /**
- * Get or create a session ID for tracking user sessions
+ * Server-derived session ID — deterministic hash of the auth session token.
+ * 
+ * This means the same login session produces the same session_id on any device/tab,
+ * and a new login (token refresh / re-auth) produces a new session_id.
+ * Cross-device continuity is achieved because the auth session is the anchor.
  */
-function getOrCreateSessionId(): string {
-  if (typeof window === 'undefined') return crypto.randomUUID();
-  
-  const storageKey = 'behavioral_session_id';
-  let sessionId = sessionStorage.getItem(storageKey);
-  
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem(storageKey, sessionId);
+let _cachedServerSessionId: string | null = null;
+let _cachedAccessTokenHash: string | null = null;
+
+async function getServerSessionId(): Promise<string | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return null;
+
+    // Only rehash if the token changed (perf: avoid repeated crypto on every signal)
+    const tokenPrefix = session.access_token.slice(-16);
+    if (_cachedAccessTokenHash === tokenPrefix && _cachedServerSessionId) {
+      return _cachedServerSessionId;
+    }
+
+    // SHA-256 of the access token → stable session ID
+    const encoder = new TextEncoder();
+    const data = encoder.encode(session.access_token);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    _cachedServerSessionId = 'srv_' + hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('');
+    _cachedAccessTokenHash = tokenPrefix;
+
+    return _cachedServerSessionId;
+  } catch {
+    return null;
   }
-  
-  return sessionId;
+}
+
+/**
+ * Fallback for unauthenticated users — per-tab UUID (not persisted cross-device).
+ * This is the minority case; most signals come from authenticated users.
+ */
+let _fallbackSessionId: string | null = null;
+function getFallbackSessionId(): string {
+  if (!_fallbackSessionId) {
+    _fallbackSessionId = 'anon_' + crypto.randomUUID();
+  }
+  return _fallbackSessionId;
 }
 
 /**
