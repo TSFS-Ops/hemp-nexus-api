@@ -63,6 +63,13 @@ export default function Auth() {
       });
     }
 
+    // Reinforce redirect explanations with toasts (banners alone can be missed on mobile)
+    if (searchParams.get("expired") === "1") {
+      toast.warning("Your session expired. Sign in to continue where you left off.", { duration: 8000 });
+    } else if (searchParams.get("signedOut") === "1") {
+      toast.info("You've been signed out successfully.", { duration: 5000 });
+    }
+
     const getPostAuthRedirect = () => {
       const returnTo = searchParams.get("returnTo");
       const safe = getSafeReturnTo(returnTo);

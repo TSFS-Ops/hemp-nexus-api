@@ -5,7 +5,8 @@
  * identified outside the platform (e.g., through direct negotiation).
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,6 +71,9 @@ export function BilateralMatchForm() {
   const update = (field: keyof BilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  const isDirty = useMemo(() => form.counterpartyName.trim().length > 0 || form.commodity.trim().length > 0 || form.quantity.length > 0, [form]);
+  useUnsavedChanges(isDirty && !isSubmitting);
+
   const canSubmit =
     form.counterpartyName.trim().length >= 2 &&
     form.commodity.trim().length >= 2;
@@ -131,7 +135,7 @@ export function BilateralMatchForm() {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
-            "Idempotency-Key": `bilateral_${crypto.randomUUID()}`,
+            "Idempotency-Key": `bilateral_${session.user.id}_${form.commodity.trim().toLowerCase()}_${form.counterpartyName.trim().toLowerCase()}_${form.side}_${form.quantity || "0"}_${form.price || "0"}`,
           },
           body: JSON.stringify({
             buyer,
