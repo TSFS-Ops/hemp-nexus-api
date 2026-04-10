@@ -5696,7 +5696,7 @@ export type Database = {
         Returns: Json
       }
       atomic_generate_poi: {
-        Args: { p_match_id: string; p_org_id: string; p_settled_at?: string }
+        Args: { p_match_id: string; p_org_id: string; p_settled_at: string }
         Returns: Json
       }
       atomic_seal_deal: {
