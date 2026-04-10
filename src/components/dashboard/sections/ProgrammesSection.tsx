@@ -41,7 +41,6 @@ export function ProgrammesSection() {
       <SectionHeader
         title="Programmes"
         description="View your organisation's programme budgets, milestones, and fund flow status."
-        parents={[{ label: "Console", href: ROUTES.DASHBOARD }]}
       />
 
       {isLoading ? (
