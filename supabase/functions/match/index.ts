@@ -139,9 +139,9 @@ Deno.serve(async (req) => {
 
       const currentState = match.state || 'discovery';
       
-      // Idempotent return if already confirmed
-      if (currentState === 'intent_declared' || match.status === 'settled') {
-        console.log(`[${requestId}] Intent already confirmed - returning idempotently`);
+      // Idempotent return if already past discovery (POI already generated)
+      if (['intent_declared', 'counterparty_sighted', 'committed', 'completed'].includes(currentState) || match.status === 'settled') {
+        console.log(`[${requestId}] POI already generated - returning idempotently`);
         await logApiRequest({
           supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
           endpoint: endpointLabel, method: "POST", statusCode: 200,
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
       if (currentState !== 'discovery') {
         throw new ApiException(
           "INVALID_STATE",
-          `Cannot declare intent from state '${currentState}'. Must be in 'discovery' state.`,
+          `Cannot generate POI from state '${currentState}'. Must be in 'discovery' state.`,
           400
         );
       }
