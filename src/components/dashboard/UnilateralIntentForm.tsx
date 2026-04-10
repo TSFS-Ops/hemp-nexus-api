@@ -326,6 +326,21 @@ export function UnilateralIntentForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Draft restored notice */}
+          {draftRestored && (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <span className="text-sm text-muted-foreground">
+                Draft restored from your previous session.
+              </span>
+              <button
+                type="button"
+                onClick={() => { clearDraft(); setDraftRestored(false); setForm(INITIAL); setDraftText(""); }}
+                className="text-sm text-primary underline hover:opacity-80"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           {/* Info banner */}
           <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
             <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />

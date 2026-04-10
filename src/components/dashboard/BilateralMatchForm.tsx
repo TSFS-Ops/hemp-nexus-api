@@ -244,6 +244,21 @@ export function BilateralMatchForm() {
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Draft restored notice */}
+          {draftRestored && (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <span className="text-sm text-muted-foreground">
+                Draft restored from your previous session.
+              </span>
+              <button
+                type="button"
+                onClick={() => { clearDraft(); setDraftRestored(false); setForm(INITIAL_FORM); }}
+                className="text-sm text-primary underline hover:opacity-80"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           {/* Warning */}
           <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
