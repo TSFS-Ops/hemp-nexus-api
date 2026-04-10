@@ -15,35 +15,43 @@ export const MATCH_STATUSES = ["matched", "settled", "disputed", "cancelled"] as
 export type MatchStatusValue = (typeof MATCH_STATUSES)[number];
 
 // ─── V3 Lifecycle States ────────────────────────────────────────────
-export const MATCH_STATES = [
+// Internal DB states (kept for backward compat)
+export const MATCH_STATES_INTERNAL = [
   "discovery",
   "intent_declared",
   "counterparty_sighted",
   "committed",
   "completed",
 ] as const;
-export type MatchStateValue = (typeof MATCH_STATES)[number];
+
+// Simplified visual states (what users see)
+export const MATCH_STATES = [
+  "discovery",
+  "committed",       // = "POI Generated"
+  "completed",
+] as const;
+export type MatchStateValue = (typeof MATCH_STATES_INTERNAL)[number];
 
 export const STATE_LABELS: Record<string, string> = {
   discovery: "Discovery",
-  intent_declared: "Intent Declared",
-  counterparty_sighted: "Counterparty Revealed",
-  committed: "Committed",
+  intent_declared: "POI Generated",
+  counterparty_sighted: "POI Generated",
+  committed: "POI Generated",
   completed: "Completed",
 };
 
 export const STATE_DESCRIPTIONS: Record<string, string> = {
-  discovery: "A trading partner has been matched. Review and confirm your intent to proceed.",
-  intent_declared: "Intent has been confirmed. You can now reveal the trading partner identity.",
-  counterparty_sighted: "Counterparty identity revealed. Both parties can now commit to the deal.",
-  committed: "Both parties have committed. Complete the transaction to finalise.",
+  discovery: "A trading partner has been matched. Review details and generate the Proof of Intent.",
+  intent_declared: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
+  counterparty_sighted: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
+  committed: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
   completed: "Transaction completed. Evidence record sealed.",
 };
 
 // ─── Valid state transitions ────────────────────────────────────────
 const VALID_STATE_TRANSITIONS: Record<string, string[]> = {
-  discovery: ["intent_declared"],
-  intent_declared: ["counterparty_sighted"],
+  discovery: ["committed"],         // Single step: Generate POI
+  intent_declared: ["committed"],   // Legacy compat
   counterparty_sighted: ["committed"],
   committed: ["completed"],
   completed: [],
