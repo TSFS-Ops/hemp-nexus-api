@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Eye, Download, RefreshCw } from "lucide-react";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { EmptyState } from "@/components/ui/error-state";
 import * as MatchState from "@/lib/match-state";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
@@ -167,11 +168,7 @@ export function AdminMatchesPanel() {
             </Select>
           </div>
 
-          {isTruncated && (
-            <p className="text-sm text-muted-foreground mb-3">
-              Showing {matches?.length} of {totalCount} matches. Only the most recent {ADMIN_MATCH_LIMIT} are displayed.
-            </p>
-          )}
+          <TruncationBanner data={matches} totalCount={totalCount} limit={ADMIN_MATCH_LIMIT} />
 
           {isLoading ? (
             <TableSkeleton rows={5} columns={9} />
