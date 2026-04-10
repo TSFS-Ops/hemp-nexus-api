@@ -9,3 +9,4 @@ export { AuditLogsSection } from "./AuditLogsSection";
 export { UsageBillingSection } from "./UsageBillingSection";
 export { LogsSection } from "./LogsSection";
 export { OrderBookSection } from "./OrderBookSection";
+export { ProgrammesSection } from "./ProgrammesSection";
