@@ -71,6 +71,9 @@ export function BilateralMatchForm() {
   const update = (field: keyof BilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  const isDirty = useMemo(() => form.counterpartyName.trim().length > 0 || form.commodity.trim().length > 0 || form.quantity.length > 0, [form]);
+  useUnsavedChanges(isDirty && !isSubmitting);
+
   const canSubmit =
     form.counterpartyName.trim().length >= 2 &&
     form.commodity.trim().length >= 2;
