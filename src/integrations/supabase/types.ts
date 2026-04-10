@@ -1511,6 +1511,71 @@ export type Database = {
           },
         ]
       }
+      discovery_search_logs: {
+        Row: {
+          created_at: string
+          fts_result_count: number
+          id: string
+          ilike_fallback_used: boolean
+          ilike_result_count: number
+          order_book_result_count: number
+          org_id: string
+          parse_token_count: number
+          parsed_location: string | null
+          parsed_product: string | null
+          parsed_role: string | null
+          raw_query: string
+          request_id: string
+          response_time_ms: number | null
+          search_method: string
+          total_results_returned: number
+        }
+        Insert: {
+          created_at?: string
+          fts_result_count?: number
+          id?: string
+          ilike_fallback_used?: boolean
+          ilike_result_count?: number
+          order_book_result_count?: number
+          org_id: string
+          parse_token_count?: number
+          parsed_location?: string | null
+          parsed_product?: string | null
+          parsed_role?: string | null
+          raw_query: string
+          request_id: string
+          response_time_ms?: number | null
+          search_method?: string
+          total_results_returned?: number
+        }
+        Update: {
+          created_at?: string
+          fts_result_count?: number
+          id?: string
+          ilike_fallback_used?: boolean
+          ilike_result_count?: number
+          order_book_result_count?: number
+          org_id?: string
+          parse_token_count?: number
+          parsed_location?: string | null
+          parsed_product?: string | null
+          parsed_role?: string | null
+          raw_query?: string
+          request_id?: string
+          response_time_ms?: number | null
+          search_method?: string
+          total_results_returned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discovery_search_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           created_at: string | null
@@ -5236,6 +5301,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      discovery_baseline_metrics: {
+        Row: {
+          avg_fts_results: number | null
+          avg_order_book_results: number | null
+          avg_parse_tokens: number | null
+          avg_response_ms: number | null
+          avg_results: number | null
+          day: string | null
+          fallback_rate_pct: number | null
+          fts_hit_rate_pct: number | null
+          total_searches: number | null
+        }
+        Relationships: []
       }
       match_evidence: {
         Row: {

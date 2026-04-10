@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
   const corsResponse = handleCors(req, allowedOrigins);
   if (corsResponse) return corsResponse;
 
+  const searchStart = performance.now();
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -83,8 +84,12 @@ Deno.serve(async (req) => {
       .map((w: string) => w.replace(/[^a-zA-Z0-9]/g, ""))
       .filter(Boolean)
       .join(" & ");
+    const parseTokens = tsQuery ? tsQuery.split(" & ").length : 0;
 
     let counterpartyResults: any[] = [];
+    let ftsResultCount = 0;
+    let ilikeFallbackUsed = false;
+    let ilikeResultCount = 0;
 
     if (tsQuery) {
       let cpQuery = supabase
@@ -103,10 +108,12 @@ Deno.serve(async (req) => {
         console.error("[search] Counterparty FTS error:", cpError.message);
       }
       counterpartyResults = cpData || [];
+      ftsResultCount = counterpartyResults.length;
     }
 
     // If FTS returned nothing, try a simple ILIKE fallback
     if (counterpartyResults.length === 0 && product) {
+      ilikeFallbackUsed = true;
       let fallbackQuery = supabase
         .from("trading partners")
         .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
@@ -120,6 +127,7 @@ Deno.serve(async (req) => {
 
       const { data: fallbackData } = await fallbackQuery;
       counterpartyResults = fallbackData || [];
+      ilikeResultCount = counterpartyResults.length;
     }
 
     console.log(`[search] Trading Partners table returned ${counterpartyResults.length} results`);
@@ -215,6 +223,27 @@ Deno.serve(async (req) => {
       },
     });
 
+    // ── 4. Discovery baseline metrics log (non-blocking) ──
+    const responseTimeMs = Math.round(performance.now() - searchStart);
+    supabase.from("discovery_search_logs").insert({
+      org_id: authCtx.orgId,
+      request_id: requestId,
+      raw_query: query,
+      parsed_product: product || null,
+      parsed_location: effectiveLocation || null,
+      parsed_role: signalType,
+      search_method: ilikeFallbackUsed ? 'ilike_fallback' : 'fts',
+      fts_result_count: ftsResultCount,
+      ilike_fallback_used: ilikeFallbackUsed,
+      ilike_result_count: ilikeResultCount,
+      order_book_result_count: orderBookResults.length,
+      total_results_returned: finalResults.length,
+      response_time_ms: responseTimeMs,
+      parse_token_count: parseTokens,
+    }).then(({ error: logErr }) => {
+      if (logErr) console.error("[search] Discovery log insert error:", logErr.message);
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -227,6 +256,11 @@ Deno.serve(async (req) => {
           upliftPct: 0,
           enrichmentReasons: {},
           orderBookMatches: orderBookResults.length,
+          ftsHitCount: ftsResultCount,
+          ilikeFallbackUsed,
+          ilikeHitCount: ilikeResultCount,
+          parseTokenCount: parseTokens,
+          responseTimeMs,
         },
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
