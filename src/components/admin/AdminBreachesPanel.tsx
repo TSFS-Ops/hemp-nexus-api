@@ -9,9 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, AlertTriangle, CheckCircle, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const BREACH_LIMIT = 200;
 
 export function AdminBreachesPanel() {
   const [breaches, setBreaches] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<any>(null);
@@ -19,9 +23,12 @@ export function AdminBreachesPanel() {
 
   const fetchBreaches = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("breaches").select("*").order("detected_at", { ascending: false }).limit(200);
+    const { data, error, count } = await supabase.from("breaches").select("*", { count: "exact" }).order("detected_at", { ascending: false }).limit(BREACH_LIMIT);
     if (error) toast.error(error.message);
-    else setBreaches(data || []);
+    else {
+      setBreaches(data || []);
+      setTotalCount(count ?? data?.length ?? 0);
+    }
     setLoading(false);
   }, []);
 
@@ -46,6 +53,7 @@ export function AdminBreachesPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={breaches} totalCount={totalCount} limit={BREACH_LIMIT} />
       <p className="text-sm text-muted-foreground">{breaches.length} breach record(s) | {breaches.filter(b => b.status === "open").length} open</p>
       <Card><CardContent className="p-0">
         <Table>

@@ -118,7 +118,18 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
       }
 
-      console.log(`[${requestId}] POST /match/${matchId}/${action} (Confirm Intent)`);
+      // Require Idempotency-Key header (server-side enforcement)
+      const idempotencyKey = req.headers.get("idempotency-key") || req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        await logApiRequest({
+          supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel, method: "POST", statusCode: 400,
+          errorMessage: "Missing Idempotency-Key header",
+        });
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+
+      console.log(`[${requestId}] POST /match/${matchId}/${action} (Generate POI) idem=${idempotencyKey}`);
 
 
       // --- Fetch match (read-only, for eligibility check & audit metadata) ---

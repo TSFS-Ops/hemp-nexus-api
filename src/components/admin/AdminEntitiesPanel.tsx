@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Building2, User, Search, ShieldCheck, AlertTriangle, RefreshCw, Loader2, LinkIcon, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSupabaseList } from "@/hooks/use-supabase-list";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
@@ -35,7 +36,7 @@ export function AdminEntitiesPanel() {
   const [bindDialogOpen, setBindDialogOpen] = useState(false);
   const [bindTarget, setBindTarget] = useState<Entity | null>(null);
 
-  const { data: entities = [], isLoading, isError, refetch } = useSupabaseList<Entity>("entities", {
+  const { data: entities = [], isLoading, isError, refetch, isTruncated, totalCount, queryLimit } = useSupabaseList<Entity>("entities", {
     limit: 200,
     queryKeyExtra: [statusFilter, typeFilter],
     filters: (q) => {
@@ -181,12 +182,8 @@ export function AdminEntitiesPanel() {
           <CardTitle className="text-lg">Entities</CardTitle>
           <CardDescription>
             All registered legal entities across the platform
-            {(entities as any).__totalCount > (entities as any).__limit && (
-              <span className="block mt-1 text-destructive">
-                Showing {entities.length} of {(entities as any).__totalCount} entities. Only the most recent {(entities as any).__limit} are displayed.
-              </span>
-            )}
           </CardDescription>
+          <TruncationBanner data={entities} totalCount={isTruncated ? totalCount : undefined} limit={queryLimit} />
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
