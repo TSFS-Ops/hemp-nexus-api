@@ -5,8 +5,9 @@
  * identified outside the platform (e.g., through direct negotiation).
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";

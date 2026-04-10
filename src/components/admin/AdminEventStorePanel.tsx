@@ -5,19 +5,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Eye } from "lucide-react";
+import { Loader2, Eye, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+
+const EVENT_LIMIT = 200;
 
 export function AdminEventStorePanel() {
   const [events, setEvents] = useState<any[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("event_store").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setEvents(data || []);
+    const [countRes, dataRes] = await Promise.all([
+      supabase.from("event_store").select("id", { count: "exact", head: true }),
+      supabase.from("event_store").select("*").order("created_at", { ascending: false }).limit(EVENT_LIMIT),
+    ]);
+    setTotal(countRes.count);
+    if (dataRes.error) toast.error(dataRes.error.message);
+    else setEvents(dataRes.data || []);
     setLoading(false);
   }, []);
 
@@ -28,6 +36,9 @@ export function AdminEventStorePanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{events.length} event(s) (append-only, immutable)</p>
+      {total !== null && events.length >= EVENT_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {events.length} of {total} events. Results are capped at {EVENT_LIMIT}.</AlertDescription></Alert>
+      )}
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow>

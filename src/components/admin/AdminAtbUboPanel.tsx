@@ -45,12 +45,18 @@ export function AdminAtbUboPanel() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [atbTotal, setAtbTotal] = useState<number | null>(null);
+  const [uboTotal, setUboTotal] = useState<number | null>(null);
+  const ATB_LIMIT = 200;
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [atbRes, uboRes] = await Promise.all([
-        supabase.from("authority_records").select("*").order("created_at", { ascending: false }).limit(200),
-        supabase.from("ubo_links").select("*").order("created_at", { ascending: false }).limit(200),
+      const [atbRes, uboRes, atbCount, uboCount] = await Promise.all([
+        supabase.from("authority_records").select("*").order("created_at", { ascending: false }).limit(ATB_LIMIT),
+        supabase.from("ubo_links").select("*").order("created_at", { ascending: false }).limit(ATB_LIMIT),
+        supabase.from("authority_records").select("id", { count: "exact", head: true }),
+        supabase.from("ubo_links").select("id", { count: "exact", head: true }),
       ]);
 
       if (atbRes.error) throw atbRes.error;
@@ -58,6 +64,8 @@ export function AdminAtbUboPanel() {
 
       setAtbRecords(atbRes.data || []);
       setUboLinks((uboRes.data as unknown as UboLink[]) || []);
+      setAtbTotal(atbCount.count);
+      setUboTotal(uboCount.count);
     } catch (err) {
       console.error("Failed to fetch ATB/UBO data:", err);
       toast.error("Failed to load data");
