@@ -281,6 +281,9 @@ export function BreakGlassPanel() {
                 {reauthError && (
                   <p className="text-xs text-destructive">{reauthError}</p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  If you signed up with Google and have no password set, you must first set a password via Account Settings before using break-glass actions.
+                </p>
               </div>
               <p className="text-xs text-muted-foreground">
                 This action will be permanently recorded in the append-only break-glass log and cannot be undone.
