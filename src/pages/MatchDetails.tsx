@@ -19,6 +19,7 @@ import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 
 export default function MatchDetails() {
   const { matchId } = useParams<{ matchId: string }>();
+  const userOrgId = useUserOrg();
   const {
     match,
     loading,
@@ -30,6 +31,8 @@ export default function MatchDetails() {
     handleSettle,
     handleStateAction,
   } = useMatchDetails(matchId);
+
+  const matchRole = match ? getMatchRole(userOrgId, match as any) : null;
 
   const breadcrumbs = [
     { label: "Console", href: ROUTES.DASHBOARD },
