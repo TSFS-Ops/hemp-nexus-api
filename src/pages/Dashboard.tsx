@@ -13,6 +13,7 @@ import { OrderBookSection } from "@/components/dashboard/sections/OrderBookSecti
 import { DashboardSettings } from "@/components/dashboard/DashboardSettings";
 import { AccountSection } from "@/components/dashboard/AccountSection";
 import { ComplianceSection } from "@/components/dashboard/sections/ComplianceSection";
+import { ProgrammesSection } from "@/components/dashboard/sections/ProgrammesSection";
 import MatchDetails from "@/pages/MatchDetails";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -103,6 +104,7 @@ export default function Dashboard() {
               </ErrorBoundary>
             } />
             <Route path="/compliance" element={<ComplianceSection />} />
+            <Route path="/programmes" element={<ProgrammesSection />} />
             <Route path="*" element={<DashboardNotFound />} />
           </Routes>
         </ErrorBoundary>

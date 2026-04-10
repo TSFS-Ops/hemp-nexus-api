@@ -1,4 +1,4 @@
-import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen, Coins } from "lucide-react";
+import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen, Coins, Landmark } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -29,6 +29,7 @@ const mainNavItems = [
 ];
 
 const settingsNavItems = [
+  { path: ROUTES.DASHBOARD_PROGRAMMES, title: "Programmes", icon: Landmark },
   { path: ROUTES.DASHBOARD_SETTINGS, title: "Settings", icon: Settings },
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
