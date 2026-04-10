@@ -53,6 +53,7 @@ import { AdminAttestationsPanel } from "@/components/admin/AdminAttestationsPane
 import { AdminNotificationsPanel } from "@/components/admin/AdminNotificationsPanel";
 import { AdminLicencesPanel } from "@/components/admin/AdminLicencesPanel";
 import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
+import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -381,6 +382,7 @@ function AdminContent() {
               <Route path="/system-logs" element={<SystemLogsSection />} />
               {/* GOVERNANCE */}
               <Route path="/data-governance" element={<DataGovernanceSection />} />
+              <Route path="/programmes" element={<ProgrammesSection />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="/overrides" element={<AdminManualOverrides />} />
               {/* Legacy redirects */}
