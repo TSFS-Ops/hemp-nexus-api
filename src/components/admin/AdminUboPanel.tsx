@@ -158,6 +158,7 @@ export function AdminUboPanel() {
               )}
             </TabsContent>
           </Tabs>
+          </>
         )}
       </CardContent>
     </Card>
