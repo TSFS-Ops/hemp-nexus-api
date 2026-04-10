@@ -54,6 +54,7 @@ import { AdminNotificationsPanel } from "@/components/admin/AdminNotificationsPa
 import { AdminLicencesPanel } from "@/components/admin/AdminLicencesPanel";
 import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
+import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -394,6 +395,7 @@ function AdminContent() {
               <Route path="/api-keys" element={<AdminApiKeys />} />
               <Route path="/webhooks" element={<WebhooksSection />} />
               <Route path="/system-logs" element={<SystemLogsSection />} />
+              <Route path="/health" element={<AdminHealthMonitor />} />
               {/* GOVERNANCE */}
               <Route path="/data-governance" element={<DataGovernanceSection />} />
               <Route path="/programmes" element={<ProgrammesSection />} />
