@@ -66,8 +66,39 @@ export function BilateralMatchForm() {
   const [form, setForm] = useState<BilateralFormData>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
+
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const getCurrentData = useCallback((): BilateralFormData | null => {
+    const f = formRef.current;
+    if (!f.counterpartyName && !f.commodity && !f.quantity) return null;
+    return f;
+  }, []);
+
+  const { restoreDraft, saveDraft, clearDraft } = useDraftPersistence<BilateralFormData>("bilateral-match", getCurrentData);
+
+  const draftInitialised = useRef(false);
+  useEffect(() => {
+    if (draftInitialised.current) return;
+    draftInitialised.current = true;
+    const draft = restoreDraft();
+    if (draft) {
+      setForm(draft);
+      setDraftRestored(true);
+    }
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (!draftInitialised.current) return;
+    const f = form;
+    if (f.counterpartyName || f.commodity || f.quantity) {
+      saveDraft(f);
+    }
+  }, [form, saveDraft]);
 
   const update = (field: keyof BilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));

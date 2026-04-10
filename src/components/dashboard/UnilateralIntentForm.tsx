@@ -68,8 +68,39 @@ export function UnilateralIntentForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [draftText, setDraftText] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
+
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  const getCurrentData = useCallback((): UnilateralFormData | null => {
+    const f = formRef.current;
+    if (!f.commodity && !f.quantity && !f.price && !f.location) return null;
+    return f;
+  }, []);
+
+  const { restoreDraft, saveDraft, clearDraft } = useDraftPersistence<UnilateralFormData>("unilateral-intent", getCurrentData);
+
+  const draftInitialised = useRef(false);
+  useEffect(() => {
+    if (draftInitialised.current) return;
+    draftInitialised.current = true;
+    const draft = restoreDraft();
+    if (draft) {
+      setForm(draft);
+      setDraftRestored(true);
+    }
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (!draftInitialised.current) return;
+    const f = form;
+    if (f.commodity || f.quantity || f.price || f.location) {
+      saveDraft(f);
+    }
+  }, [form, saveDraft]);
 
   const update = (field: keyof UnilateralFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));

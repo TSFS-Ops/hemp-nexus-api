@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, Users, FileCheck, AlertTriangle, Loader2, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 
 interface AuthorityRecord {
@@ -120,6 +121,12 @@ export function AdminAtbUboPanel() {
 
   return (
     <div className="p-6 space-y-6">
+      {atbTotal !== null && atbRecords.length >= ATB_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {atbRecords.length} of {atbTotal} authority records. Results are capped at {ATB_LIMIT}.</AlertDescription></Alert>
+      )}
+      {uboTotal !== null && uboLinks.length >= ATB_LIMIT && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {uboLinks.length} of {uboTotal} UBO links. Results are capped at {ATB_LIMIT}.</AlertDescription></Alert>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Authority & Ownership</h2>
