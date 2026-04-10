@@ -279,6 +279,7 @@ function ProgrammeDetail({ programmeId, onBack }: { programmeId: string; onBack:
         </TabsList>
 
         <TabsContent value="participants" className="mt-3">
+          <AddParticipantDialog programmeId={programmeId} />
           {!participants?.length ? (
             <p className="text-sm text-muted-foreground py-4 text-center">No participants added yet.</p>
           ) : (
@@ -306,6 +307,7 @@ function ProgrammeDetail({ programmeId, onBack }: { programmeId: string; onBack:
         </TabsContent>
 
         <TabsContent value="milestones" className="mt-3">
+          <AddMilestoneDialog programmeId={programmeId} participants={participants || []} />
           {!milestones?.length ? (
             <p className="text-sm text-muted-foreground py-4 text-center">No milestones defined yet.</p>
           ) : (
@@ -356,6 +358,7 @@ function ProgrammeDetail({ programmeId, onBack }: { programmeId: string; onBack:
             )}
           </div>
 
+          <RecordFundFlowDialog programmeId={programmeId} participants={participants || []} />
           {!fundFlows?.length ? (
             <p className="text-sm text-muted-foreground py-4 text-center">No fund flows recorded yet.</p>
           ) : (
