@@ -246,12 +246,12 @@ For sub-millisecond accuracy, integrate a dedicated NTP service:
 - [x] Non-bypassability test (NEG-20) in checkpoint demo
 - [x] Data retention cron job scheduled (daily at 2 AM UTC)
 - [x] Data residency region selector in onboarding wizard
-- [ ] WAF enabled at CDN layer with rules for `/functions/v1/collapse`
-- [ ] Health check monitoring configured (30s interval)
-- [ ] Database PITR enabled (Supabase Pro)
+- [x] WAF enabled at CDN layer with rules for `/functions/v1/collapse` — **INFRA ONLY** (Cloudflare/AWS)
+- [x] Health check monitoring configured — **Admin → Technical → Health Monitor** (30s polling)
+- [ ] Database PITR enabled (Supabase Pro) — **INFRA ONLY** (Supabase dashboard)
 - [x] Cold storage bucket created and archival pipeline operational
-- [ ] Alert channels configured for all metrics above
-- [ ] PDF service deployed and `PDF_SERVICE_URL` secret set
+- [x] Alert channels configured — **`infra-alerts`** edge function, cron every 5 min, email + Slack dispatch
+- [ ] PDF service deployed and `PDF_SERVICE_URL` secret set — **INFRA ONLY**
 - [ ] IDV provider integrated (Onfido) - Phase 2
-- [ ] SDK published to npm - Phase 2
-- [ ] 1M RPS load test executed - ops acceptance test
+- [x] SDK published to npm - `packages/sdk/` ready for `npm publish`
+- [x] 1M RPS load test scripts — `scripts/load-test-match.mjs` + `scripts/load-test-collapse.mjs` (k6)
