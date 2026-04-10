@@ -41,6 +41,8 @@ interface UnilateralFormData {
   location: string;
   notes: string;
   counterpartyEmail: string;
+  originCountry: string;
+  destinationCountry: string;
 }
 
 const INITIAL: UnilateralFormData = {
@@ -53,6 +55,8 @@ const INITIAL: UnilateralFormData = {
   location: "",
   notes: "",
   counterpartyEmail: "",
+  originCountry: "",
+  destinationCountry: "",
 };
 
 export function UnilateralIntentForm() {
@@ -155,6 +159,8 @@ export function UnilateralIntentForm() {
             price: priceAmount && !isNaN(priceAmount) && priceAmount > 0
               ? { amount: priceAmount, currency: form.currency || "USD" }
               : null,
+            origin_country: form.originCountry.trim() || null,
+            destination_country: form.destinationCountry.trim() || null,
             metadata: {
               source: "unilateral",
               intent_side: form.side,
@@ -405,6 +411,34 @@ export function UnilateralIntentForm() {
                 value={form.location}
                 onChange={(e) => update("location", e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Origin & Destination Country (jurisdiction signals) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="uni-origin-country">Origin country</Label>
+              <Input
+                id="uni-origin-country"
+                placeholder="e.g. ZA, GB, US"
+                value={form.originCountry}
+                onChange={(e) => update("originCountry", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Country where the commodity originates (ISO code or name).
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="uni-dest-country">Destination country</Label>
+              <Input
+                id="uni-dest-country"
+                placeholder="e.g. ZA, GB, US"
+                value={form.destinationCountry}
+                onChange={(e) => update("destinationCountry", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Country where the commodity will be delivered.
+              </p>
             </div>
           </div>
 

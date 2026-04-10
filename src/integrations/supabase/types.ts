@@ -2739,6 +2739,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           declared_value_usd: number | null
+          destination_country: string | null
           event_chain_hash: string | null
           finality_tokens_burned: number | null
           hash: string
@@ -2746,6 +2747,7 @@ export type Database = {
           match_type: string
           metadata: Json | null
           org_id: string
+          origin_country: string | null
           poi_state: string
           previous_event_hash: string | null
           price_amount: number | null
@@ -2772,6 +2774,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           declared_value_usd?: number | null
+          destination_country?: string | null
           event_chain_hash?: string | null
           finality_tokens_burned?: number | null
           hash: string
@@ -2779,6 +2782,7 @@ export type Database = {
           match_type?: string
           metadata?: Json | null
           org_id: string
+          origin_country?: string | null
           poi_state?: string
           previous_event_hash?: string | null
           price_amount?: number | null
@@ -2805,6 +2809,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           declared_value_usd?: number | null
+          destination_country?: string | null
           event_chain_hash?: string | null
           finality_tokens_burned?: number | null
           hash?: string
@@ -2812,6 +2817,7 @@ export type Database = {
           match_type?: string
           metadata?: Json | null
           org_id?: string
+          origin_country?: string | null
           poi_state?: string
           previous_event_hash?: string | null
           price_amount?: number | null

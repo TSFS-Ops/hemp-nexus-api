@@ -847,6 +847,7 @@ Deno.serve(async (req) => {
       }
 
       // Insert match - buyer/seller can be null for unilateral intents
+      const matchMetadata = body.metadata || {};
       const { data: match, error: insertError } = await supabase
         .from("matches")
         .insert({
@@ -862,10 +863,12 @@ Deno.serve(async (req) => {
           price_amount: body.price?.amount ?? null,
           price_currency: body.price?.currency ?? null,
           terms: body.terms ?? null,
-          metadata: body.metadata || {},
+          metadata: matchMetadata,
           match_type: matchType,
           hash,
-          status: "matched"
+          status: "matched",
+          origin_country: body.origin_country ?? matchMetadata.origin_jurisdiction ?? null,
+          destination_country: body.destination_country ?? matchMetadata.destination_jurisdiction ?? null,
         })
         .select()
         .single();
