@@ -271,6 +271,32 @@ export function BilateralMatchForm() {
             </div>
           </div>
 
+          {/* Origin & Destination */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="origin-country">Origin country</Label>
+              <Input
+                id="origin-country"
+                placeholder="e.g. ZA"
+                value={form.originCountry}
+                onChange={(e) => update("originCountry", e.target.value)}
+                maxLength={2}
+              />
+              <p className="text-xs text-muted-foreground">ISO country code where goods originate</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="destination-country">Destination country</Label>
+              <Input
+                id="destination-country"
+                placeholder="e.g. MZ"
+                value={form.destinationCountry}
+                onChange={(e) => update("destinationCountry", e.target.value)}
+                maxLength={2}
+              />
+              <p className="text-xs text-muted-foreground">ISO country code where goods are delivered</p>
+            </div>
+          </div>
+
           {/* Quantity & Price */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
