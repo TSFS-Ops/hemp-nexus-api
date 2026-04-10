@@ -98,13 +98,13 @@ Deno.serve(async (req) => {
     // Derive actor IDs once for use throughout the request
     const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
     
-    // NOTE: Token burns happen per-route via burnTokensForAction, NOT globally here.
-    // Each route (settle, reveal, commit, complete) burns exactly 1 credit.
+    // NOTE: Token burn: only 1 credit charged for the full POI generation.
+    // The settle/declare-intent endpoint chains all transitions (discovery → committed) in one call.
 
-    // Route: POST /match/:id/settle OR /match/:id/declare-intent
-    // Both endpoints do the same thing: discovery → intent_declared (500 credits)
-    // "settle" is kept for backward compatibility
-    if (req.method === "POST" && matchId && (action === "settle" || action === "declare-intent")) {
+    // Route: POST /match/:id/settle OR /match/:id/declare-intent OR /match/:id/generate-poi
+    // All endpoints do the same thing: discovery → committed (1 credit, R10)
+    // Chains: intent_declared → counterparty_sighted → committed atomically
+    if (req.method === "POST" && matchId && (action === "settle" || action === "declare-intent" || action === "generate-poi")) {
       const endpointLabel = `/match/:id/${action}`;
 
       // Validate matchId is a valid UUID

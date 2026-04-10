@@ -23,15 +23,15 @@ const TOKENS_PER_CALL = 1;
 // ACTION-SPECIFIC TOKEN COSTS (from Price List)
 // ==============================================
 export const ACTION_TOKEN_COSTS = {
-  // Transaction lifecycle - flat 1 credit per action until fully live
+  // Transaction lifecycle - single 1-credit charge for POI generation
   'transaction_shell': 1,
   'manual_description': 1,
   'document_upload': 0,
-  'counterparty_sighting': 1,
-  'buyer_commit': 1,
-  'seller_commit': 1,
-  'declare_intent': 1,
-  'transaction_complete': 1,
+  'counterparty_sighting': 0,  // Collapsed into generate-poi (no separate charge)
+  'buyer_commit': 0,           // Collapsed into generate-poi (no separate charge)
+  'seller_commit': 0,          // Collapsed into generate-poi (no separate charge)
+  'declare_intent': 1,         // This is the single POI credit charge (R10)
+  'transaction_complete': 0,   // Free - evidence sealing
   
   // Generic/legacy
   'api_call': 0,
