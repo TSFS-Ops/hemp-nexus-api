@@ -410,6 +410,7 @@ export function AdminRetentionFlagsPanel() {
                     <TableHead>Record Created</TableHead>
                     <TableHead>Expires</TableHead>
                     <TableHead>Enforced</TableHead>
+                    <TableHead>Cold Storage</TableHead>
                     <TableHead>Resolution</TableHead>
                     <TableHead className="text-right">Review</TableHead>
                   </TableRow>
