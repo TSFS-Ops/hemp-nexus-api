@@ -40,10 +40,24 @@ interface SupabaseListOptions {
   staleTime?: number;
 }
 
+export interface SupabaseListResult<T> {
+  data: T[];
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  refetch: () => void;
+  /** True when total rows exceed the query limit */
+  isTruncated: boolean;
+  /** Total row count from the server (if available) */
+  totalCount: number;
+  /** The limit used for the query */
+  queryLimit: number;
+}
+
 export function useSupabaseList<T = Record<string, unknown>>(
   table: TableName,
   options: SupabaseListOptions = {},
-) {
+): SupabaseListResult<T> {
   const {
     columns = "*",
     order = { column: "created_at", ascending: false },
@@ -54,28 +68,38 @@ export function useSupabaseList<T = Record<string, unknown>>(
     staleTime = 30_000,
   } = options;
 
-  return useQuery<T[]>({
+  const query = useQuery<{ items: T[]; totalCount: number }>({
     queryKey: [table, columns, order, limit, ...queryKeyExtra],
     queryFn: async () => {
-      let query = (supabase
+      let q = (supabase
         .from(table) as any)
         .select(columns, { count: "exact" })
         .order(order.column, { ascending: order.ascending ?? false })
         .limit(limit);
 
       if (filters) {
-        query = filters(query);
+        q = filters(q);
       }
 
-      const { data, error, count } = await query;
+      const { data, error, count } = await q;
       if (error) throw error;
-      const items = (data as T[]) ?? [];
-      // Attach totalCount to the array for truncation disclosure
-      (items as any).__totalCount = count ?? items.length;
-      (items as any).__limit = limit;
-      return items;
+      return { items: (data as T[]) ?? [], totalCount: count ?? (data?.length ?? 0) };
     },
     enabled,
     staleTime,
   });
+
+  const items = query.data?.items ?? [];
+  const totalCount = query.data?.totalCount ?? 0;
+
+  return {
+    data: items,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+    isTruncated: totalCount > limit,
+    totalCount,
+    queryLimit: limit,
+  };
 }
