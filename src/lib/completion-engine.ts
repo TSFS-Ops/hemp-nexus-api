@@ -359,7 +359,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
 
     return {
       id: "wad",
-      label: "Written Acknowledgement of Debt (WaD)",
+      label: "WaD (Without a Doubt)",
       status: canCreate ? "pending" : "not_started",
       detail: canCreate
         ? "Ready to create - POI is complete. Navigate to WaD tab to begin."
@@ -449,7 +449,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
 
   return {
     id: "wad",
-    label: "Written Acknowledgement of Debt (WaD)",
+    label: "WaD (Without a Doubt)",
     status,
     detail,
     substeps,
