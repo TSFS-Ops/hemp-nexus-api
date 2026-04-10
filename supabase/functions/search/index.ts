@@ -86,6 +86,9 @@ Deno.serve(async (req) => {
       .join(" & ");
 
     let counterpartyResults: any[] = [];
+    let ftsResultCount = 0;
+    let ilikeFallbackUsed = false;
+    let ilikeResultCount = 0;
 
     if (tsQuery) {
       let cpQuery = supabase
