@@ -256,6 +256,11 @@ Deno.serve(async (req) => {
           upliftPct: 0,
           enrichmentReasons: {},
           orderBookMatches: orderBookResults.length,
+          ftsHitCount: ftsResultCount,
+          ilikeFallbackUsed,
+          ilikeHitCount: ilikeResultCount,
+          parseTokenCount: parseTokens,
+          responseTimeMs,
         },
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
