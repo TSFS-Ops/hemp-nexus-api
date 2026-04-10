@@ -131,7 +131,7 @@ export function BilateralMatchForm() {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
-            "Idempotency-Key": `bilateral_${crypto.randomUUID()}`,
+            "Idempotency-Key": `bilateral_${session.user.id}_${form.commodity.trim().toLowerCase()}_${form.counterpartyName.trim().toLowerCase()}_${form.side}_${form.quantity || "0"}_${form.price || "0"}`,
           },
           body: JSON.stringify({
             buyer,
