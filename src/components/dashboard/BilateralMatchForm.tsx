@@ -153,6 +153,8 @@ export function BilateralMatchForm() {
                 ? "Created as bilateral match - commercial terms to be confirmed."
                 : undefined,
             },
+            origin_country: form.originCountry.trim().toUpperCase() || null,
+            destination_country: form.destinationCountry.trim().toUpperCase() || null,
           }),
         }
       );
