@@ -200,7 +200,7 @@ export async function deriveJurisdictionSignals(matchId: string): Promise<Jurisd
   if (orgIds.length > 0) {
     const { data: kycDocs } = await supabase
       .from("kyc_documents")
-      .select("issuing_country, document_type, org_id")
+      .select("issuing_country, doc_type, org_id")
       .in("org_id", orgIds)
       .not("issuing_country", "is", null)
       .limit(20);
@@ -214,30 +214,31 @@ export async function deriveJurisdictionSignals(matchId: string): Promise<Jurisd
           signals.push({
             code: doc.issuing_country.toUpperCase(),
             source: "kyc_document",
-            label: `${role} KYC doc (${doc.document_type})`,
+            label: `${role} KYC doc (${doc.doc_type})`,
           });
         }
       }
     }
   }
 
-  // 7. Match documents: jurisdiction from document metadata
+  // 7. Match documents: jurisdiction from verification_notes or notes fields
   const { data: matchDocs } = await supabase
     .from("match_documents")
-    .select("metadata, document_type")
+    .select("doc_type, notes, verification_notes")
     .eq("match_id", matchId)
     .limit(20);
 
   if (matchDocs) {
     for (const doc of matchDocs) {
-      const docMeta = doc.metadata as Record<string, unknown> | null;
-      if (docMeta) {
-        const jCode = docMeta.jurisdiction || docMeta.jurisdiction_code || docMeta.country;
-        if (typeof jCode === "string" && jCode.trim()) {
+      // Attempt to extract jurisdiction hints from notes fields
+      const notesText = [doc.notes, doc.verification_notes].filter(Boolean).join(" ");
+      if (notesText) {
+        const isoCode = resolveLocationToISO(notesText);
+        if (isoCode) {
           signals.push({
-            code: jCode.toUpperCase(),
+            code: isoCode,
             source: "match_document",
-            label: `Document: ${doc.document_type}`,
+            label: `Document: ${doc.doc_type}`,
           });
         }
       }
