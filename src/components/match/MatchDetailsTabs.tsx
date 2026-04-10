@@ -101,8 +101,8 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div><span className="text-muted-foreground">Commodity:</span> <span className="font-medium">{match.commodity}</span></div>
               <div><span className="text-muted-foreground">Status:</span> <MatchStatusBadge status={match.status} /></div>
-              <div><span className="text-muted-foreground">Buyer:</span> <span className="font-medium">{isRevealed ? match.buyer_name : <span className="italic text-muted-foreground">Hidden until reveal</span>}</span></div>
-              <div><span className="text-muted-foreground">Seller:</span> <span className="font-medium">{isRevealed ? match.seller_name : <span className="italic text-muted-foreground">Hidden until reveal</span>}</span></div>
+              <div><span className="text-muted-foreground">Buyer:</span> <span className="font-medium">{match.buyer_name || <span className="italic text-muted-foreground">Not set</span>}</span></div>
+              <div><span className="text-muted-foreground">Seller:</span> <span className="font-medium">{match.seller_name || <span className="italic text-muted-foreground">Not set</span>}</span></div>
               <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{match.quantity_amount ?? "-"} {match.quantity_unit ?? ""}</span></div>
               <div><span className="text-muted-foreground">Price:</span> <span className="font-medium">{match.price_currency ?? ""} {match.price_amount?.toLocaleString() ?? "-"}</span></div>
               <div><span className="text-muted-foreground">Total Value:</span> <span className="font-medium">{match.price_currency ?? ""} {((match.price_amount ?? 0) * (match.quantity_amount ?? 0)).toLocaleString()}</span></div>

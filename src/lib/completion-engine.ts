@@ -222,12 +222,12 @@ function derivePoi(input: CompletionInput): StageState {
   // Actions
   const actions: TrackerAction[] = [];
 
-  // Confirm intent
+  // Generate POI
   const canConfirm = match.status === "matched";
   actions.push({
     id: "poi-confirm-intent",
-    label: "Confirm Intent",
-    description: "Confirm your intent to proceed with this match. This burns 1 credit (R10 ZAR).",
+    label: "Generate POI",
+    description: "Generate a Proof of Intent for this match. This burns 1 credit (R10 ZAR).",
     type: "confirm_intent",
     targetTab: "details",
     allowed: canConfirm && !isDisputed,
