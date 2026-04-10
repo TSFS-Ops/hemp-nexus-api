@@ -54,20 +54,22 @@ function ProgrammeList({ onSelect }: { onSelect: (id: string) => void }) {
 
   const createMutation = useMutation({
     mutationFn: async (values: { name: string; department: string; fiscal_year: string; budget_allocated: number }) => {
+      // Get org_id from profiles table
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("Not authenticated");
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", userId)
+        .single();
+      if (profileError || !profile?.org_id) throw new Error("Organisation not found. Please complete your profile first.");
+      
       const { data, error } = await supabase.from("programmes").insert({
         ...values,
-        org_id: (await supabase.auth.getUser()).data.user?.user_metadata?.org_id,
+        org_id: profile.org_id,
         status: "draft",
       }).select().single();
-      // Fallback: use edge function if direct insert fails due to missing org_id
-      if (error) {
-        const { data: fnData, error: fnError } = await supabase.functions.invoke("programmes", {
-          method: "POST",
-          body: values,
-        });
-        if (fnError) throw fnError;
-        return fnData;
-      }
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
