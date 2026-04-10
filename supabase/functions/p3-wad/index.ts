@@ -367,7 +367,15 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // All gates passed - issue WaD
+      // All gates passed — propagate jurisdiction selection to the POI record
+      if (jurisdictionSel?.selected_jurisdiction && jurisdictionSel.selected_jurisdiction !== poi.jurisdiction_code) {
+        await admin
+          .from("pois")
+          .update({ jurisdiction_code: jurisdictionSel.selected_jurisdiction })
+          .eq("id", parsed.poi_id);
+      }
+
+      // Issue WaD
       const { data: wad, error: wadError } = await admin
         .from("p3_wads")
         .insert({

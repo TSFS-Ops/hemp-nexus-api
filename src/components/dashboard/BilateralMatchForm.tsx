@@ -40,6 +40,8 @@ interface BilateralFormData {
   currency: string;
   terms: string;
   location: string;
+  originCountry: string;
+  destinationCountry: string;
 }
 
 const INITIAL_FORM: BilateralFormData = {
@@ -53,6 +55,8 @@ const INITIAL_FORM: BilateralFormData = {
   currency: "USD",
   terms: "",
   location: "",
+  originCountry: "",
+  destinationCountry: "",
 };
 
 export function BilateralMatchForm() {
