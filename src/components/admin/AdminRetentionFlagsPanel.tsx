@@ -436,6 +436,36 @@ export function AdminRetentionFlagsPanel() {
                           : "-"}
                       </TableCell>
                       <TableCell>
+                        {f.archive_storage_path ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="secondary" className="gap-1 text-xs cursor-help">
+                                <HardDrive className="h-3 w-3" />
+                                Stored
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <div className="space-y-1 text-xs">
+                                <p className="font-medium">Cold Storage Archive</p>
+                                <p className="font-mono break-all">{f.archive_storage_path}</p>
+                                {f.archive_hash && (
+                                  <p className="flex items-center gap-1">
+                                    <Hash className="h-3 w-3" />
+                                    {f.archive_hash.slice(0, 16)}…
+                                  </p>
+                                )}
+                                {f.archive_size_bytes != null && (
+                                  <p>{formatBytes(f.archive_size_bytes)}</p>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            {["archived", "quarantined"].includes(f.retention_status) ? "Pending" : "-"}
+                          </span>
+                        )}
+                      <TableCell>
                         {f.resolution_status ? (
                           <Badge variant="outline" className="text-xs capitalize">
                             {f.resolution_status}
