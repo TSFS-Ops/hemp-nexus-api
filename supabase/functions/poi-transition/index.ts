@@ -238,6 +238,36 @@ Deno.serve(async (req: Request) => {
       .update({ poi_state: toState })
       .eq("id", matchId);
 
+    // 2b. Wire jurisdiction selection → POI jurisdiction_code on COMPLETED
+    if (toState === "COMPLETED") {
+      // Look up the jurisdiction selection for this match
+      const { data: jSel } = await adminClient
+        .from("jurisdiction_selections")
+        .select("selected_jurisdiction")
+        .eq("match_id", matchId)
+        .eq("org_id", matchRow.org_id)
+        .maybeSingle();
+
+      if (jSel?.selected_jurisdiction) {
+        // Find the POI linked to this match and update its jurisdiction_code
+        const { data: linkedPois } = await adminClient
+          .from("pois")
+          .select("id")
+          .eq("org_id", matchRow.org_id)
+          .or(`match_id.eq.${matchId}`)
+          .limit(5);
+
+        if (linkedPois && linkedPois.length > 0) {
+          for (const poi of linkedPois) {
+            await adminClient
+              .from("pois")
+              .update({ jurisdiction_code: jSel.selected_jurisdiction })
+              .eq("id", poi.id);
+          }
+        }
+      }
+    }
+
     if (updateError) {
       console.error("Failed to update match poi_state:", updateError);
       return new Response(

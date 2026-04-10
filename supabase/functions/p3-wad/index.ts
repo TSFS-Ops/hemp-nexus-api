@@ -168,16 +168,20 @@ Deno.serve(async (req: Request) => {
         .eq("org_id", orgId)
         .maybeSingle();
 
-      const jurisdictionCode = jurisdictionSel?.selected_jurisdiction || poi.jurisdiction_code;
+      // Hard requirement: an explicit jurisdiction_selections record must exist.
+      // Falling back to poi.jurisdiction_code silently is NOT acceptable for WaD issuance.
       const jurisdictionPass = jurisdictionSel
-        ? jurisdictionSel.selection_method !== "escalated"
-        : !!poi.jurisdiction_code;
+        ? jurisdictionSel.selection_method !== "escalated" && !!jurisdictionSel.selected_jurisdiction
+        : false;
+      const jurisdictionCode = jurisdictionSel?.selected_jurisdiction || poi.jurisdiction_code;
       gates.push({
         gate: "JURISDICTION_SELECTION",
         passed: jurisdictionPass,
         reason: jurisdictionPass
-          ? `Jurisdiction ${jurisdictionCode} selected (${jurisdictionSel?.selection_method || "poi_default"})`
-          : jurisdictionSel?.escalation_reason || "No jurisdiction selection found. Complete jurisdiction selection before WaD.",
+          ? `Jurisdiction ${jurisdictionCode} selected (${jurisdictionSel.selection_method})`
+          : jurisdictionSel
+            ? (jurisdictionSel.escalation_reason || `Jurisdiction selection is escalated or incomplete (method: ${jurisdictionSel.selection_method})`)
+            : "No jurisdiction selection found. Complete jurisdiction selection before WaD issuance.",
       });
 
       // Gate 5: Mandatory governance documents validated (using selected jurisdiction)
