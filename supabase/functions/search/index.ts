@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
   const corsResponse = handleCors(req, allowedOrigins);
   if (corsResponse) return corsResponse;
 
+  const searchStart = performance.now();
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
