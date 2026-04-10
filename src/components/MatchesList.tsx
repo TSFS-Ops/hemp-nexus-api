@@ -25,6 +25,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { downloadCSV } from "@/lib/download-utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useUrlListParams } from "@/hooks/use-url-search-params";
+import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +48,7 @@ type Match = Tables<"matches">;
 const PAGE_SIZE = 25;
 
 // Columns actually needed for the list view - avoids SELECT *
-const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type" as const;
+const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type, buyer_org_id, seller_org_id" as const;
 
 /** Returns display name for buyer/seller based on reveal state */
 function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string {
@@ -73,12 +74,25 @@ function MatchTypeBadge({ match }: { match: Match }) {
   return null;
 }
 
+/** Badge showing the user's role in a match */
+function MatchRoleBadge({ match, orgId }: { match: Match; orgId: string | null }) {
+  const role = getMatchRole(orgId, match as any);
+  if (!role || role === "creator") return null;
+  const labels: Record<string, string> = { buyer: "You: Buyer", seller: "You: Seller" };
+  return (
+    <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+      {labels[role]}
+    </Badge>
+  );
+}
+
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
 const BULK_FAILED_KEY = "izenzo_bulk_failed_ids";
 
 export function MatchesList() {
   const navigate = useNavigate();
+  const userOrgId = useUserOrg();
   const { params, setParam } = useUrlListParams(LIST_DEFAULTS);
   const statusFilter = params.status;
   const commoditySearch = params.q;
@@ -505,6 +519,7 @@ export function MatchesList() {
                           disabled={!MatchState.canDo(match.status, "select_for_bulk")}
                        />
                       <span className="font-medium text-sm">{match.commodity}</span>
+                      <MatchRoleBadge match={match} orgId={userOrgId} />
                     </div>
                     <div className="flex items-center gap-1.5">
                       {activeDisputeIds.has(match.id) && (
@@ -596,6 +611,7 @@ export function MatchesList() {
                         <div className="flex items-center gap-2">
                           {match.commodity}
                           <MatchTypeBadge match={match} />
+                          <MatchRoleBadge match={match} orgId={userOrgId} />
                         </div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{revealGuard(match, "buyer_name")}</TableCell>
@@ -721,7 +737,7 @@ export function MatchesList() {
             </div>
             <h3 className="font-semibold text-lg text-foreground mb-2">No matches yet</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-              Matches appear here when you create one from search results. Search for a trading partner, select them, and click "Create Match" to begin.
+              Matches appear here when you create one from search results, or when a trading partner invites you to a deal. Search for a trading partner to begin.
             </p>
             <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
               <Search className="h-4 w-4" />

@@ -4,6 +4,7 @@
 
 import { useParams, Link } from "react-router-dom";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { LoadingButton } from "@/components/ui/loading-button";
@@ -14,9 +15,11 @@ import { MatchHeroCard } from "@/components/match/MatchHeroCard";
 import { MatchDetailsTabs } from "@/components/match/MatchDetailsTabs";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { ROUTES } from "@/lib/constants";
+import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 
 export default function MatchDetails() {
   const { matchId } = useParams<{ matchId: string }>();
+  const userOrgId = useUserOrg();
   const {
     match,
     loading,
@@ -28,6 +31,8 @@ export default function MatchDetails() {
     handleSettle,
     handleStateAction,
   } = useMatchDetails(matchId);
+
+  const matchRole = match ? getMatchRole(userOrgId, match as any) : null;
 
   const breadcrumbs = [
     { label: "Console", href: ROUTES.DASHBOARD },
@@ -102,7 +107,14 @@ export default function MatchDetails() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Breadcrumbs items={breadcrumbs} />
+        <div className="flex items-center gap-3">
+          <Breadcrumbs items={breadcrumbs} />
+          {matchRole && matchRole !== "creator" && (
+            <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+              You: {matchRole === "buyer" ? "Buyer" : "Seller"}
+            </Badge>
+          )}
+        </div>
         <Button variant="ghost" size="sm" asChild>
           <Link to={ROUTES.DASHBOARD_MATCHES}>
             <ArrowLeft className="h-4 w-4 mr-1" />
