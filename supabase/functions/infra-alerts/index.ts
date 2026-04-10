@@ -215,7 +215,9 @@ Deno.serve(async (req) => {
     .eq("key", "notifications")
     .single();
 
-  const settings = (settingsRow?.value as Record<string, unknown>) || {};
+  // Default emailAlerts to true so alerts fire even before admin configures settings
+  const settings = (settingsRow?.value as Record<string, unknown>) || { emailAlerts: true };
+  if (settings.emailAlerts === undefined) settings.emailAlerts = true;
   const dispatched: string[] = ["audit_log"];
 
   // Email via Resend (if configured)
