@@ -35,8 +35,8 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
     },
     {
       number: "3",
-      title: "Send trade request",
-      description: "Signal your serious interest - no contract, no payment, just a verifiable audit record.",
+      title: "Generate POI",
+      description: "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
       icon: Zap,
       action: () => navigate(ROUTES.DASHBOARD_MATCHES),
       actionLabel: "View matches",

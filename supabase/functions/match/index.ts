@@ -207,16 +207,14 @@ Deno.serve(async (req) => {
         'declare_intent', requestId, matchId
       );
 
-      // --- ATOMIC STATE TRANSITION (SELECT FOR UPDATE) ---
+      // --- ATOMIC STATE TRANSITION (single DB function) ---
       const now = new Date().toISOString();
       const { data: transitionResult, error: transitionError } = await supabase.rpc(
-        'safe_transition_match_state',
+        'atomic_generate_poi',
         {
           p_match_id: matchId,
           p_org_id: authCtx.orgId,
-          p_expected_state: 'discovery',
-          p_new_state: 'intent_declared',
-          p_update_fields: { status: 'settled', settled_at: now },
+          p_settled_at: now,
         }
       );
 
@@ -240,37 +238,6 @@ Deno.serve(async (req) => {
         }
         throw new ApiException(errCode, errMsg, statusCode);
       }
-
-      // ── Chain transition: intent_declared → counterparty_sighted ──
-      const sightedAt = new Date().toISOString();
-      const { data: revealResult, error: revealError } = await supabase.rpc(
-        'safe_transition_match_state',
-        {
-          p_match_id: matchId,
-          p_org_id: authCtx.orgId,
-          p_expected_state: 'intent_declared',
-          p_new_state: 'counterparty_sighted',
-          p_update_fields: { counterparty_sighted_at: sightedAt },
-        }
-      );
-      if (revealError) handleDatabaseError(revealError, requestId);
-      if (!revealResult?.success) {
-        console.error(`[${requestId}] Chain reveal failed: ${revealResult?.error}`);
-      }
-
-      // ── Chain transition: counterparty_sighted → committed ──
-      const committedAt = new Date().toISOString();
-      const { data: commitResult, error: commitError } = await supabase.rpc(
-        'safe_transition_match_state',
-        {
-          p_match_id: matchId,
-          p_org_id: authCtx.orgId,
-          p_expected_state: 'counterparty_sighted',
-          p_new_state: 'committed',
-          p_update_fields: { buyer_committed_at: committedAt },
-        }
-      );
-      if (commitError) handleDatabaseError(commitError, requestId);
 
       // Fetch the final state of the match after all transitions
       const { data: finalMatch, error: finalFetchError } = await supabase
