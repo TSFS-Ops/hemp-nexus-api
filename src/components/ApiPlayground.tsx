@@ -169,12 +169,19 @@ export default function ApiPlayground() {
     const startTime = Date.now();
 
     try {
-      const options: RequestInit = {
-        method,
-        headers: {
+      const headers: Record<string, string> = {
           "X-API-Key": apiKey,
           "Content-Type": "application/json",
-        },
+        };
+
+      // All POST endpoints require an Idempotency-Key header
+      if (method === "POST") {
+        headers["Idempotency-Key"] = `playground_${crypto.randomUUID()}`;
+      }
+
+      const options: RequestInit = {
+        method,
+        headers,
       };
 
       if (body) {
