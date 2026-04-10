@@ -212,13 +212,10 @@ Deno.serve(async (req) => {
         throw eligibilityError;
       }
 
-      // FIX #3: Burn tokens, but refund if transition fails
-      await burnTokensForAction(
-        supabase, authCtx.orgId, actorApiKeyId,
-        'declare_intent', requestId, matchId
-      );
-
-      // --- ATOMIC STATE TRANSITION (single DB function) ---
+      // --- FULLY ATOMIC: token burn + state transition in one DB transaction ---
+      // No separate burnTokensForAction call — the DB function handles both.
+      // If the burn fails (insufficient balance), the state is untouched.
+      // If the state transition fails, the burn is rolled back automatically.
       const now = new Date().toISOString();
       const { data: transitionResult, error: transitionError } = await supabase.rpc(
         'atomic_generate_poi',
@@ -230,23 +227,20 @@ Deno.serve(async (req) => {
       );
 
       if (transitionError) handleDatabaseError(transitionError, requestId);
+
+      // Idempotent replay: POI already generated, return current match
+      if (transitionResult?.idempotent) {
+        console.log(`[${requestId}] POI already generated - atomic idempotent return`);
+        const { data: existingMatch } = await supabase.from("matches").select("*").eq("id", matchId).single();
+        await logApiRequest({ supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId, endpoint: endpointLabel, method: "POST", statusCode: 200 });
+        return new Response(JSON.stringify(existingMatch), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+      }
+
       if (!transitionResult?.success) {
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
         const errMsg = transitionResult?.message || 'State transition failed';
-        const statusCode = errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
-        try {
-          await supabase.rpc('refund_tokens_on_conflict', {
-            p_org_id: authCtx.orgId,
-            p_amount: ACTION_TOKEN_COSTS.declare_intent,
-            p_match_id: matchId,
-            p_reason: errCode,
-            p_request_id: requestId,
-            p_actor_user_id: actorUserId,
-          });
-          console.warn(`[${requestId}] REFUND: ${ACTION_TOKEN_COSTS.declare_intent} tokens refunded after ${errCode} on declare-intent`);
-        } catch (refundErr) {
-          console.error(`[${requestId}] CRITICAL: Token refund failed on declare-intent. Match: ${matchId}, Org: ${authCtx.orgId}`, refundErr);
-        }
+        const statusCode = errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 : errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
+        // No refund needed — burn and transition are in one transaction; both rolled back on failure
         throw new ApiException(errCode, errMsg, statusCode);
       }
 
