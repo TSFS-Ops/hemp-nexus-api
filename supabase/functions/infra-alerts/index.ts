@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
   // Log alerts to admin_audit_logs
   for (const alert of alerts) {
     await supabase.from("admin_audit_logs").insert({
-      admin_user_id: "00000000-0000-0000-0000-000000000000",
+      admin_user_id: null,
       action: `infra.alert.${alert.severity}`,
       target_type: "metric",
       target_id: alert.metric,
