@@ -12,7 +12,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import * as MatchState from "@/lib/match-state";
 import { useMatchDetails } from "@/hooks/use-match-details";
 import { MatchHeroCard } from "@/components/match/MatchHeroCard";
-import { MatchDetailsTabs } from "@/components/match/MatchDetailsTabs";
+import { DealWizard } from "@/components/match/wizard/DealWizard";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
@@ -126,7 +126,7 @@ export default function MatchDetails() {
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
       <MatchHeroCard match={match} isSettled={isSettled} />
 
-      <MatchDetailsTabs
+      <DealWizard
         match={match}
         canConfirm={MatchState.canDo(match.state || "discovery", "confirm_intent")}
         confirming={confirming}
