@@ -113,14 +113,7 @@ interface MatchDocumentsProps {
 }
 
 const DOC_TYPES = [
-  { value: "invoice", label: "Invoice" },
-  { value: "certificate", label: "Certificate" },
-  { value: "contract", label: "Contract" },
-  { value: "shipping", label: "Shipping Document" },
-  { value: "compliance", label: "Compliance Document" },
-  { value: "license", label: "Licence / Permit" },
-  { value: "quality_report", label: "Quality Report" },
-  { value: "other", label: "Other" },
+  { value: "other", label: "Document" },
 ];
 
 const VISIBILITY_OPTIONS = [
