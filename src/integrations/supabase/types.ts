@@ -3774,6 +3774,9 @@ export type Database = {
       }
       retention_flags: {
         Row: {
+          archive_hash: string | null
+          archive_size_bytes: number | null
+          archive_storage_path: string | null
           archived_at: string | null
           enforcement_applied_at: string | null
           enforcement_applied_by: string | null
@@ -3795,6 +3798,9 @@ export type Database = {
           table_name: string
         }
         Insert: {
+          archive_hash?: string | null
+          archive_size_bytes?: number | null
+          archive_storage_path?: string | null
           archived_at?: string | null
           enforcement_applied_at?: string | null
           enforcement_applied_by?: string | null
@@ -3816,6 +3822,9 @@ export type Database = {
           table_name: string
         }
         Update: {
+          archive_hash?: string | null
+          archive_size_bytes?: number | null
+          archive_storage_path?: string | null
           archived_at?: string | null
           enforcement_applied_at?: string | null
           enforcement_applied_by?: string | null

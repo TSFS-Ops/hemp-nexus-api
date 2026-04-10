@@ -9,9 +9,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Clock, RefreshCw, Loader2, AlertTriangle, Archive, Shield,
-  CheckCircle2, Lock, Trash2, Eye, FileText, ShieldAlert
+  CheckCircle2, Lock, Trash2, Eye, FileText, ShieldAlert,
+  HardDrive, Download, Hash
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -36,6 +38,9 @@ interface RetentionFlag {
   resolved_at: string | null;
   last_scan_at: string | null;
   org_id: string | null;
+  archive_storage_path: string | null;
+  archive_hash: string | null;
+  archive_size_bytes: number | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof Clock }> = {
@@ -70,7 +75,8 @@ export function AdminRetentionFlagsPanel() {
   const [resolveAction, setResolveAction] = useState("acknowledged");
   const [resolving, setResolving] = useState(false);
   const [stats, setStats] = useState<Record<string, number>>({});
-
+  const [archiveStats, setArchiveStats] = useState<{ count: number; totalBytes: number }>({ count: 0, totalBytes: 0 });
+  const [triggeringArchive, setTriggeringArchive] = useState(false);
   const fetchFlags = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -88,6 +94,24 @@ export function AdminRetentionFlagsPanel() {
       );
       setStats(Object.fromEntries(countResults));
 
+      // Fetch archive stats (count + total size of cold-stored records)
+      const { count: archivedCount } = await supabase
+        .from("retention_flags")
+        .select("id", { count: "exact", head: true })
+        .not("archive_storage_path", "is", null);
+
+      // Sum archive sizes — fetch actual values for summation
+      const { data: archiveSizeData } = await supabase
+        .from("retention_flags")
+        .select("archive_size_bytes")
+        .not("archive_storage_path", "is", null)
+        .not("archive_size_bytes", "is", null)
+        .limit(1000);
+
+      const totalBytes = (archiveSizeData || []).reduce(
+        (sum, r) => sum + (r.archive_size_bytes || 0), 0
+      );
+      setArchiveStats({ count: archivedCount ?? 0, totalBytes });
       // Count query
       let countQ = supabase.from("retention_flags").select("id", { count: "exact", head: true });
       if (statusFilter !== "all") countQ = countQ.eq("retention_status", statusFilter);
@@ -186,6 +210,33 @@ export function AdminRetentionFlagsPanel() {
     }
   };
 
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const triggerArchival = async () => {
+    setTriggeringArchive(true);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("cold-storage-archive", {
+        method: "POST",
+      });
+      if (invokeErr) throw invokeErr;
+      const result = data as { processed?: number; failed?: number };
+      toast.success(
+        `Cold storage archival complete: ${result?.processed ?? 0} records archived, ${result?.failed ?? 0} failed`
+      );
+      fetchFlags();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to trigger archival");
+    } finally {
+      setTriggeringArchive(false);
+    }
+  };
+
   const statusBadge = (status: string) => {
     const config = STATUS_CONFIG[status];
     if (!config) return <Badge variant="secondary">{status}</Badge>;
@@ -212,7 +263,7 @@ export function AdminRetentionFlagsPanel() {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -246,6 +297,16 @@ export function AdminRetentionFlagsPanel() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <HardDrive className="h-4 w-4" />
+              Cold Storage
+            </div>
+            <p className="text-2xl font-bold mt-1">{archiveStats.count}</p>
+            <p className="text-xs text-muted-foreground">{formatBytes(archiveStats.totalBytes)} stored</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <CheckCircle2 className="h-4 w-4" />
               Resolved
             </div>
@@ -258,13 +319,31 @@ export function AdminRetentionFlagsPanel() {
       {/* Main Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Data Retention Enforcement
-          </CardTitle>
-          <CardDescription>
-            Records evaluated against the 7-year retention policy. Actions are enforced automatically; review and resolution require admin approval.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Data Retention Enforcement
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Records evaluated against the 7-year retention policy. Actions are enforced automatically; review and resolution require admin approval.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={triggerArchival}
+              disabled={triggeringArchive}
+              className="shrink-0"
+            >
+              {triggeringArchive ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <HardDrive className="h-4 w-4 mr-2" />
+              )}
+              Run Archival
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -331,6 +410,7 @@ export function AdminRetentionFlagsPanel() {
                     <TableHead>Record Created</TableHead>
                     <TableHead>Expires</TableHead>
                     <TableHead>Enforced</TableHead>
+                    <TableHead>Cold Storage</TableHead>
                     <TableHead>Resolution</TableHead>
                     <TableHead className="text-right">Review</TableHead>
                   </TableRow>
@@ -354,6 +434,37 @@ export function AdminRetentionFlagsPanel() {
                         {f.enforcement_applied_at
                           ? format(new Date(f.enforcement_applied_at), "dd MMM yyyy")
                           : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {f.archive_storage_path ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="secondary" className="gap-1 text-xs cursor-help">
+                                <HardDrive className="h-3 w-3" />
+                                Stored
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <div className="space-y-1 text-xs">
+                                <p className="font-medium">Cold Storage Archive</p>
+                                <p className="font-mono break-all">{f.archive_storage_path}</p>
+                                {f.archive_hash && (
+                                  <p className="flex items-center gap-1">
+                                    <Hash className="h-3 w-3" />
+                                    {f.archive_hash.slice(0, 16)}…
+                                  </p>
+                                )}
+                                {f.archive_size_bytes != null && (
+                                  <p>{formatBytes(f.archive_size_bytes)}</p>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            {["archived", "quarantined"].includes(f.retention_status) ? "Pending" : "-"}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {f.resolution_status ? (
