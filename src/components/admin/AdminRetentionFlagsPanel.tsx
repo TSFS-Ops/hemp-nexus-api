@@ -465,6 +465,7 @@ export function AdminRetentionFlagsPanel() {
                             {["archived", "quarantined"].includes(f.retention_status) ? "Pending" : "-"}
                           </span>
                         )}
+                      </TableCell>
                       <TableCell>
                         {f.resolution_status ? (
                           <Badge variant="outline" className="text-xs capitalize">
