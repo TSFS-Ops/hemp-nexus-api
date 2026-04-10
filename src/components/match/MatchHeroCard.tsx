@@ -101,15 +101,15 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             <dl className="space-y-2">
               <div>
                 <dt className="text-sm text-muted-foreground">Name</dt>
-                <dd className="font-medium">
-                  {match.buyer_name == null ? (
-                    <span className="text-muted-foreground italic">
-                      {isUnilateral ? "Open - no buyer specified" : "-"}
-                    </span>
-                  ) : isRevealed ? match.buyer_name : (
-                    <span className="text-muted-foreground italic">Hidden until trading partner reveal</span>
-                  )}
-                </dd>
+                 <dd className="font-medium">
+                   {match.buyer_name == null ? (
+                     <span className="text-muted-foreground italic">
+                       {isUnilateral ? "Open - no buyer specified" : "-"}
+                     </span>
+                   ) : (
+                     match.buyer_name
+                   )}
+                 </dd>
               </div>
               {isRevealed && match.buyer_org_id && (
                 <div>
@@ -125,15 +125,15 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             <dl className="space-y-2">
               <div>
                 <dt className="text-sm text-muted-foreground">Name</dt>
-                <dd className="font-medium">
-                  {match.seller_name == null ? (
-                    <span className="text-muted-foreground italic">
-                      {isUnilateral ? "Open - no seller specified" : "-"}
-                    </span>
-                  ) : isRevealed ? match.seller_name : (
-                    <span className="text-muted-foreground italic">Hidden until trading partner reveal</span>
-                  )}
-                </dd>
+                 <dd className="font-medium">
+                   {match.seller_name == null ? (
+                     <span className="text-muted-foreground italic">
+                       {isUnilateral ? "Open - no seller specified" : "-"}
+                     </span>
+                   ) : (
+                     match.seller_name
+                   )}
+                 </dd>
               </div>
               {isRevealed && match.seller_org_id && (
                 <div>

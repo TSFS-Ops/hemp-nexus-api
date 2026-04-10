@@ -72,13 +72,13 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       if (result.success && result.data) {
         setWad(result.data);
         setGateFailures([]);
-        toast.success("Signed Deal created successfully");
+        toast.success("WaD confirmed successfully");
         onWadCreated?.();
       } else {
         if (result.gateFailures?.length) {
           setGateFailures(result.gateFailures);
         }
-        toast.error(result.error || "Failed to create Signed Deal");
+        toast.error(result.error || "Failed to confirm WaD");
       }
     } finally {
       setCreating(false);
@@ -110,11 +110,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            WaD (Signed Deal)
-          </CardTitle>
-          <CardDescription>Sealed evidence bundle for this intent</CardDescription>
+           <CardTitle className="flex items-center gap-2">
+             <Shield className="h-5 w-5" />
+             WaD (Without a Doubt)
+           </CardTitle>
+           <CardDescription>Sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
@@ -147,11 +147,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              WaD (Signed Deal)
-            </CardTitle>
-            <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
+           <CardTitle className="flex items-center gap-2">
+             <Shield className="h-5 w-5" />
+             WaD (Without a Doubt)
+           </CardTitle>
+           <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg space-y-3">
@@ -203,11 +203,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
             >
               {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <FileCheck className="h-4 w-4 mr-2" />
-              {!jurisdictionSelected
-                ? "Select jurisdiction first"
-                : gateFailures.length > 0
-                  ? "Retry Signed Deal Creation"
-                  : "Create Signed Deal"}
+             {!jurisdictionSelected
+                 ? "Select jurisdiction first"
+                 : gateFailures.length > 0
+                   ? "Retry WaD Creation"
+                   : "Confirm WaD"}
             </Button>
           </CardContent>
         </Card>
