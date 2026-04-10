@@ -266,6 +266,18 @@ export function AdminSettings() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="alertEmail">Alert Recipient Email</Label>
+                <Input
+                  id="alertEmail"
+                  type="email"
+                  placeholder="ops@izenzo.co.za"
+                  value={notifications.alertEmail}
+                  onChange={(e) => setNotifications({ ...notifications, alertEmail: e.target.value })}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Infrastructure alerts are sent to this address. Defaults to ops@izenzo.co.za if empty.
+                </p>
+              </div>
                 <Label htmlFor="slackWebhook">Slack Webhook URL</Label>
                 <Input
                   id="slackWebhook"
