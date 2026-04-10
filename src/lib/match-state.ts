@@ -167,10 +167,11 @@ export function getNextState(currentState: string): string | null {
 /** Get the API action path for a state transition */
 export function getTransitionAction(targetState: string): string | null {
   const map: Record<string, string> = {
+    committed: "generate-poi",     // Single action: discovery → committed
+    completed: "complete",
+    // Legacy compat
     intent_declared: "settle",
     counterparty_sighted: "reveal-counterparty",
-    committed: "commit",
-    completed: "complete",
   };
   return map[targetState] ?? null;
 }
@@ -179,16 +180,14 @@ export function getTransitionAction(targetState: string): string | null {
 export function getNextActionLabel(currentState: string, matchType?: string): string | null {
   if (matchType === "unilateral") {
     const labels: Record<string, string> = {
-      discovery: "Declare Intent - 1 credit",
+      discovery: "Generate POI - 1 credit",
       intent_declared: "Awaiting counterparty",
     };
     return labels[currentState] ?? null;
   }
   const labels: Record<string, string> = {
-    discovery: "Signal Intent - 1 credit",
-    intent_declared: "Reveal Counterparty - 1 credit",
-    counterparty_sighted: "Commit to Deal - 1 credit",
-    committed: "Complete Transaction - 1 credit",
+    discovery: "Generate POI - 1 credit",
+    committed: "Complete Transaction",
   };
   return labels[currentState] ?? null;
 }
@@ -197,16 +196,14 @@ export function getNextActionLabel(currentState: string, matchType?: string): st
 export function getNextActionDescription(currentState: string, matchType?: string): string | null {
   if (matchType === "unilateral") {
     const descriptions: Record<string, string> = {
-      discovery: "Formally declares your intent to the market. This creates a governed record. Non-binding.",
-      intent_declared: "This unilateral intent is awaiting a trading partner. Once a trading partner is attached, you can proceed to reveal.",
+      discovery: "Generates a Proof of Intent record for this trade. 1 credit (R10) will be charged. Non-binding.",
+      intent_declared: "This unilateral intent is awaiting a trading partner.",
     };
     return descriptions[currentState] ?? null;
   }
   const descriptions: Record<string, string> = {
-    discovery: "Records your interest so the trading partner can prepare terms. Non-binding.",
-    intent_declared: "Reveals both party identities. The trading partner will see your organisation name.",
-    counterparty_sighted: "Formally commits you to this deal. An evidence record is created.",
-    committed: "Marks the transaction as completed. The full evidence pack is sealed.",
+    discovery: "Generates a Proof of Intent (POI) record for this trade. 1 credit (R10) will be charged. Non-binding.",
+    committed: "Marks the transaction as completed. The full evidence pack is sealed. No additional charge.",
   };
   return descriptions[currentState] ?? null;
 }
