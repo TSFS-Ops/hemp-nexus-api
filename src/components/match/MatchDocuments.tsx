@@ -139,7 +139,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState("");
+  const [docType, setDocType] = useState("other");
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [visibility, setVisibility] = useState("private");
@@ -294,10 +294,11 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !docType) {
-      toast.error("Please select a file and document type");
+    if (!selectedFile) {
+      toast.error("Please select a file");
       return;
     }
+    if (!docType) setDocType("other");
     if (uploading) return;
 
     try {
