@@ -9,9 +9,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Clock, RefreshCw, Loader2, AlertTriangle, Archive, Shield,
-  CheckCircle2, Lock, Trash2, Eye, FileText, ShieldAlert
+  CheckCircle2, Lock, Trash2, Eye, FileText, ShieldAlert,
+  HardDrive, Download, Hash
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
