@@ -40,6 +40,8 @@ interface BilateralFormData {
   currency: string;
   terms: string;
   location: string;
+  originCountry: string;
+  destinationCountry: string;
 }
 
 const INITIAL_FORM: BilateralFormData = {
@@ -53,6 +55,8 @@ const INITIAL_FORM: BilateralFormData = {
   currency: "USD",
   terms: "",
   location: "",
+  originCountry: "",
+  destinationCountry: "",
 };
 
 export function BilateralMatchForm() {
@@ -149,6 +153,8 @@ export function BilateralMatchForm() {
                 ? "Created as bilateral match - commercial terms to be confirmed."
                 : undefined,
             },
+            origin_country: form.originCountry.trim().toUpperCase() || null,
+            destination_country: form.destinationCountry.trim().toUpperCase() || null,
           }),
         }
       );
@@ -264,6 +270,32 @@ export function BilateralMatchForm() {
                 value={form.location}
                 onChange={(e) => update("location", e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Origin & Destination */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="origin-country">Origin country</Label>
+              <Input
+                id="origin-country"
+                placeholder="e.g. ZA"
+                value={form.originCountry}
+                onChange={(e) => update("originCountry", e.target.value)}
+                maxLength={2}
+              />
+              <p className="text-xs text-muted-foreground">ISO country code where goods originate</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="destination-country">Destination country</Label>
+              <Input
+                id="destination-country"
+                placeholder="e.g. MZ"
+                value={form.destinationCountry}
+                onChange={(e) => update("destinationCountry", e.target.value)}
+                maxLength={2}
+              />
+              <p className="text-xs text-muted-foreground">ISO country code where goods are delivered</p>
             </div>
           </div>
 
