@@ -37,6 +37,7 @@ export const ROUTES = {
   DASHBOARD_SETTINGS: '/dashboard/settings',
   DASHBOARD_ACCOUNT: '/dashboard/account',
   DASHBOARD_COMPLIANCE: '/dashboard/compliance',
+  DASHBOARD_PROGRAMMES: '/dashboard/programmes',
   ADMIN: '/admin',
   // OPERATIONS
   ADMIN_DEALS: '/admin/deals',
