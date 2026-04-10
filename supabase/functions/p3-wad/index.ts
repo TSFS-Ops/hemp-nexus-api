@@ -160,14 +160,34 @@ Deno.serve(async (req: Request) => {
           : `Buyer ATB: ${buyerAtbOk ? "verified" : "missing"}, Seller ATB: ${sellerAtbOk ? "verified" : "missing"}`,
       });
 
-      // Gate 5: Mandatory governance documents validated
+      // Gate 4b: Jurisdiction selection must exist and not be escalated
+      const { data: jurisdictionSel } = await admin
+        .from("jurisdiction_selections")
+        .select("selected_jurisdiction, selection_method, escalation_reason")
+        .eq("match_id", poi.match_id || poi.id)
+        .eq("org_id", orgId)
+        .maybeSingle();
+
+      const jurisdictionCode = jurisdictionSel?.selected_jurisdiction || poi.jurisdiction_code;
+      const jurisdictionPass = jurisdictionSel
+        ? jurisdictionSel.selection_method !== "escalated"
+        : !!poi.jurisdiction_code;
+      gates.push({
+        gate: "JURISDICTION_SELECTION",
+        passed: jurisdictionPass,
+        reason: jurisdictionPass
+          ? `Jurisdiction ${jurisdictionCode} selected (${jurisdictionSel?.selection_method || "poi_default"})`
+          : jurisdictionSel?.escalation_reason || "No jurisdiction selection found. Complete jurisdiction selection before WaD.",
+      });
+
+      // Gate 5: Mandatory governance documents validated (using selected jurisdiction)
       const { data: mandatoryDocs } = await admin
         .from("governance_doc_registry")
         .select("id, doc_type, fixed_token_burn_amount")
         .eq("org_id", orgId)
         .eq("mandatory_flag", true)
         .eq("active", true)
-        .eq("jurisdiction_code", poi.jurisdiction_code)
+        .eq("jurisdiction_code", jurisdictionCode)
         .eq("industry_code", poi.industry_code);
 
       let govDocsPass = true;
