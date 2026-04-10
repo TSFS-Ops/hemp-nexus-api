@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
 
     // If FTS returned nothing, try a simple ILIKE fallback
     if (counterpartyResults.length === 0 && product) {
+      ilikeFallbackUsed = true;
       let fallbackQuery = supabase
         .from("trading partners")
         .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
@@ -125,6 +126,7 @@ Deno.serve(async (req) => {
 
       const { data: fallbackData } = await fallbackQuery;
       counterpartyResults = fallbackData || [];
+      ilikeResultCount = counterpartyResults.length;
     }
 
     console.log(`[search] Trading Partners table returned ${counterpartyResults.length} results`);
