@@ -223,6 +223,27 @@ Deno.serve(async (req) => {
       },
     });
 
+    // ── 4. Discovery baseline metrics log (non-blocking) ──
+    const responseTimeMs = Math.round(performance.now() - searchStart);
+    supabase.from("discovery_search_logs").insert({
+      org_id: authCtx.orgId,
+      request_id: requestId,
+      raw_query: query,
+      parsed_product: product || null,
+      parsed_location: effectiveLocation || null,
+      parsed_role: signalType,
+      search_method: ilikeFallbackUsed ? 'ilike_fallback' : 'fts',
+      fts_result_count: ftsResultCount,
+      ilike_fallback_used: ilikeFallbackUsed,
+      ilike_result_count: ilikeResultCount,
+      order_book_result_count: orderBookResults.length,
+      total_results_returned: finalResults.length,
+      response_time_ms: responseTimeMs,
+      parse_token_count: parseTokens,
+    }).then(({ error: logErr }) => {
+      if (logErr) console.error("[search] Discovery log insert error:", logErr.message);
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
