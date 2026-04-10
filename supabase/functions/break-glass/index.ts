@@ -63,10 +63,55 @@ Deno.serve(async (req) => {
       }
 
       const body = await req.json();
-      const { action_type, reason, target_org_id } = body;
+      const { action_type, reason, target_org_id, reauth_password } = body;
 
       if (!action_type || !reason) {
         throw new ApiException("VALIDATION_ERROR", "action_type and reason are required", 400);
+      }
+
+      if (!reauth_password || typeof reauth_password !== "string" || reauth_password.length < 1) {
+        throw new ApiException("REAUTH_REQUIRED", "Password re-verification is required for break-glass actions", 401);
+      }
+
+      // ── Server-side re-authentication ──
+      // Verify the caller's password via GoTrue token endpoint.
+      // This proves identity server-side — a crafted API call cannot skip this.
+      const { data: callerProfile } = await adminClient
+        .from("profiles")
+        .select("email")
+        .eq("id", authCtx.userId)
+        .single();
+
+      if (!callerProfile?.email) {
+        throw new ApiException("REAUTH_FAILED", "Unable to resolve caller identity for re-authentication", 401);
+      }
+
+      const gotrue = `${supabaseUrl}/auth/v1/token?grant_type=password`;
+      const reauthRes = await fetch(gotrue, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+        },
+        body: JSON.stringify({ email: callerProfile.email, password: reauth_password }),
+      });
+
+      if (!reauthRes.ok) {
+        // Log failed re-auth attempt
+        await adminClient.from("audit_logs").insert({
+          org_id: authCtx.orgId,
+          actor_user_id: authCtx.userId,
+          action: "break-glass.reauth_failed",
+          entity_type: "system",
+          metadata: { action_type, request_id: requestId },
+        });
+        throw new ApiException("REAUTH_FAILED", "Password verification failed. Break-glass action denied.", 401);
+      }
+
+      const reauthData = await reauthRes.json();
+      // Ensure the verified user is the same as the caller (prevent token substitution)
+      if (reauthData.user?.id !== authCtx.userId) {
+        throw new ApiException("REAUTH_FAILED", "Re-authenticated user does not match caller", 401);
       }
 
       const validActions = [
