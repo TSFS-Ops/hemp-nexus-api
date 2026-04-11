@@ -242,6 +242,9 @@ function BillingContent() {
       return;
     }
 
+    // Double-click guard: if already processing, ignore
+    if (isProcessing) return;
+
     setIsProcessing(true);
     setSelectedPackage(packageId);
     

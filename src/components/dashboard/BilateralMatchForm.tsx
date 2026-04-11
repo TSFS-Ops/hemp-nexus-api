@@ -125,6 +125,9 @@ export function BilateralMatchForm() {
       return;
     }
 
+    // Double-click guard
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const { data: profile } = await supabase
@@ -205,7 +208,7 @@ export function BilateralMatchForm() {
 
       // Also persist as trade order
       try {
-        await supabase.from("trade_orders").insert({
+        const { error: tradeOrderError } = await supabase.from("trade_orders").insert({
           org_id: profile.org_id,
           user_id: profile.id,
           side: form.side === "buyer" ? "bid" : "offer",
@@ -214,8 +217,12 @@ export function BilateralMatchForm() {
           volume: quantityAmount && !isNaN(quantityAmount) ? quantityAmount : null,
           location: form.location.trim() || null,
         } as any);
-      } catch {
-        // Non-critical
+        if (tradeOrderError) {
+          console.error("Failed to save trade order:", tradeOrderError);
+          // Non-blocking: match was created, just log the secondary failure
+        }
+      } catch (tradeErr) {
+        console.error("Failed to save trade order:", tradeErr);
       }
 
       clearDraft();

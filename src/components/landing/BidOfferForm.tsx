@@ -86,13 +86,19 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
   const canSearch = form.product.trim().length > 0 && side !== null;
   const showDetails = form.product.trim().length > 0;
 
+  const submittingRef = useRef(false);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (canSearch && !isLocked && side) {
-      clearDraft();
-      setDraftRestored(false);
-      onSearch({ ...form, side });
-    }
+    if (!canSearch || isLocked || !side) return;
+    // Double-click guard: prevent re-entry while parent processes
+    if (submittingRef.current || isSearching) return;
+    submittingRef.current = true;
+    clearDraft();
+    setDraftRestored(false);
+    onSearch({ ...form, side });
+    // Release guard after a tick (parent's isSearching prop takes over)
+    requestAnimationFrame(() => { submittingRef.current = false; });
   };
 
   const disabled = isLocked || isSearching;
