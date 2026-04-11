@@ -6,15 +6,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { FileText, Info, Loader2, Search, AlertTriangle, SearchX } from "lucide-react";
+import { FileText, Info, Loader2, Search, AlertTriangle, SearchX, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
+import { ResultCardErrorBoundary } from "@/components/search/ResultCardErrorBoundary";
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
+import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -103,6 +105,7 @@ export default function CounterpartySearch() {
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [degradation, setDegradation] = useState<DegradationInfo>({ isPartiallyDegraded: false, webDiscoveryDown: false, message: null });
 
   // Structured bid/offer context from landing page
   const [bidOfferContext, setBidOfferContext] = useState<{
@@ -186,9 +189,12 @@ export default function CounterpartySearch() {
       if (error) throw error;
 
       if (data.ok) {
-        setResults(data.results || []);
+        // Sanitize results to prevent crashes from malformed API data
+        const safeResults = sanitizeSearchResults(data.results);
+        setResults(safeResults);
         setMetrics(data.metrics || null);
         setParsedQuery(data.parsedQuery || null);
+        setDegradation(detectDegradation(data.metrics));
 
         if (bidOfferContext.side) {
           persistTradeOrder(query.trim(), bidOfferContext);
@@ -498,6 +504,16 @@ export default function CounterpartySearch() {
         {/* Metrics Card */}
         {metrics && <SearchMetricsCard metrics={metrics} />}
 
+        {/* Degraded mode banner — web discovery is down */}
+        {!isSearching && degradation.isPartiallyDegraded && degradation.message && (
+          <Alert className="border-warning/30 bg-warning/5">
+            <WifiOff className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-xs sm:text-sm text-warning-foreground">
+              {degradation.message}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Loading State */}
         {isSearching && (
           <div className="space-y-3">
@@ -599,14 +615,15 @@ export default function CounterpartySearch() {
             </div>
 
             {results.map((result, idx) => (
-              <CounterpartyResultCard
-                key={result.id}
-                result={result}
-                rank={idx + 1}
-                isSelected={selectedResults.has(result.id)}
-                onToggleSelect={toggleSelect}
-                onFindSimilar={setSimilarAnchor}
-              />
+              <ResultCardErrorBoundary key={result.id} companyName={result.title}>
+                <CounterpartyResultCard
+                  result={result}
+                  rank={idx + 1}
+                  isSelected={selectedResults.has(result.id)}
+                  onToggleSelect={toggleSelect}
+                  onFindSimilar={setSimilarAnchor}
+                />
+              </ResultCardErrorBoundary>
             ))}
 
             {results.length >= 5 && (
