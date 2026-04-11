@@ -7,7 +7,7 @@
 /** Map internal DB side values to user-facing labels */
 const SIDE_LABEL: Record<string, string> = { bid: "Buyer", offer: "Seller" };
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -306,6 +306,34 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Draft persistence: save form state to sessionStorage
+  const DRAFT_KEY = "draft:create-order";
+
+  const getCurrentData = useCallback(() => ({ side, product, price, volume, location }), [side, product, price, volume, location]);
+
+  // Restore draft on mount
+  useState(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.side) setSide(draft.side);
+        if (draft.product) setProduct(draft.product);
+        if (draft.price) setPrice(draft.price);
+        if (draft.volume) setVolume(draft.volume);
+        if (draft.location) setLocation(draft.location);
+      }
+    } catch {}
+  });
+
+  // Auto-save draft on changes
+  useState(() => {
+    const interval = setInterval(() => {
+      try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(getCurrentData())); } catch {}
+    }, 1000);
+    return () => clearInterval(interval);
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product.trim()) {
@@ -325,6 +353,7 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
       });
       if (error) throw error;
       toast.success("Order created successfully");
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
       onSuccess();
     } catch (err: any) {
       toast.error("Failed to create order", { description: err.message });

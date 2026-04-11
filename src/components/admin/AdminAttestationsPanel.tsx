@@ -80,6 +80,9 @@ export function AdminAttestationsPanel() {
               <div><span className="text-muted-foreground">Signed:</span> {new Date(selected.signed_at).toLocaleString()}</div>
             </div>
           )}
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" size="sm" onClick={() => setSelected(null)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

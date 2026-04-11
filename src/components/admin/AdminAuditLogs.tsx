@@ -429,6 +429,9 @@ export function AdminAuditLogs() {
               </div>
             </div>
           )}
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowDetailsDialog(false)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
