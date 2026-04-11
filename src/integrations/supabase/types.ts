@@ -5695,6 +5695,15 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_check_and_increment_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_limit: number
+          p_org_id: string
+          p_window_end: string
+        }
+        Returns: number
+      }
       atomic_generate_poi: {
         Args: { p_match_id: string; p_org_id: string; p_settled_at: string }
         Returns: Json
