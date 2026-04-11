@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Eye, Plus, Edit, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function AdminTradingPartnersPanel() {
@@ -16,18 +16,28 @@ export function AdminTradingPartnersPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [formData, setFormData] = useState({ company_name: "", contact_email: "", jurisdiction: "", description: "", registration_number: "", org_id: "" });
+  const [saving, setSaving] = useState(false);
+  const deletingRef = useRef(false);
 
   const fetchPartners = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("counterparties").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setPartners(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("counterparties").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      setPartners(data || []);
+    } catch (err) {
+      console.error("Failed to fetch trading partners:", err);
+      toast.error("Failed to load trading partners");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchPartners(); }, [fetchPartners]);
 
   const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
       if (editing) {
         const { error } = await supabase.from("counterparties").update({
@@ -54,13 +64,26 @@ export function AdminTradingPartnersPanel() {
       setDialogOpen(false);
       setEditing(null);
       fetchPartners();
-    } catch (err) { toast.error((err as Error).message); }
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("counterparties").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Trading partner removed"); fetchPartners(); }
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    try {
+      const { error } = await supabase.from("counterparties").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Trading partner removed");
+      fetchPartners();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      deletingRef.current = false;
+    }
   };
 
   const openCreate = () => { setEditing(null); setFormData({ company_name: "", contact_email: "", jurisdiction: "", description: "", registration_number: "", org_id: "" }); setDialogOpen(true); };
@@ -112,7 +135,7 @@ export function AdminTradingPartnersPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>{editing ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}{editing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

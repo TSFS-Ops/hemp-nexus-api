@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Plus, Edit, Eye, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function AdminDataSourcesPanel() {
@@ -17,18 +17,28 @@ export function AdminDataSourcesPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [formData, setFormData] = useState({ name: "", type: "api", org_id: "", status: "active", config: "{}" });
+  const [saving, setSaving] = useState(false);
+  const deletingRef = useRef(false);
 
-  const fetch = useCallback(async () => {
+  const fetchSources = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("data_sources").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setSources(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("data_sources").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      setSources(data || []);
+    } catch (err) {
+      console.error("Failed to fetch data sources:", err);
+      toast.error("Failed to load data sources");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchSources(); }, [fetchSources]);
 
   const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
       const configObj = JSON.parse(formData.config);
       if (editing) {
@@ -42,14 +52,27 @@ export function AdminDataSourcesPanel() {
       }
       setDialogOpen(false);
       setEditing(null);
-      fetch();
-    } catch (err) { toast.error((err as Error).message); }
+      fetchSources();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("data_sources").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Data source deleted"); fetch(); }
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    try {
+      const { error } = await supabase.from("data_sources").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Data source deleted");
+      fetchSources();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      deletingRef.current = false;
+    }
   };
 
   const openCreate = () => { setEditing(null); setFormData({ name: "", type: "api", org_id: "", status: "active", config: "{}" }); setDialogOpen(true); };
@@ -121,7 +144,7 @@ export function AdminDataSourcesPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>{editing ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}{editing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -3,11 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Eye, Plus, Edit } from "lucide-react";
+import { Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 
@@ -21,13 +19,17 @@ export function AdminNotificationsPanel() {
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
-    const { data, error, count } = await supabase.from("notifications").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(NOTIF_LIMIT);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      const { data, error, count } = await supabase.from("notifications").select("*", { count: "exact" }).order("created_at", { ascending: false }).limit(NOTIF_LIMIT);
+      if (error) throw error;
       setNotifications(data || []);
       setTotalCount(count ?? data?.length ?? 0);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+      toast.error("Failed to load notifications");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
@@ -73,6 +75,9 @@ export function AdminNotificationsPanel() {
               <div><span className="text-muted-foreground">Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

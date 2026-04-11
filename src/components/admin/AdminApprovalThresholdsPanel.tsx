@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,18 +16,28 @@ export function AdminApprovalThresholdsPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [formData, setFormData] = useState({ org_id: "", low_threshold: "10000", high_threshold: "100000" });
+  const [saving, setSaving] = useState(false);
+  const deletingRef = useRef(false);
 
   const fetchThresholds = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("approval_thresholds").select("*").order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    else setThresholds(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("approval_thresholds").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setThresholds(data || []);
+    } catch (err) {
+      console.error("Failed to fetch thresholds:", err);
+      toast.error("Failed to load approval thresholds");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchThresholds(); }, [fetchThresholds]);
 
   const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
       if (editing) {
         const { error } = await supabase.from("approval_thresholds").update({
@@ -48,13 +58,26 @@ export function AdminApprovalThresholdsPanel() {
       setDialogOpen(false);
       setEditing(null);
       fetchThresholds();
-    } catch (err) { toast.error((err as Error).message); }
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("approval_thresholds").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Threshold removed"); fetchThresholds(); }
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    try {
+      const { error } = await supabase.from("approval_thresholds").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Threshold removed");
+      fetchThresholds();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      deletingRef.current = false;
+    }
   };
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -100,7 +123,7 @@ export function AdminApprovalThresholdsPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>{editing ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}{editing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

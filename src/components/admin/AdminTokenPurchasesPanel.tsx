@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,10 +15,16 @@ export function AdminTokenPurchasesPanel() {
 
   const fetchPurchases = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("token_transactions").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setPurchases(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("token_transactions").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      setPurchases(data || []);
+    } catch (err) {
+      console.error("Failed to fetch token transactions:", err);
+      toast.error("Failed to load token transactions");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchPurchases(); }, [fetchPurchases]);
@@ -67,6 +73,9 @@ export function AdminTokenPurchasesPanel() {
               <div><span className="text-muted-foreground">Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

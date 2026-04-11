@@ -1,11 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye, CheckCircle, XCircle } from "lucide-react";
@@ -16,24 +13,40 @@ export function AdminAuthorityRecordsPanel() {
   const [loading, setLoading] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const updatingRef = useRef(false);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("authority_records").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setRecords(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("authority_records").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      setRecords(data || []);
+    } catch (err) {
+      console.error("Failed to fetch authority records:", err);
+      toast.error("Failed to load authority records");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("authority_records").update({
-      status,
-      verified_at: status === "verified" ? new Date().toISOString() : null,
-    }).eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success(`Record ${status}`); fetchRecords(); }
+    if (updatingRef.current) return;
+    updatingRef.current = true;
+    try {
+      const { error } = await supabase.from("authority_records").update({
+        status,
+        verified_at: status === "verified" ? new Date().toISOString() : null,
+      }).eq("id", id);
+      if (error) throw error;
+      toast.success(`Record ${status}`);
+      fetchRecords();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      updatingRef.current = false;
+    }
   };
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -87,6 +100,9 @@ export function AdminAuthorityRecordsPanel() {
               <div><span className="text-muted-foreground">Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
