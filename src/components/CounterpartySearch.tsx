@@ -58,7 +58,7 @@ interface ParsedQuery {
   role: "buyer" | "seller";
 }
 
-/** Persist a bid/offer to the trade_orders table (fire-and-forget) */
+/** Persist a bid/offer to the trade_orders table */
 async function persistTradeOrder(
   product: string,
   ctx: { side?: "bid" | "offer"; price?: string; volume?: string; location?: string }
@@ -69,7 +69,7 @@ async function persistTradeOrder(
     const { data: profile } = await supabase.from("profiles").select("id, org_id").eq("id", session.user.id).maybeSingle();
     if (!profile?.org_id) return;
 
-    await supabase.from("trade_orders").insert({
+    const { error } = await supabase.from("trade_orders").insert({
       org_id: profile.org_id,
       user_id: profile.id,
       side: ctx.side || "bid",
@@ -78,8 +78,18 @@ async function persistTradeOrder(
       volume: ctx.volume ? parseFloat(ctx.volume) || null : null,
       location: ctx.location || null,
     } as any);
+
+    if (error) {
+      console.error("Failed to save trade order:", error);
+      toast.error("Failed to save trade order", {
+        description: "Your trade interest could not be recorded. Please try again.",
+      });
+    }
   } catch (err) {
-    console.warn("Failed to persist trade order:", err);
+    console.error("Failed to save trade order:", err);
+    toast.error("Failed to save trade order", {
+      description: "An unexpected error occurred. Please try again.",
+    });
   }
 }
 
