@@ -425,6 +425,9 @@ RULES:
 WEB SEARCH RESULTS:
 ${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: ${r.url}\n    Snippet: ${r.description}`).join("\n\n")}`;
 
+  // ── FAILURE MODE 1b: AI gateway hangs — 15s hard timeout ──
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -432,6 +435,7 @@ ${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: 
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
