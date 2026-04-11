@@ -64,15 +64,11 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
 
   // ── Step 2: Member signs up ────────────────────────────────────
   it("2.3 - member signs up independently", async () => {
-    await supabase.auth.signUp({ email: MEMBER_EMAIL, password: PASSWORD });
-    const { data } = await supabase.auth.signInWithPassword({
-      email: MEMBER_EMAIL,
-      password: PASSWORD,
-    });
-    expect(data.user).toBeTruthy();
-    memberUserId = data.user!.id;
-    memberToken = data.session!.access_token;
-  });
+    const result = await signUpTestUser(supabase, MEMBER_EMAIL, PASSWORD);
+    memberUserId = result.userId;
+    memberToken = result.accessToken;
+    expect(memberUserId).toBeTruthy();
+  }, 15_000);
 
   // ── Step 3: Verify auto-assigned roles ─────────────────────────
   it("2.4 - new member has auto-assigned org_member and org_admin roles", async () => {
