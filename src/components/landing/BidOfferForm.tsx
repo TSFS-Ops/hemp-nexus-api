@@ -25,6 +25,7 @@ interface BidOfferFormProps {
 }
 
 export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
+  const [side, setSide] = useState<"bid" | "offer" | null>(null);
   const [form, setForm] = useState({
     product: "",
     volume: "",
@@ -40,8 +41,8 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     const f = formRef.current;
     const hasContent = f.product || f.volume || f.price || f.location;
     if (!hasContent) return null;
-    return { side: "bid" as const, ...f };
-  }, []);
+    return { side: (side || "bid") as "bid" | "offer", ...f };
+  }, [side]);
 
   const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
     side: "bid" | "offer";
@@ -82,15 +83,15 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
   const update = (field: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const canSearch = form.product.trim().length > 0;
+  const canSearch = form.product.trim().length > 0 && side !== null;
   const showDetails = form.product.trim().length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (canSearch && !isLocked) {
+    if (canSearch && !isLocked && side) {
       clearDraft();
       setDraftRestored(false);
-      onSearch({ ...form, side: "bid" });
+      onSearch({ ...form, side });
     }
   };
 
@@ -98,6 +99,46 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
 
   return (
     <form onSubmit={handleSubmit} className="p-4 space-y-4">
+      {/* Buyer / Seller toggle — first decision point */}
+      <div>
+        <label
+          className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
+          style={{ color: 'var(--lt-text-dim)' }}
+        >
+          I want to<span className="ml-0.5" style={{ color: 'var(--lt-emerald)' }}>*</span>
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setSide("bid")}
+            className="h-10 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border"
+            style={{
+              backgroundColor: side === "bid" ? 'var(--lt-emerald-dark)' : '#111827',
+              color: side === "bid" ? 'white' : 'var(--lt-text-dim)',
+              borderColor: side === "bid" ? 'var(--lt-emerald)' : 'transparent',
+              boxShadow: side === "bid" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
+            }}
+          >
+            I'm Buying
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setSide("offer")}
+            className="h-10 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border"
+            style={{
+              backgroundColor: side === "offer" ? 'var(--lt-emerald-dark)' : '#111827',
+              color: side === "offer" ? 'white' : 'var(--lt-text-dim)',
+              borderColor: side === "offer" ? 'var(--lt-emerald)' : 'transparent',
+              boxShadow: side === "offer" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
+            }}
+          >
+            I'm Selling
+          </button>
+        </div>
+      </div>
+
       {/* Draft restored notice */}
       {draftRestored && (
         <div className="flex items-center justify-between px-3 py-1.5 rounded-lg"
@@ -110,6 +151,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
             onClick={() => {
               clearDraft();
               setDraftRestored(false);
+              setSide(null);
               setForm({ product: "", volume: "", price: "", location: "", additionalInfo: "" });
             }}
             className="text-[11px] font-mono underline hover:opacity-80"
@@ -189,7 +231,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           ) : (
             <>
               <ArrowRight className="h-3.5 w-3.5" />
-              Submit Trade Interest
+              {side === "offer" ? "Submit Sell Interest" : side === "bid" ? "Submit Buy Interest" : "Select Buy or Sell"}
             </>
           )}
         </button>
