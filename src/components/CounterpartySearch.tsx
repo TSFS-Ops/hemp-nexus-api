@@ -504,6 +504,16 @@ export default function CounterpartySearch() {
         {/* Metrics Card */}
         {metrics && <SearchMetricsCard metrics={metrics} />}
 
+        {/* Degraded mode banner — web discovery is down */}
+        {!isSearching && degradation.isPartiallyDegraded && degradation.message && (
+          <Alert className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
+            <WifiOff className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-xs sm:text-sm text-amber-800 dark:text-amber-300">
+              {degradation.message}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Loading State */}
         {isSearching && (
           <div className="space-y-3">
