@@ -105,6 +105,7 @@ export default function CounterpartySearch() {
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [degradation, setDegradation] = useState<DegradationInfo>({ isPartiallyDegraded: false, webDiscoveryDown: false, message: null });
 
   // Structured bid/offer context from landing page
   const [bidOfferContext, setBidOfferContext] = useState<{
