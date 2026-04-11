@@ -90,9 +90,9 @@ Deno.serve(async (req: Request) => {
     let regionCount = 0;
 
     if (tsQuery) {
-      // Count partners matching product
+      // Count partners matching product (counterparties table has FTS GIN index)
       const { count: ftsCount } = await admin
-        .from("trading_partners")
+        .from("counterparties")
         .select("id", { count: "exact", head: true })
         .textSearch("fts", tsQuery);
 
@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
 
       // Count distinct regions
       const { data: regions } = await admin
-        .from("trading_partners")
+        .from("counterparties")
         .select("jurisdiction")
         .textSearch("fts", tsQuery)
         .not("jurisdiction", "is", null)
