@@ -6,15 +6,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { FileText, Info, Loader2, Search, AlertTriangle, SearchX } from "lucide-react";
+import { FileText, Info, Loader2, Search, AlertTriangle, SearchX, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
+import { ResultCardErrorBoundary } from "@/components/search/ResultCardErrorBoundary";
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
+import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
 import {
   AlertDialog,
   AlertDialogAction,
