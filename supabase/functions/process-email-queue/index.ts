@@ -18,7 +18,7 @@ function isRateLimited(error: unknown): boolean {
 }
 
 // Check if an error is a forbidden (403) response, which means emails are
-// disabled for this project. Retrying won't help - move straight to DLQ.
+// disabled for this project. Retrying won't help — move straight to DLQ.
 function isForbidden(error: unknown): boolean {
   if (error && typeof error === 'object' && 'status' in error) {
     return (error as { status: number }).status === 403
@@ -91,10 +91,10 @@ Deno.serve(async (req) => {
     )
   }
 
-  const authHeader = req.headers.get('Authorisation')
+  const authHeader = req.headers.get('Authorization')
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(
-      JSON.stringify({ error: 'Unauthorised' }),
+      JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     )
   }
@@ -195,17 +195,20 @@ Deno.serve(async (req) => {
       const failedAttempts =
         payload?.message_id && typeof payload.message_id === 'string'
           ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
-          : 0
+          : msg.read_ct ?? 0
 
-      // Drop expired messages (TTL exceeded)
-      if (payload.queued_at) {
-        const ageMs = Date.now() - new Date(payload.queued_at).getTime()
+      // Drop expired messages (TTL exceeded).
+      // Prefer payload.queued_at when present; fall back to PGMQ's enqueued_at
+      // which is always set by the queue.
+      const queuedAt = payload.queued_at ?? msg.enqueued_at
+      if (queuedAt) {
+        const ageMs = Date.now() - new Date(queuedAt).getTime()
         const maxAgeMs = ttlMinutes[queue] * 60 * 1000
         if (ageMs > maxAgeMs) {
           console.warn('Email expired (TTL exceeded)', {
             queue,
             msg_id: msg.msg_id,
-            queued_at: payload.queued_at,
+            queued_at: queuedAt,
             ttl_minutes: ttlMinutes[queue],
           })
           await moveToDlq(supabase, queue, msg, `TTL exceeded (${ttlMinutes[queue]} minutes)`)
@@ -261,7 +264,7 @@ Deno.serve(async (req) => {
             unsubscribe_token: payload.unsubscribe_token,
             message_id: payload.message_id,
           },
-          // sendUrl is optional - when LOVABLE_SEND_URL is not set, the library
+          // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
           // falls back to the default Lovable API endpoint (https://api.lovable.dev).
           // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
           { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
@@ -314,14 +317,14 @@ Deno.serve(async (req) => {
             })
             .eq('id', 1)
 
-          // Stop processing - remaining messages stay in queue (VT expires, retried next cycle)
+          // Stop processing — remaining messages stay in queue (VT expires, retried next cycle)
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'rate_limited' }),
             { headers: { 'Content-Type': 'application/json' } }
           )
         }
 
-        // 403 means emails are disabled for this project - retrying won't help.
+        // 403 means emails are disabled for this project — retrying won't help.
         // Move straight to DLQ and stop processing the rest of the batch.
         if (isForbidden(error)) {
           await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
