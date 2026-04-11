@@ -90,24 +90,32 @@ async function getOrCreateRateLimit(
   };
 }
 
-async function incrementRateLimitAtomic(
+/**
+ * Atomic check-and-increment: combines the limit check and increment
+ * in a single Postgres row-level lock to prevent TOCTOU races.
+ * Returns the new count, or -1 if the limit was already reached.
+ */
+async function atomicCheckAndIncrement(
   supabase: SupabaseClient,
   orgId: string,
   endpoint: string,
-  windowEnd: Date
+  windowEnd: Date,
+  limit: number
 ): Promise<number> {
-  const { data, error } = await supabase.rpc('increment_rate_limit', {
+  const { data, error } = await supabase.rpc('atomic_check_and_increment_rate_limit', {
     p_org_id: orgId,
     p_endpoint: endpoint,
-    p_window_end: windowEnd.toISOString()
+    p_window_end: windowEnd.toISOString(),
+    p_limit: limit,
   });
 
   if (error) {
-    console.error("Error incrementing rate limit atomically:", error);
+    console.error("Error in atomic rate limit check:", error);
+    // Fail open on DB errors to avoid blocking all traffic
     return 0;
   }
 
-  return data || 0;
+  return data ?? 0;
 }
 
 // ── §22 Circuit Breaker ──
