@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,19 +32,30 @@ export function AdminConsentsPanel() {
 
   const fetchConsents = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("consents")
-      .select("*")
-      .order("granted_at", { ascending: false })
-      .limit(200);
-    if (error) toast.error(error.message);
-    else setConsents((data as unknown as Consent[]) || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("consents")
+        .select("*")
+        .order("granted_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setConsents((data as unknown as Consent[]) || []);
+    } catch (err) {
+      console.error("Failed to fetch consents:", err);
+      toast.error("Failed to load consents");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchConsents(); }, [fetchConsents]);
 
+  const [saving, setSaving] = useState(false);
+  const revokingRef = useRef(false);
+
   const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
       const scopeObj = JSON.parse(formData.scope);
       if (editing) {
@@ -74,16 +85,27 @@ export function AdminConsentsPanel() {
       fetchConsents();
     } catch (err) {
       toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const revokeConsent = async (id: string) => {
-    const { error } = await supabase
-      .from("consents")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Consent revoked"); fetchConsents(); }
+    if (revokingRef.current) return;
+    revokingRef.current = true;
+    try {
+      const { error } = await supabase
+        .from("consents")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Consent revoked");
+      fetchConsents();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      revokingRef.current = false;
+    }
   };
 
   const openCreate = () => {
@@ -186,7 +208,7 @@ export function AdminConsentsPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>{editing ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}{editing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

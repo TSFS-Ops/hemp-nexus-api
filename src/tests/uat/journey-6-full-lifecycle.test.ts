@@ -14,6 +14,7 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import { signUpTestUser } from "./test-client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -76,52 +77,17 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
 
   it("1.1 - Buyer signs up, profile & org auto-created", async () => {
     const client = makeClient();
-    const { data: signupData, error: signupErr } = await client.auth.signUp({
-      email: BUYER_EMAIL,
-      password: PASSWORD,
-    });
-    expect(signupErr).toBeNull();
-    expect(signupData.user).toBeTruthy();
-
-    const { data: loginData, error: loginErr } = await client.auth.signInWithPassword({
-      email: BUYER_EMAIL,
-      password: PASSWORD,
-    });
-    expect(loginErr).toBeNull();
-
-    const userId = loginData.user!.id;
-    const token = loginData.session!.access_token;
-
-    const { data: profile } = await client
-      .from("profiles")
-      .select("org_id")
-      .eq("id", userId)
-      .single();
-    expect(profile?.org_id).toBeTruthy();
-
-    ctx.buyer = { client, userId, orgId: profile!.org_id, token, apiKey: "" };
-  });
+    const result = await signUpTestUser(client, BUYER_EMAIL, PASSWORD);
+    ctx.buyer = { client, userId: result.userId, orgId: result.orgId, token: result.accessToken, apiKey: "" };
+    expect(result.orgId).toBeTruthy();
+  }, 15_000);
 
   it("1.2 - Seller signs up, profile & org auto-created", async () => {
     const client = makeClient();
-    await client.auth.signUp({ email: SELLER_EMAIL, password: PASSWORD });
-    const { data: loginData } = await client.auth.signInWithPassword({
-      email: SELLER_EMAIL,
-      password: PASSWORD,
-    });
-
-    const userId = loginData.user!.id;
-    const token = loginData.session!.access_token;
-
-    const { data: profile } = await client
-      .from("profiles")
-      .select("org_id")
-      .eq("id", userId)
-      .single();
-
-    ctx.seller = { client, userId, orgId: profile!.org_id, token, apiKey: "" };
+    const result = await signUpTestUser(client, SELLER_EMAIL, PASSWORD);
+    ctx.seller = { client, userId: result.userId, orgId: result.orgId, token: result.accessToken, apiKey: "" };
     expect(ctx.buyer.orgId).not.toBe(ctx.seller.orgId);
-  });
+  }, 15_000);
 
   it("1.3 - Both users have correct roles (org_admin + org_member)", async () => {
     for (const actor of [ctx.buyer, ctx.seller]) {

@@ -465,6 +465,8 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
       onRefresh();
     } catch (err: any) {
       toast.error("Failed to resolve breach", { description: err.message });
+    } finally {
+      // Don't clear resolving here — it's the dialog open state; cleared on success above
     }
   };
 
@@ -550,9 +552,12 @@ function BreachesTab({ breaches, onRefresh }: { breaches: Breach[]; onRefresh: (
                               placeholder="Describe how the breach was addressed…"
                             />
                           </div>
-                          <Button onClick={() => handleResolve(b.id)} className="w-full">
-                            {resolutionAction === "resolved" ? "Mark as Resolved" : "Dismiss Breach"}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button variant="outline" className="flex-1" onClick={() => setResolving(null)}>Cancel</Button>
+                            <Button onClick={() => handleResolve(b.id)} className="flex-1">
+                              {resolutionAction === "resolved" ? "Mark as Resolved" : "Dismiss Breach"}
+                            </Button>
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>

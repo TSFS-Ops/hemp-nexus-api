@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,12 +69,17 @@ export function AdminRiskPanel() {
     }
   };
 
+  const [addingRisk, setAddingRisk] = useState(false);
+  const resolvingRef = useRef(false);
+  const reopeningRef = useRef(false);
+
   const handleAddRisk = async () => {
     if (!newRisk.title.trim()) {
       toast.error("Title is required");
       return;
     }
-
+    if (addingRisk) return;
+    setAddingRisk(true);
     try {
       const { error } = await supabase
         .from("admin_risk_items")
@@ -93,10 +98,14 @@ export function AdminRiskPanel() {
     } catch (error) {
       console.error("Error adding risk:", error);
       toast.error("Failed to add risk item");
+    } finally {
+      setAddingRisk(false);
     }
   };
 
   const handleResolve = async (id: string) => {
+    if (resolvingRef.current) return;
+    resolvingRef.current = true;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -116,10 +125,14 @@ export function AdminRiskPanel() {
     } catch (error) {
       console.error("Error resolving risk:", error);
       toast.error("Failed to resolve risk item");
+    } finally {
+      resolvingRef.current = false;
     }
   };
 
   const handleReopen = async (id: string) => {
+    if (reopeningRef.current) return;
+    reopeningRef.current = true;
     try {
       const { error } = await supabase
         .from("admin_risk_items")
@@ -137,6 +150,8 @@ export function AdminRiskPanel() {
     } catch (error) {
       console.error("Error reopening risk:", error);
       toast.error("Failed to reopen risk item");
+    } finally {
+      reopeningRef.current = false;
     }
   };
 
@@ -218,7 +233,7 @@ export function AdminRiskPanel() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                <Button onClick={handleAddRisk}>Add Risk</Button>
+                <Button onClick={handleAddRisk} disabled={addingRisk}>{addingRisk ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}Add Risk</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
