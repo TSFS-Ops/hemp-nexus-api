@@ -3,6 +3,7 @@
  */
 
 import { useParams, Link } from "react-router-dom";
+import { RequireAuth } from "@/components/RequireAuth";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 
-export default function MatchDetails() {
+function MatchDetailsContent() {
   const { matchId } = useParams<{ matchId: string }>();
   const userOrgId = useUserOrg();
   const {
@@ -136,5 +137,13 @@ export default function MatchDetails() {
         onRefresh={fetchMatch}
       />
     </div>
+  );
+}
+
+export default function MatchDetails() {
+  return (
+    <RequireAuth>
+      <MatchDetailsContent />
+    </RequireAuth>
   );
 }

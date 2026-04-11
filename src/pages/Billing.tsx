@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -44,7 +45,7 @@ const CHARGING_ENTITY = {
   vatNote: "No VAT charged - supplier not VAT registered in South Africa.",
 };
 
-export default function Billing() {
+function BillingContent() {
   const { session, isAdmin } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -634,5 +635,13 @@ export default function Billing() {
         </p>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function Billing() {
+  return (
+    <RequireAuth>
+      <BillingContent />
+    </RequireAuth>
   );
 }
