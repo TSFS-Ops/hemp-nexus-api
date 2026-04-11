@@ -18,6 +18,19 @@ Deno.serve(async (req) => {
   const corsResponse = handleCors(req, allowedOrigins);
   if (corsResponse) return corsResponse;
 
+  // ── Auth: internal cron key or service-role JWT required ──
+  const cronKey = Deno.env.get("INTERNAL_CRON_KEY");
+  const providedKey = req.headers.get("x-internal-key");
+  const authHeader = req.headers.get("authorization") || "";
+  const isServiceRole = authHeader.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "NEVER_MATCH");
+
+  if ((!cronKey || providedKey !== cronKey) && !isServiceRole) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...headers, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

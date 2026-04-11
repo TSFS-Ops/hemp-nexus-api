@@ -33,6 +33,16 @@ Deno.serve(async (req) => {
   const corsResponse = handleCors(req, allowedOrigins);
   if (corsResponse) return corsResponse;
 
+  // ── Auth: internal cron key required ──
+  const cronKey = Deno.env.get("INTERNAL_CRON_KEY");
+  const providedKey = req.headers.get("x-internal-key");
+  if (!cronKey || providedKey !== cronKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...headers, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
