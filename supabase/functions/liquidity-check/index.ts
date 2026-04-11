@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
     let locationMatches = 0;
     if (location && location.trim()) {
       const { count: locCount } = await admin
-        .from("trading_partners")
+        .from("counterparties")
         .select("id", { count: "exact", head: true })
         .textSearch("fts", tsQuery || product)
         .ilike("jurisdiction", `%${location.trim()}%`);
