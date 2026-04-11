@@ -21,14 +21,21 @@ export function AdminWebhookEndpointsPanel() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [epRes, delRes] = await Promise.all([
-      supabase.from("webhook_endpoints").select("*").order("created_at", { ascending: false }).limit(200),
-      supabase.from("webhook_deliveries").select("*").order("created_at", { ascending: false }).limit(200),
-    ]);
-    if (epRes.error) toast.error(epRes.error.message);
-    else setEndpoints(epRes.data || []);
-    if (!delRes.error) setDeliveries(delRes.data || []);
-    setLoading(false);
+    try {
+      const [epRes, delRes] = await Promise.all([
+        supabase.from("webhook_endpoints").select("*").order("created_at", { ascending: false }).limit(200),
+        supabase.from("webhook_deliveries").select("*").order("created_at", { ascending: false }).limit(200),
+      ]);
+      if (epRes.error) throw epRes.error;
+      setEndpoints(epRes.data || []);
+      if (delRes.error) console.error("Deliveries fetch error:", delRes.error);
+      else setDeliveries(delRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch webhook data:", err);
+      toast.error("Failed to load webhook endpoints");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
