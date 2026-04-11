@@ -138,11 +138,25 @@ export default function CounterpartySearch() {
     }
   }, [authLoading]);
 
+  // ── FAILURE MODE 3: AbortController for client disconnect / timeout ──
+  const abortRef = React.useRef<AbortController | null>(null);
+
   const handleSearch = async () => {
     if (!query.trim()) {
       toast.error("Please enter a search query");
       return;
     }
+
+    // ── FAILURE MODE 4 (client): Oversized input guard ──
+    if (query.trim().length > 500) {
+      toast.error("Search query is too long (max 500 characters)");
+      return;
+    }
+
+    // Abort any in-flight search
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setSearchParams((prev) => {
       const updated = new URLSearchParams(prev);
@@ -157,12 +171,17 @@ export default function CounterpartySearch() {
     setSearchError(null);
     setHasSearched(true);
 
+    // ── FAILURE MODE 3: 30s client-side timeout ──
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
     try {
-      // Map bid/offer side to search role: bid = buyer (looking for sellers), offer = seller (looking for buyers)
       const role = bidOfferContext.side === "offer" ? "seller" : bidOfferContext.side === "bid" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(bidOfferContext.location ? { location: bidOfferContext.location } : {}) }
+        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(bidOfferContext.location ? { location: bidOfferContext.location } : {}) },
       });
+
+      // If aborted while waiting, exit silently
+      if (controller.signal.aborted) return;
 
       if (error) throw error;
 
@@ -171,25 +190,33 @@ export default function CounterpartySearch() {
         setMetrics(data.metrics || null);
         setParsedQuery(data.parsedQuery || null);
 
-        // Persist bid/offer as a trade order (fire-and-forget)
         if (bidOfferContext.side) {
           persistTradeOrder(query.trim(), bidOfferContext);
         }
       } else {
         throw new Error(data.error || "Search failed");
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (controller.signal.aborted || error?.name === "AbortError") {
+        setSearchError("Search timed out. The server may be busy — please try again.");
+        return;
+      }
       console.error("Search error:", error);
       const msg = error instanceof Error ? error.message : "Search failed";
       if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed to fetch")) {
         setSearchError("Network error. Check your connection and try again.");
       } else if (msg.includes("rate") || msg.includes("429")) {
         setSearchError("Too many requests. Please wait a moment before searching again.");
+      } else if (msg.includes("Invalid JSON") || msg.includes("too long")) {
+        setSearchError(msg);
       } else {
         setSearchError(`${msg}. If this persists, contact support@izenzo.co.za.`);
       }
     } finally {
-      setIsSearching(false);
+      clearTimeout(timeout);
+      if (!controller.signal.aborted) {
+        setIsSearching(false);
+      }
     }
   };
 

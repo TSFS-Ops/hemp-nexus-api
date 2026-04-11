@@ -518,9 +518,15 @@ ${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: 
         return true;
       })
       .slice(0, 10);
-  } catch (error) {
-    console.error("[search] AI extraction error:", error);
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      console.error("[search] AI gateway timed out after 15s");
+    } else {
+      console.error("[search] AI extraction error:", error);
+    }
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
