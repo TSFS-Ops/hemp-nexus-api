@@ -63,7 +63,8 @@ export const ROUTES = {
   ADMIN_USERS_ORGS: '/admin/users',
   ADMIN_INFRASTRUCTURE: '/admin/infrastructure',
   PRICING: '/pricing',
-  BILLING: '/billing',
+  DASHBOARD_BILLING: '/dashboard/billing',
+  BILLING: '/dashboard/billing',
   DOCS: '/docs',
   WALKTHROUGH: '/walkthrough',
 } as const;

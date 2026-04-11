@@ -1,18 +1,21 @@
 /**
- * Trade workflow pipeline — responsive, no truncation on mobile.
- * Uses a compact vertical layout on small screens.
+ * Trade workflow pipeline — 9 steps matching the platform's actual lifecycle.
+ * Responsive: compact 2-column grid on mobile, horizontal row on desktop.
  */
 
-import { ArrowRight, Search, ShieldCheck, Eye, FileText, CheckCircle2, Lock } from "lucide-react";
+import { ArrowRight, FileText, Search, ShieldCheck, Eye, Users, UserCheck, Handshake, Award, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 
 const PIPELINE_STEPS = [
-  { label: "Find Partner", subtitle: "Discovery", Icon: Search },
-  { label: "Identity Check", subtitle: "Verification", Icon: ShieldCheck },
-  { label: "Initial Review", subtitle: "Sighting", Icon: Eye },
-  { label: "Trade Request", subtitle: "Structure the deal", Icon: FileText },
-  { label: "Commitment", subtitle: "Confirm & commit", Icon: CheckCircle2 },
-  { label: "Signed Deal", subtitle: "Sealed on ledger", Icon: Lock },
+  { label: "Bid / Offer", subtitle: "Intent capture", Icon: FileText },
+  { label: "Details", subtitle: "Entity & terms", Icon: BookOpen },
+  { label: "Upload Docs", subtitle: "Supporting files", Icon: FileText },
+  { label: "Search", subtitle: "Find partners", Icon: Search },
+  { label: "Choice", subtitle: "Select from results", Icon: Users },
+  { label: "Surface", subtitle: "Reveal match", Icon: UserCheck },
+  { label: "Match", subtitle: "Formal creation", Icon: Handshake },
+  { label: "Generate POI", subtitle: "Proof of intent", Icon: ShieldCheck },
+  { label: "Signed Deal", subtitle: "Evidence bundle", Icon: Award },
 ];
 
 export function WorkflowPipeline() {
@@ -29,33 +32,33 @@ export function WorkflowPipeline() {
       <div className="flex items-center gap-2 mb-4">
         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
         <span className="text-[11px] font-mono uppercase tracking-wider font-semibold" style={{ color: 'var(--lt-text-muted)' }}>
-          How it works
+          How it works — 9 steps
         </span>
       </div>
 
       {/* Desktop: horizontal row */}
-      <div className="hidden sm:flex items-center justify-between gap-1">
+      <div className="hidden lg:flex items-center justify-between gap-0.5">
         {PIPELINE_STEPS.map((step, i) => {
           const isFinal = i === PIPELINE_STEPS.length - 1;
           return (
             <motion.div
               key={step.label}
-              className="flex items-center gap-1 flex-shrink-0"
+              className="flex items-center gap-0.5 flex-shrink-0"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: i * 0.1, ease: "easeOut" }}
+              transition={{ duration: 0.35, delay: i * 0.08, ease: "easeOut" }}
             >
               <StepItem step={step} isFinal={isFinal} stepNumber={i + 1} />
               {i < PIPELINE_STEPS.length - 1 && (
-                <ArrowRight className="h-3 w-3 flex-shrink-0 mx-1" style={{ color: 'var(--lt-border-hover)' }} />
+                <ArrowRight className="h-3 w-3 flex-shrink-0 mx-0.5" style={{ color: 'var(--lt-border-hover)' }} />
               )}
             </motion.div>
           );
         })}
       </div>
 
-      {/* Mobile: compact 2-column grid — all steps visible */}
-      <div className="sm:hidden grid grid-cols-2 gap-2">
+      {/* Mobile/Tablet: compact 3-column grid */}
+      <div className="lg:hidden grid grid-cols-3 gap-2">
         {PIPELINE_STEPS.map((step, i) => {
           const isFinal = i === PIPELINE_STEPS.length - 1;
           return (
@@ -63,10 +66,10 @@ export function WorkflowPipeline() {
               key={step.label}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.06, ease: "easeOut" }}
+              transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
             >
               <div
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
+                className="flex flex-col items-center text-center gap-1.5 px-2 py-2.5 rounded-xl"
                 style={isFinal ? {
                   backgroundColor: 'rgba(16, 185, 129, 0.08)',
                   border: '1px solid var(--lt-emerald-dark)',
@@ -76,7 +79,7 @@ export function WorkflowPipeline() {
                 }}
               >
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
                     border: isFinal
                       ? '1.5px solid var(--lt-emerald)'
@@ -89,16 +92,16 @@ export function WorkflowPipeline() {
                   <step.Icon
                     style={{
                       color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)',
-                      width: '14px',
-                      height: '14px',
+                      width: '12px',
+                      height: '12px',
                     }}
                   />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[11px] font-semibold leading-tight block" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>
+                  <span className="text-[10px] font-semibold leading-tight block" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>
                     {i + 1}. {step.label}
                   </span>
-                  <span className="text-[10px] font-medium leading-tight block" style={{ color: 'var(--lt-text-dim)' }}>
+                  <span className="text-[9px] font-medium leading-tight block" style={{ color: 'var(--lt-text-dim)' }}>
                     {step.subtitle}
                   </span>
                 </div>
@@ -114,14 +117,14 @@ export function WorkflowPipeline() {
 function StepItem({ step, isFinal, stepNumber }: { step: typeof PIPELINE_STEPS[number]; isFinal: boolean; stepNumber: number }) {
   return (
     <div
-      className="flex flex-col items-center text-center min-w-[90px] px-2 py-3 rounded-xl transition-all duration-200"
+      className="flex flex-col items-center text-center min-w-[70px] px-1.5 py-2.5 rounded-xl transition-all duration-200"
       style={isFinal ? {
         backgroundColor: 'rgba(16, 185, 129, 0.08)',
         border: '1px solid var(--lt-emerald-dark)',
       } : {}}
     >
       <div
-        className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
+        className="w-10 h-10 rounded-full flex items-center justify-center mb-1.5"
         style={{
           border: isFinal
             ? '1.5px solid var(--lt-emerald)'
@@ -134,13 +137,13 @@ function StepItem({ step, isFinal, stepNumber }: { step: typeof PIPELINE_STEPS[n
         <step.Icon
           style={{
             color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)',
-            width: '18px',
-            height: '18px',
+            width: '16px',
+            height: '16px',
           }}
         />
       </div>
-      <span className="text-[11px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{stepNumber}. {step.label}</span>
-      <span className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: 'var(--lt-text-dim)' }}>{step.subtitle}</span>
+      <span className="text-[10px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{stepNumber}. {step.label}</span>
+      <span className="text-[9px] font-medium leading-tight mt-0.5" style={{ color: 'var(--lt-text-dim)' }}>{step.subtitle}</span>
     </div>
   );
 }
