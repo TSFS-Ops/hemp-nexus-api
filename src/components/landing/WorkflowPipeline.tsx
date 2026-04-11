@@ -45,7 +45,7 @@ export function WorkflowPipeline() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: i * 0.1, ease: "easeOut" }}
             >
-              <StepItem step={step} isFinal={isFinal} />
+              <StepItem step={step} isFinal={isFinal} stepNumber={i + 1} />
               {i < PIPELINE_STEPS.length - 1 && (
                 <ArrowRight className="h-3 w-3 flex-shrink-0 mx-1" style={{ color: 'var(--lt-border-hover)' }} />
               )}
