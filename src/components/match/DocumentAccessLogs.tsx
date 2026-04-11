@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -159,6 +160,9 @@ export function DocumentAccessLogs({
             </Table>
           </div>
         )}
+        <div className="flex justify-end pt-2">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Close</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

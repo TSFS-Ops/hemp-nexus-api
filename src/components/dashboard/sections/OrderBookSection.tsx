@@ -7,7 +7,7 @@
 /** Map internal DB side values to user-facing labels */
 const SIDE_LABEL: Record<string, string> = { bid: "Buyer", offer: "Seller" };
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -306,6 +306,29 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Draft persistence
+  const DRAFT_KEY = "draft:create-order";
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.side) setSide(draft.side);
+        if (draft.product) setProduct(draft.product);
+        if (draft.price) setPrice(draft.price);
+        if (draft.volume) setVolume(draft.volume);
+        if (draft.location) setLocation(draft.location);
+      }
+    } catch {}
+  }, []);
+
+  // Auto-save draft on changes
+  useEffect(() => {
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ side, product, price, volume, location })); } catch {}
+  }, [side, product, price, volume, location]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product.trim()) {
@@ -325,6 +348,7 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
       });
       if (error) throw error;
       toast.success("Order created successfully");
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
       onSuccess();
     } catch (err: any) {
       toast.error("Failed to create order", { description: err.message });
