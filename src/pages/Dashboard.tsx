@@ -21,9 +21,6 @@ import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 
 const Billing = lazy(() => import("@/pages/Billing"));
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
 
 function DashboardNotFound() {
   return (
