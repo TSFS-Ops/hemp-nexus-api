@@ -62,7 +62,9 @@ async function persistTradeOrder(
   ctx: { side?: "bid" | "offer"; price?: string; volume?: string; location?: string }
 ) {
   try {
-    const { data: profile } = await supabase.from("profiles").select("id, org_id").limit(1).maybeSingle();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const { data: profile } = await supabase.from("profiles").select("id, org_id").eq("id", session.user.id).maybeSingle();
     if (!profile?.org_id) return;
 
     await supabase.from("trade_orders").insert({
