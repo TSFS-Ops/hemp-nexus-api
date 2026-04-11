@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { supabase, BASE_URL } from "./test-client";
+import { supabase, BASE_URL, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-${Date.now()}@test.izenzo.co.za`;
 const TEST_PASSWORD = "UatT3st!Secure2026";
@@ -18,41 +18,23 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
   let apiKeyPlaintext: string;
   let matchId: string;
 
-  // ── Step 1: Sign up ──────────────────────────────────────────────
+  // ── Step 1+2: Sign up and sign in (with auto-confirm) ──────────
   it("1.1 - creates account with email + password", async () => {
-    const { data, error } = await supabase.auth.signUp({
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-    });
-    expect(error).toBeNull();
-    expect(data.user).toBeTruthy();
-    userId = data.user!.id;
-  });
+    const result = await signUpTestUser(supabase, TEST_EMAIL, TEST_PASSWORD);
+    userId = result.userId;
+    accessToken = result.accessToken;
+    orgId = result.orgId;
+    expect(userId).toBeTruthy();
+  }, 15_000);
 
-  // ── Step 2: Sign in ────────────────────────────────────────────
+  // ── Step 2: Verify session works ────────────────────────────────
   it("1.2 - signs in and receives a session", async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-    });
-    expect(error).toBeNull();
-    expect(data.session).toBeTruthy();
-    accessToken = data.session!.access_token;
+    expect(accessToken).toBeTruthy();
   });
 
   // ── Step 3: Profile & org auto-created ─────────────────────────
   it("1.3 - profile and organisation exist after first login", async () => {
-    const { data: profile, error: pErr } = await supabase
-      .from("profiles")
-      .select("id, org_id")
-      .eq("id", userId)
-      .single();
-
-    expect(pErr).toBeNull();
-    expect(profile).toBeTruthy();
-    orgId = profile!.org_id;
     expect(orgId).toBeTruthy();
-
     const { data: org, error: oErr } = await supabase
       .from("organizations")
       .select("id")

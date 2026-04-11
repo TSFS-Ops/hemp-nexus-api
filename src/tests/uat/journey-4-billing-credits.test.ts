@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { supabase } from "./test-client";
+import { supabase, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-billing-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
@@ -23,21 +23,11 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
 
   // ── Setup ──────────────────────────────────────────────────────
   it("4.1 - setup: create account", async () => {
-    await supabase.auth.signUp({ email: TEST_EMAIL, password: PASSWORD });
-    const { data } = await supabase.auth.signInWithPassword({
-      email: TEST_EMAIL,
-      password: PASSWORD,
-    });
-    userId = data.user!.id;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id")
-      .eq("id", userId)
-      .single();
-    orgId = profile!.org_id;
+    const result = await signUpTestUser(supabase, TEST_EMAIL, PASSWORD);
+    userId = result.userId;
+    orgId = result.orgId;
     expect(orgId).toBeTruthy();
-  });
+  }, 15_000);
 
   // ── Step 1: Check initial balance ──────────────────────────────
   it("4.2 - initial token balance is default (1000 from org trigger)", async () => {

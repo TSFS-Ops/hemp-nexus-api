@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { supabase, BASE_URL } from "./test-client";
+import { supabase, BASE_URL, signUpTestUser } from "./test-client";
 
 const ADMIN_EMAIL = `uat-admin-${Date.now()}@test.izenzo.co.za`;
 const MEMBER_EMAIL = `uat-member-${Date.now()}@test.izenzo.co.za`;
@@ -25,20 +25,10 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
 
   // ── Setup: Create admin account ────────────────────────────────
   it("2.1 - admin signs up and receives org_admin role", async () => {
-    await supabase.auth.signUp({ email: ADMIN_EMAIL, password: PASSWORD });
-    const { data } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: PASSWORD,
-    });
-    adminUserId = data.user!.id;
-    adminToken = data.session!.access_token;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id")
-      .eq("id", adminUserId)
-      .single();
-    adminOrgId = profile!.org_id;
+    const result = await signUpTestUser(supabase, ADMIN_EMAIL, PASSWORD);
+    adminUserId = result.userId;
+    adminToken = result.accessToken;
+    adminOrgId = result.orgId;
 
     const { data: roles } = await supabase
       .from("user_roles")
@@ -46,7 +36,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
       .eq("user_id", adminUserId);
     const roleNames = (roles ?? []).map((r: { role: string }) => r.role);
     expect(roleNames).toContain("org_admin");
-  });
+  }, 15_000);
 
   // ── Step 1: Admin sends invite ─────────────────────────────────
   it("2.2 - admin creates an invite for a new member", async () => {

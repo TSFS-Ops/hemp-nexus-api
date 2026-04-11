@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { supabase, BASE_URL } from "./test-client";
+import { supabase, BASE_URL, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-dispute-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
@@ -20,20 +20,10 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
 
   // ── Setup: account + match ─────────────────────────────────────
   it("3.1 - setup: creates account, API key, and match", async () => {
-    await supabase.auth.signUp({ email: TEST_EMAIL, password: PASSWORD });
-    const { data } = await supabase.auth.signInWithPassword({
-      email: TEST_EMAIL,
-      password: PASSWORD,
-    });
-    userId = data.user!.id;
-    accessToken = data.session!.access_token;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id")
-      .eq("id", userId)
-      .single();
-    orgId = profile!.org_id;
+    const result = await signUpTestUser(supabase, TEST_EMAIL, PASSWORD);
+    userId = result.userId;
+    accessToken = result.accessToken;
+    orgId = result.orgId;
 
     // Create API key
     const keyRes = await fetch(`${BASE_URL}/functions/v1/api-keys`, {
