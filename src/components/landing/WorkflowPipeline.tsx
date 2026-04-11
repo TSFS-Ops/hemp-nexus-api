@@ -111,7 +111,7 @@ export function WorkflowPipeline() {
   );
 }
 
-function StepItem({ step, isFinal }: { step: typeof PIPELINE_STEPS[number]; isFinal: boolean }) {
+function StepItem({ step, isFinal, stepNumber }: { step: typeof PIPELINE_STEPS[number]; isFinal: boolean; stepNumber: number }) {
   return (
     <div
       className="flex flex-col items-center text-center min-w-[90px] px-2 py-3 rounded-xl transition-all duration-200"
@@ -139,7 +139,7 @@ function StepItem({ step, isFinal }: { step: typeof PIPELINE_STEPS[number]; isFi
           }}
         />
       </div>
-      <span className="text-[11px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{step.label}</span>
+      <span className="text-[11px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{stepNumber}. {step.label}</span>
       <span className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: 'var(--lt-text-dim)' }}>{step.subtitle}</span>
     </div>
   );
