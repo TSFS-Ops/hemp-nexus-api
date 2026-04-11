@@ -203,8 +203,73 @@ Deno.serve(async (req) => {
 
     console.log(`[search] Order book matched ${orderBookResults.length} active orders`);
 
-    // ── 3. Merge, sort, return ──
-    const allResults = [...cpResults, ...orderBookResults];
+    // ── 3. Web Discovery (Brave + AI enrichment) ──
+    let webDiscoveryResults: any[] = [];
+    let webDiscoveryCount = 0;
+
+    const searchApiKey = Deno.env.get("SEARCH_API_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+
+    // Only run web discovery if we have the necessary keys and product is meaningful
+    if (searchApiKey && lovableApiKey && product && product.length >= 2) {
+      try {
+        const searchRole = signalType === "buyer" ? "suppliers" : "buyers";
+        const searchQuery = `${product} ${searchRole}${effectiveLocation ? ` ${effectiveLocation}` : ""} company`;
+        
+        console.log(`[search] Web discovery query: "${searchQuery}"`);
+
+        // Search Brave
+        const braveResults = await searchBrave(searchQuery, searchApiKey);
+        console.log(`[search] Brave returned ${braveResults.length} raw web results`);
+
+        if (braveResults.length > 0) {
+          // Send to Lovable AI for structured extraction
+          const extracted = await extractCounterpartiesWithAI(braveResults, product, effectiveLocation, signalType, lovableApiKey);
+          console.log(`[search] AI extracted ${extracted.length} structured counterparties`);
+
+          webDiscoveryResults = extracted.map((cp: any, idx: number) => ({
+            id: `web-${crypto.randomUUID()}`,
+            title: cp.company_name,
+            description: [
+              cp.description,
+              cp.location ? `Location: ${cp.location}` : null,
+              cp.products ? `Products: ${cp.products}` : null,
+            ].filter(Boolean).join(" · "),
+            url: cp.website || "#",
+            source: "web_discovery",
+            score: Math.max(0.3, Math.min(0.65, cp.relevance_score || 0.5)),
+            isEnriched: true,
+            enrichmentReason: "Discovered via AI-enriched web search",
+            whySurfaced: `Found searching for "${product}" ${searchRole}${effectiveLocation ? ` in ${effectiveLocation}` : ""}`,
+            coherence: {
+              score: cp.relevance_score || 0.5,
+              passed: (cp.relevance_score || 0.5) >= 0.4,
+              factors: [
+                "Web discovered",
+                ...(cp.location ? [`Location: ${cp.location}`] : []),
+                ...(cp.has_contact ? ["Contact available"] : []),
+              ],
+            },
+            metadata: {
+              web_discovered: true,
+              has_contact: cp.has_contact || false,
+              contact_masked: true, // Contacts are ALWAYS hidden
+              source_urls: cp.source_urls || [],
+            },
+          }));
+
+          webDiscoveryCount = webDiscoveryResults.length;
+        }
+      } catch (webErr) {
+        // Web discovery is best-effort — don't fail the whole search
+        console.error("[search] Web discovery error (non-fatal):", webErr);
+      }
+    }
+
+    console.log(`[search] Web discovery yielded ${webDiscoveryCount} structured counterparties`);
+
+    // ── 4. Merge, sort, return ──
+    const allResults = [...cpResults, ...orderBookResults, ...webDiscoveryResults];
     allResults.sort((a, b) => b.score - a.score);
     const finalResults = allResults.slice(0, limit);
 
@@ -219,11 +284,12 @@ Deno.serve(async (req) => {
         query,
         counterparty_count: cpResults.length,
         order_book_count: orderBookResults.length,
+        web_discovery_count: webDiscoveryCount,
         results_returned: finalResults.length,
       },
     });
 
-    // ── 4. Discovery baseline metrics log (non-blocking) ──
+    // ── 5. Discovery baseline metrics log (non-blocking) ──
     const responseTimeMs = Math.round(performance.now() - searchStart);
     supabase.from("discovery_search_logs").insert({
       org_id: authCtx.orgId,
@@ -252,9 +318,9 @@ Deno.serve(async (req) => {
         results: finalResults,
         metrics: {
           baselineCount: cpResults.length,
-          enrichedCount: 0,
-          upliftPct: 0,
-          enrichmentReasons: {},
+          enrichedCount: webDiscoveryCount,
+          upliftPct: cpResults.length > 0 ? Math.round((webDiscoveryCount / cpResults.length) * 100) : (webDiscoveryCount > 0 ? 100 : 0),
+          enrichmentReasons: webDiscoveryCount > 0 ? { "AI web discovery": webDiscoveryCount } : {},
           orderBookMatches: orderBookResults.length,
           ftsHitCount: ftsResultCount,
           ilikeFallbackUsed,
@@ -270,6 +336,148 @@ Deno.serve(async (req) => {
     return errorResponse(error instanceof Error ? error : new Error("Unknown error"), requestId, headers);
   }
 });
+
+// ── Brave Search ──
+async function searchBrave(query: string, apiKey: string): Promise<Array<{ title: string; url: string; description: string }>> {
+  try {
+    const response = await fetch(
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=20`,
+      {
+        headers: {
+          "Accept": "application/json",
+          "X-Subscription-Token": apiKey,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`[search] Brave API error: ${response.status}`);
+      const body = await response.text();
+      console.error(`[search] Brave response: ${body.substring(0, 200)}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.web?.results || []).map((r: any) => ({
+      title: r.title || "",
+      url: r.url || "",
+      description: r.description || "",
+    }));
+  } catch (error) {
+    console.error("[search] Brave search error:", error);
+    return [];
+  }
+}
+
+// ── AI Counterparty Extraction ──
+async function extractCounterpartiesWithAI(
+  webResults: Array<{ title: string; url: string; description: string }>,
+  product: string,
+  location: string,
+  role: "buyer" | "seller",
+  apiKey: string
+): Promise<any[]> {
+  const searchRole = role === "buyer" ? "suppliers/sellers" : "buyers/importers";
+
+  const prompt = `You are a trade intelligence analyst. From the following web search results, extract ONLY actual companies that are ${searchRole} of "${product}"${location ? ` in or near ${location}` : ""}.
+
+RULES:
+- Extract ONLY real companies (not news sites, Wikipedia, industry associations, or directories)
+- Each result must have a company_name and ideally a website
+- If you find a contact email on the page, set has_contact to true but do NOT include the actual email
+- Assign a relevance_score from 0.0 to 1.0 based on how likely this company actually trades ${product}
+- Skip results that are clearly news articles, blog posts, or educational content
+- If a result is a directory listing multiple companies, extract each individually
+
+WEB SEARCH RESULTS:
+${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: ${r.url}\n    Snippet: ${r.description}`).join("\n\n")}`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "system",
+            content: "You extract structured company data from web search results. Return ONLY the tool call, nothing else."
+          },
+          { role: "user", content: prompt }
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_counterparties",
+              description: "Extract structured counterparty company records from web search results",
+              parameters: {
+                type: "object",
+                properties: {
+                  counterparties: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        company_name: { type: "string", description: "Official company name" },
+                        website: { type: "string", description: "Company website URL" },
+                        description: { type: "string", description: "Brief description of what they do, max 100 chars" },
+                        location: { type: "string", description: "City/country where they operate" },
+                        products: { type: "string", description: "Relevant products/commodities they deal in" },
+                        has_contact: { type: "boolean", description: "Whether contact info was found (do NOT include actual email)" },
+                        relevance_score: { type: "number", description: "0.0-1.0 how relevant this company is to the query" },
+                        source_urls: { type: "array", items: { type: "string" }, description: "URLs where this company was found" }
+                      },
+                      required: ["company_name", "relevance_score"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["counterparties"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "extract_counterparties" } },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[search] AI gateway error ${response.status}: ${errText.substring(0, 200)}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      console.error("[search] AI returned no tool call");
+      return [];
+    }
+
+    const parsed = JSON.parse(toolCall.function.arguments);
+    const counterparties = parsed.counterparties || [];
+
+    // Filter out low-relevance results and deduplicate by company name
+    const seen = new Set<string>();
+    return counterparties
+      .filter((cp: any) => {
+        if (!cp.company_name || cp.relevance_score < 0.3) return false;
+        const key = cp.company_name.toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 10); // Max 10 web-discovered results
+  } catch (error) {
+    console.error("[search] AI extraction error:", error);
+    return [];
+  }
+}
 
 function parseNaturalLanguageQuery(query: string): { product: string; location: string } {
   const locationPatterns = [
