@@ -321,7 +321,7 @@ function BillingContent() {
   const isCritical = minimumRequired > 0 && currentBalance <= minimumRequired + 1000;
 
   return (
-    <DashboardLayout isAdmin={isAdmin}>
+    <>
       <div className="space-y-6">
         <SectionHeader
           title="API Credits"
@@ -637,14 +637,10 @@ function BillingContent() {
           Payments processed securely by Paystack. All amounts in ZAR.
         </p>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 
 export default function Billing() {
-  return (
-    <RequireAuth>
-      <BillingContent />
-    </RequireAuth>
-  );
+  return <BillingContent />;
 }
