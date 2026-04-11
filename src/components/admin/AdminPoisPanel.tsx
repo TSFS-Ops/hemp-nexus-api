@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,13 +40,20 @@ export function AdminPoisPanel() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("pois")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    setPois((data as Poi[]) || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("pois")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setPois((data as Poi[]) || []);
+    } catch (err) {
+      console.error("Failed to fetch POIs:", err);
+      toast.error("Failed to load Intents");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

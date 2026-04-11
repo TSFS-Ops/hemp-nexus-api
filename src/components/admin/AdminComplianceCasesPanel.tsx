@@ -70,13 +70,20 @@ export function AdminComplianceCasesPanel() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("compliance_cases")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    setCases((data as ComplianceCase[]) || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("compliance_cases")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setCases((data as ComplianceCase[]) || []);
+    } catch (err) {
+      console.error("Failed to fetch compliance cases:", err);
+      toast.error("Failed to load compliance cases");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
