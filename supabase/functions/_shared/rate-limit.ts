@@ -151,10 +151,14 @@ export async function checkRateLimit(
     circuitBreakerState.delete(cbKey);
   }
 
+  // ── Per-minute check ──
   if (limits.requestsPerMinute) {
     const minuteWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:minute`, 1);
-    if (minuteWindow.requestCount >= limits.requestsPerMinute) {
-      // Trip circuit breaker if massively over limit
+    const result = await atomicCheckAndIncrement(
+      supabase, orgId, `${endpoint}:minute`, minuteWindow.windowEnd, limits.requestsPerMinute
+    );
+    if (result === -1) {
+      // Trip circuit breaker if massively over limit (check current count)
       if (minuteWindow.requestCount >= limits.requestsPerMinute * CIRCUIT_BREAKER_MULTIPLIER) {
         circuitBreakerState.set(cbKey, { trippedAt: Date.now() });
       }
@@ -166,12 +170,15 @@ export async function checkRateLimit(
         { limit: limits.requestsPerMinute, window: "minute", resetIn: resetTime, retryAfter: resetTime }
       );
     }
-    await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:minute`, minuteWindow.windowEnd);
   }
 
+  // ── Per-hour check ──
   if (limits.requestsPerHour) {
     const hourWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:hour`, 60);
-    if (hourWindow.requestCount >= limits.requestsPerHour) {
+    const result = await atomicCheckAndIncrement(
+      supabase, orgId, `${endpoint}:hour`, hourWindow.windowEnd, limits.requestsPerHour
+    );
+    if (result === -1) {
       const resetTime = Math.ceil((hourWindow.windowEnd.getTime() - Date.now()) / 1000);
       throw new ApiException(
         "RATE_LIMIT_EXCEEDED",
@@ -180,12 +187,15 @@ export async function checkRateLimit(
         { limit: limits.requestsPerHour, window: "hour", resetIn: resetTime, retryAfter: resetTime }
       );
     }
-    await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:hour`, hourWindow.windowEnd);
   }
 
+  // ── Per-day check ──
   if (limits.requestsPerDay) {
     const dayWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:day`, 1440);
-    if (dayWindow.requestCount >= limits.requestsPerDay) {
+    const result = await atomicCheckAndIncrement(
+      supabase, orgId, `${endpoint}:day`, dayWindow.windowEnd, limits.requestsPerDay
+    );
+    if (result === -1) {
       const resetTime = Math.ceil((dayWindow.windowEnd.getTime() - Date.now()) / 1000);
       throw new ApiException(
         "RATE_LIMIT_EXCEEDED",
@@ -194,7 +204,6 @@ export async function checkRateLimit(
         { limit: limits.requestsPerDay, window: "day", resetIn: resetTime, retryAfter: resetTime }
       );
     }
-    await incrementRateLimitAtomic(supabase, orgId, `${endpoint}:day`, dayWindow.windowEnd);
   }
 }
 
