@@ -3,7 +3,7 @@
  * Uses a compact vertical layout on small screens.
  */
 
-import { ArrowRight, ArrowDown, Search, ShieldCheck, Eye, FileText, CheckCircle2, Lock } from "lucide-react";
+import { ArrowRight, Search, ShieldCheck, Eye, FileText, CheckCircle2, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 
 const PIPELINE_STEPS = [
@@ -45,7 +45,7 @@ export function WorkflowPipeline() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: i * 0.1, ease: "easeOut" }}
             >
-              <StepItem step={step} isFinal={isFinal} />
+              <StepItem step={step} isFinal={isFinal} stepNumber={i + 1} />
               {i < PIPELINE_STEPS.length - 1 && (
                 <ArrowRight className="h-3 w-3 flex-shrink-0 mx-1" style={{ color: 'var(--lt-border-hover)' }} />
               )}
@@ -111,7 +111,7 @@ export function WorkflowPipeline() {
   );
 }
 
-function StepItem({ step, isFinal }: { step: typeof PIPELINE_STEPS[number]; isFinal: boolean }) {
+function StepItem({ step, isFinal, stepNumber }: { step: typeof PIPELINE_STEPS[number]; isFinal: boolean; stepNumber: number }) {
   return (
     <div
       className="flex flex-col items-center text-center min-w-[90px] px-2 py-3 rounded-xl transition-all duration-200"
@@ -139,7 +139,7 @@ function StepItem({ step, isFinal }: { step: typeof PIPELINE_STEPS[number]; isFi
           }}
         />
       </div>
-      <span className="text-[11px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{step.label}</span>
+      <span className="text-[11px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{stepNumber}. {step.label}</span>
       <span className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: 'var(--lt-text-dim)' }}>{step.subtitle}</span>
     </div>
   );
