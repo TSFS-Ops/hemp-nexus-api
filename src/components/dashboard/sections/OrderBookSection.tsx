@@ -7,7 +7,7 @@
 /** Map internal DB side values to user-facing labels */
 const SIDE_LABEL: Record<string, string> = { bid: "Buyer", offer: "Seller" };
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
