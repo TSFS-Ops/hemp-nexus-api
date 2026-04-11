@@ -1,11 +1,11 @@
 /**
- * Izenzo Action Desk - sovereign trade entry form.
- * Clean 4-field layout: Product, Price, Quantity, Delivery Region.
- * "Find Partners" CTA button.
+ * Izenzo Action Desk — progressive trade entry form.
+ * Shows only Product initially. Reveals Price/Quantity/Region after product is selected.
+ * No premature Buyer/Seller toggle — side defaults to "bid" and is set later in the flow.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { CommoditySelect } from "@/components/ui/commodity-select";
 
@@ -25,7 +25,6 @@ interface BidOfferFormProps {
 }
 
 export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
-  const [side, setSideState] = useState<"bid" | "offer">("bid");
   const [form, setForm] = useState({
     product: "",
     volume: "",
@@ -34,8 +33,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     additionalInfo: "",
   });
 
-  const sideRef = useRef(side);
-  sideRef.current = side;
   const formRef = useRef(form);
   formRef.current = form;
 
@@ -43,7 +40,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     const f = formRef.current;
     const hasContent = f.product || f.volume || f.price || f.location;
     if (!hasContent) return null;
-    return { side: sideRef.current, ...f };
+    return { side: "bid" as const, ...f };
   }, []);
 
   const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
@@ -55,9 +52,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     additionalInfo: string;
   }>("bid-offer", getCurrentData);
 
-  const setSide = useCallback((s: "bid" | "offer") => {
-    setSideState(s);
-  }, []);
   const [draftRestored, setDraftRestored] = useState(false);
   const initialised = useRef(false);
 
@@ -66,7 +60,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     initialised.current = true;
     const draft = restoreDraft();
     if (draft) {
-      setSide(draft.side);
       setForm({
         product: draft.product || "",
         volume: draft.volume || "",
@@ -82,21 +75,22 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     if (!initialised.current) return;
     const hasContent = form.product || form.volume || form.price || form.location;
     if (hasContent) {
-      saveDraft({ side, ...form });
+      saveDraft({ side: "bid", ...form });
     }
-  }, [side, form, saveDraft]);
+  }, [form, saveDraft]);
 
   const update = (field: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const canSearch = form.product.trim().length > 0;
+  const showDetails = form.product.trim().length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (canSearch && !isLocked) {
       clearDraft();
       setDraftRestored(false);
-      onSearch({ ...form, side });
+      onSearch({ ...form, side: "bid" });
     }
   };
 
@@ -117,7 +111,6 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               clearDraft();
               setDraftRestored(false);
               setForm({ product: "", volume: "", price: "", location: "", additionalInfo: "" });
-              setSide("bid");
             }}
             className="text-[11px] font-mono underline hover:opacity-80"
             style={{ color: 'var(--lt-emerald)' }}
@@ -127,71 +120,47 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       )}
 
-      {/* BUYER / SELLER pill toggle */}
-      <div className="inline-flex rounded-full p-1" style={{ backgroundColor: '#0D1220', border: '1px solid var(--lt-border)' }}>
-        <button
-          type="button"
-          onClick={() => setSide("bid")}
-          className="px-5 py-2 text-[11px] font-mono uppercase tracking-wider font-semibold rounded-full transition-all duration-200"
-          style={{
-            backgroundColor: side === "bid" ? 'var(--lt-panel)' : 'transparent',
-            color: side === "bid" ? 'var(--lt-emerald)' : 'var(--lt-text-dim)',
-            boxShadow: side === "bid" ? '0 0 12px rgba(16, 185, 129, 0.15)' : 'none',
-          }}
+      {/* Product — always visible, primary entry point */}
+      <div>
+        <label
+          htmlFor="product"
+          className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
+          style={{ color: 'var(--lt-text-dim)' }}
         >
-          Buyer
-        </button>
-        <button
-          type="button"
-          onClick={() => setSide("offer")}
-          className="px-5 py-2 text-[11px] font-mono uppercase tracking-wider font-semibold rounded-full transition-all duration-200"
-          style={{
-            backgroundColor: side === "offer" ? 'var(--lt-panel)' : 'transparent',
-            color: side === "offer" ? 'var(--lt-emerald)' : 'var(--lt-text-dim)',
-            boxShadow: side === "offer" ? '0 0 12px rgba(16, 185, 129, 0.15)' : 'none',
-          }}
-        >
-          Seller
-        </button>
+          What are you looking to trade?<span className="ml-0.5" style={{ color: 'var(--lt-emerald)' }}>*</span>
+        </label>
+        <CommoditySelect
+          id="product"
+          value={form.product}
+          onChange={(v) => update("product", v)}
+          disabled={disabled}
+          placeholder="e.g. Soybeans, Copper, Crude Oil"
+          variant="landing"
+        />
       </div>
 
-      {/* Fields grid: Product, Price, Quantity, Delivery Region */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div>
-          <label
-            htmlFor="product"
-            className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
-            style={{ color: 'var(--lt-text-dim)' }}
-          >
-            Product<span className="ml-0.5" style={{ color: 'var(--lt-emerald)' }}>*</span>
-          </label>
-          <CommoditySelect
-            id="product"
-            value={form.product}
-            onChange={(v) => update("product", v)}
+      {/* Additional fields — revealed progressively after product selection */}
+      {showDetails && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up">
+          <PremiumField
+            id="price" label="Price (optional)" placeholder="e.g. $495/MT"
+            value={form.price} onChange={(v) => update("price", v)}
             disabled={disabled}
-            placeholder="e.g. Soybeans, Copper"
-            variant="landing"
+          />
+          <PremiumField
+            id="volume" label="Quantity (optional)" placeholder="e.g. 25,000 MT"
+            value={form.volume} onChange={(v) => update("volume", v)}
+            disabled={disabled}
+          />
+          <PremiumField
+            id="location" label="Delivery Region (optional)" placeholder="e.g. Malawi, South Africa"
+            value={form.location} onChange={(v) => update("location", v)}
+            disabled={disabled}
           />
         </div>
-        <PremiumField
-          id="price" label="Price" placeholder="e.g. $495/MT"
-          value={form.price} onChange={(v) => update("price", v)}
-          disabled={disabled}
-        />
-        <PremiumField
-          id="volume" label="Quantity" placeholder="e.g. 25,000 MT"
-          value={form.volume} onChange={(v) => update("volume", v)}
-          disabled={disabled}
-        />
-        <PremiumField
-          id="location" label="Delivery Region" placeholder="e.g. Malawi, South Africa"
-          value={form.location} onChange={(v) => update("location", v)}
-          disabled={disabled}
-        />
-      </div>
+      )}
 
-      {/* Find Partners button */}
+      {/* Submit — language aligns with Bid/Offer intent, not "search" */}
       <div className="flex sm:justify-end">
         <button
           type="submit"
@@ -215,12 +184,12 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           {isSearching ? (
             <>
               <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Searching...
+              Submitting...
             </>
           ) : (
             <>
-              <Search className="h-3.5 w-3.5" />
-              Find Partners
+              <ArrowRight className="h-3.5 w-3.5" />
+              Submit Trade Interest
             </>
           )}
         </button>

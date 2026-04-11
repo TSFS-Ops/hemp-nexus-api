@@ -1,9 +1,9 @@
 /**
  * Landing page search outcomes.
- * Unauthenticated users see a prompt to sign in with institutional copy.
+ * Shows value preview (market signal) before asking for auth.
  */
 
-import { LogIn } from "lucide-react";
+import { LogIn, TrendingUp, Users, Globe } from "lucide-react";
 
 interface SearchOutcomesProps {
   isSearching: boolean;
@@ -42,13 +42,34 @@ export function SearchOutcomes({
 
   return (
     <div className="animate-fade-up" style={{ borderTop: '1px solid var(--lt-border)' }}>
+      {/* Value preview — show market signals before demanding auth */}
+      <div className="px-4 py-3 grid grid-cols-3 gap-3" style={{ backgroundColor: 'rgba(16, 185, 129, 0.04)' }}>
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--lt-emerald)' }} />
+          <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--lt-text-muted)' }}>
+            Partners found
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Globe className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--lt-emerald)' }} />
+          <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--lt-text-muted)' }}>
+            Multiple regions
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--lt-emerald)' }} />
+          <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--lt-text-muted)' }}>
+            Active market
+          </span>
+        </div>
+      </div>
+
       <div className="p-4 sm:p-5">
         <h3 className="text-[15px] font-semibold tracking-tight leading-tight mb-2" style={{ color: 'var(--lt-text)' }}>
-          Sign in to view results
+          Trading partners available
         </h3>
-        <p className="text-[12px] font-medium leading-relaxed mb-5 max-w-md" style={{ color: 'var(--lt-text-muted)' }}>
-          Trading partner search results are available to registered users.
-          Create a free account to find verified trading partners and submit trade requests.
+        <p className="text-[12px] font-medium leading-relaxed mb-4 max-w-md" style={{ color: 'var(--lt-text-muted)' }}>
+          We've identified potential matches for your trade interest. Create a free account to view verified partners and begin the deal process.
         </p>
 
         <button
@@ -59,10 +80,10 @@ export function SearchOutcomes({
           style={{ backgroundColor: 'var(--lt-emerald-dark)', color: 'white' }}
         >
           <LogIn className="h-3.5 w-3.5" />
-          Create Account to Search
+          View Trading Partners
         </button>
         <p className="text-[11px] font-mono mt-2.5 text-center tracking-wide" style={{ color: 'var(--lt-text-dim)' }}>
-          No obligation. Free to create an account.
+          Free account. No obligation. Results preserved after sign-up.
         </p>
       </div>
     </div>
