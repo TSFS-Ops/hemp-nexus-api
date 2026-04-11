@@ -189,9 +189,12 @@ export default function CounterpartySearch() {
       if (error) throw error;
 
       if (data.ok) {
-        setResults(data.results || []);
+        // Sanitize results to prevent crashes from malformed API data
+        const safeResults = sanitizeSearchResults(data.results);
+        setResults(safeResults);
         setMetrics(data.metrics || null);
         setParsedQuery(data.parsedQuery || null);
+        setDegradation(detectDegradation(data.metrics));
 
         if (bidOfferContext.side) {
           persistTradeOrder(query.trim(), bidOfferContext);
