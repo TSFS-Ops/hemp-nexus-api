@@ -255,6 +255,7 @@ export function AdminMatchesPanel() {
               Complete match information with cryptographic proof
             </DialogDescription>
           </DialogHeader>
+          {/* Close button added at bottom */}
           {selectedMatch && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -317,6 +318,9 @@ export function AdminMatchesPanel() {
               )}
             </div>
           )}
+          <div className="flex justify-end pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,31 +20,46 @@ export function AdminBreachesPanel() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [resolveNote, setResolveNote] = useState("");
+  const resolvingRef = useRef(false);
 
   const fetchBreaches = useCallback(async () => {
     setLoading(true);
-    const { data, error, count } = await supabase.from("breaches").select("*", { count: "exact" }).order("detected_at", { ascending: false }).limit(BREACH_LIMIT);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      const { data, error, count } = await supabase.from("breaches").select("*", { count: "exact" }).order("detected_at", { ascending: false }).limit(BREACH_LIMIT);
+      if (error) throw error;
       setBreaches(data || []);
       setTotalCount(count ?? data?.length ?? 0);
+    } catch (err) {
+      console.error("Failed to fetch breaches:", err);
+      toast.error("Failed to load breaches");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchBreaches(); }, [fetchBreaches]);
 
   const resolveBreech = async () => {
-    if (!selected || !resolveNote) { toast.error("Resolution note is required"); return; }
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("breaches").update({
-      status: "resolved",
-      resolved_at: new Date().toISOString(),
-      resolved_by: user?.id,
-      resolution_note: resolveNote,
-    }).eq("id", selected.id);
-    if (error) toast.error(error.message);
-    else { toast.success("Breach resolved"); setDetailOpen(false); setResolveNote(""); fetchBreaches(); }
+    if (!selected || !resolveNote || resolvingRef.current) return;
+    resolvingRef.current = true;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("breaches").update({
+        status: "resolved",
+        resolved_at: new Date().toISOString(),
+        resolved_by: user?.id,
+        resolution_note: resolveNote,
+      }).eq("id", selected.id);
+      if (error) throw error;
+      toast.success("Breach resolved");
+      setDetailOpen(false);
+      setResolveNote("");
+      fetchBreaches();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      resolvingRef.current = false;
+    }
   };
 
   const severityColor = (s: string) => s === "critical" ? "destructive" : s === "high" ? "destructive" : "secondary";
@@ -98,6 +113,9 @@ export function AdminBreachesPanel() {
               )}
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

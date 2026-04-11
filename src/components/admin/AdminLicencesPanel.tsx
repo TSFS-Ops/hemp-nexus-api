@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,18 +17,28 @@ export function AdminLicencesPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [formData, setFormData] = useState({ org_id: "", tier: "standard", amount_usd: "0", expires_at: "", status: "active" });
+  const [saving, setSaving] = useState(false);
+  const deletingRef = useRef(false);
 
   const fetchLicences = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("licences").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setLicences(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("licences").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      setLicences(data || []);
+    } catch (err) {
+      console.error("Failed to fetch licences:", err);
+      toast.error("Failed to load licences");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchLicences(); }, [fetchLicences]);
 
   const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
       if (editing) {
         const { error } = await supabase.from("licences").update({
@@ -53,13 +63,26 @@ export function AdminLicencesPanel() {
       setDialogOpen(false);
       setEditing(null);
       fetchLicences();
-    } catch (err) { toast.error((err as Error).message); }
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("licences").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Licence removed"); fetchLicences(); }
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    try {
+      const { error } = await supabase.from("licences").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Licence removed");
+      fetchLicences();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      deletingRef.current = false;
+    }
   };
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -117,7 +140,7 @@ export function AdminLicencesPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>{editing ? "Update" : "Create"}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}{editing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

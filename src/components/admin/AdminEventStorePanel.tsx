@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -19,14 +19,20 @@ export function AdminEventStorePanel() {
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
-    const [countRes, dataRes] = await Promise.all([
-      supabase.from("event_store").select("id", { count: "exact", head: true }),
-      supabase.from("event_store").select("*").order("created_at", { ascending: false }).limit(EVENT_LIMIT),
-    ]);
-    setTotal(countRes.count);
-    if (dataRes.error) toast.error(dataRes.error.message);
-    else setEvents(dataRes.data || []);
-    setLoading(false);
+    try {
+      const [countRes, dataRes] = await Promise.all([
+        supabase.from("event_store").select("id", { count: "exact", head: true }),
+        supabase.from("event_store").select("*").order("created_at", { ascending: false }).limit(EVENT_LIMIT),
+      ]);
+      setTotal(countRes.count);
+      if (dataRes.error) throw dataRes.error;
+      setEvents(dataRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch events:", err);
+      toast.error("Failed to load event store");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
@@ -79,6 +85,9 @@ export function AdminEventStorePanel() {
               )}
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

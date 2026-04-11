@@ -1,35 +1,46 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function AdminTradeOrdersPanel() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selected, setSelected] = useState<any>(null);
+  const updatingRef = useRef(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("trade_orders").select("*").order("created_at", { ascending: false }).limit(200);
-    if (error) toast.error(error.message);
-    else setOrders(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("trade_orders").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.error("Failed to fetch trade orders:", err);
+      toast.error("Failed to load trade orders");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("trade_orders").update({ status }).eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success(`Order ${status}`); fetchOrders(); }
+    if (updatingRef.current) return;
+    updatingRef.current = true;
+    try {
+      const { error } = await supabase.from("trade_orders").update({ status }).eq("id", id);
+      if (error) throw error;
+      toast.success(`Order ${status}`);
+      fetchOrders();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      updatingRef.current = false;
+    }
   };
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
