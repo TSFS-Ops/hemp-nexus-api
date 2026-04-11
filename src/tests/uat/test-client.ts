@@ -74,6 +74,6 @@ export async function signUpTestUser(
   return {
     userId,
     accessToken,
-    orgId: profile?.org_id ?? "",
+    orgId: (profile as any)?.org_id ?? "",
   };
 }
