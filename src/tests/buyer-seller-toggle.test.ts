@@ -1,6 +1,8 @@
 /**
  * Buyer/Seller Toggle — Unit & Integration Tests
  * Tests the side selection flow from landing form through to trade_orders persistence.
+ *
+ * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
