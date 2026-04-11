@@ -34,7 +34,7 @@ export const BASE_URL = SUPABASE_URL;
  * Returns the sign-in session data (userId, accessToken, orgId).
  */
 export async function signUpTestUser(
-  client: ReturnType<typeof createClient>,
+  client: any,
   email: string,
   password: string
 ): Promise<{ userId: string; accessToken: string; orgId: string }> {
