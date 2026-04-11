@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/constants";
@@ -15,6 +15,12 @@ import { AccountSection } from "@/components/dashboard/AccountSection";
 import { ComplianceSection } from "@/components/dashboard/sections/ComplianceSection";
 import { ProgrammesSection } from "@/components/dashboard/sections/ProgrammesSection";
 import MatchDetails from "@/pages/MatchDetails";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
+import { FullPageLoader } from "@/components/ui/full-page-loader";
+
+const Billing = lazy(() => import("@/pages/Billing"));
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
@@ -102,6 +108,11 @@ export default function Dashboard() {
               }>
                 <AccountSection />
               </ErrorBoundary>
+            } />
+            <Route path="/billing" element={
+              <Suspense fallback={<FullPageLoader />}>
+                <Billing />
+              </Suspense>
             } />
             <Route path="/compliance" element={<ComplianceSection />} />
             <Route path="/programmes" element={<ProgrammesSection />} />
