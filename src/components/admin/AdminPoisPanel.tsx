@@ -39,13 +39,20 @@ export function AdminPoisPanel() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("pois")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    setPois((data as Poi[]) || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("pois")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setPois((data as Poi[]) || []);
+    } catch (err) {
+      console.error("Failed to fetch POIs:", err);
+      toast.error("Failed to load Intents");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

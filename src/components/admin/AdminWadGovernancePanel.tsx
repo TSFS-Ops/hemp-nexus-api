@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,15 +58,24 @@ export function AdminWadGovernancePanel() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [wadRes, docRes, regRes] = await Promise.all([
-      supabase.from("p3_wads").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("governance_documents").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("governance_doc_registry").select("*").order("doc_type", { ascending: true }),
-    ]);
-    setWads((wadRes.data as P3Wad[]) || []);
-    setGovDocs((docRes.data as GovDoc[]) || []);
-    setRegistry((regRes.data as GovRegistry[]) || []);
-    setLoading(false);
+    try {
+      const [wadRes, docRes, regRes] = await Promise.all([
+        supabase.from("p3_wads").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("governance_documents").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("governance_doc_registry").select("*").order("doc_type", { ascending: true }),
+      ]);
+      if (wadRes.error) throw wadRes.error;
+      if (docRes.error) throw docRes.error;
+      if (regRes.error) throw regRes.error;
+      setWads((wadRes.data as P3Wad[]) || []);
+      setGovDocs((docRes.data as GovDoc[]) || []);
+      setRegistry((regRes.data as GovRegistry[]) || []);
+    } catch (err) {
+      console.error("Failed to fetch WAD governance data:", err);
+      toast.error("Failed to load WAD governance data");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

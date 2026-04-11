@@ -34,6 +34,7 @@ export function BrdConstraintsPanel() {
       setConstraints((data as unknown as BrdConstraint[]) || []);
     } catch (error) {
       console.error("Error fetching BRD constraints:", error);
+      toast.error("Failed to load BRD constraints");
     } finally {
       setLoading(false);
     }
