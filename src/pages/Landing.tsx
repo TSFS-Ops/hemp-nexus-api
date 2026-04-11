@@ -3,17 +3,18 @@ import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
 import { BidOfferForm, type BidOfferData } from "@/components/landing/BidOfferForm";
-import { SearchOutcomes } from "@/components/landing/SearchOutcomes";
+import { SearchOutcomes, type LiquidityData } from "@/components/landing/SearchOutcomes";
 import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
 import { TrustBadges } from "@/components/landing/TrustBadges";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
-
-const REDIRECT_DELAY_MS = 300;
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Landing() {
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
+  const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
   const [isFormLocked, setIsFormLocked] = useState(false);
   const { getAuthUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
@@ -68,6 +69,7 @@ export default function Landing() {
       return;
     }
 
+    // Save pre-auth state
     savePreAuthState({
       query: queryString,
       selectedIds: [],
@@ -79,12 +81,47 @@ export default function Landing() {
       location: data.location,
     });
 
+    // Show searching state and call real liquidity check
     setIsFormLocked(true);
+    setIsSearching(true);
     setHasSearched(true);
-    await new Promise((r) => setTimeout(r, REDIRECT_DELAY_MS));
-    setIsFormLocked(false);
-  }, [isAuthenticated]);
+    setLiquidityData(null);
 
+    try {
+      const { data: result, error } = await supabase.functions.invoke("liquidity-check", {
+        body: {
+          product: data.product,
+          location: data.location || undefined,
+        },
+      });
+
+      if (error) {
+        console.error("Liquidity check failed:", error);
+        // On error, show a graceful fallback — don't fake results
+        setLiquidityData({
+          partner_count: 0,
+          region_count: 0,
+          active_orders: 0,
+          location_matches: 0,
+          has_liquidity: false,
+        });
+      } else {
+        setLiquidityData(result as LiquidityData);
+      }
+    } catch (err) {
+      console.error("Liquidity check error:", err);
+      setLiquidityData({
+        partner_count: 0,
+        region_count: 0,
+        active_orders: 0,
+        location_matches: 0,
+        has_liquidity: false,
+      });
+    } finally {
+      setIsSearching(false);
+      setIsFormLocked(false);
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="landing-terminal h-screen-safe flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--lt-bg)' }}>
@@ -118,10 +155,11 @@ export default function Landing() {
               border: '1px solid var(--lt-border)',
             }}
           >
-            <BidOfferForm onSearch={handleSearch} isSearching={false} isLocked={isFormLocked} />
+            <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
             <SearchOutcomes
-              isSearching={false}
+              isSearching={isSearching}
               hasSearched={hasSearched}
+              liquidityData={liquidityData}
               onSignIn={navigateToAuth}
             />
           </div>
