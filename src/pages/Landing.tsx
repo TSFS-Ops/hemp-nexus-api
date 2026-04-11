@@ -94,6 +94,11 @@ export default function Landing() {
       {/* Main content */}
       <div className="flex-1 overflow-y-auto relative z-10">
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-[860px] mx-auto">
+          {/* Trust badges — above the fold, before any effort is asked */}
+          <div className="mb-5">
+            <TrustBadges />
+          </div>
+
           {/* Hero headline */}
           <h1
             className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
@@ -102,10 +107,10 @@ export default function Landing() {
             Global Trade, Governed. From Discovery to Signed Deal.
           </h1>
           <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-lg" style={{ color: 'var(--lt-text-muted)' }}>
-            Search for verified buyers and sellers, then progress toward compliant, signed transactions.
+            Tell us what you want to trade. We'll find verified partners and guide you to a compliant, signed transaction.
           </p>
 
-          {/* Search form */}
+          {/* Trade interest form */}
           <div
             className="mb-6 rounded-2xl overflow-hidden"
             style={{
@@ -121,13 +126,10 @@ export default function Landing() {
             />
           </div>
 
-          {/* 6-step workflow pipeline */}
+          {/* 6-step workflow pipeline — fully visible on mobile */}
           <div className="mb-6">
             <WorkflowPipeline />
           </div>
-
-          {/* Trust badges */}
-          <TrustBadges />
         </div>
       </div>
     </div>

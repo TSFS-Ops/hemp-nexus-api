@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Globe, HelpCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -42,17 +42,8 @@ export function PublicHeader() {
           </span>
         </Link>
 
-        {/* Right side */}
+        {/* Right side — Log In always visible, no mystery icons */}
         <div className="flex items-center gap-2">
-          <button className="w-9 h-9 rounded-md flex items-center justify-center transition-colors duration-200 hover:bg-white/5" style={{ color: 'var(--lt-text-muted)' }}>
-            <Globe className="h-4 w-4" />
-          </button>
-          <button className="w-9 h-9 rounded-md flex items-center justify-center transition-colors duration-200 hover:bg-white/5" style={{ color: 'var(--lt-text-muted)' }}>
-            <HelpCircle className="h-4 w-4" />
-          </button>
-
-          <div className="w-px h-5 mx-1" style={{ backgroundColor: 'var(--lt-border)' }} />
-
           {isAuthenticated ? (
             <Link
               to="/dashboard"
@@ -64,7 +55,7 @@ export function PublicHeader() {
             </Link>
           ) : (
             <>
-              <AuthLink className="hidden sm:inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
+              <AuthLink className="inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
                         style={{ color: 'var(--lt-text-muted)' }}>
                 Log In
               </AuthLink>
