@@ -37,19 +37,6 @@ export function getHostType(): HostType {
   return 'preview';
 }
 
-/**
- * Check if current environment is the public face
- */
-export function isPublicFace(): boolean {
-  return getHostType() === 'public';
-}
-
-/**
- * Check if current environment is the developer console
- */
-export function isConsoleFace(): boolean {
-  return getHostType() === 'console';
-}
 
 /**
  * Check if current environment is preview/development
@@ -101,36 +88,6 @@ export const CONSOLE_ONLY_ROUTES = [
   ROUTES.ADMIN,
 ];
 
-/**
- * Shared routes allowed on both domains
- */
-export const SHARED_ROUTES = [ROUTES.AUTH, ROUTES.PRICING];
-
-/**
- * Check if a route is allowed on the current host
- */
-export function isRouteAllowed(pathname: string): boolean {
-  const hostType = getHostType();
-  
-  // Preview allows all routes
-  if (hostType === 'preview') {
-    return true;
-  }
-  
-  // Public face restrictions
-  if (hostType === 'public') {
-    // Allow public routes, auth, and shared routes like pricing
-    return (
-      pathname === ROUTES.ROOT ||
-      pathname === ROUTES.DOCS ||
-      pathname === ROUTES.PRICING ||
-      pathname === ROUTES.AUTH
-    );
-  }
-  
-  // Console face - allow everything except explicit public-only if needed
-  return true;
-}
 
 /**
  * Get redirect URL for disallowed routes

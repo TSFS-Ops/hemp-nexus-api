@@ -43,9 +43,3 @@ export function formatRelativeTime(
   return `${diffDays}d ago`;
 }
 
-/**
- * Truncate a UUID for display: "a1b2c3d4...".
- */
-export function truncateId(id: string, length = 8): string {
-  return id.length > length ? `${id.slice(0, length)}…` : id;
-}

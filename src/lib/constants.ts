@@ -77,13 +77,7 @@ export const MATCH_STATUS = {
 
 export type MatchStatus = (typeof MATCH_STATUS)[keyof typeof MATCH_STATUS];
 
-// ─── Signal types ───────────────────────────────────────────────────
-export const SIGNAL_TYPE = {
-  BUYER: 'buyer',
-  SELLER: 'seller',
-} as const;
-
-export type SignalType = (typeof SIGNAL_TYPE)[keyof typeof SIGNAL_TYPE];
+// ─── Signal types (reserved for future SDK use) ────────────────────
 
 // ─── Trade approval statuses ────────────────────────────────────────
 export const TRADE_APPROVAL_STATUS = {
@@ -100,19 +94,6 @@ export const RESOURCE_STATUS = {
   PENDING: 'pending',
 } as const;
 
-// ─── Invite statuses ────────────────────────────────────────────────
-export const INVITE_STATUS = {
-  PENDING: 'pending',
-  ACCEPTED: 'accepted',
-  EXPIRED: 'expired',
-} as const;
-
-// ─── Compliance case / DD request statuses ──────────────────────────
-export const DECISION_STATUS = {
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-} as const;
 
 // ─── Risk bands ─────────────────────────────────────────────────────
 export const RISK_BAND = {
@@ -122,9 +103,6 @@ export const RISK_BAND = {
 } as const;
 
 // ─── Timing constants ───────────────────────────────────────────────
-
-/** How long "Copied!" stays visible (ms) */
-export const COPY_FEEDBACK_DURATION_MS = 2000;
 
 /** Renewal period for trade approvals (years) */
 export const TRADE_APPROVAL_RENEWAL_YEARS = 1;
@@ -136,14 +114,6 @@ export const EXPIRY_WARNING_DAYS = 30;
 /** Default page size for admin list views */
 export const QUERY_LIMIT_ADMIN = 200;
 
-/** Default page size for dashboard list views */
-export const QUERY_LIMIT_DASHBOARD = 100;
-
-/** Page size for data exports / large scans */
-export const QUERY_LIMIT_EXPORT = 500;
-
-/** Page size for compact / summary queries */
-export const QUERY_LIMIT_COMPACT = 50;
 
 // ─── Hostnames ──────────────────────────────────────────────────────
 export const HOSTNAMES = {
