@@ -125,6 +125,21 @@ Deno.serve(async (req: Request) => {
     };
 
     // ────────────────────────────────────────────
+    // 1b. Expire trade_orders past their expires_at
+    // ────────────────────────────────────────────
+    const { data: expiredOrders, error: orderErr } = await admin
+      .from("trade_orders")
+      .update({ status: "expired" })
+      .eq("status", "active")
+      .lt("expires_at", nowIso)
+      .select("id");
+
+    results.expired_trade_orders = {
+      count: (expiredOrders || []).length,
+      error: orderErr?.message || null,
+    };
+
+    // ────────────────────────────────────────────
     // 2. POD/BREACH: Auto-detect overdue milestones
     // ────────────────────────────────────────────
     // Find milestones that are overdue (due_at < now, not completed, no breach detected yet)
