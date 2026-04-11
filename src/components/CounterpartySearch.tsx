@@ -615,14 +615,15 @@ export default function CounterpartySearch() {
             </div>
 
             {results.map((result, idx) => (
-              <CounterpartyResultCard
-                key={result.id}
-                result={result}
-                rank={idx + 1}
-                isSelected={selectedResults.has(result.id)}
-                onToggleSelect={toggleSelect}
-                onFindSimilar={setSimilarAnchor}
-              />
+              <ResultCardErrorBoundary key={result.id} companyName={result.title}>
+                <CounterpartyResultCard
+                  result={result}
+                  rank={idx + 1}
+                  isSelected={selectedResults.has(result.id)}
+                  onToggleSelect={toggleSelect}
+                  onFindSimilar={setSimilarAnchor}
+                />
+              </ResultCardErrorBoundary>
             ))}
 
             {results.length >= 5 && (
