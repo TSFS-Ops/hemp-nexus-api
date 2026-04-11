@@ -637,3 +637,11 @@ function BillingContent() {
     </DashboardLayout>
   );
 }
+
+export default function Billing() {
+  return (
+    <RequireAuth>
+      <BillingContent />
+    </RequireAuth>
+  );
+}

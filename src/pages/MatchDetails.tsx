@@ -139,3 +139,11 @@ function MatchDetailsContent() {
     </div>
   );
 }
+
+export default function MatchDetails() {
+  return (
+    <RequireAuth>
+      <MatchDetailsContent />
+    </RequireAuth>
+  );
+}
