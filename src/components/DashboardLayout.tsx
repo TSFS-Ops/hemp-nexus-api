@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { NotificationBell } from "./notifications/NotificationBell";
 import { PageContainer } from "@/components/ui/page-container";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { DashboardBreadcrumbs } from "@/components/dashboard/DashboardBreadcrumbs";
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -35,6 +36,7 @@ export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
           </header>
           <div className="flex-1 py-4 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8 pb-20 md:pb-6">
             <PageContainer padY={false} size="wide">
+              <DashboardBreadcrumbs />
               {children}
             </PageContainer>
           </div>

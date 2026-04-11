@@ -55,7 +55,8 @@ function App() {
                   <Route path="/landing" element={<Navigate to="/" replace />} />
                   <Route path={ROUTES.AUTH} element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path={ROUTES.BILLING} element={<Billing />} />
+                  {/* Billing now nested under dashboard */}
+                  <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
                   <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
                   <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
                   <Route path={ROUTES.DOCS} element={<Docs />} />

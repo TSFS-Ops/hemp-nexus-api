@@ -97,7 +97,7 @@ export function AdminSidebar() {
 
   return (
     <Sidebar className="w-60" collapsible="icon">
-      <SidebarHeader className="border-b border-border px-4 py-3">
+      <SidebarHeader className="border-b border-border px-4 py-3 space-y-2">
         <Link to={ROUTES.ADMIN} className="flex items-center gap-2.5">
           <div className="h-7 w-7 rounded flex items-center justify-center" style={{ backgroundColor: 'hsl(160, 84%, 29%)' }}>
             <span className="text-white font-bold text-[10px] font-mono">IZ</span>
@@ -106,6 +106,13 @@ export function AdminSidebar() {
             <h2 className="font-semibold text-sm text-foreground tracking-tight">Izenzo</h2>
             <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Platform Admin</p>
           </div>
+        </Link>
+        <Link
+          to={ROUTES.DASHBOARD}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>←</span>
+          <span>Back to Console</span>
         </Link>
       </SidebarHeader>
       <SidebarContent className="px-2 py-2">
