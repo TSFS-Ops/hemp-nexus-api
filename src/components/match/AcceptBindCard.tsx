@@ -73,6 +73,9 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       return;
     }
 
+    // Double-click guard
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const { data: freshSession } = await supabase.auth.getSession();

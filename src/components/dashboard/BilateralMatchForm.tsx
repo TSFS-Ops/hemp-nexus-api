@@ -125,6 +125,9 @@ export function BilateralMatchForm() {
       return;
     }
 
+    // Double-click guard
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const { data: profile } = await supabase
