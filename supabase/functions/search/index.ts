@@ -44,12 +44,35 @@ Deno.serve(async (req) => {
       requestId
     );
 
-    const rawBody = await req.json();
+    // ── FAILURE MODE 5: Corrupted request body ──
+    let rawBody: any;
+    try {
+      rawBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
     const { query, role, limit = 20, location: filterLocation } = rawBody;
 
     if (!query || typeof query !== "string") {
       return new Response(
         JSON.stringify({ ok: false, error: "Query is required" }),
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── FAILURE MODE 4: Oversized / malicious input ──
+    if (query.length > 500) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Query too long (max 500 characters)" }),
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
+    if (typeof filterLocation === "string" && filterLocation.length > 200) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Location too long (max 200 characters)" }),
         { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
@@ -339,6 +362,9 @@ Deno.serve(async (req) => {
 
 // ── Brave Search ──
 async function searchBrave(query: string, apiKey: string): Promise<Array<{ title: string; url: string; description: string }>> {
+  // ── FAILURE MODE 1: Brave API hangs — 8s hard timeout ──
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
     const response = await fetch(
       `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=20`,
@@ -347,6 +373,7 @@ async function searchBrave(query: string, apiKey: string): Promise<Array<{ title
           "Accept": "application/json",
           "X-Subscription-Token": apiKey,
         },
+        signal: controller.signal,
       }
     );
 
@@ -363,9 +390,15 @@ async function searchBrave(query: string, apiKey: string): Promise<Array<{ title
       url: r.url || "",
       description: r.description || "",
     }));
-  } catch (error) {
-    console.error("[search] Brave search error:", error);
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      console.error("[search] Brave API timed out after 8s");
+    } else {
+      console.error("[search] Brave search error:", error);
+    }
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -392,6 +425,9 @@ RULES:
 WEB SEARCH RESULTS:
 ${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: ${r.url}\n    Snippet: ${r.description}`).join("\n\n")}`;
 
+  // ── FAILURE MODE 1b: AI gateway hangs — 15s hard timeout ──
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -399,6 +435,7 @@ ${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: 
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
@@ -459,23 +496,37 @@ ${webResults.slice(0, 15).map((r, i) => `[${i + 1}] Title: ${r.title}\n    URL: 
       return [];
     }
 
-    const parsed = JSON.parse(toolCall.function.arguments);
-    const counterparties = parsed.counterparties || [];
+    // ── FAILURE MODE 2: AI returns malformed JSON ──
+    let parsed: any;
+    try {
+      parsed = JSON.parse(toolCall.function.arguments);
+    } catch (parseErr) {
+      console.error("[search] AI returned unparseable JSON:", toolCall.function.arguments?.substring(0, 200));
+      return [];
+    }
+    const counterparties = Array.isArray(parsed?.counterparties) ? parsed.counterparties : [];
 
     // Filter out low-relevance results and deduplicate by company name
     const seen = new Set<string>();
     return counterparties
       .filter((cp: any) => {
-        if (!cp.company_name || cp.relevance_score < 0.3) return false;
+        if (!cp.company_name || typeof cp.company_name !== "string") return false;
+        if (typeof cp.relevance_score !== "number" || cp.relevance_score < 0.3) return false;
         const key = cp.company_name.toLowerCase().trim();
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       })
-      .slice(0, 10); // Max 10 web-discovered results
-  } catch (error) {
-    console.error("[search] AI extraction error:", error);
+      .slice(0, 10);
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      console.error("[search] AI gateway timed out after 15s");
+    } else {
+      console.error("[search] AI extraction error:", error);
+    }
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
