@@ -3,7 +3,7 @@
  * Uses a compact vertical layout on small screens.
  */
 
-import { ArrowRight, ArrowDown, Search, ShieldCheck, Eye, FileText, CheckCircle2, Lock } from "lucide-react";
+import { ArrowRight, Search, ShieldCheck, Eye, FileText, CheckCircle2, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 
 const PIPELINE_STEPS = [
