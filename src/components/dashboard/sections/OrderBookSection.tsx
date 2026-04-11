@@ -7,7 +7,7 @@
 /** Map internal DB side values to user-facing labels */
 const SIDE_LABEL: Record<string, string> = { bid: "Buyer", offer: "Seller" };
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -306,13 +306,11 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Draft persistence: save form state to sessionStorage
+  // Draft persistence
   const DRAFT_KEY = "draft:create-order";
 
-  const getCurrentData = useCallback(() => ({ side, product, price, volume, location }), [side, product, price, volume, location]);
-
   // Restore draft on mount
-  useState(() => {
+  useEffect(() => {
     try {
       const raw = sessionStorage.getItem(DRAFT_KEY);
       if (raw) {
@@ -324,15 +322,12 @@ function CreateOrderForm({ orgId, userId, onSuccess }: { orgId: string; userId: 
         if (draft.location) setLocation(draft.location);
       }
     } catch {}
-  });
+  }, []);
 
   // Auto-save draft on changes
-  useState(() => {
-    const interval = setInterval(() => {
-      try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(getCurrentData())); } catch {}
-    }, 1000);
-    return () => clearInterval(interval);
-  });
+  useEffect(() => {
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ side, product, price, volume, location })); } catch {}
+  }, [side, product, price, volume, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
