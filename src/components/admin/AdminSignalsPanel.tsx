@@ -267,6 +267,9 @@ export function AdminSignalsPanel() {
               </div>
             </div>
           )}
+          <div className="flex justify-end pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
