@@ -7,10 +7,10 @@
 import { LogIn, TrendingUp, Users, Globe, SearchX } from "lucide-react";
 
 export interface LiquidityData {
-  partner_count: number;
+  partner_count: string | number;
   region_count: number;
-  active_orders: number;
-  location_matches: number;
+  active_orders: string | number;
+  location_matches: string | number;
   has_liquidity: boolean;
 }
 
@@ -92,7 +92,7 @@ export function SearchOutcomes({
         <div className="flex items-center gap-2">
           <Users className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--lt-emerald)' }} />
           <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--lt-text-muted)' }}>
-            {liquidityData.partner_count} partner{liquidityData.partner_count !== 1 ? 's' : ''}
+            {liquidityData.partner_count} partners
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -104,7 +104,7 @@ export function SearchOutcomes({
         <div className="flex items-center gap-2">
           <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--lt-emerald)' }} />
           <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--lt-text-muted)' }}>
-            {liquidityData.active_orders} open order{liquidityData.active_orders !== 1 ? 's' : ''}
+            {liquidityData.active_orders} open orders
           </span>
         </div>
       </div>
