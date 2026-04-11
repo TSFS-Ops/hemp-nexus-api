@@ -16,14 +16,20 @@ export function AdminEmailLogsPanel() {
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
-    const [countRes, dataRes] = await Promise.all([
-      supabase.from("email_send_log").select("id", { count: "exact", head: true }),
-      supabase.from("email_send_log").select("*").order("created_at", { ascending: false }).limit(EMAIL_LOG_LIMIT),
-    ]);
-    setTotal(countRes.count);
-    if (dataRes.error) toast.error(dataRes.error.message);
-    else setLogs(dataRes.data || []);
-    setLoading(false);
+    try {
+      const [countRes, dataRes] = await Promise.all([
+        supabase.from("email_send_log").select("id", { count: "exact", head: true }),
+        supabase.from("email_send_log").select("*").order("created_at", { ascending: false }).limit(EMAIL_LOG_LIMIT),
+      ]);
+      setTotal(countRes.count);
+      if (dataRes.error) throw dataRes.error;
+      setLogs(dataRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch email logs:", err);
+      toast.error("Failed to load email logs");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);

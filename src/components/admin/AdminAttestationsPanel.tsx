@@ -19,14 +19,20 @@ export function AdminAttestationsPanel() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [countRes, dataRes] = await Promise.all([
-      supabase.from("attestations").select("id", { count: "exact", head: true }),
-      supabase.from("attestations").select("*").order("signed_at", { ascending: false }).limit(ATTESTATION_LIMIT),
-    ]);
-    setTotal(countRes.count);
-    if (dataRes.error) toast.error(dataRes.error.message);
-    else setAttestations(dataRes.data || []);
-    setLoading(false);
+    try {
+      const [countRes, dataRes] = await Promise.all([
+        supabase.from("attestations").select("id", { count: "exact", head: true }),
+        supabase.from("attestations").select("*").order("signed_at", { ascending: false }).limit(ATTESTATION_LIMIT),
+      ]);
+      setTotal(countRes.count);
+      if (dataRes.error) throw dataRes.error;
+      setAttestations(dataRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch attestations:", err);
+      toast.error("Failed to load attestations");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
