@@ -506,9 +506,9 @@ export default function CounterpartySearch() {
 
         {/* Degraded mode banner — web discovery is down */}
         {!isSearching && degradation.isPartiallyDegraded && degradation.message && (
-          <Alert className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
-            <WifiOff className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-xs sm:text-sm text-amber-800 dark:text-amber-300">
+          <Alert className="border-warning/30 bg-warning/5">
+            <WifiOff className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-xs sm:text-sm text-warning-foreground">
               {degradation.message}
             </AlertDescription>
           </Alert>
