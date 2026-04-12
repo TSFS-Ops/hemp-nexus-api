@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 const DEAL_STEPS = [
   { label: "Search", active: true, complete: false },
   { label: "Match", active: false, complete: false, locked: true },
-  { label: "POI", active: false, complete: false, locked: true },
-  { label: "WaD", active: false, complete: false, locked: true },
+  { label: "Proof of Intent", active: false, complete: false, locked: true },
+  { label: "Without a Doubt", active: false, complete: false, locked: true },
   { label: "Evidence", active: false, complete: false, locked: true },
 ];
 
@@ -17,7 +17,7 @@ export function SearchSection() {
     <div className="space-y-5 sm:space-y-6">
       <SectionHeader
         title="Find Trading Partners"
-        description="Search for counterparties to begin a deal"
+        description="Search for trading partners to begin a deal"
       />
 
       {/* Deal flow stepper — shows user is on Step 1 */}

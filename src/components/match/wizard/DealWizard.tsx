@@ -3,7 +3,7 @@
  *
  * Steps:
  *   1. Search (always complete on match detail — match already exists)
- *   2. Match Details (review counterparty, terms, docs, notes, disputes)
+ *   2. Match Details (review trading partner, terms, docs, notes, disputes)
  *   3. Generate POI (readiness checklist + credit-burn action)
  *   4. WaD (governance docs + 9-gate validation)
  *   5. Evidence Pack (sealed evidence bundle + timeline)
@@ -87,20 +87,20 @@ export function DealWizard({
     {
       id: "match",
       label: "Match",
-      description: "Review counterparty details, negotiate terms, and attach supporting documents.",
+      description: "Review trading partner details, negotiate terms, and attach supporting documents.",
       complete: matchComplete,
       locked: false,
     },
     {
       id: "poi",
-      label: "POI",
+      label: "Proof of Intent",
       description: "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
       complete: poiComplete,
       locked: !matchComplete, // Strict: locked until match step complete
     },
     {
       id: "wad",
-      label: "WaD",
+      label: "Without a Doubt",
       description: "Create a Without a Doubt (WaD) evidence bundle with 9-gate compliance validation.",
       complete: wadComplete,
       locked: !poiComplete, // Strict: locked until POI generated

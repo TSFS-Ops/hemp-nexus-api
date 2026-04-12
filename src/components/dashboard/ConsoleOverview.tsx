@@ -35,7 +35,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
     },
     {
       number: "3",
-      title: "Generate POI",
+      title: "Proof of Intent",
       description: "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
       icon: Zap,
       action: () => navigate(ROUTES.DASHBOARD_MATCHES),
@@ -379,8 +379,8 @@ export function ConsoleOverview() {
               {[
                 { step: "1", label: "Search", desc: "Find trading partners" },
                 { step: "2", label: "Match", desc: "Select & create" },
-                { step: "3", label: "POI", desc: "Generate proof" },
-                { step: "4", label: "WaD", desc: "Seal evidence" },
+                { step: "3", label: "Proof of Intent", desc: "Generate proof" },
+                { step: "4", label: "Without a Doubt", desc: "Seal evidence" },
               ].map((s) => (
                 <div key={s.step} className="text-center p-3 rounded-md bg-background border border-border">
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mb-1">
