@@ -3,7 +3,7 @@
  *
  * Steps:
  *   1. Search (always complete on match detail — match already exists)
- *   2. Match Details (review counterparty, terms, docs, notes, disputes)
+ *   2. Match Details (review trading partner, terms, docs, notes, disputes)
  *   3. Generate POI (readiness checklist + credit-burn action)
  *   4. WaD (governance docs + 9-gate validation)
  *   5. Evidence Pack (sealed evidence bundle + timeline)
