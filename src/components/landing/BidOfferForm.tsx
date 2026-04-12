@@ -111,7 +111,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
           style={{ color: 'var(--lt-text-dim)' }}
         >
-          I want to<span className="ml-0.5" style={{ color: 'var(--lt-emerald)' }}>*</span>
+          I am a<span className="ml-0.5" style={{ color: 'var(--lt-emerald)' }}>*</span>
         </label>
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -126,7 +126,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               boxShadow: side === "bid" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
-            I'm Buying
+            Buyer
           </button>
           <button
             type="button"
@@ -140,7 +140,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               boxShadow: side === "offer" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
-            I'm Selling
+            Seller
           </button>
         </div>
       </div>
