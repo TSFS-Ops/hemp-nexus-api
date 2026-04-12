@@ -141,7 +141,7 @@ export default function Landing() {
             className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
             style={{ color: 'var(--lt-text)' }}
           >
-            Global Trade, Governed. From Discovery to Signed Deal.
+            Global Trade, Governed. From Discovery to Completion.
           </h1>
           <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-lg" style={{ color: 'var(--lt-text-muted)' }}>
             Tell us what you want to trade. We'll find verified partners and guide you to a compliant, signed transaction.
