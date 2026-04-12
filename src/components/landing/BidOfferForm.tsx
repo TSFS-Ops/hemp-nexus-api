@@ -126,7 +126,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               boxShadow: side === "bid" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
-            I'm Buying
+            Buyer
           </button>
           <button
             type="button"
@@ -140,7 +140,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               boxShadow: side === "offer" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
-            I'm Selling
+            Seller
           </button>
         </div>
       </div>
