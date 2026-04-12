@@ -87,20 +87,20 @@ export function DealWizard({
     {
       id: "match",
       label: "Match",
-      description: "Review counterparty details, negotiate terms, and attach supporting documents.",
+      description: "Review trading partner details, negotiate terms, and attach supporting documents.",
       complete: matchComplete,
       locked: false,
     },
     {
       id: "poi",
-      label: "POI",
+      label: "Proof of Intent",
       description: "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
       complete: poiComplete,
       locked: !matchComplete, // Strict: locked until match step complete
     },
     {
       id: "wad",
-      label: "WaD",
+      label: "Without a Doubt",
       description: "Create a Without a Doubt (WaD) evidence bundle with 9-gate compliance validation.",
       complete: wadComplete,
       locked: !poiComplete, // Strict: locked until POI generated

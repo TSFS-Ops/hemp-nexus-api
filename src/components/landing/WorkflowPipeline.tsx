@@ -14,8 +14,8 @@ const PIPELINE_STEPS = [
   { label: "Choice", subtitle: "Select from results", Icon: Users },
   { label: "Surface", subtitle: "Reveal match", Icon: UserCheck },
   { label: "Match", subtitle: "Formal creation", Icon: Handshake },
-  { label: "Generate POI", subtitle: "Proof of intent", Icon: ShieldCheck },
-  { label: "Signed Deal", subtitle: "Evidence bundle", Icon: Award },
+  { label: "Proof of Intent", subtitle: "Generate proof", Icon: ShieldCheck },
+  { label: "Without a Doubt", subtitle: "Evidence bundle", Icon: Award },
 ];
 
 export function WorkflowPipeline() {
