@@ -43,6 +43,8 @@ interface DealTerm {
 interface DealTermsPanelProps {
   matchId: string;
   orgId: string;
+  /** Called after match commercial fields are updated so parent can refresh */
+  onMatchUpdated?: () => void;
 }
 
 const EMPTY_FORM = {
@@ -52,6 +54,11 @@ const EMPTY_FORM = {
   penalty_terms: "",
   partial_shipment: false,
   amendment_notes: "",
+  // Commercial fields that update the match record
+  quantity_amount: "",
+  quantity_unit: "MT",
+  price_amount: "",
+  price_currency: "USD",
 };
 
 export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
