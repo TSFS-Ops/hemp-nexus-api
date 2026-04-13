@@ -111,6 +111,8 @@ function BillingContent() {
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
             queryClient.invalidateQueries({ queryKey: ["token-balance"] });
             queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
+            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm"] });
+            queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
           } else {
             const paystackStatus = data?.paystackStatus;
             if (paystackStatus === "abandoned") {
@@ -160,6 +162,8 @@ function BillingContent() {
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
             queryClient.invalidateQueries({ queryKey: ["token-balance"] });
             queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
+            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm"] });
+            queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
           } else {
             const paystackStatus = data?.paystackStatus;
             if (paystackStatus === "abandoned") {

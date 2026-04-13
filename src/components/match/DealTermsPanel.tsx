@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, FileText, Save, Clock, Plus, AlertTriangle, History } from "lucide-react";
 import { toast } from "sonner";
@@ -44,7 +43,7 @@ interface DealTermsPanelProps {
   matchId: string;
   orgId: string;
   /** Called after match commercial fields are updated so parent can refresh */
-  onMatchUpdated?: () => void;
+  onMatchUpdated?: () => void | Promise<void>;
 }
 
 const EMPTY_FORM = {
@@ -54,7 +53,6 @@ const EMPTY_FORM = {
   penalty_terms: "",
   partial_shipment: false,
   amendment_notes: "",
-  // Commercial fields that update the match record
   quantity_amount: "",
   quantity_unit: "MT",
   price_amount: "",
@@ -64,73 +62,34 @@ const EMPTY_FORM = {
 export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPanelProps) {
   const { user } = useAuth();
   const [terms, setTerms] = useState<DealTerm[]>([]);
-  const [matchData, setMatchData] = useState<{ quantity_amount: number | null; quantity_unit: string | null; price_amount: number | null; price_currency: string | null } | null>(null);
+  const [matchData, setMatchData] = useState<{
+    quantity_amount: number | null;
+    quantity_unit: string | null;
+    price_amount: number | null;
+    price_currency: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
-  const [pendingClose, setPendingClose] = useState(false);
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const formDirty = useRef(false);
 
-  // Emergency draft persistence on session expiry
   const getCurrentForm = useCallback(() => {
     if (!formDirty.current || !showForm) return null;
     return form;
   }, [form, showForm]);
 
-  const { restoreDraft: restoreDealDraft, clearDraft: clearDealDraft, hasRestoredDraft: hasDealDraft } = useDraftPersistence<typeof EMPTY_FORM>(
-    `deal-terms-${matchId}`,
-    getCurrentForm
-  );
+  const {
+    restoreDraft: restoreDealDraft,
+    clearDraft: clearDealDraft,
+    hasRestoredDraft: hasDealDraft,
+  } = useDraftPersistence<typeof EMPTY_FORM>(`deal-terms-${matchId}`, getCurrentForm);
 
-  // Restore draft on form open
-  useEffect(() => {
-    if (showForm && hasDealDraft) {
-      const draft = restoreDealDraft();
-      if (draft) {
-        setForm(draft);
-        toast.info("Unsaved deal terms from your previous session have been restored.", {
-          action: { label: "Discard", onClick: () => { setForm({ ...EMPTY_FORM }); clearDealDraft(); } },
-          duration: 8000,
-        });
-      }
-    }
-  }, [showForm, hasDealDraft]);
-
-  // Track dirty state
-  useEffect(() => {
-    if (!showForm) {
-      formDirty.current = false;
-      return;
-    }
-    const hasContent = Object.entries(form).some(([k, v]) => {
-      if (k === "partial_shipment") return v !== false;
-      return typeof v === "string" && v.trim().length > 0;
-    });
-    formDirty.current = hasContent;
-  }, [form, showForm]);
-
-  useEffect(() => {
-    fetchTerms();
-  }, [matchId]);
-
-  // Warn on browser back/close with unsaved changes
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (formDirty.current && showForm) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [showForm]);
-
-  const fetchTerms = async () => {
+  const fetchTerms = useCallback(async () => {
     setFetchError(null);
     try {
       const [termsRes, matchRes] = await Promise.all([
@@ -147,37 +106,89 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
       ]);
 
       if (termsRes.error) throw termsRes.error;
+
       setTerms((termsRes.data as DealTerm[]) || []);
-      if (matchRes.data) setMatchData(matchRes.data as any);
+      if (matchRes.data) {
+        setMatchData(matchRes.data as typeof matchData);
+      }
     } catch (err) {
       console.error("[DealTermsPanel] fetch failed:", err);
       setFetchError(err instanceof Error ? err.message : "Failed to load deal terms");
     } finally {
       setLoading(false);
     }
-  };
+  }, [matchId]);
+
+  useEffect(() => {
+    void fetchTerms();
+  }, [fetchTerms]);
+
+  useEffect(() => {
+    if (showForm && hasDealDraft) {
+      const draft = restoreDealDraft();
+      if (draft) {
+        setForm(draft);
+        toast.info("Unsaved deal terms from your previous session have been restored.", {
+          action: {
+            label: "Discard",
+            onClick: () => {
+              setForm({ ...EMPTY_FORM });
+              clearDealDraft();
+            },
+          },
+          duration: 8000,
+        });
+      }
+    }
+  }, [showForm, hasDealDraft, restoreDealDraft, clearDealDraft]);
+
+  useEffect(() => {
+    if (!showForm) {
+      formDirty.current = false;
+      return;
+    }
+
+    const hasContent = Object.entries(form).some(([key, value]) => {
+      if (key === "partial_shipment") return value !== false;
+      return typeof value === "string" && value.trim().length > 0;
+    });
+
+    formDirty.current = hasContent;
+  }, [form, showForm]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (formDirty.current && showForm) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [showForm]);
 
   const handleCancelForm = () => {
     if (formDirty.current) {
       setShowLeaveWarning(true);
-      setPendingClose(true);
-    } else {
-      setShowForm(false);
+      return;
     }
+
+    setShowForm(false);
   };
 
   const confirmLeave = () => {
     setShowLeaveWarning(false);
-    setPendingClose(false);
     setForm({ ...EMPTY_FORM });
     setShowForm(false);
   };
 
   const handleSave = async () => {
     if (saving) return;
+
     setSaving(true);
+
     try {
-      // Dispute guard: block term edits while an open dispute exists
       const { data: openDisputes, error: disputeErr } = await supabase
         .from("disputes")
         .select("id")
@@ -186,18 +197,17 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
         .limit(1);
 
       if (disputeErr) throw disputeErr;
+
       if (openDisputes && openDisputes.length > 0) {
         toast.error(
           "Cannot save deal terms while an open dispute exists on this match. Resolve the dispute first.",
           { duration: 6000 }
         );
-        setSaving(false);
         return;
       }
 
       const latestVersion = terms.length > 0 ? terms[0].version : 0;
 
-      // Conflict detection: re-fetch latest version before saving
       const { data: freshTerms, error: freshErr } = await supabase
         .from("deal_terms")
         .select("version")
@@ -215,7 +225,6 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
           { duration: 6000 }
         );
         await fetchTerms();
-        setSaving(false);
         return;
       }
 
@@ -235,29 +244,35 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
 
       if (error) throw error;
 
-      // Update the match record's commercial fields if provided
       const qtyNum = form.quantity_amount ? parseFloat(form.quantity_amount) : null;
       const priceNum = form.price_amount ? parseFloat(form.price_amount) : null;
+
       if (qtyNum != null || priceNum != null) {
         const matchUpdate: Record<string, unknown> = {};
+
         if (qtyNum != null && qtyNum > 0) {
           matchUpdate.quantity_amount = qtyNum;
           matchUpdate.quantity_unit = form.quantity_unit || "MT";
         }
+
         if (priceNum != null && priceNum > 0) {
           matchUpdate.price_amount = priceNum;
           matchUpdate.price_currency = form.price_currency || "USD";
         }
+
         if (Object.keys(matchUpdate).length > 0) {
           const { error: matchErr } = await supabase
             .from("matches")
             .update(matchUpdate)
             .eq("id", matchId);
+
           if (matchErr) {
             console.error("[DealTermsPanel] match update failed:", matchErr);
-            toast.error("Terms saved but failed to update match commercial fields", { description: matchErr.message });
+            toast.error("Terms saved but failed to update match commercial fields", {
+              description: matchErr.message,
+            });
           } else {
-            onMatchUpdated?.();
+            await onMatchUpdated?.();
           }
         }
       }
@@ -267,9 +282,10 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
       clearDealDraft();
       setShowForm(false);
       setForm({ ...EMPTY_FORM });
-      fetchTerms();
+      await fetchTerms();
     } catch (err: any) {
       const msg = err?.message || "";
+
       if (msg.includes("unique") || msg.includes("duplicate") || msg.includes("deal_terms_match_id_version")) {
         toast.error(
           "Version conflict: another user submitted terms at the same time. Refreshing to show the latest version.",
@@ -285,11 +301,22 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
   };
 
   if (loading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (fetchError) {
-    return <ErrorState variant="inline" title="Failed to load deal terms" message={fetchError} onRetry={fetchTerms} />;
+    return (
+      <ErrorState
+        variant="inline"
+        title="Failed to load deal terms"
+        message={fetchError}
+        onRetry={fetchTerms}
+      />
+    );
   }
 
   const latestTerm = terms[0] || null;
@@ -300,11 +327,12 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="h-5 w-5" />Deal Terms
+            <FileText className="h-5 w-5" />
+            Deal Terms
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             Terms are versioned - each proposal creates a new immutable record.
-            {latestTerm && " Click \"Amend Terms\" to propose changes based on the current version."}
+            {latestTerm && ' Click "Amend Terms" to propose changes based on the current version.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -314,11 +342,15 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
               {showHistory ? "Hide history" : `${olderTerms.length} previous version${olderTerms.length > 1 ? "s" : ""}`}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => {
-            if (showForm) {
-              handleCancelForm();
-            } else {
-              // Pre-populate form with latest term values so user can "edit"
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (showForm) {
+                handleCancelForm();
+                return;
+              }
+
               if (latestTerm) {
                 setForm({
                   payment_terms: latestTerm.payment_terms || "",
@@ -341,10 +373,12 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                   price_currency: matchData?.price_currency || "USD",
                 });
               }
+
               setShowForm(true);
-            }
-          }}>
-            <Plus className="h-4 w-4 mr-1" />{showForm ? "Cancel" : latestTerm ? "Amend Terms" : "Propose Terms"}
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            {showForm ? "Cancel" : latestTerm ? "Amend Terms" : "Propose Terms"}
           </Button>
         </div>
       </div>
@@ -356,7 +390,6 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
             <CardDescription>Capture the key commercial terms for this deal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Commercial fields — update the match record */}
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-primary" />
@@ -412,27 +445,56 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
 
             <div className="space-y-2">
               <Label>Payment Terms</Label>
-              <Textarea value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} placeholder="e.g. 30 days net, Letter of Credit, T/T on delivery" aria-label="Payment terms" />
+              <Textarea
+                value={form.payment_terms}
+                onChange={(e) => setForm({ ...form, payment_terms: e.target.value })}
+                placeholder="e.g. 30 days net, Letter of Credit, T/T on delivery"
+                aria-label="Payment terms"
+              />
             </div>
             <div className="space-y-2">
               <Label>Delivery Terms</Label>
-              <Textarea value={form.delivery_terms} onChange={(e) => setForm({ ...form, delivery_terms: e.target.value })} placeholder="e.g. FOB Cape Town, CIF Rotterdam, within 45 days" aria-label="Delivery terms" />
+              <Textarea
+                value={form.delivery_terms}
+                onChange={(e) => setForm({ ...form, delivery_terms: e.target.value })}
+                placeholder="e.g. FOB Cape Town, CIF Rotterdam, within 45 days"
+                aria-label="Delivery terms"
+              />
             </div>
             <div className="space-y-2">
               <Label>Inspection / Quality Terms</Label>
-              <Textarea value={form.inspection_terms} onChange={(e) => setForm({ ...form, inspection_terms: e.target.value })} placeholder="e.g. SGS inspection at load port, ISO 9001 certificate required" aria-label="Inspection terms" />
+              <Textarea
+                value={form.inspection_terms}
+                onChange={(e) => setForm({ ...form, inspection_terms: e.target.value })}
+                placeholder="e.g. SGS inspection at load port, ISO 9001 certificate required"
+                aria-label="Inspection terms"
+              />
             </div>
             <div className="space-y-2">
               <Label>Penalty / Default Terms</Label>
-              <Textarea value={form.penalty_terms} onChange={(e) => setForm({ ...form, penalty_terms: e.target.value })} placeholder="e.g. 1% per week late delivery penalty, force majeure clause" aria-label="Penalty terms" />
+              <Textarea
+                value={form.penalty_terms}
+                onChange={(e) => setForm({ ...form, penalty_terms: e.target.value })}
+                placeholder="e.g. 1% per week late delivery penalty, force majeure clause"
+                aria-label="Penalty terms"
+              />
             </div>
             <div className="flex items-center gap-3">
-              <Switch checked={form.partial_shipment} onCheckedChange={(v) => setForm({ ...form, partial_shipment: v })} id="partial-shipment" />
+              <Switch
+                checked={form.partial_shipment}
+                onCheckedChange={(value) => setForm({ ...form, partial_shipment: value })}
+                id="partial-shipment"
+              />
               <Label htmlFor="partial-shipment">Allow partial shipments</Label>
             </div>
             <div className="space-y-2">
               <Label>Amendment Notes</Label>
-              <Input value={form.amendment_notes} onChange={(e) => setForm({ ...form, amendment_notes: e.target.value })} placeholder="Reason for this version" aria-label="Amendment notes" />
+              <Input
+                value={form.amendment_notes}
+                onChange={(e) => setForm({ ...form, amendment_notes: e.target.value })}
+                placeholder="Reason for this version"
+                aria-label="Amendment notes"
+              />
             </div>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -442,7 +504,6 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
         </Card>
       )}
 
-      {/* Latest version */}
       {!latestTerm ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -453,20 +514,18 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
         <TermCard term={latestTerm} isCurrent />
       )}
 
-      {/* Version History */}
       {showHistory && olderTerms.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <History className="h-4 w-4" />
             Previous Versions
           </h4>
-          {olderTerms.map((t) => (
-            <TermCard key={t.id} term={t} />
+          {olderTerms.map((term) => (
+            <TermCard key={term.id} term={term} />
           ))}
         </div>
       )}
 
-      {/* Unsaved changes warning */}
       <AlertDialog open={showLeaveWarning} onOpenChange={setShowLeaveWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -494,13 +553,28 @@ function TermCard({ term, isCurrent }: { term: DealTerm; isCurrent?: boolean }) 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Badge variant="outline">v{term.version}</Badge>
-            <Badge variant={term.status === "accepted" ? "default" : term.status === "rejected" ? "destructive" : "secondary"}>
-              {term.status === "proposed" ? "Proposed" : term.status === "accepted" ? "Accepted" : term.status === "rejected" ? "Rejected" : term.status}
+            <Badge
+              variant={
+                term.status === "accepted"
+                  ? "default"
+                  : term.status === "rejected"
+                    ? "destructive"
+                    : "secondary"
+              }
+            >
+              {term.status === "proposed"
+                ? "Proposed"
+                : term.status === "accepted"
+                  ? "Accepted"
+                  : term.status === "rejected"
+                    ? "Rejected"
+                    : term.status}
             </Badge>
             {isCurrent && <Badge variant="outline" className="text-xs border-primary text-primary">Current</Badge>}
           </div>
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3" />{format(new Date(term.created_at), "dd MMM yyyy HH:mm")}
+            <Clock className="h-3 w-3" />
+            {format(new Date(term.created_at), "dd MMM yyyy HH:mm")}
           </span>
         </div>
       </CardHeader>
