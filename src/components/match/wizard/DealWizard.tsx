@@ -12,6 +12,7 @@
  */
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { WizardStepper, type WizardStepDef } from "./WizardStepper";
@@ -176,16 +177,25 @@ export function DealWizard({
 
 function StepSearch({ match }: { match: Match }) {
   const isRevealed = true; // Names are always visible per client requirement
-  const bidOfferSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
+  const userOrgId = useUserOrg();
+  const metaSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
+  const inferredRole = getMatchRole(userOrgId, match as any);
+  const roleBadgeLabel = metaSide
+    ? (metaSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)")
+    : inferredRole === "buyer"
+      ? "Buyer (Bid)"
+      : inferredRole === "seller"
+        ? "Seller (Offer)"
+        : null;
 
   return (
-    <Card className="border-primary/20">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-lg">Trading Partner Identified</CardTitle>
-          {bidOfferSide && (
+          {roleBadgeLabel && (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-primary/30 bg-primary/5 text-primary">
-              Your role: {bidOfferSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)"}
+              Your role: {roleBadgeLabel}
             </span>
           )}
         </div>
