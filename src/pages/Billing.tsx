@@ -220,6 +220,7 @@ function BillingContent() {
       const { data, error } = await supabase
         .from("token_ledger")
         .select("tokens_burned, action_type, created_at")
+        .eq("org_id", billingProfile!.org_id)
         .gte("created_at", monthStart.toISOString());
       
       if (error) throw error;
@@ -234,22 +235,23 @@ function BillingContent() {
       
       return { totalBurned, actionBreakdown, transactionCount: data?.length || 0 };
     },
-    enabled: !!session,
+    enabled: !!session && !!billingProfile?.org_id,
   });
 
   // Fetch recent transactions
   const { data: recentTransactions } = useQuery({
-    queryKey: ["recent-credit-transactions"],
+    queryKey: ["recent-credit-transactions", billingProfile?.org_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("token_ledger")
         .select("*")
+        .eq("org_id", billingProfile!.org_id)
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;
       return data;
     },
-    enabled: !!session,
+    enabled: !!session && !!billingProfile?.org_id,
   });
 
   const handlePurchase = async (packageId: string) => {
