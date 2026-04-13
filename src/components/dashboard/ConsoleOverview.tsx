@@ -115,14 +115,7 @@ export function ConsoleOverview() {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  // Onboarding wizard state - auto-open for first-time users
-  const [wizardOpen, setWizardOpen] = useState(() => {
-    try {
-      return localStorage.getItem("onboarding_completed") !== "true";
-    } catch {
-      return false;
-    }
-  });
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // Fetch the user's org_id first, then their token balance
   const { data: userProfile } = useQuery({
