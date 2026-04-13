@@ -64,6 +64,7 @@ const EMPTY_FORM = {
 export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPanelProps) {
   const { user } = useAuth();
   const [terms, setTerms] = useState<DealTerm[]>([]);
+  const [matchData, setMatchData] = useState<{ quantity_amount: number | null; quantity_unit: string | null; price_amount: number | null; price_currency: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
