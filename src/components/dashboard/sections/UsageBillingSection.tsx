@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useUserOrg } from "@/hooks/use-user-org";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ interface UsageStats {
 }
 
 export function UsageBillingSection() {
+  const orgId = useUserOrg();
   const [balance, setBalance] = useState<CreditBalance | null>(null);
   const [ledgerEntries, setLedgerEntries] = useState<CreditLedgerEntry[]>([]);
   const [allEndpoints, setAllEndpoints] = useState<string[]>([]);
@@ -48,10 +50,15 @@ export function UsageBillingSection() {
   const [dateRange, setDateRange] = useState<string>("30");
 
   const fetchBalance = async () => {
+    if (!orgId) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("token_balances")
         .select("balance, minimum_required")
+        .eq("org_id", orgId)
         .maybeSingle();
 
       if (error) throw error;
@@ -133,7 +140,7 @@ export function UsageBillingSection() {
 
   useEffect(() => {
     fetchBalance();
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     if (balance !== null) {
