@@ -113,6 +113,7 @@ interface StateProgressionCardProps {
 
 export function StateProgressionCard({ match, onAction, loading }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
+  const [recheckingBalance, setRecheckingBalance] = useState(false);
   const { session } = useAuth();
 
   const matchType = (match as any).match_type || "search";
@@ -134,7 +135,11 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
   const checklist = useMemo(() => getFieldChecklist(match), [match]);
   const allRequiredFilled = checklist.every((field) => !field.required || field.filled);
 
-  const { data: userProfile, isLoading: profileLoading } = useQuery({
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery({
     queryKey: ["user-profile-org", session?.user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -163,23 +168,42 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
         .from("token_balances")
         .select("balance")
         .eq("org_id", userProfile!.org_id)
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
-      return data?.balance ?? 0;
+      return data.balance;
     },
     enabled: canQueryBalance,
     staleTime: 15_000,
   });
 
-  const currentBalance = balance ?? 0;
-  const isBalancePending = (!!session && profileLoading) || (canQueryBalance && balanceLoading);
-  const cannotVerifyBalance = (!!session && !profileLoading && !userProfile?.org_id) || !!balanceError;
-  const hasEnough = currentBalance >= CREDITS_PER_ACTION;
+  const hasVerifiedBalance = typeof balance === "number";
+  const currentBalance = hasVerifiedBalance ? balance : null;
+  const isBalancePending =
+    (!!session && profileLoading) || (!!session && canQueryBalance && (balanceLoading || recheckingBalance));
+  const cannotVerifyBalance =
+    (!!session && !profileLoading && (!userProfile?.org_id || !!profileError)) ||
+    (!!session && canQueryBalance && !balanceLoading && !hasVerifiedBalance) ||
+    !!balanceError;
+  const showInsufficientBalance = hasVerifiedBalance && currentBalance < CREDITS_PER_ACTION;
 
-  const handleConfirmClick = () => {
-    void refetch();
-    setShowDialog(true);
+  const handleConfirmClick = async () => {
+    if (loading || recheckingBalance) return;
+
+    setRecheckingBalance(true);
+
+    try {
+      if (canQueryBalance) {
+        const result = await refetch();
+        if (typeof result.data === "number" && result.data < CREDITS_PER_ACTION) {
+          return;
+        }
+      }
+
+      setShowDialog(true);
+    } finally {
+      setRecheckingBalance(false);
+    }
   };
 
   const handleDialogConfirm = async () => {
@@ -300,17 +324,7 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
                   </p>
                 </div>
               </div>
-            ) : cannotVerifyBalance ? (
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
-                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Unable to load your credit balance</p>
-                  <p className="text-xs text-muted-foreground">
-                    Refresh the page and try again. Your credits have not been charged.
-                  </p>
-                </div>
-              </div>
-            ) : !hasEnough ? (
+            ) : showInsufficientBalance ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                 <div className="space-y-1">
@@ -324,16 +338,33 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
                   </a>
                 </div>
               </div>
-            ) : (
+            ) : cannotVerifyBalance ? (
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Balance check unavailable on this screen</p>
+                  <p className="text-xs text-muted-foreground">
+                    You can still continue. Your balance will be validated when you confirm, and no credits will be charged unless the POI is generated successfully.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {!showInsufficientBalance && !isBalancePending && (
               <button
                 onClick={handleConfirmClick}
-                disabled={loading || !allRequiredFilled}
+                disabled={loading || recheckingBalance || !allRequiredFilled}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Processing…
+                  </>
+                ) : recheckingBalance ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking credits…
                   </>
                 ) : !allRequiredFilled ? (
                   <>
@@ -373,15 +404,28 @@ export function StateProgressionCard({ match, onAction, loading }: StateProgress
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Your balance</span>
-                    <span className="font-medium text-foreground">{currentBalance.toLocaleString()} credits</span>
-                  </div>
-                  <div className="border-t border-border my-1" />
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">After confirmation</span>
                     <span className="font-medium text-foreground">
-                      {(currentBalance - CREDITS_PER_ACTION).toLocaleString()} credits
+                      {hasVerifiedBalance ? `${currentBalance.toLocaleString()} credits` : "Will be checked on confirmation"}
                     </span>
                   </div>
+                  {hasVerifiedBalance ? (
+                    <>
+                      <div className="border-t border-border my-1" />
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">After confirmation</span>
+                        <span className="font-medium text-foreground">
+                          {(currentBalance - CREDITS_PER_ACTION).toLocaleString()} credits
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="border-t border-border my-1" />
+                      <p className="text-xs text-muted-foreground">
+                        We could not verify your balance on this screen. Your balance will be checked again when you confirm. If it is insufficient, the action will be blocked and no credits will be charged.
+                      </p>
+                    </>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   <strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.
