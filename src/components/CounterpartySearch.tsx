@@ -468,6 +468,15 @@ export default function CounterpartySearch() {
           setQuery={setQuery}
           onSearch={handleSearch}
           isSearching={isSearching}
+          side={bidOfferContext.side || null}
+          onSideChange={(newSide) => {
+            setBidOfferContext((prev) => ({ ...prev, side: newSide }));
+            setSearchParams((prev) => {
+              const updated = new URLSearchParams(prev);
+              updated.set("side", newSide);
+              return updated;
+            }, { replace: true });
+          }}
         />
 
         {/* Parsed Query Display */}
@@ -632,6 +641,7 @@ export default function CounterpartySearch() {
                   isSelected={selectedResults.has(result.id)}
                   onToggleSelect={toggleSelect}
                   onFindSimilar={setSimilarAnchor}
+                  userSide={bidOfferContext.side}
                 />
               </ResultCardErrorBoundary>
             ))}
