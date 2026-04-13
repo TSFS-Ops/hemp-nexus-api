@@ -118,7 +118,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
             type="button"
             disabled={disabled}
             onClick={() => setSide("bid")}
-            className="h-10 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border"
+            className="h-12 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0"
             style={{
               backgroundColor: side === "bid" ? 'var(--lt-emerald-dark)' : '#111827',
               color: side === "bid" ? 'white' : 'var(--lt-text-dim)',
@@ -126,13 +126,14 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               boxShadow: side === "bid" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
-            Buyer
+            <span>Buyer</span>
+            <span className="text-[9px] font-normal normal-case tracking-normal opacity-60">Bid — looking to purchase</span>
           </button>
           <button
             type="button"
             disabled={disabled}
             onClick={() => setSide("offer")}
-            className="h-10 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border"
+            className="h-12 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0"
             style={{
               backgroundColor: side === "offer" ? 'var(--lt-emerald-dark)' : '#111827',
               color: side === "offer" ? 'white' : 'var(--lt-text-dim)',
@@ -140,7 +141,8 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
               boxShadow: side === "offer" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
-            Seller
+            <span>Seller</span>
+            <span className="text-[9px] font-normal normal-case tracking-normal opacity-60">Offer — looking to supply</span>
           </button>
         </div>
       </div>
