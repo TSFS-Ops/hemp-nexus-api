@@ -26,9 +26,9 @@ export function PublicHeader() {
 
   return (
     <nav
-      className="sticky top-0 z-50 backdrop-blur-md"
+      className="sticky top-0 z-50"
       style={{
-        backgroundColor: 'rgba(10, 14, 23, 0.85)',
+        backgroundColor: '#0A0E17',
         borderBottom: '1px solid var(--lt-border)',
       }}
     >
@@ -52,7 +52,7 @@ export function PublicHeader() {
               key={item.to}
               to={item.to}
               className="text-xs font-medium transition-colors hover:opacity-80"
-              style={{ color: 'var(--lt-text-muted)' }}
+              style={{ color: '#F1F5F9' }}
             >
               {item.label}
             </Link>
@@ -71,8 +71,8 @@ export function PublicHeader() {
             </Link>
           ) : (
             <>
-              <AuthLink className="inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
-                        style={{ color: 'var(--lt-text-muted)' }}>
+               <AuthLink className="inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/10"
+                        style={{ color: '#F1F5F9' }}>
                 Log In
               </AuthLink>
               <AuthLink className="inline-flex items-center gap-1.5 px-4 h-8 text-xs font-semibold rounded-md transition-all duration-200 hover:opacity-90"
