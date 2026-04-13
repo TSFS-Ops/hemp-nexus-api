@@ -101,8 +101,8 @@ export function DealWizard({
     },
     {
       id: "wad",
-      label: "Without a Doubt",
-      description: "Create a Without a Doubt evidence bundle with 9-gate compliance validation.",
+      label: "WaD",
+      description: "Create a WaD evidence bundle with 9-gate compliance validation.",
       complete: wadComplete,
       locked: !poiComplete, // Strict: locked until POI generated
     },

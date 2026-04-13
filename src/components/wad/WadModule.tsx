@@ -72,13 +72,13 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       if (result.success && result.data) {
         setWad(result.data);
         setGateFailures([]);
-        toast.success("Without a Doubt confirmed successfully");
+        toast.success("WaD confirmed successfully");
         onWadCreated?.();
       } else {
         if (result.gateFailures?.length) {
           setGateFailures(result.gateFailures);
         }
-        toast.error(result.error || "Failed to confirm Without a Doubt");
+        toast.error(result.error || "Failed to confirm WaD");
       }
     } finally {
       setCreating(false);
@@ -112,7 +112,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
         <CardHeader>
            <CardTitle className="flex items-center gap-2">
              <Shield className="h-5 w-5" />
-             WaD (Without a Doubt)
+              WaD
            </CardTitle>
            <CardDescription>Sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
@@ -149,7 +149,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
           <CardHeader>
            <CardTitle className="flex items-center gap-2">
              <Shield className="h-5 w-5" />
-             WaD (Without a Doubt)
+             WaD
            </CardTitle>
            <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
@@ -207,7 +207,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
                  ? "Select jurisdiction first"
                  : gateFailures.length > 0
                     ? "Retry Creation"
-                    : "Confirm Without a Doubt"}
+                    : "Confirm WaD"}
             </Button>
           </CardContent>
         </Card>

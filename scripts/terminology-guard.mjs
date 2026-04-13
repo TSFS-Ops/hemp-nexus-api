@@ -54,7 +54,7 @@ function scanFile(filePath) {
     /value="share_with_counterparty"/,       // DB enum value
     /id="counterparty"/,                     // HTML element ID
     /htmlFor="counterparty"/,                // HTML label association
-    /\.from\("counterparties"\)/,            // Supabase table name reference
+    /\.from\(["']counterparties["']\)/,            // Supabase table name reference
   ];
 
   for (let i = 0; i < lines.length; i++) {
