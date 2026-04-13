@@ -11,7 +11,7 @@
  * Strict linear: future steps are locked until prior steps are fully complete.
  */
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -19,8 +19,7 @@ import { WizardStepper, type WizardStepDef } from "./WizardStepper";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { MatchNotes } from "@/components/match/MatchNotes";
-import { DisputePanel } from "@/components/match/DisputePanel";
-import { DisputeBanner } from "@/components/match/DisputeBanner";
+
 import { StateProgressionCard } from "@/components/match/StateProgressionCard";
 import { GovernanceDocSubmit } from "@/components/match/GovernanceDocSubmit";
 import { WadModule } from "@/components/wad/WadModule";
@@ -28,7 +27,7 @@ import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { PoiEventsTimeline } from "@/components/match/PoiEventsTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, FileSignature, MessageSquare, ShieldAlert } from "lucide-react";
+import { FileText, FileSignature, MessageSquare } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import type { Match } from "@/hooks/use-match-details";
 
@@ -121,14 +120,11 @@ export function DealWizard({
     return firstIncomplete >= 0 ? firstIncomplete : steps.length - 1;
   }, [steps]);
 
-  const [activeStep, setActiveStep] = useState(defaultStep);
-
-  // Keep active step in bounds when completion changes
-  useEffect(() => {
-    if (steps[activeStep]?.locked) {
-      setActiveStep(defaultStep);
-    }
-  }, [steps, activeStep, defaultStep]);
+  const [activeStep, setActiveStep] = useState(() => {
+    // Start on the first incomplete, unlocked step — but only on mount
+    const first = steps.findIndex(s => !s.complete && !s.locked);
+    return first >= 0 ? first : steps.length - 1;
+  });
 
   const handleStepClick = useCallback((idx: number) => {
     if (!steps[idx].locked) {
@@ -234,8 +230,6 @@ function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; curr
 
   return (
     <div className="space-y-4">
-      <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setSubTab("disputes")} />
-
       {/* Sub-navigation within the match step */}
       <Tabs value={subTab} onValueChange={setSubTab}>
         <TabsList className="flex-wrap h-auto gap-1">
@@ -251,10 +245,6 @@ function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; curr
             <MessageSquare className="h-4 w-4" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="disputes" className="gap-1.5">
-            <ShieldAlert className="h-4 w-4" />
-            Disputes
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="terms" className="mt-4">
@@ -265,9 +255,6 @@ function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; curr
         </TabsContent>
         <TabsContent value="notes" className="mt-4">
           <MatchNotes matchId={match.id} orgId={match.org_id} />
-        </TabsContent>
-        <TabsContent value="disputes" className="mt-4">
-          <DisputePanel matchId={match.id} orgId={match.org_id} />
         </TabsContent>
       </Tabs>
     </div>
