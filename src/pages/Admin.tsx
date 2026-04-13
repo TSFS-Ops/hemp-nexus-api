@@ -366,12 +366,7 @@ function AdminContent() {
               <SidebarTrigger className="touch-target hidden md:flex" />
               <h1 className="text-sm font-medium text-muted-foreground tracking-wide uppercase">Admin</h1>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to={ROUTES.DASHBOARD}>
-                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden xs:inline">Console</span>
-              </Link>
-            </Button>
+            <BackButton fallback={ROUTES.DASHBOARD} label="Console" />
           </header>
           <main className="flex-1 overflow-auto pb-20 md:pb-0">
             <Routes>
