@@ -3617,7 +3617,7 @@ export type Database = {
       pois: {
         Row: {
           buyer_entity_id: string
-          completion_probability: number
+          completion_probability: number | null
           created_at: string
           id: string
           industry_code: string
@@ -3631,7 +3631,7 @@ export type Database = {
         }
         Insert: {
           buyer_entity_id: string
-          completion_probability?: number
+          completion_probability?: number | null
           created_at?: string
           id?: string
           industry_code: string
@@ -3645,7 +3645,7 @@ export type Database = {
         }
         Update: {
           buyer_entity_id?: string
-          completion_probability?: number
+          completion_probability?: number | null
           created_at?: string
           id?: string
           industry_code?: string
