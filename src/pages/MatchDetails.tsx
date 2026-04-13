@@ -135,6 +135,8 @@ function MatchDetailsContent() {
         onStateAction={handleStateAction}
         onRefresh={fetchMatch}
       />
+
+      <MatchHeroCard match={match} isSettled={isSettled} />
     </div>
   );
 }
