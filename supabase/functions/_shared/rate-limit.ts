@@ -24,6 +24,9 @@ const SCOPE_LIMITS: Record<string, RateLimitConfig> = {
   "data-sources:write": { requestsPerMinute: 10, requestsPerHour: 100, requestsPerDay: 1000 },
   "admin:reputation": { requestsPerMinute: 5, requestsPerHour: 30, requestsPerDay: 100 },
   "admin:tests": { requestsPerMinute: 2, requestsPerHour: 10, requestsPerDay: 50 },
+  "pois:write": { requestsPerMinute: 15, requestsPerHour: 200, requestsPerDay: 2000 },
+  "pois:read": { requestsPerMinute: 60, requestsPerHour: 1000, requestsPerDay: 10000 },
+  "pois:transition": { requestsPerMinute: 20, requestsPerHour: 300, requestsPerDay: 3000 },
 };
 
 interface RateLimitWindow {
