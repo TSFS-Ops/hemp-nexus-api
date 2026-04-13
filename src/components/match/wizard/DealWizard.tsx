@@ -11,7 +11,7 @@
  * Strict linear: future steps are locked until prior steps are fully complete.
  */
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
