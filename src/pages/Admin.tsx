@@ -2,7 +2,7 @@ import { Routes, Route, Link, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
@@ -87,12 +87,7 @@ function AdminNotFound() {
       <p className="text-4xl font-bold text-muted-foreground/30 mb-3">404</p>
       <h2 className="text-lg font-semibold text-foreground mb-1">Page not found</h2>
       <p className="text-sm text-muted-foreground mb-4">This admin section does not exist.</p>
-      <Button variant="outline" size="sm" asChild>
-        <Link to={ROUTES.ADMIN}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Overview
-        </Link>
-      </Button>
+      <BackButton fallback={ROUTES.ADMIN} label="Back to Overview" />
     </div>
   );
 }

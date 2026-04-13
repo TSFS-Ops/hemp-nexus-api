@@ -72,13 +72,13 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       if (result.success && result.data) {
         setWad(result.data);
         setGateFailures([]);
-        toast.success("WaD confirmed successfully");
+        toast.success("Without a Doubt confirmed successfully");
         onWadCreated?.();
       } else {
         if (result.gateFailures?.length) {
           setGateFailures(result.gateFailures);
         }
-        toast.error(result.error || "Failed to confirm WaD");
+        toast.error(result.error || "Failed to confirm Without a Doubt");
       }
     } finally {
       setCreating(false);
@@ -206,8 +206,8 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
              {!jurisdictionSelected
                  ? "Select jurisdiction first"
                  : gateFailures.length > 0
-                   ? "Retry WaD Creation"
-                   : "Confirm WaD"}
+                    ? "Retry Creation"
+                    : "Confirm Without a Doubt"}
             </Button>
           </CardContent>
         </Card>

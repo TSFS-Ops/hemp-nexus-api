@@ -38,7 +38,7 @@ const phases = [
     title: "Phase 4 - Evidence & Final Output (~1.5 min)",
     steps: [
       "Generate Evidence Pack v1",
-      "Confirm WaD with hard-gate validations",
+      "Confirm Without a Doubt with hard-gate validations",
       "Collect buyer + seller attestations",
       "Seal Signed Deal (hash chain)",
       "Export certificate",
