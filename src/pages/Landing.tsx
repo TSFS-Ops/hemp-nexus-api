@@ -143,8 +143,8 @@ export default function Landing() {
           >
             Discover Counterparties. Validate Intent. Execute with Confidence.
           </h1>
-          <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-lg" style={{ color: 'var(--lt-text-muted)' }}>
-            Tell us what you want to trade. We'll find verified partners and guide you to a compliant, signed transaction.
+          <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-xl" style={{ color: 'var(--lt-text-muted)' }}>
+            Izenzo is a pre-execution governance platform that structures counterparties, validates readiness, and improves execution certainty across trade, infrastructure, and institutional systems. It ensures transactions move through a sequenced, auditable process with defined counterparties and verified authority.
           </p>
 
           {/* Trade interest form */}
