@@ -180,18 +180,34 @@ function BillingContent() {
     }
   }, [session, queryClient]);
 
-  // Fetch credit balance
-  const { data: balance } = useQuery({
-    queryKey: ["credit-balance-billing"],
+  // Fetch user's org_id for scoped queries
+  const { data: billingProfile } = useQuery({
+    queryKey: ["billing-profile-org", session?.user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("token_balances")
-        .select("balance, minimum_required")
-        .maybeSingle();
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .single();
       if (error) throw error;
       return data;
     },
     enabled: !!session,
+  });
+
+  // Fetch credit balance scoped to org
+  const { data: balance } = useQuery({
+    queryKey: ["credit-balance-billing", billingProfile?.org_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("token_balances")
+        .select("balance, minimum_required")
+        .eq("org_id", billingProfile!.org_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session && !!billingProfile?.org_id,
   });
 
   // Fetch credit usage stats
