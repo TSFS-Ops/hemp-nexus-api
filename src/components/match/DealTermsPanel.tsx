@@ -43,6 +43,8 @@ interface DealTerm {
 interface DealTermsPanelProps {
   matchId: string;
   orgId: string;
+  /** Called after match commercial fields are updated so parent can refresh */
+  onMatchUpdated?: () => void;
 }
 
 const EMPTY_FORM = {
@@ -52,11 +54,17 @@ const EMPTY_FORM = {
   penalty_terms: "",
   partial_shipment: false,
   amendment_notes: "",
+  // Commercial fields that update the match record
+  quantity_amount: "",
+  quantity_unit: "MT",
+  price_amount: "",
+  price_currency: "USD",
 };
 
-export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
+export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPanelProps) {
   const { user } = useAuth();
   const [terms, setTerms] = useState<DealTerm[]>([]);
+  const [matchData, setMatchData] = useState<{ quantity_amount: number | null; quantity_unit: string | null; price_amount: number | null; price_currency: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -125,14 +133,22 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
   const fetchTerms = async () => {
     setFetchError(null);
     try {
-      const { data, error } = await supabase
-        .from("deal_terms")
-        .select("*")
-        .eq("match_id", matchId)
-        .order("version", { ascending: false });
+      const [termsRes, matchRes] = await Promise.all([
+        supabase
+          .from("deal_terms")
+          .select("*")
+          .eq("match_id", matchId)
+          .order("version", { ascending: false }),
+        supabase
+          .from("matches")
+          .select("quantity_amount, quantity_unit, price_amount, price_currency")
+          .eq("id", matchId)
+          .maybeSingle(),
+      ]);
 
-      if (error) throw error;
-      setTerms((data as DealTerm[]) || []);
+      if (termsRes.error) throw termsRes.error;
+      setTerms((termsRes.data as DealTerm[]) || []);
+      if (matchRes.data) setMatchData(matchRes.data as any);
     } catch (err) {
       console.error("[DealTermsPanel] fetch failed:", err);
       setFetchError(err instanceof Error ? err.message : "Failed to load deal terms");
@@ -218,6 +234,34 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
       });
 
       if (error) throw error;
+
+      // Update the match record's commercial fields if provided
+      const qtyNum = form.quantity_amount ? parseFloat(form.quantity_amount) : null;
+      const priceNum = form.price_amount ? parseFloat(form.price_amount) : null;
+      if (qtyNum != null || priceNum != null) {
+        const matchUpdate: Record<string, unknown> = {};
+        if (qtyNum != null && qtyNum > 0) {
+          matchUpdate.quantity_amount = qtyNum;
+          matchUpdate.quantity_unit = form.quantity_unit || "MT";
+        }
+        if (priceNum != null && priceNum > 0) {
+          matchUpdate.price_amount = priceNum;
+          matchUpdate.price_currency = form.price_currency || "USD";
+        }
+        if (Object.keys(matchUpdate).length > 0) {
+          const { error: matchErr } = await supabase
+            .from("matches")
+            .update(matchUpdate)
+            .eq("id", matchId);
+          if (matchErr) {
+            console.error("[DealTermsPanel] match update failed:", matchErr);
+            toast.error("Terms saved but failed to update match commercial fields", { description: matchErr.message });
+          } else {
+            onMatchUpdated?.();
+          }
+        }
+      }
+
       toast.success("Deal terms proposed successfully");
       formDirty.current = false;
       clearDealDraft();
@@ -283,9 +327,19 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
                   penalty_terms: latestTerm.penalty_terms || "",
                   partial_shipment: latestTerm.partial_shipment ?? false,
                   amendment_notes: "",
+                  quantity_amount: matchData?.quantity_amount?.toString() || "",
+                  quantity_unit: matchData?.quantity_unit || "MT",
+                  price_amount: matchData?.price_amount?.toString() || "",
+                  price_currency: matchData?.price_currency || "USD",
                 });
               } else {
-                setForm({ ...EMPTY_FORM });
+                setForm({
+                  ...EMPTY_FORM,
+                  quantity_amount: matchData?.quantity_amount?.toString() || "",
+                  quantity_unit: matchData?.quantity_unit || "MT",
+                  price_amount: matchData?.price_amount?.toString() || "",
+                  price_currency: matchData?.price_currency || "USD",
+                });
               }
               setShowForm(true);
             }
@@ -302,6 +356,60 @@ export function DealTermsPanel({ matchId, orgId }: DealTermsPanelProps) {
             <CardDescription>Capture the key commercial terms for this deal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Commercial fields — update the match record */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-primary" />
+                Commercial Terms (required to proceed to POI)
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Quantity</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={form.quantity_amount}
+                    onChange={(e) => setForm({ ...form, quantity_amount: e.target.value })}
+                    placeholder="e.g. 1000"
+                    aria-label="Quantity"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Unit</Label>
+                  <Input
+                    value={form.quantity_unit}
+                    onChange={(e) => setForm({ ...form, quantity_unit: e.target.value })}
+                    placeholder="e.g. MT, kg, bags"
+                    aria-label="Quantity unit"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Price per unit</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={form.price_amount}
+                    onChange={(e) => setForm({ ...form, price_amount: e.target.value })}
+                    placeholder="e.g. 500"
+                    aria-label="Price"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Currency</Label>
+                  <Input
+                    value={form.price_currency}
+                    onChange={(e) => setForm({ ...form, price_currency: e.target.value })}
+                    placeholder="e.g. USD, ZAR, EUR"
+                    aria-label="Currency"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             <div className="space-y-2">
               <Label>Payment Terms</Label>
               <Textarea value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} placeholder="e.g. 30 days net, Letter of Credit, T/T on delivery" aria-label="Payment terms" />
