@@ -19,7 +19,7 @@ import { WizardStepper, type WizardStepDef } from "./WizardStepper";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { MatchNotes } from "@/components/match/MatchNotes";
-import { DisputeBanner } from "@/components/match/DisputeBanner";
+
 import { StateProgressionCard } from "@/components/match/StateProgressionCard";
 import { GovernanceDocSubmit } from "@/components/match/GovernanceDocSubmit";
 import { WadModule } from "@/components/wad/WadModule";
