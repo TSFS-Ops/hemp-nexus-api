@@ -52,7 +52,7 @@ export function PublicHeader() {
               key={item.to}
               to={item.to}
               className="text-xs font-medium transition-colors hover:opacity-80"
-              style={{ color: 'var(--lt-text-muted)' }}
+              style={{ color: 'var(--lt-text)' }}
             >
               {item.label}
             </Link>
@@ -71,8 +71,8 @@ export function PublicHeader() {
             </Link>
           ) : (
             <>
-              <AuthLink className="inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
-                        style={{ color: 'var(--lt-text-muted)' }}>
+               <AuthLink className="inline-flex items-center px-3 h-8 text-xs font-medium rounded-md transition-all duration-200 hover:bg-white/5"
+                        style={{ color: 'var(--lt-text)' }}>
                 Log In
               </AuthLink>
               <AuthLink className="inline-flex items-center gap-1.5 px-4 h-8 text-xs font-semibold rounded-md transition-all duration-200 hover:opacity-90"
