@@ -230,12 +230,14 @@ function StepSearch({ match }: { match: Match }) {
 // ─── Step 2: Match Details ──────────────────────────────────────────
 
 function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; currentState: string; onMatchUpdated?: () => void }) {
+  const [subTab, setSubTab] = useState("terms");
+
   return (
     <div className="space-y-4">
-      <DisputeBanner matchId={match.id} onNavigateToDisputes={() => {}} />
+      <DisputeBanner matchId={match.id} onNavigateToDisputes={() => setSubTab("disputes")} />
 
       {/* Sub-navigation within the match step */}
-      <Tabs defaultValue="terms">
+      <Tabs value={subTab} onValueChange={setSubTab}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="terms" className="gap-1.5">
             <FileSignature className="h-4 w-4" />
