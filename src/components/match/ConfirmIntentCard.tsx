@@ -40,17 +40,32 @@ export function ConfirmIntentCard({ onConfirm, loading }: ConfirmIntentCardProps
   const [showDialog, setShowDialog] = useState(false);
   const { session } = useAuth();
 
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile-org", session?.user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session,
+  });
+
   const { data: balance, isLoading: balanceLoading, refetch } = useQuery({
-    queryKey: ["token-balance-confirm-single"],
+    queryKey: ["token-balance-confirm-single", userProfile?.org_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("token_balances")
         .select("balance")
-        .maybeSingle();
+        .eq("org_id", userProfile!.org_id)
+        .single();
       if (error) throw error;
       return data?.balance ?? 0;
     },
-    enabled: !!session,
+    enabled: !!session && !!userProfile?.org_id,
     staleTime: 15_000,
   });
 
