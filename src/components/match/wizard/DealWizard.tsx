@@ -153,7 +153,7 @@ export function DealWizard({
         <StepSearch match={match} />
       )}
       {activeStep === 1 && (
-        <StepMatch match={match} currentState={currentState} />
+        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} />
       )}
       {activeStep === 2 && (
         <StepPoi
@@ -219,7 +219,7 @@ function StepSearch({ match }: { match: Match }) {
 
 // ─── Step 2: Match Details ──────────────────────────────────────────
 
-function StepMatch({ match, currentState }: { match: Match; currentState: string }) {
+function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; currentState: string; onMatchUpdated?: () => void }) {
   return (
     <div className="space-y-4">
       <DisputeBanner matchId={match.id} onNavigateToDisputes={() => {}} />
@@ -246,7 +246,7 @@ function StepMatch({ match, currentState }: { match: Match; currentState: string
         </TabsList>
 
         <TabsContent value="terms" className="mt-4">
-          <DealTermsPanel matchId={match.id} orgId={match.org_id} />
+          <DealTermsPanel matchId={match.id} orgId={match.org_id} onMatchUpdated={onMatchUpdated} />
         </TabsContent>
         <TabsContent value="documents" className="mt-4">
           <MatchDocuments matchId={match.id} orgId={match.org_id} />
