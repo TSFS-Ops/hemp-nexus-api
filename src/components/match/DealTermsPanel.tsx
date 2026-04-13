@@ -133,14 +133,22 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
   const fetchTerms = async () => {
     setFetchError(null);
     try {
-      const { data, error } = await supabase
-        .from("deal_terms")
-        .select("*")
-        .eq("match_id", matchId)
-        .order("version", { ascending: false });
+      const [termsRes, matchRes] = await Promise.all([
+        supabase
+          .from("deal_terms")
+          .select("*")
+          .eq("match_id", matchId)
+          .order("version", { ascending: false }),
+        supabase
+          .from("matches")
+          .select("quantity_amount, quantity_unit, price_amount, price_currency")
+          .eq("id", matchId)
+          .maybeSingle(),
+      ]);
 
-      if (error) throw error;
-      setTerms((data as DealTerm[]) || []);
+      if (termsRes.error) throw termsRes.error;
+      setTerms((termsRes.data as DealTerm[]) || []);
+      if (matchRes.data) setMatchData(matchRes.data as any);
     } catch (err) {
       console.error("[DealTermsPanel] fetch failed:", err);
       setFetchError(err instanceof Error ? err.message : "Failed to load deal terms");
