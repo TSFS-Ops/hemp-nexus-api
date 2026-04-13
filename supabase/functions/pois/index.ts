@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -11,7 +12,10 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
  * GET:  List POIs or get by ID.
  * PATCH: Transition Intent state (deterministic state machine).
  *
- * Follows V3 SuccessEnvelope / ErrorEnvelope contract.
+ * Hardened for burst traffic:
+ * - Per-method rate limiting (pois:write, pois:read, pois:transition)
+ * - Parallel entity verification (bilateral path)
+ * - Retry-After headers on 429s
  */
 
 const MIN_PROBABILITY = 0.501; // ≥50.1%
@@ -41,8 +45,6 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 /** Unilateral POIs may not advance past ELIGIBLE */
 const UNILATERAL_STATE_CAP = "ELIGIBLE";
 const PAST_CAP_STATES = ["COMPLETION_REQUESTED", "COMPLETED"];
-
-const IMMUTABLE_STATES = ["COMPLETED", "ANNULLED", "EXPIRED", "REJECTED"];
 
 // ── Validation Schemas ──
 
@@ -88,6 +90,22 @@ function successEnvelope(data: unknown, correlationId: string, dealState?: strin
   };
 }
 
+function errorResponse(code: string, message: string, statusCode: number, correlationId: string, retryAfter?: number) {
+  const headers: Record<string, string> = { ...corsHeaders, "Content-Type": "application/json" };
+  if (retryAfter) {
+    headers["Retry-After"] = retryAfter.toString();
+  }
+  return new Response(
+    JSON.stringify({
+      status: "ERROR",
+      timestamp: new Date().toISOString(),
+      correlation_id: correlationId,
+      error: { code, message },
+    }),
+    { status: statusCode, headers }
+  );
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return handleCors(req);
 
@@ -106,6 +124,9 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Issue POI ──
     if (req.method === "POST") {
+      // Rate limit BEFORE any DB work
+      await checkRateLimit(admin, orgId, null, "pois", "pois:write");
+
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) {
         throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
@@ -145,6 +166,8 @@ Deno.serve(async (req: Request) => {
 
     // ── PATCH: Transition POI State ──
     if (req.method === "PATCH") {
+      await checkRateLimit(admin, orgId, null, "pois", "pois:transition");
+
       const body = await req.json();
       const parsed = PoiTransitionSchema.parse(body);
 
@@ -195,8 +218,8 @@ Deno.serve(async (req: Request) => {
 
       if (updateErr) throw new ApiException("INTERNAL_ERROR", updateErr.message, 500);
 
-      // Record transition event
-      await admin.from("event_store").insert({
+      // Record transition event (fire-and-forget pattern for non-critical audit)
+      admin.from("event_store").insert({
         org_id: orgId,
         domain: "trust",
         aggregate_type: "poi",
@@ -211,6 +234,8 @@ Deno.serve(async (req: Request) => {
           poi_type: poi.poi_type,
         },
         event_hash: await computeHash(JSON.stringify({ poi_id: poi.id, from: fromState, to: toState })),
+      }).then(({ error }) => {
+        if (error) console.error("Event store insert failed:", error.message);
       });
 
       return new Response(
@@ -233,6 +258,8 @@ Deno.serve(async (req: Request) => {
 
     // ── GET: List / Get POIs ──
     if (req.method === "GET") {
+      await checkRateLimit(admin, orgId, null, "pois", "pois:read");
+
       const poiId = url.searchParams.get("poi_id");
 
       if (poiId) {
@@ -278,41 +305,18 @@ Deno.serve(async (req: Request) => {
     throw new ApiException("VALIDATION_ERROR", "Method not allowed", 405);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return new Response(
-        JSON.stringify({
-          status: "ERROR",
-          timestamp: new Date().toISOString(),
-          correlation_id: correlationId,
-          error: { code: "VALIDATION_ERROR", message: err.errors.map((e) => e.message).join(", ") },
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("VALIDATION_ERROR", err.errors.map((e) => e.message).join(", "), 400, correlationId);
     }
     if (err instanceof ApiException) {
-      return new Response(
-        JSON.stringify({
-          status: "ERROR",
-          timestamp: new Date().toISOString(),
-          correlation_id: correlationId,
-          error: { code: err.code, message: err.message },
-        }),
-        { status: err.statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const retryAfter = err.statusCode === 429 ? (err.details as { retryAfter?: number })?.retryAfter : undefined;
+      return errorResponse(err.code, err.message, err.statusCode, correlationId, retryAfter);
     }
     console.error("Unhandled error:", err);
-    return new Response(
-      JSON.stringify({
-        status: "ERROR",
-        timestamp: new Date().toISOString(),
-        correlation_id: correlationId,
-        error: { code: "INTERNAL_ERROR", message: "Internal server error" },
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return errorResponse("INTERNAL_ERROR", "Internal server error", 500, correlationId);
   }
 });
 
-// ── Bilateral POI Creation (existing logic, extracted into function) ──
+// ── Bilateral POI Creation (existing logic, with parallel entity check) ──
 async function handleBilateralCreate(
   admin: ReturnType<typeof createClient>,
   orgId: string,
@@ -330,17 +334,21 @@ async function handleBilateralCreate(
     );
   }
 
-  // ── Guard: mutual interest must exist ──
+  // ── Parallel: mutual interest + entity verification (3 queries → 1 round trip) ──
   const [entityA, entityB] = [parsed.buyer_entity_id, parsed.seller_entity_id].sort();
-  const { data: mutualInterest } = await admin
-    .from("mutual_interests")
-    .select("id, status, expires_at")
-    .eq("entity_a", entityA)
-    .eq("entity_b", entityB)
-    .eq("status", "active")
-    .maybeSingle();
+  const [mutualInterestResult, buyerResult, sellerResult] = await Promise.all([
+    admin
+      .from("mutual_interests")
+      .select("id, status, expires_at")
+      .eq("entity_a", entityA)
+      .eq("entity_b", entityB)
+      .eq("status", "active")
+      .maybeSingle(),
+    admin.from("entities").select("id").eq("id", parsed.buyer_entity_id).maybeSingle(),
+    admin.from("entities").select("id").eq("id", parsed.seller_entity_id).maybeSingle(),
+  ]);
 
-  if (!mutualInterest) {
+  if (!mutualInterestResult.data) {
     throw new ApiException(
       "PRECONDITION_FAILED",
       "Active mutual interest between buyer and seller is required before POI issuance",
@@ -348,8 +356,7 @@ async function handleBilateralCreate(
     );
   }
 
-  // Check expiry
-  if (new Date(mutualInterest.expires_at) < new Date()) {
+  if (new Date(mutualInterestResult.data.expires_at) < new Date()) {
     throw new ApiException(
       "PRECONDITION_FAILED",
       "Mutual interest has expired. Parties must re-declare interest.",
@@ -357,12 +364,8 @@ async function handleBilateralCreate(
     );
   }
 
-  // Verify entities exist
-  const { data: buyer } = await admin.from("entities").select("id").eq("id", parsed.buyer_entity_id).maybeSingle();
-  const { data: seller } = await admin.from("entities").select("id").eq("id", parsed.seller_entity_id).maybeSingle();
-
-  if (!buyer) throw new ApiException("NOT_FOUND", "Buyer entity not found", 404);
-  if (!seller) throw new ApiException("NOT_FOUND", "Seller entity not found", 404);
+  if (!buyerResult.data) throw new ApiException("NOT_FOUND", "Buyer entity not found", 404);
+  if (!sellerResult.data) throw new ApiException("NOT_FOUND", "Seller entity not found", 404);
 
   // Draft Request in DRAFT state
   const { data: poi, error } = await admin
@@ -383,24 +386,9 @@ async function handleBilateralCreate(
 
   if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
 
-  // Record event
-  await admin.from("event_store").insert({
-    org_id: orgId,
-    domain: "trust",
-    aggregate_type: "poi",
-    aggregate_id: poi.id,
-    event_type: "trust.poi.issued",
-    actor_id: authCtx.isApiKey ? null : authCtx.userId,
-    actor_role: authCtx.roles?.[0] || null,
-    payload: {
-      poi_type: "bilateral",
-      buyer_entity_id: parsed.buyer_entity_id,
-      seller_entity_id: parsed.seller_entity_id,
-      completion_probability: parsed.completion_probability,
-      mutual_interest_id: mutualInterest.id,
-    },
-    event_hash: await computeHash(JSON.stringify({ poi_id: poi.id, ts: new Date().toISOString() })),
-  });
+  // Record event + idempotency key in parallel (both are non-blocking writes)
+  const eventHash = await computeHash(JSON.stringify({ poi_id: poi.id, ts: new Date().toISOString() }));
+  const requestHash = await computeHash(JSON.stringify(parsed));
 
   const responseData = successEnvelope(
     {
@@ -418,14 +406,34 @@ async function handleBilateralCreate(
     poi.state
   );
 
-  await admin.from("idempotency_keys").insert({
-    org_id: orgId,
-    idempotency_key: idempotencyKey,
-    endpoint: "pois",
-    request_hash: await computeHash(JSON.stringify(parsed)),
-    response_data: responseData,
-    response_status_code: 201,
-  });
+  // Fire both writes in parallel
+  await Promise.all([
+    admin.from("event_store").insert({
+      org_id: orgId,
+      domain: "trust",
+      aggregate_type: "poi",
+      aggregate_id: poi.id,
+      event_type: "trust.poi.issued",
+      actor_id: authCtx.isApiKey ? null : authCtx.userId,
+      actor_role: authCtx.roles?.[0] || null,
+      payload: {
+        poi_type: "bilateral",
+        buyer_entity_id: parsed.buyer_entity_id,
+        seller_entity_id: parsed.seller_entity_id,
+        completion_probability: parsed.completion_probability,
+        mutual_interest_id: mutualInterestResult.data.id,
+      },
+      event_hash: eventHash,
+    }),
+    admin.from("idempotency_keys").insert({
+      org_id: orgId,
+      idempotency_key: idempotencyKey,
+      endpoint: "pois",
+      request_hash: requestHash,
+      response_data: responseData,
+      response_status_code: 201,
+    }),
+  ]);
 
   return new Response(JSON.stringify(responseData), {
     status: 201,
@@ -446,9 +454,6 @@ async function handleUnilateralCreate(
   const { data: buyer } = await admin.from("entities").select("id").eq("id", parsed.buyer_entity_id).maybeSingle();
   if (!buyer) throw new ApiException("NOT_FOUND", "Declaring entity not found", 404);
 
-  // No mutual interest check — this is a standalone declaration
-  // No probability threshold — not applicable without a counterparty
-
   const { data: poi, error } = await admin
     .from("pois")
     .insert({
@@ -467,23 +472,8 @@ async function handleUnilateralCreate(
 
   if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
 
-  // Record event
-  await admin.from("event_store").insert({
-    org_id: orgId,
-    domain: "trust",
-    aggregate_type: "poi",
-    aggregate_id: poi.id,
-    event_type: "trust.poi.issued.unilateral",
-    actor_id: authCtx.isApiKey ? null : authCtx.userId,
-    actor_role: authCtx.roles?.[0] || null,
-    payload: {
-      poi_type: "unilateral",
-      buyer_entity_id: parsed.buyer_entity_id,
-      jurisdiction_code: parsed.jurisdiction_code,
-      industry_code: parsed.industry_code,
-    },
-    event_hash: await computeHash(JSON.stringify({ poi_id: poi.id, ts: new Date().toISOString() })),
-  });
+  const eventHash = await computeHash(JSON.stringify({ poi_id: poi.id, ts: new Date().toISOString() }));
+  const requestHash = await computeHash(JSON.stringify(parsed));
 
   const responseData = successEnvelope(
     {
@@ -502,14 +492,33 @@ async function handleUnilateralCreate(
     poi.state
   );
 
-  await admin.from("idempotency_keys").insert({
-    org_id: orgId,
-    idempotency_key: idempotencyKey,
-    endpoint: "pois",
-    request_hash: await computeHash(JSON.stringify(parsed)),
-    response_data: responseData,
-    response_status_code: 201,
-  });
+  // Fire both writes in parallel
+  await Promise.all([
+    admin.from("event_store").insert({
+      org_id: orgId,
+      domain: "trust",
+      aggregate_type: "poi",
+      aggregate_id: poi.id,
+      event_type: "trust.poi.issued.unilateral",
+      actor_id: authCtx.isApiKey ? null : authCtx.userId,
+      actor_role: authCtx.roles?.[0] || null,
+      payload: {
+        poi_type: "unilateral",
+        buyer_entity_id: parsed.buyer_entity_id,
+        jurisdiction_code: parsed.jurisdiction_code,
+        industry_code: parsed.industry_code,
+      },
+      event_hash: eventHash,
+    }),
+    admin.from("idempotency_keys").insert({
+      org_id: orgId,
+      idempotency_key: idempotencyKey,
+      endpoint: "pois",
+      request_hash: requestHash,
+      response_data: responseData,
+      response_status_code: 201,
+    }),
+  ]);
 
   return new Response(JSON.stringify(responseData), {
     status: 201,
