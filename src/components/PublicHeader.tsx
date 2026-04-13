@@ -26,9 +26,9 @@ export function PublicHeader() {
 
   return (
     <nav
-      className="sticky top-0 z-50 backdrop-blur-md"
+      className="sticky top-0 z-50"
       style={{
-        backgroundColor: 'rgba(10, 14, 23, 0.85)',
+        backgroundColor: '#0A0E17',
         borderBottom: '1px solid var(--lt-border)',
       }}
     >
