@@ -58,6 +58,9 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
 
+  // Determine user's role from metadata
+  const bidOfferSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
+
   return (
     <Card>
       <CardHeader>
@@ -84,6 +87,11 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
               <span className="text-sm text-muted-foreground font-mono">
                 {match.hash.substring(0, 8)}...
               </span>
+              {bidOfferSide && (
+                <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                  Your role: {bidOfferSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)"}
+                </Badge>
+              )}
             </div>
           </div>
           {isSettled && (
