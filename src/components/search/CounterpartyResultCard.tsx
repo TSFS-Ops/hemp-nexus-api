@@ -36,6 +36,8 @@ interface CounterpartyResultCardProps {
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   onFindSimilar?: (result: SearchResult) => void;
+  /** The current user's side — used to infer the counterparty's role */
+  userSide?: "bid" | "offer";
 }
 
 function getSourceLabel(source: string): { label: string; icon: React.ReactNode; color: string } {
@@ -59,6 +61,7 @@ export function CounterpartyResultCard({
   isSelected, 
   onToggleSelect,
   onFindSimilar,
+  userSide,
 }: CounterpartyResultCardProps) {
   const sourceInfo = getSourceLabel(result.source);
   const isWebDiscovered = result.source === "web_discovery" || result.metadata?.web_discovered;
