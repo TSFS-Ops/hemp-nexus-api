@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
           metadata: {
             request_id: requestId,
             confirmed_at: now,
-            committed_at: committedAt,
+            committed_at: now,
             hash: match.hash,
             buyer_id: match.buyer_id,
             seller_id: match.seller_id,
@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
           supabase, matchId, match.org_id, "poi.generated",
           {
             confirmedAt: now,
-            committedAt,
+            committedAt: now,
             hash: match.hash,
             commodity: match.commodity,
             tokensCharged: ACTION_TOKEN_COSTS.declare_intent,
@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
 
       // Trigger webhooks
       triggerWebhooks(supabase, match.org_id, "poi.generated", {
-        matchId, hash: match.hash, confirmedAt: now, committedAt,
+        matchId, hash: match.hash, confirmedAt: now, committedAt: now,
         commodity: match.commodity, quantity: match.quantity_amount,
         note: "POI generated - no payment or legal obligation"
       }).catch(err => console.error(`Webhook error:`, err));
