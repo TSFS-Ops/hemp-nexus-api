@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { z } from "zod";
-import { Loader2, ArrowLeft, LogIn } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import { getPublicUrl, getHostType } from "@/lib/hostname";
 
 const authSchema = z.object({
@@ -287,7 +287,7 @@ export default function Auth() {
               onClick={() => setShowForgotPassword(false)}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
               Back
             </button>
             <h1 className="text-2xl font-semibold text-foreground mb-2">Reset password</h1>
