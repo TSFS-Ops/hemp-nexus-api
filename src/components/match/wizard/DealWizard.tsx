@@ -176,11 +176,19 @@ export function DealWizard({
 
 function StepSearch({ match }: { match: Match }) {
   const isRevealed = true; // Names are always visible per client requirement
+  const bidOfferSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
 
   return (
     <Card className="border-primary/20">
       <CardHeader>
-        <CardTitle className="text-lg">Trading Partner Identified</CardTitle>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="text-lg">Trading Partner Identified</CardTitle>
+          {bidOfferSide && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-primary/30 bg-primary/5 text-primary">
+              Your role: {bidOfferSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)"}
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
