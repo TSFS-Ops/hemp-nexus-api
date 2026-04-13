@@ -125,7 +125,6 @@ function MatchDetailsContent() {
       </div>
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
-      <MatchHeroCard match={match} isSettled={isSettled} />
 
       <DealWizard
         match={match}
