@@ -140,7 +140,7 @@ export function UsageBillingSection() {
 
   useEffect(() => {
     fetchBalance();
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     if (balance !== null) {
