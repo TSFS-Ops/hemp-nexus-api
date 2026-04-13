@@ -26,6 +26,12 @@ export const TERMINAL_STATES: PoiState[] = ['EXPIRED', 'REJECTED', 'ANNULLED'];
 export const IMMUTABLE_STATES: PoiState[] = ['COMPLETED', 'ANNULLED', 'EXPIRED', 'REJECTED'];
 
 /**
+ * Unilateral POIs may not advance past this state.
+ * WaD, collapse, and completion all require a counterparty.
+ */
+export const UNILATERAL_STATE_CAP: PoiState = 'ELIGIBLE';
+
+/**
  * Valid state transitions.
  * This is the ONLY place transitions are defined.
  */
@@ -87,6 +93,25 @@ export function validateTransition(from: PoiState, to: PoiState): string | null 
  */
 export function isMutable(state: PoiState): boolean {
   return !IMMUTABLE_STATES.includes(state);
+}
+
+/**
+ * Validate a transition for a unilateral POI.
+ * Unilateral POIs cannot advance past UNILATERAL_STATE_CAP (ELIGIBLE).
+ * Returns null if valid, or an error message if blocked.
+ */
+export function validateUnilateralTransition(from: PoiState, to: PoiState): string | null {
+  // First, validate using the standard bilateral rules
+  const baseError = validateTransition(from, to);
+  if (baseError) return baseError;
+
+  // States that are at or past the cap (excluding terminal states which are always allowed)
+  const PAST_CAP: PoiState[] = ['COMPLETION_REQUESTED', 'COMPLETED'];
+  if (PAST_CAP.includes(to)) {
+    return `Unilateral POIs cannot transition to ${to}. A counterparty is required for execution stages. Maximum reachable state: ${UNILATERAL_STATE_CAP}`;
+  }
+
+  return null;
 }
 
 /**
