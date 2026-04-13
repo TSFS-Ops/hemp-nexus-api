@@ -327,13 +327,19 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                   penalty_terms: latestTerm.penalty_terms || "",
                   partial_shipment: latestTerm.partial_shipment ?? false,
                   amendment_notes: "",
-                  quantity_amount: form.quantity_amount,
-                  quantity_unit: form.quantity_unit,
-                  price_amount: form.price_amount,
-                  price_currency: form.price_currency,
+                  quantity_amount: matchData?.quantity_amount?.toString() || "",
+                  quantity_unit: matchData?.quantity_unit || "MT",
+                  price_amount: matchData?.price_amount?.toString() || "",
+                  price_currency: matchData?.price_currency || "USD",
                 });
               } else {
-                setForm({ ...EMPTY_FORM });
+                setForm({
+                  ...EMPTY_FORM,
+                  quantity_amount: matchData?.quantity_amount?.toString() || "",
+                  quantity_unit: matchData?.quantity_unit || "MT",
+                  price_amount: matchData?.price_amount?.toString() || "",
+                  price_currency: matchData?.price_currency || "USD",
+                });
               }
               setShowForm(true);
             }
