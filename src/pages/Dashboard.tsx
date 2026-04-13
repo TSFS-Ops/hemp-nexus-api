@@ -17,7 +17,8 @@ import { ProgrammesSection } from "@/components/dashboard/sections/ProgrammesSec
 import MatchDetails from "@/pages/MatchDetails";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 
 const Billing = lazy(() => import("@/pages/Billing"));
@@ -28,12 +29,7 @@ function DashboardNotFound() {
       <p className="text-4xl font-bold text-muted-foreground/30 mb-3">404</p>
       <h2 className="text-lg font-semibold text-foreground mb-1">Page not found</h2>
       <p className="text-sm text-muted-foreground mb-4">This console page doesn't exist.</p>
-      <Button variant="outline" size="sm" asChild>
-        <Link to={ROUTES.DASHBOARD}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Overview
-        </Link>
-      </Button>
+      <BackButton fallback={ROUTES.DASHBOARD} label="Back to Overview" />
     </div>
   );
 }

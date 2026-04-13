@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 
 const TIMEOUT_MS = 15_000; // 15 seconds to detect recovery event
 
@@ -108,13 +109,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <Link
-            to="/auth"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to sign in
-          </Link>
+          <BackButton fallback="/auth" label="Back to sign in" className="mb-6 -ml-3 text-muted-foreground hover:text-foreground" />
           <h1 className="text-2xl font-semibold text-foreground mb-2">Set new password</h1>
           <p className="text-sm text-muted-foreground">Enter your new password below.</p>
         </div>

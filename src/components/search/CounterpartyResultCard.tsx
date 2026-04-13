@@ -36,7 +36,7 @@ interface CounterpartyResultCardProps {
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   onFindSimilar?: (result: SearchResult) => void;
-  /** The current user's side — used to infer the counterparty's role */
+  /** The current user's side — used to infer the trading partner's role */
   userSide?: "bid" | "offer";
 }
 
@@ -103,7 +103,7 @@ export function CounterpartyResultCard({
               </h4>
               
               <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Counterparty role badge — inferred from user's side */}
+                {/* Trading partner role badge — inferred from user's side */}
                 {userSide && (
                   <Badge 
                     variant="outline" 

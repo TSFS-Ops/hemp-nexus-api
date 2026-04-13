@@ -4,7 +4,8 @@
 
 import { useParams, Link } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
-import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineLoader } from "@/components/ui/inline-loader";
@@ -73,12 +74,7 @@ function MatchDetailsContent() {
                 Retry
               </LoadingButton>
             )}
-            <Button variant="outline" asChild>
-              <Link to={ROUTES.DASHBOARD_MATCHES}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Matches
-              </Link>
-            </Button>
+            <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="Back to Matches" />
           </div>
         </div>
       </div>
@@ -92,12 +88,7 @@ function MatchDetailsContent() {
         <div className="text-center py-16 text-muted-foreground">
           <p className="font-medium">Match not found</p>
           <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
-          <Button variant="outline" className="mt-4" asChild>
-            <Link to={ROUTES.DASHBOARD_MATCHES}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Matches
-            </Link>
-          </Button>
+          <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="Back to Matches" className="mt-4" />
         </div>
       </div>
     );
@@ -116,12 +107,7 @@ function MatchDetailsContent() {
             </Badge>
           )}
         </div>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to={ROUTES.DASHBOARD_MATCHES}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            All Matches
-          </Link>
-        </Button>
+        <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="All Matches" />
       </div>
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
