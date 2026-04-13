@@ -3624,7 +3624,8 @@ export type Database = {
           jurisdiction_code: string
           last_activity_at: string
           org_id: string
-          seller_entity_id: string
+          poi_type: string
+          seller_entity_id: string | null
           state: string
           terms: Json
         }
@@ -3637,7 +3638,8 @@ export type Database = {
           jurisdiction_code: string
           last_activity_at?: string
           org_id: string
-          seller_entity_id: string
+          poi_type?: string
+          seller_entity_id?: string | null
           state?: string
           terms?: Json
         }
@@ -3650,7 +3652,8 @@ export type Database = {
           jurisdiction_code?: string
           last_activity_at?: string
           org_id?: string
-          seller_entity_id?: string
+          poi_type?: string
+          seller_entity_id?: string | null
           state?: string
           terms?: Json
         }
