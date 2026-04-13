@@ -10,7 +10,9 @@ export {
   VALID_TRANSITIONS,
   TERMINAL_STATES,
   IMMUTABLE_STATES,
+  UNILATERAL_STATE_CAP,
   validateTransition,
+  validateUnilateralTransition,
   isMutable,
   canCollapse,
 } from './state-machine';
