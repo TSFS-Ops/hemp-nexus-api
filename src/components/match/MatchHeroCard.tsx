@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
+import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import type { Match } from "@/hooks/use-match-details";
 
 interface MatchHeroCardProps {
@@ -58,8 +59,17 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
 
-  // Determine user's role from metadata
-  const bidOfferSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
+  // Determine user's role: prefer metadata, fall back to org_id matching
+  const userOrgId = useUserOrg();
+  const metaSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
+  const inferredRole = getMatchRole(userOrgId, match as any);
+  const roleBadgeLabel = metaSide
+    ? (metaSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)")
+    : inferredRole === "buyer"
+      ? "Buyer (Bid)"
+      : inferredRole === "seller"
+        ? "Seller (Offer)"
+        : null;
 
   return (
     <Card>
@@ -87,9 +97,9 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
               <span className="text-sm text-muted-foreground font-mono">
                 {match.hash.substring(0, 8)}...
               </span>
-              {bidOfferSide && (
+              {roleBadgeLabel && (
                 <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-                  Your role: {bidOfferSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)"}
+                  Your role: {roleBadgeLabel}
                 </Badge>
               )}
             </div>
