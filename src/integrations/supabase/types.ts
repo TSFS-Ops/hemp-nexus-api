@@ -2898,6 +2898,7 @@ export type Database = {
           state: string
           status: string
           terms: string | null
+          trade_request_id: string | null
         }
         Insert: {
           buyer_committed_at?: string | null
@@ -2933,6 +2934,7 @@ export type Database = {
           state?: string
           status?: string
           terms?: string | null
+          trade_request_id?: string | null
         }
         Update: {
           buyer_committed_at?: string | null
@@ -2968,6 +2970,7 @@ export type Database = {
           state?: string
           status?: string
           terms?: string | null
+          trade_request_id?: string | null
         }
         Relationships: [
           {
@@ -2989,6 +2992,13 @@ export type Database = {
             columns: ["seller_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_trade_request_id_fkey"
+            columns: ["trade_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -4945,6 +4955,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "trade_orders_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_requests: {
+        Row: {
+          commodity: string | null
+          created_at: string
+          created_by: string
+          id: string
+          location: string | null
+          match_type: string | null
+          metadata: Json | null
+          org_id: string
+          price_amount: number | null
+          price_currency: string | null
+          quantity_amount: number | null
+          quantity_unit: string | null
+          side: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commodity?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          location?: string | null
+          match_type?: string | null
+          metadata?: Json | null
+          org_id: string
+          price_amount?: number | null
+          price_currency?: string | null
+          quantity_amount?: number | null
+          quantity_unit?: string | null
+          side?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commodity?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          location?: string | null
+          match_type?: string | null
+          metadata?: Json | null
+          org_id?: string
+          price_amount?: number | null
+          price_currency?: string | null
+          quantity_amount?: number | null
+          quantity_unit?: string | null
+          side?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_requests_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
