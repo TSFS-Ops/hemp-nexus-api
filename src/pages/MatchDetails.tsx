@@ -1,8 +1,10 @@
 /**
  * MatchDetails Page - Thin orchestrator with breadcrumb back-navigation.
+ * Fetches engagement status and passes it down to enforce the POI hold-point.
  */
 
 import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { ShieldAlert } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
@@ -19,6 +21,8 @@ import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { EngagementTracker } from "@/components/match/EngagementTracker";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { supabase } from "@/integrations/supabase/client";
+import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 
 function MatchDetailsContent() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -34,6 +38,26 @@ function MatchDetailsContent() {
     handleSettle,
     handleStateAction,
   } = useMatchDetails(matchId);
+
+  // Fetch engagement status for this match to enforce the hold-point gate
+  const { data: engagementData } = useQuery({
+    queryKey: ["engagement-status-gate", matchId],
+    queryFn: async () => {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session?.access_token) return null;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/by-match/${matchId}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      );
+      if (!response.ok) return null;
+      const result = await response.json();
+      return result?.engagement || null;
+    },
+    enabled: !!matchId,
+    refetchInterval: 30000,
+  });
+
+  const engagementStatus: EngagementStatus = engagementData?.engagement_status || null;
 
   const matchRole = match ? getMatchRole(userOrgId, match as any) : null;
 
@@ -123,6 +147,7 @@ function MatchDetailsContent() {
         onConfirm={handleSettle}
         onStateAction={handleStateAction}
         onRefresh={fetchMatch}
+        engagementStatus={engagementStatus}
       />
 
       <MatchHeroCard match={match} isSettled={isSettled} />
