@@ -113,7 +113,7 @@ function MatchDetailsContent() {
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
 
-      {isSettled && matchId && <EngagementTracker matchId={matchId} />}
+      {isSettled && matchId && <EngagementTracker matchId={matchId} match={match} />}
 
       <DealWizard
         match={match}
