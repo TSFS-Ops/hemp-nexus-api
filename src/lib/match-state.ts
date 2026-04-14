@@ -187,7 +187,8 @@ export function getNextActionLabel(currentState: string, matchType?: string): st
   }
   const labels: Record<string, string> = {
     discovery: "Generate POI - 1 credit",
-    committed: "Complete Transaction",
+    // "committed" CTA is intentionally omitted — the hold-point blocks progression
+    // until counterparty engagement is accepted, which is managed by DealWizard.
   };
   return labels[currentState] ?? null;
 }
@@ -203,7 +204,7 @@ export function getNextActionDescription(currentState: string, matchType?: strin
   }
   const descriptions: Record<string, string> = {
     discovery: "Generates a Proof of Intent (POI) record for this trade. 1 credit (R10) will be charged. Non-binding.",
-    committed: "Marks the transaction as completed. The full evidence pack is sealed. No additional charge.",
+    // No committed description — DealWizard manages progression after POI hold-point
   };
   return descriptions[currentState] ?? null;
 }
