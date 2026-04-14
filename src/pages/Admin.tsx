@@ -55,6 +55,7 @@ import { AdminLicencesPanel } from "@/components/admin/AdminLicencesPanel";
 import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
+import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -115,6 +116,19 @@ function DealsSection() {
         <TabsContent value="matches" className="mt-4 animate-section-enter"><AdminMatchesPanel /></TabsContent>
         <TabsContent value="approvals" className="mt-4 animate-section-enter"><AdminTradeApprovalsPanel /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function EngagementsSection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
+      <SectionHeader
+        title="Pending Engagements"
+        description="POIs awaiting counterparty response. Filter by known or unknown counterparties and track expiry countdowns."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <AdminPendingEngagementsPanel />
     </div>
   );
 }
@@ -373,6 +387,7 @@ function AdminContent() {
               {/* OPERATIONS */}
               <Route path="/" element={<AdminOverview />} />
               <Route path="/deals" element={<DealsSection />} />
+              <Route path="/engagements" element={<EngagementsSection />} />
               <Route path="/order-book" element={<OrderBookSection />} />
               {/* TRUST & INTEGRITY */}
               <Route path="/compliance" element={<ComplianceSection />} />
