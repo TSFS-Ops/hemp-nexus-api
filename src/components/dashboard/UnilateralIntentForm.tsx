@@ -176,6 +176,34 @@ export function UnilateralIntentForm() {
         ? { id: profile.org_id, name: myName }
         : null;
 
+      // Create the persistent trade request first
+      const { data: tradeRequest, error: trError } = await supabase
+        .from("trade_requests")
+        .insert({
+          org_id: profile.org_id,
+          created_by: profile.id,
+          commodity: form.commodity.trim(),
+          quantity_amount: quantityAmount && !isNaN(quantityAmount) ? quantityAmount : null,
+          quantity_unit: form.unit || "MT",
+          price_amount: priceAmount && !isNaN(priceAmount) ? priceAmount : null,
+          price_currency: form.currency || "ZAR",
+          side: form.side,
+          location: form.location.trim() || null,
+          match_type: "unilateral",
+          metadata: {
+            notes: form.notes.trim() || null,
+            counterpartyEmail: form.counterpartyEmail.trim() || null,
+            originCountry: form.originCountry.trim() || null,
+            destinationCountry: form.destinationCountry.trim() || null,
+          },
+        } as any)
+        .select("id")
+        .single();
+
+      if (trError) {
+        console.error("Failed to create trade request:", trError);
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
         {
@@ -190,6 +218,7 @@ export function UnilateralIntentForm() {
             seller,
             commodity: form.commodity.trim(),
             match_type: "unilateral",
+            trade_request_id: tradeRequest?.id || null,
             quantity: quantityAmount && !isNaN(quantityAmount) && quantityAmount > 0
               ? { amount: quantityAmount, unit: form.unit || "MT" }
               : null,

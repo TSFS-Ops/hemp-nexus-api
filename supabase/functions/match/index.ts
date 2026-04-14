@@ -1014,9 +1014,7 @@ Deno.serve(async (req) => {
 
       // Insert match - buyer/seller can be null for unilateral intents
       const matchMetadata = body.metadata || {};
-      const { data: match, error: insertError } = await supabase
-        .from("matches")
-        .insert({
+      const insertPayload: Record<string, unknown> = {
           org_id: authCtx.orgId,
           created_by: getCreatedBy(authCtx),
           buyer_id: body.buyer?.id ?? null,
@@ -1035,7 +1033,16 @@ Deno.serve(async (req) => {
           status: "matched",
           origin_country: body.origin_country ?? matchMetadata.origin_jurisdiction ?? null,
           destination_country: body.destination_country ?? matchMetadata.destination_jurisdiction ?? null,
-        })
+      };
+
+      // Link to parent trade_request if provided
+      if (body.trade_request_id) {
+        insertPayload.trade_request_id = body.trade_request_id;
+      }
+
+      const { data: match, error: insertError } = await supabase
+        .from("matches")
+        .insert(insertPayload)
         .select()
         .single();
 
