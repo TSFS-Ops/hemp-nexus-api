@@ -148,7 +148,7 @@ export function BilateralMatchForm() {
         .maybeSingle();
 
       const myName = org?.name || profile.full_name || "Your Organisation";
-      const counterpartyId = `bilateral_${crypto.randomUUID().slice(0, 12)}`;
+      const counterpartyId = crypto.randomUUID();
 
       const quantityAmount = form.quantity ? parseFloat(form.quantity) : null;
       const priceAmount = form.price ? parseFloat(form.price) : null;
