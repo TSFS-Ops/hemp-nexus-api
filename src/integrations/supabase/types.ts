@@ -3566,6 +3566,8 @@ export type Database = {
       poi_engagements: {
         Row: {
           admin_notes: string | null
+          contact_date: string | null
+          contact_method: string | null
           contacted_at: string | null
           counterparty_email: string | null
           counterparty_org_id: string | null
@@ -3581,6 +3583,8 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          contact_date?: string | null
+          contact_method?: string | null
           contacted_at?: string | null
           counterparty_email?: string | null
           counterparty_org_id?: string | null
@@ -3596,6 +3600,8 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          contact_date?: string | null
+          contact_method?: string | null
           contacted_at?: string | null
           counterparty_email?: string | null
           counterparty_org_id?: string | null

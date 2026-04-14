@@ -168,7 +168,7 @@ export function AdminPendingEngagementsPanel() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | null>(null);
-  const [actionForm, setActionForm] = useState<{ status?: string; email?: string; notes?: string }>({});
+  const [actionForm, setActionForm] = useState<{ status?: string; email?: string; notes?: string; contactMethod?: string; contactDate?: string }>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-engagements", statusFilter, typeFilter],
@@ -214,9 +214,18 @@ export function AdminPendingEngagementsPanel() {
   const handleUpdate = () => {
     if (!selectedEngagement) return;
     const updates: Record<string, unknown> = {};
-    if (actionForm.status) updates.engagement_status = actionForm.status;
+    if (actionForm.status) {
+      // Require proof of contact when marking as contacted
+      if (actionForm.status === "contacted" && !actionForm.contactMethod) {
+        toast.error("Please select a contact method before marking as Contacted");
+        return;
+      }
+      updates.engagement_status = actionForm.status;
+    }
     if (actionForm.email) updates.counterparty_email = actionForm.email;
     if (actionForm.notes) updates.admin_notes = actionForm.notes;
+    if (actionForm.contactMethod) updates.contact_method = actionForm.contactMethod;
+    if (actionForm.contactDate) updates.contact_date = new Date(actionForm.contactDate).toISOString();
     if (Object.keys(updates).length === 0) {
       toast.error("No changes to save");
       return;
@@ -411,6 +420,40 @@ export function AdminPendingEngagementsPanel() {
                   If this person registers with this email, they'll be auto-linked to the trade.
                 </p>
               </div>
+
+              {/* Proof of contact fields — required when marking as Contacted */}
+              {(selectedEngagement.engagement_status === "notification_sent" || selectedEngagement.engagement_status === "contacted") && (
+                <div className="space-y-3 rounded-md border border-border p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Proof of Contact</p>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground">Contact Method</label>
+                    <Select
+                      value={actionForm.contactMethod || ""}
+                      onValueChange={(v) => setActionForm((prev) => ({ ...prev, contactMethod: v }))}
+                    >
+                      <SelectTrigger className="mt-1 h-8 text-xs">
+                        <SelectValue placeholder="Select method of contact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="phone">Phone Call</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                        <SelectItem value="in_person">In Person</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground">Contact Date & Time</label>
+                    <Input
+                      type="datetime-local"
+                      value={actionForm.contactDate || ""}
+                      onChange={(e) => setActionForm((prev) => ({ ...prev, contactDate: e.target.value }))}
+                      className="mt-1 h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Status transition */}
               {!["accepted", "declined", "expired"].includes(selectedEngagement.engagement_status) && (
