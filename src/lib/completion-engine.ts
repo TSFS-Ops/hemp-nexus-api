@@ -140,6 +140,8 @@ export interface DisputeSummary {
   total: number;
 }
 
+export type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
+
 export interface CompletionInput {
   match: MatchData;
   wad: WadData | null;
@@ -150,6 +152,8 @@ export interface CompletionInput {
   disputes: DisputeSummary;
   userRole: UserRole;
   userOrgId: string;
+  /** Engagement status for the hold-point gate — null means no engagement record */
+  engagementStatus?: EngagementStatus;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -321,18 +325,30 @@ function derivePoi(input: CompletionInput): StageState {
 // ─── WaD Stage ──────────────────────────────────────────────────────
 
 function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
-  const { match, wad, userRole } = input;
+  const { match, wad, userRole, engagementStatus } = input;
   const isSettled = match.status === "settled";
+
+  // ── ENGAGEMENT HOLD-POINT GATE ──
+  // WaD is blocked until counterparty engagement is accepted
+  const engagementAccepted = engagementStatus === "accepted";
+  const holdPointActive = isSettled && !engagementAccepted;
 
   const substeps: Substep[] = [];
   const actions: TrackerAction[] = [];
 
   if (!wad) {
-    // No WaD exists
-    const canCreate = isSettled && poiStatus === "complete";
+    // No WaD exists — canCreate requires POI complete AND engagement accepted
+    const canCreate = isSettled && poiStatus === "complete" && engagementAccepted;
 
     substeps.push(
       { label: "POI must be issued (intent confirmed)", done: isSettled },
+      {
+        label: "Counterparty engagement accepted",
+        done: engagementAccepted,
+        detail: holdPointActive
+          ? "Awaiting counterparty engagement — process paused"
+          : undefined,
+      },
       { label: "WaD record created", done: false },
       { label: "9-gate validation passed", done: false },
       { label: "Attestations collected", done: false },
@@ -348,9 +364,11 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
       allowed: canCreate,
       blockedReason: !isSettled
         ? "Intent must be confirmed before creating a WaD"
-        : poiStatus !== "complete"
-          ? "POI stage must be complete first"
-          : null,
+        : holdPointActive
+          ? "Counterparty must accept the engagement before WaD can begin"
+          : poiStatus !== "complete"
+            ? "POI stage must be complete first"
+            : null,
       requiredRole: "org_admin",
       stage: "wad",
       priority: canCreate ? 1 : 99,
@@ -360,13 +378,15 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     return {
       id: "wad",
       label: "WaD (Without a Doubt)",
-      status: canCreate ? "pending" : "not_started",
-      detail: canCreate
-        ? "Ready to create - POI is complete. Navigate to WaD tab to begin."
-        : "Waiting for POI completion before WaD can be initiated",
+      status: holdPointActive ? "blocked" : canCreate ? "pending" : "not_started",
+      detail: holdPointActive
+        ? "Blocked — awaiting counterparty engagement acceptance before WaD can begin"
+        : canCreate
+          ? "Ready to create - POI is complete and engagement accepted. Navigate to WaD tab to begin."
+          : "Waiting for POI completion before WaD can be initiated",
       substeps,
       actions,
-      completionPct: isSettled ? 20 : 0,
+      completionPct: isSettled && engagementAccepted ? 20 : isSettled ? 10 : 0,
     };
   }
 

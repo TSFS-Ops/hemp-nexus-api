@@ -86,7 +86,7 @@ describe("resolveCompletion", () => {
     expect(wad.status).toBe("not_started");
   });
 
-  it("WaD is pending when POI is complete", () => {
+  it("WaD is blocked when POI complete but engagement not accepted", () => {
     const result = resolveCompletion(baseInput({
       match: {
         ...baseInput().match,
@@ -95,6 +95,24 @@ describe("resolveCompletion", () => {
         buyer_committed_at: "2026-01-01T00:00:00Z",
         seller_committed_at: "2026-01-01T00:00:00Z",
       },
+    }));
+    const wad = result.stages[1];
+    expect(wad.status).toBe("blocked");
+    const createAction = wad.actions.find(a => a.type === "create_wad");
+    expect(createAction!.allowed).toBe(false);
+    expect(createAction!.blockedReason).toContain("Counterparty must accept");
+  });
+
+  it("WaD is pending when POI complete and engagement accepted", () => {
+    const result = resolveCompletion(baseInput({
+      match: {
+        ...baseInput().match,
+        status: "settled",
+        settled_at: "2026-01-01T00:00:00Z",
+        buyer_committed_at: "2026-01-01T00:00:00Z",
+        seller_committed_at: "2026-01-01T00:00:00Z",
+      },
+      engagementStatus: "accepted",
     }));
     const wad = result.stages[1];
     expect(wad.status).toBe("pending");
