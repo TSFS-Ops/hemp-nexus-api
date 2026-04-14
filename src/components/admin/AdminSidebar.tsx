@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Landmark,
   HeartPulse,
+  Handshake,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -49,6 +50,7 @@ const sidebarGroups: NavGroup[] = [
     items: [
       { title: "Global Overview", url: ROUTES.ADMIN, icon: Activity, exact: true },
       { title: "Active Requests", url: ROUTES.ADMIN_DEALS, icon: GitCompare },
+      { title: "Pending Engagements", url: ROUTES.ADMIN_ENGAGEMENTS, icon: Handshake },
       { title: "Complete Deals", url: ROUTES.ADMIN_ORDER_BOOK, icon: CheckCircle2 },
     ],
   },

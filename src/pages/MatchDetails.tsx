@@ -16,6 +16,7 @@ import { useMatchDetails } from "@/hooks/use-match-details";
 import { MatchHeroCard } from "@/components/match/MatchHeroCard";
 import { DealWizard } from "@/components/match/wizard/DealWizard";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
+import { EngagementTracker } from "@/components/match/EngagementTracker";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 
@@ -111,6 +112,8 @@ function MatchDetailsContent() {
       </div>
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
+
+      {isSettled && matchId && <EngagementTracker matchId={matchId} />}
 
       <DealWizard
         match={match}
