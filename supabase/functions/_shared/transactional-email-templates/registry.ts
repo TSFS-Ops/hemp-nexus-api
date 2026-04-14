@@ -13,10 +13,12 @@ import { template as matchNotification } from './match-notification.tsx'
 import { template as stateTransition } from './state-transition.tsx'
 import { template as poiIssuance } from './poi-issuance.tsx'
 import { template as poiInvite } from './poi-invite.tsx'
+import { template as poiCounterpartyNotify } from './poi-counterparty-notify.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'match-notification': matchNotification,
   'state-transition': stateTransition,
   'poi-issuance': poiIssuance,
   'poi-invite': poiInvite,
+  'poi-counterparty-notify': poiCounterpartyNotify,
 }
