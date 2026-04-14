@@ -55,6 +55,7 @@ import { AdminLicencesPanel } from "@/components/admin/AdminLicencesPanel";
 import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
+import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -373,6 +374,7 @@ function AdminContent() {
               {/* OPERATIONS */}
               <Route path="/" element={<AdminOverview />} />
               <Route path="/deals" element={<DealsSection />} />
+              <Route path="/engagements" element={<EngagementsSection />} />
               <Route path="/order-book" element={<OrderBookSection />} />
               {/* TRUST & INTEGRITY */}
               <Route path="/compliance" element={<ComplianceSection />} />
