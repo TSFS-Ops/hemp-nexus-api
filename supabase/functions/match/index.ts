@@ -301,6 +301,27 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POI generated successfully (discovery → committed)`);
 
+      // ── Create POI Engagement Record (hold-point) ──
+      // This creates the engagement tracking entry that gates progression until
+      // the counterparty responds (accepted/declined/expired).
+      (async () => {
+        try {
+          const isUnilateral = match.match_type === 'unilateral' || !match.buyer_id || !match.seller_id;
+          const counterpartyOrgId = isUnilateral ? null : (match.buyer_id === match.org_id ? match.seller_id : match.buyer_id);
+
+          await supabase.from("poi_engagements").insert({
+            match_id: matchId,
+            org_id: match.org_id,
+            counterparty_org_id: counterpartyOrgId || null,
+            counterparty_type: isUnilateral ? 'unknown' : 'known',
+            engagement_status: 'notification_sent',
+          });
+          console.log(`[${requestId}] POI engagement record created (type=${isUnilateral ? 'unknown' : 'known'})`);
+        } catch (engErr) {
+          console.error(`[${requestId}] Failed to create engagement record:`, engErr);
+        }
+      })();
+
       // Trigger webhooks
       triggerWebhooks(supabase, match.org_id, "poi.generated", {
         matchId, hash: match.hash, confirmedAt: now, committedAt: now,
