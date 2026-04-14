@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
     const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
     const { actorUserId } = deriveActorIds(authCtx);
-    const isAdmin = authCtx.roles.includes("admin") || authCtx.roles.includes("platform_admin");
+    const isAdmin = authCtx.roles.includes("platform_admin");
 
     // Fetch document
     const { data: doc, error: docErr } = await supabase

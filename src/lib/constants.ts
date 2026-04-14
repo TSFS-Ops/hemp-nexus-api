@@ -11,7 +11,6 @@ export const APP_ROLES = {
   PLATFORM_ADMIN: 'platform_admin',
   ORG_ADMIN: 'org_admin',
   ORG_MEMBER: 'org_member',
-  ADMIN: 'admin',        // legacy alias for platform_admin
   BUYER: 'buyer',
   AUDITOR: 'auditor',
 } as const;
@@ -21,7 +20,6 @@ export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
 /** Roles that grant platform-admin level access */
 export const PLATFORM_ADMIN_ROLES: readonly string[] = [
   APP_ROLES.PLATFORM_ADMIN,
-  APP_ROLES.ADMIN,
 ] as const;
 
 
@@ -74,7 +72,6 @@ export const ROUTES = {
 export const MATCH_STATUS = {
   MATCHED: 'matched',
   SETTLED: 'settled',
-  CONFIRMED: 'confirmed',
 } as const;
 
 export type MatchStatus = (typeof MATCH_STATUS)[keyof typeof MATCH_STATUS];

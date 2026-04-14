@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
           const { data: burnResult, error: burnError } = await admin.rpc("atomic_token_burn", {
             p_org_id: govDoc.org_id,
             p_amount: burnAmount,
-            p_reason: "governance_burn",
+            p_reason: "action:governance_burn",
             p_reference_id: govDoc.id,
           });
 

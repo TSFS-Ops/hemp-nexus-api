@@ -309,13 +309,14 @@ export const hashApiKey = async (key: string): Promise<string> => {
     ['deriveBits']
   );
   
-  // Derive bits using PBKDF2 (similar security to scrypt)
-  // N=2^16 iterations, memory-hard parameters
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt: salt,
-      iterations: 65536,
+   // Derive bits using PBKDF2 (similar security to scrypt)
+   // N=2^16 iterations, memory-hard parameters
+   const PBKDF2_ITERATIONS = 65536;
+   const derivedBits = await crypto.subtle.deriveBits(
+     {
+       name: 'PBKDF2',
+       salt: salt,
+       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256'
     },
     keyMaterial,
@@ -355,13 +356,14 @@ const verifyScrypt = async (key: string, storedHash: string): Promise<boolean> =
       ['deriveBits']
     );
     
-    // Derive bits with same parameters
-    const derivedBits = await crypto.subtle.deriveBits(
-      {
-        name: 'PBKDF2',
-        salt: salt,
-        iterations: 65536,
-        hash: 'SHA-256'
+     // Derive bits with same parameters — must match hashScrypt
+     const PBKDF2_ITERATIONS = 65536;
+     const derivedBits = await crypto.subtle.deriveBits(
+       {
+         name: 'PBKDF2',
+         salt: salt,
+         iterations: PBKDF2_ITERATIONS,
+         hash: 'SHA-256'
       },
       keyMaterial,
       256
@@ -387,7 +389,7 @@ const hashApiKeySHA256 = async (key: string): Promise<string> => {
 };
 
 export const requireRole = (ctx: AuthContext, role: string) => {
-  if (!ctx.roles.includes(role) && !ctx.roles.includes('admin')) {
+  if (!ctx.roles.includes(role) && !ctx.roles.includes('platform_admin')) {
     throw new ApiException('FORBIDDEN', 'Insufficient permissions', 403);
   }
 };

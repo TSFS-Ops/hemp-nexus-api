@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
 
     // Check ownership (only uploader org can change visibility)
     const uploaderOrgId = document.uploader_org_id || document.org_id;
-    const isAdmin = authCtx.roles.includes("admin");
+    const isAdmin = authCtx.roles.includes("platform_admin");
 
     if (uploaderOrgId !== authCtx.orgId && !isAdmin) {
       throw new ApiException(

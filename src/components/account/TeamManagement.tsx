@@ -235,7 +235,6 @@ export function TeamManagement() {
     switch (role) {
       case "platform_admin": return "bg-red-500/10 text-red-700 border-red-200";
       case "org_admin": return "bg-amber-500/10 text-amber-700 border-amber-200";
-      case "admin": return "bg-red-500/10 text-red-700 border-red-200";
       default: return "";
     }
   };

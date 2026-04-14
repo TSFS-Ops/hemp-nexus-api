@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    const isAdmin = authCtx.roles.includes("admin");
+    const isAdmin = authCtx.roles.includes("platform_admin");
 
     // Fetch match (used for counterparty access checks)
     const { data: match, error: matchError } = await supabase
