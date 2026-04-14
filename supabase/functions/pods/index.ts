@@ -277,7 +277,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!pod) throw new ApiException("NOT_FOUND", "PoD not found", 404);
-      if (pod.org_id !== orgId && !authCtx.roles.includes("admin") && !authCtx.roles.includes("platform_admin")) {
+      if (pod.org_id !== orgId && !authCtx.roles.includes("platform_admin")) {
         throw new ApiException("FORBIDDEN", "Not authorised", 403);
       }
 

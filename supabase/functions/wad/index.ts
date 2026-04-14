@@ -59,9 +59,9 @@ function buildCanonicalPayload(wad: any, attestations: any[], documents: any[]):
   };
 }
 
-// Check if user has admin/platform_admin role
+// Check if user has platform_admin role
 function isAdmin(authCtx: { roles: string[] }): boolean {
-  return authCtx.roles.includes("admin") || authCtx.roles.includes("platform_admin");
+  return authCtx.roles.includes("platform_admin");
 }
 
 // Check if user is a party to the WaD

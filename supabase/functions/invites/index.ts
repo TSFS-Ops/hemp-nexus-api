@@ -187,7 +187,6 @@ Deno.serve(async (req) => {
         invite.from_org_id === authCtx.orgId ||
         invite.to_org_id === authCtx.orgId ||
         invite.to_email === userEmail ||
-        authCtx.roles.includes("admin") ||
         authCtx.roles.includes("platform_admin");
       if (!hasAccess) throw new ApiException("FORBIDDEN", "You do not have access to this invite", 403);
 
