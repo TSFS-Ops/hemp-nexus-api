@@ -17,6 +17,8 @@ const UpdateEngagementSchema = z.object({
   engagement_status: EngagementStatusSchema.optional(),
   counterparty_email: z.string().email().optional(),
   admin_notes: z.string().max(2000).optional(),
+  contact_method: z.enum(["email", "phone", "whatsapp", "in_person", "other"]).optional(),
+  contact_date: z.string().datetime().optional(),
 });
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -159,6 +161,15 @@ Deno.serve(async (req) => {
 
         if (parsed.data.engagement_status === "contacted") {
           updates.contacted_at = new Date().toISOString();
+          // Record proof of contact
+          if (parsed.data.contact_method) {
+            updates.contact_method = parsed.data.contact_method;
+          }
+          if (parsed.data.contact_date) {
+            updates.contact_date = parsed.data.contact_date;
+          } else {
+            updates.contact_date = new Date().toISOString();
+          }
         }
         if (["accepted", "declined"].includes(parsed.data.engagement_status)) {
           updates.responded_at = new Date().toISOString();
