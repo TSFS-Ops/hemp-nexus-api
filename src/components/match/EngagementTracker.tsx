@@ -19,6 +19,7 @@ interface EngagementTrackerProps {
     price_currency?: string | null;
     match_type?: string | null;
     metadata?: unknown;
+    trade_request_id?: string | null;
   };
 }
 
