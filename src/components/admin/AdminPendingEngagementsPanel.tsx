@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Clock, Mail, Building2, AlertTriangle, CheckCircle2, XCircle, Timer } from "lucide-react";
-import { format, formatDistanceToNow, isPast } from "date-fns";
+import { Clock, Mail, Building2, AlertTriangle, CheckCircle2, XCircle, Timer, UserCheck, UserX, Handshake } from "lucide-react";
+import { format, differenceInDays, differenceInHours, isPast } from "date-fns";
 
+// ─── Types ──────────────────────────────────────────────────────────
 interface Engagement {
   id: string;
   match_id: string;
@@ -41,6 +43,7 @@ interface Engagement {
   counterparty_org: { id: string; name: string } | null;
 }
 
+// ─── Status config ──────────────────────────────────────────────────
 const STATUS_CONFIG = {
   notification_sent: { label: "Notification Sent", variant: "outline" as const, icon: Mail },
   contacted: { label: "Contacted", variant: "secondary" as const, icon: Clock },
@@ -49,49 +52,134 @@ const STATUS_CONFIG = {
   expired: { label: "Expired", variant: "outline" as const, icon: AlertTriangle },
 };
 
-function ExpiryCountdown({ expiresAt }: { expiresAt: string }) {
+// ─── Expiry helpers ─────────────────────────────────────────────────
+function getExpiryInfo(expiresAt: string) {
   const expiry = new Date(expiresAt);
-  const expired = isPast(expiry);
+  const now = new Date();
+  if (isPast(expiry)) return { expired: true, days: 0, hours: 0, urgent: false };
+  const days = differenceInDays(expiry, now);
+  const hours = differenceInHours(expiry, now) % 24;
+  return { expired: false, days, hours, urgent: days <= 2 };
+}
+
+function ExpiryCountdown({ expiresAt }: { expiresAt: string }) {
+  const { expired, days, hours, urgent } = getExpiryInfo(expiresAt);
 
   if (expired) {
-    return <span className="text-destructive text-xs font-medium">Expired</span>;
+    return (
+      <Badge variant="destructive" className="text-[10px] gap-1">
+        <AlertTriangle className="h-3 w-3" /> Expired
+      </Badge>
+    );
   }
 
   return (
-    <span className="text-xs text-muted-foreground flex items-center gap-1">
+    <span className={`text-xs font-medium flex items-center gap-1 ${urgent ? "text-destructive" : "text-muted-foreground"}`}>
       <Timer className="h-3 w-3" />
-      {formatDistanceToNow(expiry, { addSuffix: false })} left
+      {days > 0 ? `${days}d ${hours}h` : `${hours}h`} left
     </span>
   );
 }
 
+// ─── Summary cards ──────────────────────────────────────────────────
+function SummaryCards({ data }: { data: Engagement[] }) {
+  const pending = data.filter((e) => ["notification_sent", "contacted"].includes(e.engagement_status)).length;
+  const known = data.filter((e) => e.counterparty_type === "known").length;
+  const unknown = data.filter((e) => e.counterparty_type === "unknown").length;
+  const urgentCount = data.filter((e) => {
+    if (["accepted", "declined", "expired"].includes(e.engagement_status)) return false;
+    return getExpiryInfo(e.expires_at).urgent;
+  }).length;
+
+  const cards = [
+    { label: "Pending", value: pending, icon: Handshake, color: "text-primary" },
+    { label: "Known", value: known, icon: UserCheck, color: "text-success" },
+    { label: "Unknown", value: unknown, icon: UserX, color: "text-muted-foreground" },
+    { label: "Expiring Soon", value: urgentCount, icon: AlertTriangle, color: urgentCount > 0 ? "text-destructive" : "text-muted-foreground" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {cards.map((c) => (
+        <Card key={c.label}>
+          <CardContent className="p-3 flex items-center gap-3">
+            <c.icon className={`h-5 w-5 ${c.color} shrink-0`} />
+            <div>
+              <p className="text-lg font-semibold leading-none">{c.value}</p>
+              <p className="text-[11px] text-muted-foreground">{c.label}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ─── Contact details section inside dialog ──────────────────────────
+function ContactDetailsSection({ engagement }: { engagement: Engagement }) {
+  return (
+    <Card className="bg-muted/30">
+      <CardHeader className="p-3 pb-1">
+        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+          <Building2 className="h-3.5 w-3.5" /> Counterparty Details
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-3 pt-0 space-y-1.5 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground text-xs">Type</span>
+          <Badge variant={engagement.counterparty_type === "known" ? "default" : "outline"} className="text-[10px]">
+            {engagement.counterparty_type === "known" ? "Known Organisation" : "Unknown / Unregistered"}
+          </Badge>
+        </div>
+        {engagement.counterparty_org && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-xs">Organisation</span>
+            <span className="font-medium text-xs">{engagement.counterparty_org.name}</span>
+          </div>
+        )}
+        {engagement.counterparty_email && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-xs">Email</span>
+            <a href={`mailto:${engagement.counterparty_email}`} className="text-xs text-primary hover:underline">
+              {engagement.counterparty_email}
+            </a>
+          </div>
+        )}
+        {engagement.contacted_at && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-xs">Contacted</span>
+            <span className="text-xs">{format(new Date(engagement.contacted_at), "dd MMM yyyy HH:mm")}</span>
+          </div>
+        )}
+        {engagement.responded_at && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-xs">Responded</span>
+            <span className="text-xs">{format(new Date(engagement.responded_at), "dd MMM yyyy HH:mm")}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Main Panel ─────────────────────────────────────────────────────
 export function AdminPendingEngagementsPanel() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | null>(null);
-  const [actionForm, setActionForm] = useState<{
-    status?: string;
-    email?: string;
-    notes?: string;
-  }>({});
+  const [actionForm, setActionForm] = useState<{ status?: string; email?: string; notes?: string }>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-engagements", statusFilter, typeFilter],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      if (typeFilter !== "all") params.set("type", typeFilter);
-      params.set("limit", "100");
-
       const { data: result, error } = await supabase.functions.invoke("poi-engagements", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         body: null,
       });
-
       if (error) throw error;
-      return result?.engagements as Engagement[] || [];
+      return (result?.engagements as Engagement[]) || [];
     },
   });
 
@@ -120,9 +208,7 @@ export function AdminPendingEngagementsPanel() {
       setSelectedEngagement(null);
       setActionForm({});
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const handleUpdate = () => {
@@ -131,34 +217,32 @@ export function AdminPendingEngagementsPanel() {
     if (actionForm.status) updates.engagement_status = actionForm.status;
     if (actionForm.email) updates.counterparty_email = actionForm.email;
     if (actionForm.notes) updates.admin_notes = actionForm.notes;
-
     if (Object.keys(updates).length === 0) {
       toast.error("No changes to save");
       return;
     }
-
     updateMutation.mutate({ id: selectedEngagement.id, updates });
   };
 
-  const filteredData = data?.filter((e) => {
-    if (statusFilter !== "all" && e.engagement_status !== statusFilter) return false;
-    if (typeFilter !== "all" && e.counterparty_type !== typeFilter) return false;
-    return true;
-  }) || [];
+  const filteredData =
+    data?.filter((e) => {
+      if (statusFilter !== "all" && e.engagement_status !== statusFilter) return false;
+      if (typeFilter !== "all" && e.counterparty_type !== typeFilter) return false;
+      return true;
+    }) || [];
 
-  const pendingCount = data?.filter(
-    (e) => !["accepted", "declined", "expired"].includes(e.engagement_status)
-  ).length || 0;
+  const openDetail = (engagement: Engagement) => {
+    setSelectedEngagement(engagement);
+    setActionForm({ email: engagement.counterparty_email || "", notes: engagement.admin_notes || "" });
+  };
 
   return (
     <div className="space-y-4">
-      {/* Summary bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 text-sm font-medium">
-          <Clock className="h-4 w-4 text-primary" />
-          <span>{pendingCount} pending</span>
-        </div>
+      {/* Summary stats */}
+      {!isLoading && data && <SummaryCards data={data} />}
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[160px] h-8 text-xs">
             <SelectValue placeholder="Filter by status" />
@@ -175,7 +259,7 @@ export function AdminPendingEngagementsPanel() {
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[160px] h-8 text-xs">
-            <SelectValue placeholder="Filter by type" />
+            <SelectValue placeholder="Counterparty type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
@@ -183,92 +267,102 @@ export function AdminPendingEngagementsPanel() {
             <SelectItem value="unknown">Unknown</SelectItem>
           </SelectContent>
         </Select>
+
+        <span className="text-xs text-muted-foreground ml-auto">
+          {filteredData.length} result{filteredData.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
-      {/* Engagement cards */}
+      {/* Table */}
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
         </div>
       ) : filteredData.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Clock className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+            <Handshake className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No engagements match the current filters.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {filteredData.map((engagement) => {
-            const cfg = STATUS_CONFIG[engagement.engagement_status];
-            const StatusIcon = cfg.icon;
-            return (
-              <Card
-                key={engagement.id}
-                className="cursor-pointer hover:border-primary/30 transition-colors"
-                onClick={() => {
-                  setSelectedEngagement(engagement);
-                  setActionForm({
-                    email: engagement.counterparty_email || "",
-                    notes: engagement.admin_notes || "",
-                  });
-                }}
-              >
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium truncate">
-                          {engagement.matches?.commodity || "Trade"} —{" "}
-                          {engagement.matches?.quantity_amount}{" "}
-                          {engagement.matches?.quantity_unit}
-                        </span>
-                        <Badge variant={cfg.variant} className="text-[10px] gap-1">
-                          <StatusIcon className="h-3 w-3" />
-                          {cfg.label}
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Trade</TableHead>
+                <TableHead className="text-xs">Initiator</TableHead>
+                <TableHead className="text-xs">Counterparty</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Expiry</TableHead>
+                <TableHead className="text-xs">Contact</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredData.map((eng) => {
+                const cfg = STATUS_CONFIG[eng.engagement_status];
+                const StatusIcon = cfg.icon;
+                return (
+                  <TableRow
+                    key={eng.id}
+                    className="cursor-pointer"
+                    onClick={() => openDetail(eng)}
+                  >
+                    <TableCell className="text-xs font-medium py-2">
+                      {eng.matches?.commodity || "Trade"}
+                      {eng.matches?.quantity_amount ? ` · ${eng.matches.quantity_amount} ${eng.matches.quantity_unit || ""}` : ""}
+                    </TableCell>
+                    <TableCell className="text-xs py-2">{eng.initiator_org?.name || "—"}</TableCell>
+                    <TableCell className="text-xs py-2">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={eng.counterparty_type === "known" ? "default" : "outline"} className="text-[9px] px-1.5 py-0">
+                          {eng.counterparty_type}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px]">
-                          {engagement.counterparty_type}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {engagement.initiator_org?.name || "Unknown"}
-                        </span>
-                        {engagement.counterparty_email && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {engagement.counterparty_email}
-                          </span>
+                        {eng.counterparty_org?.name && (
+                          <span className="truncate max-w-[100px]">{eng.counterparty_org.name}</span>
                         )}
-                        <span>{format(new Date(engagement.created_at), "dd MMM yyyy")}</span>
                       </div>
-                    </div>
-                    <ExpiryCountdown expiresAt={engagement.expires_at} />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Badge variant={cfg.variant} className="text-[10px] gap-1">
+                        <StatusIcon className="h-3 w-3" />
+                        {cfg.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <ExpiryCountdown expiresAt={eng.expires_at} />
+                    </TableCell>
+                    <TableCell className="text-xs py-2">
+                      {eng.counterparty_email ? (
+                        <span className="flex items-center gap-1 text-primary">
+                          <Mail className="h-3 w-3" />
+                          <span className="truncate max-w-[120px]">{eng.counterparty_email}</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {/* Detail / Action dialog */}
       <Dialog
         open={!!selectedEngagement}
         onOpenChange={(open) => {
-          if (!open) {
-            setSelectedEngagement(null);
-            setActionForm({});
-          }
+          if (!open) { setSelectedEngagement(null); setActionForm({}); }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Manage Engagement</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-4 w-4 text-primary" />
+              Manage Engagement
+            </DialogTitle>
             <DialogDescription>
               Update counterparty contact details, log outreach, or record a response.
             </DialogDescription>
@@ -276,29 +370,32 @@ export function AdminPendingEngagementsPanel() {
 
           {selectedEngagement && (
             <div className="space-y-4">
-              {/* Current state */}
+              {/* Trade summary */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-muted-foreground text-xs">Status</p>
-                  <Badge variant={STATUS_CONFIG[selectedEngagement.engagement_status].variant}>
+                  <Badge variant={STATUS_CONFIG[selectedEngagement.engagement_status].variant} className="mt-0.5">
                     {STATUS_CONFIG[selectedEngagement.engagement_status].label}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">Type</p>
-                  <p className="font-medium capitalize">{selectedEngagement.counterparty_type}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Initiator</p>
-                  <p className="font-medium">{selectedEngagement.initiator_org?.name || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Expires</p>
+                  <p className="text-muted-foreground text-xs">Time Remaining</p>
                   <ExpiryCountdown expiresAt={selectedEngagement.expires_at} />
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Commodity</p>
+                  <p className="font-medium text-xs">{selectedEngagement.matches?.commodity || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Created</p>
+                  <p className="text-xs">{format(new Date(selectedEngagement.created_at), "dd MMM yyyy")}</p>
                 </div>
               </div>
 
-              {/* Counterparty email (lookup key) */}
+              {/* Contact details card */}
+              <ContactDetailsSection engagement={selectedEngagement} />
+
+              {/* Counterparty email (auto-link key) */}
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
                   Counterparty Email (auto-link key)
@@ -318,9 +415,7 @@ export function AdminPendingEngagementsPanel() {
               {/* Status transition */}
               {!["accepted", "declined", "expired"].includes(selectedEngagement.engagement_status) && (
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Update Status
-                  </label>
+                  <label className="text-xs font-medium text-muted-foreground">Update Status</label>
                   <Select
                     value={actionForm.status || ""}
                     onValueChange={(v) => setActionForm((prev) => ({ ...prev, status: v }))}
@@ -362,9 +457,7 @@ export function AdminPendingEngagementsPanel() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedEngagement(null)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setSelectedEngagement(null)}>Cancel</Button>
             <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? "Saving…" : "Save Changes"}
             </Button>
