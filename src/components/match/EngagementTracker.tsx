@@ -18,7 +18,7 @@ interface EngagementTrackerProps {
     price_amount?: number | null;
     price_currency?: string | null;
     match_type?: string | null;
-    metadata?: Record<string, unknown> | null;
+    metadata?: unknown;
   };
 }
 
