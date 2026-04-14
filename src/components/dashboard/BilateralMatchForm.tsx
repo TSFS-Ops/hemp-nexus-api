@@ -163,6 +163,36 @@ export function BilateralMatchForm() {
 
       const isDraft = (!quantityAmount || isNaN(quantityAmount)) && (!priceAmount || isNaN(priceAmount));
 
+      // Create the persistent trade request first
+      const { data: tradeRequest, error: trError } = await supabase
+        .from("trade_requests")
+        .insert({
+          org_id: profile.org_id,
+          created_by: profile.id,
+          commodity: form.commodity.trim(),
+          quantity_amount: quantityAmount && !isNaN(quantityAmount) ? quantityAmount : null,
+          quantity_unit: form.unit || "MT",
+          price_amount: priceAmount && !isNaN(priceAmount) ? priceAmount : null,
+          price_currency: form.currency || "USD",
+          side: form.side,
+          location: form.location.trim() || null,
+          match_type: "bilateral",
+          metadata: {
+            counterpartyName: form.counterpartyName.trim(),
+            counterpartyContact: form.counterpartyContact.trim() || null,
+            originCountry: form.originCountry.trim().toUpperCase() || null,
+            destinationCountry: form.destinationCountry.trim().toUpperCase() || null,
+            terms: form.terms.trim() || null,
+          },
+        } as any)
+        .select("id")
+        .single();
+
+      if (trError) {
+        console.error("Failed to create trade request:", trError);
+        // Non-blocking — fall back to legacy flow without trade_request_id
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
         {
@@ -177,6 +207,7 @@ export function BilateralMatchForm() {
             seller,
             commodity: form.commodity.trim(),
             match_type: "bilateral",
+            trade_request_id: tradeRequest?.id || null,
             quantity: quantityAmount && !isNaN(quantityAmount) && quantityAmount > 0
               ? { amount: quantityAmount, unit: form.unit || "MT" }
               : null,
