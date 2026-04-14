@@ -25,6 +25,7 @@ interface ApiSettings {
 interface NotificationSettings {
   emailAlerts: boolean;
   alertEmail: string;
+  poiFacilitationEmail: string;
   slackWebhook: string;
   alertThreshold: number;
 }
@@ -45,6 +46,7 @@ export function AdminSettings() {
   const [notifications, setNotifications] = useState<NotificationSettings>({
     emailAlerts: true,
     alertEmail: "",
+    poiFacilitationEmail: "",
     slackWebhook: "",
     alertThreshold: 10,
   });
@@ -276,6 +278,19 @@ export function AdminSettings() {
                 />
                 <p className="text-sm text-muted-foreground">
                   Infrastructure alerts are sent to this address. Defaults to ops@izenzo.co.za if empty.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="poiFacilitationEmail">POI Facilitation Email</Label>
+                <Input
+                  id="poiFacilitationEmail"
+                  type="email"
+                  placeholder="admin@izenzo.co.za"
+                  value={notifications.poiFacilitationEmail}
+                  onChange={(e) => setNotifications({ ...notifications, poiFacilitationEmail: e.target.value })}
+                />
+                <p className="text-sm text-muted-foreground">
+                  When a POI is generated for an unknown counterparty (unilateral trade), a facilitation alert is sent to this address so the team can arrange contact. Defaults to admin@izenzo.co.za if empty.
                 </p>
               </div>
               <div className="space-y-2">
