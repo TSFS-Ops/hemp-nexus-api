@@ -25,6 +25,7 @@ interface ApiSettings {
 interface NotificationSettings {
   emailAlerts: boolean;
   alertEmail: string;
+  poiFacilitationEmail: string;
   slackWebhook: string;
   alertThreshold: number;
 }
@@ -45,6 +46,7 @@ export function AdminSettings() {
   const [notifications, setNotifications] = useState<NotificationSettings>({
     emailAlerts: true,
     alertEmail: "",
+    poiFacilitationEmail: "",
     slackWebhook: "",
     alertThreshold: 10,
   });
