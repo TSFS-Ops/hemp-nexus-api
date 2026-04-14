@@ -147,7 +147,17 @@ export function BilateralMatchForm() {
         .eq("id", profile.org_id)
         .maybeSingle();
 
-      const myName = org?.name || profile.full_name || "Your Organisation";
+      const rawOrgName = org?.name || profile.full_name || "";
+      // Guard: org name must be a proper legal name, not an email address
+      const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawOrgName.trim());
+      if (!rawOrgName || looksLikeEmail) {
+        toast.error(
+          "Your organisation's legal name has not been set. Please update it in Account Settings before creating a trade request.",
+          { duration: 8000 }
+        );
+        return;
+      }
+      const myName = rawOrgName;
       const counterpartyId = crypto.randomUUID();
 
       const quantityAmount = form.quantity ? parseFloat(form.quantity) : null;
