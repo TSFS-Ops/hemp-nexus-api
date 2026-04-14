@@ -422,7 +422,7 @@ function AdminContent() {
 
 export default function Admin() {
   return (
-    <RequireAuth role={["platform_admin", "admin"]}>
+    <RequireAuth role="platform_admin">
       <AdminContent />
     </RequireAuth>
   );
