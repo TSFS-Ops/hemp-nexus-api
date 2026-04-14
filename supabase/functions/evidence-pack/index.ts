@@ -162,8 +162,8 @@ th{background:#f5f5f5}
 <tr><th>Commodity</th><td>${m.commodity}</td></tr>
 <tr><th>Quantity</th><td>${m.quantity.amount} ${m.quantity.unit}</td></tr>
 <tr><th>Price</th><td>${m.price.currency} ${m.price.amount}</td></tr>
-<tr><th>Buyer</th><td>${m.buyer.name} (${m.buyer.id})</td></tr>
-<tr><th>Seller</th><td>${m.seller.name} (${m.seller.id})</td></tr>
+<tr><th>Buyer</th><td>${m.buyer.name}</td></tr>
+<tr><th>Seller</th><td>${m.seller.name}</td></tr>
 <tr><th>Status</th><td>${m.status}</td></tr>
 <tr><th>POI State</th><td>${m.poi_state}</td></tr>
 <tr><th>Created</th><td>${m.created_at}</td></tr>
