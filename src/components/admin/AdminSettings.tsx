@@ -91,20 +91,25 @@ export function AdminSettings() {
       setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("admin_settings")
-        .update({
+        .upsert({
+          key,
           value: value as Json,
           updated_by: user?.id,
-        })
-        .eq("key", key);
+        }, { onConflict: "key" })
+        .select();
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error("Settings were not saved — you may not have permission.");
+      }
 
       toast.success("Settings saved successfully");
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error("Failed to save settings");
+      toast.error(error instanceof Error ? error.message : "Failed to save settings");
     } finally {
       setSaving(false);
     }
