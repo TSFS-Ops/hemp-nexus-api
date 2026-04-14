@@ -9,6 +9,7 @@
  *   5. Evidence Pack (sealed evidence bundle + timeline)
  *
  * Strict linear: future steps are locked until prior steps are fully complete.
+ * POI is a HOLD POINT: WaD step is locked until counterparty engagement is accepted.
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -27,9 +28,11 @@ import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { PoiEventsTimeline } from "@/components/match/PoiEventsTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, FileSignature, MessageSquare } from "lucide-react";
+import { FileText, FileSignature, MessageSquare, ShieldAlert } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import type { Match } from "@/hooks/use-match-details";
+
+export type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
 
 interface DealWizardProps {
   match: Match;
@@ -39,6 +42,8 @@ interface DealWizardProps {
   onConfirm: () => void;
   onStateAction: (action: string) => Promise<void>;
   onRefresh: () => void;
+  /** Engagement status — null means no engagement record exists */
+  engagementStatus?: EngagementStatus;
 }
 
 export function DealWizard({
@@ -49,6 +54,7 @@ export function DealWizard({
   onConfirm,
   onStateAction,
   onRefresh,
+  engagementStatus,
 }: DealWizardProps) {
   const currentState = match.state || "discovery";
   const isSettled = match.status === "settled";

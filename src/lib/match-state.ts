@@ -42,9 +42,9 @@ export const STATE_LABELS: Record<string, string> = {
 
 export const STATE_DESCRIPTIONS: Record<string, string> = {
   discovery: "A trading partner has been matched. Review details and generate the Proof of Intent.",
-  intent_declared: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
-  counterparty_sighted: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
-  committed: "POI has been generated. You can now proceed to WaD (Without a Doubt).",
+  intent_declared: "POI has been generated. Awaiting counterparty engagement before you can proceed.",
+  counterparty_sighted: "POI has been generated. Awaiting counterparty engagement before you can proceed.",
+  committed: "POI has been generated. Awaiting counterparty engagement before you can proceed.",
   completed: "Transaction completed. Evidence record sealed.",
 };
 
