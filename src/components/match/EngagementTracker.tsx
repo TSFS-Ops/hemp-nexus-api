@@ -1,12 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Clock, Mail, Phone, XCircle, AlertTriangle } from "lucide-react";
+import { Check, Clock, Mail, Phone, XCircle, AlertTriangle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/lib/constants";
 
 interface EngagementTrackerProps {
   matchId: string;
+  /** The parent match object — used to pre-fill the re-use form */
+  match?: {
+    commodity?: string | null;
+    quantity_amount?: number | null;
+    quantity_unit?: string | null;
+    price_amount?: number | null;
+    price_currency?: string | null;
+    match_type?: string | null;
+    metadata?: Record<string, unknown> | null;
+  };
 }
 
 type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
@@ -23,7 +36,7 @@ const TERMINAL_OVERRIDES: Record<string, { label: string; icon: typeof XCircle }
 };
 
 function getStepState(
-  stepKey: string,
+  _stepKey: string,
   currentStatus: EngagementStatus,
   stepIndex: number
 ): "complete" | "current" | "upcoming" | "terminal" {
@@ -31,9 +44,7 @@ function getStepState(
   const currentIndex = statusOrder.indexOf(currentStatus);
 
   if (currentStatus === "declined" || currentStatus === "expired") {
-    const reachedIndex = currentStatus === "declined" || currentStatus === "expired"
-      ? statusOrder.indexOf("contacted")
-      : -1;
+    const reachedIndex = statusOrder.indexOf("contacted");
     if (stepIndex <= reachedIndex) return "complete";
     return "terminal";
   }
@@ -43,7 +54,9 @@ function getStepState(
   return "upcoming";
 }
 
-export function EngagementTracker({ matchId }: EngagementTrackerProps) {
+export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
+  const navigate = useNavigate();
+
   const { data: engagement, isLoading } = useQuery({
     queryKey: ["engagement-tracker", matchId],
     queryFn: async () => {
@@ -59,7 +72,7 @@ export function EngagementTracker({ matchId }: EngagementTrackerProps) {
       const result = await response.json();
       return result?.engagement || null;
     },
-    refetchInterval: 30000, // Poll every 30s for updates
+    refetchInterval: 30000,
   });
 
   if (isLoading) {
@@ -71,6 +84,28 @@ export function EngagementTracker({ matchId }: EngagementTrackerProps) {
   const status: EngagementStatus = engagement.engagement_status;
   const isTerminal = status === "declined" || status === "expired";
   const terminalInfo = isTerminal ? TERMINAL_OVERRIDES[status] : null;
+
+  /** Navigate to the trade form pre-filled with the current match's details */
+  const handleReuse = () => {
+    const meta = match?.metadata as Record<string, unknown> | undefined;
+    const side = (meta?.bidOfferSide as string) || "buyer";
+    const isUnilateral = match?.match_type === "unilateral";
+
+    // Build query params that the form can read
+    const params = new URLSearchParams();
+    if (match?.commodity) params.set("commodity", match.commodity);
+    if (match?.quantity_amount) params.set("quantity", String(match.quantity_amount));
+    if (match?.quantity_unit) params.set("unit", match.quantity_unit);
+    if (match?.price_amount) params.set("price", String(match.price_amount));
+    if (match?.price_currency) params.set("currency", match.price_currency);
+    if (side) params.set("side", side);
+
+    const target = isUnilateral
+      ? `${ROUTES.DASHBOARD}?section=unilateral&${params.toString()}`
+      : `${ROUTES.DASHBOARD}?section=bilateral&${params.toString()}`;
+
+    navigate(target);
+  };
 
   return (
     <Card className="border-dashed">
@@ -158,6 +193,19 @@ export function EngagementTracker({ matchId }: EngagementTrackerProps) {
           {status === "declined" && "Counterparty declined this trade. You can re-use your trade details to approach a different counterparty."}
           {status === "expired" && "This engagement has expired. You can re-use your trade details to try a different counterparty."}
         </p>
+
+        {/* Re-use CTA for terminal states */}
+        {isTerminal && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 w-full sm:w-auto"
+            onClick={handleReuse}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+            Re-use Trade Details
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
