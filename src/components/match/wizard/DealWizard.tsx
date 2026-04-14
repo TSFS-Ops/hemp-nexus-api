@@ -174,14 +174,14 @@ export function DealWizard({
 function StepSearch({ match }: { match: Match }) {
   const isRevealed = true; // Names are always visible per client requirement
   const userOrgId = useUserOrg();
-  const metaSide = (match.metadata as any)?.bidOfferSide as "bid" | "offer" | null | undefined;
+  const metaSide = (match.metadata as any)?.tradeSide || (match.metadata as any)?.bidOfferSide;
   const inferredRole = getMatchRole(userOrgId, match as any);
   const roleBadgeLabel = metaSide
-    ? (metaSide === "bid" ? "Buyer (Bid)" : "Seller (Offer)")
+    ? (metaSide === "buyer" || metaSide === "bid" ? "Buyer" : "Seller")
     : inferredRole === "buyer"
-      ? "Buyer (Bid)"
+      ? "Buyer"
       : inferredRole === "seller"
-        ? "Seller (Offer)"
+        ? "Seller"
         : null;
 
   return (
