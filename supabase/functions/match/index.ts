@@ -188,6 +188,22 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ENGAGEMENT HOLD-POINT GUARD: Block POI generation if counterparty has not accepted
+      const { data: engagement, error: engErr } = await supabase
+        .from("poi_engagements")
+        .select("id, engagement_status")
+        .eq("match_id", matchId)
+        .maybeSingle();
+
+      if (!engErr && engagement && !["accepted"].includes(engagement.engagement_status)) {
+        const statusLabel = engagement.engagement_status.replace(/_/g, " ");
+        throw new ApiException(
+          "ENGAGEMENT_PENDING",
+          `Cannot generate POI: counterparty engagement is '${statusLabel}'. The counterparty must accept before you can proceed.`,
+          409
+        );
+      }
+
       // ELIGIBILITY CHECK
       try {
         enforceEligibility(match);

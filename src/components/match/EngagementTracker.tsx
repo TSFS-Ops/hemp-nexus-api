@@ -57,22 +57,33 @@ function getStepState(
 export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
   const navigate = useNavigate();
 
-  const { data: engagement, isLoading } = useQuery({
+  const { data: engagement, isLoading, isError } = useQuery({
     queryKey: ["engagement-tracker", matchId],
     queryFn: async () => {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session?.access_token) {
+        throw new Error("SESSION_EXPIRED");
+      }
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/by-match/${matchId}`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
         }
       );
+      if (response.status === 401) {
+        throw new Error("SESSION_EXPIRED");
+      }
       if (!response.ok) return null;
       const result = await response.json();
       return result?.engagement || null;
     },
     refetchInterval: 30000,
+    retry: (failureCount, error) => {
+      if (error?.message === "SESSION_EXPIRED") return false;
+      return failureCount < 2;
+    },
   });
 
   if (isLoading) {
