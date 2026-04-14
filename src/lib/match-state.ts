@@ -11,7 +11,7 @@
 import { MATCH_STATUS } from "@/lib/constants";
 
 // ─── Statuses (legacy) ──────────────────────────────────────────────
-export const MATCH_STATUSES = ["matched", "settled", "disputed", "cancelled"] as const;
+export const MATCH_STATUSES = ["matched", "settled"] as const;
 export type MatchStatusValue = (typeof MATCH_STATUSES)[number];
 
 // ─── V3 Lifecycle States ────────────────────────────────────────────
@@ -132,11 +132,6 @@ const ALLOWED_ACTIONS: Record<MatchStatusValue, readonly MatchAction[]> = {
     "create_wad",
     "generate_evidence_pack",
   ],
-  disputed: [
-    "upload_document",
-    "add_note",
-  ],
-  cancelled: [],
 };
 
 // ─── Public API ─────────────────────────────────────────────────────
@@ -214,7 +209,7 @@ export function getAllowedActions(status: string): readonly MatchAction[] {
 }
 
 export function isTerminal(status: string): boolean {
-  return status === "cancelled" || status === "completed";
+  return status === "completed";
 }
 
 export function isSettled(status: string): boolean {
