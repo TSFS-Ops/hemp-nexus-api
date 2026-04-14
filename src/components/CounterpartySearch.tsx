@@ -188,7 +188,7 @@ export default function CounterpartySearch() {
     const timeout = setTimeout(() => controller.abort(), 30_000);
 
     try {
-      const role = tradeContext.side === "offer" ? "seller" : tradeContext.side === "bid" ? "buyer" : undefined;
+      const role = tradeContext.side === "seller" ? "seller" : tradeContext.side === "buyer" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
         body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(tradeContext.location ? { location: tradeContext.location } : {}) },
       });
@@ -380,7 +380,7 @@ export default function CounterpartySearch() {
                       ? "Created from search - commercial terms to be confirmed during negotiation."
                       : undefined;
                   })(),
-                  bidOfferSide: tradeContext.side || null,
+                  tradeSide: tradeContext.side || null,
                 }
               }),
             }

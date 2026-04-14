@@ -20,11 +20,11 @@ describe("PreAuthState side persistence", () => {
       selectedIds: [],
       pendingAction: "interested",
       returnTo: "/",
-      side: "bid",
+      side: "buyer",
     });
     const restored = consumePreAuthState();
     expect(restored).not.toBeNull();
-    expect(restored!.side).toBe("bid");
+    expect(restored!.side).toBe("buyer");
   });
 
   it("happy: saves and restores side='offer'", async () => {
@@ -34,10 +34,10 @@ describe("PreAuthState side persistence", () => {
       selectedIds: [],
       pendingAction: "interested",
       returnTo: "/",
-      side: "offer",
+      side: "seller",
     });
     const restored = consumePreAuthState();
-    expect(restored!.side).toBe("offer");
+    expect(restored!.side).toBe("seller");
   });
 
   it("sad: missing side field returns undefined (not crash)", async () => {
@@ -61,7 +61,7 @@ describe("PreAuthState side persistence", () => {
       selectedIds: [],
       pendingAction: "interested",
       returnTo: "/",
-      side: "bid",
+      side: "buyer",
     });
     consumePreAuthState(); // first consume
     const second = consumePreAuthState(); // should be null
@@ -81,40 +81,40 @@ describe("PreAuthState side persistence", () => {
 
 describe("BidOfferData side field contract", () => {
   it("happy: bid side maps correctly", () => {
-    const data = { product: "Soybeans", volume: "100", price: "500", location: "India", additionalInfo: "", side: "bid" as const };
-    expect(data.side).toBe("bid");
-    expect(["bid", "offer"]).toContain(data.side);
+    const data = { product: "Soybeans", volume: "100", price: "500", location: "India", additionalInfo: "", side: "buyer" as const };
+    expect(data.side).toBe("buyer");
+    expect(["buyer", "seller"]).toContain(data.side);
   });
 
   it("happy: offer side maps correctly", () => {
-    const data = { product: "Copper", volume: "50", price: "9000", location: "Chile", additionalInfo: "", side: "offer" as const };
-    expect(data.side).toBe("offer");
+    const data = { product: "Copper", volume: "50", price: "9000", location: "Chile", additionalInfo: "", side: "seller" as const };
+    expect(data.side).toBe("seller");
   });
 
   it("edge: empty strings for optional fields", () => {
-    const data = { product: "Oil", volume: "", price: "", location: "", additionalInfo: "", side: "bid" as const };
+    const data = { product: "Oil", volume: "", price: "", location: "", additionalInfo: "", side: "buyer" as const };
     expect(data.product).toBeTruthy();
-    expect(data.side).toBe("bid");
+    expect(data.side).toBe("buyer");
   });
 
   it("edge: product with special characters", () => {
-    const data = { product: "Café arabica (washed)", volume: "", price: "", location: "", additionalInfo: "", side: "offer" as const };
+    const data = { product: "Café arabica (washed)", volume: "", price: "", location: "", additionalInfo: "", side: "seller" as const };
     expect(data.product.length).toBeGreaterThan(0);
-    expect(data.side).toBe("offer");
+    expect(data.side).toBe("seller");
   });
 });
 
 // ─── Unit: trade_orders side constraint ───
 
 describe("trade_orders side value validation", () => {
-  const VALID_SIDES = ["bid", "offer"];
+  const VALID_SIDES = ["buyer", "seller"];
 
   it("happy: 'bid' passes constraint", () => {
-    expect(VALID_SIDES).toContain("bid");
+    expect(VALID_SIDES).toContain("buyer");
   });
 
   it("happy: 'offer' passes constraint", () => {
-    expect(VALID_SIDES).toContain("offer");
+    expect(VALID_SIDES).toContain("seller");
   });
 
   it("sad: 'buy' would fail DB constraint", () => {
@@ -150,15 +150,15 @@ describe("persistTradeOrder respects side parameter", () => {
   });
 
   it("edge: side defaults to 'bid' when undefined in context", () => {
-    const ctx: { side?: "bid" | "offer" } = {};
-    const resolvedSide = ctx.side || "bid";
-    expect(resolvedSide).toBe("bid");
+    const ctx: { side?: "buyer" | "seller" } = {};
+    const resolvedSide = ctx.side || "buyer";
+    expect(resolvedSide).toBe("buyer");
   });
 
   it("edge: side='offer' preserved through context", () => {
-    const ctx: { side?: "bid" | "offer" } = { side: "offer" };
-    const resolvedSide = ctx.side || "bid";
-    expect(resolvedSide).toBe("offer");
+    const ctx: { side?: "buyer" | "seller" } = { side: "seller" };
+    const resolvedSide = ctx.side || "buyer";
+    expect(resolvedSide).toBe("seller");
   });
 });
 
@@ -167,12 +167,12 @@ describe("persistTradeOrder respects side parameter", () => {
 describe("Search URL parameter side propagation", () => {
   it("happy: side=bid in URL is parsed", () => {
     const params = new URLSearchParams("q=soybeans&side=bid");
-    expect(params.get("side")).toBe("bid");
+    expect(params.get("side")).toBe("buyer");
   });
 
   it("happy: side=offer in URL is parsed", () => {
     const params = new URLSearchParams("q=copper&side=offer");
-    expect(params.get("side")).toBe("offer");
+    expect(params.get("side")).toBe("seller");
   });
 
   it("sad: missing side returns null (handled as undefined)", () => {
@@ -182,9 +182,9 @@ describe("Search URL parameter side propagation", () => {
 
   it("edge: invalid side value is still a string (UI must validate)", () => {
     const params = new URLSearchParams("q=test&side=hacker");
-    const side = params.get("side") as "bid" | "offer" | null;
+    const side = params.get("side") as "buyer" | "seller" | null;
     // DB constraint will reject this; UI should prevent it
     expect(side).toBe("hacker");
-    expect(["bid", "offer"]).not.toContain(side);
+    expect(["buyer", "seller"]).not.toContain(side);
   });
 });
