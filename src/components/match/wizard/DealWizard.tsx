@@ -76,6 +76,11 @@ export function DealWizard({
     return isSettled || ["intent_declared", "counterparty_sighted", "committed", "completed"].includes(currentState);
   }, [currentState, isSettled]);
 
+  // ── ENGAGEMENT HOLD-POINT GATE ──
+  // POI is a hold point. WaD is BLOCKED until counterparty engagement is accepted.
+  const engagementAccepted = engagementStatus === "accepted";
+  const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
+
   // WaD completion requires checking WaD status — simplified: we check if match is completed
   // or if the match has progressed past the WaD stage
   const wadComplete = isCompleted;
@@ -100,16 +105,20 @@ export function DealWizard({
     {
       id: "poi",
       label: "Proof of Intent",
-      description: "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
-      complete: poiComplete,
+      description: poiHoldActive
+        ? "POI generated. Awaiting counterparty engagement — the process is paused here."
+        : "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
+      complete: poiComplete && engagementAccepted,
       locked: !matchComplete, // Strict: locked until match step complete
     },
     {
       id: "wad",
       label: "WaD",
-      description: "Create a WaD evidence bundle with 9-gate compliance validation.",
+      description: poiHoldActive
+        ? "Locked — counterparty must accept before you can proceed to WaD."
+        : "Create a WaD evidence bundle with 9-gate compliance validation.",
       complete: wadComplete,
-      locked: !poiComplete, // Strict: locked until POI generated
+      locked: !poiComplete || poiHoldActive, // HOLD POINT: locked until engagement accepted
     },
     {
       id: "evidence",
@@ -118,7 +127,7 @@ export function DealWizard({
       complete: evidenceComplete,
       locked: !wadComplete, // Strict: locked until WaD sealed
     },
-  ], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete]);
+  ], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted]);
 
   // Auto-select the first incomplete, unlocked step
   const defaultStep = useMemo(() => {
@@ -166,7 +175,21 @@ export function DealWizard({
         />
       )}
       {activeStep === 3 && (
-        <StepWad match={match} onRefresh={onRefresh} />
+        poiHoldActive ? (
+          <Card className="border-dashed border-primary/30">
+            <CardContent className="py-8 text-center space-y-3">
+              <ShieldAlert className="h-8 w-8 text-primary mx-auto" />
+              <h3 className="font-semibold">Awaiting Counterparty Engagement</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                The POI has been generated and the counterparty has been notified. 
+                This step is paused until the counterparty has been engaged and has responded.
+                Check the Engagement Tracker above for the current status.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <StepWad match={match} onRefresh={onRefresh} />
+        )
       )}
       {activeStep === 4 && (
         <StepEvidence match={match} currentState={currentState} />
