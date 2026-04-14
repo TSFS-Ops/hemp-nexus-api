@@ -3553,6 +3553,83 @@ export type Database = {
           },
         ]
       }
+      poi_engagements: {
+        Row: {
+          admin_notes: string | null
+          contacted_at: string | null
+          counterparty_email: string | null
+          counterparty_org_id: string | null
+          counterparty_type: Database["public"]["Enums"]["counterparty_type"]
+          created_at: string
+          engagement_status: Database["public"]["Enums"]["engagement_status"]
+          expires_at: string
+          id: string
+          match_id: string
+          org_id: string
+          responded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          contacted_at?: string | null
+          counterparty_email?: string | null
+          counterparty_org_id?: string | null
+          counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
+          created_at?: string
+          engagement_status?: Database["public"]["Enums"]["engagement_status"]
+          expires_at?: string
+          id?: string
+          match_id: string
+          org_id: string
+          responded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          contacted_at?: string | null
+          counterparty_email?: string | null
+          counterparty_org_id?: string | null
+          counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
+          created_at?: string
+          engagement_status?: Database["public"]["Enums"]["engagement_status"]
+          expires_at?: string
+          id?: string
+          match_id?: string
+          org_id?: string
+          responded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poi_engagements_counterparty_org_id_fkey"
+            columns: ["counterparty_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poi_events: {
         Row: {
           actor_api_key_id: string | null
@@ -5949,6 +6026,13 @@ export type Database = {
         | "compliance_analyst"
         | "legal_reviewer"
         | "director"
+      counterparty_type: "known" | "unknown"
+      engagement_status:
+        | "notification_sent"
+        | "contacted"
+        | "accepted"
+        | "declined"
+        | "expired"
       signal_type: "buyer" | "seller"
     }
     CompositeTypes: {
@@ -6091,6 +6175,14 @@ export const Constants = {
         "compliance_analyst",
         "legal_reviewer",
         "director",
+      ],
+      counterparty_type: ["known", "unknown"],
+      engagement_status: [
+        "notification_sent",
+        "contacted",
+        "accepted",
+        "declined",
+        "expired",
       ],
       signal_type: ["buyer", "seller"],
     },
