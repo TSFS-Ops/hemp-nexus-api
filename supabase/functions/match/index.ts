@@ -308,6 +308,120 @@ Deno.serve(async (req) => {
         note: "POI generated - no payment or legal obligation"
       }).catch(err => console.error(`Webhook error:`, err));
 
+      // ── POI Notification Routing (fire-and-forget) ──
+      // Route A: Unilateral (unknown counterparty) → notify admins
+      // Route B: Bilateral (known counterparty)   → notify counterparty org users directly
+      (async () => {
+        try {
+          const isUnilateral = match.match_type === 'unilateral' || !match.buyer_id || !match.seller_id;
+          const creatorOrgId = match.org_id;
+
+          // Fetch creator org name for notification content
+          const { data: creatorOrg } = await supabase
+            .from("organizations")
+            .select("name")
+            .eq("id", creatorOrgId)
+            .single();
+          const creatorOrgName = creatorOrg?.name || 'Unknown Organisation';
+
+          if (isUnilateral) {
+            // ── Route A: Admin facilitation ──
+            console.log(`[${requestId}] POI notification: Route A (unilateral) — notifying admins`);
+
+            // 1. In-app: notify all admin users
+            const { data: adminRoles } = await supabase
+              .from("user_roles")
+              .select("user_id")
+              .eq("role", "admin");
+
+            if (adminRoles && adminRoles.length > 0) {
+              const notifRows = adminRoles.map((r: any) => ({
+                user_id: r.user_id,
+                type: "poi_admin_facilitation",
+                title: `Facilitation needed: ${match.commodity || 'Trade'} POI`,
+                body: `A Proof of Intent has been generated for ${match.commodity || 'a trade'} by ${creatorOrgName}. The counterparty is not yet on the platform — please facilitate contact.`,
+                link: `/dashboard/matches/${matchId}`,
+                org_id: creatorOrgId,
+              }));
+              await supabase.from("notifications").insert(notifRows);
+            }
+
+            // 2. Email: send facilitation alert to configured admin email
+            const { data: notifSettings } = await supabase
+              .from("admin_settings")
+              .select("value")
+              .eq("key", "notifications")
+              .single();
+            const settings = (notifSettings?.value as Record<string, any>) || {};
+            const facilitationEmail = (settings.poiFacilitationEmail as string) || 'admin@izenzo.co.za';
+
+            if (settings.emailAlerts !== false) {
+              await supabase.functions.invoke('send-transactional-email', {
+                body: {
+                  templateName: 'poi-issuance',
+                  recipientEmail: facilitationEmail,
+                  idempotencyKey: `poi-admin-facilitation-${matchId}`,
+                  templateData: {
+                    matchId,
+                    commodity: match.commodity,
+                    poiState: 'committed',
+                    issuedAt: now,
+                  },
+                },
+              });
+            }
+          } else {
+            // ── Route B: Known counterparty ──
+            console.log(`[${requestId}] POI notification: Route B (bilateral) — notifying counterparty`);
+
+            // Determine counterparty org id
+            const counterpartyOrgId = match.buyer_id === creatorOrgId ? match.seller_id : match.buyer_id;
+            const counterpartySide = match.buyer_id === creatorOrgId ? 'seller' : 'buyer';
+
+            if (counterpartyOrgId) {
+              // 1. In-app: notify ALL users in counterparty org
+              const { data: cpUsers } = await supabase
+                .from("profiles")
+                .select("id, email")
+                .eq("org_id", counterpartyOrgId);
+
+              if (cpUsers && cpUsers.length > 0) {
+                const notifRows = cpUsers.map((u: any) => ({
+                  user_id: u.id,
+                  type: "poi_counterparty_notification",
+                  title: `POI issued: ${match.commodity || 'Trade'}`,
+                  body: `A Proof of Intent has been issued for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and respond.`,
+                  link: `/dashboard/matches/${matchId}`,
+                  org_id: counterpartyOrgId,
+                }));
+                await supabase.from("notifications").insert(notifRows);
+
+                // 2. Email: send to all counterparty org users
+                for (const u of cpUsers) {
+                  await supabase.functions.invoke('send-transactional-email', {
+                    body: {
+                      templateName: 'poi-counterparty-notify',
+                      recipientEmail: u.email,
+                      idempotencyKey: `poi-cp-notify-${matchId}-${u.id}`,
+                      templateData: {
+                        commodity: match.commodity,
+                        creatorOrgName,
+                        matchId,
+                        side: counterpartySide,
+                        issuedAt: now,
+                      },
+                    },
+                  });
+                }
+              }
+            }
+          }
+        } catch (notifErr) {
+          // Never fail the POI response because notifications failed
+          console.error(`[${requestId}] POI notification dispatch error:`, notifErr);
+        }
+      })();
+
       await logApiRequest({
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
         endpoint: endpointLabel, method: "POST", statusCode: 200,
