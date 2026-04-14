@@ -110,13 +110,14 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
   const isTerminal = status === "declined" || status === "expired";
   const terminalInfo = isTerminal ? TERMINAL_OVERRIDES[status] : null;
 
-  /** Navigate to the trade form pre-filled with the current match's details */
+  /** Navigate to the trade form pre-filled with the current match's details.
+   *  If a trade_request_id exists, pass it so the new match links to the same
+   *  persistent trade request (no data loss, no re-entry). */
   const handleReuse = () => {
     const meta = match?.metadata as Record<string, unknown> | undefined;
     const side = (meta?.tradeSide as string) || (meta?.bidOfferSide as string) || "buyer";
     const isUnilateral = match?.match_type === "unilateral";
 
-    // Build query params that the form can read
     const params = new URLSearchParams();
     if (match?.commodity) params.set("commodity", match.commodity);
     if (match?.quantity_amount) params.set("quantity", String(match.quantity_amount));
@@ -124,6 +125,7 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
     if (match?.price_amount) params.set("price", String(match.price_amount));
     if (match?.price_currency) params.set("currency", match.price_currency);
     if (side) params.set("side", side);
+    if (match?.trade_request_id) params.set("trade_request_id", match.trade_request_id);
 
     const target = isUnilateral
       ? `${ROUTES.DASHBOARD}?section=unilateral&${params.toString()}`
