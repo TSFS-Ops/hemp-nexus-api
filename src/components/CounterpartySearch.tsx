@@ -58,10 +58,10 @@ interface ParsedQuery {
   role: "buyer" | "seller";
 }
 
-/** Persist a bid/offer to the trade_orders table */
+/** Persist a trade interest to the trade_orders table */
 async function persistTradeOrder(
   product: string,
-  ctx: { side?: "bid" | "offer"; price?: string; volume?: string; location?: string }
+  ctx: { side?: "buyer" | "seller"; price?: string; volume?: string; location?: string }
 ) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -72,7 +72,7 @@ async function persistTradeOrder(
     const { error } = await supabase.from("trade_orders").insert({
       org_id: profile.org_id,
       user_id: profile.id,
-      side: ctx.side || "bid",
+      side: ctx.side === "seller" ? "offer" : "bid",
       product,
       price: ctx.price ? parseFloat(ctx.price) || null : null,
       volume: ctx.volume ? parseFloat(ctx.volume) || null : null,
@@ -99,7 +99,7 @@ export default function CounterpartySearch() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialQuery = (searchParams.get("q") || "").trim();
-  const initialSide = searchParams.get("side") as "bid" | "offer" | null;
+  const initialSide = searchParams.get("side") as "buyer" | "seller" | null;
   const initialPrice = searchParams.get("price") || "";
   const initialVolume = searchParams.get("volume") || "";
   const initialLocation = searchParams.get("location") || "";
@@ -117,9 +117,9 @@ export default function CounterpartySearch() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [degradation, setDegradation] = useState<DegradationInfo>({ isPartiallyDegraded: false, webDiscoveryDown: false, message: null });
 
-  // Structured bid/offer context from landing page
-  const [bidOfferContext, setBidOfferContext] = useState<{
-    side?: "bid" | "offer";
+  // Structured trade interest context from landing page
+  const [tradeContext, setTradeContext] = useState<{
+    side?: "buyer" | "seller";
     price?: string;
     volume?: string;
     location?: string;
@@ -137,7 +137,7 @@ export default function CounterpartySearch() {
     if (preAuth?.query && !query) {
       setQuery(preAuth.query);
       if (preAuth.side || preAuth.price || preAuth.volume) {
-        setBidOfferContext({ side: preAuth.side, price: preAuth.price, volume: preAuth.volume });
+        setTradeContext({ side: preAuth.side, price: preAuth.price, volume: preAuth.volume });
       }
       setSearchParams((prev) => {
         const updated = new URLSearchParams(prev);
