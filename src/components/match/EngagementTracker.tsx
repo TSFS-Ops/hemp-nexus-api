@@ -90,6 +90,19 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
     return <Skeleton className="h-28 w-full" />;
   }
 
+  if (isError) {
+    return (
+      <Card className="border-dashed border-destructive/40">
+        <CardContent className="py-3 px-4">
+          <p className="text-xs text-destructive">
+            Unable to load engagement status. Your session may have expired —{" "}
+            <a href="/auth" className="underline font-medium">sign in again</a>.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!engagement) return null;
 
   const status: EngagementStatus = engagement.engagement_status;
