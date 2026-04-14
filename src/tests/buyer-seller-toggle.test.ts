@@ -165,13 +165,13 @@ describe("persistTradeOrder respects side parameter", () => {
 // ─── Integration: URL parameter flow ───
 
 describe("Search URL parameter side propagation", () => {
-  it("happy: side=bid in URL is parsed", () => {
-    const params = new URLSearchParams("q=soybeans&side=bid");
+  it("happy: side=buyer in URL is parsed", () => {
+    const params = new URLSearchParams("q=soybeans&side=buyer");
     expect(params.get("side")).toBe("buyer");
   });
 
-  it("happy: side=offer in URL is parsed", () => {
-    const params = new URLSearchParams("q=copper&side=offer");
+  it("happy: side=seller in URL is parsed", () => {
+    const params = new URLSearchParams("q=copper&side=seller");
     expect(params.get("side")).toBe("seller");
   });
 
