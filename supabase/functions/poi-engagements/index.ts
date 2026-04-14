@@ -182,6 +182,12 @@ Deno.serve(async (req) => {
       if (parsed.data.admin_notes !== undefined) {
         updates.admin_notes = parsed.data.admin_notes;
       }
+      if (parsed.data.contact_method !== undefined) {
+        updates.contact_method = parsed.data.contact_method;
+      }
+      if (parsed.data.contact_date !== undefined) {
+        updates.contact_date = parsed.data.contact_date;
+      }
 
       const { data: updated, error: updateErr } = await supabase
         .from("poi_engagements")
