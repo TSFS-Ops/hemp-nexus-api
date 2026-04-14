@@ -105,6 +105,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       }
     } catch (err) {
       console.error("Error loading governance data:", err);
+      setError("Failed to load governance documents. Please refresh to retry.");
     } finally {
       setLoading(false);
     }

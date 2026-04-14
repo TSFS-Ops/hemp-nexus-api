@@ -200,7 +200,7 @@ export function BilateralMatchForm() {
 
       if (trError) {
         console.error("Failed to create trade request:", trError);
-        // Non-blocking — fall back to legacy flow without trade_request_id
+        toast.warning("Trade request record could not be saved. Proceeding without it.");
       }
 
       const response = await fetch(
@@ -260,10 +260,11 @@ export function BilateralMatchForm() {
         } as any);
         if (tradeOrderError) {
           console.error("Failed to save trade order:", tradeOrderError);
-          // Non-blocking: match was created, just log the secondary failure
+          toast.warning("Trade order record could not be saved. Your match was still created.");
         }
       } catch (tradeErr) {
         console.error("Failed to save trade order:", tradeErr);
+        toast.warning("Trade order record could not be saved. Your match was still created.");
       }
 
       clearDraft();
