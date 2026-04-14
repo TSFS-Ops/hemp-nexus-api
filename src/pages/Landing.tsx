@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
-import { BidOfferForm, type BidOfferData } from "@/components/landing/BidOfferForm";
+import { TradeInterestForm, type TradeInterestData } from "@/components/landing/TradeInterestForm";
 import { SearchOutcomes, type LiquidityData } from "@/components/landing/SearchOutcomes";
 import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
 import { TrustBadges } from "@/components/landing/TrustBadges";
@@ -51,7 +51,7 @@ export default function Landing() {
     }
   }, [isPreview, authUrl, lastQuery]);
 
-  const handleSearch = useCallback(async (data: BidOfferData) => {
+  const handleSearch = useCallback(async (data: TradeInterestData) => {
     const queryString = [data.product, data.location].filter(Boolean).join(" ");
     setLastQuery(queryString);
 
@@ -155,7 +155,7 @@ export default function Landing() {
               border: '1px solid var(--lt-border)',
             }}
           >
-            <BidOfferForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
+            <TradeInterestForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
             <SearchOutcomes
               isSearching={isSearching}
               hasSearched={hasSearched}

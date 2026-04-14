@@ -1,7 +1,7 @@
 /**
  * Izenzo Action Desk — progressive trade entry form.
  * Shows only Product initially. Reveals Price/Quantity/Region after product is selected.
- * No premature Buyer/Seller toggle — side defaults to "bid" and is set later in the flow.
+ * No premature Buyer/Seller toggle — side defaults to "buyer" and is set later in the flow.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -9,23 +9,23 @@ import { ArrowRight } from "lucide-react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { CommoditySelect } from "@/components/ui/commodity-select";
 
-export interface BidOfferData {
+export interface TradeInterestData {
   product: string;
   volume: string;
   price: string;
   location: string;
   additionalInfo: string;
-  side: "bid" | "offer";
+  side: "buyer" | "seller";
 }
 
-interface BidOfferFormProps {
-  onSearch: (data: BidOfferData) => void;
+interface TradeInterestFormProps {
+  onSearch: (data: TradeInterestData) => void;
   isSearching: boolean;
   isLocked?: boolean;
 }
 
-export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOfferFormProps) {
-  const [side, setSide] = useState<"bid" | "offer" | null>(null);
+export function TradeInterestForm({ onSearch, isSearching, isLocked = false }: TradeInterestFormProps) {
+  const [side, setSide] = useState<"buyer" | "seller" | null>(null);
   const [form, setForm] = useState({
     product: "",
     volume: "",
@@ -41,17 +41,17 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     const f = formRef.current;
     const hasContent = f.product || f.volume || f.price || f.location;
     if (!hasContent) return null;
-    return { side: (side || "bid") as "bid" | "offer", ...f };
+    return { side: (side || "buyer") as "buyer" | "seller", ...f };
   }, [side]);
 
   const { restoreDraft, saveDraft, clearDraft, hasRestoredDraft } = useDraftPersistence<{
-    side: "bid" | "offer";
+    side: "buyer" | "seller";
     product: string;
     volume: string;
     price: string;
     location: string;
     additionalInfo: string;
-  }>("bid-offer", getCurrentData);
+  }>("trade-interest", getCurrentData);
 
   const [draftRestored, setDraftRestored] = useState(false);
   const initialised = useRef(false);
@@ -68,6 +68,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         location: draft.location || "",
         additionalInfo: draft.additionalInfo || "",
       });
+      if (draft.side) setSide(draft.side);
       setDraftRestored(true);
     }
   }, [restoreDraft]);
@@ -76,9 +77,9 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
     if (!initialised.current) return;
     const hasContent = form.product || form.volume || form.price || form.location;
     if (hasContent) {
-      saveDraft({ side: "bid", ...form });
+      saveDraft({ side: side || "buyer", ...form });
     }
-  }, [form, saveDraft]);
+  }, [form, saveDraft, side]);
 
   const update = (field: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -91,13 +92,11 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSearch || isLocked || !side) return;
-    // Double-click guard: prevent re-entry while parent processes
     if (submittingRef.current || isSearching) return;
     submittingRef.current = true;
     clearDraft();
     setDraftRestored(false);
     onSearch({ ...form, side });
-    // Release guard after a tick (parent's isSearching prop takes over)
     requestAnimationFrame(() => { submittingRef.current = false; });
   };
 
@@ -117,32 +116,32 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           <button
             type="button"
             disabled={disabled}
-            onClick={() => setSide("bid")}
+            onClick={() => setSide("buyer")}
             className="h-12 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0"
             style={{
-              backgroundColor: side === "bid" ? 'var(--lt-emerald-dark)' : '#111827',
-              color: side === "bid" ? 'white' : 'var(--lt-text-dim)',
-              borderColor: side === "bid" ? 'var(--lt-emerald)' : 'transparent',
-              boxShadow: side === "bid" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
+              backgroundColor: side === "buyer" ? 'var(--lt-emerald-dark)' : '#111827',
+              color: side === "buyer" ? 'white' : 'var(--lt-text-dim)',
+              borderColor: side === "buyer" ? 'var(--lt-emerald)' : 'transparent',
+              boxShadow: side === "buyer" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
             <span>Buyer</span>
-            <span className="text-[9px] font-normal normal-case tracking-normal opacity-60">Bid — looking to purchase</span>
+            <span className="text-[9px] font-normal normal-case tracking-normal opacity-60">Looking to purchase</span>
           </button>
           <button
             type="button"
             disabled={disabled}
-            onClick={() => setSide("offer")}
+            onClick={() => setSide("seller")}
             className="h-12 rounded-lg font-mono text-[12px] uppercase tracking-wider font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0"
             style={{
-              backgroundColor: side === "offer" ? 'var(--lt-emerald-dark)' : '#111827',
-              color: side === "offer" ? 'white' : 'var(--lt-text-dim)',
-              borderColor: side === "offer" ? 'var(--lt-emerald)' : 'transparent',
-              boxShadow: side === "offer" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
+              backgroundColor: side === "seller" ? 'var(--lt-emerald-dark)' : '#111827',
+              color: side === "seller" ? 'white' : 'var(--lt-text-dim)',
+              borderColor: side === "seller" ? 'var(--lt-emerald)' : 'transparent',
+              boxShadow: side === "seller" ? '0 0 12px rgba(5, 150, 105, 0.2)' : 'none',
             }}
           >
             <span>Seller</span>
-            <span className="text-[9px] font-normal normal-case tracking-normal opacity-60">Offer — looking to supply</span>
+            <span className="text-[9px] font-normal normal-case tracking-normal opacity-60">Looking to supply</span>
           </button>
         </div>
       </div>
@@ -210,7 +209,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
         </div>
       )}
 
-      {/* Submit — language aligns with Bid/Offer intent, not "search" */}
+      {/* Submit */}
       <div className="flex sm:justify-end">
         <button
           type="submit"
@@ -239,7 +238,7 @@ export function BidOfferForm({ onSearch, isSearching, isLocked = false }: BidOff
           ) : (
             <>
               <ArrowRight className="h-3.5 w-3.5" />
-              {side === "offer" ? "Submit Sell Interest" : side === "bid" ? "Submit Buy Interest" : "Select Buy or Sell"}
+              {side === "seller" ? "Submit Sell Interest" : side === "buyer" ? "Submit Buy Interest" : "Select Buy or Sell"}
             </>
           )}
         </button>
