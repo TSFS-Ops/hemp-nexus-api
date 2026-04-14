@@ -112,7 +112,7 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
   /** Navigate to the trade form pre-filled with the current match's details */
   const handleReuse = () => {
     const meta = match?.metadata as Record<string, unknown> | undefined;
-    const side = (meta?.bidOfferSide as string) || "buyer";
+    const side = (meta?.tradeSide as string) || (meta?.bidOfferSide as string) || "buyer";
     const isUnilateral = match?.match_type === "unilateral";
 
     // Build query params that the form can read

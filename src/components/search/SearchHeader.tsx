@@ -10,9 +10,9 @@ interface SearchHeaderProps {
   onSearch: () => void;
   isSearching: boolean;
   /** Current user side — optional, pre-populated from landing page URL params */
-  side?: "bid" | "offer" | null;
+  side?: "buyer" | "seller" | null;
   /** Called when user changes their side selection */
-  onSideChange?: (side: "bid" | "offer") => void;
+  onSideChange?: (side: "buyer" | "seller") => void;
 }
 
 const EXAMPLE_QUERIES = [
@@ -51,32 +51,32 @@ export function SearchHeader({
               <button
                 type="button"
                 disabled={isSearching}
-                onClick={() => onSideChange("bid")}
+                onClick={() => onSideChange("buyer")}
                 className={cn(
                   "h-10 rounded-lg text-xs font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0",
-                  side === "bid"
+                  side === "buyer"
                     ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
                     : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/50",
                   isSearching && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <span>Buyer</span>
-                <span className="text-[9px] font-normal opacity-60">Bid — looking to purchase</span>
+                <span className="text-[9px] font-normal opacity-60">Looking to purchase</span>
               </button>
               <button
                 type="button"
                 disabled={isSearching}
-                onClick={() => onSideChange("offer")}
+                onClick={() => onSideChange("seller")}
                 className={cn(
                   "h-10 rounded-lg text-xs font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0",
-                  side === "offer"
+                  side === "seller"
                     ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
                     : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/50",
                   isSearching && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <span>Seller</span>
-                <span className="text-[9px] font-normal opacity-60">Offer — looking to supply</span>
+                <span className="text-[9px] font-normal opacity-60">Looking to supply</span>
               </button>
             </div>
           </div>

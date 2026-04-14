@@ -170,7 +170,7 @@ export async function deriveJurisdictionSignals(matchId: string): Promise<Jurisd
     });
   }
 
-  // 5. Check match metadata for jurisdiction fields (legacy / bid-offer stated)
+  // 5. Check match metadata for jurisdiction fields (legacy / trade interest stated)
   const meta = match.metadata as Record<string, unknown> | null;
   if (meta) {
     if (typeof meta.origin_jurisdiction === "string" && meta.origin_jurisdiction) {
@@ -190,8 +190,8 @@ export async function deriveJurisdictionSignals(matchId: string): Promise<Jurisd
     if (typeof meta.jurisdiction === "string" && meta.jurisdiction) {
       signals.push({
         code: meta.jurisdiction.toUpperCase(),
-        source: "bid_offer",
-        label: "Stated in bid/offer",
+        source: "trade_interest",
+        label: "Stated in trade interest",
       });
     }
   }
