@@ -143,6 +143,23 @@ Deno.serve(async (req) => {
         throw new ApiException("HARD_GATE_FAILED", `Intent state must be COMPLETED, currently: ${poi.poi_state}`, 422);
       }
 
+      // ── Hard-gate: Counterparty engagement must be accepted ──
+      const { data: engagement } = await supabase
+        .from("poi_engagements")
+        .select("engagement_status")
+        .eq("match_id", poi_id)
+        .in("engagement_status", ["accepted"])
+        .limit(1)
+        .maybeSingle();
+
+      if (!engagement) {
+        throw new ApiException(
+          "HARD_GATE_FAILED",
+          "Counterparty engagement has not been accepted. WaD cannot be issued until the counterparty confirms participation.",
+          422
+        );
+      }
+
       // ── Hard-gate: Screening recentness (within 30 days) + risk_band checks ──
       const partyOrgIds = [poi.buyer_org_id, poi.seller_org_id].filter(Boolean);
       for (const partyOrgId of partyOrgIds) {
