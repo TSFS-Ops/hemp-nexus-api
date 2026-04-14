@@ -188,9 +188,9 @@ export default function CounterpartySearch() {
     const timeout = setTimeout(() => controller.abort(), 30_000);
 
     try {
-      const role = bidOfferContext.side === "offer" ? "seller" : bidOfferContext.side === "bid" ? "buyer" : undefined;
+      const role = tradeContext.side === "offer" ? "seller" : tradeContext.side === "bid" ? "buyer" : undefined;
       const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(bidOfferContext.location ? { location: bidOfferContext.location } : {}) },
+        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(tradeContext.location ? { location: tradeContext.location } : {}) },
       });
 
       // If aborted while waiting, exit silently
@@ -206,8 +206,8 @@ export default function CounterpartySearch() {
         setParsedQuery(data.parsedQuery || null);
         setDegradation(detectDegradation(data.metrics));
 
-        if (bidOfferContext.side) {
-          persistTradeOrder(query.trim(), bidOfferContext);
+        if (tradeContext.side) {
+          persistTradeOrder(query.trim(), tradeContext);
         }
       } else {
         throw new Error(data.error || "Search failed");
@@ -355,11 +355,11 @@ export default function CounterpartySearch() {
                 },
                 commodity: parsedQuery?.product || query,
                 quantity: (() => {
-                  const v = bidOfferContext.volume ? parseFloat(bidOfferContext.volume) : NaN;
+                  const v = tradeContext.volume ? parseFloat(tradeContext.volume) : NaN;
                   return !isNaN(v) && v > 0 ? { amount: v, unit: "MT" } : null;
                 })(),
                 price: (() => {
-                  const p = bidOfferContext.price ? parseFloat(bidOfferContext.price) : NaN;
+                  const p = tradeContext.price ? parseFloat(tradeContext.price) : NaN;
                   return !isNaN(p) && p > 0 ? { amount: p, currency: "USD" } : null;
                 })(),
                 terms: null,
@@ -369,18 +369,18 @@ export default function CounterpartySearch() {
                   source: selectedResult.source,
                   coherenceScore: selectedResult.coherence?.score,
                   isDraft: (() => {
-                    const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
-                    const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                    const hasValidPrice = !isNaN(parseFloat(tradeContext.price || "")) && parseFloat(tradeContext.price || "") > 0;
+                    const hasValidVolume = !isNaN(parseFloat(tradeContext.volume || "")) && parseFloat(tradeContext.volume || "") > 0;
                     return !hasValidPrice && !hasValidVolume;
                   })(),
                   draftReason: (() => {
-                    const hasValidPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
-                    const hasValidVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                    const hasValidPrice = !isNaN(parseFloat(tradeContext.price || "")) && parseFloat(tradeContext.price || "") > 0;
+                    const hasValidVolume = !isNaN(parseFloat(tradeContext.volume || "")) && parseFloat(tradeContext.volume || "") > 0;
                     return !hasValidPrice && !hasValidVolume
                       ? "Created from search - commercial terms to be confirmed during negotiation."
                       : undefined;
                   })(),
-                  bidOfferSide: bidOfferContext.side || null,
+                  bidOfferSide: tradeContext.side || null,
                 }
               }),
             }
@@ -468,9 +468,9 @@ export default function CounterpartySearch() {
           setQuery={setQuery}
           onSearch={handleSearch}
           isSearching={isSearching}
-          side={bidOfferContext.side || null}
+          side={tradeContext.side || null}
           onSideChange={(newSide) => {
-            setBidOfferContext((prev) => ({ ...prev, side: newSide }));
+            setTradeContext((prev) => ({ ...prev, side: newSide }));
             setSearchParams((prev) => {
               const updated = new URLSearchParams(prev);
               updated.set("side", newSide);
@@ -501,19 +501,19 @@ export default function CounterpartySearch() {
             >
               {parsedQuery.role === "buyer" ? "Buyer" : "Seller"}
             </Badge>
-            {bidOfferContext.volume && !isNaN(parseFloat(bidOfferContext.volume)) && parseFloat(bidOfferContext.volume) > 0 && (
+            {tradeContext.volume && !isNaN(parseFloat(tradeContext.volume)) && parseFloat(tradeContext.volume) > 0 && (
               <>
                 <span className="text-muted-foreground">·</span>
                 <Badge variant="outline" className="text-[10px] sm:text-xs">
-                  {bidOfferContext.volume} MT
+                  {tradeContext.volume} MT
                 </Badge>
               </>
             )}
-            {bidOfferContext.price && !isNaN(parseFloat(bidOfferContext.price)) && parseFloat(bidOfferContext.price) > 0 && (
+            {tradeContext.price && !isNaN(parseFloat(tradeContext.price)) && parseFloat(tradeContext.price) > 0 && (
               <>
                 <span className="text-muted-foreground">@</span>
                 <Badge variant="outline" className="text-[10px] sm:text-xs">
-                  ${bidOfferContext.price}
+                  ${tradeContext.price}
                 </Badge>
               </>
             )}
@@ -641,7 +641,7 @@ export default function CounterpartySearch() {
                   isSelected={selectedResults.has(result.id)}
                   onToggleSelect={toggleSelect}
                   onFindSimilar={setSimilarAnchor}
-                  userSide={bidOfferContext.side}
+                  userSide={tradeContext.side}
                 />
               </ResultCardErrorBoundary>
             ))}
@@ -662,8 +662,8 @@ export default function CounterpartySearch() {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Create {(() => {
-                const vp = parseFloat(bidOfferContext.price || "");
-                const vv = parseFloat(bidOfferContext.volume || "");
+                const vp = parseFloat(tradeContext.price || "");
+                const vv = parseFloat(tradeContext.volume || "");
                 return (!isNaN(vp) && vp > 0) || (!isNaN(vv) && vv > 0) ? "" : "Draft ";
               })()}Match{selectedResults.size > 1 ? "es" : ""}</AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
@@ -671,15 +671,15 @@ export default function CounterpartySearch() {
                   You are about to create {selectedResults.size} match{selectedResults.size > 1 ? "es" : ""} for <strong>{parsedQuery?.product || query}</strong>.
                 </p>
                 {(() => {
-                  const validPrice = !isNaN(parseFloat(bidOfferContext.price || "")) && parseFloat(bidOfferContext.price || "") > 0;
-                  const validVolume = !isNaN(parseFloat(bidOfferContext.volume || "")) && parseFloat(bidOfferContext.volume || "") > 0;
+                  const validPrice = !isNaN(parseFloat(tradeContext.price || "")) && parseFloat(tradeContext.price || "") > 0;
+                  const validVolume = !isNaN(parseFloat(tradeContext.volume || "")) && parseFloat(tradeContext.volume || "") > 0;
                   if (validPrice || validVolume) {
                     return (
                       <p>
                         <strong>Commercial terms from your bid/offer will be recorded:</strong>
-                        {validVolume && ` Quantity: ${bidOfferContext.volume} MT`}
-                        {validPrice && ` · Price: $${bidOfferContext.price}`}
-                        {bidOfferContext.side && ` · Side: ${bidOfferContext.side.toUpperCase()}`}
+                        {validVolume && ` Quantity: ${tradeContext.volume} MT`}
+                        {validPrice && ` · Price: $${tradeContext.price}`}
+                        {tradeContext.side && ` · Side: ${tradeContext.side.toUpperCase()}`}
                         . You can amend these on the match detail page.
                       </p>
                     );
