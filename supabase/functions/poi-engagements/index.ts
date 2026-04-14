@@ -160,11 +160,16 @@ Deno.serve(async (req) => {
         updates.engagement_status = parsed.data.engagement_status;
 
         if (parsed.data.engagement_status === "contacted") {
-          updates.contacted_at = new Date().toISOString();
-          // Record proof of contact
-          if (parsed.data.contact_method) {
-            updates.contact_method = parsed.data.contact_method;
+          // ── SERVER-SIDE ENFORCEMENT: contact_method is mandatory ──
+          if (!parsed.data.contact_method) {
+            throw new ApiException(
+              "VALIDATION_ERROR",
+              "contact_method is required when marking engagement as contacted",
+              400
+            );
           }
+          updates.contacted_at = new Date().toISOString();
+          updates.contact_method = parsed.data.contact_method;
           if (parsed.data.contact_date) {
             updates.contact_date = parsed.data.contact_date;
           } else {
