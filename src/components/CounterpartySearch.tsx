@@ -345,14 +345,12 @@ export default function CounterpartySearch() {
                 "Idempotency-Key": idempotencyKey,
               },
               body: JSON.stringify({
-                buyer: { 
-                  id: profile.org_id, 
-                  name: org?.name || profile.full_name || "Your Organisation" 
-                },
-                seller: { 
-                  id: selectedResult.id, 
-                  name: selectedResult.title 
-                },
+                buyer: tradeContext.side === "seller"
+                  ? { id: selectedResult.id, name: selectedResult.title }
+                  : { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation" },
+                seller: tradeContext.side === "seller"
+                  ? { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation" }
+                  : { id: selectedResult.id, name: selectedResult.title },
                 commodity: parsedQuery?.product || query,
                 quantity: (() => {
                   const v = tradeContext.volume ? parseFloat(tradeContext.volume) : NaN;
