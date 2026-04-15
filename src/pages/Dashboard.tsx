@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShieldAlert } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
+import { ProfileCompletionBanner } from "@/components/dashboard/ProfileCompletionBanner";
 
 const Billing = lazy(() => import("@/pages/Billing"));
 
@@ -77,6 +78,7 @@ export default function Dashboard() {
   return (
     <RequireAuth>
       <DashboardLayout isAdmin={isAdmin}>
+        <ProfileCompletionBanner />
         <AccessDeniedBanner />
         <ErrorBoundary>
           <Routes>
