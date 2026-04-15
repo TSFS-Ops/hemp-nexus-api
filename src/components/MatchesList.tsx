@@ -770,7 +770,7 @@ export function MatchesList() {
             </Button>
           </div>
         </div>
-      )
+      )}
 
       <BulkConfirmDialog
         open={showSettleDialog}
