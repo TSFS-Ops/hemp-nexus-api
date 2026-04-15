@@ -228,6 +228,28 @@ Deno.serve(async (req) => {
         },
       });
 
+      // ── Immutable outreach log (if status changed and contact details provided) ──
+      if (updates.engagement_status && parsed.data.contact_method && parsed.data.contact_detail) {
+        // Fetch admin profile for snapshot
+        const { data: adminProfile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", authCtx.userId)
+          .single();
+
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          admin_user_id: authCtx.userId,
+          admin_email: adminProfile?.email || "unknown",
+          admin_name: adminProfile?.full_name || null,
+          contact_method: parsed.data.contact_method,
+          contact_detail: parsed.data.contact_detail,
+          previous_status: current.engagement_status,
+          new_status: updates.engagement_status as string,
+          notes: parsed.data.admin_notes || null,
+        });
+      }
+
       console.log(`[${requestId}] Engagement ${engagementId} updated: ${current.engagement_status} → ${updates.engagement_status || "(no status change)"}`);
 
       return new Response(JSON.stringify({ engagement: updated }), {
