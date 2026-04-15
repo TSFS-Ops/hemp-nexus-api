@@ -784,7 +784,28 @@ Deno.serve(async (req) => {
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
       if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
-      // 1 credit for completion
+      // ── WaD GATE: require a sealed WaD before allowing completion ──
+      const { data: sealedWad, error: wadError } = await supabase
+        .from("p3_wads")
+        .select("id, state")
+        .eq("poi_id", matchId)
+        .eq("state", "sealed")
+        .maybeSingle();
+
+      if (wadError) {
+        console.error(`[${requestId}] WaD check failed:`, wadError);
+        handleDatabaseError(wadError, requestId);
+      }
+
+      if (!sealedWad) {
+        throw new ApiException(
+          "WAD_NOT_SEALED",
+          "A sealed WaD (Without a Doubt) evidence bundle is required before completing a trade. Please complete the WaD step first.",
+          422
+        );
+      }
+
+      // Completion is free (0 credits) — burn call kept for audit trail consistency
       await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'transaction_complete', requestId, matchId);
 
       // --- ATOMIC STATE TRANSITION ---

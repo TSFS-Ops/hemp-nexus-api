@@ -5,14 +5,17 @@
  *   1. Search (always complete on match detail — match already exists)
  *   2. Match Details (review trading partner, terms, docs, notes, disputes)
  *   3. Generate POI (readiness checklist + credit-burn action)
- *   4. WaD (governance docs + 9-gate validation)
+ *   4. WaD (governance docs + 9-gate validation) — must be SEALED before completion
  *   5. Evidence Pack (sealed evidence bundle + timeline)
  *
  * Strict linear: future steps are locked until prior steps are fully complete.
  * POI is a HOLD POINT: WaD step is locked until counterparty engagement is accepted.
+ * WaD is a COMPLIANCE GATE: trade cannot complete unless p3_wads.state === 'sealed'.
  */
 
 import { useState, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -82,9 +85,24 @@ export function DealWizard({
   const engagementAccepted = engagementStatus === "accepted";
   const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
 
-  // WaD completion requires checking WaD status — simplified: we check if match is completed
-  // or if the match has progressed past the WaD stage
-  const wadComplete = isCompleted;
+  // ── WaD COMPLIANCE GATE ──
+  // Query actual p3_wads table to determine if WaD is sealed
+  const { data: wadRecord } = useQuery({
+    queryKey: ["wad-status", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("p3_wads")
+        .select("id, state")
+        .eq("poi_id", match.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: poiComplete && engagementAccepted,
+  });
+
+  const wadSealed = wadRecord?.state === "sealed";
+  const wadComplete = wadSealed || isCompleted;
 
   const evidenceComplete = isCompleted;
 
