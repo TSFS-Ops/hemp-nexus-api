@@ -7,7 +7,7 @@ import { ArrowRight, FileText, Search, ShieldCheck, Eye, Users, UserCheck, Hands
 import { motion } from "framer-motion";
 
 const PIPELINE_STEPS = [
-  { label: "Bid / Offer", subtitle: "Intent capture", Icon: FileText },
+  { label: "Trade Interest", subtitle: "Intent capture", Icon: FileText },
   { label: "Details", subtitle: "Entity & terms", Icon: BookOpen },
   { label: "Upload Docs", subtitle: "Supporting files", Icon: FileText },
   { label: "Search", subtitle: "Find partners", Icon: Search },
