@@ -22,7 +22,7 @@ interface Engagement {
   counterparty_email: string | null;
   counterparty_org_id: string | null;
   counterparty_type: "known" | "unknown";
-  engagement_status: "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
   expires_at: string;
   contacted_at: string | null;
   responded_at: string | null;
@@ -45,6 +45,7 @@ interface Engagement {
 
 // ─── Status config ──────────────────────────────────────────────────
 const STATUS_CONFIG = {
+  pending: { label: "Awaiting Outreach", variant: "outline" as const, icon: AlertTriangle },
   notification_sent: { label: "Notification Sent", variant: "outline" as const, icon: Mail },
   contacted: { label: "Contacted", variant: "secondary" as const, icon: Clock },
   accepted: { label: "Accepted", variant: "default" as const, icon: CheckCircle2 },
@@ -83,7 +84,7 @@ function ExpiryCountdown({ expiresAt }: { expiresAt: string }) {
 
 // ─── Summary cards ──────────────────────────────────────────────────
 function SummaryCards({ data }: { data: Engagement[] }) {
-  const pending = data.filter((e) => ["notification_sent", "contacted"].includes(e.engagement_status)).length;
+  const pending = data.filter((e) => ["pending", "notification_sent", "contacted"].includes(e.engagement_status)).length;
   const known = data.filter((e) => e.counterparty_type === "known").length;
   const unknown = data.filter((e) => e.counterparty_type === "unknown").length;
   const urgentCount = data.filter((e) => {
@@ -258,6 +259,7 @@ export function AdminPendingEngagementsPanel() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="pending">Awaiting Outreach</SelectItem>
             <SelectItem value="notification_sent">Notification Sent</SelectItem>
             <SelectItem value="contacted">Contacted</SelectItem>
             <SelectItem value="accepted">Accepted</SelectItem>
@@ -423,7 +425,7 @@ export function AdminPendingEngagementsPanel() {
               </div>
 
               {/* Proof of contact fields — required when marking as Contacted */}
-              {(selectedEngagement.engagement_status === "notification_sent" || selectedEngagement.engagement_status === "contacted") && (
+              {(["pending", "notification_sent"].includes(selectedEngagement.engagement_status) || selectedEngagement.engagement_status === "contacted") && (
                 <div className="space-y-3 rounded-md border border-border p-3">
                   <p className="text-xs font-medium text-muted-foreground">Proof of Contact</p>
                   <div>
@@ -468,6 +470,13 @@ export function AdminPendingEngagementsPanel() {
                       <SelectValue placeholder="Select new status" />
                     </SelectTrigger>
                     <SelectContent>
+                      {selectedEngagement.engagement_status === "pending" && (
+                        <>
+                          <SelectItem value="contacted">Mark as Contacted</SelectItem>
+                          <SelectItem value="notification_sent">Notification Sent</SelectItem>
+                          <SelectItem value="expired">Mark as Expired</SelectItem>
+                        </>
+                      )}
                       {selectedEngagement.engagement_status === "notification_sent" && (
                         <>
                           <SelectItem value="contacted">Mark as Contacted</SelectItem>
