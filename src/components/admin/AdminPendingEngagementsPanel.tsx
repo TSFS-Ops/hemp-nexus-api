@@ -366,7 +366,7 @@ export function AdminPendingEngagementsPanel() {
           if (!open) { setSelectedEngagement(null); setActionForm({}); }
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Handshake className="h-4 w-4 text-primary" />
@@ -377,8 +377,9 @@ export function AdminPendingEngagementsPanel() {
             </DialogDescription>
           </DialogHeader>
 
+          <div className="flex-1 overflow-y-auto -mx-6 px-6">
           {selectedEngagement && (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-2">
               {/* Trade summary */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -498,6 +499,7 @@ export function AdminPendingEngagementsPanel() {
               </div>
             </div>
           )}
+          </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedEngagement(null)}>Cancel</Button>
