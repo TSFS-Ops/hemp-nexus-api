@@ -19,6 +19,7 @@ import { MatchHeroCard } from "@/components/match/MatchHeroCard";
 import { DealWizard } from "@/components/match/wizard/DealWizard";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { EngagementTracker } from "@/components/match/EngagementTracker";
+import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { supabase } from "@/integrations/supabase/client";
