@@ -320,23 +320,28 @@ Deno.serve(async (req) => {
       // ── Create POI Engagement Record (hold-point) ──
       // This creates the engagement tracking entry that gates progression until
       // the counterparty responds (accepted/declined/expired).
-      (async () => {
-        try {
-          const isUnilateral = match.match_type === 'unilateral' || !match.buyer_id || !match.seller_id;
-          const counterpartyOrgId = isUnilateral ? null : (match.buyer_id === match.org_id ? match.seller_id : match.buyer_id);
+      // MUST be awaited — if this fails, the platform is internally inconsistent.
+      {
+        // Determine counterparty from real org UUIDs, not synthetic buyer_id/seller_id
+        const counterpartyOrgId = match.buyer_org_id === match.org_id
+          ? match.seller_org_id
+          : match.buyer_org_id;
+        // A counterparty is only 'known' if a real platform org UUID exists
+        const counterpartyType = counterpartyOrgId ? 'known' : 'unknown';
 
-          await supabase.from("poi_engagements").insert({
-            match_id: matchId,
-            org_id: match.org_id,
-            counterparty_org_id: counterpartyOrgId || null,
-            counterparty_type: isUnilateral ? 'unknown' : 'known',
-            engagement_status: 'notification_sent',
-          });
-          console.log(`[${requestId}] POI engagement record created (type=${isUnilateral ? 'unknown' : 'known'})`);
-        } catch (engErr) {
-          console.error(`[${requestId}] Failed to create engagement record:`, engErr);
+        const { error: engError } = await supabase.from("poi_engagements").insert({
+          match_id: matchId,
+          org_id: match.org_id,
+          counterparty_org_id: counterpartyOrgId || null,
+          counterparty_type: counterpartyType,
+          engagement_status: 'notification_sent',
+        });
+        if (engError) {
+          console.error(`[${requestId}] CRITICAL: Failed to create POI engagement record:`, engError);
+          throw new ApiException("ENGAGEMENT_CREATION_FAILED", "Failed to create engagement tracking record", 500, { detail: engError.message });
         }
-      })();
+        console.log(`[${requestId}] POI engagement record created (type=${counterpartyType}, counterpartyOrgId=${counterpartyOrgId || 'null'})`);
+      }
 
       // Trigger webhooks
       triggerWebhooks(supabase, match.org_id, "poi.generated", {
