@@ -166,7 +166,7 @@ export function DealWizard({
         <StepSearch match={match} />
       )}
       {activeStep === 1 && (
-        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} />
+        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} />
       )}
       {activeStep === 2 && (
         <StepPoi
