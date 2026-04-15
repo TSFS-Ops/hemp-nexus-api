@@ -244,11 +244,11 @@ function StepSearch({ match }: { match: Match }) {
   const userOrgId = useUserOrg();
   const inferredRole = getMatchRole(userOrgId, match as any);
 
-  // Derive role from canonical buyer_org_id / seller_org_id, not metadata
+  // Derive role from canonical buyer_org_id / seller_org_id
   let roleBadgeLabel: string | null = null;
-  if (inferredRole === "buyer" || (inferredRole === "creator" && (match as any).buyer_org_id === userOrgId)) {
+  if (inferredRole === "buyer") {
     roleBadgeLabel = "Buyer";
-  } else if (inferredRole === "seller" || (inferredRole === "creator" && (match as any).seller_org_id === userOrgId)) {
+  } else if (inferredRole === "seller") {
     roleBadgeLabel = "Seller";
   }
 
