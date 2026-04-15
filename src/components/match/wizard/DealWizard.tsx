@@ -184,8 +184,22 @@ export function DealWizard({
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 The POI has been generated and the counterparty has been notified. 
                 This step is paused until the counterparty has been engaged and has responded.
-                Check the Engagement Tracker above for the current status.
               </p>
+              {/* Inline engagement status — no need to scroll up */}
+              {engagementStatus && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
+                  <span className={`h-2 w-2 rounded-full ${
+                    engagementStatus === "accepted" ? "bg-green-500" :
+                    engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" :
+                    "bg-amber-500 animate-pulse"
+                  }`} />
+                  Current status: {engagementStatus === "notification_sent" ? "Notification sent" :
+                    engagementStatus === "contacted" ? "Contacted" :
+                    engagementStatus === "accepted" ? "Accepted" :
+                    engagementStatus === "declined" ? "Declined" :
+                    engagementStatus === "expired" ? "Expired" : engagementStatus}
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
