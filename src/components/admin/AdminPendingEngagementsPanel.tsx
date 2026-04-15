@@ -68,7 +68,7 @@ const STATUS_CONFIG = {
 };
 
 const CONTACT_METHOD_CONFIG: Record<string, { label: string; icon: typeof Mail; placeholder: string }> = {
-  email: { label: "Email", icon: Mail, placeholder: "counterparty@example.com" },
+  email: { label: "Email", icon: Mail, placeholder: "partner@example.com" },
   phone: { label: "Phone Call", icon: Phone, placeholder: "+27 82 123 4567" },
   linkedin: { label: "LinkedIn", icon: Linkedin, placeholder: "https://linkedin.com/in/username" },
   whatsapp: { label: "WhatsApp", icon: MessageSquare, placeholder: "+27 82 123 4567" },
@@ -145,7 +145,7 @@ function ContactDetailsSection({ engagement }: { engagement: Engagement }) {
     <Card className="bg-muted/30">
       <CardHeader className="p-3 pb-1">
         <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Building2 className="h-3.5 w-3.5" /> Counterparty Details
+          <Building2 className="h-3.5 w-3.5" /> Trading Partner Details
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0 space-y-1.5 text-sm">
@@ -403,7 +403,7 @@ export function AdminPendingEngagementsPanel() {
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[160px] h-8 text-xs">
-            <SelectValue placeholder="Counterparty type" />
+            <SelectValue placeholder="Partner type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
@@ -436,7 +436,7 @@ export function AdminPendingEngagementsPanel() {
               <TableRow>
                 <TableHead className="text-xs">Trade</TableHead>
                 <TableHead className="text-xs">Initiator</TableHead>
-                <TableHead className="text-xs">Counterparty</TableHead>
+                <TableHead className="text-xs">Trading Partner</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
                 <TableHead className="text-xs">Expiry</TableHead>
                 <TableHead className="text-xs">Contact</TableHead>
@@ -508,7 +508,7 @@ export function AdminPendingEngagementsPanel() {
               Manage Engagement
             </DialogTitle>
             <DialogDescription>
-              Update counterparty contact details, log outreach, or record a response.
+              Update trading partner contact details, log outreach, or record a response.
             </DialogDescription>
           </DialogHeader>
 
@@ -545,14 +545,14 @@ export function AdminPendingEngagementsPanel() {
               <OutreachLogSection engagementId={selectedEngagement.id} />
               <Separator />
 
-              {/* Counterparty email (auto-link key) */}
+              {/* Trading partner email (auto-link key) */}
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
-                  Counterparty Email (auto-link key)
+                  Trading Partner Email (auto-link key)
                 </label>
                 <Input
                   type="email"
-                  placeholder="counterparty@example.com"
+                  placeholder="partner@example.com"
                   value={actionForm.email || ""}
                   onChange={(e) => setActionForm((prev) => ({ ...prev, email: e.target.value }))}
                   className="mt-1"
@@ -646,8 +646,8 @@ export function AdminPendingEngagementsPanel() {
                       )}
                       {selectedEngagement.engagement_status === "contacted" && (
                         <>
-                          <SelectItem value="accepted">Counterparty Accepted</SelectItem>
-                          <SelectItem value="declined">Counterparty Declined</SelectItem>
+                          <SelectItem value="accepted">Trading Partner Accepted</SelectItem>
+                          <SelectItem value="declined">Trading Partner Declined</SelectItem>
                           <SelectItem value="expired">Mark as Expired</SelectItem>
                         </>
                       )}

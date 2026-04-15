@@ -140,7 +140,7 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
       <CardHeader className="pb-2 pt-3 px-4">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Clock className="h-4 w-4 text-primary" />
-          Counterparty Engagement
+          Trading Partner Engagement
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
@@ -217,17 +217,17 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
         <p className="text-xs text-muted-foreground mt-3">
           {status === "notification_sent" && (
             counterpartyType === "known"
-              ? "Your counterparty has been notified directly. Waiting for their response."
-              : "Your counterparty has been notified. Waiting for engagement."
+              ? "Your trading partner has been notified directly. Waiting for their response."
+              : "Your trading partner has been notified. Waiting for engagement."
           )}
           {status === "contacted" && (
             counterpartyType === "known"
-              ? "Your counterparty has been contacted. Awaiting their response."
-              : "Support has contacted the counterparty on your behalf. Awaiting their response."
+              ? "Your trading partner has been contacted. Awaiting their response."
+              : "Support has contacted the trading partner on your behalf. Awaiting their response."
           )}
-          {status === "accepted" && "Counterparty has accepted. You may proceed with the trade."}
-          {status === "declined" && "Counterparty declined this trade. You can re-use your trade details to approach a different counterparty."}
-          {status === "expired" && "This engagement has expired. You can re-use your trade details to try a different counterparty."}
+          {status === "accepted" && "Trading partner has accepted. You may proceed with the trade."}
+          {status === "declined" && "Trading partner declined this trade. You can re-use your trade details to approach a different trading partner."}
+          {status === "expired" && "This engagement has expired. You can re-use your trade details to try a different trading partner."}
         </p>
 
         {/* Re-use CTA for terminal states */}

@@ -766,7 +766,7 @@ export function MatchesList() {
               ) : (
                 <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
               )}
-              {isSettling ? "Confirming…" : `Confirm Intent (${selectedMatches.size})`}
+              {isSettling ? "Confirming…" : `Send Trade Request (${selectedMatches.size})`}
             </Button>
           </div>
         </div>

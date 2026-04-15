@@ -9,8 +9,8 @@
  *   5. Evidence Pack (sealed evidence bundle + timeline)
  *
  * Strict linear: future steps are locked until prior steps are fully complete.
- * POI is a HOLD POINT: WaD step is locked until counterparty engagement is accepted.
- * WaD is a COMPLIANCE GATE: trade cannot complete unless p3_wads.state === 'sealed'.
+ * Trade Request is a HOLD POINT: Signed Deal step is locked until trading partner engagement is accepted.
+ * Signed Deal is a COMPLIANCE GATE: trade cannot complete unless wads.status === 'sealed'.
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -81,7 +81,7 @@ export function DealWizard({
   }, [currentState, isSettled]);
 
   // ── ENGAGEMENT HOLD-POINT GATE ──
-  // POI is a hold point. WaD is BLOCKED until counterparty engagement is accepted.
+  // Trade request is a hold point. Signed Deal is BLOCKED until trading partner engagement is accepted.
   const engagementAccepted = engagementStatus === "accepted";
   const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
 
@@ -127,17 +127,17 @@ export function DealWizard({
       id: "poi",
       label: "Proof of Intent",
       description: poiHoldActive
-        ? "POI generated. Awaiting counterparty engagement — the process is paused here."
-        : "Generate a Proof of Intent — 1 credit (R10). Non-binding, irreversible, fully audited.",
+        ? "Trade request generated. Awaiting trading partner engagement — the process is paused here."
+        : "Generate a Trade Request — 1 credit (R10). Non-binding, irreversible, fully audited.",
       complete: poiComplete && engagementAccepted,
       locked: !matchComplete, // Strict: locked until match step complete
     },
     {
       id: "wad",
-      label: "WaD",
+      label: "Signed Deal",
       description: poiHoldActive
-        ? "Locked — counterparty must accept before you can proceed to WaD."
-        : "Create a WaD evidence bundle with 9-gate compliance validation.",
+        ? "Locked — trading partner must accept before you can proceed to Signed Deal."
+        : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
       complete: wadComplete,
       locked: !poiComplete || poiHoldActive, // HOLD POINT: locked until engagement accepted
     },
@@ -201,9 +201,9 @@ export function DealWizard({
             <Card className="border-dashed border-primary/30">
               <CardContent className="py-6 text-center space-y-3">
                 <ShieldAlert className="h-7 w-7 text-primary mx-auto" />
-                <h3 className="font-semibold text-sm">WaD Step Locked — Awaiting Counterparty</h3>
+                <h3 className="font-semibold text-sm">Signed Deal Step Locked — Awaiting Trading Partner</h3>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  The POI has been generated. The next step (WaD) is locked until the counterparty engagement is accepted.
+                  The trade request has been generated. The next step (Signed Deal) is locked until the trading partner engagement is accepted.
                 </p>
                 {engagementStatus && (
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
@@ -227,10 +227,10 @@ export function DealWizard({
           <Card className="border-dashed border-primary/30">
             <CardContent className="py-8 text-center space-y-3">
               <ShieldAlert className="h-8 w-8 text-primary mx-auto" />
-              <h3 className="font-semibold">Awaiting Counterparty Engagement</h3>
+              <h3 className="font-semibold">Awaiting Trading Partner Engagement</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                The POI has been generated and the counterparty has been notified. 
-                This step is paused until the counterparty has been engaged and has responded.
+                The trade request has been generated and the trading partner has been notified. 
+                This step is paused until the trading partner has been engaged and has responded.
               </p>
               {/* Inline engagement status — no need to scroll up */}
               {engagementStatus && (

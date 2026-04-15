@@ -125,7 +125,7 @@ function EngagementsSection() {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
       <SectionHeader
         title="Pending Engagements"
-        description="POIs awaiting counterparty response. Filter by known or unknown counterparties and track expiry countdowns."
+        description="Trade requests awaiting trading partner response. Filter by known or unknown partners and track expiry countdowns."
         parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
       />
       <AdminPendingEngagementsPanel />
