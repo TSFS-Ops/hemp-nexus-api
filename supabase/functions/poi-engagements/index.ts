@@ -373,23 +373,33 @@ Deno.serve(async (req) => {
           .eq("id", authCtx.orgId)
           .maybeSingle();
 
-        const profileName = counterpartyProfile?.full_name;
-        const orgName = counterpartyOrg?.name;
-        // Only update if we have a proper name (not an email)
+        const profileName = counterpartyProfile?.full_name?.trim();
+        const orgName = counterpartyOrg?.name?.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const bestName = profileName && !emailRegex.test(profileName) ? profileName : null;
 
-        if (bestName) {
-          // Determine which slot the counterparty occupies
-          if (matchData.buyer_org_id === authCtx.orgId) {
-            await supabase.from("matches")
-              .update({ buyer_name: bestName })
-              .eq("id", matchId);
-          } else if (matchData.seller_org_id === authCtx.orgId) {
-            await supabase.from("matches")
-              .update({ seller_name: bestName })
-              .eq("id", matchId);
-          }
+        // Resolve best available legal name: profile first, then org
+        const bestName =
+          (profileName && !emailRegex.test(profileName) ? profileName : null) ||
+          (orgName && !emailRegex.test(orgName) ? orgName : null);
+
+        // Hard gate: reject acceptance if no valid legal name is available
+        if (!bestName) {
+          throw new ApiException(
+            "PROFILE_INCOMPLETE",
+            "Your profile name must be set to a legal name (not an email address) before you can accept a trade engagement. Please update your name on the Dashboard and try again.",
+            400
+          );
+        }
+
+        // Sync the validated name to the correct match slot
+        if (matchData.buyer_org_id === authCtx.orgId) {
+          await supabase.from("matches")
+            .update({ buyer_name: bestName })
+            .eq("id", matchId);
+        } else if (matchData.seller_org_id === authCtx.orgId) {
+          await supabase.from("matches")
+            .update({ seller_name: bestName })
+            .eq("id", matchId);
         }
       }
 
