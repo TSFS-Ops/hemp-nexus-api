@@ -174,6 +174,7 @@ export function DealWizard({
             match={match}
             onStateAction={onStateAction}
             loading={stateActionLoading || confirming}
+            engagementStatus={engagementStatus}
           />
           {/* Hold-point notice shown on POI step since WaD step is locked */}
           {poiHoldActive && (
@@ -354,10 +355,12 @@ function StepPoi({
   match,
   onStateAction,
   loading,
+  engagementStatus,
 }: {
   match: Match;
   onStateAction: (action: string) => Promise<void>;
   loading: boolean;
+  engagementStatus?: EngagementStatus;
 }) {
   return (
     <div className="space-y-4">
@@ -365,6 +368,7 @@ function StepPoi({
         match={match}
         onAction={onStateAction}
         loading={loading}
+        engagementStatus={engagementStatus}
       />
     </div>
   );
