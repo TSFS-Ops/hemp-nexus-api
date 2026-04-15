@@ -420,38 +420,47 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>{nextDescription}</p>
-                <div className="rounded-md border border-border p-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cost</span>
-                    <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit (R10 ZAR)</span>
+                {isFreeAction ? (
+                  <div className="rounded-md border border-border p-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Cost</span>
+                      <span className="font-medium text-foreground">Free</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Your balance</span>
-                    <span className="font-medium text-foreground">
-                      {hasVerifiedBalance ? `${currentBalance.toLocaleString()} credits` : "Will be checked on confirmation"}
-                    </span>
+                ) : (
+                  <div className="rounded-md border border-border p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Cost</span>
+                      <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit (R10 ZAR)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Your balance</span>
+                      <span className="font-medium text-foreground">
+                        {hasVerifiedBalance ? `${currentBalance.toLocaleString()} credits` : "Will be checked on confirmation"}
+                      </span>
+                    </div>
+                    {hasVerifiedBalance ? (
+                      <>
+                        <div className="border-t border-border my-1" />
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">After confirmation</span>
+                          <span className="font-medium text-foreground">
+                            {(currentBalance - CREDITS_PER_ACTION).toLocaleString()} credits
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="border-t border-border my-1" />
+                        <p className="text-xs text-muted-foreground">
+                          We could not verify your balance on this screen. Your balance will be checked again when you confirm. If it is insufficient, the action will be blocked and no credits will be charged.
+                        </p>
+                      </>
+                    )}
                   </div>
-                  {hasVerifiedBalance ? (
-                    <>
-                      <div className="border-t border-border my-1" />
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">After confirmation</span>
-                        <span className="font-medium text-foreground">
-                          {(currentBalance - CREDITS_PER_ACTION).toLocaleString()} credits
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="border-t border-border my-1" />
-                      <p className="text-xs text-muted-foreground">
-                        We could not verify your balance on this screen. Your balance will be checked again when you confirm. If it is insufficient, the action will be blocked and no credits will be charged.
-                      </p>
-                    </>
-                  )}
-                </div>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  <strong>Irreversible.</strong> This action cannot be undone. Credits will not be refunded.
+                  <strong>Irreversible.</strong> This action cannot be undone.{!isFreeAction && " Credits will not be refunded."}
                 </p>
               </div>
             </AlertDialogDescription>
@@ -459,8 +468,17 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
-              <Coins className="h-4 w-4 mr-2" />
-              Confirm - R10 ZAR
+              {isFreeAction ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Confirm
+                </>
+              ) : (
+                <>
+                  <Coins className="h-4 w-4 mr-2" />
+                  Confirm - R10 ZAR
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
