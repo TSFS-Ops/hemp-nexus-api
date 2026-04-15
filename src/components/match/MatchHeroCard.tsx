@@ -60,15 +60,13 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const isUnilateral = matchType === "unilateral";
 
   // Determine user's role from canonical buyer_org_id / seller_org_id fields.
-  // For the creator, also check these fields (creator IS the buyer or seller).
-  // metadata.tradeSide is only used as a last-resort fallback.
   const userOrgId = useUserOrg();
   const inferredRole = getMatchRole(userOrgId, match as any);
 
   let roleBadgeLabel: string | null = null;
-  if (inferredRole === "buyer" || (inferredRole === "creator" && (match as any).buyer_org_id === userOrgId)) {
+  if (inferredRole === "buyer") {
     roleBadgeLabel = "Buyer";
-  } else if (inferredRole === "seller" || (inferredRole === "creator" && (match as any).seller_org_id === userOrgId)) {
+  } else if (inferredRole === "seller") {
     roleBadgeLabel = "Seller";
   }
 
