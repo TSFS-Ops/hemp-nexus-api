@@ -22,7 +22,7 @@ interface Engagement {
   counterparty_email: string | null;
   counterparty_org_id: string | null;
   counterparty_type: "known" | "unknown";
-  engagement_status: "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
   expires_at: string;
   contacted_at: string | null;
   responded_at: string | null;
@@ -45,6 +45,7 @@ interface Engagement {
 
 // ─── Status config ──────────────────────────────────────────────────
 const STATUS_CONFIG = {
+  pending: { label: "Awaiting Outreach", variant: "outline" as const, icon: AlertTriangle },
   notification_sent: { label: "Notification Sent", variant: "outline" as const, icon: Mail },
   contacted: { label: "Contacted", variant: "secondary" as const, icon: Clock },
   accepted: { label: "Accepted", variant: "default" as const, icon: CheckCircle2 },

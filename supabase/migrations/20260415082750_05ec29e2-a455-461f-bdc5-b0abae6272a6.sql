@@ -1,0 +1,1 @@
+UPDATE poi_engagements SET engagement_status = 'pending' WHERE engagement_status = 'notification_sent' AND contacted_at IS NULL;

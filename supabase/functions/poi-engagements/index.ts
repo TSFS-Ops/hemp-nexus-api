@@ -6,6 +6,7 @@ import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 const EngagementStatusSchema = z.enum([
+  "pending",
   "notification_sent",
   "contacted",
   "accepted",
@@ -22,6 +23,7 @@ const UpdateEngagementSchema = z.object({
 });
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending: ["notification_sent", "contacted", "expired"],
   notification_sent: ["contacted", "expired"],
   contacted: ["accepted", "declined", "expired"],
   accepted: [],
