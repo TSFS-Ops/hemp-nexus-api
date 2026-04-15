@@ -17,6 +17,7 @@ import {
   Landmark,
   HeartPulse,
   Handshake,
+  ChevronRight,
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -30,6 +31,11 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ROUTES } from "@/lib/constants";
 
 interface NavItem {
@@ -97,6 +103,9 @@ export function AdminSidebar() {
     return currentPath.startsWith(url);
   };
 
+  const groupHasActive = (group: NavGroup) =>
+    group.items.some((item) => isActive(item.url, item.exact));
+
   return (
     <Sidebar className="w-60" collapsible="icon">
       <SidebarHeader className="border-b border-border px-4 py-3 space-y-2">
@@ -119,36 +128,47 @@ export function AdminSidebar() {
       </SidebarHeader>
       <SidebarContent className="px-2 py-2">
         {sidebarGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase px-2 mb-0.5">
-              {group.label}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const active = isActive(item.url, item.exact);
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          to={item.url}
-                          className={`flex items-center gap-2 text-[13px] transition-all duration-150 ${
-                            active
-                              ? "bg-foreground text-background font-medium"
-                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                          }`}
-                          style={active ? { borderLeft: '2px solid hsl(160, 84%, 29%)' } : {}}
-                        >
-                          <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-success' : ''}`} />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <Collapsible
+            key={group.label}
+            defaultOpen={groupHasActive(group)}
+            className="group/collapsible"
+          >
+            <SidebarGroup className="py-0">
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase px-2 mb-0.5 cursor-pointer hover:text-muted-foreground transition-colors">
+                  <span className="flex-1">{group.label}</span>
+                  <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => {
+                      const active = isActive(item.url, item.exact);
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton asChild>
+                            <Link
+                              to={item.url}
+                              className={`flex items-center gap-2 text-[13px] transition-all duration-150 ${
+                                active
+                                  ? "bg-foreground text-background font-medium"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              }`}
+                              style={active ? { borderLeft: '2px solid hsl(160, 84%, 29%)' } : {}}
+                            >
+                              <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-success' : ''}`} />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         ))}
       </SidebarContent>
     </Sidebar>
