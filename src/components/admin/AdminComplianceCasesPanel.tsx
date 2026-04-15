@@ -144,6 +144,7 @@ export function AdminComplianceCasesPanel() {
 
   return (
     <div className="p-6 space-y-6">
+      <TruncationBanner data={cases} limit={CASE_LIMIT} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Compliance Cases</h2>
