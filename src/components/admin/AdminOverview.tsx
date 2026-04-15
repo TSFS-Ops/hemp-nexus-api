@@ -106,7 +106,7 @@ export function AdminOverview() {
   const s = data ?? {
     stalledPois: 0, kycPending: 0, recentErrors: 0, totalUsers: 0,
     totalOrgs: 0, totalMatches: 0, confirmedMatches: 0, activeKeys: 0,
-    requestsToday: 0, activeSignals: 0, openDisputes: 0,
+    requestsToday: 0, activeSignals: 0, openDisputes: 0, uncontactedCounterparties: 0,
   };
 
   // Build action items dynamically
