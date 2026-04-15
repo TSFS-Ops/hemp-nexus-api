@@ -19,6 +19,7 @@ import {
   FileWarning,
   CheckCircle2,
   Blocks,
+  UserX,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MATCH_STATUS, RESOURCE_STATUS, ROUTES } from "@/lib/constants";
