@@ -97,6 +97,7 @@ export function AdminOverview() {
         requestsToday: requestsToday.count ?? 0,
         activeSignals: activeSignals.count ?? 0,
         openDisputes: openDisputes.count ?? 0,
+        uncontactedCounterparties: uncontactedCounterparties.count ?? 0,
       };
     },
     staleTime: 30_000,
