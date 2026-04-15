@@ -80,7 +80,7 @@ export function AdminOverview() {
         supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("signals").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
         supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
-        // Off-platform counterparties awaiting manual outreach
+        // Off-platform trading partners awaiting manual outreach
         supabase.from("poi_engagements").select("id", { count: "exact", head: true })
           .eq("counterparty_type", "unknown")
           .in("engagement_status", ["pending", "notification_sent"]),
@@ -161,11 +161,11 @@ export function AdminOverview() {
     actions.push({
       severity: "critical",
       icon: UserX,
-      title: "Off-platform counterparties awaiting contact",
+      title: "Off-platform trading partners awaiting contact",
       description: `${s.uncontactedCounterparties} trading partner${s.uncontactedCounterparties !== 1 ? "s" : ""} not on the platform. Manual outreach required before the engagement expires.`,
       count: s.uncontactedCounterparties,
       href: ROUTES.ADMIN_ENGAGEMENTS + "?status=pending&type=unknown",
-      linkLabel: "Contact counterparties",
+      linkLabel: "Contact trading partners",
     });
   }
 

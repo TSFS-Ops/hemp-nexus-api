@@ -72,13 +72,13 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
       if (result.success && result.data) {
         setWad(result.data);
         setGateFailures([]);
-        toast.success("WaD confirmed successfully");
+        toast.success("Signed Deal confirmed successfully");
         onWadCreated?.();
       } else {
         if (result.gateFailures?.length) {
           setGateFailures(result.gateFailures);
         }
-        toast.error(result.error || "Failed to confirm WaD");
+        toast.error(result.error || "Failed to confirm Signed Deal");
       }
     } finally {
       setCreating(false);
@@ -207,7 +207,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
                  ? "Select jurisdiction first"
                  : gateFailures.length > 0
                     ? "Retry Creation"
-                    : "Confirm WaD"}
+                    : "Confirm Signed Deal"}
             </Button>
           </CardContent>
         </Card>

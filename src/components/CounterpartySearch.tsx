@@ -655,7 +655,7 @@ export default function CounterpartySearch() {
           </div>
         )}
 
-        {/* Sticky floating CTA — always visible when counterparties are selected */}
+        {/* Sticky floating CTA — always visible when trading partners are selected */}
         {!isSearching && results.length > 0 && selectedResults.size > 0 && (
           <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-lg">

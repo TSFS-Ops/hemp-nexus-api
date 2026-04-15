@@ -1,8 +1,8 @@
 /**
- * AcceptEngagementCard — Shown to the invited counterparty on a bilateral
+ * AcceptEngagementCard — Shown to the invited trading partner on a bilateral
  * known-partner match when the engagement is awaiting their response.
  *
- * Provides Accept / Decline actions that call the counterparty-facing
+ * Provides Accept / Decline actions that call the trading-partner-facing
  * POST /poi-engagements/respond/:matchId endpoint.
  */
 
@@ -40,7 +40,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
   const matchRole = getMatchRole(userOrgId, match as any);
 
   // Only show if:
-  // 1. The user is NOT the creator (they are the counterparty)
+  // 1. The user is NOT the creator (they are the trading partner)
   // 2. The engagement exists and is in a respondable state
   const isCreator = userOrgId === (match as any).org_id;
   const isCounterparty = !isCreator && (matchRole === "buyer" || matchRole === "seller");
@@ -177,7 +177,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
                       <strong>{match.commodity}</strong>.
                     </p>
                     <p className="text-sm">
-                      The initiator will be notified and may approach a different counterparty.
+                      The initiator will be notified and may approach a different trading partner.
                     </p>
                   </>
                 )}

@@ -162,7 +162,7 @@ export function BilateralMatchForm() {
       const priceAmount = form.price ? parseFloat(form.price) : null;
 
       // Place the creator's org_id in the correct buyer/seller slot.
-      // The counterparty's org_id is null at creation (they haven't joined yet).
+      // The trading partner's org_id is null at creation (they haven't joined yet).
       const buyer = form.side === "buyer"
         ? { id: profile.org_id, org_id: profile.org_id, name: myName }
         : { id: null, org_id: null, name: form.counterpartyName.trim() };
