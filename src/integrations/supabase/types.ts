@@ -6106,6 +6106,7 @@ export type Database = {
         | "director"
       counterparty_type: "known" | "unknown"
       engagement_status:
+        | "pending"
         | "notification_sent"
         | "contacted"
         | "accepted"
@@ -6256,6 +6257,7 @@ export const Constants = {
       ],
       counterparty_type: ["known", "unknown"],
       engagement_status: [
+        "pending",
         "notification_sent",
         "contacted",
         "accepted",

@@ -1,0 +1,1 @@
+ALTER TYPE engagement_status ADD VALUE IF NOT EXISTS 'pending' BEFORE 'notification_sent';
