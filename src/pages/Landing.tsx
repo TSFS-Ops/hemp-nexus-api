@@ -168,6 +168,33 @@ export default function Landing() {
           <div className="mb-6">
             <WorkflowPipeline />
           </div>
+
+          {/* Closing CTA — catch users who scroll past everything */}
+          <div
+            className="mb-8 rounded-xl p-5 text-center"
+            style={{
+              backgroundColor: '#131823',
+              border: '1px solid var(--lt-border)',
+            }}
+          >
+            <p className="text-sm font-medium mb-1" style={{ color: 'var(--lt-text)' }}>
+              Ready to find your trading partner?
+            </p>
+            <p className="text-xs mb-3" style={{ color: 'var(--lt-text-muted)' }}>
+              Join verified buyers and sellers on a governance-first platform.
+            </p>
+            <button
+              onClick={navigateToAuth}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--lt-accent)',
+                color: '#fff',
+              }}
+            >
+              Sign up free
+              <span aria-hidden>→</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
