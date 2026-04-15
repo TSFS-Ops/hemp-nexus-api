@@ -107,6 +107,7 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
   if (!engagement) return null;
 
   const status: EngagementStatus = engagement.engagement_status;
+  const counterpartyType: string = engagement.counterparty_type || "unknown";
   const isTerminal = status === "declined" || status === "expired";
   const terminalInfo = isTerminal ? TERMINAL_OVERRIDES[status] : null;
 
@@ -214,8 +215,16 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
 
         {/* Status message */}
         <p className="text-xs text-muted-foreground mt-3">
-          {status === "notification_sent" && "Your counterparty has been notified. Waiting for engagement."}
-          {status === "contacted" && "Support has contacted the counterparty. Awaiting their response."}
+          {status === "notification_sent" && (
+            counterpartyType === "known"
+              ? "Your counterparty has been notified directly. Waiting for their response."
+              : "Your counterparty has been notified. Waiting for engagement."
+          )}
+          {status === "contacted" && (
+            counterpartyType === "known"
+              ? "Your counterparty has been contacted. Awaiting their response."
+              : "Support has contacted the counterparty on your behalf. Awaiting their response."
+          )}
           {status === "accepted" && "Counterparty has accepted. You may proceed with the trade."}
           {status === "declined" && "Counterparty declined this trade. You can re-use your trade details to approach a different counterparty."}
           {status === "expired" && "This engagement has expired. You can re-use your trade details to try a different counterparty."}

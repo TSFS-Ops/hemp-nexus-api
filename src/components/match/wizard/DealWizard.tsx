@@ -242,15 +242,15 @@ export function DealWizard({
 function StepSearch({ match }: { match: Match }) {
   const isRevealed = true; // Names are always visible per client requirement
   const userOrgId = useUserOrg();
-  const metaSide = (match.metadata as any)?.tradeSide || (match.metadata as any)?.bidOfferSide;
   const inferredRole = getMatchRole(userOrgId, match as any);
-  const roleBadgeLabel = metaSide
-    ? (metaSide === "buyer" || metaSide === "bid" ? "Buyer" : "Seller")
-    : inferredRole === "buyer"
-      ? "Buyer"
-      : inferredRole === "seller"
-        ? "Seller"
-        : null;
+
+  // Derive role from canonical buyer_org_id / seller_org_id, not metadata
+  let roleBadgeLabel: string | null = null;
+  if (inferredRole === "buyer" || (inferredRole === "creator" && (match as any).buyer_org_id === userOrgId)) {
+    roleBadgeLabel = "Buyer";
+  } else if (inferredRole === "seller" || (inferredRole === "creator" && (match as any).seller_org_id === userOrgId)) {
+    roleBadgeLabel = "Seller";
+  }
 
   return (
     <Card>
