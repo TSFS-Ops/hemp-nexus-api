@@ -128,6 +128,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const actionPath = nextState ? MatchState.getTransitionAction(nextState) : null;
   const isTerminal = MatchState.isTerminal(currentState);
 
+  // For committed state, block progression until engagement is accepted
+  const engagementBlocked = currentState === "committed" && engagementStatus !== "accepted";
+  // Completion is free — only POI generation costs credits
+  const isFreeAction = currentState === "committed";
+
   const unilateralBlocked =
     isUnilateral &&
     currentState === "intent_declared" &&
