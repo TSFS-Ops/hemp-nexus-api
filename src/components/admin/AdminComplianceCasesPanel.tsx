@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Scale, RefreshCw, Loader2 } from "lucide-react";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const CASE_LIMIT = 200;
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -141,6 +144,7 @@ export function AdminComplianceCasesPanel() {
 
   return (
     <div className="p-6 space-y-6">
+      <TruncationBanner data={cases} limit={CASE_LIMIT} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Compliance Cases</h2>

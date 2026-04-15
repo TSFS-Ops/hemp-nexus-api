@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw, Brain, TrendingUp, Target, Zap } from "lucide-react";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const COHERENCE_LIMIT = 100;
 import { format } from "date-fns";
 import * as MatchState from "@/lib/match-state";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
@@ -58,6 +61,7 @@ export function AdminCoherencePanel() {
 
   return (
     <div className="p-6 space-y-6">
+      <TruncationBanner data={recentMatches} limit={COHERENCE_LIMIT} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Coherence Engine</h2>

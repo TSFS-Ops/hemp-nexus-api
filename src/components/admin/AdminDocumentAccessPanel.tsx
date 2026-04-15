@@ -7,6 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const LOG_LIMIT = 200;
 
 export function AdminDocumentAccessPanel() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -33,6 +36,7 @@ export function AdminDocumentAccessPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={logs} limit={LOG_LIMIT} />
       <p className="text-sm text-muted-foreground">{logs.length} access log(s)</p>
       <Card><CardContent className="p-0">
         <Table>

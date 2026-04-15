@@ -8,6 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Shield, RefreshCw, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const POI_LIMIT = 200;
 
 interface Poi {
   id: string;
@@ -86,6 +89,8 @@ export function AdminPoisPanel() {
           Refresh
         </Button>
       </div>
+
+      <TruncationBanner data={pois} limit={POI_LIMIT} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {["DRAFT", "ELIGIBLE", "COMPLETED", "EXPIRED"].map((state) => (

@@ -14,6 +14,9 @@ import { toast } from "sonner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const SIGNAL_LIMIT = 100;
 import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import {
   Dialog,
@@ -92,6 +95,7 @@ export function AdminSignalsPanel() {
 
   return (
     <div className="p-6 space-y-6">
+      <TruncationBanner data={signals} limit={SIGNAL_LIMIT} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Signals Management</h2>

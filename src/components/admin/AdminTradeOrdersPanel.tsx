@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const ORDER_LIMIT = 200;
 
 export function AdminTradeOrdersPanel() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -47,6 +50,7 @@ export function AdminTradeOrdersPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={orders} limit={ORDER_LIMIT} />
       <p className="text-sm text-muted-foreground">{orders.length} trade order(s) | {orders.filter(o => o.status === "active").length} active</p>
       <Card><CardContent className="p-0">
         <Table>

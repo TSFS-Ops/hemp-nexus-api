@@ -11,6 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Trash2, Edit, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const CONSENT_LIMIT = 200;
 
 interface Consent {
   id: string;
@@ -129,6 +132,7 @@ export function AdminConsentsPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={consents} limit={CONSENT_LIMIT} />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{consents.length} consent record(s)</p>
         <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Add Consent</Button>
