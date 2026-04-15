@@ -157,6 +157,17 @@ export function AdminOverview() {
       linkLabel: "View system logs",
     });
   }
+  if (s.uncontactedCounterparties > 0) {
+    actions.push({
+      severity: "critical",
+      icon: UserX,
+      title: "Off-platform counterparties awaiting contact",
+      description: `${s.uncontactedCounterparties} trading partner${s.uncontactedCounterparties !== 1 ? "s" : ""} not on the platform. Manual outreach required before the engagement expires.`,
+      count: s.uncontactedCounterparties,
+      href: ROUTES.ADMIN_ENGAGEMENTS + "?status=notification_sent&type=unknown",
+      linkLabel: "Contact counterparties",
+    });
+  }
 
   const severityStyles = {
     critical: "border-destructive/40 bg-destructive/5",
