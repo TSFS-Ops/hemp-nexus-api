@@ -19,6 +19,7 @@ import {
   FileWarning,
   CheckCircle2,
   Blocks,
+  UserX,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MATCH_STATUS, RESOURCE_STATUS, ROUTES } from "@/lib/constants";
@@ -56,6 +57,7 @@ export function AdminOverview() {
         requestsToday,
         activeSignals,
         openDisputes,
+        uncontactedCounterparties,
       ] = await Promise.all([
         // Stalled intents: unilateral drafts older than 48h with no trading partner
         supabase.from("matches").select("id", { count: "exact", head: true })
@@ -78,6 +80,10 @@ export function AdminOverview() {
         supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("signals").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
         supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
+        // Off-platform counterparties awaiting manual outreach
+        supabase.from("poi_engagements").select("id", { count: "exact", head: true })
+          .eq("counterparty_type", "unknown")
+          .eq("engagement_status", "notification_sent"),
       ]);
 
       return {
@@ -92,6 +98,7 @@ export function AdminOverview() {
         requestsToday: requestsToday.count ?? 0,
         activeSignals: activeSignals.count ?? 0,
         openDisputes: openDisputes.count ?? 0,
+        uncontactedCounterparties: uncontactedCounterparties.count ?? 0,
       };
     },
     staleTime: 30_000,
@@ -100,7 +107,7 @@ export function AdminOverview() {
   const s = data ?? {
     stalledPois: 0, kycPending: 0, recentErrors: 0, totalUsers: 0,
     totalOrgs: 0, totalMatches: 0, confirmedMatches: 0, activeKeys: 0,
-    requestsToday: 0, activeSignals: 0, openDisputes: 0,
+    requestsToday: 0, activeSignals: 0, openDisputes: 0, uncontactedCounterparties: 0,
   };
 
   // Build action items dynamically
@@ -148,6 +155,17 @@ export function AdminOverview() {
       count: s.recentErrors,
       href: ROUTES.ADMIN_SYSTEM_LOGS,
       linkLabel: "View system logs",
+    });
+  }
+  if (s.uncontactedCounterparties > 0) {
+    actions.push({
+      severity: "critical",
+      icon: UserX,
+      title: "Off-platform counterparties awaiting contact",
+      description: `${s.uncontactedCounterparties} trading partner${s.uncontactedCounterparties !== 1 ? "s" : ""} not on the platform. Manual outreach required before the engagement expires.`,
+      count: s.uncontactedCounterparties,
+      href: ROUTES.ADMIN_ENGAGEMENTS + "?status=notification_sent&type=unknown",
+      linkLabel: "Contact counterparties",
     });
   }
 
