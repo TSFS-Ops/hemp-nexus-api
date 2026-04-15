@@ -657,6 +657,30 @@ export default function CounterpartySearch() {
           </div>
         )}
 
+        {/* Sticky floating CTA — always visible when counterparties are selected */}
+        {!isSearching && results.length > 0 && selectedResults.size > 0 && (
+          <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-lg">
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                {selectedResults.size} counterpart{selectedResults.size !== 1 ? "ies" : "y"} selected
+              </span>
+              <Button
+                onClick={handleCreateMatchClick}
+                disabled={isConfirming}
+                size="sm"
+                className="h-9 text-xs sm:text-sm touch-target"
+              >
+                {isConfirming ? (
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
+                )}
+                {isConfirming ? "Creating…" : `Create Draft Match (${selectedResults.size})`}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Draft Match Confirmation Dialog */}
         <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
           <AlertDialogContent>
