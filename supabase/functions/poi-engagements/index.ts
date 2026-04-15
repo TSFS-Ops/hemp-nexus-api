@@ -18,7 +18,8 @@ const UpdateEngagementSchema = z.object({
   engagement_status: EngagementStatusSchema.optional(),
   counterparty_email: z.string().email().optional(),
   admin_notes: z.string().max(2000).optional(),
-  contact_method: z.enum(["email", "phone", "whatsapp", "in_person", "other"]).optional(),
+  contact_method: z.enum(["email", "phone", "linkedin", "whatsapp", "in_person", "other"]).optional(),
+  contact_detail: z.string().max(500).optional(),
   contact_date: z.string().datetime().optional(),
 });
 
