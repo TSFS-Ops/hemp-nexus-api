@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const PARTNER_LIMIT = 200;
 import { toast } from "sonner";
 
 export function AdminTradingPartnersPanel() {
@@ -93,6 +96,7 @@ export function AdminTradingPartnersPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={partners} limit={PARTNER_LIMIT} />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{partners.length} trading partner(s)</p>
         <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Add Partner</Button>

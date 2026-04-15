@@ -7,6 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const TXN_LIMIT = 200;
 
 export function AdminTokenPurchasesPanel() {
   const [purchases, setPurchases] = useState<any[]>([]);
@@ -35,6 +38,7 @@ export function AdminTokenPurchasesPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={purchases} limit={TXN_LIMIT} />
       <p className="text-sm text-muted-foreground">{purchases.length} transaction(s)</p>
       <Card><CardContent className="p-0">
         <Table>

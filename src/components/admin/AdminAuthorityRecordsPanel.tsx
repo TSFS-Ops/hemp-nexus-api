@@ -7,6 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Eye, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const RECORD_LIMIT = 200;
 
 export function AdminAuthorityRecordsPanel() {
   const [records, setRecords] = useState<any[]>([]);
@@ -53,6 +56,7 @@ export function AdminAuthorityRecordsPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={records} limit={RECORD_LIMIT} />
       <p className="text-sm text-muted-foreground">{records.length} authority-to-bind record(s)</p>
       <Card><CardContent className="p-0">
         <Table>
