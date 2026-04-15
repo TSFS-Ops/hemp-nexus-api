@@ -356,6 +356,43 @@ Deno.serve(async (req) => {
 
       if (updateErr) throw updateErr;
 
+      // On acceptance: update the match's buyer/seller name from the counterparty's profile
+      // so POI certificates and evidence packs show real names, not raw emails.
+      if (parsed.data.action === "accepted") {
+        const { data: counterpartyProfile } = await supabase
+          .from("profiles")
+          .select("full_name, org_id")
+          .eq("org_id", authCtx.orgId)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        const { data: counterpartyOrg } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", authCtx.orgId)
+          .maybeSingle();
+
+        const profileName = counterpartyProfile?.full_name;
+        const orgName = counterpartyOrg?.name;
+        // Only update if we have a proper name (not an email)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const bestName = profileName && !emailRegex.test(profileName) ? profileName : null;
+
+        if (bestName) {
+          // Determine which slot the counterparty occupies
+          if (matchData.buyer_org_id === authCtx.orgId) {
+            await supabase.from("matches")
+              .update({ buyer_name: bestName })
+              .eq("id", matchId);
+          } else if (matchData.seller_org_id === authCtx.orgId) {
+            await supabase.from("matches")
+              .update({ seller_name: bestName })
+              .eq("id", matchId);
+          }
+        }
+      }
+
       // Audit log
       await supabase.from("audit_logs").insert({
         org_id: authCtx.orgId,
