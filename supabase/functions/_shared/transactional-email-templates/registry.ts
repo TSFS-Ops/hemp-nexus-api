@@ -22,4 +22,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'poi-issuance': poiIssuance,
   'poi-invite': poiInvite,
   'poi-counterparty-notify': poiCounterpartyNotify,
+  'poi-support-desk-notify': poiSupportDeskNotify,
 }
