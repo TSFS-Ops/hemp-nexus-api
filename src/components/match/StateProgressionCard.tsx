@@ -262,7 +262,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           })}
         </div>
 
-        <p className="text-sm text-muted-foreground">{MatchState.STATE_DESCRIPTIONS[currentState]}</p>
+        <p className="text-sm text-muted-foreground">
+          {engagementStatus === "accepted" && ["intent_declared", "counterparty_sighted", "committed"].includes(currentState)
+            ? "Counterparty has accepted. You may now proceed to the next step."
+            : MatchState.STATE_DESCRIPTIONS[currentState]}
+        </p>
 
         {!isTerminal && nextLabel && (
           <div className="rounded-lg border border-border p-4 space-y-3">
