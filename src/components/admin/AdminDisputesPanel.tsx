@@ -20,6 +20,9 @@ import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/ui/error-state";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const DISPUTE_LIMIT = 200;
 
 interface Dispute {
   id: string;
@@ -120,6 +123,7 @@ export function AdminDisputesPanel() {
 
   return (
     <div className="space-y-6">
+      <TruncationBanner data={disputes} limit={DISPUTE_LIMIT} />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Dispute Resolution</h3>
