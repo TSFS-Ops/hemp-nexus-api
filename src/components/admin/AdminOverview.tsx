@@ -83,7 +83,7 @@ export function AdminOverview() {
         // Off-platform counterparties awaiting manual outreach
         supabase.from("poi_engagements").select("id", { count: "exact", head: true })
           .eq("counterparty_type", "unknown")
-          .eq("engagement_status", "notification_sent"),
+          .in("engagement_status", ["pending", "notification_sent"]),
       ]);
 
       return {
@@ -164,7 +164,7 @@ export function AdminOverview() {
       title: "Off-platform counterparties awaiting contact",
       description: `${s.uncontactedCounterparties} trading partner${s.uncontactedCounterparties !== 1 ? "s" : ""} not on the platform. Manual outreach required before the engagement expires.`,
       count: s.uncontactedCounterparties,
-      href: ROUTES.ADMIN_ENGAGEMENTS + "?status=notification_sent&type=unknown",
+      href: ROUTES.ADMIN_ENGAGEMENTS + "?status=pending&type=unknown",
       linkLabel: "Contact counterparties",
     });
   }
