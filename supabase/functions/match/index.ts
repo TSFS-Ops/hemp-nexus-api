@@ -1085,13 +1085,49 @@ Deno.serve(async (req) => {
 
       // Insert match - buyer/seller can be null for unilateral intents
       const matchMetadata = body.metadata || {};
+
+      // ── Resolve buyer_org_id / seller_org_id ──
+      // If buyer.org_id or seller.org_id is explicitly provided, validate it's a real UUID
+      // and verify the org exists before writing it as a canonical org reference.
+      // This ensures known platform orgs get proper RLS visibility and notification routing.
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      let buyerOrgId: string | null = null;
+      let sellerOrgId: string | null = null;
+
+      // Check explicit org_id fields first (preferred), then fall back to id if it's a valid UUID
+      const rawBuyerOrgId = body.buyer?.org_id || body.buyer?.id || null;
+      const rawSellerOrgId = body.seller?.org_id || body.seller?.id || null;
+
+      if (rawBuyerOrgId && uuidRegex.test(rawBuyerOrgId)) {
+        const { data: buyerOrg } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("id", rawBuyerOrgId)
+          .maybeSingle();
+        if (buyerOrg) buyerOrgId = buyerOrg.id;
+      }
+
+      if (rawSellerOrgId && uuidRegex.test(rawSellerOrgId)) {
+        const { data: sellerOrg } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("id", rawSellerOrgId)
+          .maybeSingle();
+        if (sellerOrg) sellerOrgId = sellerOrg.id;
+      }
+
+      console.log(`[${requestId}] Resolved org IDs: buyer_org_id=${buyerOrgId || 'null'}, seller_org_id=${sellerOrgId || 'null'}`);
+
       const insertPayload: Record<string, unknown> = {
           org_id: authCtx.orgId,
           created_by: getCreatedBy(authCtx),
           buyer_id: body.buyer?.id ?? null,
           buyer_name: body.buyer?.name ?? null,
+          buyer_org_id: buyerOrgId,
           seller_id: body.seller?.id ?? null,
           seller_name: body.seller?.name ?? null,
+          seller_org_id: sellerOrgId,
           commodity: body.commodity,
           quantity_amount: body.quantity?.amount ?? null,
           quantity_unit: body.quantity?.unit ?? null,
