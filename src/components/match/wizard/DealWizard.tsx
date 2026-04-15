@@ -85,9 +85,24 @@ export function DealWizard({
   const engagementAccepted = engagementStatus === "accepted";
   const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
 
-  // WaD completion requires checking WaD status — simplified: we check if match is completed
-  // or if the match has progressed past the WaD stage
-  const wadComplete = isCompleted;
+  // ── WaD COMPLIANCE GATE ──
+  // Query actual p3_wads table to determine if WaD is sealed
+  const { data: wadRecord } = useQuery({
+    queryKey: ["wad-status", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("p3_wads")
+        .select("id, state")
+        .eq("poi_id", match.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: poiComplete && engagementAccepted,
+  });
+
+  const wadSealed = wadRecord?.state === "sealed";
+  const wadComplete = wadSealed || isCompleted;
 
   const evidenceComplete = isCompleted;
 
