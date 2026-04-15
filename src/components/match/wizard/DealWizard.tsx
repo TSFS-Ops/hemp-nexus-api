@@ -28,7 +28,8 @@ import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { PoiEventsTimeline } from "@/components/match/PoiEventsTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, FileSignature, MessageSquare, ShieldAlert } from "lucide-react";
+import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import type { Match } from "@/hooks/use-match-details";
 
