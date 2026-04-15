@@ -158,18 +158,18 @@ export function BilateralMatchForm() {
         return;
       }
       const myName = rawOrgName;
-      const counterpartyId = crypto.randomUUID();
-
       const quantityAmount = form.quantity ? parseFloat(form.quantity) : null;
       const priceAmount = form.price ? parseFloat(form.price) : null;
 
+      // Place the creator's org_id in the correct buyer/seller slot.
+      // The counterparty's org_id is null at creation (they haven't joined yet).
       const buyer = form.side === "buyer"
-        ? { id: profile.org_id, name: myName }
-        : { id: counterpartyId, name: form.counterpartyName.trim() };
+        ? { id: profile.org_id, org_id: profile.org_id, name: myName }
+        : { id: null, org_id: null, name: form.counterpartyName.trim() };
 
       const seller = form.side === "seller"
-        ? { id: profile.org_id, name: myName }
-        : { id: counterpartyId, name: form.counterpartyName.trim() };
+        ? { id: profile.org_id, org_id: profile.org_id, name: myName }
+        : { id: null, org_id: null, name: form.counterpartyName.trim() };
 
       const isDraft = (!quantityAmount || isNaN(quantityAmount)) && (!priceAmount || isNaN(priceAmount));
 
@@ -228,6 +228,7 @@ export function BilateralMatchForm() {
             metadata: {
               source: "bilateral",
               isDraft,
+              tradeSide: form.side,
               counterpartyContact: form.counterpartyContact.trim() || null,
               location: form.location.trim() || null,
               draftReason: isDraft
