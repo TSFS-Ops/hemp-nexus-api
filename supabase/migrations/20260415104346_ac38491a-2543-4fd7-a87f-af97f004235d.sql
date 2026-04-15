@@ -1,0 +1,1 @@
+UPDATE poi_engagements SET engagement_status = 'contacted' WHERE id = 'cbb05f36-d20c-4d2f-939b-14eaf5285cc0';
