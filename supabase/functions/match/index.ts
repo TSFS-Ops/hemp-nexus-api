@@ -786,10 +786,10 @@ Deno.serve(async (req) => {
 
       // ── WaD GATE: require a sealed WaD before allowing completion ──
       const { data: sealedWad, error: wadError } = await supabase
-        .from("p3_wads")
-        .select("id, state")
+        .from("wads")
+        .select("id, status")
         .eq("poi_id", matchId)
-        .eq("state", "sealed")
+        .eq("status", "sealed")
         .maybeSingle();
 
       if (wadError) {
