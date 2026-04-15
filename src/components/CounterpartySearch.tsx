@@ -347,9 +347,9 @@ export default function CounterpartySearch() {
               body: JSON.stringify({
                 buyer: tradeContext.side === "seller"
                   ? { id: selectedResult.id, name: selectedResult.title }
-                  : { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation" },
+                  : { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation", org_id: profile.org_id },
                 seller: tradeContext.side === "seller"
-                  ? { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation" }
+                  ? { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation", org_id: profile.org_id }
                   : { id: selectedResult.id, name: selectedResult.title },
                 commodity: parsedQuery?.product || query,
                 quantity: (() => {
