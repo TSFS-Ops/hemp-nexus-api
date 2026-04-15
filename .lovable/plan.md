@@ -1,39 +1,64 @@
-## Multi-Jurisdiction WaD Path - Implementation Plan
+# Buyer/Seller Identity Fix — Architectural Plan
 
-### What we're building
-The deterministic three-branch jurisdiction rule that David confirmed, which governs how the platform selects the documentary/WaD path when multiple jurisdiction signals are present.
+## Problem
+When a user creates a bilateral trade and says "I am the Buyer", downstream processes (auto-linking, UI rendering) can invert the roles. There are 3+ independent sources of "who is the buyer" that disagree.
 
-### Step 1: Jurisdiction Signal Derivation
-- Create `src/lib/modules/jurisdiction/` module
-- Derive jurisdiction signals from available pre-POI data:
-  - Entity `jurisdiction_code` (buyer + seller from `entities` table)
-  - Trade order location (from `trade_orders`)
-  - Match metadata (origin/destination if present)
-- Return a deduplicated list of "surfaced jurisdictions" with signal source labels
+## Single Source of Truth
 
-### Step 2: Database - Jurisdiction Selection Table
-- Add `jurisdiction_selections` table to record the user's choice with:
-  - `match_id`, `selected_jurisdiction`, `surfaced_jurisdictions` (JSONB), `selection_method` (auto/user_choice/escalated), `escalation_reason`, `selected_by`
-- This provides the audit trail David requires
+- `buyer_org_id` = the org that IS the buyer
+- `seller_org_id` = the org that IS the seller
+- `org_id` = who created the match (NOT a role indicator)
+- `metadata.tradeSide` = what the CREATOR declared ("I am a buyer/seller")
 
-### Step 3: Three-Branch Logic
-- **Branch 1**: If exactly one unique jurisdiction signal → auto-select, record as `auto`
-- **Branch 2**: If multiple signals → show chooser UI (user picks from surfaced set only)
-- **Branch 3**: If chosen jurisdiction isn't in surfaced set OR no governance rules exist for it → block WaD, flag for manual governance review
+Everything must derive from `buyer_org_id`/`seller_org_id`. `metadata.tradeSide` exists only as creation context.
 
-### Step 4: WaD Integration
-- Wire the jurisdiction selector into the WaD flow (before WaD creation)
-- WaD creation checks `jurisdiction_selections` for a valid, non-escalated selection
-- Governance doc lookup uses the selected jurisdiction instead of hardcoded ZA
+---
 
-### Step 5: Jurisdiction Chooser UI
-- Add a `JurisdictionSelector` component to the WaD tab
-- Shows surfaced jurisdictions with source labels
-- Validates against governance_doc_registry before accepting
-- Escalation state shows "Pending Governance Review" banner
+## Phase 1: Fix Creation (BilateralMatchForm.tsx)
 
-### Files touched
-- **New**: `src/lib/modules/jurisdiction/index.ts` (derivation + three-branch logic)
-- **New**: `src/components/wad/JurisdictionSelector.tsx` (chooser UI)
-- **Modified**: `src/components/wad/WadModule.tsx` (wire jurisdiction gate)
-- **Migration**: `jurisdiction_selections` table with RLS
+**Bug:** Counterparty gets `crypto.randomUUID()` as ID → fails org validation → their slot written as `null`.
+
+**Fix:** Send `null` for counterparty org_id, send creator's `org_id` explicitly in the correct buyer/seller slot:
+- Creator says "I am the Buyer" → `buyer.org_id = profile.org_id`, `seller.org_id = null`
+- Creator says "I am the Seller" → `seller.org_id = profile.org_id`, `buyer.org_id = null`
+
+## Phase 2: Fix Auto-Linking (DB trigger)
+
+**Bug:** `auto_link_engagement_on_signup` links counterparty org to engagement but doesn't fill the correct match slot.
+
+**Fix:** When auto-linking, find the vacant slot on the match (`buyer_org_id IS NULL` or `seller_org_id IS NULL`) and fill it.
+
+## Phase 3: Fix UI Role Detection
+
+**Bugs:**
+- `MatchHeroCard` uses `metadata.tradeSide` for creator, `getMatchRole()` for viewers — they disagree
+- `AcceptEngagementCard` excludes creators via `matchRole === "creator"`
+- `EngagementTracker` doesn't branch on `counterparty_type`
+
+**Fix:**
+1. Remove `metadata.tradeSide` override in MatchHeroCard — use `getMatchRole()` for everyone
+2. `AcceptEngagementCard`: check `counterparty_org_id` on engagement, not `getMatchRole()`
+3. `EngagementTracker`: branch messages on `counterparty_type`
+
+## Phase 4: Fix Existing Data
+
+Swap inverted `buyer_org_id`/`seller_org_id` on match `7566e4f0` based on `metadata.tradeSide` + `org_id`.
+
+## Order of Operations
+1. Phase 4 (fix existing data)
+2. Phase 1 (fix creation)
+3. Phase 2 (fix auto-linking)
+4. Phase 3 (fix UI)
+5. Verify with live match
+
+## Files Changed
+
+| File | Change |
+|---|---|
+| `src/components/dashboard/BilateralMatchForm.tsx` | Fix buyer/seller object construction |
+| `supabase/functions/match/index.ts` | Clean up org resolution |
+| DB trigger `auto_link_engagement_on_signup` | Also fill match buyer/seller slot |
+| `src/components/match/MatchHeroCard.tsx` | Remove tradeSide override |
+| `src/components/match/AcceptEngagementCard.tsx` | Check engagement counterparty_org_id |
+| `src/components/match/EngagementTracker.tsx` | Branch on counterparty_type |
+| Data fix | Swap inverted org IDs on affected matches |
