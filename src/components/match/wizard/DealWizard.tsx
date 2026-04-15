@@ -169,11 +169,37 @@ export function DealWizard({
         <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} />
       )}
       {activeStep === 2 && (
-        <StepPoi
-          match={match}
-          onStateAction={onStateAction}
-          loading={stateActionLoading || confirming}
-        />
+        <div className="space-y-4">
+          <StepPoi
+            match={match}
+            onStateAction={onStateAction}
+            loading={stateActionLoading || confirming}
+          />
+          {/* Hold-point notice shown on POI step since WaD step is locked */}
+          {poiHoldActive && (
+            <Card className="border-dashed border-primary/30">
+              <CardContent className="py-6 text-center space-y-3">
+                <ShieldAlert className="h-7 w-7 text-primary mx-auto" />
+                <h3 className="font-semibold text-sm">WaD Step Locked — Awaiting Counterparty</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  The POI has been generated. The next step (WaD) is locked until the counterparty engagement is accepted.
+                </p>
+                {engagementStatus && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
+                    <span className={`h-2 w-2 rounded-full ${
+                      engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" :
+                      "bg-amber-500 animate-pulse"
+                    }`} />
+                    Current status: {engagementStatus === "notification_sent" ? "Notification sent" :
+                      engagementStatus === "contacted" ? "Contacted" :
+                      engagementStatus === "declined" ? "Declined" :
+                      engagementStatus === "expired" ? "Expired" : engagementStatus}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
       {activeStep === 3 && (
         poiHoldActive ? (
