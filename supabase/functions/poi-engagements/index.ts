@@ -121,6 +121,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── GET /poi-engagements/:id/outreach-log — Immutable outreach history ──
+    if (req.method === "GET" && engagementId && parts[1] === "outreach-log") {
+      requireRole(authCtx, "admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const { data: logs, error } = await supabase
+        .from("engagement_outreach_logs")
+        .select("*")
+        .eq("engagement_id", engagementId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ logs: logs || [] }), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     // ── PATCH /poi-engagements/:id — Update engagement (admin only) ──
     if (req.method === "PATCH" && engagementId) {
       requireRole(authCtx, "admin");
