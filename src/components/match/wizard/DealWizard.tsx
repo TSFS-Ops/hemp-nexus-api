@@ -174,6 +174,7 @@ export function DealWizard({
             match={match}
             onStateAction={onStateAction}
             loading={stateActionLoading || confirming}
+            engagementStatus={engagementStatus}
           />
           {/* Hold-point notice shown on POI step since WaD step is locked */}
           {poiHoldActive && (
