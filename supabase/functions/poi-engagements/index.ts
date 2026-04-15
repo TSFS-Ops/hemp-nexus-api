@@ -163,11 +163,18 @@ Deno.serve(async (req) => {
         updates.engagement_status = parsed.data.engagement_status;
 
         if (parsed.data.engagement_status === "contacted") {
-          // ── SERVER-SIDE ENFORCEMENT: contact_method is mandatory ──
+          // ── SERVER-SIDE ENFORCEMENT: contact_method + contact_detail mandatory ──
           if (!parsed.data.contact_method) {
             throw new ApiException(
               "VALIDATION_ERROR",
               "contact_method is required when marking engagement as contacted",
+              400
+            );
+          }
+          if (!parsed.data.contact_detail) {
+            throw new ApiException(
+              "VALIDATION_ERROR",
+              "contact_detail is required (email address, phone number, or LinkedIn URL)",
               400
             );
           }
