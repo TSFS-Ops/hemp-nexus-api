@@ -22,6 +22,12 @@ export default tseslint.config(
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-non-null-asserted-optional-chain": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "no-empty": "warn",
+      "no-control-regex": "warn",
+      "no-useless-escape": "warn",
+      "prefer-const": "warn",
     },
   },
   // Edge functions run in Deno — relax browser-centric rules
