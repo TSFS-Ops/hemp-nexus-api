@@ -501,7 +501,7 @@ export function AdminPendingEngagementsPanel() {
           if (!open) { setSelectedEngagement(null); setActionForm({}); }
         }}
       >
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] !grid-rows-[auto_1fr_auto] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Handshake className="h-4 w-4 text-primary" />
