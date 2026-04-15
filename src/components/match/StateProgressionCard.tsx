@@ -141,6 +141,8 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const checklist = useMemo(() => getFieldChecklist(match), [match]);
   const allRequiredFilled = checklist.every((field) => !field.required || field.filled);
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const {
     data: userProfile,
     isLoading: profileLoading,
@@ -150,7 +152,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("org_id")
+        .select("org_id, full_name")
         .eq("id", session!.user.id)
         .maybeSingle();
 
@@ -159,6 +161,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     },
     enabled: !!session,
   });
+
+  // Hard gate: block all progression if user's name is missing or is an email
+  const nameIsInvalid = !userProfile?.full_name
+    || userProfile.full_name.trim().length === 0
+    || EMAIL_RE.test(userProfile.full_name.trim());
 
   const canQueryBalance = !!session && !!userProfile?.org_id;
 
@@ -335,7 +342,23 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           </div>
         )}
 
-        {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && (
+        {!isTerminal && nextLabel && nameIsInvalid && !profileLoading && (
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Legal name required</p>
+              <p className="text-xs text-muted-foreground">
+                Your profile name must be set to your full legal name before you can proceed.
+                It will appear on Proofs of Intent, certificates, and compliance records.
+              </p>
+              <a href="/dashboard" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                Update your name on the Dashboard
+              </a>
+            </div>
+          </div>
+        )}
+
+        {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && !nameIsInvalid && (
           <>
             {!isFreeAction && isBalancePending ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
