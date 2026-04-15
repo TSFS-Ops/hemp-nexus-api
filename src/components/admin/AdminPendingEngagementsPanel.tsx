@@ -512,7 +512,7 @@ export function AdminPendingEngagementsPanel() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto -mx-6 px-6">
+          <div className="min-h-0 overflow-y-auto -mx-6 px-6">
           {selectedEngagement && (
             <div className="space-y-4 pb-2">
               {/* Trade summary */}
