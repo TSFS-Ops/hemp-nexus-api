@@ -20,11 +20,11 @@ export function AccountSection() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="profile">Organisation</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="data">Data Controls</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto flex-nowrap justify-start sm:justify-center no-scrollbar">
+          <TabsTrigger value="profile" className="shrink-0">Organisation</TabsTrigger>
+          <TabsTrigger value="team" className="shrink-0">Team</TabsTrigger>
+          <TabsTrigger value="security" className="shrink-0">Security</TabsTrigger>
+          <TabsTrigger value="data" className="shrink-0">Data Controls</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4">
           <OrgProfileForm />

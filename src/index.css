@@ -438,11 +438,24 @@
   }
 }
 
-/* Hidden scrollbar utility - for swipeable steppers and tickers */
-.scrollbar-hide {
+/* Hidden scrollbar utility - for swipeable steppers, tickers, and tab strips */
+.scrollbar-hide,
+.no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.scrollbar-hide::-webkit-scrollbar {
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Global focus ring consistency for interactive elements */
+a:focus-visible,
+button:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: var(--radius);
 }

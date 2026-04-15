@@ -103,11 +103,15 @@ export function MatchAnalytics() {
     );
   }
 
-  if (!analytics) {
+  if (!analytics || analytics.totalMatches === 0) {
     return (
       <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-muted-foreground">No analytics data available</div>
+        <CardContent className="py-12 text-center">
+          <TrendingUp className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+          <h3 className="font-semibold text-lg mb-1">No analytics yet</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Analytics will appear here once you have active trades. Start a search to find your first trading partner.
+          </p>
         </CardContent>
       </Card>
     );
