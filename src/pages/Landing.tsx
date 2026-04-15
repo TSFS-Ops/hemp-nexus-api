@@ -187,7 +187,7 @@ export default function Landing() {
               onClick={isAuthenticated ? () => window.location.assign("/dashboard/search") : navigateToAuth}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
               style={{
-                backgroundColor: 'var(--lt-accent)',
+                backgroundColor: 'var(--lt-emerald-dark)',
                 color: '#fff',
               }}
             >
