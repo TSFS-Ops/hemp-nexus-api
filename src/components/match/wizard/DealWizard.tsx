@@ -86,14 +86,16 @@ export function DealWizard({
   const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
 
   // ── WaD COMPLIANCE GATE ──
-  // Query actual p3_wads table to determine if WaD is sealed
+  // Query actual wads table to determine if WaD is sealed
   const { data: wadRecord } = useQuery({
     queryKey: ["wad-status", match.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("p3_wads")
-        .select("id, state")
+        .from("wads")
+        .select("id, status")
         .eq("poi_id", match.id)
+        .neq("status", "revoked")
+        .neq("status", "superseded")
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -101,7 +103,7 @@ export function DealWizard({
     enabled: poiComplete && engagementAccepted,
   });
 
-  const wadSealed = wadRecord?.state === "sealed";
+  const wadSealed = wadRecord?.status === "sealed";
   const wadComplete = wadSealed || isCompleted;
 
   const evidenceComplete = isCompleted;
