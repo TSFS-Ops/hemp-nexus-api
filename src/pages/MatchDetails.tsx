@@ -138,6 +138,8 @@ function MatchDetailsContent() {
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
 
+      {matchId && <AcceptEngagementCard match={match} engagementStatus={engagementStatus} onResponded={fetchMatch} />}
+
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 
       <DealWizard
