@@ -9,6 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Edit, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const WEBHOOK_LIMIT = 200;
 
 export function AdminWebhookEndpointsPanel() {
   const [endpoints, setEndpoints] = useState<any[]>([]);
@@ -70,6 +73,7 @@ export function AdminWebhookEndpointsPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={view === "endpoints" ? endpoints : deliveries} limit={WEBHOOK_LIMIT} />
       <div className="flex items-center gap-2">
         <Button size="sm" variant={view === "endpoints" ? "default" : "outline"} onClick={() => setView("endpoints")}>Endpoints ({endpoints.length})</Button>
         <Button size="sm" variant={view === "deliveries" ? "default" : "outline"} onClick={() => setView("deliveries")}>Deliveries ({deliveries.length})</Button>

@@ -10,6 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const SOURCE_LIMIT = 200;
 
 export function AdminDataSourcesPanel() {
   const [sources, setSources] = useState<any[]>([]);
@@ -82,6 +85,7 @@ export function AdminDataSourcesPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={sources} limit={SOURCE_LIMIT} />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{sources.length} data source(s)</p>
         <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Add Source</Button>

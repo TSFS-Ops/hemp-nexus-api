@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw, Brain, TrendingUp, Target, Zap } from "lucide-react";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const COHERENCE_LIMIT = 100;
 import { format } from "date-fns";
 import * as MatchState from "@/lib/match-state";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";

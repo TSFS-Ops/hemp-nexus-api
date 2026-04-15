@@ -10,6 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const LICENCE_LIMIT = 200;
 
 export function AdminLicencesPanel() {
   const [licences, setLicences] = useState<any[]>([]);
@@ -89,6 +92,7 @@ export function AdminLicencesPanel() {
 
   return (
     <div className="space-y-4">
+      <TruncationBanner data={licences} limit={LICENCE_LIMIT} />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{licences.length} licence(s)</p>
         <Button size="sm" onClick={() => { setEditing(null); setFormData({ org_id: "", tier: "standard", amount_usd: "0", expires_at: "", status: "active" }); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-1" />Add Licence</Button>
