@@ -342,22 +342,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      const updates: Record<string, unknown> = {
-        engagement_status: parsed.data.action,
-        responded_at: new Date().toISOString(),
-      };
-
-      const { data: updated, error: updateErr } = await supabase
-        .from("poi_engagements")
-        .update(updates)
-        .eq("id", engagement.id)
-        .select()
-        .single();
-
-      if (updateErr) throw updateErr;
-
-      // On acceptance: update the match's buyer/seller name from the counterparty's profile
-      // so POI certificates and evidence packs show real names, not raw emails.
+      // ── Pre-flight: validate legal name BEFORE committing acceptance ──
+      let bestName: string | null = null;
       if (parsed.data.action === "accepted") {
         const { data: counterpartyProfile } = await supabase
           .from("profiles")
@@ -377,12 +363,10 @@ Deno.serve(async (req) => {
         const orgName = counterpartyOrg?.name?.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        // Resolve best available legal name: profile first, then org
-        const bestName =
+        bestName =
           (profileName && !emailRegex.test(profileName) ? profileName : null) ||
           (orgName && !emailRegex.test(orgName) ? orgName : null);
 
-        // Hard gate: reject acceptance if no valid legal name is available
         if (!bestName) {
           throw new ApiException(
             "PROFILE_INCOMPLETE",
@@ -390,8 +374,25 @@ Deno.serve(async (req) => {
             400
           );
         }
+      }
 
-        // Sync the validated name to the correct match slot
+      // ── Commit the status change (only reached if pre-flight passed) ──
+      const updates: Record<string, unknown> = {
+        engagement_status: parsed.data.action,
+        responded_at: new Date().toISOString(),
+      };
+
+      const { data: updated, error: updateErr } = await supabase
+        .from("poi_engagements")
+        .update(updates)
+        .eq("id", engagement.id)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+
+      // ── Post-commit: sync validated name to match record ──
+      if (parsed.data.action === "accepted" && bestName) {
         if (matchData.buyer_org_id === authCtx.orgId) {
           await supabase.from("matches")
             .update({ buyer_name: bestName })
