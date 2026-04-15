@@ -107,6 +107,7 @@ export function EngagementTracker({ matchId, match }: EngagementTrackerProps) {
   if (!engagement) return null;
 
   const status: EngagementStatus = engagement.engagement_status;
+  const counterpartyType: string = engagement.counterparty_type || "unknown";
   const isTerminal = status === "declined" || status === "expired";
   const terminalInfo = isTerminal ? TERMINAL_OVERRIDES[status] : null;
 
