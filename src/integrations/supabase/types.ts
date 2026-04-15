@@ -1855,6 +1855,56 @@ export type Database = {
         }
         Relationships: []
       }
+      engagement_outreach_logs: {
+        Row: {
+          admin_email: string
+          admin_name: string | null
+          admin_user_id: string
+          contact_detail: string
+          contact_method: string
+          created_at: string
+          engagement_id: string
+          id: string
+          new_status: string
+          notes: string | null
+          previous_status: string
+        }
+        Insert: {
+          admin_email: string
+          admin_name?: string | null
+          admin_user_id: string
+          contact_detail: string
+          contact_method: string
+          created_at?: string
+          engagement_id: string
+          id?: string
+          new_status: string
+          notes?: string | null
+          previous_status: string
+        }
+        Update: {
+          admin_email?: string
+          admin_name?: string | null
+          admin_user_id?: string
+          contact_detail?: string
+          contact_method?: string
+          created_at?: string
+          engagement_id?: string
+          id?: string
+          new_status?: string
+          notes?: string | null
+          previous_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_outreach_logs_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entities: {
         Row: {
           created_at: string

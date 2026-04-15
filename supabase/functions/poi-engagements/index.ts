@@ -18,7 +18,8 @@ const UpdateEngagementSchema = z.object({
   engagement_status: EngagementStatusSchema.optional(),
   counterparty_email: z.string().email().optional(),
   admin_notes: z.string().max(2000).optional(),
-  contact_method: z.enum(["email", "phone", "whatsapp", "in_person", "other"]).optional(),
+  contact_method: z.enum(["email", "phone", "linkedin", "whatsapp", "in_person", "other"]).optional(),
+  contact_detail: z.string().max(500).optional(),
   contact_date: z.string().datetime().optional(),
 });
 
@@ -120,6 +121,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── GET /poi-engagements/:id/outreach-log — Immutable outreach history ──
+    if (req.method === "GET" && engagementId && parts[1] === "outreach-log") {
+      requireRole(authCtx, "admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const { data: logs, error } = await supabase
+        .from("engagement_outreach_logs")
+        .select("*")
+        .eq("engagement_id", engagementId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ logs: logs || [] }), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     // ── PATCH /poi-engagements/:id — Update engagement (admin only) ──
     if (req.method === "PATCH" && engagementId) {
       requireRole(authCtx, "admin");
@@ -162,11 +186,18 @@ Deno.serve(async (req) => {
         updates.engagement_status = parsed.data.engagement_status;
 
         if (parsed.data.engagement_status === "contacted") {
-          // ── SERVER-SIDE ENFORCEMENT: contact_method is mandatory ──
+          // ── SERVER-SIDE ENFORCEMENT: contact_method + contact_detail mandatory ──
           if (!parsed.data.contact_method) {
             throw new ApiException(
               "VALIDATION_ERROR",
               "contact_method is required when marking engagement as contacted",
+              400
+            );
+          }
+          if (!parsed.data.contact_detail) {
+            throw new ApiException(
+              "VALIDATION_ERROR",
+              "contact_detail is required (email address, phone number, or LinkedIn URL)",
               400
             );
           }
@@ -219,6 +250,28 @@ Deno.serve(async (req) => {
           counterparty_email: updates.counterparty_email || null,
         },
       });
+
+      // ── Immutable outreach log (if status changed and contact details provided) ──
+      if (updates.engagement_status && parsed.data.contact_method && parsed.data.contact_detail) {
+        // Fetch admin profile for snapshot
+        const { data: adminProfile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", authCtx.userId)
+          .single();
+
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          admin_user_id: authCtx.userId,
+          admin_email: adminProfile?.email || "unknown",
+          admin_name: adminProfile?.full_name || null,
+          contact_method: parsed.data.contact_method,
+          contact_detail: parsed.data.contact_detail,
+          previous_status: current.engagement_status,
+          new_status: updates.engagement_status as string,
+          notes: parsed.data.admin_notes || null,
+        });
+      }
 
       console.log(`[${requestId}] Engagement ${engagementId} updated: ${current.engagement_status} → ${updates.engagement_status || "(no status change)"}`);
 
