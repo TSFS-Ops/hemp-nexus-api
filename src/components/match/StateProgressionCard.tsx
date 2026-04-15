@@ -109,6 +109,7 @@ interface StateProgressionCardProps {
   match: Match;
   onAction: (action: string) => Promise<void>;
   loading: boolean;
+  engagementStatus?: "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
 }
 
 export function StateProgressionCard({ match, onAction, loading }: StateProgressionCardProps) {
