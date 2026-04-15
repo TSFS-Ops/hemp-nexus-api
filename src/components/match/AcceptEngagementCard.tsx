@@ -42,7 +42,8 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
   // Only show if:
   // 1. The user is NOT the creator (they are the counterparty)
   // 2. The engagement exists and is in a respondable state
-  const isCounterparty = matchRole === "buyer" || matchRole === "seller";
+  const isCreator = userOrgId === (match as any).org_id;
+  const isCounterparty = !isCreator && (matchRole === "buyer" || matchRole === "seller");
   const canRespond = engagementStatus === "notification_sent" || engagementStatus === "contacted";
 
   if (!isCounterparty || !canRespond) return null;
