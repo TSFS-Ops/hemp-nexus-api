@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Scale, RefreshCw, Loader2 } from "lucide-react";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
+
+const CASE_LIMIT = 200;
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
