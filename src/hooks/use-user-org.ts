@@ -34,10 +34,12 @@ export function useUserOrg() {
 export function getMatchRole(
   orgId: string | null,
   match: { org_id: string; buyer_org_id?: string | null; seller_org_id?: string | null }
-): "creator" | "buyer" | "seller" | null {
+): "buyer" | "seller" | "creator" | null {
   if (!orgId) return null;
-  if (match.org_id === orgId) return "creator";
+  // Check canonical buyer/seller slots first — the creator IS the buyer or seller
   if (match.buyer_org_id === orgId) return "buyer";
   if (match.seller_org_id === orgId) return "seller";
+  // Fallback: creator without a buyer/seller slot (e.g. unilateral with no org in either slot)
+  if (match.org_id === orgId) return "creator";
   return null;
 }
