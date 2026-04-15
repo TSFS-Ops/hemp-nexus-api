@@ -112,7 +112,7 @@ interface StateProgressionCardProps {
   engagementStatus?: "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
 }
 
-export function StateProgressionCard({ match, onAction, loading }: StateProgressionCardProps) {
+export function StateProgressionCard({ match, onAction, loading, engagementStatus }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [recheckingBalance, setRecheckingBalance] = useState(false);
   const { session } = useAuth();
