@@ -5,11 +5,12 @@
  *   1. Search (always complete on match detail — match already exists)
  *   2. Match Details (review trading partner, terms, docs, notes, disputes)
  *   3. Generate POI (readiness checklist + credit-burn action)
- *   4. WaD (governance docs + 9-gate validation)
+ *   4. WaD (governance docs + 9-gate validation) — must be SEALED before completion
  *   5. Evidence Pack (sealed evidence bundle + timeline)
  *
  * Strict linear: future steps are locked until prior steps are fully complete.
  * POI is a HOLD POINT: WaD step is locked until counterparty engagement is accepted.
+ * WaD is a COMPLIANCE GATE: trade cannot complete unless p3_wads.state === 'sealed'.
  */
 
 import { useState, useMemo, useCallback } from "react";
