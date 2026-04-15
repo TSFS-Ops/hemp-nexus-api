@@ -28,7 +28,8 @@ import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { PoiEventsTimeline } from "@/components/match/PoiEventsTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, FileSignature, MessageSquare, ShieldAlert } from "lucide-react";
+import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import type { Match } from "@/hooks/use-match-details";
 
@@ -165,7 +166,7 @@ export function DealWizard({
         <StepSearch match={match} />
       )}
       {activeStep === 1 && (
-        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} />
+        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} />
       )}
       {activeStep === 2 && (
         <StepPoi
@@ -183,8 +184,20 @@ export function DealWizard({
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 The POI has been generated and the counterparty has been notified. 
                 This step is paused until the counterparty has been engaged and has responded.
-                Check the Engagement Tracker above for the current status.
               </p>
+              {/* Inline engagement status — no need to scroll up */}
+              {engagementStatus && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
+                  <span className={`h-2 w-2 rounded-full ${
+                    engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" :
+                    "bg-amber-500 animate-pulse"
+                  }`} />
+                  Current status: {engagementStatus === "notification_sent" ? "Notification sent" :
+                    engagementStatus === "contacted" ? "Contacted" :
+                    engagementStatus === "declined" ? "Declined" :
+                    engagementStatus === "expired" ? "Expired" : engagementStatus}
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -254,8 +267,13 @@ function StepSearch({ match }: { match: Match }) {
 
 // ─── Step 2: Match Details ──────────────────────────────────────────
 
-function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; currentState: string; onMatchUpdated?: () => void }) {
+function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { match: Match; currentState: string; onMatchUpdated?: () => void; onProceedToPoi?: () => void }) {
   const [subTab, setSubTab] = useState("terms");
+
+  // Check if all required fields are complete
+  const allComplete = !!match.commodity && !!match.buyer_name && !!match.seller_name
+    && match.quantity_amount != null && match.quantity_amount > 0
+    && match.price_amount != null && match.price_amount > 0;
 
   return (
     <div className="space-y-4">
@@ -286,6 +304,20 @@ function StepMatch({ match, currentState, onMatchUpdated }: { match: Match; curr
           <MatchNotes matchId={match.id} orgId={match.org_id} />
         </TabsContent>
       </Tabs>
+
+      {/* Next-step prompt when all required fields are complete */}
+      {allComplete && onProceedToPoi && (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-sm font-medium text-foreground">All required fields complete</p>
+          </div>
+          <Button size="sm" onClick={onProceedToPoi} className="gap-1.5 shrink-0">
+            Proceed to Proof of Intent
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
