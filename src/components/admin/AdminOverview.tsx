@@ -56,6 +56,7 @@ export function AdminOverview() {
         requestsToday,
         activeSignals,
         openDisputes,
+        uncontactedCounterparties,
       ] = await Promise.all([
         // Stalled intents: unilateral drafts older than 48h with no trading partner
         supabase.from("matches").select("id", { count: "exact", head: true })
@@ -78,6 +79,10 @@ export function AdminOverview() {
         supabase.from("api_request_logs").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("signals").select("id", { count: "exact", head: true }).eq("status", RESOURCE_STATUS.ACTIVE),
         supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
+        // Off-platform counterparties awaiting manual outreach
+        supabase.from("poi_engagements").select("id", { count: "exact", head: true })
+          .eq("counterparty_type", "unknown")
+          .eq("engagement_status", "notification_sent"),
       ]);
 
       return {
