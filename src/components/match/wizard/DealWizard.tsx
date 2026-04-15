@@ -189,13 +189,11 @@ export function DealWizard({
               {engagementStatus && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
                   <span className={`h-2 w-2 rounded-full ${
-                    engagementStatus === "accepted" ? "bg-green-500" :
                     engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" :
                     "bg-amber-500 animate-pulse"
                   }`} />
                   Current status: {engagementStatus === "notification_sent" ? "Notification sent" :
                     engagementStatus === "contacted" ? "Contacted" :
-                    engagementStatus === "accepted" ? "Accepted" :
                     engagementStatus === "declined" ? "Declined" :
                     engagementStatus === "expired" ? "Expired" : engagementStatus}
                 </div>
