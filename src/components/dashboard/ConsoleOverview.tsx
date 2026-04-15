@@ -81,7 +81,7 @@ function GettingStartedEmpty({ onStartWizard }: { onStartWizard: () => void }) {
               <div className="space-y-1 flex-1">
                 <h3 className="font-medium text-sm text-foreground">{step.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{step.description}</p>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary mt-1.5">
                   {step.actionLabel}
                   <ArrowRight className="h-3 w-3" />
                 </span>
@@ -225,6 +225,57 @@ export function ConsoleOverview() {
         </div>
       )}
 
+      {/* "Your next step" — moved above stats for wayfinding priority */}
+      {!isError && !hasZeroActivity && !isLoading && stats && (() => {
+        const hasKeys = stats.activeApiKeys > 0;
+        const hasSearches = stats.callsLast24h > 0 || stats.callsLast7d > 0;
+        const hasIntents = stats.confirmedIntents > 0;
+
+        if (!hasKeys) {
+          return (
+            <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Your next step: Create an API key</p>
+                <p className="text-xs text-muted-foreground mt-0.5">You need an API key to run searches and interact with the platform programmatically.</p>
+              </div>
+              <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SETTINGS)}>
+                <Key className="h-3.5 w-3.5 mr-1.5" />
+                Create API key
+              </Button>
+            </div>
+          );
+        }
+        if (!hasSearches) {
+          return (
+            <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Your next step: Run your first search</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Search for trading partners by commodity, region, or company name to find potential matches.</p>
+              </div>
+              <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)}>
+                <Search className="h-3.5 w-3.5 mr-1.5" />
+                Start searching
+              </Button>
+            </div>
+          );
+        }
+        if (!hasIntents) {
+          return (
+            <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Your next step: Send a trade request on a match</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable trade request record.</p>
+              </div>
+              <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)}>
+                <Handshake className="h-3.5 w-3.5 mr-1.5" />
+                View matches
+              </Button>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Credit Balance Card - prominent, client-requested */}
       {!isError && tokenBalance && (
         <Link
@@ -315,57 +366,6 @@ export function ConsoleOverview() {
         <GettingStartedEmpty onStartWizard={() => setWizardOpen(true)} />
       ) : !isError && !hasZeroActivity && !isLoading ? (
         <div className="space-y-4">
-          {/* Contextual next-step prompt */}
-          {stats && (() => {
-            const hasKeys = stats.activeApiKeys > 0;
-            const hasSearches = stats.callsLast24h > 0 || stats.callsLast7d > 0;
-            const hasIntents = stats.confirmedIntents > 0;
-
-            if (!hasKeys) {
-              return (
-                <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Your next step: Create an API key</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">You need an API key to run searches and interact with the platform programmatically.</p>
-                  </div>
-                  <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SETTINGS)}>
-                    <Key className="h-3.5 w-3.5 mr-1.5" />
-                    Create API key
-                  </Button>
-                </div>
-              );
-            }
-            if (!hasSearches) {
-              return (
-                <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Your next step: Run your first search</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Search for trading partners by commodity, region, or company name to find potential matches.</p>
-                  </div>
-                  <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)}>
-                    <Search className="h-3.5 w-3.5 mr-1.5" />
-                    Start searching
-                  </Button>
-                </div>
-              );
-            }
-            if (!hasIntents) {
-              return (
-                <div className="p-4 border border-primary/30 rounded-lg bg-primary/5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Your next step: Send a trade request on a match</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Open an existing match and signal your interest. This creates an immutable trade request record.</p>
-                  </div>
-                  <Button size="sm" onClick={() => navigate(ROUTES.DASHBOARD_MATCHES)}>
-                    <Handshake className="h-3.5 w-3.5 mr-1.5" />
-                    View matches
-                  </Button>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
           <div className="p-5 border border-border rounded-lg bg-muted/30">
             <h3 className="font-medium text-foreground mb-3">How it works</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
