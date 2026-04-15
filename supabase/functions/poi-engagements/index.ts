@@ -281,6 +281,104 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── POST /poi-engagements/respond/:matchId — Counterparty accepts/declines ──
+    if (req.method === "POST" && engagementId === "respond" && parts[1]) {
+      const matchId = parts[1];
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(matchId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
+      }
+
+      const body = await req.json();
+      const ResponseSchema = z.object({
+        action: z.enum(["accepted", "declined"]),
+      });
+      const parsed = ResponseSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException("VALIDATION_ERROR", "action must be 'accepted' or 'declined'", 400);
+      }
+
+      // Fetch the engagement for this match
+      const { data: engagement, error: engErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("match_id", matchId)
+        .maybeSingle();
+
+      if (engErr) throw engErr;
+      if (!engagement) {
+        throw new ApiException("NOT_FOUND", "No engagement found for this match", 404);
+      }
+
+      // Verify the caller is the counterparty (their org_id matches counterparty_org_id,
+      // or they are listed as buyer/seller on the match but are NOT the initiating org)
+      const { data: matchData, error: matchErr } = await supabase
+        .from("matches")
+        .select("org_id, buyer_org_id, seller_org_id")
+        .eq("id", matchId)
+        .single();
+
+      if (matchErr || !matchData) {
+        throw new ApiException("NOT_FOUND", "Match not found", 404);
+      }
+
+      const isCounterparty =
+        (engagement.counterparty_org_id && engagement.counterparty_org_id === authCtx.orgId) ||
+        (matchData.org_id !== authCtx.orgId &&
+          (matchData.buyer_org_id === authCtx.orgId || matchData.seller_org_id === authCtx.orgId));
+
+      if (!isCounterparty) {
+        throw new ApiException("FORBIDDEN", "Only the counterparty can respond to this engagement", 403);
+      }
+
+      // Validate status transition
+      const currentStatus = engagement.engagement_status;
+      const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+      if (!allowed.includes(parsed.data.action)) {
+        throw new ApiException(
+          "INVALID_TRANSITION",
+          `Cannot transition from '${currentStatus}' to '${parsed.data.action}'. Allowed: [${allowed.join(", ")}]`,
+          400
+        );
+      }
+
+      const updates: Record<string, unknown> = {
+        engagement_status: parsed.data.action,
+        responded_at: new Date().toISOString(),
+      };
+
+      const { data: updated, error: updateErr } = await supabase
+        .from("poi_engagements")
+        .update(updates)
+        .eq("id", engagement.id)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        action: "engagement.counterparty_responded",
+        entity_type: "poi_engagement",
+        entity_id: engagement.id,
+        actor_user_id: authCtx.userId,
+        metadata: {
+          request_id: requestId,
+          match_id: matchId,
+          previous_status: currentStatus,
+          new_status: parsed.data.action,
+        },
+      });
+
+      console.log(`[${requestId}] Counterparty ${authCtx.orgId} responded '${parsed.data.action}' on engagement ${engagement.id}`);
+
+      return new Response(JSON.stringify({ engagement: updated }), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     throw new ApiException("NOT_FOUND", "Endpoint not found", 404);
   } catch (error) {
     console.error(`[${requestId}] poi-engagements error:`, error);

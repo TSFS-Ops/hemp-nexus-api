@@ -59,17 +59,22 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
 
-  // Determine user's role: prefer metadata, fall back to org_id matching
+  // Determine user's role via org_id matching (buyer_org_id / seller_org_id).
+  // metadata.tradeSide stores the *creator's* chosen side, not the viewer's,
+  // so we only use it when the viewer IS the creator.
   const userOrgId = useUserOrg();
-  const metaSide = (match.metadata as any)?.tradeSide || (match.metadata as any)?.bidOfferSide;
   const inferredRole = getMatchRole(userOrgId, match as any);
-  const roleBadgeLabel = metaSide
-    ? (metaSide === "buyer" || metaSide === "bid" ? "Buyer" : "Seller")
-    : inferredRole === "buyer"
-      ? "Buyer"
-      : inferredRole === "seller"
-        ? "Seller"
-        : null;
+  const metaSide = (match.metadata as any)?.tradeSide || (match.metadata as any)?.bidOfferSide;
+  const isCreator = inferredRole === "creator";
+
+  let roleBadgeLabel: string | null = null;
+  if (isCreator && metaSide) {
+    roleBadgeLabel = metaSide === "buyer" || metaSide === "bid" ? "Buyer" : "Seller";
+  } else if (inferredRole === "buyer") {
+    roleBadgeLabel = "Buyer";
+  } else if (inferredRole === "seller") {
+    roleBadgeLabel = "Seller";
+  }
 
   return (
     <Card>
