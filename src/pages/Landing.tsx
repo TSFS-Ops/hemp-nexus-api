@@ -184,14 +184,14 @@ export default function Landing() {
               Join verified buyers and sellers on a governance-first platform.
             </p>
             <button
-              onClick={navigateToAuth}
+              onClick={isAuthenticated ? () => window.location.assign("/dashboard/search") : navigateToAuth}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
               style={{
                 backgroundColor: 'var(--lt-accent)',
                 color: '#fff',
               }}
             >
-              Sign up free
+              {isAuthenticated ? "Go to console" : "Sign up free"}
               <span aria-hidden>→</span>
             </button>
           </div>
