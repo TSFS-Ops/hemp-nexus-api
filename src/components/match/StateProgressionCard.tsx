@@ -322,9 +322,22 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           </div>
         )}
 
-        {!isTerminal && nextLabel && !unilateralBlocked && (
+        {engagementBlocked && !isTerminal && nextLabel && (
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Awaiting counterparty engagement</p>
+              <p className="text-xs text-muted-foreground">
+                The counterparty must accept this trade engagement before you can complete it.
+                You will be able to proceed once they respond.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && (
           <>
-            {isBalancePending ? (
+            {!isFreeAction && isBalancePending ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
                 <Loader2 className="h-4 w-4 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
                 <div className="space-y-1">
@@ -334,7 +347,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </p>
                 </div>
               </div>
-            ) : showInsufficientBalance ? (
+            ) : !isFreeAction && showInsufficientBalance ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                 <div className="space-y-1">
@@ -348,7 +361,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </a>
                 </div>
               </div>
-            ) : cannotVerifyBalance ? (
+            ) : !isFreeAction && cannotVerifyBalance ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
                 <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                 <div className="space-y-1">
@@ -360,10 +373,10 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </div>
             ) : null}
 
-            {!showInsufficientBalance && !isBalancePending && (
+            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
               <button
-                onClick={handleConfirmClick}
-                disabled={loading || recheckingBalance || !allRequiredFilled}
+                onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
+                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
@@ -371,7 +384,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Processing…
                   </>
-                ) : recheckingBalance ? (
+                ) : !isFreeAction && recheckingBalance ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Checking credits…
