@@ -14,7 +14,8 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { WizardStepper, type WizardStepDef } from "./WizardStepper";
