@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Clock, Mail, Building2, AlertTriangle, CheckCircle2, XCircle, Timer, UserCheck, UserX, Handshake } from "lucide-react";
+import { Clock, Mail, Building2, AlertTriangle, CheckCircle2, XCircle, Timer, UserCheck, UserX, Handshake, Phone, Linkedin, MessageSquare, User } from "lucide-react";
 import { format, differenceInDays, differenceInHours, isPast } from "date-fns";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -43,6 +44,19 @@ interface Engagement {
   counterparty_org: { id: string; name: string } | null;
 }
 
+interface OutreachLog {
+  id: string;
+  admin_user_id: string;
+  admin_email: string;
+  admin_name: string | null;
+  contact_method: string;
+  contact_detail: string;
+  previous_status: string;
+  new_status: string;
+  notes: string | null;
+  created_at: string;
+}
+
 // ─── Status config ──────────────────────────────────────────────────
 const STATUS_CONFIG = {
   pending: { label: "Awaiting Outreach", variant: "outline" as const, icon: AlertTriangle },
@@ -51,6 +65,15 @@ const STATUS_CONFIG = {
   accepted: { label: "Accepted", variant: "default" as const, icon: CheckCircle2 },
   declined: { label: "Declined", variant: "destructive" as const, icon: XCircle },
   expired: { label: "Expired", variant: "outline" as const, icon: AlertTriangle },
+};
+
+const CONTACT_METHOD_CONFIG: Record<string, { label: string; icon: typeof Mail; placeholder: string }> = {
+  email: { label: "Email", icon: Mail, placeholder: "counterparty@example.com" },
+  phone: { label: "Phone Call", icon: Phone, placeholder: "+27 82 123 4567" },
+  linkedin: { label: "LinkedIn", icon: Linkedin, placeholder: "https://linkedin.com/in/username" },
+  whatsapp: { label: "WhatsApp", icon: MessageSquare, placeholder: "+27 82 123 4567" },
+  in_person: { label: "In Person", icon: User, placeholder: "Name and location of meeting" },
+  other: { label: "Other", icon: Clock, placeholder: "Describe the contact method and details" },
 };
 
 // ─── Expiry helpers ─────────────────────────────────────────────────
@@ -163,13 +186,112 @@ function ContactDetailsSection({ engagement }: { engagement: Engagement }) {
   );
 }
 
+// ─── Outreach Log (immutable history) ───────────────────────────────
+function OutreachLogSection({ engagementId }: { engagementId: string }) {
+  const { data: logs, isLoading } = useQuery({
+    queryKey: ["outreach-logs", engagementId],
+    queryFn: async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/${engagementId}/outreach-log`,
+        {
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+        }
+      );
+      if (!response.ok) return [];
+      const result = await response.json();
+      return (result?.logs as OutreachLog[]) || [];
+    },
+  });
+
+  if (isLoading) return <Skeleton className="h-16 w-full" />;
+  if (!logs || logs.length === 0) {
+    return (
+      <Card className="bg-muted/20 border-dashed">
+        <CardContent className="py-4 text-center">
+          <p className="text-xs text-muted-foreground">No outreach recorded yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+        <Clock className="h-3.5 w-3.5" /> Outreach History (immutable)
+      </p>
+      <div className="space-y-2">
+        {logs.map((log) => {
+          const methodCfg = CONTACT_METHOD_CONFIG[log.contact_method] || CONTACT_METHOD_CONFIG.other;
+          const MethodIcon = methodCfg.icon;
+          return (
+            <Card key={log.id} className="bg-muted/20">
+              <CardContent className="p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <MethodIcon className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-medium">{methodCfg.label}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {format(new Date(log.created_at), "dd MMM yyyy HH:mm")}
+                  </span>
+                </div>
+                <div className="text-xs space-y-0.5">
+                  <div className="flex gap-1">
+                    <span className="text-muted-foreground shrink-0">By:</span>
+                    <span className="font-medium">{log.admin_name || log.admin_email}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <span className="text-muted-foreground shrink-0">To:</span>
+                    {log.contact_method === "linkedin" ? (
+                      <a href={log.contact_detail} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
+                        {log.contact_detail}
+                      </a>
+                    ) : (
+                      <span className="truncate">{log.contact_detail}</span>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <span className="text-muted-foreground shrink-0">Transition:</span>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">
+                      {STATUS_CONFIG[log.previous_status as keyof typeof STATUS_CONFIG]?.label || log.previous_status}
+                    </Badge>
+                    <span className="text-muted-foreground">→</span>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">
+                      {STATUS_CONFIG[log.new_status as keyof typeof STATUS_CONFIG]?.label || log.new_status}
+                    </Badge>
+                  </div>
+                  {log.notes && (
+                    <div className="flex gap-1">
+                      <span className="text-muted-foreground shrink-0">Notes:</span>
+                      <span className="italic">{log.notes}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Panel ─────────────────────────────────────────────────────
 export function AdminPendingEngagementsPanel() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | null>(null);
-  const [actionForm, setActionForm] = useState<{ status?: string; email?: string; notes?: string; contactMethod?: string; contactDate?: string }>({});
+  const [actionForm, setActionForm] = useState<{
+    status?: string;
+    email?: string;
+    notes?: string;
+    contactMethod?: string;
+    contactDetail?: string;
+    contactDate?: string;
+  }>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-engagements", statusFilter, typeFilter],
@@ -205,6 +327,7 @@ export function AdminPendingEngagementsPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-engagements"] });
+      queryClient.invalidateQueries({ queryKey: ["outreach-logs"] });
       toast.success("Engagement updated successfully");
       setSelectedEngagement(null);
       setActionForm({});
@@ -216,16 +339,22 @@ export function AdminPendingEngagementsPanel() {
     if (!selectedEngagement) return;
     const updates: Record<string, unknown> = {};
     if (actionForm.status) {
-      // Require proof of contact when marking as contacted
-      if (actionForm.status === "contacted" && !actionForm.contactMethod) {
-        toast.error("Please select a contact method before marking as Contacted");
-        return;
+      if (actionForm.status === "contacted") {
+        if (!actionForm.contactMethod) {
+          toast.error("Please select a contact method before marking as Contacted");
+          return;
+        }
+        if (!actionForm.contactDetail) {
+          toast.error("Please provide the contact details (email, phone number, or LinkedIn URL)");
+          return;
+        }
       }
       updates.engagement_status = actionForm.status;
     }
     if (actionForm.email) updates.counterparty_email = actionForm.email;
     if (actionForm.notes) updates.admin_notes = actionForm.notes;
     if (actionForm.contactMethod) updates.contact_method = actionForm.contactMethod;
+    if (actionForm.contactDetail) updates.contact_detail = actionForm.contactDetail;
     if (actionForm.contactDate) updates.contact_date = new Date(actionForm.contactDate).toISOString();
     if (Object.keys(updates).length === 0) {
       toast.error("No changes to save");
@@ -245,6 +374,10 @@ export function AdminPendingEngagementsPanel() {
     setSelectedEngagement(engagement);
     setActionForm({ email: engagement.counterparty_email || "", notes: engagement.admin_notes || "" });
   };
+
+  const selectedContactMethodCfg = actionForm.contactMethod
+    ? CONTACT_METHOD_CONFIG[actionForm.contactMethod]
+    : null;
 
   return (
     <div className="space-y-4">
@@ -407,6 +540,11 @@ export function AdminPendingEngagementsPanel() {
               {/* Contact details card */}
               <ContactDetailsSection engagement={selectedEngagement} />
 
+              {/* ── Immutable Outreach Log ── */}
+              <Separator />
+              <OutreachLogSection engagementId={selectedEngagement.id} />
+              <Separator />
+
               {/* Counterparty email (auto-link key) */}
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
@@ -432,7 +570,7 @@ export function AdminPendingEngagementsPanel() {
                     <label className="text-[11px] text-muted-foreground">Contact Method</label>
                     <Select
                       value={actionForm.contactMethod || ""}
-                      onValueChange={(v) => setActionForm((prev) => ({ ...prev, contactMethod: v }))}
+                      onValueChange={(v) => setActionForm((prev) => ({ ...prev, contactMethod: v, contactDetail: "" }))}
                     >
                       <SelectTrigger className="mt-1 h-8 text-xs">
                         <SelectValue placeholder="Select method of contact" />
@@ -440,12 +578,35 @@ export function AdminPendingEngagementsPanel() {
                       <SelectContent>
                         <SelectItem value="email">Email</SelectItem>
                         <SelectItem value="phone">Phone Call</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
                         <SelectItem value="whatsapp">WhatsApp</SelectItem>
                         <SelectItem value="in_person">In Person</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Dynamic contact detail field */}
+                  {actionForm.contactMethod && selectedContactMethodCfg && (
+                    <div>
+                      <label className="text-[11px] text-muted-foreground">
+                        {actionForm.contactMethod === "email" && "Email Address Contacted"}
+                        {actionForm.contactMethod === "phone" && "Phone Number Called"}
+                        {actionForm.contactMethod === "linkedin" && "LinkedIn Profile URL"}
+                        {actionForm.contactMethod === "whatsapp" && "WhatsApp Number"}
+                        {actionForm.contactMethod === "in_person" && "Meeting Details"}
+                        {actionForm.contactMethod === "other" && "Contact Details"}
+                      </label>
+                      <Input
+                        type={actionForm.contactMethod === "email" ? "email" : actionForm.contactMethod === "linkedin" ? "url" : "text"}
+                        placeholder={selectedContactMethodCfg.placeholder}
+                        value={actionForm.contactDetail || ""}
+                        onChange={(e) => setActionForm((prev) => ({ ...prev, contactDetail: e.target.value }))}
+                        className="mt-1 h-8 text-xs"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-[11px] text-muted-foreground">Contact Date & Time</label>
                     <Input
