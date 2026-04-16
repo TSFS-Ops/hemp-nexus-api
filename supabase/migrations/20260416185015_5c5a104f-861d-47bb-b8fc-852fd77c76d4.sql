@@ -1,0 +1,1 @@
+UPDATE public.token_balances SET balance = 0 WHERE balance > 0;
