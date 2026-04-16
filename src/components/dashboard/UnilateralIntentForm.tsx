@@ -11,6 +11,7 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -291,8 +292,9 @@ export function UnilateralIntentForm() {
         try {
           const siteUrl = window.location.origin;
           const acceptUrl = `${siteUrl}/auth?redirect=/dashboard/matches/${matchData.id}`;
-          await supabase.functions.invoke("send-transactional-email", {
-            body: {
+          await apiFetch("send-transactional-email", {
+            method: "POST",
+            body: JSON.stringify({
               templateName: "poi-invite",
               recipientEmail: form.counterpartyEmail.trim(),
               idempotencyKey: `poi-invite-${matchData.id}`,
@@ -305,7 +307,7 @@ export function UnilateralIntentForm() {
                 senderName: myName,
                 acceptUrl,
               },
-            },
+            }),
           });
           toast.success("Invite sent to trading partner.", { duration: 4000 });
         } catch (emailErr) {
@@ -411,10 +413,10 @@ export function UnilateralIntentForm() {
               onClick={async () => {
                 setIsDrafting(true);
                 try {
-                  const { data, error } = await supabase.functions.invoke("draft-poi", {
-                    body: { rawText: draftText.trim() },
+                  const data = await apiFetch<any>("draft-poi", {
+                    method: "POST",
+                    body: JSON.stringify({ rawText: draftText.trim() }),
                   });
-                  if (error) throw error;
                   if (data?.error) {
                     toast.error(data.error);
                     return;

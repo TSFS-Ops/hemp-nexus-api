@@ -9,6 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { FileText, Info, Loader2, Search, AlertTriangle, SearchX, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
+import { handleApiError } from "@/lib/api-error-handler";
 import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
@@ -189,14 +191,12 @@ export default function CounterpartySearch() {
 
     try {
       const role = tradeContext.side === "seller" ? "seller" : tradeContext.side === "buyer" ? "buyer" : undefined;
-      const { data, error } = await supabase.functions.invoke("search", {
-        body: { query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(tradeContext.location ? { location: tradeContext.location } : {}) },
+      const data = await apiFetch<any>("search", {
+        method: "POST",
+        body: JSON.stringify({ query: query.trim(), limit: 20, ...(role ? { role } : {}), ...(tradeContext.location ? { location: tradeContext.location } : {}) }),
       });
 
-      // If aborted while waiting, exit silently
       if (controller.signal.aborted) return;
-
-      if (error) throw error;
 
       if (data.ok) {
         // Sanitize results to prevent crashes from malformed API data

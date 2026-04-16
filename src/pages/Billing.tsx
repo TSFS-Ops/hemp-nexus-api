@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
+import { handleApiError } from "@/lib/api-error-handler";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,17 +91,10 @@ function BillingContent() {
       // Verify the transaction - it may have succeeded even without status=success
       (async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
+          const data = await apiFetch<any>("token-purchase/verify", {
             method: "POST",
-            body: { reference },
+            body: JSON.stringify({ reference }),
           });
-          if (error) {
-            toast.info(
-              "We couldn't confirm your payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference.",
-              { duration: 10000 }
-            );
-            return;
-          }
           if (data?.success) {
             if (data.alreadyCredited) {
               toast.success("Credits already applied to your account.");
@@ -139,17 +134,10 @@ function BillingContent() {
       verifyAttempted.current = true;
       (async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
+          const data = await apiFetch<any>("token-purchase/verify", {
             method: "POST",
-            body: { reference },
+            body: JSON.stringify({ reference }),
           });
-          if (error) {
-            console.error("Verify error:", error);
-            toast.error(
-              "Could not verify payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference."
-            );
-            return;
-          }
           if (data?.success) {
             if (data.alreadyCredited) {
               toast.success("Credits already applied to your account.");
@@ -271,48 +259,16 @@ function BillingContent() {
     setSelectedPackage(packageId);
     
     try {
-      const { data, error } = await supabase.functions.invoke("token-purchase", {
+      const data = await apiFetch<any>("token-purchase", {
         method: "POST",
-        body: { 
+        body: JSON.stringify({ 
           packageId,
           callbackUrl: `${window.location.origin}/billing?status=success`,
           cancelUrl: `${window.location.origin}/billing?status=cancelled`,
-        },
+        }),
       });
 
-      if (error) {
-        // Try to surface structured errors returned by the backend function
-        const anyError = error as unknown as {
-          message?: string;
-          context?: { body?: any };
-        };
-
-        const rawBody = anyError?.context?.body;
-        let body: any = rawBody;
-        if (typeof rawBody === "string") {
-          try {
-            body = JSON.parse(rawBody);
-          } catch {
-            body = { error: rawBody };
-          }
-        }
-
-        const providerCode = body?.providerCode as string | undefined;
-        const providerMessage = body?.providerMessage as string | undefined;
-        const fallbackMessage = body?.error || anyError?.message;
-
-        const message =
-          providerCode === "unsupported_currency"
-            ? "Your Paystack account is not enabled for USD. Enable USD on your Paystack integration (or tell me to switch pricing to ZAR)."
-            : providerMessage || fallbackMessage || "Failed to initiate purchase. Please try again.";
-
-        console.error("Purchase error:", error);
-        toast.error(message);
-        return;
-      }
-
       if (data?.checkoutUrl) {
-        // Start a timeout: if we're still on this page after 8s, the redirect failed
         const redirectTimeout = setTimeout(() => {
           setIsProcessing(false);
           setSelectedPackage(null);
@@ -321,7 +277,6 @@ function BillingContent() {
             { duration: 10000 }
           );
         }, 8000);
-        // Store timeout so cleanup can clear it if page actually unloads
         (window as any).__billingRedirectTimeout = redirectTimeout;
         window.location.href = data.checkoutUrl;
       } else {
@@ -331,7 +286,7 @@ function BillingContent() {
       }
     } catch (err) {
       console.error("Purchase error:", err);
-      toast.error("Failed to initiate purchase. Please try again.");
+      handleApiError(err, { errorMessage: "Failed to initiate purchase. Please try again." });
       setIsProcessing(false);
       setSelectedPackage(null);
     }

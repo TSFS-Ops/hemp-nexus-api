@@ -9,6 +9,7 @@ import { TrustBadges } from "@/components/landing/TrustBadges";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetchPublic } from "@/lib/api-client";
 
 export default function Landing() {
   const [hasSearched, setHasSearched] = useState(false);
@@ -88,16 +89,17 @@ export default function Landing() {
     setLiquidityData(null);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke("liquidity-check", {
-        body: {
+      const result = await apiFetchPublic<any>("liquidity-check", {
+        method: "POST",
+        body: JSON.stringify({
           product: data.product,
           location: data.location || undefined,
-        },
+        }),
       });
 
-      if (error) {
-        console.error("Liquidity check failed:", error);
-        // On error, show a graceful fallback — don't fake results
+      if (result) {
+        setLiquidityData(result as LiquidityData);
+      } else {
         setLiquidityData({
           partner_count: 0,
           region_count: 0,
@@ -105,8 +107,6 @@ export default function Landing() {
           location_matches: 0,
           has_liquidity: false,
         });
-      } else {
-        setLiquidityData(result as LiquidityData);
       }
     } catch (err) {
       console.error("Liquidity check error:", err);
