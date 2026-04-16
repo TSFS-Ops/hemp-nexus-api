@@ -98,7 +98,8 @@ export default function Landing() {
       });
 
       if (result) {
-        // On error, show a graceful fallback — don't fake results
+        setLiquidityData(result as LiquidityData);
+      } else {
         setLiquidityData({
           partner_count: 0,
           region_count: 0,
@@ -106,8 +107,6 @@ export default function Landing() {
           location_matches: 0,
           has_liquidity: false,
         });
-      } else {
-        setLiquidityData(result as LiquidityData);
       }
     } catch (err) {
       console.error("Liquidity check error:", err);
