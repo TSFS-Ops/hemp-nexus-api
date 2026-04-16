@@ -235,9 +235,6 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {doc.governance_doc_registry?.mandatory_flag && (
-                    <Badge variant="outline" className="text-xs">Required</Badge>
-                  )}
                   <Badge variant={doc.status === "validated" ? "default" : "secondary"} className="text-xs">
                     {doc.status}
                   </Badge>
@@ -260,8 +257,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                   {availableRegistry.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.doc_type.replace(/_/g, " ")}
-                      {r.mandatory_flag ? " (Required)" : ""}
-                      {" - "}
+                      {" — "}
                       {r.jurisdiction_code}
                     </SelectItem>
                   ))}
