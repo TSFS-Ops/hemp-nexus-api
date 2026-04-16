@@ -24,6 +24,7 @@ const WalkthroughReport = lazy(() => import("@/pages/WalkthroughReport"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Unsubscribe = lazy(() => import("@/pages/Unsubscribe"));
+const DeveloperApiKeys = lazy(() => import("@/pages/DeveloperApiKeys"));
 
 /**
  * Root element that renders based on host type:
@@ -63,6 +64,8 @@ function App() {
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                   <Route path={ROUTES.PRICING} element={<Pricing />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
+                  <Route path="/developers/keys" element={<DeveloperApiKeys />} />
+                  <Route path="/developers" element={<Navigate to="/developers/keys" replace />} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
