@@ -1,0 +1,450 @@
+/**
+ * TriageInbox — Governor workspace for risk-weighted trade review.
+ *
+ * Layout: 40/60 split.
+ *   Left  — Risk-weighted queue of pending bilateral seals.
+ *   Right — 9-Gate reviewer with integrity score + audit trail.
+ *
+ * Pure presentational mockup — pre-execution governance demo.
+ */
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, AlertTriangle, Flag, Stamp } from "lucide-react";
+
+type Risk = "high" | "medium" | "low";
+
+type QueueItem = {
+  id: string;
+  matchRef: string;
+  parties: string;
+  commodity: string;
+  notional: string;
+  jurisdictionRoute: string;
+  riskScore: number;
+  risk: Risk;
+  flag: string;
+};
+
+const QUEUE: QueueItem[] = [
+  {
+    id: "wad-7f2a91c8",
+    matchRef: "WAD-7F2A91C8",
+    parties: "Kruger Trading ↔ Aurubis",
+    commodity: "Copper Cathode · 500 MT",
+    notional: "USD 4,710,000",
+    jurisdictionRoute: "ZA → DE",
+    riskScore: 88,
+    risk: "high",
+    flag: "Cross-border · Non-SADC",
+  },
+  {
+    id: "wad-3b1f04ae",
+    matchRef: "WAD-3B1F04AE",
+    parties: "KSB Mining ↔ Trafigura",
+    commodity: "Manganese Ore · 12,000 MT",
+    notional: "USD 2,160,000",
+    jurisdictionRoute: "ZA → SG",
+    riskScore: 74,
+    risk: "high",
+    flag: "PEP-adjacent UBO",
+  },
+  {
+    id: "wad-9c5d23ef",
+    matchRef: "WAD-9C5D23EF",
+    parties: "BHP Billiton ↔ Glencore",
+    commodity: "Iron Ore Fines · 80,000 MT",
+    notional: "USD 8,400,000",
+    jurisdictionRoute: "AU → CH",
+    riskScore: 62,
+    risk: "medium",
+    flag: "High notional",
+  },
+  {
+    id: "wad-1e8a47bc",
+    matchRef: "WAD-1E8A47BC",
+    parties: "Rio Tinto ↔ Norsk Hydro",
+    commodity: "Bauxite · 25,000 MT",
+    notional: "USD 1,875,000",
+    jurisdictionRoute: "AU → NO",
+    riskScore: 55,
+    risk: "medium",
+    flag: "Sanctions watchlist proximity",
+  },
+];
+
+const INTEGRITY_FACTORS = [
+  { label: "Sanctions Screen", status: "CLEAR", tone: "ok" as const },
+  { label: "Jurisdiction", status: "ALERT", tone: "alert" as const },
+  { label: "PEP Exposure", status: "CLEAR", tone: "ok" as const },
+  { label: "UBO Transparency", status: "CLEAR", tone: "ok" as const },
+  { label: "Authority Bind", status: "VERIFIED", tone: "ok" as const },
+];
+
+type GateState = "passed" | "alert" | "pending";
+
+const GATES: Array<{ id: string; label: string; state: GateState; note?: string }> = [
+  { id: "01", label: "GATE_01_BILATERAL_SEAL", state: "passed" },
+  { id: "02", label: "GATE_02_PAYLOAD_HASH", state: "passed" },
+  { id: "03", label: "GATE_03_SANCTIONS_SCREEN", state: "passed" },
+  {
+    id: "04",
+    label: "GATE_04_JURISDICTION",
+    state: "alert",
+    note: "Manual review required — Non-SADC jurisdiction route (ZA → DE).",
+  },
+  { id: "05", label: "GATE_05_UBO_VALIDATION", state: "pending" },
+  { id: "06", label: "GATE_06_AUTHORITY_BIND", state: "pending" },
+  { id: "07", label: "GATE_07_DOC_INTEGRITY", state: "pending" },
+  { id: "08", label: "GATE_08_GOVERNOR_SIGNATURE", state: "pending" },
+  { id: "09", label: "GATE_09_WAD_ISSUANCE", state: "pending" },
+];
+
+const AUDIT_TRAIL = [
+  "[2026-04-16 21:04:07] Bilateral signatures verified. HASH: 0x8f3c7e1a…b09d",
+  "[2026-04-16 21:04:08] Payload bound to certificate. SEAL: 0x9a3f8c1e…ef0",
+  "[2026-04-16 21:04:09] Sanctions screen executed against OFAC, EU, UK lists. Result: CLEAR.",
+  "[2026-04-16 21:04:11] Jurisdiction route ZA → DE flagged for governor review.",
+  "[2026-04-16 21:04:12] Trade routed to triage queue. Severity: HIGH.",
+];
+
+export default function TriageInbox() {
+  const [activeId, setActiveId] = useState<string>(QUEUE[0].id);
+  const [alertAcknowledged, setAlertAcknowledged] = useState(false);
+  const active = QUEUE.find((q) => q.id === activeId)!;
+
+  function selectItem(id: string) {
+    if (id === activeId) return;
+    setActiveId(id);
+    setAlertAcknowledged(false);
+  }
+
+  return (
+    <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
+      {/* ── LEFT PANE: Queue (40%) ─────────────────────────────── */}
+      <section className="w-2/5 flex flex-col border-r border-slate-200 bg-white">
+        <div className="px-10 pt-12 pb-6">
+          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+            Governance Layer
+          </p>
+          <h1 className="text-3xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
+            Triage Queue
+          </h1>
+          <div className="mt-5 flex items-center gap-3 text-xs text-slate-500">
+            <span className="font-mono uppercase tracking-[0.2em] text-[10px] text-slate-400">
+              Showing
+            </span>
+            <span className="text-slate-700">High Risk & Cross-Border</span>
+            <span className="text-slate-300">·</span>
+            <span className="font-mono text-slate-500">{QUEUE.length} pending</span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-8">
+          <ul className="space-y-1">
+            {QUEUE.map((item) => (
+              <QueueRow
+                key={item.id}
+                item={item}
+                active={item.id === activeId}
+                onClick={() => selectItem(item.id)}
+              />
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ── RIGHT PANE: 9-Gate Reviewer (60%) ──────────────────── */}
+      <section className="w-3/5 flex flex-col bg-slate-50">
+        <div className="flex-1 overflow-y-auto">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="p-12 max-w-4xl"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-8 mb-10 pb-8 border-b border-slate-200">
+                <div>
+                  <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-2">
+                    Reviewing · {active.matchRef}
+                  </p>
+                  <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                    {active.parties}
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {active.commodity} ·{" "}
+                    <span className="font-mono">{active.notional}</span> ·{" "}
+                    <span className="font-mono">{active.jurisdictionRoute}</span>
+                  </p>
+                </div>
+                <RiskBadge risk={active.risk} score={active.riskScore} large />
+              </div>
+
+              {/* Section 1 — Integrity Score */}
+              <Section number="01" title="Integrity Score">
+                <div className="grid grid-cols-5 gap-px bg-slate-200 border border-slate-200 rounded-sm overflow-hidden">
+                  {INTEGRITY_FACTORS.map((f) => (
+                    <div key={f.label} className="bg-white p-4">
+                      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mb-2">
+                        {f.label}
+                      </p>
+                      <p
+                        className={`font-mono text-xs font-medium tracking-[0.15em] ${
+                          f.tone === "ok" ? "text-emerald-700" : "text-amber-700"
+                        }`}
+                      >
+                        {f.status}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              {/* Section 2 — 9-Gate Checklist */}
+              <Section number="02" title="9-Gate Without-a-Doubt Checklist">
+                <div className="grid grid-cols-2 gap-3">
+                  {GATES.map((gate) => (
+                    <GateRow
+                      key={gate.id}
+                      gate={gate}
+                      acknowledged={gate.state === "alert" && alertAcknowledged}
+                      onAcknowledge={
+                        gate.state === "alert"
+                          ? () => setAlertAcknowledged((v) => !v)
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              </Section>
+
+              {/* Section 3 — Audit Trail */}
+              <Section number="03" title="Audit Trail">
+                <div className="rounded-sm border border-slate-200 bg-white p-5">
+                  <ul className="space-y-2 font-mono text-[11px] text-slate-700 leading-relaxed">
+                    {AUDIT_TRAIL.map((line, i) => (
+                      <li key={i} className="break-all">
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Section>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Sticky Governor Action Footer */}
+        <div className="shrink-0 border-t border-slate-200 bg-white p-6">
+          <div className="max-w-4xl flex items-center justify-between gap-6">
+            <button className="inline-flex items-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors">
+              <Flag className="h-4 w-4" strokeWidth={2} />
+              Flag for Investigation
+            </button>
+
+            <motion.button
+              whileHover={alertAcknowledged ? { scale: 0.99 } : undefined}
+              whileTap={alertAcknowledged ? { scale: 0.985 } : undefined}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              disabled={!alertAcknowledged}
+              className={`inline-flex items-center gap-2.5 rounded-md px-6 py-3 text-sm font-medium transition-all ${
+                alertAcknowledged
+                  ? "bg-primary text-primary-foreground shadow-sm hover:shadow-md"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+              }`}
+            >
+              <Stamp className="h-4 w-4" strokeWidth={2} />
+              Override & Issue WaD Certificate
+            </motion.button>
+          </div>
+          {!alertAcknowledged && (
+            <p className="mt-3 text-xs text-slate-500 max-w-4xl">
+              Acknowledge the Gate 04 alert above to enable WaD issuance.
+            </p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+
+function QueueRow({
+  item,
+  active,
+  onClick,
+}: {
+  item: QueueItem;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        onClick={onClick}
+        className={`w-full text-left relative px-5 py-4 rounded-sm transition-colors ${
+          active ? "bg-slate-50" : "hover:bg-slate-50/60"
+        }`}
+      >
+        {active && (
+          <span className="absolute left-0 top-2 bottom-2 w-[2px] bg-primary rounded-r-sm" />
+        )}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-slate-900 font-medium truncate">{item.parties}</p>
+            <p className="mt-1 text-xs text-slate-600 truncate">
+              {item.commodity} · <span className="font-mono">{item.notional}</span>
+            </p>
+            <div className="mt-2.5 flex items-center gap-2 font-mono text-[10px] text-slate-500">
+              <span>{item.matchRef}</span>
+              <span className="text-slate-300">·</span>
+              <span>{item.jurisdictionRoute}</span>
+            </div>
+          </div>
+          <RiskBadge risk={item.risk} score={item.riskScore} />
+        </div>
+        <p className="mt-2 text-[11px] text-slate-500 italic">{item.flag}</p>
+      </button>
+    </li>
+  );
+}
+
+function RiskBadge({
+  risk,
+  score,
+  large,
+}: {
+  risk: Risk;
+  score: number;
+  large?: boolean;
+}) {
+  const tone =
+    risk === "high"
+      ? { ring: "ring-red-200", text: "text-red-700", bg: "bg-red-50", label: "High Risk" }
+      : risk === "medium"
+        ? { ring: "ring-amber-200", text: "text-amber-700", bg: "bg-amber-50", label: "Medium Risk" }
+        : { ring: "ring-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", label: "Low Risk" };
+
+  const sizeCircle = large ? "h-14 w-14 text-base" : "h-9 w-9 text-[11px]";
+
+  return (
+    <div className="flex flex-col items-end gap-1.5 shrink-0">
+      <div
+        className={`${sizeCircle} ${tone.bg} ${tone.text} rounded-full ring-1 ${tone.ring} flex items-center justify-center font-mono font-medium tabular-nums`}
+      >
+        {score}
+      </div>
+      <span
+        className={`font-mono text-[9px] tracking-[0.2em] uppercase font-medium ${tone.text}`}
+      >
+        {tone.label}
+      </span>
+    </div>
+  );
+}
+
+function Section({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="relative mt-12 first:mt-0">
+      <span className="absolute -left-10 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+        {number}
+      </span>
+      <h3 className="text-base font-medium text-slate-900 tracking-tight pb-3 border-b border-slate-200 mb-6">
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function GateRow({
+  gate,
+  acknowledged,
+  onAcknowledge,
+}: {
+  gate: { id: string; label: string; state: GateState; note?: string };
+  acknowledged?: boolean;
+  onAcknowledge?: () => void;
+}) {
+  const isAlert = gate.state === "alert";
+  const isPassed = gate.state === "passed";
+  const effectivePassed = isPassed || (isAlert && acknowledged);
+
+  return (
+    <div
+      className={`rounded-sm border p-4 transition-colors ${
+        effectivePassed
+          ? "border-emerald-200 bg-white"
+          : isAlert
+            ? "border-amber-200 bg-amber-50/50"
+            : "border-slate-200 bg-slate-50/60 opacity-60"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 shrink-0">
+          {effectivePassed ? (
+            <div className="h-5 w-5 rounded-full bg-emerald-700 flex items-center justify-center">
+              <Check className="h-3 w-3 text-white" strokeWidth={3} />
+            </div>
+          ) : isAlert ? (
+            <div className="relative h-5 w-5 flex items-center justify-center">
+              <motion.span
+                className="absolute inset-0 rounded-full bg-amber-400/30"
+                animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+              />
+              <div className="relative h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
+                <AlertTriangle className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+              </div>
+            </div>
+          ) : (
+            <div className="h-5 w-5 rounded-full border border-slate-300" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p
+            className={`font-mono text-[11px] tracking-wide font-medium ${
+              effectivePassed
+                ? "text-slate-900"
+                : isAlert
+                  ? "text-amber-900"
+                  : "text-slate-500"
+            }`}
+          >
+            {gate.label}
+          </p>
+          {gate.note && (
+            <p className="mt-1.5 text-[11px] text-amber-800 leading-relaxed">{gate.note}</p>
+          )}
+          {isAlert && onAcknowledge && (
+            <button
+              onClick={onAcknowledge}
+              className="mt-2.5 text-[11px] font-medium text-amber-900 hover:text-amber-950 underline underline-offset-2"
+            >
+              {acknowledged ? "✓ Acknowledged" : "Acknowledge alert"}
+            </button>
+          )}
+          {gate.state === "pending" && (
+            <p className="mt-1 font-mono text-[10px] tracking-wider uppercase text-slate-400">
+              Pending Gate 04
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
