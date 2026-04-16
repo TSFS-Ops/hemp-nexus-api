@@ -105,15 +105,7 @@ export default function Desk() {
             <DeskLayout>
               <Routes>
                 <Route index element={<DeskOverview />} />
-                <Route
-                  path="discover"
-                  element={
-                    <DeskPlaceholder
-                      title="Discover Counterparties"
-                      subtitle="Search the verified institutional liquidity network. Filter by commodity, jurisdiction, and trade history."
-                    />
-                  }
-                />
+                <Route path="discover" element={<DiscoverCounterparties />} />
                 <Route
                   path="deals"
                   element={
