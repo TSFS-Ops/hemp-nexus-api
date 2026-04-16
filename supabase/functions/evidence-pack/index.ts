@@ -308,7 +308,11 @@ Deno.serve(async (req) => {
     }
 
     const match = matchRes.data;
-    if (match.org_id !== authCtx.orgId) {
+    const isParticipant =
+      match.org_id === authCtx.orgId ||
+      match.buyer_org_id === authCtx.orgId ||
+      match.seller_org_id === authCtx.orgId;
+    if (!isParticipant) {
       throw new ApiException("FORBIDDEN", "You do not have permission to access this match", 403);
     }
 
