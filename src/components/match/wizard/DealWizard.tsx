@@ -336,7 +336,7 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab
     if (isLastSubTab && onProceedToPoi) {
       onProceedToPoi();
     } else if (currentSubIndex < subTabOrder.length - 1) {
-      setSubTab(subTabOrder[currentSubIndex + 1]);
+      onSubTabChange(subTabOrder[currentSubIndex + 1]);
     }
   };
 
@@ -351,7 +351,7 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab
   return (
     <div className="space-y-4">
       {/* Sub-navigation within the match step */}
-      <Tabs value={subTab} onValueChange={setSubTab}>
+      <Tabs value={subTab} onValueChange={onSubTabChange}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="terms" className="gap-1.5">
             <FileSignature className="h-4 w-4" />
