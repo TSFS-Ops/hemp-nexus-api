@@ -434,6 +434,12 @@ export function MatchCompiler() {
           </div>
         </div>
       </section>
+
+      <CreditProvisioningPanel
+        open={provisioningOpen}
+        onClose={() => setProvisioningOpen(false)}
+        currentBalance={creditBalance}
+      />
     </div>
   );
 }
