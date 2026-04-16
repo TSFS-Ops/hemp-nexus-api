@@ -162,11 +162,18 @@ export function DealWizard({
     return first >= 0 ? first : steps.length - 1;
   });
 
+  // Lifted sub-tab state for Match step so stepper can intercept
+  const [matchSubTab, setMatchSubTab] = useState("terms");
+
   const handleStepClick = useCallback((idx: number) => {
-    if (!steps[idx].locked) {
-      setActiveStep(idx);
+    if (steps[idx].locked) return;
+    // If user is on Match step and clicks POI, guide them to Notes first
+    if (activeStep === 1 && idx === 2 && matchSubTab !== "notes") {
+      setMatchSubTab("notes");
+      return;
     }
-  }, [steps]);
+    setActiveStep(idx);
+  }, [steps, activeStep, matchSubTab]);
 
   return (
     <div className="space-y-6">
