@@ -211,35 +211,91 @@ export function RejectedMatch() {
                   </div>
                 </div>
 
-                {/* VOIDED watermark — stamped with shake */}
+                {/* VOIDED watermark — physical red ink stamp */}
                 <motion.div
-                  initial={{ scale: 2.4, opacity: 0, rotate: -22 }}
+                  initial={{ scale: 2.6, opacity: 0, rotate: -15 }}
                   animate={{
-                    scale: [2.4, 0.95, 1],
-                    opacity: [0, 0.18, 0.18],
-                    rotate: -22,
-                    x: [0, -6, 6, -4, 4, -2, 0],
+                    scale: [2.6, 0.92, 1.02, 1],
+                    opacity: [0, 0.55, 0.55, 0.55],
+                    rotate: -15,
+                    x: [0, -5, 5, -3, 2, 0],
+                    y: [0, -2, 3, -1, 1, 0],
                   }}
                   transition={{
-                    duration: 0.7,
-                    times: [0, 0.55, 1],
+                    duration: 0.65,
+                    times: [0, 0.5, 0.78, 1],
                     delay: 0.35,
                     ease: [0.34, 1.56, 0.64, 1],
-                    x: { duration: 0.4, delay: 0.7, ease: "easeInOut" },
+                    x: { duration: 0.45, delay: 0.65, ease: "easeOut" },
+                    y: { duration: 0.45, delay: 0.65, ease: "easeOut" },
                   }}
                   className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  style={{
+                    filter: "url(#voided-ink-stamp) blur(0.4px)",
+                  }}
                 >
-                  <span
-                    className="font-bold tracking-[0.15em] text-red-700 select-none"
+                  <div
+                    className="relative px-10 py-4 select-none"
                     style={{
-                      fontSize: "8.5rem",
-                      lineHeight: 1,
-                      WebkitTextStroke: "3px rgb(185 28 28)",
-                      color: "rgba(185, 28, 28, 0.18)",
+                      border: "5px solid rgba(176, 24, 24, 0.78)",
+                      boxShadow:
+                        "inset 0 0 0 2px rgba(255,255,255,0.55), inset 0 0 0 3px rgba(176, 24, 24, 0.78)",
+                      borderRadius: "4px",
+                      background:
+                        "radial-gradient(ellipse at 30% 40%, rgba(176, 24, 24, 0.04) 0%, transparent 55%), radial-gradient(ellipse at 75% 65%, rgba(176, 24, 24, 0.06) 0%, transparent 60%)",
                     }}
                   >
-                    VOIDED
-                  </span>
+                    <span
+                      className="font-bold tracking-[0.18em]"
+                      style={{
+                        fontFamily:
+                          "ui-serif, 'Times New Roman', Georgia, serif",
+                        fontSize: "5.5rem",
+                        lineHeight: 0.95,
+                        color: "rgba(176, 24, 24, 0.82)",
+                        WebkitTextStroke: "1.5px rgba(140, 18, 18, 0.85)",
+                        textShadow:
+                          "0.5px 0.5px 0 rgba(120, 14, 14, 0.35), -0.5px 0 0 rgba(200, 40, 40, 0.25), 0 0.5px 1px rgba(140, 18, 18, 0.2)",
+                      }}
+                    >
+                      VOIDED
+                    </span>
+
+                    <p
+                      className="absolute left-1/2 -translate-x-1/2 -bottom-2.5 px-2 bg-white"
+                      style={{
+                        fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
+                        fontSize: "0.55rem",
+                        letterSpacing: "0.25em",
+                        color: "rgba(140, 18, 18, 0.85)",
+                      }}
+                    >
+                      — {REJECT_TIMESTAMP} —
+                    </p>
+                  </div>
+
+                  <svg
+                    className="absolute h-0 w-0"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <defs>
+                      <filter id="voided-ink-stamp">
+                        <feTurbulence
+                          type="fractalNoise"
+                          baseFrequency="0.85"
+                          numOctaves="2"
+                          seed="7"
+                          result="noise"
+                        />
+                        <feDisplacementMap
+                          in="SourceGraphic"
+                          in2="noise"
+                          scale="1.6"
+                        />
+                      </filter>
+                    </defs>
+                  </svg>
                 </motion.div>
               </article>
             </div>
