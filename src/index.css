@@ -9,40 +9,42 @@
 
 @layer base {
   :root {
-    /* #FFFFFF - clean white */
+    /* #FFFFFF - pure white primary background */
     --background: 0 0% 100%;
-    /* #111827 - rich near-black for maximum readability */
-    --foreground: 220 26% 11%;
+    /* #0F172A - deep slate, never pure black */
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 26% 11%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 26% 11%;
+    --popover-foreground: 222 47% 11%;
 
-    /* #1B4533 - brand dark green */
-    --primary: 155 44% 19%;
+    /* #047857 - muted institutional green */
+    --primary: 158 84% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 13% 95%;
-    --secondary-foreground: 220 26% 14%;
+    /* #F8FAFC - subtle secondary surface */
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 220 13% 95%;
-    /* #6B7280 - mid-dark grey for secondary text & placeholders */
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 40% 98%;
+    /* #64748B - slate-500 for secondary text */
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 220 13% 93%;
-    --accent-foreground: 220 26% 11%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* #D1D5DB - slightly darker dividers for structural clarity */
-    --border: 220 13% 83%;
-    --input: 220 13% 83%;
-    --ring: 155 44% 19%;
+    /* #E2E8F0 - crisp 1px border separator */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 158 84% 24%;
 
-    --radius: 0.125rem;
+    /* 6px radius — Stripe/Checkout.com institutional standard */
+    --radius: 0.375rem;
 
     --sidebar-background: 210 20% 98%;
     --sidebar-foreground: 220 26% 11%;
