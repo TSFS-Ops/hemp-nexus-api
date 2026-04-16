@@ -292,8 +292,9 @@ export function UnilateralIntentForm() {
         try {
           const siteUrl = window.location.origin;
           const acceptUrl = `${siteUrl}/auth?redirect=/dashboard/matches/${matchData.id}`;
-          await supabase.functions.invoke("send-transactional-email", {
-            body: {
+          await apiFetch("send-transactional-email", {
+            method: "POST",
+            body: JSON.stringify({
               templateName: "poi-invite",
               recipientEmail: form.counterpartyEmail.trim(),
               idempotencyKey: `poi-invite-${matchData.id}`,
@@ -306,7 +307,7 @@ export function UnilateralIntentForm() {
                 senderName: myName,
                 acceptUrl,
               },
-            },
+            }),
           });
           toast.success("Invite sent to trading partner.", { duration: 4000 });
         } catch (emailErr) {

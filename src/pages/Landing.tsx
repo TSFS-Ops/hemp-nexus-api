@@ -89,15 +89,15 @@ export default function Landing() {
     setLiquidityData(null);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke("liquidity-check", {
-        body: {
+      const result = await apiFetchPublic<any>("liquidity-check", {
+        method: "POST",
+        body: JSON.stringify({
           product: data.product,
           location: data.location || undefined,
-        },
+        }),
       });
 
-      if (error) {
-        console.error("Liquidity check failed:", error);
+      if (result) {
         // On error, show a graceful fallback — don't fake results
         setLiquidityData({
           partner_count: 0,
