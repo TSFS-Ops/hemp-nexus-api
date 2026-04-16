@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
           registry_id: parsed.registry_id,
           deal_reference_id: parsed.deal_reference_id,
           deal_reference_type: parsed.deal_reference_type,
-          status: "pending",
+          status: "DRAFT",
         };
       if (parsed.document_path) insertPayload.document_path = parsed.document_path;
 
@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!govDoc) throw new ApiException("NOT_FOUND", "Governance document not found", 404);
-      if (govDoc.status === "validated") {
+      if (govDoc.status === "VALIDATED") {
         throw new ApiException("CONFLICT", "Document already validated", 409);
       }
 
