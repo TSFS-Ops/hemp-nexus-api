@@ -2,6 +2,7 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { DeskLayout } from "@/components/desk/DeskLayout";
+import { DeskSidebar } from "@/components/desk/DeskSidebar";
 import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
 import { DealPipeline } from "@/components/desk/DealPipeline";
 import { DeskSettingsLayout } from "@/components/desk/settings/DeskSettingsLayout";
@@ -10,6 +11,16 @@ import { CompanyIdentityTab } from "@/components/desk/settings/CompanyIdentityTa
 import { NotificationRulesTab } from "@/components/desk/settings/NotificationRulesTab";
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
+
+/** Full-bleed shell: sidebar only, no padded max-w container. */
+function DeskFullBleed({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen w-full flex bg-white">
+      <DeskSidebar />
+      <main className="flex-1 min-w-0">{children}</main>
+    </div>
+  );
+}
 
 function DeskOverview() {
   const navigate = useNavigate();
