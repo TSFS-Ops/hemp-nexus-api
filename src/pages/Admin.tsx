@@ -352,7 +352,8 @@ function IntegritySection() {
   );
 }
 
-  function DataGovernanceSection() {
+function DataGovernanceSection() {
+  const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SectionHeader title="Data Governance" description="Retention enforcement, consent management, and emergency protocols." parents={[{ label: "Admin", href: ROUTES.ADMIN }]} />
