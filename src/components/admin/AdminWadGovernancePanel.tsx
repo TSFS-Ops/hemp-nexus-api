@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WadTooltip } from "@/components/ui/wad-tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,7 +97,7 @@ export function AdminWadGovernancePanel() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">WaD Hard-Gates & Governance</h2>
+          <h2 className="text-3xl font-bold tracking-tight"><WadTooltip label="WaD Hard-Gates & Governance" /></h2>
           <p className="text-muted-foreground mt-1">
             Signed Deal issuance with 7 deterministic hard-gate enforcement
           </p>
@@ -111,7 +112,7 @@ export function AdminWadGovernancePanel() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" /> WaDs Issued
+              <CheckCircle className="h-4 w-4" /> <WadTooltip label="WaDs Issued" inline />
             </CardTitle>
           </CardHeader>
           <CardContent><p className="text-2xl font-bold">{issuedCount}</p></CardContent>
@@ -119,7 +120,7 @@ export function AdminWadGovernancePanel() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" /> WaDs Denied
+              <AlertTriangle className="h-4 w-4" /> <WadTooltip label="WaDs Denied" inline />
             </CardTitle>
           </CardHeader>
           <CardContent><p className="text-2xl font-bold">{deniedCount}</p></CardContent>
@@ -144,7 +145,7 @@ export function AdminWadGovernancePanel() {
 
       <Tabs defaultValue="wads">
         <TabsList>
-          <TabsTrigger value="wads">WaD Issuances</TabsTrigger>
+          <TabsTrigger value="wads"><WadTooltip label="WaD Issuances" inline /></TabsTrigger>
           <TabsTrigger value="gov-docs">Governance Documents</TabsTrigger>
           <TabsTrigger value="registry">Document Registry</TabsTrigger>
         </TabsList>
@@ -167,7 +168,7 @@ export function AdminWadGovernancePanel() {
                   {wads.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground">
-                        No WaD issuance attempts yet
+                        No Signed Deal issuance attempts yet
                       </TableCell>
                     </TableRow>
                   ) : (

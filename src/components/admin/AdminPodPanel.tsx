@@ -225,7 +225,7 @@ function PodsTab({ pods, milestones, onRefresh }: { pods: Pod[]; milestones: Pod
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>WaD</TableHead>
+              <TableHead>Signed Deal</TableHead>
               <TableHead>State</TableHead>
               <TableHead>Milestones</TableHead>
               <TableHead>Created</TableHead>

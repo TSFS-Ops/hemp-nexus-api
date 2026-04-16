@@ -54,7 +54,7 @@ export async function fetchActiveWad(matchId: string): Promise<ConsequenceResult
       success: false,
       error: err instanceof AuthRequiredError
         ? "Session expired. Please sign in again."
-        : err instanceof Error ? err.message : "Failed to fetch WaD",
+        : err instanceof Error ? err.message : "Failed to fetch Signed Deal",
     };
   }
 }
@@ -72,7 +72,7 @@ export async function createWad(matchId: string): Promise<ConsequenceResult<WadR
   } catch (err) {
     const result: ConsequenceResult<WadRecord> = {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to create WaD",
+      error: err instanceof Error ? err.message : "Failed to create Signed Deal",
     };
     if (err && typeof err === "object" && "failures" in err) {
       result.gateFailures = (err as { failures: string[] }).failures;
@@ -117,7 +117,7 @@ export async function sealWad(wadId: string): Promise<ConsequenceResult<void>> {
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to seal WaD",
+      error: err instanceof Error ? err.message : "Failed to seal Signed Deal",
     };
   }
 }
@@ -139,7 +139,7 @@ export async function revokeWad(wadId: string, reason: string): Promise<Conseque
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to revoke WaD",
+      error: err instanceof Error ? err.message : "Failed to revoke Signed Deal",
     };
   }
 }
@@ -199,7 +199,7 @@ export async function fetchWadChain(matchId: string): Promise<ConsequenceResult<
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to fetch WaD history",
+      error: err instanceof Error ? err.message : "Failed to fetch Signed Deal history",
     };
   }
 }
