@@ -161,6 +161,7 @@ export function AdminDataIntegrityPanel() {
             </CardHeader>
             <CardContent>
               {tokenLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (
+                <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -187,6 +188,10 @@ export function AdminDataIntegrityPanel() {
                     ))}
                   </TableBody>
                 </Table>
+                {(tokenIssues || []).length > 50 && (
+                  <p className="text-xs text-muted-foreground mt-2">Showing 50 of {(tokenIssues || []).length} records. Remaining {(tokenIssues || []).length - 50} not displayed.</p>
+                )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -235,6 +240,7 @@ export function AdminDataIntegrityPanel() {
               {stateLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : stateIssues?.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">All match states are consistent. No violations.</p>
               ) : (
+              <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -253,6 +259,10 @@ export function AdminDataIntegrityPanel() {
                     ))}
                   </TableBody>
                 </Table>
+                {(stateIssues || []).length > 100 && (
+                  <p className="text-xs text-muted-foreground mt-2">Showing 100 of {(stateIssues || []).length} violations. Remaining {(stateIssues || []).length - 100} not displayed.</p>
+                )}
+              </>
               )}
             </CardContent>
           </Card>
