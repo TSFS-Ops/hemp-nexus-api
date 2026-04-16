@@ -28,6 +28,7 @@ const DeveloperApiKeys = lazy(() => import("@/pages/DeveloperApiKeys"));
 const DeveloperWebhooks = lazy(() => import("@/pages/DeveloperWebhooks"));
 const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
+const Welcome = lazy(() => import("@/pages/Welcome"));
 
 /**
  * Root element that renders based on host type:
@@ -58,6 +59,7 @@ function App() {
                   {/* Canonical redirect: /landing → / */}
                   <Route path="/landing" element={<Navigate to="/" replace />} />
                   <Route path={ROUTES.AUTH} element={<Auth />} />
+                  <Route path="/welcome" element={<Welcome />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* Billing now nested under dashboard */}
                   <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />

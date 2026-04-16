@@ -3831,6 +3831,7 @@ export type Database = {
           full_name: string | null
           id: string
           org_id: string
+          selected_persona: string | null
           status: string
           updated_at: string
         }
@@ -3840,6 +3841,7 @@ export type Database = {
           full_name?: string | null
           id: string
           org_id: string
+          selected_persona?: string | null
           status?: string
           updated_at?: string
         }
@@ -3849,6 +3851,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           org_id?: string
+          selected_persona?: string | null
           status?: string
           updated_at?: string
         }
