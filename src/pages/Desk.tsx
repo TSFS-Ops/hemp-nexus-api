@@ -13,6 +13,7 @@ import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
 import { DiscoverCounterparties } from "@/components/desk/discover/DiscoverCounterparties";
+import { InboundReview } from "@/components/desk/inbound/InboundReview";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -86,6 +87,14 @@ export default function Desk() {
           element={
             <DeskFullBleed>
               <SealedEngagement />
+            </DeskFullBleed>
+          }
+        />
+        <Route
+          path="inbound/review"
+          element={
+            <DeskFullBleed>
+              <InboundReview />
             </DeskFullBleed>
           }
         />
