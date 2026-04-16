@@ -162,11 +162,18 @@ export function DealWizard({
     return first >= 0 ? first : steps.length - 1;
   });
 
+  // Lifted sub-tab state for Match step so stepper can intercept
+  const [matchSubTab, setMatchSubTab] = useState("terms");
+
   const handleStepClick = useCallback((idx: number) => {
-    if (!steps[idx].locked) {
-      setActiveStep(idx);
+    if (steps[idx].locked) return;
+    // If user is on Match step and clicks POI, guide them to Notes first
+    if (activeStep === 1 && idx === 2 && matchSubTab !== "notes") {
+      setMatchSubTab("notes");
+      return;
     }
-  }, [steps]);
+    setActiveStep(idx);
+  }, [steps, activeStep, matchSubTab]);
 
   return (
     <div className="space-y-6">
@@ -186,7 +193,7 @@ export function DealWizard({
         <StepSearch match={match} />
       )}
       {activeStep === 1 && (
-        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} />
+        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />
       )}
       {activeStep === 2 && (
         <div className="space-y-4">
@@ -314,9 +321,7 @@ function StepSearch({ match }: { match: Match }) {
 
 // ─── Step 2: Match Details ──────────────────────────────────────────
 
-function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { match: Match; currentState: string; onMatchUpdated?: () => void; onProceedToPoi?: () => void }) {
-  const [subTab, setSubTab] = useState("terms");
-
+function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab, onSubTabChange }: { match: Match; currentState: string; onMatchUpdated?: () => void; onProceedToPoi?: () => void; subTab: string; onSubTabChange: (tab: string) => void }) {
   // Check if all required fields are complete
   const allComplete = !!match.commodity && !!match.buyer_name && !!match.seller_name
     && match.quantity_amount != null && match.quantity_amount > 0
@@ -331,7 +336,7 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { ma
     if (isLastSubTab && onProceedToPoi) {
       onProceedToPoi();
     } else if (currentSubIndex < subTabOrder.length - 1) {
-      setSubTab(subTabOrder[currentSubIndex + 1]);
+      onSubTabChange(subTabOrder[currentSubIndex + 1]);
     }
   };
 
@@ -346,7 +351,7 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { ma
   return (
     <div className="space-y-4">
       {/* Sub-navigation within the match step */}
-      <Tabs value={subTab} onValueChange={setSubTab}>
+      <Tabs value={subTab} onValueChange={onSubTabChange}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="terms" className="gap-1.5">
             <FileSignature className="h-4 w-4" />
