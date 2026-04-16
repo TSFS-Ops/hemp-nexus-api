@@ -294,7 +294,7 @@ export function Phase2Verification() {
               as enhancement using a library like pdf-lib or server-side rendering.
             </li>
             <li>
-              <strong>WaD Attestation UI:</strong> Multi-party attestation flow requires both parties to log in 
+              <strong>Signed Deal (WaD) Attestation UI:</strong> Multi-party attestation flow requires both parties to log in 
               and attest separately. Status updates to "awaiting_attestations" after first attestation.
             </li>
             <li>
