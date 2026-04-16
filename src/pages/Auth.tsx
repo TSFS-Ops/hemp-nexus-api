@@ -138,16 +138,25 @@ export default function Auth() {
       setVerificationPending(true);
       toast.success("Check your email to verify your account.");
     } catch (error) {
+      console.error("[signup] error:", error);
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else if (error instanceof Error) {
         const msg = error.message;
-        if (msg.includes("already registered") || msg.includes("already been registered")) {
+        const lower = msg.toLowerCase();
+        if (lower.includes("already registered") || lower.includes("already been registered") || lower.includes("user already")) {
           toast.error("An account with this email already exists. Try signing in instead.");
-        } else if (msg.includes("rate limit") || msg.includes("too many")) {
+        } else if (lower.includes("rate limit") || lower.includes("too many") || lower.includes("for security purposes")) {
           toast.error("Too many attempts. Please wait a moment and try again.");
+        } else if ((lower.includes("signup") && lower.includes("disabled")) || lower.includes("signups not allowed") || lower.includes("not allowed")) {
+          toast.error("New account signups are currently disabled. Contact your administrator.");
+        } else if (lower.includes("password") && (lower.includes("weak") || lower.includes("pwned") || lower.includes("compromised") || lower.includes("leaked") || lower.includes("breach"))) {
+          toast.error("This password has been found in a data breach. Please choose a different one.");
+        } else if (lower.includes("invalid") && lower.includes("email")) {
+          toast.error("Please enter a valid email address.");
         } else {
-          toast.error("Unable to create account. Please try again.");
+          // Surface actual error so the cause is visible
+          toast.error(msg || "Unable to create account. Please try again.");
         }
       }
     } finally {
