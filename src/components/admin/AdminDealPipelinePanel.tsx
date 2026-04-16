@@ -69,6 +69,13 @@ export function AdminDealPipelinePanel() {
         supabase.from("matches").select("org_id, poi_state").limit(2000),
       ]);
 
+      // Detect if any query hit its limit (data may be incomplete)
+      const DATA_LIMIT = 2000;
+      const anyLimitHit = [entitiesRes, uboRes, atbRes, collapseRes, matchesRes]
+        .some(r => (r.data?.length ?? 0) >= DATA_LIMIT)
+        || [ddRes, approvalsRes].some(r => (r.data?.length ?? 0) >= 1000);
+      setDataLimitHit(anyLimitHit);
+
       // Build lookup maps
       const entityCounts = new Map<string, number>();
       (entitiesRes.data || []).forEach((e: any) => {
