@@ -24,7 +24,7 @@ const PERSONAS: PersonaCard[] = [
     title: "Commercial Trading",
     description:
       "Search for verified counterparties, negotiate terms, and execute cryptographically sealed Proofs of Intent.",
-    route: "/dashboard",
+    route: "/desk",
     meta: "For buyers, sellers & deal originators",
   },
   {
