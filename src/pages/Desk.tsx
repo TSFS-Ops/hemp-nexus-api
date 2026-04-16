@@ -12,6 +12,7 @@ import { NotificationRulesTab } from "@/components/desk/settings/NotificationRul
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
+import { RejectedMatch } from "@/components/desk/match/RejectedMatch";
 import { DiscoverCounterparties } from "@/components/desk/discover/DiscoverCounterparties";
 import { InboundReview } from "@/components/desk/inbound/InboundReview";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
@@ -88,6 +89,14 @@ export default function Desk() {
           element={
             <DeskFullBleed>
               <SealedEngagement />
+            </DeskFullBleed>
+          }
+        />
+        <Route
+          path="match/rejected"
+          element={
+            <DeskFullBleed>
+              <RejectedMatch />
             </DeskFullBleed>
           }
         />
