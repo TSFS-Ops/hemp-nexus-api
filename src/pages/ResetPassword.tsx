@@ -128,7 +128,7 @@ export default function ResetPassword() {
           <AlertTriangle className="h-8 w-8 mx-auto text-amber-500" />
           <h1 className="text-xl font-semibold text-foreground">Reset link expired or invalid</h1>
           <p className="text-sm text-muted-foreground">
-            This password reset link has expired or is no longer valid. Reset links are single-use and expire after a short time.
+            {errorMsg ?? "This password reset link has expired or is no longer valid. Reset links are single-use and expire after a short time."}
           </p>
           <Link
             to="/auth"
