@@ -141,7 +141,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     try {
       // 1. Upload file to storage
       const ext = selectedFile.name.split(".").pop() || "pdf";
-      storagePath = `governance/${orgId}/${matchId}/${crypto.randomUUID()}.${ext}`;
+      storagePath = `${orgId}/${matchId}/gov_${crypto.randomUUID()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
