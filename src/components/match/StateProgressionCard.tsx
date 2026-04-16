@@ -354,8 +354,8 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 Your profile name must be set to your full legal name before you can proceed.
                 It will appear on Proofs of Intent, certificates, and compliance records.
               </p>
-              <a href="/dashboard" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                Update your name on the Dashboard
+              <a href="/dashboard/account" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                Update your name in Account Settings
               </a>
             </div>
           </div>
