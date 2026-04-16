@@ -211,36 +211,13 @@ export async function burnTokens(
     newBalance = currentBalance?.balance || 0;
   }
   
-  // Record in ledger (append-only)
-  const validApiKeyId = apiKeyId && apiKeyId.length > 0 ? apiKeyId : null;
-  
-  const { data: ledgerEntry, error: ledgerError } = await supabase
-    .from("token_ledger")
-    .insert({
-      org_id: orgId,
-      api_key_id: validApiKeyId,
-      endpoint,
-      tokens_burned: tokensToBurn,
-      outcome,
-      remaining_balance: newBalance,
-      request_id: requestId,
-      metadata: metadata || {},
-    })
-    .select("id")
-    .single();
-  
-  if (ledgerError) {
-    console.error("Error recording token ledger entry:", ledgerError);
-    // If we burned tokens but ledger write failed, this is a critical integrity issue - log it
-    if (tokensToBurn > 0) {
-      console.error(`CRITICAL: Token burn of ${tokensToBurn} for org ${orgId} succeeded but ledger write failed. Request: ${requestId}`);
-    }
-  }
+  // Ledger write is now handled inside atomic_token_burn (self-auditing).
+  // No duplicate write needed here.
   
   return {
     success: true,
     newBalance,
-    ledgerEntryId: ledgerEntry?.id || "",
+    ledgerEntryId: "",
   };
 }
 
@@ -483,42 +460,15 @@ export async function burnTokensForAction(
   // Check if we crossed any low balance thresholds
   await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
   
-  // Record in ledger with action type
-  const validApiKeyId = apiKeyId && apiKeyId.length > 0 ? apiKeyId : null;
-  const validEntityId = entityId && entityId.length > 0 ? entityId : null;
-  
-  const { data: ledgerEntry, error: ledgerError } = await supabase
-    .from("token_ledger")
-    .insert({
-      org_id: orgId,
-      api_key_id: validApiKeyId,
-      endpoint: `action:${actionType}`,
-      tokens_burned: tokensToBurn,
-      outcome: "allowed",
-      remaining_balance: newBalance,
-      request_id: requestId,
-      action_type: actionType,
-      entity_id: validEntityId,
-      metadata: {
-        ...metadata,
-        action: actionType,
-        tokens_burned: tokensToBurn,
-      },
-    })
-    .select("id")
-    .single();
-  
-  if (ledgerError) {
-    console.error("Error recording token ledger entry:", ledgerError);
-    console.error(`CRITICAL: Token burn of ${tokensToBurn} for action ${actionType} (org: ${orgId}) succeeded but ledger write failed. Request: ${requestId}`);
-  }
+  // Ledger write is now handled inside atomic_token_burn (self-auditing).
+  // No duplicate write needed here.
   
   console.log(`[Token Metering] Burned ${tokensToBurn} tokens for ${actionType} (org: ${orgId})`);
   
   return {
     success: true,
     newBalance,
-    ledgerEntryId: ledgerEntry?.id || "",
+    ledgerEntryId: "",
   };
 }
 
