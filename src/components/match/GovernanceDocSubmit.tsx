@@ -69,10 +69,8 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
           .eq("active", true)
           .eq("org_id", orgId)
           .order("category"),
-        supabase.functions.invoke("governance-docs", {
+        supabase.functions.invoke(`governance-docs?deal_reference_id=${matchId}`, {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deal_reference_id: matchId }),
         }),
       ]);
 
