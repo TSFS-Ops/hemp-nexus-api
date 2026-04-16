@@ -44,6 +44,7 @@ interface GovernanceDocSubmitProps {
 }
 
 export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps) {
+  const queryClient = useQueryClient();
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [submitted, setSubmitted] = useState<GovernanceDoc[]>([]);
   const [selectedRegistryId, setSelectedRegistryId] = useState("");
