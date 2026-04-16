@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WadTooltip } from "@/components/ui/wad-tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,7 @@ export function AdminWadPanel() {
   if (isError) {
     return (
       <div className="p-6">
-        <ErrorState title="Failed to load WaDs" onRetry={() => refetch()} type="server" />
+        <ErrorState title="Failed to load Signed Deals" onRetry={() => refetch()} type="server" />
       </div>
     );
   }
@@ -155,7 +156,7 @@ export function AdminWadPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Shield className="h-8 w-8" />
-            WaD Management
+            <WadTooltip label="WaD Management" />
           </h2>
           <p className="text-muted-foreground mt-2">
             View and manage all Signed Deal sealed evidence bundles
@@ -169,9 +170,9 @@ export function AdminWadPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All WaDs</CardTitle>
+          <CardTitle>All Signed Deals</CardTitle>
           <CardDescription>
-            Admin access to WaDs is logged. Certificate downloads require a reason.
+            Admin access to Signed Deals (WaD) is logged. Certificate downloads require a reason.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -298,7 +299,7 @@ export function AdminWadPanel() {
                                 Revoke Signed Deal
                               </DialogTitle>
                               <DialogDescription>
-                                This action cannot be undone. The WaD will be marked as revoked but not deleted.
+                                This action cannot be undone. The Signed Deal will be marked as revoked but not deleted.
                               </DialogDescription>
                             </DialogHeader>
                             <div className="py-4">
