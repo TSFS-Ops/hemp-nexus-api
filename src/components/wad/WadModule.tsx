@@ -110,11 +110,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     return (
       <Card>
         <CardHeader>
-           <CardTitle className="flex items-center gap-2">
-             <Shield className="h-5 w-5" />
-              WaD
-           </CardTitle>
-           <CardDescription>Sealed evidence bundle for this intent</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+               Signed Deal
+            </CardTitle>
+            <CardDescription>Sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
@@ -147,16 +147,16 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
 
         <Card>
           <CardHeader>
-           <CardTitle className="flex items-center gap-2">
-             <Shield className="h-5 w-5" />
-             WaD
-           </CardTitle>
-           <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Signed Deal
+            </CardTitle>
+            <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg space-y-3">
               <p className="text-sm">
-                WaD creates an auditable, tamper-evident record that packages the full evidence trail
+                Signed Deal creates an auditable, tamper-evident record that packages the full evidence trail
                 for this trade request. It includes:
               </p>
               <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
@@ -175,7 +175,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               )}
               <div className="pt-2 border-t">
                 <p className="text-xs text-muted-foreground italic">
-                  <strong>Note:</strong> WaD is NOT a contract. No payment. No obligation.
+                  <strong>Note:</strong> A Signed Deal is NOT a contract. No payment. No obligation.
                   It is an evidence-grade "proof bundle".
                 </p>
               </div>
@@ -184,7 +184,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
                 <p className="text-sm font-medium text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  WaD creation blocked - {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
+                  Signed Deal creation blocked - {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
                 </p>
                 <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
                   {gateFailures.map((f, i) => (

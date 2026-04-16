@@ -121,7 +121,10 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const isUnilateral = matchType === "unilateral";
 
   const currentState = match.state || "discovery";
-  const currentIdx = MatchState.getStateIndex(currentState);
+  const rawIdx = MatchState.getStateIndex(currentState);
+  // When engagement is accepted at committed state, visually advance the stepper
+  // so POI Generated shows as completed (green check) and Completed becomes current
+  const currentIdx = (currentState === "committed" && engagementStatus === "accepted") ? rawIdx + 1 : rawIdx;
   const nextState = MatchState.getNextState(currentState);
   const nextLabel = MatchState.getNextActionLabel(currentState, matchType);
   const nextDescription = MatchState.getNextActionDescription(currentState, matchType);
