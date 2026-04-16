@@ -31,6 +31,14 @@ export default function Auth() {
   const [pageReady, setPageReady] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Tick down the resend cooldown each second
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -221,13 +229,24 @@ export default function Auth() {
       toast.error("Enter your email first.");
       return;
     }
+    if (resendCooldown > 0) return;
     try {
       setLoading(true);
       const { error } = await supabase.auth.resend({ type: "signup", email });
       if (error) throw error;
       toast.success("Verification email sent.");
-    } catch {
-      toast.error("Failed to resend verification email.");
+      setResendCooldown(60);
+    } catch (err: any) {
+      const msg: string = err?.message ?? "";
+      // Supabase rate limit: "For security purposes, you can only request this after N seconds."
+      const match = msg.match(/after (\d+) seconds?/i);
+      if (match || err?.status === 429 || /rate.?limit/i.test(msg)) {
+        const wait = match ? parseInt(match[1], 10) : 30;
+        setResendCooldown(wait);
+        toast.error(`Please wait ${wait}s before requesting another email.`);
+      } else {
+        toast.error(msg || "Failed to resend verification email.");
+      }
     } finally {
       setLoading(false);
     }
@@ -254,7 +273,7 @@ export default function Auth() {
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
             </div>
           ) : verificationPending ? (
-            <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
+            <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
           ) : mode === "reset" ? (
             <ResetForm password={password} setPassword={setPassword} loading={loading} onSubmit={handleResetPassword} />
           ) : mode === "forgot" ? (
@@ -554,8 +573,9 @@ function ResetForm({
 }
 
 function VerificationPendingBlock({
-  email, onResend, loading, onBack,
-}: { email: string; onResend: () => void; loading: boolean; onBack: () => void }) {
+  email, onResend, loading, cooldown, onBack,
+}: { email: string; onResend: () => void; loading: boolean; cooldown: number; onBack: () => void }) {
+  const disabled = loading || cooldown > 0;
   return (
     <>
       <button
@@ -572,12 +592,21 @@ function VerificationPendingBlock({
       </div>
       <Button
         onClick={onResend}
-        disabled={loading}
+        disabled={disabled}
         variant="outline"
         className="w-full h-12 rounded-md border-slate-200 hover:bg-slate-50 shadow-none font-medium text-slate-900"
       >
-        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : "Resend verification email"}
+        {loading
+          ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+          : cooldown > 0
+            ? `Resend available in ${cooldown}s`
+            : "Resend verification email"}
       </Button>
+      {cooldown > 0 && (
+        <p className="mt-3 text-xs text-slate-400 text-center">
+          For security, verification emails are throttled. Check your inbox (and spam folder) while you wait.
+        </p>
+      )}
     </>
   );
 }
