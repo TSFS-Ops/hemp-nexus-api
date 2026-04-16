@@ -349,23 +349,23 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
           ? "Awaiting counterparty engagement — process paused"
           : undefined,
       },
-      { label: "WaD record created", done: false },
+      { label: "Signed Deal record created", done: false },
       { label: "9-gate validation passed", done: false },
       { label: "Attestations collected", done: false },
-      { label: "WaD sealed", done: false },
+      { label: "Signed Deal sealed", done: false },
     );
 
     actions.push({
       id: "wad-create",
-      label: "Create WaD",
+      label: "Create Signed Deal",
       description: "Start the Signed Deal evidence bundle process. The system will validate 9 compliance gates.",
       type: "create_wad",
       targetTab: "wad",
       allowed: canCreate,
       blockedReason: !isSettled
-        ? "Intent must be confirmed before creating a WaD"
+        ? "Intent must be confirmed before creating a Signed Deal"
         : holdPointActive
-          ? "Counterparty must accept the engagement before WaD can begin"
+          ? "Counterparty must accept the engagement before the Signed Deal can begin"
           : poiStatus !== "complete"
             ? "POI stage must be complete first"
             : null,
@@ -377,13 +377,13 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
 
     return {
       id: "wad",
-      label: "WaD (Without a Doubt)",
+      label: "Signed Deal",
       status: holdPointActive ? "blocked" : canCreate ? "pending" : "not_started",
       detail: holdPointActive
-        ? "Blocked — awaiting counterparty engagement acceptance before WaD can begin"
+        ? "Blocked — awaiting counterparty engagement acceptance before Signed Deal can begin"
         : canCreate
-          ? "Ready to create - POI is complete and engagement accepted. Navigate to WaD tab to begin."
-          : "Waiting for POI completion before WaD can be initiated",
+          ? "Ready to create — POI is complete and engagement accepted. Navigate to Signed Deal tab to begin."
+          : "Waiting for POI completion before Signed Deal can be initiated",
       substeps,
       actions,
       completionPct: isSettled && engagementAccepted ? 20 : isSettled ? 10 : 0,
@@ -399,17 +399,17 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
 
   substeps.push(
     { label: "POI issued", done: true },
-    { label: "WaD record created", done: true },
+    { label: "Signed Deal record created", done: true },
     {
       label: "9-gate validation passed",
       done: isSealed || hasAttestation,
       detail: isDenied
-        ? `Failed: ${(wad.denial_reasons || []).join(", ") || "See WaD tab for details"}`
+        ? `Failed: ${(wad.denial_reasons || []).join(", ") || "See Signed Deal tab for details"}`
         : undefined,
     },
     { label: "Attestations collected", done: isSealed || hasAttestation },
     {
-      label: "WaD sealed with SHA-256",
+      label: "Signed Deal sealed with SHA-256",
       done: isSealed,
       detail: isSealed && wad.seal_hash
         ? `Hash: ${wad.seal_hash.substring(0, 16)}…`
@@ -422,10 +422,10 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
   // Action: open WaD tab
   actions.push({
     id: "wad-open",
-    label: isSealed ? "View Sealed WaD" : isDraft ? "Continue WaD Process" : "Review WaD",
+    label: isSealed ? "View Sealed Signed Deal" : isDraft ? "Continue Signed Deal Process" : "Review Signed Deal",
     description: isSealed
       ? "View the sealed evidence bundle, attestations, and certificate"
-      : "Continue the WaD attestation and sealing process",
+      : "Continue the Signed Deal attestation and sealing process",
     type: "open_wad",
     targetTab: "wad",
     allowed: true,
@@ -441,7 +441,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     actions.push({
       id: "wad-upload-docs",
       label: "Upload Supporting Documents",
-      description: "Attach governance or compliance documents required for WaD gates",
+      description: "Attach governance or compliance documents required for Signed Deal gates",
       type: "upload_document",
       targetTab: "documents",
       allowed: true,
@@ -458,18 +458,18 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
 
   if (isSealed) {
     status = "complete";
-    detail = `WaD sealed at ${wad.sealed_at ? new Date(wad.sealed_at).toLocaleDateString() : "unknown date"}`;
+    detail = `Signed Deal sealed at ${wad.sealed_at ? new Date(wad.sealed_at).toLocaleDateString() : "unknown date"}`;
   } else if (isDenied) {
     status = "blocked";
-    detail = `WaD denied: ${(wad.denial_reasons || []).join(", ") || "One or more gates failed"}. Fix the issues and retry.`;
+    detail = `Signed Deal denied: ${(wad.denial_reasons || []).join(", ") || "One or more gates failed"}. Fix the issues and retry.`;
   } else {
     status = "in_progress";
-    detail = `WaD in ${wadStatus} state - ${doneCount} of ${substeps.length} steps complete`;
+    detail = `Signed Deal in ${wadStatus} state — ${doneCount} of ${substeps.length} steps complete`;
   }
 
   return {
     id: "wad",
-    label: "WaD (Without a Doubt)",
+    label: "Signed Deal",
     status,
     detail,
     substeps,
@@ -489,7 +489,7 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
 
   if (!pod) {
     substeps.push(
-      { label: "WaD must be sealed", done: wadComplete },
+      { label: "Signed Deal must be sealed", done: wadComplete },
       { label: "PoD record created", done: false },
       { label: "Milestones defined", done: false },
       { label: "All milestones complete", done: false },
@@ -505,9 +505,9 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
       targetTab: "progress",
       allowed: canCreate,
       blockedReason: !wadComplete
-        ? "WaD must be sealed before creating a PoD"
+        ? "Signed Deal must be sealed before creating a PoD"
         : !wad
-          ? "No WaD record found"
+          ? "No Signed Deal record found"
           : null,
       requiredRole: "org_admin",
       stage: "pod",
@@ -520,8 +520,8 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
       label: "Proof of Delivery (PoD)",
       status: canCreate ? "pending" : "not_started",
       detail: canCreate
-        ? "Ready to create - WaD is sealed"
-        : "Waiting for WaD to be sealed",
+        ? "Ready to create — Signed Deal is sealed"
+        : "Waiting for Signed Deal to be sealed",
       substeps,
       actions,
       completionPct: wadComplete ? 10 : 0,
@@ -538,7 +538,7 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
   const openBreaches = breaches.filter(b => !["resolved", "remediated", "dismissed"].includes(b.status));
 
   substeps.push(
-    { label: "WaD sealed", done: true },
+    { label: "Signed Deal sealed", done: true },
     { label: "PoD record created", done: true },
     {
       label: `Milestones: ${completedMs.length}/${milestones.length} complete`,
