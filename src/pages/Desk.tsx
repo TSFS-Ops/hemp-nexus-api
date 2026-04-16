@@ -14,6 +14,7 @@ import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
 import { DiscoverCounterparties } from "@/components/desk/discover/DiscoverCounterparties";
 import { InboundReview } from "@/components/desk/inbound/InboundReview";
+import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -106,6 +107,7 @@ export default function Desk() {
             </DeskFullBleed>
           }
         />
+        <Route path="evidence/:id" element={<EvidencePackView />} />
 
         {/* Standard padded Desk surfaces */}
         <Route
