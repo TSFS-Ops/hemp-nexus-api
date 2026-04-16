@@ -26,6 +26,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const Unsubscribe = lazy(() => import("@/pages/Unsubscribe"));
 const DeveloperApiKeys = lazy(() => import("@/pages/DeveloperApiKeys"));
 const DeveloperWebhooks = lazy(() => import("@/pages/DeveloperWebhooks"));
+const GovernorTriage = lazy(() => import("@/pages/GovernorTriage"));
 
 /**
  * Root element that renders based on host type:
@@ -68,6 +69,7 @@ function App() {
                   <Route path="/developers/keys" element={<DeveloperApiKeys />} />
                   <Route path="/developers/webhooks" element={<DeveloperWebhooks />} />
                   <Route path="/developers" element={<Navigate to="/developers/keys" replace />} />
+                  <Route path="/governor" element={<GovernorTriage />} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
