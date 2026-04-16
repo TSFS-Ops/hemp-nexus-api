@@ -29,37 +29,24 @@ Deno.serve(async (req) => {
 
   try {
     // SECURITY: Verify internal cron authentication.
-    // pg_cron sends the anon key as Bearer. We validate by decoding the JWT
-    // and confirming it was issued by our Supabase instance.
+    // pg_cron's net.http_post sends the anon key as Bearer token.
     const authHeader = req.headers.get("authorization") || "";
     const bearer = authHeader.replace("Bearer ", "");
     const cronKey = Deno.env.get("INTERNAL_CRON_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
     let isAuthorised = false;
 
-    // Check explicit keys first
-    if (cronKey && bearer === cronKey) isAuthorised = true;
+    // Direct key comparison — covers cron (anon), service-role, and explicit cron key
+    if (anonKey && bearer === anonKey) isAuthorised = true;
     if (serviceRoleKey && bearer === serviceRoleKey) isAuthorised = true;
-    if (req.headers.get("x-internal-key") === cronKey && cronKey) isAuthorised = true;
-    if (req.headers.get("x-internal-key") === serviceRoleKey && serviceRoleKey) isAuthorised = true;
-
-    // Fallback: verify the bearer is a valid Supabase-issued JWT (anon or service role)
-    if (!isAuthorised && bearer) {
-      try {
-        const [, payloadB64] = bearer.split(".");
-        if (payloadB64) {
-          const payload = JSON.parse(atob(payloadB64));
-          const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-          const expectedRef = supabaseUrl.match(/https:\/\/([^.]+)/)?.[1];
-          if (payload.iss === "supabase" && payload.ref === expectedRef && (payload.role === "anon" || payload.role === "service_role")) {
-            isAuthorised = true;
-          }
-        }
-      } catch { /* invalid JWT — not authorised */ }
-    }
+    if (cronKey && bearer === cronKey) isAuthorised = true;
+    if (cronKey && req.headers.get("x-internal-key") === cronKey) isAuthorised = true;
+    if (serviceRoleKey && req.headers.get("x-internal-key") === serviceRoleKey) isAuthorised = true;
 
     if (!isAuthorised) {
+      console.error("Auth failed. Bearer present:", !!bearer, "Anon key present:", !!anonKey, "Service key present:", !!serviceRoleKey);
       throw new ApiException("UNAUTHORIZED", "Internal authentication required", 401);
     }
 
@@ -81,7 +68,7 @@ Deno.serve(async (req) => {
         )
       `)
       .lte("next_retry_at", now)
-      .lt("delivery_attempt", supabase.rpc("COALESCE", { column: "max_retries", default: 3 }))
+      .lt("delivery_attempt", 3)
       .eq("is_dead_letter", false)
       .eq("webhook_endpoints.status", "active")
       .limit(50);
