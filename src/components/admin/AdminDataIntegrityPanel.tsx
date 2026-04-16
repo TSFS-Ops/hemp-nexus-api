@@ -187,6 +187,10 @@ export function AdminDataIntegrityPanel() {
                     ))}
                   </TableBody>
                 </Table>
+                {(tokenIssues || []).length > 50 && (
+                  <p className="text-xs text-muted-foreground mt-2">Showing 50 of {(tokenIssues || []).length} records. Remaining {(tokenIssues || []).length - 50} not displayed.</p>
+                )}
+                </Table>
               )}
             </CardContent>
           </Card>
@@ -252,6 +256,10 @@ export function AdminDataIntegrityPanel() {
                       </TableRow>
                     ))}
                   </TableBody>
+                </Table>
+                {(stateIssues || []).length > 100 && (
+                  <p className="text-xs text-muted-foreground mt-2">Showing 100 of {(stateIssues || []).length} violations. Remaining {(stateIssues || []).length - 100} not displayed.</p>
+                )}
                 </Table>
               )}
             </CardContent>
