@@ -322,6 +322,27 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { ma
     && match.quantity_amount != null && match.quantity_amount > 0
     && match.price_amount != null && match.price_amount > 0;
 
+  // Sequential sub-tab navigation: Terms → Documents → Notes → POI
+  const subTabOrder = ["terms", "documents", "notes"] as const;
+  const currentSubIndex = subTabOrder.indexOf(subTab as any);
+  const isLastSubTab = currentSubIndex === subTabOrder.length - 1;
+
+  const handleNextSubTab = () => {
+    if (isLastSubTab && onProceedToPoi) {
+      onProceedToPoi();
+    } else if (currentSubIndex < subTabOrder.length - 1) {
+      setSubTab(subTabOrder[currentSubIndex + 1]);
+    }
+  };
+
+  // Label and description for the contextual next prompt
+  const nextLabel = isLastSubTab ? "Proceed to Proof of Intent" : `Next: ${subTab === "terms" ? "Documents" : "Notes"}`;
+  const nextDescription = isLastSubTab
+    ? "All required fields complete"
+    : subTab === "terms"
+      ? "Terms saved — review or attach supporting documents"
+      : "Documents reviewed — add any deal notes before proceeding";
+
   return (
     <div className="space-y-4">
       {/* Sub-navigation within the match step */}
@@ -352,15 +373,15 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { ma
         </TabsContent>
       </Tabs>
 
-      {/* Next-step prompt when all required fields are complete */}
-      {allComplete && onProceedToPoi && (
+      {/* Contextual next-step prompt — only when required commercial fields are complete */}
+      {allComplete && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-            <p className="text-sm font-medium text-foreground">All required fields complete</p>
+            <p className="text-sm font-medium text-foreground">{nextDescription}</p>
           </div>
-          <Button size="sm" onClick={onProceedToPoi} className="gap-1.5 shrink-0">
-            Proceed to Proof of Intent
+          <Button size="sm" onClick={handleNextSubTab} className="gap-1.5 shrink-0">
+            {nextLabel}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
