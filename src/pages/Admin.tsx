@@ -56,6 +56,7 @@ import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
+import { AdminDataIntegrityPanel } from "@/components/admin/AdminDataIntegrityPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -401,6 +402,7 @@ function AdminContent() {
               <Route path="/webhooks" element={<WebhooksSection />} />
               <Route path="/system-logs" element={<SystemLogsSection />} />
               <Route path="/health" element={<AdminHealthMonitor />} />
+              <Route path="/integrity" element={<IntegritySection />} />
               {/* GOVERNANCE */}
               <Route path="/data-governance" element={<DataGovernanceSection />} />
               <Route path="/programmes" element={<ProgrammesSection />} />
