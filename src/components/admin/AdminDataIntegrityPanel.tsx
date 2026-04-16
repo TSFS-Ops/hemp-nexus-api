@@ -240,6 +240,7 @@ export function AdminDataIntegrityPanel() {
               {stateLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : stateIssues?.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">All match states are consistent. No violations.</p>
               ) : (
+              <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -261,7 +262,7 @@ export function AdminDataIntegrityPanel() {
                 {(stateIssues || []).length > 100 && (
                   <p className="text-xs text-muted-foreground mt-2">Showing 100 of {(stateIssues || []).length} violations. Remaining {(stateIssues || []).length - 100} not displayed.</p>
                 )}
-                </Table>
+              </>
               )}
             </CardContent>
           </Card>
