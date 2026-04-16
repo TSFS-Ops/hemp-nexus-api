@@ -145,15 +145,7 @@ export default function Desk() {
                     />
                   }
                 />
-                <Route
-                  path="compliance"
-                  element={
-                    <DeskPlaceholder
-                      title="Compliance Profile"
-                      subtitle="Your KYB status, beneficial-ownership records, and sanctions clearance."
-                    />
-                  }
-                />
+                <Route path="compliance" element={<ComplianceProfile />} />
                 <Route
                   path="billing"
                   element={
