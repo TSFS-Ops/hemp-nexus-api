@@ -117,6 +117,10 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
       const allDisputes = (disputeRes.data as any[]) || [];
       const activeDisputes = allDisputes.filter((d: any) => d.status === "open" || d.status === "investigating").length;
 
+      // Engagement status
+      const engagementRecord = (engagementRes.data as any[])?.[0] || null;
+      const engagementStatus = engagementRecord?.engagement_status || null;
+
       return {
         match: {
           id: match.id,
@@ -150,6 +154,7 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
         disputes: { active: activeDisputes, total: allDisputes.length },
         userRole,
         userOrgId: orgId,
+        engagementStatus,
       };
     },
   });
