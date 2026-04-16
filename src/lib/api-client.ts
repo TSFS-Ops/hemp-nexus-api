@@ -51,10 +51,16 @@ export class ApiError extends Error {
 
     try {
       const body = await res.json();
-      if (body.error) message = body.error;
+      // Handle nested envelope: { error: { code, message } } (governance-docs style)
+      if (body.error && typeof body.error === 'object') {
+        message = body.error.message || body.error.code || JSON.stringify(body.error);
+        code = body.error.code;
+      } else if (body.error && typeof body.error === 'string') {
+        message = body.error;
+      }
       if (body.message) message = body.message;
-      code = body.code;
-      requestId = body.request_id;
+      if (body.code) code = body.code;
+      requestId = body.request_id || body.correlation_id;
     } catch {
       // body wasn't JSON – use statusText
     }
