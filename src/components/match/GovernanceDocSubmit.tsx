@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface GovernanceDocSubmitProps {
 }
 
 export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps) {
+  const queryClient = useQueryClient();
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [submitted, setSubmitted] = useState<GovernanceDoc[]>([]);
   const [selectedRegistryId, setSelectedRegistryId] = useState("");
@@ -141,7 +143,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     try {
       // 1. Upload file to storage
       const ext = selectedFile.name.split(".").pop() || "pdf";
-      storagePath = `governance/${orgId}/${matchId}/${crypto.randomUUID()}.${ext}`;
+      storagePath = `${orgId}/${matchId}/gov_${crypto.randomUUID()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
@@ -176,6 +178,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
+      queryClient.invalidateQueries({ queryKey: ["gov-doc-count", matchId] });
     } catch (err) {
       // Clean up orphaned file if upload succeeded but registration failed
       if (storagePath) {
@@ -235,9 +238,6 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {doc.governance_doc_registry?.mandatory_flag && (
-                    <Badge variant="outline" className="text-xs">Required</Badge>
-                  )}
                   <Badge variant={doc.status === "validated" ? "default" : "secondary"} className="text-xs">
                     {doc.status}
                   </Badge>
@@ -260,8 +260,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                   {availableRegistry.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.doc_type.replace(/_/g, " ")}
-                      {r.mandatory_flag ? " (Required)" : ""}
-                      {" - "}
+                      {" — "}
                       {r.jurisdiction_code}
                     </SelectItem>
                   ))}
