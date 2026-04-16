@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,11 +81,10 @@ export function AdminManualOverrides() {
           break;
         }
         case "rerun_screening": {
-          const { error } = await supabase.functions.invoke("dilisense-screen", {
+          await apiFetch("dilisense-screen", {
             method: "POST",
-            body: { entity_id: targetId.trim(), force: true },
+            body: JSON.stringify({ entity_id: targetId.trim(), force: true }),
           });
-          if (error) throw error;
           await supabase.from("admin_audit_logs").insert({
             admin_user_id: adminUserId,
             action: "rerun_screening",
@@ -96,11 +96,10 @@ export function AdminManualOverrides() {
           break;
         }
         case "regenerate_evidence": {
-          const { error } = await supabase.functions.invoke("evidence-pack", {
+          await apiFetch("evidence-pack", {
             method: "POST",
-            body: { match_id: targetId.trim(), force_regenerate: true },
+            body: JSON.stringify({ match_id: targetId.trim(), force_regenerate: true }),
           });
-          if (error) throw error;
           await supabase.from("admin_audit_logs").insert({
             admin_user_id: adminUserId,
             action: "regenerate_evidence_pack",

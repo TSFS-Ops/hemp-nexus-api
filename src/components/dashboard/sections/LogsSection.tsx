@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { Input } from "@/components/ui/input";
@@ -97,11 +98,11 @@ export function LogsSection() {
 
     setActivityLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("audit-logs", {
-       body: { limit: 100 }
+      const data = await apiFetch<{ items?: any[] }>("audit-logs", {
+        method: "POST",
+        body: JSON.stringify({ limit: 100 }),
       });
 
-      if (error) throw error;
       setActivityLogs(data?.items || []);
     } catch (error) {
       console.error("Failed to fetch activity logs:", error);

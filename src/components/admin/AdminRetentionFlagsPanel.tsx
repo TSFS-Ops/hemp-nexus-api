@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -221,11 +222,10 @@ export function AdminRetentionFlagsPanel() {
   const triggerArchival = async () => {
     setTriggeringArchive(true);
     try {
-      const { data, error: invokeErr } = await supabase.functions.invoke("cold-storage-archive", {
+      const data = await apiFetch<{ processed?: number; failed?: number }>("cold-storage-archive", {
         method: "POST",
       });
-      if (invokeErr) throw invokeErr;
-      const result = data as { processed?: number; failed?: number };
+      const result = data;
       toast.success(
         `Cold storage archival complete: ${result?.processed ?? 0} records archived, ${result?.failed ?? 0} failed`
       );

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -79,15 +80,11 @@ export function AuthorityBindDialog({ open, onOpenChange, companyEntity, onSucce
       if (type === "atb") body.method = method;
       if (type === "ubo") body.ownership_percentage = Number(ownershipPct);
 
-      const { data, error: fnError } = await supabase.functions.invoke("authority-bind", {
-        body,
+      const data = await apiFetch<any>("authority-bind", {
+        method: "POST",
         headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify(body),
       });
-
-      if (fnError) {
-        const msg = typeof fnError === "object" && "message" in fnError ? (fnError as any).message : String(fnError);
-        throw new Error(msg);
-      }
 
       if (data?.status === "ERROR") {
         throw new Error(data.message || data.error?.message || "Failed to create record");

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -77,17 +78,17 @@ export function AdminApiKeys() {
       // This ensures email access is always verified server-side
       let profileMap = new Map<string, { email: string }>();
       if (userIds.length > 0) {
-        const { data: profilesResponse, error: profilesError } = await supabase.functions.invoke(
+        const profilesResponse = await apiFetch<{ profiles: { id: string; email: string }[] }>(
           "admin-users",
           {
             method: "POST",
-            body: { action: "lookup_profiles", user_ids: userIds },
+            body: JSON.stringify({ action: "lookup_profiles", user_ids: userIds }),
           }
         );
 
-        if (!profilesError && profilesResponse?.profiles) {
+        if (profilesResponse?.profiles) {
           profileMap = new Map(
-            profilesResponse.profiles.map((p: { id: string; email: string }) => [p.id, { email: p.email }])
+            profilesResponse.profiles.map((p) => [p.id, { email: p.email }])
           );
         }
       }

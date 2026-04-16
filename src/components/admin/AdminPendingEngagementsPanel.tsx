@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -296,12 +297,9 @@ export function AdminPendingEngagementsPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-engagements", statusFilter, typeFilter],
     queryFn: async () => {
-      const { data: result, error } = await supabase.functions.invoke("poi-engagements", {
+      const result = await apiFetch<any>("poi-engagements", {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
-        body: null,
       });
-      if (error) throw error;
       return (result?.engagements as Engagement[]) || [];
     },
   });

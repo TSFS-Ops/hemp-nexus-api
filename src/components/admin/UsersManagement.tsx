@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,19 +63,10 @@ export default function UsersManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
 
-      const response = await supabase.functions.invoke("admin-users", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const response = await apiFetch<{ users: any[] }>("admin-users");
 
-      if (response.error) throw response.error;
-      
-      setUsers(response.data.users || []);
+      setUsers(response.users || []);
       setSelectedUserIds(new Set());
     } catch (error) {
       console.error("Error fetching users:", error);
