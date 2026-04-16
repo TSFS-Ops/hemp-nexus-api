@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         )
       `)
       .lte("next_retry_at", now)
-      .lt("delivery_attempt", supabase.rpc("COALESCE", { column: "max_retries", default: 3 }))
+      .lt("delivery_attempt", 3)
       .eq("is_dead_letter", false)
       .eq("webhook_endpoints.status", "active")
       .limit(50);
