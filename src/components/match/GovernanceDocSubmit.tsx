@@ -191,8 +191,6 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
 
   const submittedRegistryIds = new Set(submitted.map((d) => d.registry_id));
   const availableRegistry = registry.filter((r) => !submittedRegistryIds.has(r.id));
-  const mandatoryCount = registry.filter((r) => r.mandatory_flag).length;
-  const mandatorySubmitted = submitted.filter((d) => d.governance_doc_registry?.mandatory_flag).length;
 
   if (loading) {
     return (
