@@ -40,7 +40,7 @@ const STAGE_ICONS: Record<StageId, React.ReactNode> = {
 
 const STAGE_EXPLAINERS: Record<StageId, string> = {
   poi: "A Proof of Intent records both parties\u2019 confirmed interest in a trade. It is the first binding evidence step.",
-  wad: "Without a Doubt \u2014 a sealed, tamper-evident evidence bundle confirming the full trade trail. Not a contract, but a \u2018proof bundle\u2019.",
+  wad: "Without a Doubt (WaD) \u2014 a sealed, tamper-evident evidence bundle confirming the full trade trail. Not a contract, but a \u2018proof bundle\u2019.",
   pod: "Tracks fulfilment milestones after the deal is sealed. Each milestone must be completed in sequence.",
   evidence: "A cryptographically hashed archive of all documents, attestations, and audit records for this trade.",
 };
