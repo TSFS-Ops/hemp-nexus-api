@@ -148,64 +148,33 @@ Deno.serve(async (req: Request) => {
       }
 
       const burnAmount = (govDoc as any).governance_doc_registry?.fixed_token_burn_amount || 0;
+      const docType = (govDoc as any).governance_doc_registry?.doc_type || null;
 
-      // Token burn if required - uses atomic DB function to prevent race conditions
-      if (burnAmount > 0) {
-        // Idempotent burn check - skip if already burned for this doc
-        if (govDoc.token_burned) {
-          // Already burned - skip
-        } else {
-          const { data: burnResult, error: burnError } = await admin.rpc("atomic_token_burn", {
-            p_org_id: govDoc.org_id,
-            p_amount: burnAmount,
-            p_reason: "action:governance_burn",
-            p_reference_id: govDoc.id,
-          });
+      // Atomic validation: burn + status update + audit log in single DB transaction
+      const { data: validateResult, error: validateError } = await admin.rpc("atomic_validate_governance_doc", {
+        p_governance_doc_id: parsed.governance_doc_id,
+        p_org_id: govDoc.org_id,
+        p_burn_amount: burnAmount,
+        p_actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        p_doc_type: docType,
+      });
 
-          if (burnError) throw new ApiException("INTERNAL_ERROR", burnError.message, 500);
+      if (validateError) throw new ApiException("INTERNAL_ERROR", validateError.message, 500);
 
-          const result = burnResult as { success: boolean; current_balance?: number; balance_before?: number; balance_after?: number };
-          if (!result.success) {
-            throw new ApiException(
-              "INSUFFICIENT_TOKENS",
-              `Token burn requires ${burnAmount} tokens. Balance: ${result.current_balance || 0}`,
-              422
-            );
-          }
-
-          // Record token transaction in audit log
-          await admin.from("audit_logs").insert({
-            org_id: govDoc.org_id,
-            actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
-            action: "token.governance_burn",
-            entity_type: "governance_document",
-            entity_id: govDoc.id,
-            metadata: {
-              burn_amount: burnAmount,
-              balance_before: result.balance_before,
-              balance_after: result.balance_after,
-              doc_type: (govDoc as any).governance_doc_registry?.doc_type,
-              idempotency_key: `gov-burn-${govDoc.id}`,
-            },
-          });
-        }
+      const vResult = validateResult as { success: boolean; idempotent?: boolean; error?: string; message?: string; burn_amount?: number; balance_after?: number };
+      if (!vResult.success) {
+        const statusCode = vResult.error === "INSUFFICIENT_TOKENS" ? 422 : vResult.error === "NOT_FOUND" ? 404 : 500;
+        throw new ApiException(vResult.error || "INTERNAL_ERROR", vResult.message || "Validation failed", statusCode);
       }
 
-      // Mark as validated
-      const { data: updated, error } = await admin
+      // Fetch updated row for response
+      const { data: updated } = await admin
         .from("governance_documents")
-        .update({
-          status: "validated",
-          validated_at: new Date().toISOString(),
-          token_burned: burnAmount > 0,
-        })
-        .eq("id", parsed.governance_doc_id)
         .select()
+        .eq("id", parsed.governance_doc_id)
         .single();
 
-      if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
-
-      // Record event
+      // Record event (non-transactional but acceptable — doc is already validated)
       await admin.from("event_store").insert({
         org_id: govDoc.org_id,
         domain: "governance",
