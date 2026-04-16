@@ -1,0 +1,124 @@
+import { Routes, Route, useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
+import { RequireAuth } from "@/components/RequireAuth";
+import { DeskLayout } from "@/components/desk/DeskLayout";
+import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
+import { DealPipeline } from "@/components/desk/DealPipeline";
+
+function DeskOverview() {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      {/* Header */}
+      <header className="flex items-start justify-between gap-8 mb-12">
+        <div>
+          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+            Commercial Trading
+          </p>
+          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+            Your Deal Desk
+          </h1>
+        </div>
+        <button
+          onClick={() => navigate("/desk/new-trade")}
+          className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2} />
+          Start New Trade
+        </button>
+      </header>
+
+      <AttentionPipeline />
+      <DealPipeline />
+    </>
+  );
+}
+
+function DeskPlaceholder({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <>
+      <header className="mb-12">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+          Commercial Trading
+        </p>
+        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">{title}</h1>
+        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">{subtitle}</p>
+      </header>
+      <div className="bg-white rounded-md border border-slate-200 p-12 text-center">
+        <p className="text-sm text-slate-400 font-mono tracking-wide uppercase">
+          Coming soon
+        </p>
+        <p className="mt-3 text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+          This surface is being rebuilt as part of the Deal Desk greenfield programme.
+        </p>
+      </div>
+    </>
+  );
+}
+
+export default function Desk() {
+  return (
+    <RequireAuth>
+      <DeskLayout>
+        <Routes>
+          <Route index element={<DeskOverview />} />
+          <Route
+            path="discover"
+            element={
+              <DeskPlaceholder
+                title="Discover Counterparties"
+                subtitle="Search the verified institutional liquidity network. Filter by commodity, jurisdiction, and trade history."
+              />
+            }
+          />
+          <Route
+            path="deals"
+            element={
+              <DeskPlaceholder
+                title="My Deals"
+                subtitle="The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent."
+              />
+            }
+          />
+          <Route
+            path="deals/:matchId"
+            element={
+              <DeskPlaceholder
+                title="Deal Details"
+                subtitle="The 9-step Without-a-Doubt workflow for this trade."
+              />
+            }
+          />
+          <Route
+            path="compliance"
+            element={
+              <DeskPlaceholder
+                title="Compliance Profile"
+                subtitle="Your KYB status, beneficial-ownership records, and sanctions clearance."
+              />
+            }
+          />
+          <Route
+            path="billing"
+            element={
+              <DeskPlaceholder
+                title="Billing"
+                subtitle="Token balance, Proof-of-Intent burn history, and invoices."
+              />
+            }
+          />
+          <Route
+            path="new-trade"
+            element={
+              <DeskPlaceholder
+                title="Start New Trade"
+                subtitle="Capture commercial intent. The system will guide you through all 9 steps to a sealed Proof of Intent."
+              />
+            }
+          />
+        </Routes>
+      </DeskLayout>
+    </RequireAuth>
+  );
+}

@@ -29,6 +29,7 @@ const DeveloperWebhooks = lazy(() => import("@/pages/DeveloperWebhooks"));
 const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
 const Welcome = lazy(() => import("@/pages/Welcome"));
+const Desk = lazy(() => import("@/pages/Desk"));
 
 /**
  * Root element that renders based on host type:
@@ -64,6 +65,7 @@ function App() {
                   {/* Billing now nested under dashboard */}
                   <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
                   <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
+                  <Route path="/desk/*" element={<Desk />} />
                   <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
                   <Route path={ROUTES.DOCS} element={<Docs />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
