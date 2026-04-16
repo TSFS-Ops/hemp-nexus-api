@@ -198,7 +198,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
                 </Badge>
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Documentary and WaD rules will follow {existing.selected_jurisdiction} requirements.
+                Documentary and Signed Deal rules will follow {existing.selected_jurisdiction} requirements.
               </p>
             </div>
           </div>
@@ -223,7 +223,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
             <p className="text-sm font-medium text-amber-700">Manual Review Required</p>
             <p className="text-sm text-muted-foreground">{reason}</p>
             <p className="text-xs text-muted-foreground italic">
-              WaD creation is blocked until a governance officer resolves this. Contact compliance@izenzo.co.za.
+              Signed Deal creation is blocked until a governance officer resolves this. Contact compliance@izenzo.co.za.
             </p>
           </div>
         </CardContent>
@@ -263,7 +263,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
           Select Documentary Jurisdiction
         </CardTitle>
         <CardDescription>
-          Multiple jurisdiction signals detected. Choose the primary jurisdictional path for documentary and WaD purposes.
+          Multiple jurisdiction signals detected. Choose the primary jurisdictional path for documentary and Signed Deal purposes.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

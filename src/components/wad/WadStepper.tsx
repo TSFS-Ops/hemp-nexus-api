@@ -130,7 +130,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-muted-foreground">WaD ID</Label>
+                <Label className="text-muted-foreground">Signed Deal ID</Label>
                 <p className="font-mono text-sm">{wad.id}</p>
               </div>
               <div>
@@ -226,7 +226,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         return (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Both buyer and seller must attest before the WaD can be sealed.
+              Both buyer and seller must attest before the Signed Deal can be sealed.
             </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 border rounded-lg">
@@ -288,7 +288,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           return (
             <div className="text-center py-6">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <p className="font-medium">WaD has been sealed</p>
+              <p className="font-medium">Signed Deal has been sealed</p>
               <p className="text-sm text-muted-foreground">All attestations complete</p>
             </div>
           );
@@ -308,7 +308,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                   <Button onClick={handleSeal} disabled={sealing} className="w-full">
                     {sealing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     <Lock className="h-4 w-4 mr-2" />
-                    Seal WaD
+                    Seal Signed Deal
                   </Button>
                 </>
               )}
@@ -322,7 +322,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="font-medium">Attestation not available</p>
               <p className="text-sm text-muted-foreground">
-                Only buyer and seller signatories can attest on this WaD.
+                Only buyer and seller signatories can attest on this Signed Deal.
               </p>
             </div>
           );
@@ -376,7 +376,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="font-medium">Certificate not yet available</p>
               <p className="text-sm text-muted-foreground">
-                WaD must be sealed before certificate can be generated
+                Signed Deal must be sealed before the certificate can be generated
               </p>
             </div>
           );
@@ -386,7 +386,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           <div className="space-y-4">
             <div className="text-center py-4">
               <Lock className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <p className="font-medium text-lg">WaD Sealed</p>
+              <p className="font-medium text-lg">Signed Deal Sealed</p>
               <p className="text-sm text-muted-foreground">
                 Sealed on {wad.sealed_at ? new Date(wad.sealed_at).toLocaleString() : "N/A"}
               </p>
@@ -420,7 +420,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           <div>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              WaD (Signed Deal)
+              Signed Deal
             </CardTitle>
             <CardDescription>Sealed evidence bundle for POI</CardDescription>
           </div>

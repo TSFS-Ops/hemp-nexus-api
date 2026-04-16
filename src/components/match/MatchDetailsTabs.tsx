@@ -66,7 +66,7 @@ export function MatchDetailsTabs({ match, canConfirm, confirming, stateActionLoa
           </TabsTrigger>
           <TabsTrigger value="wad" className="flex items-center gap-1.5 min-w-[44px]">
             <Shield className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">WaD</span>
+            <span className="hidden sm:inline">Signed Deal</span>
           </TabsTrigger>
           <TabsTrigger value="disputes" className="flex items-center gap-1.5 min-w-[44px]">
             <ShieldAlert className="h-4 w-4 shrink-0" />
