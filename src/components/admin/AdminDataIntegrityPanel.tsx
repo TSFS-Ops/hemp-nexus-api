@@ -161,6 +161,7 @@ export function AdminDataIntegrityPanel() {
             </CardHeader>
             <CardContent>
               {tokenLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (
+                <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -190,7 +191,7 @@ export function AdminDataIntegrityPanel() {
                 {(tokenIssues || []).length > 50 && (
                   <p className="text-xs text-muted-foreground mt-2">Showing 50 of {(tokenIssues || []).length} records. Remaining {(tokenIssues || []).length - 50} not displayed.</p>
                 )}
-                </Table>
+                </>
               )}
             </CardContent>
           </Card>
