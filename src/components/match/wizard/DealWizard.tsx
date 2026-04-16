@@ -157,7 +157,12 @@ export function DealWizard({
   }, [steps]);
 
   const [activeStep, setActiveStep] = useState(() => {
-    // Start on the first incomplete, unlocked step — but only on mount
+    // Land on the Match step (1) whenever POI has not yet been generated, even if
+    // all commercial fields are already filled. This keeps the user inside Terms →
+    // Documents → Notes so they can naturally complete the optional sub-steps and
+    // explicitly opt-in to Proof of Intent via the in-page CTA — they should never
+    // be silently skipped past Documents and Notes.
+    if (!poiComplete) return 1;
     const first = steps.findIndex(s => !s.complete && !s.locked);
     return first >= 0 ? first : steps.length - 1;
   });
