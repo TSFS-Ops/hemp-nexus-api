@@ -227,7 +227,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
             {submitted.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
                 <div className="flex items-center gap-2">
-                  {doc.status === "validated" ? (
+                  {doc.status === "VALIDATED" ? (
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                   ) : (
                     <Clock className="h-4 w-4 text-yellow-500" />
@@ -237,7 +237,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={doc.status === "validated" ? "default" : "secondary"} className="text-xs">
+                  <Badge variant={doc.status === "VALIDATED" ? "default" : "secondary"} className="text-xs">
                     {doc.status}
                   </Badge>
                 </div>
