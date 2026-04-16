@@ -573,8 +573,9 @@ function ResetForm({
 }
 
 function VerificationPendingBlock({
-  email, onResend, loading, onBack,
-}: { email: string; onResend: () => void; loading: boolean; onBack: () => void }) {
+  email, onResend, loading, cooldown, onBack,
+}: { email: string; onResend: () => void; loading: boolean; cooldown: number; onBack: () => void }) {
+  const disabled = loading || cooldown > 0;
   return (
     <>
       <button
@@ -591,12 +592,21 @@ function VerificationPendingBlock({
       </div>
       <Button
         onClick={onResend}
-        disabled={loading}
+        disabled={disabled}
         variant="outline"
         className="w-full h-12 rounded-md border-slate-200 hover:bg-slate-50 shadow-none font-medium text-slate-900"
       >
-        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : "Resend verification email"}
+        {loading
+          ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+          : cooldown > 0
+            ? `Resend available in ${cooldown}s`
+            : "Resend verification email"}
       </Button>
+      {cooldown > 0 && (
+        <p className="mt-3 text-xs text-slate-400 text-center">
+          For security, verification emails are throttled. Check your inbox (and spam folder) while you wait.
+        </p>
+      )}
     </>
   );
 }
