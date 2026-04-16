@@ -36,8 +36,8 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
   const { data: completionInput, isLoading, error } = useQuery({
     queryKey: ["completion-tracker", matchId],
     queryFn: async (): Promise<CompletionInput> => {
-      // Parallel data fetch - scoped to this match and org
-      const [matchRes, wadRes, podRes, docsRes, disputeRes] = await Promise.all([
+      // Parallel data fetch - scoped to this match and org (includes engagement status)
+      const [matchRes, wadRes, podRes, docsRes, disputeRes, engagementRes] = await Promise.all([
         supabase.from("matches")
           .select("id, status, state, poi_state, org_id, buyer_org_id, seller_org_id, buyer_committed_at, seller_committed_at, counterparty_sighted_at, settled_at")
           .eq("id", matchId)
@@ -59,6 +59,12 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
         supabase.from("disputes")
           .select("id, status")
           .eq("match_id", matchId),
+        // Fetch engagement status for the hold-point gate
+        supabase.from("poi_engagements")
+          .select("engagement_status")
+          .eq("match_id", matchId)
+          .order("created_at", { ascending: false })
+          .limit(1),
       ]);
 
       // Guard: match must exist
@@ -111,6 +117,10 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
       const allDisputes = (disputeRes.data as any[]) || [];
       const activeDisputes = allDisputes.filter((d: any) => d.status === "open" || d.status === "investigating").length;
 
+      // Engagement status
+      const engagementRecord = (engagementRes.data as any[])?.[0] || null;
+      const engagementStatus = engagementRecord?.engagement_status || null;
+
       return {
         match: {
           id: match.id,
@@ -144,6 +154,7 @@ export function CompletionTracker({ matchId, orgId, onNavigateTab }: CompletionT
         disputes: { active: activeDisputes, total: allDisputes.length },
         userRole,
         userOrgId: orgId,
+        engagementStatus,
       };
     },
   });
