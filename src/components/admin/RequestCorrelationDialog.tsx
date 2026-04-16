@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { Input } from "@/components/ui/input";
