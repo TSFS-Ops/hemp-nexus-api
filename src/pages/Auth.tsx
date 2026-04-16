@@ -31,6 +31,14 @@ export default function Auth() {
   const [pageReady, setPageReady] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Tick down the resend cooldown each second
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
