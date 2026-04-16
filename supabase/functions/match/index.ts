@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
-      if (match.org_id !== authCtx.orgId) {
+      if (!isMatchParty(match, authCtx.orgId)) {
         throw new ApiException("FORBIDDEN", "You do not have permission to confirm intent for this match", 403);
       }
 
