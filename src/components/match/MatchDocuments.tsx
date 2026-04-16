@@ -344,15 +344,15 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         return;
       }
 
-      // Storage path format: <org_id>/poi/<match_id>/<doc_id>/<filename>
-      // First folder must be org_id to satisfy storage RLS policy
+      // Storage path format: <org_id>/<match_id>/poi/<doc_id>/<filename>
+      // First folder = org_id (RLS check), second folder = match_id (RLS cross-ref)
       const docId = crypto.randomUUID();
       // Sanitise filename in storage path to prevent path traversal
       const safeStorageName = selectedFile.name
         .replace(/[/\\:*?"<>|\x00-\x1f]/g, "_")
         .replace(/\.{2,}/g, "_")
         .slice(0, 255);
-      const storagePath = `${effectiveOrgId}/poi/${matchId}/${docId}/${safeStorageName}`;
+      const storagePath = `${effectiveOrgId}/${matchId}/poi/${docId}/${safeStorageName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
