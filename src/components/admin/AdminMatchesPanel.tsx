@@ -126,6 +126,13 @@ export function AdminMatchesPanel() {
         </div>
       </div>
 
+      {isTruncated && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Showing {ADMIN_MATCH_LIMIT} of {totalCount} matches. Use filters to narrow results.
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>All Matches</CardTitle>
