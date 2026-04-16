@@ -5,9 +5,11 @@ import { toast } from "sonner";
 
 interface LedgerEntry {
   id: string;
-  type: string;
-  amount: number;
-  balance_after: number;
+  endpoint: string | null;
+  action_type: string | null;
+  outcome: string | null;
+  tokens_burned: number;
+  remaining_balance: number;
   created_at: string;
 }
 
@@ -65,13 +67,13 @@ export function TokenBalanceTab() {
           .maybeSingle(),
         supabase
           .from("token_ledger")
-          .select("id, type, amount, balance_after, created_at")
+          .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
           .eq("org_id", profile.org_id)
           .order("created_at", { ascending: false })
           .limit(20),
       ]);
       setBalance(Number(walletRes.data?.balance ?? 0));
-      setLedger((ledgerRes.data ?? []) as LedgerEntry[]);
+      setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
       setLoading(false);
     })();
   }, [user]);
@@ -166,23 +168,28 @@ export function TokenBalanceTab() {
                 </tr>
               )}
               {ledger.map((row) => {
-                const isBurn = Number(row.amount) < 0 || row.type === "burn" || row.type === "debit";
+                const burned = Number(row.tokens_burned ?? 0);
+                const isBurn = burned > 0;
                 return (
                   <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 text-sm text-slate-500 font-mono">
                       {new Date(row.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900">
-                      {isBurn ? "Proof of Intent generated" : "Credits purchased"}
+                      {row.action_type === "purchase"
+                        ? "Credits purchased"
+                        : isBurn
+                          ? "Proof of Intent generated"
+                          : (row.action_type ?? "Activity")}
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-400 font-mono">
                       {row.id.slice(0, 8)}
                     </td>
                     <td className={["px-6 py-4 text-sm text-right font-mono", isBurn ? "text-rose-700" : "text-emerald-700"].join(" ")}>
-                      {isBurn ? "" : "+"}{Number(row.amount).toLocaleString()}
+                      {isBurn ? `-${burned}` : `+${burned || 0}`}
                     </td>
                     <td className="px-6 py-4 text-sm text-right font-mono text-slate-700">
-                      {Number(row.balance_after).toLocaleString()}
+                      {Number(row.remaining_balance ?? 0).toLocaleString()}
                     </td>
                   </tr>
                 );
