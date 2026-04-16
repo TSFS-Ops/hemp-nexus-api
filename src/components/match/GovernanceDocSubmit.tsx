@@ -212,15 +212,12 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
           Governance Documents
         </CardTitle>
         <CardDescription>
-          Submit required governance documents for this intent.
-          {mandatoryCount > 0 && (
-            <span className="block mt-1">
-              {mandatorySubmitted}/{mandatoryCount} mandatory documents submitted.
-            </span>
-          )}
+          Supporting documents strengthen your evidence bundle. Upload governance documents for this trade.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Evidence Strength Indicator */}
+        <EvidenceStrengthIndicator documentCount={submitted.length} />
         {/* Already submitted */}
         {submitted.length > 0 && (
           <div className="space-y-2">
