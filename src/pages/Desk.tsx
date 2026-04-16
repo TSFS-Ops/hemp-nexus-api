@@ -81,6 +81,14 @@ export default function Desk() {
       <Routes>
         {/* Full-bleed routes — no padded container */}
         <Route
+          path="match/active"
+          element={
+            <DeskFullBleed>
+              <SealedEngagement />
+            </DeskFullBleed>
+          }
+        />
+        <Route
           path="match/:matchId"
           element={
             <DeskFullBleed>
