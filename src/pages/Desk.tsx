@@ -4,6 +4,11 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { DeskLayout } from "@/components/desk/DeskLayout";
 import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
 import { DealPipeline } from "@/components/desk/DealPipeline";
+import { DeskSettingsLayout } from "@/components/desk/settings/DeskSettingsLayout";
+import { MyProfileTab } from "@/components/desk/settings/MyProfileTab";
+import { CompanyIdentityTab } from "@/components/desk/settings/CompanyIdentityTab";
+import { NotificationRulesTab } from "@/components/desk/settings/NotificationRulesTab";
+import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 
 function DeskOverview() {
   const navigate = useNavigate();
@@ -108,6 +113,12 @@ export default function Desk() {
               />
             }
           />
+          <Route path="settings" element={<DeskSettingsLayout />}>
+            <Route index element={<MyProfileTab />} />
+            <Route path="company" element={<CompanyIdentityTab />} />
+            <Route path="notifications" element={<NotificationRulesTab />} />
+            <Route path="balance" element={<TokenBalanceTab />} />
+          </Route>
           <Route
             path="new-trade"
             element={

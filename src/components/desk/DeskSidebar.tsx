@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Briefcase, Search, Files, ShieldCheck, Receipt, LogOut } from "lucide-react";
+import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const NAV = [
@@ -8,6 +8,7 @@ const NAV = [
   { to: "/desk/deals", label: "My Deals", icon: Files },
   { to: "/desk/compliance", label: "Compliance Profile", icon: ShieldCheck },
   { to: "/desk/billing", label: "Billing", icon: Receipt },
+  { to: "/desk/settings", label: "Settings & Identity", icon: Settings },
 ];
 
 export function DeskSidebar() {
