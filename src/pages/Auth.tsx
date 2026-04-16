@@ -229,13 +229,24 @@ export default function Auth() {
       toast.error("Enter your email first.");
       return;
     }
+    if (resendCooldown > 0) return;
     try {
       setLoading(true);
       const { error } = await supabase.auth.resend({ type: "signup", email });
       if (error) throw error;
       toast.success("Verification email sent.");
-    } catch {
-      toast.error("Failed to resend verification email.");
+      setResendCooldown(60);
+    } catch (err: any) {
+      const msg: string = err?.message ?? "";
+      // Supabase rate limit: "For security purposes, you can only request this after N seconds."
+      const match = msg.match(/after (\d+) seconds?/i);
+      if (match || err?.status === 429 || /rate.?limit/i.test(msg)) {
+        const wait = match ? parseInt(match[1], 10) : 30;
+        setResendCooldown(wait);
+        toast.error(`Please wait ${wait}s before requesting another email.`);
+      } else {
+        toast.error(msg || "Failed to resend verification email.");
+      }
     } finally {
       setLoading(false);
     }
