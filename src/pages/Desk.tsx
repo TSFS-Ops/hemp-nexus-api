@@ -12,6 +12,7 @@ import { NotificationRulesTab } from "@/components/desk/settings/NotificationRul
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
+import { DiscoverCounterparties } from "@/components/desk/discover/DiscoverCounterparties";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -104,15 +105,7 @@ export default function Desk() {
             <DeskLayout>
               <Routes>
                 <Route index element={<DeskOverview />} />
-                <Route
-                  path="discover"
-                  element={
-                    <DeskPlaceholder
-                      title="Discover Counterparties"
-                      subtitle="Search the verified institutional liquidity network. Filter by commodity, jurisdiction, and trade history."
-                    />
-                  }
-                />
+                <Route path="discover" element={<DiscoverCounterparties />} />
                 <Route
                   path="deals"
                   element={
