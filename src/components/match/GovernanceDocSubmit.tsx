@@ -182,7 +182,9 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     } catch (err) {
       // Clean up orphaned file if upload succeeded but registration failed
       if (storagePath) {
-        supabase.storage.from("match-documents").remove([storagePath]).catch(() => {});
+        supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
+          console.error("[GovernanceDocSubmit] Failed to clean up orphaned file:", storagePath, cleanupErr);
+        });
       }
       const msg = err instanceof Error ? err.message : "Failed to submit governance document";
       setError(msg);
