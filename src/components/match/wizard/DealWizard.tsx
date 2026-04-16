@@ -193,7 +193,7 @@ export function DealWizard({
         <StepSearch match={match} />
       )}
       {activeStep === 1 && (
-        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} />
+        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />
       )}
       {activeStep === 2 && (
         <div className="space-y-4">
