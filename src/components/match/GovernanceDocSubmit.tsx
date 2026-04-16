@@ -8,12 +8,12 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, FileCheck, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 
 interface RegistryEntry {
   id: string;
