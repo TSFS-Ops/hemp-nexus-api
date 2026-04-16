@@ -11,6 +11,7 @@ import { CompanyIdentityTab } from "@/components/desk/settings/CompanyIdentityTa
 import { NotificationRulesTab } from "@/components/desk/settings/NotificationRulesTab";
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
+import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,14 @@ export default function Desk() {
     <RequireAuth>
       <Routes>
         {/* Full-bleed routes — no padded container */}
+        <Route
+          path="match/active"
+          element={
+            <DeskFullBleed>
+              <SealedEngagement />
+            </DeskFullBleed>
+          }
+        />
         <Route
           path="match/:matchId"
           element={
