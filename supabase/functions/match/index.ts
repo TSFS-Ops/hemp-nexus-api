@@ -20,6 +20,13 @@ import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
 
+/** Check if the caller's org is a party to the match (creator, buyer, or seller). */
+function isMatchParty(match: { org_id: string; buyer_org_id?: string | null; seller_org_id?: string | null }, callerOrgId: string): boolean {
+  return match.org_id === callerOrgId
+    || match.buyer_org_id === callerOrgId
+    || match.seller_org_id === callerOrgId;
+}
+
 // Valid state transitions for transaction state machine
 const VALID_STATE_TRANSITIONS: Record<string, string[]> = {
   'discovery': ['intent_declared'],
