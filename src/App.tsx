@@ -69,6 +69,8 @@ function App() {
                   <Route path="/developers/keys" element={<DeveloperApiKeys />} />
                   <Route path="/developers/webhooks" element={<DeveloperWebhooks />} />
                   <Route path="/developers" element={<Navigate to="/developers/keys" replace />} />
+                  <Route path="/governance/triage" element={<GovernanceTriage />} />
+                  <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
