@@ -1,8 +1,9 @@
 /**
  * BillingOverview — Trade User credit vault & burn ledger.
  *
- * Editorial layout: typographic balance hero, three outline
- * purchase cards, and a high-density recent activity table.
+ * Editorial layout: typographic balance hero, three horizontal
+ * border-only top-up cards with dark-green Purchase CTAs, and a
+ * high-density Usage History audit log.
  */
 
 import { useEffect, useState } from "react";
@@ -25,6 +26,10 @@ const PACKS = [
   { credits: 50, price: "R450", unit: "R9.00 / credit", saving: "10% saving" },
   { credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
 ];
+
+// Dark institutional green — matches the "Sealed" tone used in compliance.
+const INK_GREEN = "hsl(155 35% 22%)";
+const INK_GREEN_HOVER = "hsl(155 35% 16%)";
 
 export function BillingOverview() {
   const { user } = useAuth();
@@ -68,7 +73,10 @@ export function BillingOverview() {
   };
 
   const displayBalance = balance ?? 0;
-  const zarValue = (displayBalance * 10).toLocaleString("en-ZA");
+  const zarValue = (displayBalance * 10).toLocaleString("en-ZA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   return (
     <>
@@ -93,94 +101,114 @@ export function BillingOverview() {
           </span>
           <span className="text-2xl text-slate-400 font-light">Credits</span>
         </div>
-        <p className="mt-6 font-mono text-sm text-slate-500">
-          Approx. R{zarValue} ZAR available for trade actions.
-        </p>
-        <p className="mt-2 font-mono text-[11px] text-slate-400">
-          1 credit = 1 Proof of Intent · Credits never expire
+        <p className="mt-6 font-mono text-sm text-slate-700 max-w-2xl">
+          R{zarValue} ZAR equivalent.
+          <span className="text-slate-500">
+            {" "}Credits are consumed atomically upon POI generation.
+          </span>
         </p>
       </section>
 
-      {/* ── TOP-UP GRID ───────────────────────────────────────── */}
+      {/* ── TOP-UP / PROVISIONING ─────────────────────────────── */}
       <section className="mb-20">
         <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-slate-200">
           <h2 className="text-sm font-medium tracking-wider uppercase text-slate-500">
-            Purchase Credits
+            Provisioning
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
-            ZAR · Inclusive
+            ZAR · VAT Inclusive
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div className="space-y-3">
           {PACKS.map((pack) => (
-            <button
+            <div
               key={pack.credits}
-              onClick={() => handlePurchase(pack.credits)}
-              className="group text-left border border-slate-300 rounded-sm p-8 hover:border-slate-900 transition-colors flex flex-col"
+              className="grid grid-cols-12 gap-6 items-center bg-white border border-slate-200 rounded-sm px-6 py-5 hover:border-slate-400 transition-colors"
             >
-              <div className="flex items-baseline justify-between mb-8">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
-                  Pack
+              {/* Credits column */}
+              <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
+                <span className="font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+                  {pack.credits}
+                </span>
+                <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                  Credits
+                </span>
+              </div>
+
+              {/* Price column */}
+              <div className="col-span-6 sm:col-span-3">
+                <p className="font-mono text-base text-slate-900 tabular-nums">
+                  {pack.price}
                 </p>
-                {pack.saving && (
-                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] text-slate-500 mt-0.5">
+                  {pack.unit}
+                </p>
+              </div>
+
+              {/* Saving badge column */}
+              <div className="col-span-6 sm:col-span-3">
+                {pack.saving ? (
+                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600 border border-slate-200 px-2 py-1 rounded-sm">
                     {pack.saving}
-                  </p>
+                  </span>
+                ) : (
+                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+                    Standard rate
+                  </span>
                 )}
               </div>
 
-              <p className="font-semibold text-slate-900 tracking-tight tabular-nums text-4xl">
-                {pack.credits}
-              </p>
-              <p className="mt-1 font-mono text-[11px] tracking-[0.2em] uppercase text-slate-500">
-                Credits
-              </p>
-
-              <div className="mt-8 pt-6 border-t border-slate-100 flex items-baseline justify-between">
-                <span className="font-mono text-xl text-slate-900 tabular-nums">
-                  {pack.price}
-                </span>
-                <span className="font-mono text-[10px] text-slate-500">
-                  {pack.unit}
-                </span>
+              {/* Action column */}
+              <div className="col-span-12 sm:col-span-3 sm:text-right">
+                <button
+                  type="button"
+                  onClick={() => handlePurchase(pack.credits)}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto"
+                  style={{ backgroundColor: INK_GREEN }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = INK_GREEN;
+                  }}
+                >
+                  Purchase
+                </button>
               </div>
-
-              <span className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.2em] uppercase text-slate-500 group-hover:text-slate-900 transition-colors">
-                Purchase →
-              </span>
-            </button>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* ── BURN LEDGER ───────────────────────────────────────── */}
+      {/* ── USAGE HISTORY ─────────────────────────────────────── */}
       <section>
         <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-slate-200">
           <h2 className="text-sm font-medium tracking-wider uppercase text-slate-500">
-            Recent Activity
+            Usage History
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
             Append-only · Cryptographically chained
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-white border border-slate-200 rounded-sm">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left py-3 pr-6 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50/60">
+                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
                   Date
                 </th>
-                <th className="text-left py-3 pr-6 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
                   Action
                 </th>
-                <th className="text-left py-3 pr-6 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
                   Reference ID
                 </th>
-                <th className="text-right py-3 pr-6 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-right px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
                   Amount
                 </th>
-                <th className="text-right py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-right px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
                   Balance
                 </th>
               </tr>
@@ -210,17 +238,17 @@ export function BillingOverview() {
                 const isBurn = burned > 0;
                 const isPurchase = row.action_type === "purchase";
                 const action = isPurchase
-                  ? "Credits purchased"
+                  ? "Credits Purchased"
                   : isBurn
-                    ? "Proof of Intent generated"
+                    ? "POI Generated"
                     : (row.action_type ?? "Activity");
 
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+                    className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors"
                   >
-                    <td className="py-4 pr-6 font-mono text-[12px] text-slate-500 whitespace-nowrap">
+                    <td className="px-5 py-3.5 font-mono text-[12px] text-slate-500 whitespace-nowrap tabular-nums">
                       {new Date(row.created_at).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
@@ -232,25 +260,25 @@ export function BillingOverview() {
                         minute: "2-digit",
                       })}
                     </td>
-                    <td className="py-4 pr-6 text-sm text-slate-900">
-                      {action}
-                    </td>
-                    <td className="py-4 pr-6 font-mono text-[11px] text-slate-500">
-                      {row.id.slice(0, 8).toUpperCase()}
-                      <span className="text-slate-300">…</span>
-                      {row.id.slice(-4).toUpperCase()}
+                    <td className="px-5 py-3.5 text-sm text-slate-900">{action}</td>
+                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-600">
+                      {row.id}
                     </td>
                     <td
-                      className={`py-4 pr-6 text-right font-mono text-sm tabular-nums ${
-                        isBurn ? "text-slate-900" : "text-emerald-700"
-                      }`}
+                      className="px-5 py-3.5 text-right font-mono text-sm tabular-nums font-medium"
+                      style={{
+                        color: isBurn ? "hsl(0 65% 38%)" : "hsl(155 45% 28%)",
+                      }}
                     >
                       {isBurn ? `−${burned}` : `+${burned || 0}`}
-                      <span className="text-slate-400 ml-1 text-[11px]">
+                      <span
+                        className="ml-1 text-[11px] font-normal"
+                        style={{ color: "hsl(215 16% 55%)" }}
+                      >
                         {Math.abs(burned) === 1 ? "Credit" : "Credits"}
                       </span>
                     </td>
-                    <td className="py-4 text-right font-mono text-sm text-slate-500 tabular-nums">
+                    <td className="px-5 py-3.5 text-right font-mono text-sm text-slate-500 tabular-nums">
                       {Number(row.remaining_balance ?? 0).toLocaleString()}
                     </td>
                   </tr>
