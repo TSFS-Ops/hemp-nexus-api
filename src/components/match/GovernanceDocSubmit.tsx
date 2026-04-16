@@ -58,6 +58,33 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
   const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"];
   const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
+  const DRAFT_KEY = `gov-doc-draft:${matchId}`;
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.selectedRegistryId) setSelectedRegistryId(draft.selectedRegistryId);
+      }
+    } catch { /* ignore corrupt localStorage */ }
+  }, [DRAFT_KEY]);
+
+  // Emergency-save on session expiry
+  useEffect(() => {
+    const handler = () => {
+      if (selectedRegistryId) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedRegistryId }));
+      }
+    };
+    window.addEventListener("izenzo:session-expiry", handler);
+    return () => window.removeEventListener("izenzo:session-expiry", handler);
+  }, [selectedRegistryId, DRAFT_KEY]);
+
+  // Clear draft after successful submit
+  const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
+
   useEffect(() => {
     loadData();
   }, [matchId, orgId]);
@@ -173,6 +200,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       toast.success("Governance document uploaded and submitted for review");
       setSelectedRegistryId("");
       setSelectedFile(null);
+      clearDraft();
       if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
       queryClient.invalidateQueries({ queryKey: ["gov-doc-count", matchId] });

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Download, RefreshCw } from "lucide-react";
+import { Search, Eye, Download, RefreshCw, AlertTriangle } from "lucide-react";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { EmptyState } from "@/components/ui/error-state";
 import * as MatchState from "@/lib/match-state";
@@ -125,6 +125,13 @@ export function AdminMatchesPanel() {
           </Button>
         </div>
       </div>
+
+      {isTruncated && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Showing {ADMIN_MATCH_LIMIT} of {totalCount} matches. Use filters to narrow results.
+        </div>
+      )}
 
       <Card>
         <CardHeader>

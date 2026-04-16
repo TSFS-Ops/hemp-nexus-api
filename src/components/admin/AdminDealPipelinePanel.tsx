@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, ArrowRight, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Loader2, RefreshCw, ArrowRight, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface PipelineOrg {
@@ -49,6 +49,7 @@ function StageIndicator({ passed, label }: { passed: boolean | null; label: stri
 export function AdminDealPipelinePanel() {
   const [pipelines, setPipelines] = useState<PipelineOrg[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLimitHit, setDataLimitHit] = useState(false);
 
   const fetchPipeline = async () => {
     setLoading(true);
@@ -67,6 +68,13 @@ export function AdminDealPipelinePanel() {
         supabase.from("collapse_ledger").select("org_id, id").limit(2000),
         supabase.from("matches").select("org_id, poi_state").limit(2000),
       ]);
+
+      // Detect if any query hit its limit (data may be incomplete)
+      const DATA_LIMIT = 2000;
+      const anyLimitHit = [entitiesRes, uboRes, atbRes, collapseRes, matchesRes]
+        .some(r => (r.data?.length ?? 0) >= DATA_LIMIT)
+        || [ddRes, approvalsRes].some(r => (r.data?.length ?? 0) >= 1000);
+      setDataLimitHit(anyLimitHit);
 
       // Build lookup maps
       const entityCounts = new Map<string, number>();
@@ -179,6 +187,13 @@ export function AdminDealPipelinePanel() {
           <RefreshCw className="h-4 w-4 mr-2" /> Refresh
         </Button>
       </div>
+
+      {dataLimitHit && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Some data queries reached their limit. Pipeline counts may be incomplete for large datasets.
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <Card>
