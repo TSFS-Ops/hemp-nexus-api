@@ -573,7 +573,7 @@ Deno.serve(async (req) => {
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
-      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      if (!isMatchParty(match, authCtx.orgId)) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // UNILATERAL GUARD: Cannot reveal counterparty if one side is missing
       if (match.match_type === "unilateral" && (match.buyer_id == null || match.seller_id == null)) {
@@ -687,7 +687,7 @@ Deno.serve(async (req) => {
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
-      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      if (!isMatchParty(match, authCtx.orgId)) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // Flat 1-credit cost for commit (R10 pricing model)
       const commitCost = ACTION_TOKEN_COSTS.buyer_commit;
@@ -789,7 +789,7 @@ Deno.serve(async (req) => {
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
-      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      if (!isMatchParty(match, authCtx.orgId)) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // ── WaD GATE: require a sealed WaD before allowing completion ──
       const { data: sealedWad, error: wadError } = await supabase
@@ -908,7 +908,7 @@ Deno.serve(async (req) => {
       }
 
       // Verify match belongs to authenticated user's organisation
-      if (match.org_id !== authCtx.orgId) {
+      if (!isMatchParty(match, authCtx.orgId)) {
         throw new ApiException(
           "FORBIDDEN", 
           "You do not have permission to access this match", 
