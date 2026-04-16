@@ -178,6 +178,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
+      queryClient.invalidateQueries({ queryKey: ["gov-doc-count", matchId] });
     } catch (err) {
       // Clean up orphaned file if upload succeeded but registration failed
       if (storagePath) {
