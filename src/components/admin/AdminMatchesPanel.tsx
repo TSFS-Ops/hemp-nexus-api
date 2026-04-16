@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Download, RefreshCw } from "lucide-react";
+import { Search, Eye, Download, RefreshCw, AlertTriangle } from "lucide-react";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { EmptyState } from "@/components/ui/error-state";
 import * as MatchState from "@/lib/match-state";

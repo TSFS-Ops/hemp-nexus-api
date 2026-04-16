@@ -200,6 +200,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       toast.success("Governance document uploaded and submitted for review");
       setSelectedRegistryId("");
       setSelectedFile(null);
+      clearDraft();
       if (fileInputRef.current) fileInputRef.current.value = "";
       loadData();
       queryClient.invalidateQueries({ queryKey: ["gov-doc-count", matchId] });
