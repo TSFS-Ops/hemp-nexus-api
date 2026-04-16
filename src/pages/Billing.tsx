@@ -91,17 +91,10 @@ function BillingContent() {
       // Verify the transaction - it may have succeeded even without status=success
       (async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
+          const data = await apiFetch<any>("token-purchase/verify", {
             method: "POST",
-            body: { reference },
+            body: JSON.stringify({ reference }),
           });
-          if (error) {
-            toast.info(
-              "We couldn't confirm your payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference.",
-              { duration: 10000 }
-            );
-            return;
-          }
           if (data?.success) {
             if (data.alreadyCredited) {
               toast.success("Credits already applied to your account.");
@@ -141,17 +134,10 @@ function BillingContent() {
       verifyAttempted.current = true;
       (async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("token-purchase/verify", {
+          const data = await apiFetch<any>("token-purchase/verify", {
             method: "POST",
-            body: { reference },
+            body: JSON.stringify({ reference }),
           });
-          if (error) {
-            console.error("Verify error:", error);
-            toast.error(
-              "Could not verify payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference."
-            );
-            return;
-          }
           if (data?.success) {
             if (data.alreadyCredited) {
               toast.success("Credits already applied to your account.");
