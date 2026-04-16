@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
+import { apiFetch } from "@/lib/api-client";
 
 interface RegistryEntry {
   id: string;
@@ -64,18 +65,13 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load registry entries and already-submitted docs in parallel
-      const [regRes, docsRes] = await Promise.all([
-        supabase
-          .from("governance_doc_registry")
-          .select("id, doc_type, category, mandatory_flag, jurisdiction_code")
-          .eq("active", true)
-          .eq("org_id", orgId)
-          .order("category"),
-        supabase.functions.invoke(`governance-docs?deal_reference_id=${matchId}`, {
-          method: "GET",
-        }),
-      ]);
+      // Load registry entries
+      const regRes = await supabase
+        .from("governance_doc_registry")
+        .select("id, doc_type, category, mandatory_flag, jurisdiction_code")
+        .eq("active", true)
+        .eq("org_id", orgId)
+        .order("category");
 
       // Registry may be org-scoped, fallback to loading all
       let regData = regRes.data || [];
@@ -89,7 +85,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         regData = allReg || [];
       }
 
-      // Deduplicate by doc_type (registry may have multiple entries per org)
+      // Deduplicate by doc_type
       const seen = new Set<string>();
       const dedupedRegistry = regData.filter((r) => {
         if (seen.has(r.doc_type)) return false;
@@ -98,11 +94,20 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       });
       setRegistry(dedupedRegistry);
 
-      // Parse submitted docs from edge function response
-      if (docsRes.data?.data) {
-        setSubmitted(docsRes.data.data);
-      } else if (Array.isArray(docsRes.data)) {
-        setSubmitted(docsRes.data);
+      // Load submitted governance docs via apiFetch (proper error handling)
+      try {
+        const docsResponse = await apiFetch<{ status: string; data: GovernanceDoc[] }>(
+          `governance-docs?deal_reference_id=${matchId}`,
+          { method: "GET" }
+        );
+        if (docsResponse?.data) {
+          setSubmitted(docsResponse.data);
+        } else if (Array.isArray(docsResponse)) {
+          setSubmitted(docsResponse as unknown as GovernanceDoc[]);
+        }
+      } catch (docsErr) {
+        console.error("Error loading submitted governance docs:", docsErr);
+        // Don't block the whole form if loading submitted docs fails
       }
     } catch (err) {
       console.error("Error loading governance data:", err);
@@ -154,24 +159,16 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
 
       if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
-      // 2. Register governance doc with file path
-      const { data, error: fnError } = await supabase.functions.invoke("governance-docs", {
-        body: {
+      // 2. Register governance doc via apiFetch (proper error surfacing)
+      await apiFetch("governance-docs", {
+        method: "POST",
+        body: JSON.stringify({
           registry_id: selectedRegistryId,
           deal_reference_id: matchId,
           deal_reference_type: "poi",
           document_path: storagePath,
-        },
+        }),
       });
-
-      if (fnError) {
-        const msg = typeof fnError === "object" && "message" in fnError ? (fnError as any).message : String(fnError);
-        throw new Error(msg);
-      }
-
-      if (data?.status === "ERROR") {
-        throw new Error(data.error?.message || "Submission failed");
-      }
 
       toast.success("Governance document uploaded and submitted for review");
       setSelectedRegistryId("");
