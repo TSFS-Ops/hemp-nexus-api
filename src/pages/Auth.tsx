@@ -56,8 +56,8 @@ export default function Auth() {
       if (persona === "developer") return "/developers/keys";
       if (persona === "governance") return "/governance/triage";
       // trade
-      if (hasPreAuthState()) return "/dashboard/search?resume=1";
-      return "/dashboard";
+      if (hasPreAuthState()) return "/desk?resume=1";
+      return "/desk";
     } catch {
       return "/welcome";
     }
