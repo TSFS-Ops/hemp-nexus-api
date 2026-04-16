@@ -1,12 +1,12 @@
 /**
  * MatchCompiler — Split-screen Deal Editor + WaD Certificate preview.
  *
- * Left pane: scrollable, editorial inputs with bottom-border-only fields.
+ * Left pane: scrollable, step-numbered editorial inputs.
  * Right pane: sticky, monospace-heavy Certificate of Intent that mirrors
  * the user's inputs in real time. Pure presentational mockup — no mutations.
  */
 
-import { useMemo, useState, useRef, ChangeEvent, DragEvent } from "react";
+import { useMemo, useState, useRef, ChangeEvent, DragEvent, ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, UploadCloud, FileText, X } from "lucide-react";
 
@@ -40,19 +40,20 @@ export function MatchCompiler() {
   const [price, setPrice] = useState("");
   const [incoterms, setIncoterms] = useState("");
   const [counterparty, setCounterparty] = useState("");
+  const [notes, setNotes] = useState("");
   const [docs, setDocs] = useState<AttachedDoc[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const matchRef = useMemo(
-    () => (matchId ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000"),
+    () => (matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000"),
     [matchId]
   );
 
   const certSeal = useMemo(() => {
-    const payload = [commodity, volume, price, incoterms, counterparty, ...docs.map((d) => d.hash)].join("|");
+    const payload = [commodity, volume, price, incoterms, counterparty, notes, ...docs.map((d) => d.hash)].join("|");
     return payload.trim().length > 0 ? mockSha256(payload) : null;
-  }, [commodity, volume, price, incoterms, counterparty, docs]);
+  }, [commodity, volume, price, incoterms, counterparty, notes, docs]);
 
   function handleFiles(files: FileList | null) {
     if (!files) return;
@@ -73,168 +74,198 @@ export function MatchCompiler() {
   return (
     <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
       {/* ── LEFT PANE: Deal Editor ─────────────────────────────── */}
-      <section className="w-1/2 overflow-y-auto border-r border-slate-200 bg-white">
-        <div className="p-12 pb-40 max-w-2xl">
-          <Link
-            to="/desk"
-            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors mb-10"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
-            Back to Pipeline
-          </Link>
-
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
-            Match · {matchRef}
-          </p>
-          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
-            Draft Commercial Terms
-          </h1>
-          <p className="mt-5 text-base text-slate-500 leading-relaxed max-w-lg">
-            Structure the trade. Each field below is mirrored in the Certificate of Intent
-            to your right and sealed when you generate the Proof.
-          </p>
-
-          {/* ── Inputs ───────────────────────────────────────────── */}
-          <div className="mt-16 space-y-10">
-            <EditorField
-              label="Counterparty"
-              hint="The legal entity you intend to trade with."
-              value={counterparty}
-              onChange={setCounterparty}
-              placeholder="e.g. Aurubis AG"
-            />
-            <EditorField
-              label="Commodity"
-              hint="Specific grade or product description."
-              value={commodity}
-              onChange={setCommodity}
-              placeholder="e.g. Copper Cathode, LME Grade A"
-            />
-            <div className="grid grid-cols-2 gap-10">
-              <EditorField
-                label="Volume (MT)"
-                hint="Metric tonnes."
-                value={volume}
-                onChange={setVolume}
-                placeholder="500"
-                mono
-              />
-              <EditorField
-                label="Price (USD)"
-                hint="Per metric tonne."
-                value={price}
-                onChange={setPrice}
-                placeholder="9,420"
-                mono
-              />
-            </div>
-            <EditorField
-              label="Delivery Incoterms"
-              hint="Incoterms 2020 — e.g. FOB, CIF, DAP."
-              value={incoterms}
-              onChange={setIncoterms}
-              placeholder="CIF Rotterdam"
-            />
-          </div>
-
-          {/* ── Document Upload ──────────────────────────────────── */}
-          <div className="mt-16">
-            <label className="block text-xs font-mono tracking-[0.2em] uppercase text-slate-500 mb-4">
-              Supporting Documents
-            </label>
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`cursor-pointer rounded-md border border-dashed p-10 text-center transition-colors ${
-                dragOver
-                  ? "border-primary bg-primary/5"
-                  : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-white"
-              }`}
+      <section className="w-1/2 flex flex-col border-r border-slate-200 bg-white">
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-12 pb-16 max-w-2xl">
+            <Link
+              to="/desk"
+              className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-10"
             >
-              <UploadCloud className="h-6 w-6 mx-auto text-slate-400" strokeWidth={1.5} />
-              <p className="mt-4 text-sm text-slate-600 font-medium">
-                Drag and drop supporting documents
-              </p>
-              <p className="mt-1 text-xs text-slate-400">PDF, DOCX · Each file is hashed on attach</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept=".pdf,.docx,.doc"
-                className="hidden"
-                onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
-              />
-            </div>
+              <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
+              Back to Pipeline
+            </Link>
 
-            {docs.length > 0 && (
-              <ul className="mt-6 space-y-3">
-                {docs.map((d, i) => (
-                  <li
-                    key={`${d.name}-${i}`}
-                    className="flex items-center gap-4 rounded-md border border-slate-200 bg-white px-4 py-3"
-                  >
-                    <FileText className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={1.5} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-900 truncate">{d.name}</p>
-                      <p className="font-mono text-[11px] text-slate-400 truncate">
-                        sha256:{shortHash(d.hash)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDocs((prev) => prev.filter((_, idx) => idx !== i));
-                      }}
-                      className="text-slate-400 hover:text-slate-900 transition-colors"
-                      aria-label={`Remove ${d.name}`}
+            <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+              Match · {matchRef}
+            </p>
+            <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+              Draft Commercial Terms
+            </h1>
+            <p className="mt-5 text-base text-slate-600 leading-relaxed max-w-lg">
+              Structure the trade in three steps. Each entry is mirrored in the Certificate of
+              Intent to your right and sealed when you generate the Proof.
+            </p>
+
+            {/* ── STEP 1: Commercial Terms ──────────────────────── */}
+            <StepSection
+              number={1}
+              title="Commercial Terms"
+              description="The core economic shape of the trade."
+            >
+              <EditorField
+                label="Counterparty"
+                hint="Must exactly match the verified legal entity name."
+                value={counterparty}
+                onChange={setCounterparty}
+                placeholder="e.g. Aurubis AG"
+              />
+              <EditorField
+                label="Commodity"
+                hint="Specific grade or product description, including quality spec."
+                value={commodity}
+                onChange={setCommodity}
+                placeholder="e.g. Copper Cathode, LME Grade A"
+              />
+              <div className="grid grid-cols-2 gap-10">
+                <EditorField
+                  label="Volume (MT)"
+                  hint="Metric tonnes. Numeric only."
+                  value={volume}
+                  onChange={setVolume}
+                  placeholder="500"
+                  mono
+                />
+                <EditorField
+                  label="Price (USD / MT)"
+                  hint="Unit price per metric tonne."
+                  value={price}
+                  onChange={setPrice}
+                  placeholder="9,420"
+                  mono
+                />
+              </div>
+              <EditorField
+                label="Delivery Incoterms"
+                hint="Incoterms 2020 standard — e.g. FOB, CIF, DAP, with named port."
+                value={incoterms}
+                onChange={setIncoterms}
+                placeholder="CIF Rotterdam"
+              />
+            </StepSection>
+
+            {/* ── STEP 2: Supporting Documents ──────────────────── */}
+            <StepSection
+              number={2}
+              title="Supporting Documents"
+              description="Attach evidence — each file is hashed on attach and bound to the certificate."
+            >
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`cursor-pointer rounded-md border border-dashed p-10 text-center transition-colors ${
+                  dragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-white"
+                }`}
+              >
+                <UploadCloud className="h-6 w-6 mx-auto text-slate-500" strokeWidth={1.5} />
+                <p className="mt-4 text-sm text-slate-700 font-medium">
+                  Drag and drop supporting documents
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  PDF, DOCX · Each file is hashed on attach
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.docx,.doc"
+                  className="hidden"
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
+                />
+              </div>
+
+              {docs.length > 0 && (
+                <ul className="mt-6 space-y-3">
+                  {docs.map((d, i) => (
+                    <li
+                      key={`${d.name}-${i}`}
+                      className="flex items-center gap-4 rounded-md border border-slate-200 bg-white px-4 py-3"
                     >
-                      <X className="h-4 w-4" strokeWidth={2} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                      <FileText className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={1.5} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-900 truncate font-medium">{d.name}</p>
+                        <p className="font-mono text-[11px] text-slate-500 truncate">
+                          sha256:{shortHash(d.hash)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDocs((prev) => prev.filter((_, idx) => idx !== i));
+                        }}
+                        className="text-slate-500 hover:text-slate-900 transition-colors"
+                        aria-label={`Remove ${d.name}`}
+                      >
+                        <X className="h-4 w-4" strokeWidth={2} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </StepSection>
+
+            {/* ── STEP 3: Additional Notes ──────────────────────── */}
+            <StepSection
+              number={3}
+              title="Additional Notes"
+              description="Optional. Context for compliance review or internal record-keeping."
+            >
+              <div>
+                <label className="block text-xs font-mono tracking-[0.2em] uppercase text-slate-600 mb-3">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. Inspection by SGS at load port. Payment via L/C at sight."
+                  rows={4}
+                  className="w-full bg-transparent border-0 border-b border-slate-300 px-0 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-0 transition-colors resize-none"
+                />
+                <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                  Notes are included in the sealed payload and visible to your counterparty.
+                </p>
+              </div>
+            </StepSection>
           </div>
         </div>
 
         {/* ── Sticky Footer Action ──────────────────────────────── */}
-        <div className="sticky bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-          <div className="max-w-2xl px-12 py-6 flex items-center justify-between gap-6">
-            <p className="text-xs text-slate-500 leading-relaxed max-w-xs">
-              This action atomically consumes 1 credit and permanently seals the trade intent.
-            </p>
-            <button className="shrink-0 inline-flex items-center gap-3 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-              Generate Proof of Intent
-              <span className="font-mono text-[11px] tracking-wider opacity-70">1 CREDIT</span>
-            </button>
-          </div>
+        <div className="shrink-0 border-t border-slate-200 bg-white p-6">
+          <button className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            Generate Proof of Intent
+            <span className="font-mono text-[11px] tracking-wider opacity-80">1 CREDIT</span>
+          </button>
+          <p className="mt-3 text-center text-xs text-slate-500 leading-relaxed">
+            This action atomically consumes 1 credit and permanently seals the trade intent.
+          </p>
         </div>
       </section>
 
       {/* ── RIGHT PANE: Certificate Preview ─────────────────────── */}
-      <section className="w-1/2 bg-[#F8FAFC] overflow-hidden">
+      <section className="w-1/2 bg-slate-100 overflow-hidden">
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-4 text-center">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
               Live Preview · Mirrors Left Pane
             </p>
 
             {/* Physical document card */}
-            <article className="bg-white rounded-sm shadow-sm border border-slate-200/60 p-12">
+            <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
               {/* Header */}
               <header className="text-center pb-8 border-b border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800">
                   Izenzo Sovereign Infrastructure — Deal Record
                 </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-400">
+                <p className="mt-3 font-mono text-[11px] text-slate-600">
                   Ref · {matchRef}
                 </p>
               </header>
@@ -257,23 +288,35 @@ export function MatchCompiler() {
                 />
               </dl>
 
+              {/* Notes */}
+              {notes.trim().length > 0 && (
+                <div className="py-6 border-t border-slate-200">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                    Notes
+                  </p>
+                  <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                    {notes}
+                  </p>
+                </div>
+              )}
+
               {/* Document hashes */}
               <div className="py-6 border-t border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400 mb-4">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-4">
                   Attached Evidence
                 </p>
                 {docs.length === 0 ? (
-                  <p className="font-mono text-xs text-slate-400">{PLACEHOLDER}</p>
+                  <p className="font-mono text-xs italic text-slate-500">{PLACEHOLDER}</p>
                 ) : (
                   <ul className="space-y-2">
                     {docs.map((d, i) => (
                       <li key={i} className="flex items-baseline gap-3">
-                        <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                        <span className="font-mono text-[10px] text-slate-600 shrink-0">
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-700 truncate">{d.name}</p>
-                          <p className="font-mono text-[10px] text-slate-400 truncate">
+                          <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
+                          <p className="font-mono text-[10px] text-slate-600 truncate">
                             {d.hash}
                           </p>
                         </div>
@@ -285,7 +328,7 @@ export function MatchCompiler() {
 
               {/* Cryptographic Seal */}
               <div className="mt-2 pt-6 border-t border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400 mb-5">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
                   Security & Integrity
                 </p>
                 <ul className="space-y-3 font-mono text-[11px]">
@@ -296,12 +339,12 @@ export function MatchCompiler() {
                 </ul>
 
                 <div className="mt-6 pt-5 border-t border-dashed border-slate-200">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                     SHA-256 Seal
                   </p>
                   <p
                     className={`font-mono text-[11px] leading-relaxed break-all ${
-                      certSeal ? "text-slate-900" : "text-slate-300"
+                      certSeal ? "text-slate-900" : "text-slate-400"
                     }`}
                   >
                     {certSeal ?? "0".repeat(64)}
@@ -310,13 +353,13 @@ export function MatchCompiler() {
               </div>
 
               <footer className="mt-8 pt-6 border-t border-slate-200 text-center">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-300">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-600">
                   Unsealed Draft · Not Yet Binding
                 </p>
               </footer>
             </article>
 
-            <p className="mt-6 text-center text-[11px] text-slate-400 leading-relaxed">
+            <p className="mt-6 text-center text-[11px] text-slate-600 leading-relaxed">
               The Certificate becomes immutable upon Proof of Intent generation.
             </p>
           </div>
@@ -327,6 +370,35 @@ export function MatchCompiler() {
 }
 
 /* ────────────────────────────────────────────────────────────── */
+
+function StepSection({
+  number,
+  title,
+  description,
+  children,
+}: {
+  number: number;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mt-14">
+      <div className="flex items-baseline gap-4 pb-6 border-b border-slate-200">
+        <span className="font-mono text-xs tracking-[0.25em] text-slate-500">
+          {String(number).padStart(2, "0")}
+        </span>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h2>
+          {description && (
+            <p className="mt-1 text-xs text-slate-500 leading-relaxed">{description}</p>
+          )}
+        </div>
+      </div>
+      <div className="mt-8 space-y-8">{children}</div>
+    </section>
+  );
+}
 
 function EditorField({
   label,
@@ -345,7 +417,7 @@ function EditorField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-mono tracking-[0.2em] uppercase text-slate-500 mb-3">
+      <label className="block text-xs font-mono tracking-[0.2em] uppercase text-slate-600 mb-3">
         {label}
       </label>
       <input
@@ -353,11 +425,11 @@ function EditorField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full bg-transparent border-0 border-b border-slate-200 px-0 py-2 text-lg text-slate-900 placeholder:text-slate-300 focus:border-primary focus:outline-none focus:ring-0 transition-colors ${
+        className={`w-full bg-transparent border-0 border-b border-slate-300 px-0 py-2 text-lg text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-0 transition-colors ${
           mono ? "font-mono" : ""
         }`}
       />
-      {hint && <p className="mt-2 text-xs text-slate-400 leading-relaxed">{hint}</p>}
+      {hint && <p className="mt-2 text-xs text-slate-500 leading-relaxed">{hint}</p>}
     </div>
   );
 }
@@ -366,12 +438,12 @@ function CertRow({ label, value, mono }: { label: string; value: string; mono?: 
   const filled = value.trim().length > 0;
   return (
     <div className="flex items-baseline gap-4">
-      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400 w-32 shrink-0">
+      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
         {label}
       </dt>
       <dd
         className={`flex-1 text-sm ${mono ? "font-mono" : ""} ${
-          filled ? "text-slate-900" : "text-slate-300 font-mono text-xs"
+          filled ? "text-slate-900 font-medium" : "text-slate-500 italic font-mono text-xs"
         }`}
       >
         {filled ? value : PLACEHOLDER}
@@ -383,8 +455,8 @@ function CertRow({ label, value, mono }: { label: string; value: string; mono?: 
 function SealRow({ label, status }: { label: string; status: string }) {
   return (
     <li className="flex items-center justify-between">
-      <span className="text-slate-500 tracking-wide">{label}</span>
-      <span className="text-amber-600 tracking-[0.2em] text-[10px]">{status}</span>
+      <span className="text-slate-800 tracking-wide">{label}</span>
+      <span className="text-amber-700 font-medium tracking-[0.2em] text-[10px]">{status}</span>
     </li>
   );
 }
