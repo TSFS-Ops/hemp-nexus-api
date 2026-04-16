@@ -113,6 +113,12 @@ export default function Desk() {
               />
             }
           />
+          <Route path="settings" element={<DeskSettingsLayout />}>
+            <Route index element={<MyProfileTab />} />
+            <Route path="company" element={<CompanyIdentityTab />} />
+            <Route path="notifications" element={<NotificationRulesTab />} />
+            <Route path="balance" element={<TokenBalanceTab />} />
+          </Route>
           <Route
             path="new-trade"
             element={
