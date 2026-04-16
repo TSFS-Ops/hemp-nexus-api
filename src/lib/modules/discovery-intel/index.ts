@@ -82,73 +82,44 @@ export function calculatePublicPresenceScore(
 export const discoveryIntel = {
   /** DISC-002: Request OSINT crawl */
   async requestCrawl(params: CrawlRequest): Promise<CrawlResult> {
-    const { data, error } = await supabase.functions.invoke("intel-crawl", {
+    const data = await apiFetch<{ data: CrawlResult }>("intel-crawl", {
       method: "POST",
-      body: params,
+      body: JSON.stringify(params),
     });
-    if (error) throw new Error(error.message);
     return data.data;
   },
 
   /** DISC-002: Get crawl results */
   async getCrawl(crawlId: string): Promise<CrawlResult> {
-    const { data, error } = await supabase.functions.invoke("intel-crawl", {
-      method: "GET",
-      body: null,
-      headers: {},
-    });
-    // GET with query params requires manual fetch
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/intel-crawl?crawl_id=${crawlId}`;
-    const session = await supabase.auth.getSession();
-    const resp = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${session.data.session?.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
-    if (!resp.ok) throw new Error(await resp.text());
-    const result = await resp.json();
-    return result.data;
+    const data = await apiFetch<{ data: CrawlResult }>(
+      `intel-crawl?crawl_id=${encodeURIComponent(crawlId)}`
+    );
+    return data.data;
   },
 
   /** DISC-002: List crawls for entity */
   async listCrawls(entityId: string): Promise<CrawlResult[]> {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/intel-crawl?entity_id=${entityId}`;
-    const session = await supabase.auth.getSession();
-    const resp = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${session.data.session?.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
-    if (!resp.ok) throw new Error(await resp.text());
-    const result = await resp.json();
-    return result.data;
+    const data = await apiFetch<{ data: CrawlResult[] }>(
+      `intel-crawl?entity_id=${encodeURIComponent(entityId)}`
+    );
+    return data.data;
   },
 
   /** DISC-006: Evaluate eligibility */
   async evaluateEligibility(entityId: string, signals?: EligibilitySignals): Promise<EligibilitySnapshot> {
-    const { data, error } = await supabase.functions.invoke("discovery-eligibility", {
+    const data = await apiFetch<{ data: EligibilitySnapshot }>("discovery-eligibility", {
       method: "POST",
-      body: { entity_id: entityId, signals },
+      body: JSON.stringify({ entity_id: entityId, signals }),
     });
-    if (error) throw new Error(error.message);
     return data.data;
   },
 
   /** DISC-006: Get latest eligibility */
   async getEligibility(entityId: string): Promise<EligibilitySnapshot> {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discovery-eligibility?entity_id=${entityId}`;
-    const session = await supabase.auth.getSession();
-    const resp = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${session.data.session?.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
-    if (!resp.ok) throw new Error(await resp.text());
-    const result = await resp.json();
-    return result.data;
+    const data = await apiFetch<{ data: EligibilitySnapshot }>(
+      `discovery-eligibility?entity_id=${encodeURIComponent(entityId)}`
+    );
+    return data.data;
   },
 
   /** DISC-004: Upload vault document metadata */
@@ -160,27 +131,19 @@ export const discoveryIntel = {
     file_size?: number;
     mime_type?: string;
   }): Promise<VaultDocument> {
-    const { data, error } = await supabase.functions.invoke("vault-documents", {
+    const data = await apiFetch<{ data: VaultDocument }>("vault-documents", {
       method: "POST",
-      body: params,
+      body: JSON.stringify(params),
     });
-    if (error) throw new Error(error.message);
     return data.data;
   },
 
   /** DISC-004: List vault documents */
   async listCollateral(entityId: string): Promise<VaultDocument[]> {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vault-documents?entity_id=${entityId}`;
-    const session = await supabase.auth.getSession();
-    const resp = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${session.data.session?.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
-    if (!resp.ok) throw new Error(await resp.text());
-    const result = await resp.json();
-    return result.data;
+    const data = await apiFetch<{ data: VaultDocument[] }>(
+      `vault-documents?entity_id=${encodeURIComponent(entityId)}`
+    );
+    return data.data;
   },
 
   /** DISC-007: Check if entity passes discovery gate */
