@@ -413,10 +413,10 @@ export function UnilateralIntentForm() {
               onClick={async () => {
                 setIsDrafting(true);
                 try {
-                  const { data, error } = await supabase.functions.invoke("draft-poi", {
-                    body: { rawText: draftText.trim() },
+                  const data = await apiFetch<any>("draft-poi", {
+                    method: "POST",
+                    body: JSON.stringify({ rawText: draftText.trim() }),
                   });
-                  if (error) throw error;
                   if (data?.error) {
                     toast.error(data.error);
                     return;
