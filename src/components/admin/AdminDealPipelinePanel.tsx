@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, ArrowRight, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Loader2, RefreshCw, ArrowRight, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface PipelineOrg {
@@ -49,6 +49,7 @@ function StageIndicator({ passed, label }: { passed: boolean | null; label: stri
 export function AdminDealPipelinePanel() {
   const [pipelines, setPipelines] = useState<PipelineOrg[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLimitHit, setDataLimitHit] = useState(false);
 
   const fetchPipeline = async () => {
     setLoading(true);
