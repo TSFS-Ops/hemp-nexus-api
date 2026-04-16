@@ -8,11 +8,11 @@
  *   - Public presence scoring (DISC-003)  
  *   - Collateral documentation (DISC-004)
  *   - Discovery eligibility evaluation (DISC-006)
-import { apiFetch } from "@/lib/api-client";
  *   - Gate status checks (DISC-007)
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 
 // ── Types ──
 
