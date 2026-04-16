@@ -12,6 +12,7 @@ import { NotificationRulesTab } from "@/components/desk/settings/NotificationRul
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
+import { DiscoverCounterparties } from "@/components/desk/discover/DiscoverCounterparties";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
