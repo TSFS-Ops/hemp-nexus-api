@@ -94,6 +94,16 @@ export function StageCard({ stage, userRole, onAction, defaultExpanded = false }
             <div className="flex items-center gap-2">
               {STAGE_ICONS[stage.id]}
               <CardTitle className="text-base">{stage.label}</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-sm">
+                    {STAGE_EXPLAINERS[stage.id]}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           <div className="flex items-center gap-2">
