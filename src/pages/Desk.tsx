@@ -9,6 +9,7 @@ import { MyProfileTab } from "@/components/desk/settings/MyProfileTab";
 import { CompanyIdentityTab } from "@/components/desk/settings/CompanyIdentityTab";
 import { NotificationRulesTab } from "@/components/desk/settings/NotificationRulesTab";
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
+import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 
 function DeskOverview() {
   const navigate = useNavigate();
