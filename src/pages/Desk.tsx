@@ -2,6 +2,7 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { DeskLayout } from "@/components/desk/DeskLayout";
+import { DeskSidebar } from "@/components/desk/DeskSidebar";
 import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
 import { DealPipeline } from "@/components/desk/DealPipeline";
 import { DeskSettingsLayout } from "@/components/desk/settings/DeskSettingsLayout";
@@ -9,6 +10,17 @@ import { MyProfileTab } from "@/components/desk/settings/MyProfileTab";
 import { CompanyIdentityTab } from "@/components/desk/settings/CompanyIdentityTab";
 import { NotificationRulesTab } from "@/components/desk/settings/NotificationRulesTab";
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
+import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
+
+/** Full-bleed shell: sidebar only, no padded max-w container. */
+function DeskFullBleed({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen w-full flex bg-white">
+      <DeskSidebar />
+      <main className="flex-1 min-w-0">{children}</main>
+    </div>
+  );
+}
 
 function DeskOverview() {
   const navigate = useNavigate();
@@ -65,71 +77,97 @@ function DeskPlaceholder({ title, subtitle }: { title: string; subtitle: string 
 export default function Desk() {
   return (
     <RequireAuth>
-      <DeskLayout>
-        <Routes>
-          <Route index element={<DeskOverview />} />
-          <Route
-            path="discover"
-            element={
-              <DeskPlaceholder
-                title="Discover Counterparties"
-                subtitle="Search the verified institutional liquidity network. Filter by commodity, jurisdiction, and trade history."
-              />
-            }
-          />
-          <Route
-            path="deals"
-            element={
-              <DeskPlaceholder
-                title="My Deals"
-                subtitle="The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent."
-              />
-            }
-          />
-          <Route
-            path="deals/:matchId"
-            element={
-              <DeskPlaceholder
-                title="Deal Details"
-                subtitle="The 9-step Without-a-Doubt workflow for this trade."
-              />
-            }
-          />
-          <Route
-            path="compliance"
-            element={
-              <DeskPlaceholder
-                title="Compliance Profile"
-                subtitle="Your KYB status, beneficial-ownership records, and sanctions clearance."
-              />
-            }
-          />
-          <Route
-            path="billing"
-            element={
-              <DeskPlaceholder
-                title="Billing"
-                subtitle="Token balance, Proof-of-Intent burn history, and invoices."
-              />
-            }
-          />
-          <Route path="settings" element={<DeskSettingsLayout />}>
-            <Route index element={<MyProfileTab />} />
-            <Route path="company" element={<CompanyIdentityTab />} />
-            <Route path="notifications" element={<NotificationRulesTab />} />
-            <Route path="balance" element={<TokenBalanceTab />} />
-          </Route>
-          <Route
-            path="new-trade"
-            element={
-              <DeskPlaceholder
-                title="Start New Trade"
-                subtitle="Capture commercial intent. The system will guide you through all 9 steps to a sealed Proof of Intent."
-              />
-            }
-          />
-        </Routes>
-      </DeskLayout>
+      <Routes>
+        {/* Full-bleed routes — no padded container */}
+        <Route
+          path="match/:matchId"
+          element={
+            <DeskFullBleed>
+              <MatchCompiler />
+            </DeskFullBleed>
+          }
+        />
+        <Route
+          path="match"
+          element={
+            <DeskFullBleed>
+              <MatchCompiler />
+            </DeskFullBleed>
+          }
+        />
+
+        {/* Standard padded Desk surfaces */}
+        <Route
+          path="*"
+          element={
+            <DeskLayout>
+              <Routes>
+                <Route index element={<DeskOverview />} />
+                <Route
+                  path="discover"
+                  element={
+                    <DeskPlaceholder
+                      title="Discover Counterparties"
+                      subtitle="Search the verified institutional liquidity network. Filter by commodity, jurisdiction, and trade history."
+                    />
+                  }
+                />
+                <Route
+                  path="deals"
+                  element={
+                    <DeskPlaceholder
+                      title="My Deals"
+                      subtitle="The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent."
+                    />
+                  }
+                />
+                <Route
+                  path="deals/:matchId"
+                  element={
+                    <DeskPlaceholder
+                      title="Deal Details"
+                      subtitle="The 9-step Without-a-Doubt workflow for this trade."
+                    />
+                  }
+                />
+                <Route
+                  path="compliance"
+                  element={
+                    <DeskPlaceholder
+                      title="Compliance Profile"
+                      subtitle="Your KYB status, beneficial-ownership records, and sanctions clearance."
+                    />
+                  }
+                />
+                <Route
+                  path="billing"
+                  element={
+                    <DeskPlaceholder
+                      title="Billing"
+                      subtitle="Token balance, Proof-of-Intent burn history, and invoices."
+                    />
+                  }
+                />
+                <Route path="settings" element={<DeskSettingsLayout />}>
+                  <Route index element={<MyProfileTab />} />
+                  <Route path="company" element={<CompanyIdentityTab />} />
+                  <Route path="notifications" element={<NotificationRulesTab />} />
+                  <Route path="balance" element={<TokenBalanceTab />} />
+                </Route>
+                <Route
+                  path="new-trade"
+                  element={
+                    <DeskPlaceholder
+                      title="Start New Trade"
+                      subtitle="Capture commercial intent. The system will guide you through all 9 steps to a sealed Proof of Intent."
+                    />
+                  }
+                />
+              </Routes>
+            </DeskLayout>
+          }
+        />
+      </Routes>
     </RequireAuth>
   );
 }
