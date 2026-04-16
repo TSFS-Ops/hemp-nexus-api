@@ -66,6 +66,19 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const userOrgId = useUserOrg();
   const inferredRole = getMatchRole(userOrgId, match as any);
 
+  // Governance document count for Evidence Strength Indicator
+  const { data: govDocCount } = useQuery({
+    queryKey: ["gov-doc-count", match.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("governance_documents")
+        .select("id", { count: "exact", head: true })
+        .eq("deal_reference_id", match.id);
+      if (error) return 0;
+      return count ?? 0;
+    },
+  });
+
   let roleBadgeLabel: string | null = null;
   if (inferredRole === "buyer") {
     roleBadgeLabel = "Buyer";
