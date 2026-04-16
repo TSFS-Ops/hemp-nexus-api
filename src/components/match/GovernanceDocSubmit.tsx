@@ -7,13 +7,14 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, FileCheck, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 
 interface RegistryEntry {
   id: string;
@@ -69,10 +70,8 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
           .eq("active", true)
           .eq("org_id", orgId)
           .order("category"),
-        supabase.functions.invoke("governance-docs", {
+        supabase.functions.invoke(`governance-docs?deal_reference_id=${matchId}`, {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deal_reference_id: matchId }),
         }),
       ]);
 
@@ -192,8 +191,6 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
 
   const submittedRegistryIds = new Set(submitted.map((d) => d.registry_id));
   const availableRegistry = registry.filter((r) => !submittedRegistryIds.has(r.id));
-  const mandatoryCount = registry.filter((r) => r.mandatory_flag).length;
-  const mandatorySubmitted = submitted.filter((d) => d.governance_doc_registry?.mandatory_flag).length;
 
   if (loading) {
     return (
@@ -215,15 +212,12 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
           Governance Documents
         </CardTitle>
         <CardDescription>
-          Submit required governance documents for this intent.
-          {mandatoryCount > 0 && (
-            <span className="block mt-1">
-              {mandatorySubmitted}/{mandatoryCount} mandatory documents submitted.
-            </span>
-          )}
+          Supporting documents strengthen your evidence bundle. Upload governance documents for this trade.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Evidence Strength Indicator */}
+        <EvidenceStrengthIndicator documentCount={submitted.length} />
         {/* Already submitted */}
         {submitted.length > 0 && (
           <div className="space-y-2">

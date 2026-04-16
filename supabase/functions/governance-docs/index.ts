@@ -34,8 +34,12 @@ function successEnvelope(data: unknown, correlationId: string) {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return handleCors(req);
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const corsRes = handleCors(req, allowedOrigins);
+  if (corsRes) return corsRes;
 
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(allowedOrigins, origin);
   const correlationId = req.headers.get("X-Correlation-ID") || crypto.randomUUID();
 
   try {
@@ -115,7 +119,7 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify(successEnvelope(govDoc, correlationId)),
-        { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 201, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
@@ -216,7 +220,7 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify(successEnvelope({ ...updated, token_burned_amount: burnAmount }, correlationId)),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
@@ -239,7 +243,7 @@ Deno.serve(async (req: Request) => {
       if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
 
       return new Response(JSON.stringify(successEnvelope(data || [], correlationId)), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
       });
     }
 
@@ -253,7 +257,7 @@ Deno.serve(async (req: Request) => {
           correlation_id: correlationId,
           error: { code: "VALIDATION_ERROR", message: err.errors.map((e) => e.message).join(", ") },
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
     if (err instanceof ApiException) {
@@ -264,7 +268,7 @@ Deno.serve(async (req: Request) => {
           correlation_id: correlationId,
           error: { code: err.code, message: err.message },
         }),
-        { status: err.statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: err.statusCode, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
     console.error("Unhandled error:", err);
@@ -275,7 +279,7 @@ Deno.serve(async (req: Request) => {
         correlation_id: correlationId,
         error: { code: "INTERNAL_ERROR", message: "Internal server error" },
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
     );
   }
 });
