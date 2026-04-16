@@ -26,6 +26,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const Unsubscribe = lazy(() => import("@/pages/Unsubscribe"));
 const DeveloperApiKeys = lazy(() => import("@/pages/DeveloperApiKeys"));
 const DeveloperWebhooks = lazy(() => import("@/pages/DeveloperWebhooks"));
+const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 
 /**
  * Root element that renders based on host type:
