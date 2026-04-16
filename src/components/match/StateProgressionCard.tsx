@@ -280,7 +280,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         <p className="text-sm text-muted-foreground">
           {engagementStatus === "accepted" && ["intent_declared", "counterparty_sighted", "committed"].includes(currentState)
             ? "Trading partner has accepted. You may now proceed to the next step."
-            : MatchState.STATE_DESCRIPTIONS[currentState]}
+            : engagementStatus === "declined" && ["intent_declared", "counterparty_sighted", "committed"].includes(currentState)
+              ? "Trading partner has declined this engagement. You may re-use the trade details to create a new trade request with a different partner."
+              : engagementStatus === "expired" && ["intent_declared", "counterparty_sighted", "committed"].includes(currentState)
+                ? "The engagement invitation has expired without a response. You may re-use the trade details to try again or invite a different partner."
+                : MatchState.STATE_DESCRIPTIONS[currentState]}
         </p>
 
         {!isTerminal && nextLabel && (

@@ -547,7 +547,7 @@ function BillingContent() {
           <CardContent className="text-sm text-muted-foreground space-y-2">
             <p>• <strong>Unused credits:</strong> Refundable within 7 days of purchase</p>
             <p>• <strong>Consumed credits:</strong> Non-refundable</p>
-            <p>• <strong>POI and WaD:</strong> Non-refundable once issued</p>
+            <p>• <strong>Trade Request and Signed Deal:</strong> Non-refundable once issued</p>
           </CardContent>
         </Card>
 

@@ -88,7 +88,7 @@ export default function WalkthroughReport() {
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
             <span className="rounded-md border bg-background px-3 py-1">Duration: 5–8 min</span>
             <span className="rounded-md border bg-background px-3 py-1">Steps: 19</span>
-            <span className="rounded-md border bg-background px-3 py-1">Outcome: Sealed WaD + Evidence Pack + Audit Export</span>
+            <span className="rounded-md border bg-background px-3 py-1">Outcome: Sealed Signed Deal + Evidence Pack + Audit Export</span>
           </div>
         </header>
 
@@ -123,8 +123,8 @@ export default function WalkthroughReport() {
         <section className="mt-8 break-inside-avoid rounded-lg border p-5">
           <h2 className="mb-3 text-xl font-semibold">Hard-Gates Confirmed in This Walkthrough</h2>
           <ul className="space-y-2 text-sm">
-            <li>• WaD enforces screening freshness (≤ 30 days)</li>
-            <li>• WaD rejects high/critical risk bands</li>
+            <li>• Signed Deal enforces screening freshness (≤ 30 days)</li>
+            <li>• Signed Deal rejects high/critical risk bands</li>
             <li>• Governance token burn is atomic</li>
             <li>• Collapse requires POI probability ≥ 50.1%</li>
           </ul>
