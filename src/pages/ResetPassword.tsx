@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,37 +15,91 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [expired, setExpired] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    // Listen for the PASSWORD_RECOVERY event from the hash fragment
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setReady(true);
-        setExpired(false);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      }
-    });
+    let cancelled = false;
 
-    // Also check if there's already a session with recovery type
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setReady(true);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      }
-    });
+    const markReady = () => {
+      if (cancelled) return;
+      setReady(true);
+      setExpired(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
 
-    // Timeout: if no recovery event fires within 15 seconds, the link is expired or invalid
-    timeoutRef.current = setTimeout(() => {
+    const markExpired = (msg?: string) => {
+      if (cancelled) return;
+      if (msg) setErrorMsg(msg);
       setExpired(true);
-    }, TIMEOUT_MS);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+
+    // Listen for the PASSWORD_RECOVERY event (implicit flow: #access_token in hash)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        markReady();
+      }
+    });
+
+    (async () => {
+      // 1) PKCE flow: ?code=... in query string
+      const code = searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          markExpired(error.message);
+        } else {
+          markReady();
+        }
+        return;
+      }
+
+      // 2) Error returned in hash (e.g. expired/invalid OTP from Supabase verify)
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const hashParams = new URLSearchParams(hash);
+      const hashError = hashParams.get("error_description") || hashParams.get("error");
+      if (hashError) {
+        markExpired(decodeURIComponent(hashError.replace(/\+/g, " ")));
+        return;
+      }
+
+      // 3) token_hash flow: ?token_hash=...&type=recovery
+      const tokenHash = searchParams.get("token_hash");
+      const type = searchParams.get("type");
+      if (tokenHash && type) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as any,
+        });
+        if (error) {
+          markExpired(error.message);
+        } else {
+          markReady();
+        }
+        return;
+      }
+
+      // 4) Implicit flow already established a session, or hash contains access_token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        markReady();
+      }
+    })();
+
+    // Timeout safety net for implicit flow if no auth event fires
+    timeoutRef.current = setTimeout(() => markExpired(), TIMEOUT_MS);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [searchParams]);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +128,7 @@ export default function ResetPassword() {
           <AlertTriangle className="h-8 w-8 mx-auto text-amber-500" />
           <h1 className="text-xl font-semibold text-foreground">Reset link expired or invalid</h1>
           <p className="text-sm text-muted-foreground">
-            This password reset link has expired or is no longer valid. Reset links are single-use and expire after a short time.
+            {errorMsg ?? "This password reset link has expired or is no longer valid. Reset links are single-use and expire after a short time."}
           </p>
           <Link
             to="/auth"
