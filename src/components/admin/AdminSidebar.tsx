@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Landmark,
   HeartPulse,
+  ShieldCheck,
   Handshake,
   ChevronRight,
 } from "lucide-react";
@@ -82,6 +83,7 @@ const sidebarGroups: NavGroup[] = [
       { title: "Webhooks", url: ROUTES.ADMIN_WEBHOOKS, icon: Webhook },
       { title: "System Logs", url: ROUTES.ADMIN_SYSTEM_LOGS, icon: Terminal },
       { title: "Health Monitor", url: ROUTES.ADMIN_HEALTH, icon: HeartPulse },
+      { title: "Data Integrity", url: ROUTES.ADMIN_INTEGRITY, icon: ShieldCheck },
     ],
   },
   {

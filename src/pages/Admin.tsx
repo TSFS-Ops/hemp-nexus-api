@@ -56,6 +56,7 @@ import { BreakGlassPanel } from "@/components/admin/BreakGlassPanel";
 import { AdminProgrammesPanel } from "@/components/admin/AdminProgrammesPanel";
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
+import { AdminDataIntegrityPanel } from "@/components/admin/AdminDataIntegrityPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -338,6 +339,19 @@ function ProgrammesSection() {
 }
 
 
+function IntegritySection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
+      <SectionHeader
+        title="Data Integrity"
+        description="Cross-consistency reconciliation across tokens, event chains, match states, email delivery, and document versions."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <AdminDataIntegrityPanel />
+    </div>
+  );
+}
+
 function DataGovernanceSection() {
   const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
@@ -401,6 +415,7 @@ function AdminContent() {
               <Route path="/webhooks" element={<WebhooksSection />} />
               <Route path="/system-logs" element={<SystemLogsSection />} />
               <Route path="/health" element={<AdminHealthMonitor />} />
+              <Route path="/integrity" element={<IntegritySection />} />
               {/* GOVERNANCE */}
               <Route path="/data-governance" element={<DataGovernanceSection />} />
               <Route path="/programmes" element={<ProgrammesSection />} />

@@ -55,6 +55,7 @@ export const ROUTES = {
   ADMIN_DATA_GOVERNANCE: '/admin/data-governance',
   ADMIN_PROGRAMMES: '/admin/programmes',
   ADMIN_HEALTH: '/admin/health',
+  ADMIN_INTEGRITY: '/admin/integrity',
   ADMIN_ENGAGEMENTS: '/admin/engagements',
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_OVERRIDES: '/admin/overrides',
