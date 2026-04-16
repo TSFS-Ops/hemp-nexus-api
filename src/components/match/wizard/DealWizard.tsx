@@ -321,9 +321,7 @@ function StepSearch({ match }: { match: Match }) {
 
 // ─── Step 2: Match Details ──────────────────────────────────────────
 
-function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi }: { match: Match; currentState: string; onMatchUpdated?: () => void; onProceedToPoi?: () => void }) {
-  const [subTab, setSubTab] = useState("terms");
-
+function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab, onSubTabChange }: { match: Match; currentState: string; onMatchUpdated?: () => void; onProceedToPoi?: () => void; subTab: string; onSubTabChange: (tab: string) => void }) {
   // Check if all required fields are complete
   const allComplete = !!match.commodity && !!match.buyer_name && !!match.seller_name
     && match.quantity_amount != null && match.quantity_amount > 0
