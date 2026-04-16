@@ -38,7 +38,7 @@ function DeskOverview() {
           </h1>
         </div>
         <button
-          onClick={() => navigate("/desk/new-trade")}
+          onClick={() => navigate("/desk/match/new")}
           className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
@@ -81,14 +81,6 @@ export default function Desk() {
         {/* Full-bleed routes — no padded container */}
         <Route
           path="match/:matchId"
-          element={
-            <DeskFullBleed>
-              <MatchCompiler />
-            </DeskFullBleed>
-          }
-        />
-        <Route
-          path="match"
           element={
             <DeskFullBleed>
               <MatchCompiler />
