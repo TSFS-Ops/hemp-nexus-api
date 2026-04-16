@@ -28,16 +28,20 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // SECURITY: Verify internal cron authentication
-    // Supabase cron invocations pass the service role key as the Bearer token automatically.
+    // SECURITY: Verify internal cron authentication.
+    // Supabase pg_cron uses net.http_post with the ANON key as Bearer token.
     const authHeader = req.headers.get("authorization") || "";
-    const internalKey = req.headers.get("x-internal-key") || authHeader.replace("Bearer ", "");
+    const bearer = authHeader.replace("Bearer ", "");
+    const internalKey = req.headers.get("x-internal-key") || bearer;
+
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const cronKey = Deno.env.get("INTERNAL_CRON_KEY");
 
     const isAuthorised =
       (cronKey && internalKey === cronKey) ||
-      (serviceRoleKey && internalKey === serviceRoleKey);
+      (serviceRoleKey && internalKey === serviceRoleKey) ||
+      (anonKey && internalKey === anonKey);
 
     if (!isAuthorised) {
       throw new ApiException("UNAUTHORIZED", "Internal authentication required", 401);
