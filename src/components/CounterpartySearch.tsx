@@ -9,6 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { FileText, Info, Loader2, Search, AlertTriangle, SearchX, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
+import { handleApiError } from "@/lib/api-error-handler";
 import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";

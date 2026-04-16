@@ -9,6 +9,7 @@ import { TrustBadges } from "@/components/landing/TrustBadges";
 import { savePreAuthState, consumePreAuthState } from "@/lib/pre-auth-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetchPublic } from "@/lib/api-client";
 
 export default function Landing() {
   const [hasSearched, setHasSearched] = useState(false);
