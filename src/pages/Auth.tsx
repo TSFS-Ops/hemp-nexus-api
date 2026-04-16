@@ -273,7 +273,7 @@ export default function Auth() {
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
             </div>
           ) : verificationPending ? (
-            <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
+            <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
           ) : mode === "reset" ? (
             <ResetForm password={password} setPassword={setPassword} loading={loading} onSubmit={handleResetPassword} />
           ) : mode === "forgot" ? (
