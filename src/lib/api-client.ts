@@ -166,6 +166,47 @@ export async function apiFetch<T = unknown>(
 }
 
 /**
+ * Public variant of apiFetch — does NOT require auth.
+ * Uses the anon key for pre-auth endpoints (e.g. liquidity-check).
+ */
+export async function apiFetchPublic<T = unknown>(
+  path: string,
+  init?: Omit<ApiFetchOptions, "idempotencyKey">
+): Promise<T> {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = `${baseUrl}/functions/v1/${path}`;
+
+  const { headers: initHeaders, ...restInit } = init ?? {};
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    apikey: anonKey,
+    ...(initHeaders as Record<string, string> ?? {}),
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+  let res: Response;
+  try {
+    res = await fetch(url, { ...restInit, headers, signal: controller.signal });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(0, "Request timed out.", "TIMEOUT");
+    }
+    throw new ApiError(0, "Network error.", "NETWORK_ERROR");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!res.ok) throw await ApiError.fromResponse(res);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+/**
  * Convenience: check if an error is an auth error so the UI can redirect.
  */
 export function isAuthError(err: unknown): err is AuthRequiredError {
