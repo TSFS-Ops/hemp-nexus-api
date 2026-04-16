@@ -339,7 +339,19 @@ function ProgrammesSection() {
 }
 
 
-function DataGovernanceSection() {
+function IntegritySection() {
+  return (
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6" data-admin-table>
+      <SectionHeader
+        title="Data Integrity"
+        description="Cross-consistency reconciliation across tokens, event chains, match states, email delivery, and document versions."
+        parents={[{ label: "Admin", href: ROUTES.ADMIN }]}
+      />
+      <AdminDataIntegrityPanel />
+    </div>
+  );
+}
+
   const [tab, setTab] = useUrlTab("tab", "retention", ["retention", "governance-docs", "consents", "data-sources", "thresholds", "break-glass"]);
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
