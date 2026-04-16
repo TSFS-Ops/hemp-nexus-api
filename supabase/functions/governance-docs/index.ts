@@ -257,7 +257,7 @@ Deno.serve(async (req: Request) => {
           correlation_id: correlationId,
           error: { code: "VALIDATION_ERROR", message: err.errors.map((e) => e.message).join(", ") },
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
     if (err instanceof ApiException) {
@@ -268,7 +268,7 @@ Deno.serve(async (req: Request) => {
           correlation_id: correlationId,
           error: { code: err.code, message: err.message },
         }),
-        { status: err.statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: err.statusCode, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
     console.error("Unhandled error:", err);
@@ -279,7 +279,7 @@ Deno.serve(async (req: Request) => {
         correlation_id: correlationId,
         error: { code: "INTERNAL_ERROR", message: "Internal server error" },
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
     );
   }
 });
