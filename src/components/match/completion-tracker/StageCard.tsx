@@ -20,6 +20,7 @@ import {
   FileCheck,
   Truck,
   Shield,
+  Info,
 } from "lucide-react";
 import { useState } from "react";
 import type { StageState, TrackerAction, StageId, StageStatus, UserRole } from "@/lib/completion-engine";
@@ -35,6 +36,13 @@ const STAGE_ICONS: Record<StageId, React.ReactNode> = {
   wad: <FileCheck className="h-5 w-5" />,
   pod: <Truck className="h-5 w-5" />,
   evidence: <Shield className="h-5 w-5" />,
+};
+
+const STAGE_EXPLAINERS: Record<StageId, string> = {
+  poi: "A Proof of Intent records both parties\u2019 confirmed interest in a trade. It is the first binding evidence step.",
+  wad: "Without a Doubt \u2014 a sealed, tamper-evident evidence bundle confirming the full trade trail. Not a contract, but a \u2018proof bundle\u2019.",
+  pod: "Tracks fulfilment milestones after the deal is sealed. Each milestone must be completed in sequence.",
+  evidence: "A cryptographically hashed archive of all documents, attestations, and audit records for this trade.",
 };
 
 function statusIcon(status: StageStatus) {
@@ -86,6 +94,16 @@ export function StageCard({ stage, userRole, onAction, defaultExpanded = false }
             <div className="flex items-center gap-2">
               {STAGE_ICONS[stage.id]}
               <CardTitle className="text-base">{stage.label}</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-sm">
+                    {STAGE_EXPLAINERS[stage.id]}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           <div className="flex items-center gap-2">
