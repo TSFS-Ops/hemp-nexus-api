@@ -219,6 +219,7 @@ Deno.serve(async (req: Request) => {
     throw new ApiException("VALIDATION_ERROR", "Method not allowed", 405);
   } catch (err) {
     if (err instanceof z.ZodError) {
+      console.error(`[${correlationId}] Validation error:`, err.errors);
       return new Response(
         JSON.stringify({
           status: "ERROR",
@@ -230,6 +231,7 @@ Deno.serve(async (req: Request) => {
       );
     }
     if (err instanceof ApiException) {
+      console.error(`[${correlationId}] ApiException [${err.code}] ${err.statusCode}:`, err.message);
       return new Response(
         JSON.stringify({
           status: "ERROR",
@@ -240,7 +242,7 @@ Deno.serve(async (req: Request) => {
         { status: err.statusCode, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
-    console.error("Unhandled error:", err);
+    console.error(`[${correlationId}] Unhandled error:`, err);
     return new Response(
       JSON.stringify({
         status: "ERROR",
