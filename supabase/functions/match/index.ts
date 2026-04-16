@@ -20,6 +20,13 @@ import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
 
+/** Check if the caller's org is a party to the match (creator, buyer, or seller). */
+function isMatchParty(match: { org_id: string; buyer_org_id?: string | null; seller_org_id?: string | null }, callerOrgId: string): boolean {
+  return match.org_id === callerOrgId
+    || match.buyer_org_id === callerOrgId
+    || match.seller_org_id === callerOrgId;
+}
+
 // Valid state transitions for transaction state machine
 const VALID_STATE_TRANSITIONS: Record<string, string[]> = {
   'discovery': ['intent_declared'],
@@ -144,7 +151,7 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Match not found", 404);
       }
 
-      if (match.org_id !== authCtx.orgId) {
+      if (!isMatchParty(match, authCtx.orgId)) {
         throw new ApiException("FORBIDDEN", "You do not have permission to confirm intent for this match", 403);
       }
 
@@ -566,7 +573,7 @@ Deno.serve(async (req) => {
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
-      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      if (!isMatchParty(match, authCtx.orgId)) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // UNILATERAL GUARD: Cannot reveal counterparty if one side is missing
       if (match.match_type === "unilateral" && (match.buyer_id == null || match.seller_id == null)) {
@@ -680,7 +687,7 @@ Deno.serve(async (req) => {
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
-      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      if (!isMatchParty(match, authCtx.orgId)) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // Flat 1-credit cost for commit (R10 pricing model)
       const commitCost = ACTION_TOKEN_COSTS.buyer_commit;
@@ -782,7 +789,7 @@ Deno.serve(async (req) => {
 
       if (fetchError) handleDatabaseError(fetchError, requestId);
       if (!match) throw new ApiException("NOT_FOUND", "Match not found", 404);
-      if (match.org_id !== authCtx.orgId) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
+      if (!isMatchParty(match, authCtx.orgId)) throw new ApiException("FORBIDDEN", "You do not have permission to modify this match", 403);
 
       // ── WaD GATE: require a sealed WaD before allowing completion ──
       const { data: sealedWad, error: wadError } = await supabase
@@ -901,7 +908,7 @@ Deno.serve(async (req) => {
       }
 
       // Verify match belongs to authenticated user's organisation
-      if (match.org_id !== authCtx.orgId) {
+      if (!isMatchParty(match, authCtx.orgId)) {
         throw new ApiException(
           "FORBIDDEN", 
           "You do not have permission to access this match", 
@@ -928,7 +935,7 @@ Deno.serve(async (req) => {
       let query = supabase
         .from("matches")
         .select("*", { count: "exact" })
-        .eq("org_id", authCtx.orgId) // Only return matches for user's org
+        .or(`org_id.eq.${authCtx.orgId},buyer_org_id.eq.${authCtx.orgId},seller_org_id.eq.${authCtx.orgId}`)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
