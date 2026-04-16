@@ -305,18 +305,17 @@ function RecordFundFlowDialog({ programmeId, participants }: { programmeId: stri
   const mutation = useMutation({
     mutationFn: async () => {
       const idempotencyKey = `ff_${programmeId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-      const { data, error } = await supabase.functions.invoke("programmes", {
+      const data = await apiFetch<any>("programmes", {
         method: "POST",
-        body: {
+        headers: { "x-programme-id": programmeId },
+        body: JSON.stringify({
           participant_id: participantId,
           flow_type: flowType,
           amount: parseFloat(amount),
           reference: reference || undefined,
           idempotency_key: idempotencyKey,
-        },
-        headers: { "x-programme-id": programmeId },
+        }),
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
     },

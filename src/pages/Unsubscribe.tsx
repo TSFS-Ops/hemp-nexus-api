@@ -42,10 +42,10 @@ export default function Unsubscribe() {
     if (!token) return;
     setStatus("confirming");
     try {
-      const { data, error } = await supabase.functions.invoke("handle-email-unsubscribe", {
-        body: { token },
+      const data = await apiFetchPublic<{ success?: boolean; reason?: string }>("handle-email-unsubscribe", {
+        method: "POST",
+        body: JSON.stringify({ token }),
       });
-      if (error) throw error;
       if (data?.success) {
         setStatus("done");
       } else if (data?.reason === "already_unsubscribed") {

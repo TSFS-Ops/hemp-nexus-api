@@ -98,11 +98,11 @@ export function LogsSection() {
 
     setActivityLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("audit-logs", {
-       body: { limit: 100 }
+      const data = await apiFetch<{ items?: any[] }>("audit-logs", {
+        method: "POST",
+        body: JSON.stringify({ limit: 100 }),
       });
 
-      if (error) throw error;
       setActivityLogs(data?.items || []);
     } catch (error) {
       console.error("Failed to fetch activity logs:", error);

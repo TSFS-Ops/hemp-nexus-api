@@ -297,12 +297,9 @@ export function AdminPendingEngagementsPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-engagements", statusFilter, typeFilter],
     queryFn: async () => {
-      const { data: result, error } = await supabase.functions.invoke("poi-engagements", {
+      const result = await apiFetch<any>("poi-engagements", {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
-        body: null,
       });
-      if (error) throw error;
       return (result?.engagements as Engagement[]) || [];
     },
   });

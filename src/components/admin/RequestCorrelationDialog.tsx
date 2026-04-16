@@ -55,15 +55,12 @@ export function RequestCorrelationDialog(props: {
         setLoading(true);
         setItems([]);
 
-        const { data, error } = await supabase.functions.invoke(
+        const data = await apiFetch<Partial<AuditLogsResponse>>(
           `audit-logs?request_id=${encodeURIComponent(requestId!)}&limit=50`,
           { method: "GET" }
         );
 
-        if (error) throw error;
-
-        const parsed = (data || {}) as Partial<AuditLogsResponse>;
-        if (!cancelled) setItems(parsed.items || []);
+        if (!cancelled) setItems(data?.items || []);
       } catch (e) {
         console.error("Failed to fetch correlated audit logs", e);
         toast.error("Failed to load correlated audit logs");

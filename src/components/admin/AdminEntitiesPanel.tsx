@@ -61,22 +61,10 @@ export function AdminEntitiesPanel() {
         return;
       }
 
-      const resp = await supabase.functions.invoke("dilisense-screen", {
-        body: { entity_id: entityId },
+      const resp = await apiFetch<any>("dilisense-screen", {
+        method: "POST",
+        body: JSON.stringify({ entity_id: entityId }),
       });
-
-      if (resp.error) {
-        const errMsg = typeof resp.error === "object" && "message" in resp.error 
-          ? (resp.error as any).message 
-          : String(resp.error);
-        // If the provider key is missing, surface that clearly
-        if (errMsg.includes("not configured") || errMsg.includes("API key")) {
-          toast.error("Screening provider not configured - no stub results will be created.");
-        } else {
-          toast.error(`Screening failed: ${errMsg}`);
-        }
-        return;
-      }
 
       toast.success("Screening completed");
       refetch();
@@ -91,19 +79,12 @@ export function AdminEntitiesPanel() {
   const verifyUbo = async (entityId: string) => {
     setVerifyingEntity(entityId);
     try {
-      const resp = await supabase.functions.invoke("ubo-verify", {
-        body: { entity_id: entityId },
+      const resp = await apiFetch<any>("ubo-verify", {
+        method: "POST",
+        body: JSON.stringify({ entity_id: entityId }),
       });
 
-      if (resp.error) {
-        const errMsg = typeof resp.error === "object" && "message" in resp.error
-          ? (resp.error as any).message
-          : String(resp.error);
-        toast.error(`UBO verification failed: ${errMsg}`);
-        return;
-      }
-
-      const result = resp.data;
+      const result = resp;
       if (result?.verification === "not_applicable") {
         toast.info("Individual entities do not require UBO verification.");
         return;

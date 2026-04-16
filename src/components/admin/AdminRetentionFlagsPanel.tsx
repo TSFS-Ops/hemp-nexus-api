@@ -222,11 +222,10 @@ export function AdminRetentionFlagsPanel() {
   const triggerArchival = async () => {
     setTriggeringArchive(true);
     try {
-      const { data, error: invokeErr } = await supabase.functions.invoke("cold-storage-archive", {
+      const data = await apiFetch<{ processed?: number; failed?: number }>("cold-storage-archive", {
         method: "POST",
       });
-      if (invokeErr) throw invokeErr;
-      const result = data as { processed?: number; failed?: number };
+      const result = data;
       toast.success(
         `Cold storage archival complete: ${result?.processed ?? 0} records archived, ${result?.failed ?? 0} failed`
       );

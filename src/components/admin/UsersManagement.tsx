@@ -63,19 +63,10 @@ export default function UsersManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
 
-      const response = await supabase.functions.invoke("admin-users", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const response = await apiFetch<{ users: any[] }>("admin-users");
 
-      if (response.error) throw response.error;
-      
-      setUsers(response.data.users || []);
+      setUsers(response.users || []);
       setSelectedUserIds(new Set());
     } catch (error) {
       console.error("Error fetching users:", error);
