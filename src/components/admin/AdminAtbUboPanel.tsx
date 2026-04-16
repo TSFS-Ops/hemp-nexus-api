@@ -171,7 +171,7 @@ export function AdminAtbUboPanel() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Authority-to-Bind Records</CardTitle>
-              <CardDescription>Who is authorised to legally bind each company entity (WaD Gate #4)</CardDescription>
+              <CardDescription>Who is authorised to legally bind each company entity (Signed Deal Gate #4)</CardDescription>
             </CardHeader>
             <CardContent>
               {atbRecords.length === 0 ? (
@@ -239,7 +239,7 @@ export function AdminAtbUboPanel() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">UBO Ownership Links</CardTitle>
-              <CardDescription>Beneficial ownership chain - must total ≥100% per entity for WaD Gate #3</CardDescription>
+              <CardDescription>Beneficial ownership chain - must total ≥100% per entity for Signed Deal Gate #3</CardDescription>
             </CardHeader>
             <CardContent>
               {uboLinks.length === 0 ? (

@@ -149,7 +149,7 @@ export function AdminComplianceCasesPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Compliance Cases</h2>
           <p className="text-muted-foreground mt-1">
-            Entity compliance case management - blocks WaD issuance when open
+            Entity compliance case management - blocks Signed Deal issuance when open
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>

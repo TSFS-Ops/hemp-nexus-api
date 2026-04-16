@@ -374,7 +374,7 @@ export function AdminRetentionFlagsPanel() {
                 <SelectItem value="matches">Matches</SelectItem>
                 <SelectItem value="screening_results">Screening Results</SelectItem>
                 <SelectItem value="match_documents">Documents</SelectItem>
-                <SelectItem value="wads">WaDs</SelectItem>
+                <SelectItem value="wads">Signed Deals (WaD)</SelectItem>
                 <SelectItem value="compliance_cases">Compliance Cases</SelectItem>
               </SelectContent>
             </Select>
