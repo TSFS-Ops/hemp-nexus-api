@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Landmark,
   HeartPulse,
+  ShieldCheck,
   Handshake,
   ChevronRight,
 } from "lucide-react";
