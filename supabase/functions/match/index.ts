@@ -935,7 +935,7 @@ Deno.serve(async (req) => {
       let query = supabase
         .from("matches")
         .select("*", { count: "exact" })
-        .eq("org_id", authCtx.orgId) // Only return matches for user's org
+        .or(`org_id.eq.${authCtx.orgId},buyer_org_id.eq.${authCtx.orgId},seller_org_id.eq.${authCtx.orgId}`)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
