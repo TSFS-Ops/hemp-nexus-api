@@ -165,7 +165,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         body: JSON.stringify({
           registry_id: selectedRegistryId,
           deal_reference_id: matchId,
-          deal_reference_type: "poi",
+          deal_reference_type: "POI",
           document_path: storagePath,
         }),
       });

@@ -16,7 +16,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 const GovDocCreateSchema = z.object({
   registry_id: z.string().uuid(),
   deal_reference_id: z.string().uuid(),
-  deal_reference_type: z.enum(["poi", "wad"]),
+  deal_reference_type: z.enum(["POI", "WAD", "POD"]),
   document_path: z.string().min(1).max(500).optional(),
 });
 
