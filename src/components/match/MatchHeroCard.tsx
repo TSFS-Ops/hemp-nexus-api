@@ -12,7 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
+import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import type { Match } from "@/hooks/use-match-details";
 
 interface MatchHeroCardProps {
