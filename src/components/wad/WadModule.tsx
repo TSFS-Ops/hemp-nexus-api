@@ -110,11 +110,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
     return (
       <Card>
         <CardHeader>
-           <CardTitle className="flex items-center gap-2">
-             <Shield className="h-5 w-5" />
-              WaD
-           </CardTitle>
-           <CardDescription>Sealed evidence bundle for this intent</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+               Signed Deal
+            </CardTitle>
+            <CardDescription>Sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
@@ -147,11 +147,11 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
 
         <Card>
           <CardHeader>
-           <CardTitle className="flex items-center gap-2">
-             <Shield className="h-5 w-5" />
-             WaD
-           </CardTitle>
-           <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Signed Deal
+            </CardTitle>
+            <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg space-y-3">
