@@ -188,6 +188,13 @@ export function AdminDealPipelinePanel() {
         </Button>
       </div>
 
+      {dataLimitHit && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Some data queries reached their limit. Pipeline counts may be incomplete for large datasets.
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
