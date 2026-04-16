@@ -16,6 +16,7 @@ import { RejectedMatch } from "@/components/desk/match/RejectedMatch";
 import { DiscoverCounterparties } from "@/components/desk/discover/DiscoverCounterparties";
 import { InboundReview } from "@/components/desk/inbound/InboundReview";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
+import { ComplianceProfile } from "@/components/desk/compliance/ComplianceProfile";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
