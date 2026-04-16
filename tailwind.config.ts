@@ -102,10 +102,10 @@ export default {
         "surface-sidebar": "hsl(var(--surface-sidebar))",
       },
       borderRadius: {
-        lg: "2px",
-        md: "2px",
-        sm: "1px",
-        DEFAULT: "2px",
+        lg: "6px",
+        md: "6px",
+        sm: "4px",
+        DEFAULT: "6px",
         none: "0px",
       },
       letterSpacing: {
@@ -113,8 +113,8 @@ export default {
         widest: "0.05em",
       },
       boxShadow: {
-        sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-        "inner-metallic": "inset 0 1px 0 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 0 rgba(0, 0, 0, 0.1)",
+        sm: "none",
+        "inner-metallic": "none",
         none: "0 0 #0000",
       },
       keyframes: {
