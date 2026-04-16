@@ -92,7 +92,7 @@ export function deriveConsequenceState(
     if (matchStatus !== "settled") {
       createBlockedReasons.push({
         gate: "poi_status",
-        reason: "Both parties must confirm intent before a WaD can be created.",
+        reason: "Both parties must confirm intent before a Signed Deal can be created.",
       });
     }
 
