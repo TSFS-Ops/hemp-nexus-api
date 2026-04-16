@@ -5947,6 +5947,16 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_validate_governance_doc: {
+        Args: {
+          p_actor_user_id?: string
+          p_burn_amount: number
+          p_doc_type?: string
+          p_governance_doc_id: string
+          p_org_id: string
+        }
+        Returns: Json
+      }
       change_org_member_role: {
         Args: {
           p_new_role: string
