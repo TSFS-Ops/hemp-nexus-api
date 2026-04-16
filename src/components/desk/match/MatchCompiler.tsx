@@ -10,6 +10,7 @@ import { useMemo, useState, useRef, ChangeEvent, DragEvent, ReactNode } from "re
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, UploadCloud, FileText, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CreditProvisioningPanel } from "./CreditProvisioningPanel";
 
 type AttachedDoc = {
   name: string;
@@ -56,7 +57,11 @@ export function MatchCompiler() {
   const [docs, setDocs] = useState<AttachedDoc[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [focusedField, setFocusedField] = useState<FieldKey>(null);
+  const [provisioningOpen, setProvisioningOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Mocked: in production this comes from the user's token balance
+  const creditBalance = 0;
 
   const matchRef = useMemo(
     () => (matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000"),
@@ -265,6 +270,13 @@ export function MatchCompiler() {
               whileHover={{ scale: 0.99 }}
               whileTap={{ scale: 0.985 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              onClick={() => {
+                if (creditBalance < 1) {
+                  setProvisioningOpen(true);
+                  return;
+                }
+                // TODO: real POI generation flow
+              }}
               className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow"
             >
               Generate Proof of Intent
@@ -422,6 +434,12 @@ export function MatchCompiler() {
           </div>
         </div>
       </section>
+
+      <CreditProvisioningPanel
+        open={provisioningOpen}
+        onClose={() => setProvisioningOpen(false)}
+        currentBalance={creditBalance}
+      />
     </div>
   );
 }
