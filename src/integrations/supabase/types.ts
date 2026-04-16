@@ -5994,6 +5994,34 @@ export type Database = {
           violation: string
         }[]
       }
+      check_document_version_integrity: {
+        Args: never
+        Returns: {
+          current_version_count: number
+          doc_type: string
+          issue: string
+          match_id: string
+        }[]
+      }
+      check_engagement_email_delivery: {
+        Args: never
+        Returns: {
+          counterparty_email: string
+          email_status: string
+          engagement_id: string
+          engagement_status: string
+          issue: string
+          match_id: string
+        }[]
+      }
+      check_match_state_invariants: {
+        Args: never
+        Returns: {
+          current_state: string
+          match_id: string
+          violation: string
+        }[]
+      }
       check_public_exposure: {
         Args: { p_allowlist?: string[] }
         Returns: {
@@ -6112,6 +6140,18 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reconcile_token_balances: {
+        Args: never
+        Returns: {
+          computed_balance: number
+          discrepancy: number
+          org_id: string
+          recorded_balance: number
+          status: string
+          total_burned: number
+          total_credited: number
+        }[]
+      }
       refund_tokens_on_conflict: {
         Args: {
           p_actor_user_id?: string
@@ -6128,6 +6168,7 @@ export type Database = {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
       }
+      run_data_integrity_checks: { Args: never; Returns: Json }
       safe_transition_match_state: {
         Args: {
           p_expected_state: string
@@ -6148,6 +6189,14 @@ export type Database = {
         Returns: Json
       }
       try_lifecycle_lock: { Args: never; Returns: boolean }
+      verify_event_chain_integrity: {
+        Args: never
+        Returns: {
+          details: string
+          issue_type: string
+          match_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:
