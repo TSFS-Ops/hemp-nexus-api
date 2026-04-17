@@ -738,7 +738,7 @@ export function MatchesList() {
             <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
               Matches appear here when you create one from search results, or when a trading partner invites you to a deal. Search for a trading partner to begin.
             </p>
-            <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+            <Button onClick={() => navigate("/desk/discover")} className="gap-2">
               <Search className="h-4 w-4" />
               Search trading partners
             </Button>
