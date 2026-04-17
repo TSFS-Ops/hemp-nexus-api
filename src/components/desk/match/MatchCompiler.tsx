@@ -20,12 +20,27 @@ import { useMatchDetails } from "@/hooks/use-match-details";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { sha256Hex, sha256HexOfBlob, canonicalTermsPayload, shortHash } from "@/lib/crypto";
+import {
+  DEMO_MATCH_ID,
+  DEMO_COMPILER_TERMS,
+  DEMO_COMPILER_DOCS,
+  DEMO_COMPILER_SEAL,
+} from "@/components/desk/_demo/fixtures";
 
 type AttachedDoc = {
   name: string;
   size: number;
   hash: string; // real SHA-256 digest of file bytes
 };
+
+export interface MatchCompilerProps {
+  /**
+   * Marketing-mockup mode. When true, all data fetching, auth, and
+   * mutations are bypassed and the component renders a static, high-fidelity
+   * fixture so the live UI can be used in landing pages / screenshots.
+   */
+  demoMode?: boolean;
+}
 
 type FieldKey =
   | "counterparty"
