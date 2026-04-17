@@ -204,7 +204,11 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
         <div className="px-6 md:px-16 pt-8 md:pt-12 pb-24 max-w-2xl">
           <Link
             to="/desk"
-            className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-12"
+            tabIndex={demoMode ? -1 : 0}
+            aria-disabled={demoMode}
+            className={`inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-12 ${
+              demoMode ? "pointer-events-none opacity-60" : ""
+            }`}
           >
             <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Back to Pipeline
