@@ -35,6 +35,7 @@ const Desk = lazy(() => import("@/pages/Desk"));
 const DeveloperCenter = lazy(() => import("@/pages/DeveloperCenter"));
 const HQ = lazy(() => import("@/pages/HQ"));
 const TradeDeskProductPage = lazy(() => import("@/pages/products/TradeDesk"));
+const ComplianceEngineProductPage = lazy(() => import("@/pages/products/ComplianceEngine"));
 
 /**
  * Root element that renders based on host type:
@@ -119,6 +120,7 @@ function App() {
                   <Route path={ROUTES.PRICING} element={<Pricing />} />
                   {/* Public product pages */}
                   <Route path="/products/trade-desk" element={<TradeDeskProductPage />} />
+                  <Route path="/products/compliance-engine" element={<ComplianceEngineProductPage />} />
                   <Route path="/products" element={<Navigate to="/products/trade-desk" replace />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
                   {/* Legacy /developers/* → consolidated /developer Command Center */}

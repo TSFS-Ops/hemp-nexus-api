@@ -198,13 +198,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
   }
 
   return (
-    <div
-      className={
-        demoMode
-          ? "relative w-full h-[640px] flex bg-white rounded-xl overflow-hidden"
-          : "fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0"
-      }
-    >
+    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Deal Editor ─────────────────────────────── */}
       <section className="w-full md:w-1/2 overflow-y-auto md:border-r border-slate-200 bg-white">
         <div className="px-6 md:px-16 pt-8 md:pt-12 pb-24 max-w-2xl">
