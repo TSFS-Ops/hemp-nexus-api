@@ -297,9 +297,9 @@ export default function Auth() {
 
   // ── Render ──
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-white">
-      {/* LEFT — 40% — pure white, ruthlessly minimal form */}
-      <section className="w-full md:w-2/5 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-20 py-16 bg-white">
+    <div className="min-h-screen w-full flex flex-col bg-white">
+      {/* Centered, ruthlessly minimal form — full width, no side panel */}
+      <section className="w-full flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-20 py-16 bg-white min-h-screen">
         <div className="w-full max-w-sm mx-auto">
           {/* Wordmark */}
           <div className="mb-12">
@@ -347,52 +347,7 @@ export default function Auth() {
         </div>
       </section>
 
-      {/* RIGHT — 60% — deep slate, typographic statement + hash motif */}
-      <aside className="hidden md:flex md:w-3/5 bg-slate-900 relative overflow-hidden">
-        {/* Subtle grid texture */}
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
-
-        <div className="relative z-10 flex flex-col justify-center w-full px-12 lg:px-20 xl:px-28">
-          <div className="max-w-2xl">
-            {/* Top label */}
-            <div className="mb-12 flex items-center gap-3 text-white/40">
-              <span className="h-px w-8 bg-white/30" />
-              <span className="font-mono text-xs tracking-[0.25em] uppercase">
-                Institutional Grade
-              </span>
-            </div>
-
-            {/* Statement */}
-            <h1 className="font-mono text-4xl lg:text-5xl xl:text-6xl font-medium tracking-tight text-white leading-[1.1]">
-              Compliant Infrastructure
-              <br />
-              <span className="text-white/60">for Trade.</span>
-            </h1>
-
-            {/* Hash chain */}
-            <div className="mt-16 pt-8 border-t border-white/10">
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/30 mb-4">
-                Cryptographic Ledger · Verified Chain
-              </p>
-              <HashChainMotif />
-            </div>
-
-            {/* Footer mark */}
-            <div className="mt-16 flex items-center justify-between text-white/30 font-mono text-[10px] tracking-wider">
-              <span>SHA-256 · TLS 1.3 · POPIA · GDPR</span>
-              <span>v4.0</span>
-            </div>
-          </div>
-        </div>
-      </aside>
+      {/* Right-hand institutional panel removed per design. */}
     </div>
   );
 }
