@@ -1,5 +1,5 @@
 /**
- * SealedEngagement, Post-POI cryptographic ledger view (HARDENED).
+ * SealedEngagement, Post-POI tamper-proof ledger view (HARDENED).
  *
  * Live data: fetches the match, its poi_engagement, and bound documents from Supabase
  * using :matchId from the URL. The countdown is calculated from poi_engagements.expires_at.
@@ -139,7 +139,7 @@ export function SealedEngagement() {
             Engagement Hold-Point
           </h1>
           <p className="mt-6 text-base text-slate-600 leading-relaxed max-w-lg">
-            The Proof of Intent has been cryptographically sealed. The counterparty has been
+            The Proof of Intent has been tamper-proofally sealed. The counterparty has been
             notified and the deal is locked pending their response.
           </p>
 
@@ -224,7 +224,7 @@ export function SealedEngagement() {
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
-              Sealed · Cryptographic Record
+              Sealed · Tamper-Proof Record
             </p>
 
             <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">

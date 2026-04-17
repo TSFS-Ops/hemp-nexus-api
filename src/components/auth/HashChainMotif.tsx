@@ -1,5 +1,5 @@
 /**
- * Subtle cryptographic hash-chain motif for the Auth right pane.
+ * Subtle tamper-proof hash-chain motif for the Auth right pane.
  * Pure SVG, no external assets. Low contrast, decorative only.
  */
 export function HashChainMotif() {

@@ -302,7 +302,7 @@ export default function SovereignsSolutionsPage() {
                 label: "Append-only event stream"
               }, {
                 icon: ShieldCheck,
-                label: "Cryptographic provenance"
+                label: "Tamper-Proof provenance"
               }].map(s => {
                 const Icon = s.icon;
                 return <div key={s.label} className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-5">

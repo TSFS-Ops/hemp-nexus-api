@@ -436,7 +436,7 @@ export function EvidencePackView({
           {/* 9-Gate audit trail (real progression) */}
           <section className="pt-10 pb-4 border-t border-slate-200">
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-6">
-              II · 9-Gate Cryptographic Proof
+              II · 9-Gate Tamper-Proof Proof
             </p>
             <ul className="space-y-3">
               {gates.map((gate, idx) => {

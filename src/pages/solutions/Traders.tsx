@@ -100,7 +100,7 @@ function CertificateMockup() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
-                SHA-256 Cryptographic Seal
+                SHA-256 Tamper-Proof Seal
               </p>
               <p className="mt-1 font-mono text-[11px] text-slate-900 break-all leading-relaxed">
                 {DEMO_COMPILER_SEAL}
@@ -235,7 +235,7 @@ export default function TradersSolutionsPage() {
             </h2>
             <p className="mt-6 text-lg text-slate-600 leading-relaxed">
               Three primitives engineered to compress days of paperwork into
-              minutes of cryptographic execution.
+              minutes of tamper-proof execution.
             </p>
           </div>
 

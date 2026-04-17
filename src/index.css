@@ -278,7 +278,7 @@
     );
   }
 
-  /* Ledger shimmer - cryptographic verification indicator */
+  /* Ledger shimmer - tamper-proof verification indicator */
   .ledger-verify {
     animation: ledger-pulse 2s ease-in-out 1;
   }

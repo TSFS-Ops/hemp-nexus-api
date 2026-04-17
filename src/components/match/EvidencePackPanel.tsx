@@ -262,7 +262,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               <Badge variant="secondary" className="text-[10px]">Sealed</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              This deal has been cryptographically sealed. Download the institutional-grade certificate
+              This deal has been tamper-proofally sealed. Download the institutional-grade certificate
               containing partner identities, trade terms, and hash-chain integrity verification.
             </p>
             <Button

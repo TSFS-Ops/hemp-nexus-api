@@ -312,7 +312,7 @@ function SettingsTab() {
           </Surface>
         </TabsContent>
         <TabsContent value="signing">
-          <Surface label="Cryptographic signing keys · append-only · public.signing_keys">
+          <Surface label="Tamper-Proof signing keys · append-only · public.signing_keys">
             <AdminSigningKeysPanel />
           </Surface>
         </TabsContent>

@@ -374,7 +374,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                     { num: "1", icon: Search, label: "Search", desc: "Find verified buyers or sellers by commodity, region, or company name." },
                     { num: "2", icon: FileText, label: "Create Match", desc: "Select trading partners and create a draft match. No commercial terms are recorded yet." },
                     { num: "3", icon: Zap, label: "Send Trade Request", desc: "Add commercial terms, then signal your serious interest. This deducts 1 credit (R10 ZAR) and creates an audit record." },
-                    { num: "4", icon: Key, label: "Evidence Pack", desc: "Download a tamper-evident evidence pack with cryptographic proof for your compliance records." },
+                    { num: "4", icon: Key, label: "Evidence Pack", desc: "Download a tamper-evident evidence pack with tamper-proof proof for your compliance records." },
                   ].map((s) => (
                     <div key={s.num} className="flex items-start gap-3 p-2 rounded-md">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">

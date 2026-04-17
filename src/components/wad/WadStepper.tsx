@@ -401,7 +401,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               Download PDF Certificate
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              PDF certificate includes all attestations, evidence bundle hashes, seal verification data, and a cryptographic verification section.
+              PDF certificate includes all attestations, evidence bundle hashes, seal verification data, and a tamper-proof verification section.
             </p>
           </div>
         );

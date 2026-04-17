@@ -115,7 +115,7 @@ function CertificateMockup() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
-                SHA-256 Cryptographic Seal
+                SHA-256 Tamper-Proof Seal
               </p>
               <p className="mt-1 font-mono text-[11px] text-slate-900 break-all leading-relaxed">
                 {DEMO_COMPILER_SEAL}
@@ -279,7 +279,7 @@ export default function TradeDeskProductPage() {
             }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
                 The all-in-one terminal for institutional commodity trade. Discover
                 counterparties, run compliance, and seal cross-border deals with
-                cryptographic Proof of Intent.
+                tamper-proof Proof of Intent.
               </motion.p>
 
               <motion.div initial={{
@@ -349,7 +349,7 @@ export default function TradeDeskProductPage() {
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
                 The 9-Gate Protocol.
               </h3>
-              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> Every Proof of Intent traverses nine cryptographic gates before it seals, entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
+              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> Every Proof of Intent traverses nine tamper-proof gates before it seals, entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
 
               <div className="mt-12">
                 <NineGateProtocol />
@@ -397,7 +397,7 @@ export default function TradeDeskProductPage() {
                   <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
                     Real-time telemetry.
                   </h3>
-                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> A live activity stream surfaces every state transition across your desk (from match creation to certificate issuance) with cryptographic provenance on every pulse. </p>
+                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> A live activity stream surfaces every state transition across your desk (from match creation to certificate issuance) with tamper-proof provenance on every pulse. </p>
                 </div>
                 <div className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-8">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-5">

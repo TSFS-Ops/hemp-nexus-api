@@ -188,7 +188,7 @@ export function BillingOverview() {
             Usage History
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
-            Append-only · Cryptographically chained
+            Append-only · Tamper-Proofally chained
           </p>
         </div>
 
