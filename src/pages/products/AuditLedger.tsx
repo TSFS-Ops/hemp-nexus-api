@@ -220,10 +220,15 @@ export default function AuditLedgerProductPage() {
                 <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
                 background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
               }} />
-                {/* Masked container, locks height + fade-out so the long doc doesn't blow out the layout */}
-                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-slate-950">
-                  <EvidencePackView demoMode />
-                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950 to-transparent z-10 pointer-events-none" />
+                {/* Masked container — locks height + fades the long doc, scrolled to surface the WaD seal */}
+                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-white">
+                  <div className="absolute inset-x-0 -top-[260px]">
+                    <EvidencePackView demoMode />
+                  </div>
+                  {/* top fade — softens the cut-off above the title */}
+                  <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
+                  {/* bottom fade — disappears into the page */}
+                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
                 </div>
               </motion.div>
             </div>
