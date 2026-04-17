@@ -51,7 +51,7 @@ export default function Auth() {
         .select("role")
         .eq("user_id", userId);
       const isPlatformAdmin = (roleRows || []).some(r => r.role === "platform_admin");
-      if (isPlatformAdmin) return "/hq";
+      if (isPlatformAdmin) return "/hq/users";
     } catch {
       // Non-fatal — fall through to standard routing
     }
