@@ -18,6 +18,7 @@ import { InboundReview } from "@/components/desk/inbound/InboundReview";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 import { ComplianceProfile } from "@/components/desk/compliance/ComplianceProfile";
 import { BillingOverview } from "@/components/desk/billing/BillingOverview";
+import { NewTradeInitiation } from "@/components/desk/NewTradeInitiation";
 // Migrated from the retired /dashboard shell. Data hooks (useQuery, Supabase) are unchanged.
 import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
@@ -187,15 +188,7 @@ export default function Desk() {
                   <Route path="notifications" element={<NotificationRulesTab />} />
                   <Route path="balance" element={<TokenBalanceTab />} />
                 </Route>
-                <Route
-                  path="new-trade"
-                  element={
-                    <DeskPlaceholder
-                      title="Start New Trade"
-                      subtitle="Capture commercial intent. The system will guide you through all 9 steps to a sealed Proof of Intent."
-                    />
-                  }
-                />
+                <Route path="new-trade" element={<NewTradeInitiation />} />
               </Routes>
             </DeskLayout>
           }
