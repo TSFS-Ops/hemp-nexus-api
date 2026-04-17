@@ -163,7 +163,7 @@ export default function AuditLedgerProductPage() {
               duration: 0.7,
               delay: 0.1
             }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
-                Provide banks, DDIs, and insurers with mathematically provable
+                Provide banks, DFIs, and insurers with mathematically provable
                 deal records. Eliminate manual auditing, eradicate fraud, and
                 accelerate capital deployment.
               </motion.p>
