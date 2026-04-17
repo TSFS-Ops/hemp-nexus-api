@@ -125,27 +125,14 @@ export default function Landing() {
   }, [isAuthenticated]);
 
   return (
-    <div className="landing-terminal h-screen-safe flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--lt-bg)' }}>
-      <AnimatedBackground />
+    <div className="min-h-screen flex flex-col bg-white" style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}>
       <PublicHeader />
-
-      {/* Main content */}
-      <div className="flex-1 overflow-y-auto relative z-10" style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}>
-        {/* Stripe-Glow Hero */}
+      <main className="flex-1">
         <HeroStripeGlow
           onGetStarted={isAuthenticated ? () => window.location.assign("/dashboard") : navigateToAuth}
           onContactSales={() => window.location.assign("mailto:sales@izenzo.co.za")}
         />
-
-        <div className="px-4 sm:px-6 lg:px-8 py-20 sm:py-28 max-w-[1100px] mx-auto space-y-24 sm:space-y-32">
-          {/* Trust badges */}
-          <div>
-            <TrustBadges />
-          </div>
-
-          {/* Trade interest form and workflow pipeline removed per request */}
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
