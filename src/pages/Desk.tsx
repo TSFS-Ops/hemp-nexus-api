@@ -94,13 +94,15 @@ export default function Desk() {
           }
         />
         <Route
-          path="inbound/review"
+          path="inbound/review/:matchId"
           element={
             <DeskFullBleed>
               <InboundReview />
             </DeskFullBleed>
           }
         />
+        {/* Legacy mock route — redirect to deals overview */}
+        <Route path="inbound/review" element={<Navigate to="/desk" replace />} />
         {/* MatchDetails — migrated from /dashboard/matches/:matchId.
             Backend hooks (useMatchDetails, useQuery for engagements) are unchanged;
             only the surrounding shell is now the Desk layout. */}
