@@ -65,8 +65,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
         {/* Sub-headline — extra breathing room */}
         <p className="mt-12 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Discover counterparties, run compliance, and seal cross-border trades with
-          cryptographic Proof of Intent — from your first match to your ten-thousandth.
+          Discover Trading Partners. Validate Intent. Execute with Confidence.
         </p>
 
         {/* Dual CTAs */}
