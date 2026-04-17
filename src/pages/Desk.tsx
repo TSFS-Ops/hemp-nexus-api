@@ -156,21 +156,21 @@ export default function Desk() {
                 <Route
                   path="deals"
                   element={
-                    <DeskPlaceholder
-                      title="My Deals"
-                      subtitle="The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent."
-                    />
+                    <>
+                      <header className="mb-8">
+                        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+                          Commercial Trading
+                        </p>
+                        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">My Deals</h1>
+                        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
+                          The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent.
+                        </p>
+                      </header>
+                      <MatchesList />
+                    </>
                   }
                 />
-                <Route
-                  path="deals/:matchId"
-                  element={
-                    <DeskPlaceholder
-                      title="Deal Details"
-                      subtitle="The 9-step Without-a-Doubt workflow for this trade."
-                    />
-                  }
-                />
+                {/* Deep links to a specific deal route through the migrated MatchDetails surface. */}
                 <Route path="compliance" element={<ComplianceProfile />} />
                 <Route path="billing" element={<BillingOverview />} />
                 <Route path="settings" element={<DeskSettingsLayout />}>
