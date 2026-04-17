@@ -198,6 +198,22 @@ export function EvidencePackView() {
   const [pack, setPack] = useState<EvidencePack | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+
+  const canonicalPayload = useMemo(
+    () => (pack ? JSON.stringify(pack.canonical, null, 2) : ""),
+    [pack]
+  );
+
+  async function handleCopyPayload() {
+    if (!canonicalPayload) return;
+    try {
+      await navigator.clipboard.writeText(canonicalPayload);
+      toast.success("Canonical payload copied to clipboard.");
+    } catch {
+      toast.error("Could not copy payload.");
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
