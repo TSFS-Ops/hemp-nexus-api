@@ -160,16 +160,22 @@ export default function Auth() {
         }
         throw error;
       }
-      // ── Safety net: drive the redirect from the handler, not just the listener.
-      // The onAuthStateChange listener can be torn down by re-renders (deps include
-      // searchParams) and Supabase has been observed to skip a SIGNED_IN replay if
-      // the listener was registered after the event fired. Resolving and navigating
-      // here guarantees a deterministic post-auth redirect.
+      // ── Post-auth redirect.
+      // We use a HARD navigation (window.location) rather than React Router's
+      // navigate() because the destination route (e.g. /hq/users) is wrapped in
+      // <RequireAuth>, which reads `isAuthenticated` from AuthContext. After
+      // signInWithPassword resolves, the Supabase client has the session, but
+      // AuthContext's onAuthStateChange handler hasn't yet propagated it into
+      // React state. A SPA navigate causes RequireAuth to mount with
+      // isAuthenticated=false and bounce back to /auth?returnTo=… (the bug
+      // we hit). A full reload forces AuthContext to re-initialise from
+      // getSession() with the persisted session already present.
       if (data?.user) {
         console.info("[Auth] signInWithPassword → resolving redirect from handler");
         const route = await resolvePostAuthRoute(data.user.id);
-        console.info("[Auth] handler navigating →", route);
-        navigate(route, { replace: true });
+        console.info("[Auth] handler hard-navigating →", route);
+        window.location.assign(route);
+        return;
       }
     } catch (err) {
       if (err instanceof z.ZodError) toast.error(err.errors[0].message);
