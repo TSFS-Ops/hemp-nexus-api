@@ -5,8 +5,8 @@
  * and certification grade so it reads like an institutional control room.
  */
 
-import { NavLink } from "react-router-dom";
-import { Inbox, FileSearch, ShieldCheck, Activity, LogOut } from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
+import { Inbox, FileSearch, ShieldCheck, Activity, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const NAV = [
@@ -93,13 +93,23 @@ export function GovernorSidebar() {
           </p>
         </div>
 
-        <button
-          onClick={signOut}
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors pt-2"
-        >
-          <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Sign out
-        </button>
+        <div className="flex items-center gap-3 pt-2">
+          <Link
+            to="/dashboard/settings"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Settings
+          </Link>
+          <span className="text-slate-300">·</span>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Sign out
+          </button>
+        </div>
       </div>
     </aside>
   );
