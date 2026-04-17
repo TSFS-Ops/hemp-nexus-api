@@ -585,25 +585,7 @@ export default function CounterpartySearch() {
           </Card>
         )}
 
-        {/* Pre-Search Empty State */}
-        {!isSearching && !searchError && !hasSearched && results.length === 0 && (
-          <Card>
-            <CardContent className="py-10 text-center space-y-4">
-              <Search className="h-10 w-10 mx-auto text-muted-foreground" />
-              <div>
-                <p className="font-medium text-foreground">Search for trading partners</p>
-                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                  Enter a commodity, region, or company name above to find registered buyers and sellers. 
-                  Select one or more results to create a draft match.
-                </p>
-              </div>
-              <div className="text-xs text-muted-foreground max-w-sm mx-auto">
-                <p className="font-medium mb-1">Example searches:</p>
-                <p>"chrome ore South Africa" · "manganese buyer" · "coal exports Richards Bay"</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Pre-Search Empty State intentionally removed per design. */}
 
         {/* Results */}
         {!isSearching && !searchError && results.length > 0 && (
