@@ -563,7 +563,7 @@ export function MatchesList() {
                       variant="ghost"
                       size="sm"
                       className="h-9 touch-target"
-                      onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
+                      onClick={() => navigate(`/desk/match/${match.id}`)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       View
