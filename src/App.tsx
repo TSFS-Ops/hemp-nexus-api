@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -15,7 +15,7 @@ import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 
 // Lazy loaded - secondary routes (reduces initial bundle ~40%)
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
+// Dashboard page deleted — every /dashboard/* path now redirects into /desk (see RedirectDashboardMatch + routes below).
 // Admin lazy import removed — /admin/* now redirects to /hq tabs (see routes below).
 const Docs = lazy(() => import("@/pages/Docs"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
@@ -29,7 +29,7 @@ const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 const GovernanceAudits = lazy(() => import("@/pages/GovernanceAudits"));
 const GovernanceEntities = lazy(() => import("@/pages/GovernanceEntities"));
 const GovernanceHealth = lazy(() => import("@/pages/GovernanceHealth"));
-const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
+// TradeDealWizard now mounted inside the Desk shell at /desk/wizard.
 const Welcome = lazy(() => import("@/pages/Welcome"));
 const Desk = lazy(() => import("@/pages/Desk"));
 const DeveloperCenter = lazy(() => import("@/pages/DeveloperCenter"));
@@ -38,17 +38,28 @@ const HQ = lazy(() => import("@/pages/HQ"));
 /**
  * Root element that renders based on host type:
  * - Public domain: Landing page
- * - Console domain: Redirect to Dashboard
+ * - Console domain: Redirect to Trade Desk
  * - Preview: Landing page (for testing)
  */
 function RootElement() {
   const hostType = getHostType();
-  
+
   if (hostType === 'console') {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
+    return <Navigate to="/desk" replace />;
   }
-  
+
   return <Landing />;
+}
+
+/**
+ * Legacy /dashboard/matches/:matchId → /desk/match/:matchId.
+ * React Router's <Navigate to="..."> does not substitute :params, so
+ * we resolve the param explicitly while preserving search + hash.
+ */
+function RedirectDashboardMatch() {
+  const { matchId } = useParams();
+  const { search, hash } = useLocation();
+  return <Navigate to={`/desk/match/${matchId ?? ""}${search}${hash}`} replace />;
 }
 
 function App() {
@@ -66,9 +77,27 @@ function App() {
                   <Route path={ROUTES.AUTH} element={<Auth />} />
                   <Route path="/welcome" element={<Welcome />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  {/* Billing now nested under dashboard */}
-                  <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
-                  <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
+                  {/* Billing now lives under the Trade Desk shell */}
+                  <Route path="/billing" element={<Navigate to="/desk/billing" replace />} />
+
+                  {/* ─── Legacy /dashboard/* → /desk redirect map ───
+                      The Dashboard page has been retired. Every legacy sub-route
+                      forwards to its closest Trade Desk equivalent so existing
+                      bookmarks, notification deep-links, and audit trails keep
+                      working. */}
+                  <Route path="/dashboard" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/matches/:matchId" element={<RedirectDashboardMatch />} />
+                  <Route path="/dashboard/matches" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/search" element={<Navigate to="/desk/discover" replace />} />
+                  <Route path="/dashboard/order-book" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/settings" element={<Navigate to="/desk/settings" replace />} />
+                  <Route path="/dashboard/account" element={<Navigate to="/desk/settings/company" replace />} />
+                  <Route path="/dashboard/billing" element={<Navigate to="/desk/billing" replace />} />
+                  <Route path="/dashboard/compliance" element={<Navigate to="/desk/compliance" replace />} />
+                  <Route path="/dashboard/programmes" element={<Navigate to="/desk" replace />} />
+                  {/* Catch-all: any other /dashboard/* path lands on the Desk overview */}
+                  <Route path="/dashboard/*" element={<Navigate to="/desk" replace />} />
+
                   <Route path="/desk/*" element={<Desk />} />
                   {/* Legacy /admin/* — every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
@@ -101,7 +130,8 @@ function App() {
                   <Route path="/governance/entities" element={<GovernanceEntities />} />
                   <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
-                  <Route path="/trade/wizard" element={<TradeDealWizard />} />
+                  {/* Legacy /trade/wizard → consolidated under the Trade Desk shell */}
+                  <Route path="/trade/wizard" element={<Navigate to="/desk/wizard" replace />} />
                   {/* Admin Dashboard — Izenzo Platform Administration.
                       Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
                   <Route path="/hq" element={<HQ />} />

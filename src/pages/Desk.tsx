@@ -18,6 +18,9 @@ import { InboundReview } from "@/components/desk/inbound/InboundReview";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 import { ComplianceProfile } from "@/components/desk/compliance/ComplianceProfile";
 import { BillingOverview } from "@/components/desk/billing/BillingOverview";
+// Migrated from the retired /dashboard shell. Data hooks (useQuery, Supabase) are unchanged.
+import MatchDetails from "@/pages/MatchDetails";
+import TradeDealWizard from "@/pages/TradeDealWizard";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -110,11 +113,32 @@ export default function Desk() {
             </DeskFullBleed>
           }
         />
+        {/* MatchDetails — migrated from /dashboard/matches/:matchId.
+            Backend hooks (useMatchDetails, useQuery for engagements) are unchanged;
+            only the surrounding shell is now the Desk layout. */}
         <Route
           path="match/:matchId"
           element={
             <DeskFullBleed>
+              <MatchDetails />
+            </DeskFullBleed>
+          }
+        />
+        {/* MatchCompiler retains its split-screen WaD editor under a dedicated path. */}
+        <Route
+          path="compiler/:matchId"
+          element={
+            <DeskFullBleed>
               <MatchCompiler />
+            </DeskFullBleed>
+          }
+        />
+        {/* TradeDealWizard — migrated from /trade/wizard. */}
+        <Route
+          path="wizard"
+          element={
+            <DeskFullBleed>
+              <TradeDealWizard />
             </DeskFullBleed>
           }
         />
