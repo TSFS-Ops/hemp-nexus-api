@@ -192,7 +192,16 @@ function TerminalMockup() {
 
 /* ───────────────────────── DEVELOPER BENTO ───────────────────────── */
 
-const HUB_CARDS = [
+type HubCard = {
+  icon: typeof BookOpen;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  statusBadge?: boolean;
+};
+
+const HUB_CARDS: HubCard[] = [
   {
     icon: BookOpen,
     title: "Documentation",
@@ -222,7 +231,7 @@ const HUB_CARDS = [
     cta: "View status",
     statusBadge: true,
   },
-] as const;
+];
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
