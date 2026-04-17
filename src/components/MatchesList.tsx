@@ -670,7 +670,7 @@ export function MatchesList() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
+                            onClick={() => navigate(`/desk/match/${match.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View
