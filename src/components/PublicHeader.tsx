@@ -31,10 +31,10 @@ const MEGA_NAV: MegaCategory[] = [
     key: "developers",
     label: "Developers",
     items: [
-      { label: "Documentation", description: "Guides, concepts & quickstarts", to: ROUTES.DOCS },
-      { label: "API Reference", description: "Full endpoint specification", to: ROUTES.DOCS },
-      { label: "SDKs & Libraries", description: "TypeScript SDK, code samples & client libs", to: ROUTES.DOCS },
-      { label: "System Status", description: "Live platform health & uptime", to: "/admin/health" },
+      { label: "Documentation", description: "Guides, concepts & quickstarts", to: "/developers" },
+      { label: "API Reference", description: "Full endpoint specification", to: "/developers" },
+      { label: "SDKs & Libraries", description: "TypeScript SDK, code samples & client libs", to: "/developers" },
+      { label: "System Status", description: "Live platform health & uptime", to: "/developers" },
     ],
   },
   {
