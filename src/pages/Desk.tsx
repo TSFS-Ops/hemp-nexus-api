@@ -113,11 +113,32 @@ export default function Desk() {
             </DeskFullBleed>
           }
         />
+        {/* MatchDetails — migrated from /dashboard/matches/:matchId.
+            Backend hooks (useMatchDetails, useQuery for engagements) are unchanged;
+            only the surrounding shell is now the Desk layout. */}
         <Route
           path="match/:matchId"
           element={
             <DeskFullBleed>
+              <MatchDetails />
+            </DeskFullBleed>
+          }
+        />
+        {/* MatchCompiler retains its split-screen WaD editor under a dedicated path. */}
+        <Route
+          path="compiler/:matchId"
+          element={
+            <DeskFullBleed>
               <MatchCompiler />
+            </DeskFullBleed>
+          }
+        />
+        {/* TradeDealWizard — migrated from /trade/wizard. */}
+        <Route
+          path="wizard"
+          element={
+            <DeskFullBleed>
+              <TradeDealWizard />
             </DeskFullBleed>
           }
         />
