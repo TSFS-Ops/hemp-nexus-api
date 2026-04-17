@@ -20,10 +20,19 @@ import {
   Loader2,
   AlertTriangle,
   ArrowLeft,
+  FileSearch,
+  Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadFile } from "@/lib/download-utils";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // ──────────────────────────────────────────────────────────────────────
 // Types
@@ -189,6 +198,22 @@ export function EvidencePackView() {
   const [pack, setPack] = useState<EvidencePack | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+
+  const canonicalPayload = useMemo(
+    () => (pack ? JSON.stringify(pack.canonical, null, 2) : ""),
+    [pack]
+  );
+
+  async function handleCopyPayload() {
+    if (!canonicalPayload) return;
+    try {
+      await navigator.clipboard.writeText(canonicalPayload);
+      toast.success("Canonical payload copied to clipboard.");
+    } catch {
+      toast.error("Could not copy payload.");
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -466,6 +491,14 @@ export function EvidencePackView() {
                 Payload Hash ({pack.hashAlgorithm})
               </p>
               <p className="font-mono text-[10px] text-slate-900 break-all">{payloadHash}</p>
+              <button
+                type="button"
+                onClick={() => setInspectorOpen(true)}
+                className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-mono text-[10px] tracking-[0.2em] uppercase transition-colors"
+              >
+                <FileSearch className="h-3 w-3" strokeWidth={1.75} />
+                Verify Record Integrity
+              </button>
             </div>
             <div className="sm:text-right">
               <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
@@ -481,6 +514,57 @@ export function EvidencePackView() {
           </footer>
         </div>
       </motion.article>
+
+      {/* Integrity Inspector — reveals the canonical SHA-256 input */}
+      <Dialog open={inspectorOpen} onOpenChange={setInspectorOpen}>
+        <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 text-slate-100 p-0 gap-0 max-h-[90vh] flex flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-800">
+            <DialogTitle className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-300">
+              Integrity Inspector · Canonical Payload
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-[12px] leading-relaxed pt-2">
+              This JSON object is the immutable input for the SHA-256 algorithm. You can copy this payload and run it through any independent hashing utility (e.g.{" "}
+              <span className="font-mono text-slate-300">sha256sum</span>,{" "}
+              <span className="font-mono text-slate-300">openssl dgst -sha256</span>) to verify it matches the Seal Hash above.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-4 border-b border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-500 mb-1">
+                Algorithm
+              </p>
+              <p className="font-mono text-[11px] text-slate-200">{pack.hashAlgorithm}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-500 mb-1">
+                Seal Hash
+              </p>
+              <p className="font-mono text-[10px] text-emerald-400 break-all">{payloadHash}</p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto p-6 bg-slate-900/50">
+            <pre className="font-mono text-[11px] leading-relaxed text-slate-200 whitespace-pre-wrap break-words">
+              {canonicalPayload || "{}"}
+            </pre>
+          </div>
+
+          <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
+            <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-slate-500">
+              {canonicalPayload.length.toLocaleString()} bytes · deterministic input
+            </p>
+            <button
+              type="button"
+              onClick={handleCopyPayload}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-slate-100 hover:bg-white text-slate-900 font-mono text-[10px] tracking-[0.2em] uppercase transition-colors"
+            >
+              <Copy className="h-3 w-3" strokeWidth={2} />
+              Copy Payload
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Floating control bar */}
       <motion.div
