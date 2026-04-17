@@ -1,5 +1,5 @@
 /**
- * ComplianceProfile — Trade User identity vault.
+ * ComplianceProfile, Trade User identity vault.
  *
  * Editorial layout: header + ghost action, status banner, three white
  * cards (Registered Identity · Ownership · Regulatory Evidence). All
@@ -182,17 +182,17 @@ export function ComplianceProfile() {
     0
   );
   const formattedAddress = formatAddress(org?.address ?? null);
-  const jurisdiction = org?.jurisdictions?.[0] ?? "—";
+  const jurisdiction = org?.jurisdictions?.[0] ?? "-";
 
   const legalRows = [
-    { label: "Legal Name", value: org?.legal_name || org?.name || "—" },
-    { label: "Trading As", value: org?.trading_name || "—" },
+    { label: "Legal Name", value: org?.legal_name || org?.name || "-" },
+    { label: "Trading As", value: org?.trading_name || "-" },
     {
       label: "Reg Number",
-      value: org?.registration_number || "—",
+      value: org?.registration_number || "-",
       mono: true,
     },
-    { label: "VAT Number", value: org?.vat_number || "—", mono: true },
+    { label: "VAT Number", value: org?.vat_number || "-", mono: true },
     {
       label: "Registered Address",
       value: formattedAddress || "Not on file",
@@ -330,7 +330,7 @@ export function ComplianceProfile() {
                           </p>
                           <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
                             {(owner.person?.entity_type ?? "owner")} ·{" "}
-                            {owner.person?.jurisdiction_code ?? "—"}
+                            {owner.person?.jurisdiction_code ?? "-"}
                           </p>
                         </div>
                       </div>

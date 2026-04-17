@@ -1,5 +1,5 @@
 /**
- * CompanyIdentityTab — KYB Command Center.
+ * CompanyIdentityTab, KYB Command Center.
  *
  * Replaces the prior "status badge + read-only fields" loop with a real
  * 3-step intake controller:
@@ -7,7 +7,7 @@
  *   §02 Beneficial Owners → writes to entities (person) + ubo_links
  *   §03 Documents         → uploads to kyc-documents bucket + kyc_documents row
  *
- * Verification badge is derived from real KYB signals — never from the
+ * Verification badge is derived from real KYB signals, never from the
  * always-"active" organizations.status column.
  */
 
@@ -159,7 +159,7 @@ export function CompanyIdentityTab() {
       setOwners([]);
     }
 
-    // Derive verification — never trust orgData.status alone.
+    // Derive verification, never trust orgData.status alone.
     const hasCoreFields = !!(orgData?.legal_name && orgData?.registration_number);
     const hasVerifiedEntity = (entityRows ?? []).some((e) => e.status === "verified");
     const hasVerifiedDocs = (docRows ?? []).some((d) => d.status === "verified" || d.status === "approved");
@@ -247,7 +247,7 @@ export function CompanyIdentityTab() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Step 1 — Entity details
+// Step 1, Entity details
 
 function EntityDetailsStep({
   org,
@@ -353,7 +353,7 @@ function EntityDetailsStep({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Step 2 — Beneficial owners
+// Step 2, Beneficial owners
 
 function OwnersStep({
   orgId,
@@ -389,7 +389,7 @@ function OwnersStep({
     if (!orgId || !companyEntityId) return;
     const pctNum = Number(pct);
     if (!name.trim() || !jurisdiction.trim() || !Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
-      toast.error("Enter a name, valid jurisdiction code, and ownership 0.01–100");
+      toast.error("Enter a name, valid jurisdiction code, and ownership 0.01 to 100");
       return;
     }
     setAdding(true);
@@ -463,7 +463,7 @@ function OwnersStep({
                     {o.person?.legal_name ?? "Unnamed"}
                   </p>
                   <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mt-0.5">
-                    {o.person?.jurisdiction_code ?? "—"} · {o.status}
+                    {o.person?.jurisdiction_code ?? "-"} · {o.status}
                   </p>
                 </div>
                 <p className="font-mono text-sm text-slate-900 tabular-nums">
@@ -512,7 +512,7 @@ function OwnersStep({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Step 3 — Documents
+// Step 3, Documents
 
 function DocumentsStep({
   orgId,

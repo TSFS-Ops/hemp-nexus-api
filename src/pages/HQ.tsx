@@ -1,5 +1,5 @@
 /**
- * Admin Dashboard — Izenzo Platform Administration.
+ * Admin Dashboard, Izenzo Platform Administration.
  *
  * Top-level admin workspace for the platform operations team. Provides
  * functional management surfaces for users, organisations (KYB), disputes,
@@ -8,7 +8,7 @@
  * Layout:
  *   - Top admin bar (slate-950): brand + system status + exit.
  *   - Tab rail (white, hairline border): four functional admin surfaces.
- *   - Tab content (slate-50): real, wired admin panels — no mocks.
+ *   - Tab content (slate-50): real, wired admin panels, no mocks.
  *
  * Privacy contract: counterparty trade detail remains opaque to admins by
  * design. Only meta-state surfaces here (KYB status, dispute escalations,
@@ -42,7 +42,7 @@ import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab registry — single source of truth. Order matters; first entry is default.
+// Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
 type TabId = "users" | "organisations" | "disputes" | "audit" | "settings";
 const TABS: {
@@ -79,7 +79,7 @@ const TABS: {
 const VALID_TAB_IDS = TABS.map(t => t.id) as readonly TabId[];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Top admin bar — header for the platform administration workspace.
+// Top admin bar, header for the platform administration workspace.
 // Midnight slate-950 to draw a hard boundary against the bright workspace below.
 // ─────────────────────────────────────────────────────────────────────────────
 function CommandBar() {
@@ -104,7 +104,7 @@ function CommandBar() {
             </div>
           </Link>
 
-          {/* Workspace switcher — escape hatch back to Desk / Governance / Developer */}
+          {/* Workspace switcher, escape hatch back to Desk / Governance / Developer */}
           <div className="hidden md:block w-[240px]">
             <ContextSwitcher tone="dark" />
           </div>
@@ -138,7 +138,7 @@ function CommandBar() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Section header — renders inside each tab. Anchors the operator with a
+// Section header, renders inside each tab. Anchors the operator with a
 // breadcrumb-equivalent and a one-line description of the surface.
 // ─────────────────────────────────────────────────────────────────────────────
 function TabHeader({
@@ -165,7 +165,7 @@ function TabHeader({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Surface wrapper — uniform admin chrome for every wired panel.
+// Surface wrapper, uniform admin chrome for every wired panel.
 // White card on slate-50, hairline border, generous padding. The internal
 // admin panels supply their own tables; we just frame them.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ function Surface({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab content — each panel is the legacy admin component, restyled by Surface.
+// Tab content, each panel is the legacy admin component, restyled by Surface.
 // ─────────────────────────────────────────────────────────────────────────────
 function UsersTab() {
   return <>
@@ -331,7 +331,7 @@ function SettingsTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Admin layout — top bar + tab rail. Tab state lives in the URL (/hq/:tab)
+// Admin layout, top bar + tab rail. Tab state lives in the URL (/hq/:tab)
 // so admins can deep-link and bookmark surfaces without losing context.
 // ─────────────────────────────────────────────────────────────────────────────
 function HQLayout() {
@@ -352,7 +352,7 @@ function HQLayout() {
   }}>
       <CommandBar />
 
-      {/* Tab rail — replaces the old SecondaryNav. Mirrors the Command Bar's
+      {/* Tab rail, replaces the old SecondaryNav. Mirrors the Command Bar's
           horizontal language; sticky so admins always have the four levers in view. */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
@@ -395,7 +395,7 @@ function HQLayout() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 403 Forbidden — clean, brand-aligned denial state.
+// 403 Forbidden, clean, brand-aligned denial state.
 // Shown to authenticated non-admins who navigate directly to /hq via URL.
 // We render a visible explanation rather than a silent redirect so operators
 // understand the boundary; a manual exit returns them to the persona selector.

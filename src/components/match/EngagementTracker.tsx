@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
 interface EngagementTrackerProps {
   matchId: string;
-  /** The parent match object — used to pre-fill the re-use form */
+  /** The parent match object, used to pre-fill the re-use form */
   match?: {
     commodity?: string | null;
     quantity_amount?: number | null;

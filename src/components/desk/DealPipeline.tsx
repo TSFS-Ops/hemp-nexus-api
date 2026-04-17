@@ -65,7 +65,7 @@ export function DealPipeline() {
           id: m.id,
           commodity: m.commodity ?? "Unspecified commodity",
           counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
-          volume: m.quantity_amount && m.quantity_unit ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}` : "—",
+          volume: m.quantity_amount && m.quantity_unit ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}` : "-",
           state: m.state ?? "draft",
           created_at: m.created_at
         };
@@ -121,7 +121,7 @@ function DealDocumentCard({
     year: "numeric"
   });
   return <button onClick={onClick} className="text-left bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors p-6 group">
-      {/* Top mono row — like a document header */}
+      {/* Top mono row, like a document header */}
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
         <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-400">
           {deal.id.slice(0, 8)}

@@ -111,7 +111,7 @@ export default function TradeDealWizard() {
               </div>
 
               <div className="border border-border rounded-md bg-background overflow-hidden">
-                {/* TOP SECTION — Deal Summary */}
+                {/* TOP SECTION, Deal Summary */}
                 <div className="p-6 space-y-5">
                   {/* Counterparty */}
                   <div>
@@ -190,7 +190,7 @@ export default function TradeDealWizard() {
                   </div>
                 </div>
 
-                {/* BOTTOM SECTION — Commercial Action */}
+                {/* BOTTOM SECTION, Commercial Action */}
                 <div className="border-t border-border bg-secondary/40 p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h3 className="text-base font-bold text-foreground">

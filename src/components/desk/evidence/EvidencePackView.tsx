@@ -1,10 +1,10 @@
 /**
- * EvidencePackView — Sovereign-vault rendering of a real evidence pack.
+ * EvidencePackView, Sovereign-vault rendering of a real evidence pack.
  *
  * Pulls the deterministic, server-signed pack from the `evidence-pack`
  * Edge Function (which computes SHA-256 over a canonical JSON payload of
  * the match, its event chain, documents, and audit log). The UI presents
- * verified commercial terms and the actual gate progression — no mocks.
+ * verified commercial terms and the actual gate progression, no mocks.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -74,7 +74,7 @@ interface Gate {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Gate derivation — maps real match/event state to the 9-gate WaD model
+// Gate derivation, maps real match/event state to the 9-gate WaD model
 
 function deriveGates(pack: EvidencePack | null): Gate[] {
   const match = (pack?.canonical?.match ?? {}) as Record<string, unknown>;
@@ -140,7 +140,7 @@ function deriveGates(pack: EvidencePack | null): Gate[] {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Term derivation — maps real match row to verified-terms grid
+// Term derivation, maps real match row to verified-terms grid
 
 function deriveTerms(pack: EvidencePack | null): Array<{
   label: string;
@@ -148,10 +148,10 @@ function deriveTerms(pack: EvidencePack | null): Array<{
 }> {
   const m = (pack?.canonical?.match ?? {}) as Record<string, unknown>;
   if (!Object.keys(m).length) return [];
-  const fmt = (v: unknown) => v == null || v === "" ? "—" : String(v);
-  const qty = m.quantity_amount ? `${m.quantity_amount} ${fmt(m.quantity_unit)}` : "—";
-  const price = m.price_amount != null ? `${fmt(m.price_currency)} ${Number(m.price_amount).toLocaleString("en-US")}` : "—";
-  const notional = m.price_amount != null && m.quantity_amount != null ? `${fmt(m.price_currency)} ${(Number(m.price_amount) * Number(m.quantity_amount)).toLocaleString("en-US")}` : "—";
+  const fmt = (v: unknown) => v == null || v === "" ? "-" : String(v);
+  const qty = m.quantity_amount ? `${m.quantity_amount} ${fmt(m.quantity_unit)}` : "-";
+  const price = m.price_amount != null ? `${fmt(m.price_currency)} ${Number(m.price_amount).toLocaleString("en-US")}` : "-";
+  const notional = m.price_amount != null && m.quantity_amount != null ? `${fmt(m.price_currency)} ${(Number(m.price_amount) * Number(m.quantity_amount)).toLocaleString("en-US")}` : "-";
   return [{
     label: "COMMODITY",
     value: fmt(m.commodity)
@@ -178,7 +178,7 @@ function deriveTerms(pack: EvidencePack | null): Array<{
     value: fmt(m.seller_name)
   }, {
     label: "EXECUTION DATE",
-    value: m.settled_at ? new Date(String(m.settled_at)).toUTCString() : "—"
+    value: m.settled_at ? new Date(String(m.settled_at)).toUTCString() : "-"
   }, {
     label: "STATUS",
     value: fmt(m.status)
@@ -211,7 +211,7 @@ export function EvidencePackView({
     }
   }
   useEffect(() => {
-    if (demoMode) return; // fixture is already loaded — never hit the network.
+    if (demoMode) return; // fixture is already loaded, never hit the network.
     let cancelled = false;
     async function load() {
       if (!matchId) {
@@ -500,7 +500,7 @@ export function EvidencePackView({
         </div>
       </motion.article>
 
-      {/* Integrity Inspector — reveals the canonical SHA-256 input */}
+      {/* Integrity Inspector, reveals the canonical SHA-256 input */}
       <Dialog open={inspectorOpen} onOpenChange={setInspectorOpen}>
         <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 text-slate-100 p-0 gap-0 max-h-[90vh] flex flex-col">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-800">
@@ -547,7 +547,7 @@ export function EvidencePackView({
         </DialogContent>
       </Dialog>
 
-      {/* Floating control bar — hidden in demo mode (museum / public page embed) */}
+      {/* Floating control bar, hidden in demo mode (museum / public page embed) */}
       {!demoMode && <motion.div initial={{
       y: 30,
       opacity: 0

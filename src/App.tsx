@@ -15,8 +15,8 @@ import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 
 // Lazy loaded - secondary routes (reduces initial bundle ~40%)
-// Dashboard page deleted — every /dashboard/* path now redirects into /desk (see RedirectDashboardMatch + routes below).
-// Admin lazy import removed — /admin/* now redirects to /hq tabs (see routes below).
+// Dashboard page deleted, every /dashboard/* path now redirects into /desk (see RedirectDashboardMatch + routes below).
+// Admin lazy import removed, /admin/* now redirects to /hq tabs (see routes below).
 const Docs = lazy(() => import("@/pages/Docs"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
 const Billing = lazy(() => import("@/pages/Billing"));
@@ -24,7 +24,7 @@ const WalkthroughReport = lazy(() => import("@/pages/WalkthroughReport"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Unsubscribe = lazy(() => import("@/pages/Unsubscribe"));
-// DeveloperApiKeys / DeveloperWebhooks pages were removed — superseded by DeveloperCenter.
+// DeveloperApiKeys / DeveloperWebhooks pages were removed, superseded by DeveloperCenter.
 const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 const GovernanceAudits = lazy(() => import("@/pages/GovernanceAudits"));
 const GovernanceEntities = lazy(() => import("@/pages/GovernanceEntities"));
@@ -110,7 +110,7 @@ function App() {
                   <Route path="/dashboard/*" element={<Navigate to="/desk" replace />} />
 
                   <Route path="/desk/*" element={<Desk />} />
-                  {/* Legacy /admin/* — every section now lives under /hq.
+                  {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
                       bookmarks, audit logs, and outbound links keep working. */}
                   <Route path="/admin" element={<Navigate to="/hq/users" replace />} />
@@ -124,7 +124,7 @@ function App() {
                   <Route path="/admin/overrides" element={<Navigate to="/hq/settings" replace />} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
                   <Route path="/admin/*" element={<Navigate to="/hq/users" replace />} />
-                  {/* Public docs hub — Stripe-style sidebar layout */}
+                  {/* Public docs hub, Stripe-style sidebar layout */}
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
                   <Route path="/docs/sdks" element={<DocsSdks />} />
@@ -137,13 +137,13 @@ function App() {
                   <Route path="/products/compliance-engine" element={<ComplianceEngineProductPage />} />
                   <Route path="/products/audit-ledger" element={<AuditLedgerProductPage />} />
                   <Route path="/products" element={<Navigate to="/products/trade-desk" replace />} />
-                  {/* Public solutions pages — persona-targeted landing pages */}
+                  {/* Public solutions pages, persona-targeted landing pages */}
                   <Route path="/solutions/traders" element={<TradersSolutionsPage />} />
                   <Route path="/solutions/finance" element={<FinanceSolutionsPage />} />
                   <Route path="/solutions/sovereigns" element={<SovereignsSolutionsPage />} />
                   <Route path="/solutions" element={<Navigate to="/solutions/traders" replace />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
-                  {/* Public developer hub — landing page for the four dropdown links.
+                  {/* Public developer hub, landing page for the four dropdown links.
                       Authenticated tooling lives at /developer/* (DeveloperCenter). */}
                   <Route path="/developers" element={<Developers />} />
                   <Route path="/developers/keys" element={<Navigate to="/developer/keys" replace />} />
@@ -159,7 +159,7 @@ function App() {
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   {/* Legacy /trade/wizard → consolidated under the Trade Desk shell */}
                   <Route path="/trade/wizard" element={<Navigate to="/desk/wizard" replace />} />
-                  {/* Admin Dashboard — Izenzo Platform Administration.
+                  {/* Admin Dashboard, Izenzo Platform Administration.
                       Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
                   <Route path="/hq" element={<HQ />} />
                   <Route path="/hq/:tab" element={<HQ />} />

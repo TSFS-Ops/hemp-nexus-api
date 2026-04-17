@@ -180,7 +180,7 @@ function RequestInspector({ row }: { row: ApiRequestLog | null }) {
           </div>
           <div className="flex justify-between font-mono text-[11px]">
             <span className="text-slate-400">ip</span>
-            <span className="text-slate-100 truncate ml-2">{row.ip_address || "—"}</span>
+            <span className="text-slate-100 truncate ml-2">{row.ip_address || "-"}</span>
           </div>
         </div>
         {row.error_message && (

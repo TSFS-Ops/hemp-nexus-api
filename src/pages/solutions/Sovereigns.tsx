@@ -1,5 +1,5 @@
 /**
- * Solutions — Sovereigns & PDBs.
+ * Solutions, Sovereigns & PDBs.
  *
  * Same "Emerald & Airy" Stripe-Infrastructure aesthetic as the Product pages.
  * Persona-targeted copy (Macro-Oversight) wrapped around a custom static
@@ -33,7 +33,7 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ─────────────── HERO MOCKUP — Macro Telemetry Dashboard ─────────────── */
+/* ─────────────── HERO MOCKUP, Macro Telemetry Dashboard ─────────────── */
 
 const PROGRAMME_PULSES = [{
   t: "10:42",
@@ -46,11 +46,11 @@ const PROGRAMME_PULSES = [{
 }, {
   t: "10:39",
   evt: "kyb_re_attestation",
-  amt: "—"
+  amt: "-"
 }, {
   t: "10:36",
   evt: "sanctions_clear",
-  amt: "—"
+  amt: "-"
 }, {
   t: "10:34",
   evt: "fund_flow_recorded",
@@ -278,7 +278,7 @@ export default function SovereignsSolutionsPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — Macro Oversight */}
+            {/* Box 1, Macro Oversight */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -315,7 +315,7 @@ export default function SovereignsSolutionsPage() {
               </div>
             </div>
 
-            {/* Box 2 — Fraud & Leakage Prevention */}
+            {/* Box 2, Fraud & Leakage Prevention */}
             <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -338,7 +338,7 @@ export default function SovereignsSolutionsPage() {
               </ul>
             </div>
 
-            {/* Box 3 — Institutional Data Control */}
+            {/* Box 3, Institutional Data Control */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>

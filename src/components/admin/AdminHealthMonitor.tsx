@@ -149,7 +149,7 @@ export function AdminHealthMonitor() {
   // Uptime calculation
   const uptimePercent = history.length > 0
     ? ((history.filter(h => h.status === "healthy").length / history.length) * 100).toFixed(1)
-    : "—";
+    : "-";
 
   const avgResponseTime = history.length > 0
     ? Math.round(history.reduce((sum, h) => sum + h.totalResponseTime, 0) / history.filter(h => h.totalResponseTime > 0).length || 0)
@@ -280,11 +280,11 @@ export function AdminHealthMonitor() {
                           (check.responseTime ?? 0) > 1000 ? "text-destructive" :
                           (check.responseTime ?? 0) > 500 ? "text-yellow-600" : "text-muted-foreground"
                         }`}>
-                          {check.responseTime != null ? `${check.responseTime}ms` : "—"}
+                          {check.responseTime != null ? `${check.responseTime}ms` : "-"}
                         </span>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground max-w-[250px] truncate">
-                        {check.message || "—"}
+                        {check.message || "-"}
                       </TableCell>
                     </TableRow>
                   );

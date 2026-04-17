@@ -5,7 +5,7 @@
  * in demo/preview mode (e.g. landing pages, screenshots, marketing visuals)
  * WITHOUT touching the live database, edge functions, or auth session.
  *
- * Keep values realistic — these surfaces are user-facing in marketing.
+ * Keep values realistic, these surfaces are user-facing in marketing.
  */
 
 export const DEMO_MATCH_ID = "a1b2c3d4-demo-4f5e-9c2a-7d3e8f1a2b3c";

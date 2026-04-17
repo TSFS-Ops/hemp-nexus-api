@@ -223,7 +223,7 @@ export function ConsoleOverview() {
           </div>
         </div>}
 
-      {/* "Your next step" — moved above stats for wayfinding priority */}
+      {/* "Your next step", moved above stats for wayfinding priority */}
       {!isError && !hasZeroActivity && !isLoading && stats && (() => {
       const hasKeys = stats.activeApiKeys > 0;
       const hasSearches = stats.callsLast24h > 0 || stats.callsLast7d > 0;

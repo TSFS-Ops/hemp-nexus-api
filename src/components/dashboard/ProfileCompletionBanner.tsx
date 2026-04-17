@@ -1,5 +1,5 @@
 /**
- * ProfileCompletionBanner — Shown on the dashboard when the user's full_name
+ * ProfileCompletionBanner, Shown on the dashboard when the user's full_name
  * is missing or looks like an email address.
  *
  * This is a soft gate: it prompts but doesn't block navigation.

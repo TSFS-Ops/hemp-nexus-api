@@ -1,11 +1,10 @@
 /**
- * Audit Ledger — public product page.
+ * Audit Ledger, public product page.
  *
  * Same "Emerald & Airy" aesthetic as Trade Desk and Compliance Engine: a
  * whisper-light emerald mesh, 40px precision grid, extreme whitespace, tight-
  * tracked Inter headings. The hero artwork mounts the live EvidencePackView in
- * `demoMode` so the public visitor sees the *actual* sealed certificate UI —
- * no auth, no Supabase round-trip, no redirects.
+ * `demoMode` so the public visitor sees the *actual* sealed certificate UI, * no auth, no Supabase round-trip, no redirects.
  */
 
 import { Link } from "react-router-dom";
@@ -40,7 +39,7 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ───────────────── BENTO VISUAL — payload → SHA-256 hash ───────────────── */
+/* ───────────────── BENTO VISUAL, payload → SHA-256 hash ───────────────── */
 
 const HASH_VALUE = "0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b";
 function PayloadToHash() {
@@ -92,7 +91,7 @@ function PayloadToHash() {
     </div>;
 }
 
-/* ─────────────── BENTO — Bank-Ready Exports ─────────────── */
+/* ─────────────── BENTO, Bank-Ready Exports ─────────────── */
 
 const EXPORT_FORMATS = [{
   icon: FileJson,
@@ -221,7 +220,7 @@ export default function AuditLedgerProductPage() {
                 <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
                 background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
               }} />
-                {/* Masked container — locks height + fade-out so the long doc doesn't blow out the layout */}
+                {/* Masked container, locks height + fade-out so the long doc doesn't blow out the layout */}
                 <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-slate-950">
                   <EvidencePackView demoMode />
                   <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950 to-transparent z-10 pointer-events-none" />
@@ -246,7 +245,7 @@ export default function AuditLedgerProductPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — Large, spans 2 cols: The Immutable Ledger */}
+            {/* Box 1, Large, spans 2 cols: The Immutable Ledger */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -270,7 +269,7 @@ export default function AuditLedgerProductPage() {
               </div>
             </div>
 
-            {/* Box 2 — Bank-Ready Exports */}
+            {/* Box 2, Bank-Ready Exports */}
             <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -304,7 +303,7 @@ export default function AuditLedgerProductPage() {
               </ul>
             </div>
 
-            {/* Box 3 — The 9-Gate Proof (full width) */}
+            {/* Box 3, The 9-Gate Proof (full width) */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>

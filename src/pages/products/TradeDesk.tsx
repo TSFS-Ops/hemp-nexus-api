@@ -1,5 +1,5 @@
 /**
- * Trade Desk — public product page.
+ * Trade Desk, public product page.
  *
  * "Stripe-Infrastructure" aesthetic: extreme whitespace, whisper-light emerald
  * mesh, tight-tracked Inter headings, a tactile floating Certificate of
@@ -32,7 +32,7 @@ function PrecisionGrid({
   }} />;
 }
 
-/** A whisper of emerald — soft radial mesh, very low opacity. */
+/** A whisper of emerald, soft radial mesh, very low opacity. */
 function EmeraldWhisper() {
   return <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl" style={{
@@ -44,7 +44,7 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ─────────────────── HERO MOCKUP — Certificate of Intent ─────────────────── */
+/* ─────────────────── HERO MOCKUP, Certificate of Intent ─────────────────── */
 
 function CertificateMockup() {
   const docCount = DEMO_COMPILER_DOCS.length;
@@ -80,7 +80,7 @@ function CertificateMockup() {
           </p>
         </header>
 
-        {/* Body — commercial terms */}
+        {/* Body, commercial terms */}
         <div className="px-10 py-8 space-y-5">
           <Row label="Counterparty" value={DEMO_COMPILER_TERMS.counterparty} />
           <Row label="Commodity" value={DEMO_COMPILER_TERMS.commodity} />
@@ -200,7 +200,7 @@ const PULSES = [{
 }, {
   t: "00:11",
   evt: "poi_generated",
-  org: "—"
+  org: "-"
 }];
 function TelemetryFeed() {
   return <div className="space-y-2.5">
@@ -336,7 +336,7 @@ export default function TradeDeskProductPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — Large, spans 2 cols */}
+            {/* Box 1, Large, spans 2 cols */}
             <div className="lg:col-span-2 lg:row-span-1 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -356,7 +356,7 @@ export default function TradeDeskProductPage() {
               </div>
             </div>
 
-            {/* Box 2 — KYB */}
+            {/* Box 2, KYB */}
             <div className="rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 shadow-sm flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -382,7 +382,7 @@ export default function TradeDeskProductPage() {
               </ul>
             </div>
 
-            {/* Box 3 — Telemetry */}
+            {/* Box 3, Telemetry */}
             <div className="lg:col-span-3 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>

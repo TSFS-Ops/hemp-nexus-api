@@ -164,7 +164,7 @@ function WelcomeContent() {
             YOUR SELECTION IS RECORDED IN YOUR PROFILE · CHANGEABLE FROM SETTINGS · ATTESTED BY SHA-256
           </p>
 
-          {/* Internal HQ access — minimal, intentional dev-phase escape hatch.
+          {/* Internal HQ access, minimal, intentional dev-phase escape hatch.
               The route itself is RBAC-guarded so non-admins receive a 403 on arrival. */}
           <div className="mt-8 text-center">
             <button

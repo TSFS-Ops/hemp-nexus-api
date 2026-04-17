@@ -1,5 +1,5 @@
 /**
- * Solutions — Commodity Traders & Corporates.
+ * Solutions, Commodity Traders & Corporates.
  *
  * Same "Emerald & Airy" Stripe-Infrastructure aesthetic as the Product pages.
  * Persona-targeted copy (Speed & Execution) wrapped around the live
@@ -34,7 +34,7 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ─────────────── HERO MOCKUP — Static Certificate of Intent ─────────────── */
+/* ─────────────── HERO MOCKUP, Static Certificate of Intent ─────────────── */
 
 function CertificateMockup() {
   const docCount = DEMO_COMPILER_DOCS.length;
@@ -240,7 +240,7 @@ export default function TradersSolutionsPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — Verified Liquidity */}
+            {/* Box 1, Verified Liquidity */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -279,7 +279,7 @@ export default function TradersSolutionsPage() {
               </div>
             </div>
 
-            {/* Box 2 — Hash-Locked Negotiations */}
+            {/* Box 2, Hash-Locked Negotiations */}
             <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -302,7 +302,7 @@ export default function TradersSolutionsPage() {
               </ul>
             </div>
 
-            {/* Box 3 — Zero-Friction Compliance */}
+            {/* Box 3, Zero-Friction Compliance */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>

@@ -32,7 +32,7 @@ interface CounterpartyResultCardProps {
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   onFindSimilar?: (result: SearchResult) => void;
-  /** The current user's side — used to infer the trading partner's role */
+  /** The current user's side, used to infer the trading partner's role */
   userSide?: "buyer" | "seller";
 }
 function getSourceLabel(source: string): {
@@ -106,7 +106,7 @@ export function CounterpartyResultCard({
               </h4>
               
               <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Trading partner role badge — inferred from user's side */}
+                {/* Trading partner role badge, inferred from user's side */}
                 {userSide && <Badge variant="outline" className={`text-[10px] sm:text-xs px-1.5 py-0 h-5 gap-0.5 ${userSide === "buyer" ? "border-orange-300 text-orange-700 dark:border-orange-600 dark:text-orange-300" : "border-blue-300 text-blue-700 dark:border-blue-600 dark:text-blue-300"}`}>
                     {userSide === "buyer" ? "Seller" : "Buyer"}
                   </Badge>}

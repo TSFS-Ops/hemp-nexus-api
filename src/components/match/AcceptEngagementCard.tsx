@@ -1,5 +1,5 @@
 /**
- * AcceptEngagementCard — Shown to the invited trading partner on a bilateral
+ * AcceptEngagementCard, Shown to the invited trading partner on a bilateral
  * known-partner match when the engagement is awaiting their response.
  *
  * Provides Accept / Decline actions that call the trading-partner-facing

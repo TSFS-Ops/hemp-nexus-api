@@ -1,5 +1,5 @@
 /**
- * InboundReview — The counterparty-side review of a sealed Proof of Intent.
+ * InboundReview, The counterparty-side review of a sealed Proof of Intent.
  *
  * Hardened (Prompt 34): no more mock data, no more hollow buttons.
  * - Fetches the real `matches` row + linked `poi_engagements` + `match_documents`
@@ -46,9 +46,9 @@ interface InboundData {
   callerOrgId: string;
 }
 function formatRelativeExpiry(expiresAt: string | null): string {
-  if (!expiresAt) return "—";
+  if (!expiresAt) return "-";
   const ms = new Date(expiresAt).getTime() - Date.now();
-  if (Number.isNaN(ms)) return "—";
+  if (Number.isNaN(ms)) return "-";
   if (ms <= 0) return "expired";
   const days = Math.floor(ms / 86_400_000);
   const hours = Math.floor(ms % 86_400_000 / 3_600_000);
@@ -84,7 +84,7 @@ export function InboundReview() {
       } = await supabase.from("profiles").select("org_id").eq("id", user.id).maybeSingle();
       const callerOrgId = callerProfile?.org_id ?? "";
 
-      // Match row — RLS scopes us to participating orgs.
+      // Match row, RLS scopes us to participating orgs.
       const {
         data: match,
         error: matchErr
@@ -120,20 +120,20 @@ export function InboundReview() {
       // Caller is the counterparty if engagement.counterparty_org_id matches
       // OR if they're a party to the match but NOT the initiator.
       const isCounterparty = engagement?.counterparty_org_id && engagement.counterparty_org_id === callerOrgId || match.org_id !== callerOrgId && (match.buyer_org_id === callerOrgId || match.seller_org_id === callerOrgId);
-      const volume = match.quantity_amount != null ? `${Number(match.quantity_amount).toLocaleString()}${match.quantity_unit ? ` ${match.quantity_unit}` : ""}` : "—";
-      const price = match.price_amount != null ? `${Number(match.price_amount).toLocaleString()}${match.price_currency ? ` ${match.price_currency}` : ""}` : "—";
+      const volume = match.quantity_amount != null ? `${Number(match.quantity_amount).toLocaleString()}${match.quantity_unit ? ` ${match.quantity_unit}` : ""}` : "-";
+      const price = match.price_amount != null ? `${Number(match.price_amount).toLocaleString()}${match.price_currency ? ` ${match.price_currency}` : ""}` : "-";
       return {
         matchRef: `WAD-${match.id.slice(0, 8).toUpperCase()}`,
         matchId: match.id,
         initiator: initiatorName ?? "Counterparty",
         initiatorOrgId: match.org_id,
-        initiatorHash: match.event_chain_hash ?? "—",
+        initiatorHash: match.event_chain_hash ?? "-",
         receivedAt: new Date(match.created_at).toISOString().replace("T", " ").slice(0, 19) + " UTC",
         expiresIn: formatRelativeExpiry(engagement?.expires_at ?? null),
-        commodity: match.commodity ?? "—",
+        commodity: match.commodity ?? "-",
         volume,
         price,
-        incoterms: "—",
+        incoterms: "-",
         notes: match.terms ?? "",
         documents,
         engagementId: engagement?.id ?? null,
@@ -195,10 +195,10 @@ export function InboundReview() {
     }
   });
   const notional = useMemo(() => {
-    if (!data) return "—";
+    if (!data) return "-";
     const q = parseFloat(data.volume.replace(/[^0-9.]/g, ""));
     const p = parseFloat(data.price.replace(/[^0-9.]/g, ""));
-    if (!Number.isFinite(q) || !Number.isFinite(p)) return "—";
+    if (!Number.isFinite(q) || !Number.isFinite(p)) return "-";
     return (q * p).toLocaleString("en-US");
   }, [data]);
   if (!matchId) {
@@ -311,7 +311,7 @@ export function InboundReview() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-slate-900 truncate font-medium">{d.name}</p>
                         <p className="font-mono text-[11px] text-slate-500 truncate">
-                          sha256:{d.hash || "—"}
+                          sha256:{d.hash || "-"}
                         </p>
                       </div>
                     </li>)}
@@ -410,7 +410,7 @@ export function InboundReview() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
-                          <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash || "—"}</p>
+                          <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash || "-"}</p>
                         </div>
                       </li>)}
                   </ul>

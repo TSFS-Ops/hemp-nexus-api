@@ -1,10 +1,10 @@
 /**
- * DiscoverCounterparties — Trade Desk shell for the live Discovery Engine.
+ * DiscoverCounterparties, Trade Desk shell for the live Discovery Engine.
  *
  * Mounts the legacy CounterpartySearch component (which owns all Supabase
  * queries, the parsed-query pipeline, role context, and batched match
  * creation) inside the institutional Trade Desk container. No data binding
- * is altered here — this file is purely the presentational wrapper.
+ * is altered here, this file is purely the presentational wrapper.
  */
 
 import CounterpartySearch from "@/components/CounterpartySearch";

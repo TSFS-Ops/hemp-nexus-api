@@ -521,7 +521,7 @@ export default function CounterpartySearch() {
         {/* Metrics Card */}
         {metrics && <SearchMetricsCard metrics={metrics} />}
 
-        {/* Degraded mode banner — web discovery is down */}
+        {/* Degraded mode banner, web discovery is down */}
         {!isSearching && degradation.isPartiallyDegraded && degradation.message && (
           <Alert className="border-warning/30 bg-warning/5">
             <WifiOff className="h-4 w-4 text-warning" />
@@ -637,7 +637,7 @@ export default function CounterpartySearch() {
           </div>
         )}
 
-        {/* Sticky floating CTA — always visible when trading partners are selected */}
+        {/* Sticky floating CTA, always visible when trading partners are selected */}
         {!isSearching && results.length > 0 && selectedResults.size > 0 && (
           <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-lg">

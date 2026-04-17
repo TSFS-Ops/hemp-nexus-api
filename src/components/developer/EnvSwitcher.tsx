@@ -10,7 +10,7 @@ interface EnvCtx {
 const Ctx = createContext<EnvCtx>({ env: "sandbox", setEnv: () => {} });
 
 export function EnvProvider({ children }: { children: ReactNode }) {
-  // Sandbox is active by default — safer baseline for a developer landing fresh.
+  // Sandbox is active by default, safer baseline for a developer landing fresh.
   const [env, setEnv] = useState<Env>("sandbox");
   return <Ctx.Provider value={{ env, setEnv }}>{children}</Ctx.Provider>;
 }

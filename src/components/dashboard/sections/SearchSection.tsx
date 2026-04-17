@@ -32,7 +32,7 @@ export function SearchSection() {
   return <div className="space-y-5 sm:space-y-6">
       <SectionHeader title="Find Trading Partners" description="Search for trading partners to begin a deal" />
 
-      {/* Deal flow stepper — shows user is on Step 1 */}
+      {/* Deal flow stepper, shows user is on Step 1 */}
       <Card>
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center justify-between gap-0">
@@ -52,7 +52,7 @@ export function SearchSection() {
         </CardContent>
       </Card>
 
-      {/* Single unified search — no more separate tabs */}
+      {/* Single unified search, no more separate tabs */}
       <CounterpartySearch />
     </div>;
 }

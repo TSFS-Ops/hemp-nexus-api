@@ -1,5 +1,5 @@
 /**
- * RejectedMatch — Post-Mortem split-screen for a denied trade.
+ * RejectedMatch, Post-Mortem split-screen for a denied trade.
  *
  * Left:  Grounds for rejection, audit log, and recovery actions.
  * Right: Voided WaD certificate with stamped 'VOIDED' watermark.
@@ -191,7 +191,7 @@ export function RejectedMatch() {
                   </div>
                 </div>
 
-                {/* VOIDED watermark — physical red ink stamp */}
+                {/* VOIDED watermark, physical red ink stamp */}
                 <motion.div initial={{
                 scale: 2.6,
                 opacity: 0,

@@ -2,10 +2,10 @@
  * DealWizard - Replaces the 9-tab MatchDetailsTabs with a strict linear 5-step wizard.
  *
  * Steps:
- *   1. Search (always complete on match detail — match already exists)
+ *   1. Search (always complete on match detail, match already exists)
  *   2. Match Details (review trading partner, terms, docs, notes, disputes)
  *   3. Generate POI (readiness checklist + credit-burn action)
- *   4. WaD (governance docs + 9-gate validation) — must be SEALED before completion
+ *   4. WaD (governance docs + 9-gate validation), must be SEALED before completion
  *   5. Evidence Pack (sealed evidence bundle + timeline)
  *
  * Strict linear: future steps are locked until prior steps are fully complete.
@@ -43,7 +43,7 @@ interface DealWizardProps {
   onConfirm: () => void;
   onStateAction: (action: string) => Promise<void>;
   onRefresh: () => void;
-  /** Engagement status — null means no engagement record exists */
+  /** Engagement status, null means no engagement record exists */
   engagementStatus?: EngagementStatus;
 }
 export function DealWizard({
@@ -61,7 +61,7 @@ export function DealWizard({
   const isCompleted = currentState === "completed";
 
   // Determine step completion
-  const searchComplete = true; // always — match exists
+  const searchComplete = true; // always, match exists
   const matchComplete = useMemo(() => {
     // Match step is complete when all required fields are filled
     const hasCommodity = !!match.commodity;
@@ -140,7 +140,7 @@ export function DealWizard({
     // Land on the Match step (1) whenever POI has not yet been generated, even if
     // all commercial fields are already filled. This keeps the user inside Terms →
     // Documents → Notes so they can naturally complete the optional sub-steps and
-    // explicitly opt-in to Proof of Intent via the in-page CTA — they should never
+    // explicitly opt-in to Proof of Intent via the in-page CTA, they should never
     // be silently skipped past Documents and Notes.
     if (!poiComplete) return 1;
     const first = steps.findIndex(s => !s.complete && !s.locked);
@@ -194,7 +194,7 @@ export function DealWizard({
                 The trade request has been generated and the trading partner has been notified. 
                 This step is paused until the trading partner has been engaged and has responded.
               </p>
-              {/* Inline engagement status — no need to scroll up */}
+              {/* Inline engagement status, no need to scroll up */}
               {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
                   <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
                   Current status: {engagementStatus === "notification_sent" ? "Notification sent" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
@@ -322,7 +322,7 @@ function StepMatch({
         </TabsContent>
       </Tabs>
 
-      {/* Contextual next-step prompt — only when required commercial fields are complete */}
+      {/* Contextual next-step prompt, only when required commercial fields are complete */}
       {allComplete && <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />

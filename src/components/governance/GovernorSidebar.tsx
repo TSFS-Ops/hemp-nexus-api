@@ -1,5 +1,5 @@
 /**
- * GovernorSidebar — dedicated navigation rail for the Governance persona.
+ * GovernorSidebar, dedicated navigation rail for the Governance persona.
  * Izenzo aesthetic: white surface, hairline borders, JetBrains Mono
  * for IDs and certification status. Footer carries the Governor's official ID
  * and certification grade so it reads like an institutional control room.

@@ -64,7 +64,7 @@ function DeskOverview() {
   );
 }
 
-/* DeskPlaceholder removed — all Desk routes now mount functional components. */
+/* DeskPlaceholder removed, all Desk routes now mount functional components. */
 
 /** Forward legacy /desk/deals/:matchId deep links to the migrated MatchDetails route. */
 function RedirectDealToMatch() {
@@ -76,7 +76,7 @@ export default function Desk() {
   return (
     <RequireAuth>
       <Routes>
-        {/* Full-bleed routes — no padded container */}
+        {/* Full-bleed routes, no padded container */}
         <Route
           path="match/active"
           element={
@@ -101,9 +101,9 @@ export default function Desk() {
             </DeskFullBleed>
           }
         />
-        {/* Legacy mock route — redirect to deals overview */}
+        {/* Legacy mock route, redirect to deals overview */}
         <Route path="inbound/review" element={<Navigate to="/desk" replace />} />
-        {/* MatchDetails — migrated from /dashboard/matches/:matchId.
+        {/* MatchDetails, migrated from /dashboard/matches/:matchId.
             Backend hooks (useMatchDetails, useQuery for engagements) are unchanged;
             only the surrounding shell is now the Desk layout. */}
         <Route
@@ -123,7 +123,7 @@ export default function Desk() {
             </DeskFullBleed>
           }
         />
-        {/* TradeDealWizard — migrated from /trade/wizard. */}
+        {/* TradeDealWizard, migrated from /trade/wizard. */}
         <Route
           path="wizard"
           element={
@@ -159,7 +159,7 @@ export default function Desk() {
                     </>
                   }
                 />
-                {/* Legacy /desk/deals/:matchId — forward to the migrated MatchDetails surface. */}
+                {/* Legacy /desk/deals/:matchId, forward to the migrated MatchDetails surface. */}
                 <Route path="deals/:matchId" element={<RedirectDealToMatch />} />
                 {/* Deep links to a specific deal route through the migrated MatchDetails surface. */}
                 <Route path="compliance" element={<ComplianceProfile />} />

@@ -1,5 +1,5 @@
 /**
- * Developers — public technical landing page.
+ * Developers, public technical landing page.
  *
  * Same "Emerald & Airy" Stripe-Infrastructure aesthetic as the Product and
  * Solutions pages: whisper-light emerald mesh, 40px precision grid, extreme
@@ -35,7 +35,7 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ───────────────── HERO MOCKUP — Dark Terminal with cURL ───────────────── */
+/* ───────────────── HERO MOCKUP, Dark Terminal with cURL ───────────────── */
 
 function TerminalMockup() {
   return <motion.div initial={{

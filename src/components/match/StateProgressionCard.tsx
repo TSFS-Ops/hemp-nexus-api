@@ -133,7 +133,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
   // For committed state, block progression until engagement is accepted
   const engagementBlocked = currentState === "committed" && engagementStatus !== "accepted";
-  // Completion is free — only POI generation costs credits
+  // Completion is free, only POI generation costs credits
   const isFreeAction = currentState === "committed";
 
   const unilateralBlocked =

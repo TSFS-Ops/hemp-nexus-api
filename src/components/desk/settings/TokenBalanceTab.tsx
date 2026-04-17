@@ -91,7 +91,7 @@ export function TokenBalanceTab() {
         </p>
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-6xl font-semibold text-slate-900 tracking-tight">
-            {loading ? "—" : balance?.toLocaleString() ?? "0"}
+            {loading ? "-" : balance?.toLocaleString() ?? "0"}
           </span>
           <span className="text-base text-slate-500">credits</span>
         </div>

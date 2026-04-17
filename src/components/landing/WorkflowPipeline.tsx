@@ -1,5 +1,5 @@
 /**
- * Trade workflow pipeline — 9 steps matching the platform's actual lifecycle.
+ * Trade workflow pipeline, 9 steps matching the platform's actual lifecycle.
  * Responsive: compact 2-column grid on mobile, horizontal row on desktop.
  */
 

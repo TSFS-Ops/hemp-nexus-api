@@ -1,11 +1,11 @@
 /**
- * Compliance Engine — public product page.
+ * Compliance Engine, public product page.
  *
  * Same "Emerald & Airy" design DNA as TradeDesk: precision grid, emerald
  * whisper mesh, tight-tracked Inter headings, floating tactile mockup.
  *
  * Hero artwork is a static "Museum Mode" rendering of the KYB Company
- * Identity tab — no auth, no Supabase, no redirect. Renders instantly for
+ * Identity tab, no auth, no Supabase, no redirect. Renders instantly for
  * public visitors while staying pixel-faithful to the live product.
  */
 
@@ -40,7 +40,7 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ─────────────── HERO MOCKUP — Company Identity (Museum Mode) ─────────────── */
+/* ─────────────── HERO MOCKUP, Company Identity (Museum Mode) ─────────────── */
 
 const DEMO_OWNERS = [{
   name: "Aurelia Holdings AG",
@@ -130,7 +130,7 @@ function IdentityMockup() {
           </div>
         </div>
 
-        {/* Body — Step §02 active */}
+        {/* Body, Step §02 active */}
         <div className="px-10 pb-8">
           <div className="flex items-center justify-between mb-4">
             <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
@@ -394,7 +394,7 @@ export default function ComplianceEngineProductPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — OCR (large, spans 2) */}
+            {/* Box 1, OCR (large, spans 2) */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -414,7 +414,7 @@ export default function ComplianceEngineProductPage() {
               </div>
             </div>
 
-            {/* Box 2 — Sanctions */}
+            {/* Box 2, Sanctions */}
             <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -455,7 +455,7 @@ export default function ComplianceEngineProductPage() {
               </ul>
             </div>
 
-            {/* Box 3 — UBO Graphing (full width) */}
+            {/* Box 3, UBO Graphing (full width) */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>

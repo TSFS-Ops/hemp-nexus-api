@@ -50,7 +50,7 @@ export function SearchOutcomes({
   // No data yet (error or still loading)
   if (!liquidityData) return null;
 
-  // No liquidity found — honest "no results" state
+  // No liquidity found, honest "no results" state
   if (!liquidityData.has_liquidity) {
     return <div className="animate-fade-up" style={{
       borderTop: '1px solid var(--lt-border)'
@@ -88,7 +88,7 @@ export function SearchOutcomes({
       </div>;
   }
 
-  // Real liquidity found — show actual numbers
+  // Real liquidity found, show actual numbers
   return <div className="animate-fade-up" style={{
     borderTop: '1px solid var(--lt-border)'
   }}>

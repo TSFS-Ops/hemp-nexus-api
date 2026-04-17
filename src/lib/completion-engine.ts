@@ -152,7 +152,7 @@ export interface CompletionInput {
   disputes: DisputeSummary;
   userRole: UserRole;
   userOrgId: string;
-  /** Engagement status for the hold-point gate — null means no engagement record */
+  /** Engagement status for the hold-point gate, null means no engagement record */
   engagementStatus?: EngagementStatus;
 }
 
@@ -337,7 +337,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
   const actions: TrackerAction[] = [];
 
   if (!wad) {
-    // No WaD exists — canCreate requires POI complete AND engagement accepted
+    // No WaD exists, canCreate requires POI complete AND engagement accepted
     const canCreate = isSettled && poiStatus === "complete" && engagementAccepted;
 
     substeps.push(

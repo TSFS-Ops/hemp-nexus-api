@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 
 /**
- * DeveloperShell — pure dark-mode terminal environment.
+ * DeveloperShell, pure dark-mode terminal environment.
  * The ONLY surface in the app that uses true dark mode.
  * Background: slate-950. Sidebar: slate-900. Inter for nav, JetBrains Mono for data.
  */
@@ -73,7 +73,7 @@ export function DeveloperShell({
           })}
           </nav>
 
-          {/* System status — pulsing green LED */}
+          {/* System status, pulsing green LED */}
           <div className="px-5 py-4 border-t border-slate-800">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">

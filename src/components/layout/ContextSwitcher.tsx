@@ -1,9 +1,9 @@
 /**
- * ContextSwitcher — role-aware "Command Bridge" for jumping between workspaces.
+ * ContextSwitcher, role-aware "Command Bridge" for jumping between workspaces.
  *
  * Renders a minimalist workspace picker at the top of every persona shell
  * (Desk, Governance, Developer, HQ). Authorisation is derived from the
- * authenticated user's roles — unauthorised modes are never rendered, so a
+ * authenticated user's roles, unauthorised modes are never rendered, so a
  * standard operator literally cannot see the HQ option in the menu.
  *
  * Visual language follows the Izenzo "Sovereign" aesthetic:
@@ -74,7 +74,7 @@ export function ContextSwitcher({
     pathname
   } = useLocation();
 
-  // Authorisation matrix — unauthorised entries are never rendered.
+  // Authorisation matrix, unauthorised entries are never rendered.
   const available = useMemo<Workspace[]>(() => {
     const isAuditor = roles.includes("auditor" as never);
     return ALL_WORKSPACES.filter(w => {

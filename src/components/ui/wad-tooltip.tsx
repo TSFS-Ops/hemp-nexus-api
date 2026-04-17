@@ -1,5 +1,5 @@
 /**
- * WadTooltip — Renders the term "WaD" (or a custom label) with a small info icon
+ * WadTooltip, Renders the term "WaD" (or a custom label) with a small info icon
  * and a hover tooltip that explains the acronym in plain language.
  *
  * Usage:

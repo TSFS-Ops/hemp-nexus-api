@@ -1,5 +1,5 @@
 /**
- * BillingOverview — Trade User credit vault & burn ledger.
+ * BillingOverview, Trade User credit vault & burn ledger.
  *
  * Editorial layout: typographic balance hero, three horizontal
  * border-only top-up cards with dark-green Purchase CTAs, and a
@@ -27,7 +27,7 @@ const PACKS = [
   { credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
 ];
 
-// Dark institutional green — matches the "Sealed" tone used in compliance.
+// Dark institutional green, matches the "Sealed" tone used in compliance.
 const INK_GREEN = "hsl(155 35% 22%)";
 const INK_GREEN_HOVER = "hsl(155 35% 16%)";
 
@@ -97,7 +97,7 @@ export function BillingOverview() {
         </p>
         <div className="flex items-baseline gap-5 flex-wrap">
           <span className="font-semibold text-slate-900 tracking-tight tabular-nums leading-none text-7xl lg:text-8xl">
-            {loading ? "—" : displayBalance.toLocaleString()}
+            {loading ? "-" : displayBalance.toLocaleString()}
           </span>
           <span className="text-2xl text-slate-400 font-light">Credits</span>
         </div>

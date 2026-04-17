@@ -1,5 +1,5 @@
 /**
- * Solutions — Trade Finance & Insurance.
+ * Solutions, Trade Finance & Insurance.
  *
  * Same "Emerald & Airy" Stripe-Infrastructure aesthetic as the Product pages.
  * Persona-targeted copy (Risk Mitigation) wrapped around the live
@@ -163,7 +163,7 @@ export default function FinanceSolutionsPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — Immutable Proof */}
+            {/* Box 1, Immutable Proof */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -197,7 +197,7 @@ export default function FinanceSolutionsPage() {
               </div>
             </div>
 
-            {/* Box 2 — Automated Underwriting */}
+            {/* Box 2, Automated Underwriting */}
             <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -224,7 +224,7 @@ export default function FinanceSolutionsPage() {
               </ul>
             </div>
 
-            {/* Box 3 — Instant Audit Resolution */}
+            {/* Box 3, Instant Audit Resolution */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>

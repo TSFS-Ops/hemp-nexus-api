@@ -67,7 +67,7 @@ export function DeskSidebar() {
           {user?.email}
         </p>
 
-        {/* Quick escape — public marketing site */}
+        {/* Quick escape, public marketing site */}
         <a
           href="/"
           target="_blank"

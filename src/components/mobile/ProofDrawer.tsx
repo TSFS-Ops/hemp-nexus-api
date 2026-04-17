@@ -1,5 +1,5 @@
 /**
- * ProofDrawer — Mobile-only slide-up sheet for the "Proof / Preview" pane
+ * ProofDrawer, Mobile-only slide-up sheet for the "Proof / Preview" pane
  * of all split-screen surfaces (Match Compiler, Inbound Review, Triage,
  * Schema Explorer).
  *
@@ -9,7 +9,7 @@
  *   - Mobile (< md): renders a floating glassmorphism trigger button at
  *     bottom-center and a full-screen framer-motion drawer.
  *
- * The drawer feels weighted via cubic-bezier(0.32, 0.72, 0, 1) — Apple's
+ * The drawer feels weighted via cubic-bezier(0.32, 0.72, 0, 1), Apple's
  * "ease out expo" used throughout iOS sheets.
  */
 import { ReactNode } from "react";

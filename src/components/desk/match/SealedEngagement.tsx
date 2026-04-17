@@ -1,5 +1,5 @@
 /**
- * SealedEngagement — Post-POI cryptographic ledger view (HARDENED).
+ * SealedEngagement, Post-POI cryptographic ledger view (HARDENED).
  *
  * Live data: fetches the match, its poi_engagement, and bound documents from Supabase
  * using :matchId from the URL. The countdown is calculated from poi_engagements.expires_at.
@@ -22,11 +22,11 @@ function fmtCountdown(msRemaining: number) {
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
 }
 function fmtNumber(n: number | null | undefined) {
-  if (n === null || n === undefined) return "—";
+  if (n === null || n === undefined) return "-";
   return Number(n).toLocaleString("en-US");
 }
 function fmtTimestamp(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toISOString().replace("T", " ").slice(0, 19) + " UTC";
 }
 function shortRef(matchId: string) {
@@ -89,12 +89,12 @@ export function SealedEngagement() {
   } = data;
   const matchRef = shortRef(match.id);
   const counterparty = match.buyer_name && match.seller_name ?
-  // Show the side opposite to the creating party — fallback to whichever is set
+  // Show the side opposite to the creating party, fallback to whichever is set
   match.buyer_name && match.seller_name ? `${match.buyer_name} ↔ ${match.seller_name}` : match.buyer_name ?? match.seller_name ?? "Counterparty" : match.buyer_name ?? match.seller_name ?? "Counterparty";
-  const commodity = match.commodity ?? "—";
+  const commodity = match.commodity ?? "-";
   const volume = match.quantity_amount;
   const price = match.price_amount;
-  const incoterms = match.terms ?? "—";
+  const incoterms = match.terms ?? "-";
   const notes = (match.metadata as {
     notes?: string;
   } | null)?.notes ?? "";
@@ -106,7 +106,7 @@ export function SealedEngagement() {
   const expiresAt = engagement?.expires_at ? new Date(engagement.expires_at).getTime() : null;
   const status = engagement?.engagement_status;
   const isResolved = status === "accepted" || status === "declined" || status === "expired";
-  const countdown = expiresAt && !isResolved ? fmtCountdown(expiresAt - now) : status === "expired" || expiresAt && expiresAt - now <= 0 && !isResolved ? "Expired" : status === "accepted" ? "Accepted" : status === "declined" ? "Declined" : "—";
+  const countdown = expiresAt && !isResolved ? fmtCountdown(expiresAt - now) : status === "expired" || expiresAt && expiresAt - now <= 0 && !isResolved ? "Expired" : status === "accepted" ? "Accepted" : status === "declined" ? "Declined" : "-";
   const trackerActiveTitle = status === "accepted" ? "Counterparty Accepted" : status === "declined" ? "Counterparty Declined" : status === "expired" ? "Engagement Window Expired" : "Awaiting Counterparty Acceptance";
   const trackerActiveState: "completed" | "active" = status === "accepted" || status === "declined" || status === "expired" ? "completed" : "active";
   const issuanceLabel = status === "accepted" ? "SEALED · COUNTER-SIGNED" : status === "declined" ? "RELEASED · DECLINED" : status === "expired" ? "RELEASED · EXPIRED" : "PENDING COUNTERPARTY SIGNATURE";

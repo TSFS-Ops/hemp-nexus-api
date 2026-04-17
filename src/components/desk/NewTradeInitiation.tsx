@@ -1,5 +1,5 @@
 /**
- * NewTradeInitiation — entry point to the deal state machine.
+ * NewTradeInitiation, entry point to the deal state machine.
  *
  * Captures the minimum viable intent (commodity, side, counterparty), inserts
  * a row into `matches` in the `discovery` state, and hard-redirects the user

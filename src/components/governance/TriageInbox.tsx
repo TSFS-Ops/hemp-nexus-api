@@ -1,5 +1,5 @@
 /**
- * TriageInbox — Governor's risk-weighted compliance review surface (HARDENED).
+ * TriageInbox, Governor's risk-weighted compliance review surface (HARDENED).
  *
  * Live data: queries `disputes` (open) joined with their match + counterparties to populate
  * the queue. The "Seal & Issue WaD Certificate" action inserts a real row into `wads`,
@@ -61,14 +61,14 @@ function classifyRisk(notionalUsd: number, crossBorder: boolean): { risk: Risk; 
 }
 
 function fmtBytes(b: number | null | undefined) {
-  if (!b || b <= 0) return "—";
+  if (!b || b <= 0) return "-";
   if (b < 1024) return `${b} B`;
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
   return `${(b / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function fmtMoney(amount: number | null | undefined, ccy: string | null | undefined) {
-  if (amount === null || amount === undefined) return "—";
+  if (amount === null || amount === undefined) return "-";
   return `${ccy ?? "USD"} ${Number(amount).toLocaleString("en-US")}`;
 }
 
@@ -133,7 +133,7 @@ export default function TriageInbox() {
             jurisdictionRoute:
               m.origin_country && m.destination_country
                 ? `${m.origin_country} → ${m.destination_country}`
-                : (m.origin_country ?? m.destination_country ?? "—"),
+                : (m.origin_country ?? m.destination_country ?? "-"),
             riskScore: score,
             risk,
             crossBorder,
@@ -145,7 +145,7 @@ export default function TriageInbox() {
 
   const queue = queueQuery.data ?? [];
 
-  // Default selection — once data lands, select the first item.
+  // Default selection, once data lands, select the first item.
   useEffect(() => {
     if (queue.length > 0 && !activeId) {
       setActiveId(queue[0].id);
@@ -443,7 +443,7 @@ export default function TriageInbox() {
                   <RiskBadge risk={active.risk} score={active.riskScore} large />
                 </div>
 
-                {/* Section 01 — 9-Gate Matrix */}
+                {/* Section 01 to 9-Gate Matrix */}
                 <Section number="01" title="9-Gate Verification Matrix">
                   <div className="grid grid-cols-3 gap-2 md:gap-3">
                     {gates.map((gate) => (
@@ -461,7 +461,7 @@ export default function TriageInbox() {
                   </div>
                 </Section>
 
-                {/* Section 02 — Evidence Feed */}
+                {/* Section 02, Evidence Feed */}
                 <Section number="02" title="Evidence Feed">
                   {evidenceQuery.isLoading ? (
                     <div className="rounded-sm border border-slate-200 bg-white p-8 flex items-center justify-center">

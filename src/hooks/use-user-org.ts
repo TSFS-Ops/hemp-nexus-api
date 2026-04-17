@@ -36,7 +36,7 @@ export function getMatchRole(
   match: { org_id: string; buyer_org_id?: string | null; seller_org_id?: string | null }
 ): "buyer" | "seller" | "creator" | null {
   if (!orgId) return null;
-  // Check canonical buyer/seller slots first — the creator IS the buyer or seller
+  // Check canonical buyer/seller slots first, the creator IS the buyer or seller
   if (match.buyer_org_id === orgId) return "buyer";
   if (match.seller_org_id === orgId) return "seller";
   // Fallback: creator without a buyer/seller slot (e.g. unilateral with no org in either slot)

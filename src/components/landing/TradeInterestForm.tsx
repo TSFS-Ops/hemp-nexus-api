@@ -1,7 +1,7 @@
 /**
- * Izenzo Action Desk — progressive trade entry form.
+ * Izenzo Action Desk, progressive trade entry form.
  * Shows only Product initially. Reveals Price/Quantity/Region after product is selected.
- * No premature Buyer/Seller toggle — side defaults to "buyer" and is set later in the flow.
+ * No premature Buyer/Seller toggle, side defaults to "buyer" and is set later in the flow.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -104,7 +104,7 @@ export function TradeInterestForm({ onSearch, isSearching, isLocked = false }: T
 
   return (
     <form onSubmit={handleSubmit} className="p-4 space-y-4">
-      {/* Buyer / Seller toggle — first decision point */}
+      {/* Buyer / Seller toggle, first decision point */}
       <div>
         <label
           className="block text-[11px] font-mono uppercase tracking-wider font-medium mb-1.5 pl-1 select-none"
@@ -169,7 +169,7 @@ export function TradeInterestForm({ onSearch, isSearching, isLocked = false }: T
         </div>
       )}
 
-      {/* Product — always visible, primary entry point */}
+      {/* Product, always visible, primary entry point */}
       <div>
         <label
           htmlFor="product"
@@ -188,7 +188,7 @@ export function TradeInterestForm({ onSearch, isSearching, isLocked = false }: T
         />
       </div>
 
-      {/* Additional fields — revealed progressively after product selection */}
+      {/* Additional fields, revealed progressively after product selection */}
       {showDetails && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up">
           <PremiumField
