@@ -204,7 +204,7 @@ export function CompanyIdentityTab() {
             <button
               key={s.key}
               type="button"
-              onClick={() => setActiveStep(s.key)}
+              onClick={() => selectStep(s.key)}
               className={[
                 "px-4 py-3 text-left transition-colors border-b-2 -mb-px",
                 active
