@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
@@ -242,9 +242,11 @@ export default function WebhookLogs() {
   const auditRows = audit.data || [];
 
   // Auto-select first row when data loads
-  if (tab === "requests" && reqRows.length > 0 && !selected) {
-    setSelected(reqRows[0]);
-  }
+  useEffect(() => {
+    if (tab === "requests" && reqRows.length > 0 && !selected) {
+      setSelected(reqRows[0]);
+    }
+  }, [tab, reqRows, selected]);
 
   const counts = {
     success: reqRows.filter((r) => r.status_code >= 200 && r.status_code < 300).length,
