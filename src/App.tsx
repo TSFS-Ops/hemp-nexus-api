@@ -37,6 +37,9 @@ const HQ = lazy(() => import("@/pages/HQ"));
 const TradeDeskProductPage = lazy(() => import("@/pages/products/TradeDesk"));
 const ComplianceEngineProductPage = lazy(() => import("@/pages/products/ComplianceEngine"));
 const AuditLedgerProductPage = lazy(() => import("@/pages/products/AuditLedger"));
+const TradersSolutionsPage = lazy(() => import("@/pages/solutions/Traders"));
+const FinanceSolutionsPage = lazy(() => import("@/pages/solutions/Finance"));
+const SovereignsSolutionsPage = lazy(() => import("@/pages/solutions/Sovereigns"));
 
 /**
  * Root element that renders based on host type:
@@ -124,6 +127,11 @@ function App() {
                   <Route path="/products/compliance-engine" element={<ComplianceEngineProductPage />} />
                   <Route path="/products/audit-ledger" element={<AuditLedgerProductPage />} />
                   <Route path="/products" element={<Navigate to="/products/trade-desk" replace />} />
+                  {/* Public solutions pages — persona-targeted landing pages */}
+                  <Route path="/solutions/traders" element={<TradersSolutionsPage />} />
+                  <Route path="/solutions/finance" element={<FinanceSolutionsPage />} />
+                  <Route path="/solutions/sovereigns" element={<SovereignsSolutionsPage />} />
+                  <Route path="/solutions" element={<Navigate to="/solutions/traders" replace />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
                   {/* Legacy /developers/* → consolidated /developer Command Center */}
                   <Route path="/developers" element={<Navigate to="/developer/keys" replace />} />
