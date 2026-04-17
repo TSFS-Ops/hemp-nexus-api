@@ -287,7 +287,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
                   {availableRegistry.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.doc_type.replace(/_/g, " ")}
-                      {" — "}
+                      {", "}
                       {r.jurisdiction_code}
                     </SelectItem>
                   ))}

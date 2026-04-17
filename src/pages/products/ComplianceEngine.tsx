@@ -1,99 +1,83 @@
 /**
- * Compliance Engine — public product page.
+ * Compliance Engine, public product page.
  *
  * Same "Emerald & Airy" design DNA as TradeDesk: precision grid, emerald
  * whisper mesh, tight-tracked Inter headings, floating tactile mockup.
  *
  * Hero artwork is a static "Museum Mode" rendering of the KYB Company
- * Identity tab — no auth, no Supabase, no redirect. Renders instantly for
+ * Identity tab, no auth, no Supabase, no redirect. Renders instantly for
  * public visitors while staying pixel-faithful to the live product.
  */
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ShieldCheck,
-  FileText,
-  ScanLine,
-  Network,
-  Globe2,
-  Building2,
-  User,
-  Lock,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, FileText, ScanLine, Network, Globe2, Building2, User, Lock } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
 
 /* ───────────────────────── BACKDROP PIECES ───────────────────────── */
 
-function PrecisionGrid({ className = "" }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute inset-0 ${className}`}
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-        maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-      }}
-    />
-  );
+function PrecisionGrid({
+  className = ""
+}: {
+  className?: string;
+}) {
+  return <div aria-hidden className={`pointer-events-none absolute inset-0 ${className}`} style={{
+    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    maskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+    WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)"
+  }} />;
 }
-
 function EmeraldWhisper() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
-        }}
-      />
-    </div>
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)"
+    }} />
+      <div className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)"
+    }} />
+    </div>;
 }
 
-/* ─────────────── HERO MOCKUP — Company Identity (Museum Mode) ─────────────── */
+/* ─────────────── HERO MOCKUP, Company Identity (Museum Mode) ─────────────── */
 
-const DEMO_OWNERS = [
-  { name: "Aurelia Holdings AG", jurisdiction: "CH", pct: 51.0, type: "entity" as const },
-  { name: "Marcus Van Der Berg", jurisdiction: "ZA", pct: 32.5, type: "person" as const },
-  { name: "Pinehurst Trust", jurisdiction: "JE", pct: 16.5, type: "entity" as const },
-];
-
+const DEMO_OWNERS = [{
+  name: "Aurelia Holdings AG",
+  jurisdiction: "CH",
+  pct: 51.0,
+  type: "entity" as const
+}, {
+  name: "Marcus Van Der Berg",
+  jurisdiction: "ZA",
+  pct: 32.5,
+  type: "person" as const
+}, {
+  name: "Pinehurst Trust",
+  jurisdiction: "JE",
+  pct: 16.5,
+  type: "entity" as const
+}];
 function IdentityMockup() {
   const totalPct = DEMO_OWNERS.reduce((s, o) => s + o.pct, 0);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, rotate: -2 }}
-      animate={{ opacity: 1, y: 0, rotate: -1 }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-[560px] mx-auto"
-      style={{ transformOrigin: "center center" }}
-    >
+  return <motion.div initial={{
+    opacity: 0,
+    y: 24,
+    rotate: -2
+  }} animate={{
+    opacity: 1,
+    y: 0,
+    rotate: -1
+  }} transition={{
+    duration: 0.9,
+    ease: [0.16, 1, 0.3, 1]
+  }} className="relative w-full max-w-[560px] mx-auto" style={{
+    transformOrigin: "center center"
+  }}>
       {/* soft floor shadow */}
-      <div
-        aria-hidden
-        className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
-        }}
-      />
+      <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
+      background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
+    }} />
       <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 overflow-hidden">
         {/* Header bar */}
         <header className="px-10 pt-9 pb-6 border-b border-slate-100">
@@ -119,42 +103,34 @@ function IdentityMockup() {
         {/* Step indicator */}
         <div className="px-10 pt-6 pb-4">
           <div className="flex items-center gap-3">
-            {[
-              { i: "§01", l: "Entity", done: true },
-              { i: "§02", l: "Owners", done: true, active: true },
-              { i: "§03", l: "Documents", done: true },
-            ].map((s, idx) => (
-              <div key={s.i} className="flex items-center gap-3 flex-1">
-                <div
-                  className={`flex items-center gap-2 ${
-                    s.active ? "text-emerald-700" : "text-slate-500"
-                  }`}
-                >
-                  <div
-                    className={`h-5 w-5 rounded-full flex items-center justify-center ring-1 ${
-                      s.done
-                        ? "bg-emerald-50 ring-emerald-200"
-                        : "bg-slate-50 ring-slate-200"
-                    }`}
-                  >
-                    <CheckCircle2
-                      className={`h-3 w-3 ${s.done ? "text-emerald-600" : "text-slate-300"}`}
-                      strokeWidth={2}
-                    />
+            {[{
+            i: "§01",
+            l: "Entity",
+            done: true
+          }, {
+            i: "§02",
+            l: "Owners",
+            done: true,
+            active: true
+          }, {
+            i: "§03",
+            l: "Documents",
+            done: true
+          }].map((s, idx) => <div key={s.i} className="flex items-center gap-3 flex-1">
+                <div className={`flex items-center gap-2 ${s.active ? "text-emerald-700" : "text-slate-500"}`}>
+                  <div className={`h-5 w-5 rounded-full flex items-center justify-center ring-1 ${s.done ? "bg-emerald-50 ring-emerald-200" : "bg-slate-50 ring-slate-200"}`}>
+                    <CheckCircle2 className={`h-3 w-3 ${s.done ? "text-emerald-600" : "text-slate-300"}`} strokeWidth={2} />
                   </div>
                   <span className="font-mono text-[10px] tracking-[0.2em] uppercase">
                     {s.i} · {s.l}
                   </span>
                 </div>
-                {idx < 2 && (
-                  <div className="flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-slate-100" />
-                )}
-              </div>
-            ))}
+                {idx < 2 && <div className="flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-slate-100" />}
+              </div>)}
           </div>
         </div>
 
-        {/* Body — Step §02 active */}
+        {/* Body, Step §02 active */}
         <div className="px-10 pb-8">
           <div className="flex items-center justify-between mb-4">
             <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
@@ -166,17 +142,9 @@ function IdentityMockup() {
           </div>
 
           <ul className="space-y-2.5">
-            {DEMO_OWNERS.map((o) => (
-              <li
-                key={o.name}
-                className="flex items-center gap-3 rounded-lg border border-slate-100 px-4 py-3"
-              >
+            {DEMO_OWNERS.map(o => <li key={o.name} className="flex items-center gap-3 rounded-lg border border-slate-100 px-4 py-3">
                 <div className="h-8 w-8 rounded-md bg-slate-50 ring-1 ring-slate-100 flex items-center justify-center shrink-0">
-                  {o.type === "entity" ? (
-                    <Building2 className="h-3.5 w-3.5 text-slate-500" strokeWidth={1.75} />
-                  ) : (
-                    <User className="h-3.5 w-3.5 text-slate-500" strokeWidth={1.75} />
-                  )}
+                  {o.type === "entity" ? <Building2 className="h-3.5 w-3.5 text-slate-500" strokeWidth={1.75} /> : <User className="h-3.5 w-3.5 text-slate-500" strokeWidth={1.75} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-medium text-slate-900 truncate">
@@ -191,19 +159,21 @@ function IdentityMockup() {
                     {o.pct.toFixed(1)}%
                   </p>
                 </div>
-              </li>
-            ))}
+              </li>)}
           </ul>
 
           {/* Progress bar */}
           <div className="mt-5">
             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${totalPct}%` }}
-                transition={{ duration: 1.2, delay: 0.4, ease: "easeOut" }}
-                className="h-full bg-emerald-600"
-              />
+              <motion.div initial={{
+              width: 0
+            }} animate={{
+              width: `${totalPct}%`
+            }} transition={{
+              duration: 1.2,
+              delay: 0.4,
+              ease: "easeOut"
+            }} className="h-full bg-emerald-600" />
             </div>
             <div className="mt-2 flex items-center justify-between font-mono text-[10px] tracking-[0.15em] uppercase">
               <span className="text-slate-500">UBO threshold · 100%</span>
@@ -229,23 +199,29 @@ function IdentityMockup() {
           </div>
         </footer>
       </article>
-    </motion.div>
-  );
+    </motion.div>;
 }
 
 /* ─────────────────── OCR EXTRACTION VISUAL (Bento 01) ─────────────────── */
 
-const EXTRACTED_FIELDS = [
-  { k: "legal_name", v: "Aurelia Trade Holdings (Pty) Ltd" },
-  { k: "registration_number", v: "2019/438217/07" },
-  { k: "jurisdiction", v: "ZA" },
-  { k: "incorporation_date", v: "2019-08-14" },
-  { k: "registered_address", v: "12 Keerom St, Cape Town" },
-];
-
+const EXTRACTED_FIELDS = [{
+  k: "legal_name",
+  v: "Aurelia Trade Holdings (Pty) Ltd"
+}, {
+  k: "registration_number",
+  v: "2019/438217/07"
+}, {
+  k: "jurisdiction",
+  v: "ZA"
+}, {
+  k: "incorporation_date",
+  v: "2019-08-14"
+}, {
+  k: "registered_address",
+  v: "12 Keerom St, Cape Town"
+}];
 function OcrExtractionVisual() {
-  return (
-    <div className="grid sm:grid-cols-[1fr_auto_1fr] gap-6 items-center">
+  return <div className="grid sm:grid-cols-[1fr_auto_1fr] gap-6 items-center">
       {/* PDF source */}
       <div className="relative rounded-xl border border-slate-200 bg-slate-50/60 p-5 min-h-[200px]">
         <div className="flex items-center gap-2 mb-3">
@@ -255,23 +231,25 @@ function OcrExtractionVisual() {
           </p>
         </div>
         <div className="space-y-1.5">
-          {[6, 4, 5, 3, 5, 4].map((w, i) => (
-            <div
-              key={i}
-              className="h-1.5 bg-slate-200 rounded-full"
-              style={{ width: `${w * 12}%` }}
-            />
-          ))}
+          {[6, 4, 5, 3, 5, 4].map((w, i) => <div key={i} className="h-1.5 bg-slate-200 rounded-full" style={{
+          width: `${w * 12}%`
+        }} />)}
         </div>
         {/* Scan line */}
-        <motion.div
-          aria-hidden
-          initial={{ y: 0, opacity: 0 }}
-          whileInView={{ y: 140, opacity: [0, 1, 1, 0] }}
-          viewport={{ once: false, margin: "-100px" }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-3 right-3 h-px bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]"
-        />
+        <motion.div aria-hidden initial={{
+        y: 0,
+        opacity: 0
+      }} whileInView={{
+        y: 140,
+        opacity: [0, 1, 1, 0]
+      }} viewport={{
+        once: false,
+        margin: "-100px"
+      }} transition={{
+        duration: 2.4,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }} className="absolute left-3 right-3 h-px bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]" />
       </div>
 
       {/* Arrow */}
@@ -283,32 +261,31 @@ function OcrExtractionVisual() {
       {/* JSON output */}
       <div className="rounded-xl border border-slate-200 bg-slate-900 p-5 min-h-[200px] font-mono text-[11px] leading-relaxed">
         <p className="text-emerald-400 mb-2">{"{"}</p>
-        {EXTRACTED_FIELDS.map((f, i) => (
-          <motion.p
-            key={f.k}
-            initial={{ opacity: 0, x: -4 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 + i * 0.08 }}
-            className="pl-3 truncate"
-          >
+        {EXTRACTED_FIELDS.map((f, i) => <motion.p key={f.k} initial={{
+        opacity: 0,
+        x: -4
+      }} whileInView={{
+        opacity: 1,
+        x: 0
+      }} viewport={{
+        once: true
+      }} transition={{
+        delay: 0.3 + i * 0.08
+      }} className="pl-3 truncate">
             <span className="text-slate-400">"{f.k}"</span>
             <span className="text-slate-500">: </span>
             <span className="text-emerald-300">"{f.v}"</span>
             {i < EXTRACTED_FIELDS.length - 1 && <span className="text-slate-500">,</span>}
-          </motion.p>
-        ))}
+          </motion.p>)}
         <p className="text-emerald-400 mt-1">{"}"}</p>
       </div>
-    </div>
-  );
+    </div>;
 }
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function ComplianceEngineProductPage() {
-  return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -320,66 +297,77 @@ export default function ComplianceEngineProductPage() {
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             {/* Left: copy */}
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 8
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.6
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 Compliance Engine
               </motion.p>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
-              >
+              <motion.h1 initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.05
+            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Institutional identity.
                 <br />
                 Resolved.
               </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.1
+            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
                 Automate KYB, resolve complex UBO structures, and screen against
                 global sanctions in real-time. Turn compliance from a bottleneck
                 into a competitive advantage.
               </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.18 }}
-                className="mt-12 flex flex-wrap items-center gap-4"
-              >
-                <Link
-                  to="/auth"
-                  className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
-                >
+              <motion.div initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.18
+            }} className="mt-12 flex flex-wrap items-center gap-4">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
                   Verify a counterparty
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link
-                  to="/products/trade-desk"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-                >
+                <Link to="/products/trade-desk" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
                   See the Trade Desk
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
               </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
-              >
+              <motion.p initial={{
+              opacity: 0
+            }} animate={{
+              opacity: 1
+            }} transition={{
+              duration: 0.7,
+              delay: 0.3
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
                 OFAC · EU · UK HMT · DPL · Continuous screening
               </motion.p>
             </div>
@@ -402,14 +390,11 @@ export default function ComplianceEngineProductPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               Three primitives. One verified counterparty.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed">
-              Document intelligence, ownership graphing, and continuous sanctions
-              screening — composed into a single auditable record.
-            </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Document intelligence, ownership graphing, and continuous sanctions screening: composed into a single auditable record. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — OCR (large, spans 2) */}
+            {/* Box 1, OCR (large, spans 2) */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -422,18 +407,14 @@ export default function ComplianceEngineProductPage() {
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
                 AI document extraction.
               </h3>
-              <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-md">
-                Upload a Certificate of Incorporation. Within seconds, the engine
-                reads, structures, and SHA-256 seals the contents — ready to bind
-                to an entity record.
-              </p>
+              <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-md"> Upload a Certificate of Incorporation. Within seconds, the engine reads, structures, and SHA-256 seals the contents, ready to bind to an entity record. </p>
 
               <div className="mt-12">
                 <OcrExtractionVisual />
               </div>
             </div>
 
-            {/* Box 2 — Sanctions */}
+            {/* Box 2, Sanctions */}
             <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -446,31 +427,35 @@ export default function ComplianceEngineProductPage() {
               <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
                 Continuous sanctions screening.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
-                Every entity is continuously screened against global watchlists —
-                not just at onboarding.
-              </p>
+              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed"> Every entity is continuously screened against global watchlists: not just at onboarding. </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {[
-                  { l: "OFAC SDN", c: "US" },
-                  { l: "EU Consolidated", c: "EU" },
-                  { l: "UK HM Treasury", c: "UK" },
-                  { l: "UN Security Council", c: "UN" },
-                  { l: "PEP databases", c: "GLB" },
-                ].map((s) => (
-                  <li key={s.l} className="flex items-center gap-3 text-slate-700">
+                {[{
+                l: "OFAC SDN",
+                c: "US"
+              }, {
+                l: "EU Consolidated",
+                c: "EU"
+              }, {
+                l: "UK HM Treasury",
+                c: "UK"
+              }, {
+                l: "UN Security Council",
+                c: "UN"
+              }, {
+                l: "PEP databases",
+                c: "GLB"
+              }].map(s => <li key={s.l} className="flex items-center gap-3 text-slate-700">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                     <span className="flex-1">{s.l}</span>
                     <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-400">
                       {s.c}
                     </span>
-                  </li>
-                ))}
+                  </li>)}
               </ul>
             </div>
 
-            {/* Box 3 — UBO Graphing (full width) */}
+            {/* Box 3, UBO Graphing (full width) */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
@@ -485,11 +470,7 @@ export default function ComplianceEngineProductPage() {
                   <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
                     UBO graphing.
                   </h3>
-                  <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-md">
-                    Nested corporate entities are recursively traversed until the
-                    ultimate human owners are resolved — with ownership
-                    percentages summing to 100%.
-                  </p>
+                  <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-md"> Nested corporate entities are recursively traversed until the ultimate human owners are resolved, with ownership percentages summing to 100%. </p>
                 </div>
 
                 {/* UBO graph visual */}
@@ -506,28 +487,27 @@ export default function ComplianceEngineProductPage() {
 
                     {/* Tier 1 */}
                     <div className="pl-6 space-y-2 border-l-2 border-emerald-200 ml-4">
-                      {[
-                        { n: "Aurelia Holdings AG", t: "entity", p: "51%" },
-                        { n: "Marcus Van Der Berg", t: "person", p: "32.5%" },
-                        { n: "Pinehurst Trust", t: "entity", p: "16.5%" },
-                      ].map((n) => (
-                        <div
-                          key={n.n}
-                          className="flex items-center gap-3 rounded-lg border border-slate-100 px-4 py-2.5"
-                        >
-                          {n.t === "entity" ? (
-                            <Building2 className="h-3.5 w-3.5 text-slate-500 shrink-0" strokeWidth={1.75} />
-                          ) : (
-                            <User className="h-3.5 w-3.5 text-slate-500 shrink-0" strokeWidth={1.75} />
-                          )}
+                      {[{
+                      n: "Aurelia Holdings AG",
+                      t: "entity",
+                      p: "51%"
+                    }, {
+                      n: "Marcus Van Der Berg",
+                      t: "person",
+                      p: "32.5%"
+                    }, {
+                      n: "Pinehurst Trust",
+                      t: "entity",
+                      p: "16.5%"
+                    }].map(n => <div key={n.n} className="flex items-center gap-3 rounded-lg border border-slate-100 px-4 py-2.5">
+                          {n.t === "entity" ? <Building2 className="h-3.5 w-3.5 text-slate-500 shrink-0" strokeWidth={1.75} /> : <User className="h-3.5 w-3.5 text-slate-500 shrink-0" strokeWidth={1.75} />}
                           <span className="text-[12px] text-slate-800 flex-1 truncate">
                             {n.n}
                           </span>
                           <span className="font-mono text-[11px] tabular-nums text-slate-500">
                             {n.p}
                           </span>
-                        </div>
-                      ))}
+                        </div>)}
                     </div>
 
                     {/* Resolution */}
@@ -556,17 +536,11 @@ export default function ComplianceEngineProductPage() {
             to the Trade Desk and seal cross-border transactions in minutes.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/auth"
-              className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-            >
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
               Get started
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>
-            <Link
-              to="/docs"
-              className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-            >
+            <Link to="/docs" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
               Read the docs
               <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
             </Link>
@@ -575,6 +549,5 @@ export default function ComplianceEngineProductPage() {
       </section>
 
       <PageFooter />
-    </div>
-  );
+    </div>;
 }

@@ -16,7 +16,7 @@ export interface CommodityEntry {
   key: string;
   /** UI grouping */
   category: CommodityCategory;
-  /** HS code prefix (2–6 digits). Informational for now. */
+  /** HS code prefix (2 to 6 digits). Informational for now. */
   hsCode?: string;
 }
 

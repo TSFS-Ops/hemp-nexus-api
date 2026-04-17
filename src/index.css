@@ -43,7 +43,7 @@
     --input: 214 32% 91%;
     --ring: 155 35% 28%;
 
-    /* 6px radius — Stripe/Checkout.com institutional standard */
+    /* 6px radius: Stripe/Checkout.com institutional standard */
     --radius: 0.375rem;
 
     --sidebar-background: 210 20% 98%;

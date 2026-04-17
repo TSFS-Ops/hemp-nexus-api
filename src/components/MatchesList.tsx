@@ -691,7 +691,7 @@ export function MatchesList() {
                 )}
                 <p className="text-sm text-muted-foreground">
                   {totalPages > 1
-                    ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
+                    ? `Showing ${page * PAGE_SIZE + 1} to ${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
                     : `${totalCount} match${totalCount !== 1 ? 'es' : ''} total`}
                 </p>
               </div>
@@ -748,7 +748,7 @@ export function MatchesList() {
         </CardContent>
       </Card>
 
-      {/* Sticky floating bulk action bar — always visible when matches are selected */}
+      {/* Sticky floating bulk action bar, always visible when matches are selected */}
       {selectedMatches.size > 0 && (
         <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent">
           <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-lg">

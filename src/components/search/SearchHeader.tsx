@@ -9,7 +9,7 @@ interface SearchHeaderProps {
   setQuery: (query: string) => void;
   onSearch: () => void;
   isSearching: boolean;
-  /** Current user side — optional, pre-populated from landing page URL params */
+  /** Current user side, optional, pre-populated from landing page URL params */
   side?: "buyer" | "seller" | null;
   /** Called when user changes their side selection */
   onSideChange?: (side: "buyer" | "seller") => void;
@@ -41,7 +41,7 @@ export function SearchHeader({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
-        {/* Side toggle — always visible so user can set/change role */}
+        {/* Side toggle, always visible so user can set/change role */}
         {onSideChange && (
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">

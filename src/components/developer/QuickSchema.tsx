@@ -1,5 +1,5 @@
 /**
- * QuickSchema — inline JSON reference for the core Match + POI objects.
+ * QuickSchema, inline JSON reference for the core Match + POI objects.
  * Blue for keys, amber for values. Lets a developer learn the data model
  * without leaving the page.
  */

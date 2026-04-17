@@ -3,7 +3,7 @@
  * Pure SVG, no external assets. Low contrast, decorative only.
  */
 export function HashChainMotif() {
-  // Deterministic pseudo-random hash fragments — cosmetic only
+  // Deterministic pseudo-random hash fragments, cosmetic only
   const fragments = [
     "0x7a3f9c2e8b14d5a9",
     "0xb82d4f1c7e6a09f3",

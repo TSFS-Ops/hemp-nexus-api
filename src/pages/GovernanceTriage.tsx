@@ -1,5 +1,5 @@
 /**
- * GovernanceTriage page — Governor / Compliance Officer workspace.
+ * GovernanceTriage page, Governor / Compliance Officer workspace.
  * Renders the persona-specific sidebar + the 40/60 split triage workspace.
  */
 

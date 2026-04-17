@@ -685,7 +685,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                 </p>
               </div>
               
-              {/* doc_type is auto-defaulted to "other" — no dropdown needed */}
+              {/* doc_type is auto-defaulted to "other", no dropdown needed */}
 
               <div className="space-y-2">
                 <Label htmlFor="title">Title (optional)</Label>

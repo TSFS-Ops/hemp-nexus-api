@@ -1,5 +1,5 @@
 /**
- * WadTooltip — Renders the term "WaD" (or a custom label) with a small info icon
+ * WadTooltip, Renders the term "WaD" (or a custom label) with a small info icon
  * and a hover tooltip that explains the acronym in plain language.
  *
  * Usage:
@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Info } from "lucide-react";
 
 const WAD_EXPLANATION =
-  "Without a Doubt (WaD) — a sealed, tamper-evident evidence bundle that confirms the full trade trail. It is not a contract, but an auditable proof bundle.";
+  "Without a Doubt (WaD): a sealed, tamper-evident evidence bundle that confirms the full trade trail. It is not a contract, but an auditable proof bundle.";
 
 interface WadTooltipProps {
   /** Custom label text. Defaults to "WaD". */

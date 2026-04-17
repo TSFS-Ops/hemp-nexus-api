@@ -1,5 +1,5 @@
 /**
- * MobileBottomNav — Persona-aware bottom tab bar (< md).
+ * MobileBottomNav, Persona-aware bottom tab bar (< md).
  *
  * Resolves the active persona from the current route + user roles:
  *   - /governance/*  → Governor nav  (Triage / Audits / Entities / Profile)

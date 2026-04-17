@@ -1,5 +1,5 @@
 /**
- * GovernancePlaceholder — professional empty state for governance surfaces
+ * GovernancePlaceholder, professional empty state for governance surfaces
  * that have no active records to display. No "under construction" copy:
  * if a surface is mounted, it is shipped; emptiness reflects an empty queue.
  */

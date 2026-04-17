@@ -103,7 +103,7 @@ export function AdminSettings() {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        throw new Error("Settings were not saved — you may not have permission.");
+        throw new Error("Settings were not saved. You may not have permission.");
       }
 
       toast.success("Settings saved successfully");

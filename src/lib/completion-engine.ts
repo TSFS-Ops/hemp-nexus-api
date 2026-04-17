@@ -152,7 +152,7 @@ export interface CompletionInput {
   disputes: DisputeSummary;
   userRole: UserRole;
   userOrgId: string;
-  /** Engagement status for the hold-point gate — null means no engagement record */
+  /** Engagement status for the hold-point gate, null means no engagement record */
   engagementStatus?: EngagementStatus;
 }
 
@@ -337,7 +337,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
   const actions: TrackerAction[] = [];
 
   if (!wad) {
-    // No WaD exists — canCreate requires POI complete AND engagement accepted
+    // No WaD exists, canCreate requires POI complete AND engagement accepted
     const canCreate = isSettled && poiStatus === "complete" && engagementAccepted;
 
     substeps.push(
@@ -346,7 +346,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
         label: "Counterparty engagement accepted",
         done: engagementAccepted,
         detail: holdPointActive
-          ? "Awaiting counterparty engagement — process paused"
+          ? "Awaiting counterparty engagement, the process is paused"
           : undefined,
       },
       { label: "Signed Deal record created", done: false },
@@ -380,9 +380,9 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
       label: "Signed Deal",
       status: holdPointActive ? "blocked" : canCreate ? "pending" : "not_started",
       detail: holdPointActive
-        ? "Blocked — awaiting counterparty engagement acceptance before Signed Deal can begin"
+        ? "Blocked, awaiting counterparty engagement acceptance before Signed Deal can begin"
         : canCreate
-          ? "Ready to create — POI is complete and engagement accepted. Navigate to Signed Deal tab to begin."
+          ? "Ready to create. POI is complete and engagement accepted. Navigate to Signed Deal tab to begin."
           : "Waiting for POI completion before Signed Deal can be initiated",
       substeps,
       actions,
@@ -464,7 +464,7 @@ function deriveWad(input: CompletionInput, poiStatus: StageStatus): StageState {
     detail = `Signed Deal denied: ${(wad.denial_reasons || []).join(", ") || "One or more gates failed"}. Fix the issues and retry.`;
   } else {
     status = "in_progress";
-    detail = `Signed Deal in ${wadStatus} state — ${doneCount} of ${substeps.length} steps complete`;
+    detail = `Signed Deal in ${wadStatus} state, ${doneCount} of ${substeps.length} steps complete`;
   }
 
   return {
@@ -520,7 +520,7 @@ function derivePod(input: CompletionInput, wadStatus: StageStatus): StageState {
       label: "Proof of Delivery (PoD)",
       status: canCreate ? "pending" : "not_started",
       detail: canCreate
-        ? "Ready to create — Signed Deal is sealed"
+        ? "Ready to create, Signed Deal is sealed"
         : "Waiting for Signed Deal to be sealed",
       substeps,
       actions,

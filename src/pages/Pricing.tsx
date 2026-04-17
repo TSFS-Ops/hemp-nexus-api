@@ -1,5 +1,5 @@
 /**
- * Pricing — Institutional infrastructure framing.
+ * Pricing, Institutional infrastructure framing.
  *
  * Two-track pricing in the same "Emerald & Airy" Stripe aesthetic as the
  * product pages: pay-as-you-go for operators (R10 ZAR per Trade Request) and

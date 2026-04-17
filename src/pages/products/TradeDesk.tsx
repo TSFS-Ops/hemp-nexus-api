@@ -1,5 +1,5 @@
 /**
- * Trade Desk — public product page.
+ * Trade Desk, public product page.
  *
  * "Stripe-Infrastructure" aesthetic: extreme whitespace, whisper-light emerald
  * mesh, tight-tracked Inter headings, a tactile floating Certificate of
@@ -11,86 +11,61 @@
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ShieldCheck,
-  Activity,
-  FileText,
-  Lock,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, Activity, FileText, Lock } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
-import {
-  DEMO_COMPILER_TERMS,
-  DEMO_COMPILER_DOCS,
-  DEMO_COMPILER_SEAL,
-} from "@/components/desk/_demo/fixtures";
+import { DEMO_COMPILER_TERMS, DEMO_COMPILER_DOCS, DEMO_COMPILER_SEAL } from "@/components/desk/_demo/fixtures";
 
 /* ───────────────────────── BACKDROP PIECES ───────────────────────── */
 
 /** 1px precision grid, 40px cells. Whispered, not shouted. */
-function PrecisionGrid({ className = "" }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute inset-0 ${className}`}
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-        maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-      }}
-    />
-  );
+function PrecisionGrid({
+  className = ""
+}: {
+  className?: string;
+}) {
+  return <div aria-hidden className={`pointer-events-none absolute inset-0 ${className}`} style={{
+    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    maskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+    WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)"
+  }} />;
 }
 
-/** A whisper of emerald — soft radial mesh, very low opacity. */
+/** A whisper of emerald, soft radial mesh, very low opacity. */
 function EmeraldWhisper() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
-        }}
-      />
-    </div>
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)"
+    }} />
+      <div className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)"
+    }} />
+    </div>;
 }
 
-/* ─────────────────── HERO MOCKUP — Certificate of Intent ─────────────────── */
+/* ─────────────────── HERO MOCKUP, Certificate of Intent ─────────────────── */
 
 function CertificateMockup() {
   const docCount = DEMO_COMPILER_DOCS.length;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, rotate: -2 }}
-      animate={{ opacity: 1, y: 0, rotate: -1 }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-[520px] mx-auto"
-      style={{ transformOrigin: "center center" }}
-    >
+  return <motion.div initial={{
+    opacity: 0,
+    y: 24,
+    rotate: -2
+  }} animate={{
+    opacity: 1,
+    y: 0,
+    rotate: -1
+  }} transition={{
+    duration: 0.9,
+    ease: [0.16, 1, 0.3, 1]
+  }} className="relative w-full max-w-[520px] mx-auto" style={{
+    transformOrigin: "center center"
+  }}>
       {/* soft floor shadow */}
-      <div
-        aria-hidden
-        className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
-        }}
-      />
+      <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
+      background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
+    }} />
       <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 overflow-hidden">
         {/* Header bar */}
         <header className="px-10 pt-9 pb-6 border-b border-slate-100 text-center">
@@ -105,7 +80,7 @@ function CertificateMockup() {
           </p>
         </header>
 
-        {/* Body — commercial terms */}
+        {/* Body, commercial terms */}
         <div className="px-10 py-8 space-y-5">
           <Row label="Counterparty" value={DEMO_COMPILER_TERMS.counterparty} />
           <Row label="Commodity" value={DEMO_COMPILER_TERMS.commodity} />
@@ -121,18 +96,13 @@ function CertificateMockup() {
               Bound Evidence · {docCount} files
             </p>
             <ul className="space-y-2">
-              {DEMO_COMPILER_DOCS.map((d) => (
-                <li
-                  key={d.name}
-                  className="flex items-center gap-3 text-[12px] text-slate-700"
-                >
+              {DEMO_COMPILER_DOCS.map(d => <li key={d.name} className="flex items-center gap-3 text-[12px] text-slate-700">
                   <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
                   <span className="truncate flex-1">{d.name}</span>
                   <span className="font-mono text-[10px] text-slate-400">
                     {d.hash.slice(0, 8)}…
                   </span>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
         </div>
@@ -154,61 +124,45 @@ function CertificateMockup() {
           </div>
         </footer>
       </article>
-    </motion.div>
-  );
+    </motion.div>;
 }
-
 function Row({
   label,
   value,
-  mono = false,
+  mono = false
 }: {
   label: string;
   value: string;
   mono?: boolean;
 }) {
-  return (
-    <div>
+  return <div>
       <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
         {label}
       </p>
-      <p
-        className={`mt-1 text-[14px] text-slate-900 ${
-          mono ? "font-mono tabular-nums" : "font-medium"
-        }`}
-      >
+      <p className={`mt-1 text-[14px] text-slate-900 ${mono ? "font-mono tabular-nums" : "font-medium"}`}>
         {value}
       </p>
-    </div>
-  );
+    </div>;
 }
 
 /* ─────────────────────── 9-GATE PROTOCOL VISUAL ─────────────────────── */
 
-const GATES = [
-  "Entity Verification",
-  "UBO Disclosure",
-  "Sanctions Screening",
-  "Jurisdiction Resolution",
-  "Authority Binding",
-  "Terms Lock",
-  "Evidence Attachment",
-  "Bilateral Collapse Sign",
-  "WaD Certificate Issuance",
-];
-
+const GATES = ["Entity Verification", "UBO Disclosure", "Sanctions Screening", "Jurisdiction Resolution", "Authority Binding", "Terms Lock", "Evidence Attachment", "Bilateral Collapse Sign", "WaD Certificate Issuance"];
 function NineGateProtocol() {
-  return (
-    <div className="space-y-3">
-      {GATES.map((gate, i) => (
-        <motion.div
-          key={gate}
-          initial={{ opacity: 0, x: -8 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ delay: i * 0.04, duration: 0.4 }}
-          className="flex items-center gap-4"
-        >
+  return <div className="space-y-3">
+      {GATES.map((gate, i) => <motion.div key={gate} initial={{
+      opacity: 0,
+      x: -8
+    }} whileInView={{
+      opacity: 1,
+      x: 0
+    }} viewport={{
+      once: true,
+      margin: "-50px"
+    }} transition={{
+      delay: i * 0.04,
+      duration: 0.4
+    }} className="flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-700/70 w-6">
               {String(i + 1).padStart(2, "0")}
@@ -221,34 +175,44 @@ function NineGateProtocol() {
             <p className="text-[13px] text-slate-800 font-medium">{gate}</p>
           </div>
           <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-transparent" />
-        </motion.div>
-      ))}
-    </div>
-  );
+        </motion.div>)}
+    </div>;
 }
 
 /* ────────────────── REAL-TIME TELEMETRY (mini live feed) ────────────────── */
 
-const PULSES = [
-  { t: "00:01", evt: "match_created", org: "GLN-SG" },
-  { t: "00:02", evt: "kyc_verified", org: "AUR-DE" },
-  { t: "00:04", evt: "sanctions_screened", org: "AUR-DE" },
-  { t: "00:09", evt: "terms_locked", org: "GLN-SG" },
-  { t: "00:11", evt: "poi_generated", org: "—" },
-];
-
+const PULSES = [{
+  t: "00:01",
+  evt: "match_created",
+  org: "GLN-SG"
+}, {
+  t: "00:02",
+  evt: "kyc_verified",
+  org: "AUR-DE"
+}, {
+  t: "00:04",
+  evt: "sanctions_screened",
+  org: "AUR-DE"
+}, {
+  t: "00:09",
+  evt: "terms_locked",
+  org: "GLN-SG"
+}, {
+  t: "00:11",
+  evt: "poi_generated",
+  org: "-"
+}];
 function TelemetryFeed() {
-  return (
-    <div className="space-y-2.5">
-      {PULSES.map((p, i) => (
-        <motion.div
-          key={p.t + p.evt}
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: i * 0.08 }}
-          className="flex items-center gap-3 text-[12px] font-mono"
-        >
+  return <div className="space-y-2.5">
+      {PULSES.map((p, i) => <motion.div key={p.t + p.evt} initial={{
+      opacity: 0
+    }} whileInView={{
+      opacity: 1
+    }} viewport={{
+      once: true
+    }} transition={{
+      delay: i * 0.08
+    }} className="flex items-center gap-3 text-[12px] font-mono">
           <span className="relative flex h-1.5 w-1.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-600" />
@@ -256,17 +220,14 @@ function TelemetryFeed() {
           <span className="text-slate-400 tabular-nums">{p.t}</span>
           <span className="text-slate-900 truncate flex-1">{p.evt}</span>
           <span className="text-slate-500">{p.org}</span>
-        </motion.div>
-      ))}
-    </div>
-  );
+        </motion.div>)}
+    </div>;
 }
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function TradeDeskProductPage() {
-  return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -278,66 +239,77 @@ export default function TradeDeskProductPage() {
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             {/* Left: copy */}
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 8
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.6
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 Trade Desk
               </motion.p>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
-              >
+              <motion.h1 initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.05
+            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Governance infrastructure
                 <br />
                 for the deal maker.
               </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.1
+            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
                 The all-in-one terminal for institutional commodity trade. Discover
                 counterparties, run compliance, and seal cross-border deals with
                 cryptographic Proof of Intent.
               </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.18 }}
-                className="mt-12 flex flex-wrap items-center gap-4"
-              >
-                <Link
-                  to="/auth"
-                  className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
-                >
+              <motion.div initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.18
+            }} className="mt-12 flex flex-wrap items-center gap-4">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
                   Open your desk
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link
-                  to="/pricing"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-                >
+                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
                   See pricing
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
               </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
-              >
+              <motion.p initial={{
+              opacity: 0
+            }} animate={{
+              opacity: 1
+            }} transition={{
+              duration: 0.7,
+              delay: 0.3
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
                 SHA-256 sealed · 9-gate verified · Audit-ready
               </motion.p>
             </div>
@@ -360,14 +332,11 @@ export default function TradeDeskProductPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               Precision-engineered for institutional throughput.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed">
-              Three primitives — verification, compliance, and telemetry — composed
-              into a single cohesive workspace.
-            </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (verification, compliance, and telemetry) composed into a single cohesive workspace. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1 — Large, spans 2 cols */}
+            {/* Box 1, Large, spans 2 cols */}
             <div className="lg:col-span-2 lg:row-span-1 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -380,18 +349,14 @@ export default function TradeDeskProductPage() {
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
                 The 9-Gate Protocol.
               </h3>
-              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md">
-                Every Proof of Intent traverses nine cryptographic gates before it
-                seals — entity, UBO, sanctions, jurisdiction, authority, terms,
-                evidence, dual-collapse, certification.
-              </p>
+              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> Every Proof of Intent traverses nine cryptographic gates before it seals, entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
 
               <div className="mt-12">
                 <NineGateProtocol />
               </div>
             </div>
 
-            {/* Box 2 — KYB */}
+            {/* Box 2, KYB */}
             <div className="rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 shadow-sm flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
@@ -410,21 +375,14 @@ export default function TradeDeskProductPage() {
               </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {[
-                  "Entity verification",
-                  "Beneficial-owner disclosure",
-                  "Sanctions & PEP screening",
-                  "Jurisdiction residency lock",
-                ].map((c) => (
-                  <li key={c} className="flex items-center gap-3 text-slate-700">
+                {["Entity verification", "Beneficial-owner disclosure", "Sanctions & PEP screening", "Jurisdiction residency lock"].map(c => <li key={c} className="flex items-center gap-3 text-slate-700">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                     {c}
-                  </li>
-                ))}
+                  </li>)}
               </ul>
             </div>
 
-            {/* Box 3 — Telemetry */}
+            {/* Box 3, Telemetry */}
             <div className="lg:col-span-3 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
@@ -439,11 +397,7 @@ export default function TradeDeskProductPage() {
                   <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
                     Real-time telemetry.
                   </h3>
-                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md">
-                    A live activity stream surfaces every state transition across
-                    your desk — from match creation to certificate issuance —
-                    with cryptographic provenance on every pulse.
-                  </p>
+                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> A live activity stream surfaces every state transition across your desk (from match creation to certificate issuance) with cryptographic provenance on every pulse. </p>
                 </div>
                 <div className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-8">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-5">
@@ -469,10 +423,7 @@ export default function TradeDeskProductPage() {
             first sealed Proof of Intent today.
           </p>
           <div className="mt-12">
-            <Link
-              to="/auth"
-              className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-            >
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
               Open your desk
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>
@@ -481,6 +432,5 @@ export default function TradeDeskProductPage() {
       </section>
 
       <PageFooter />
-    </div>
-  );
+    </div>;
 }

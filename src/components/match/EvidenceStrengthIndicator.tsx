@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface EvidenceStrengthIndicatorProps {
   documentCount: number;
-  /** Compact mode for list views — shows just the bar + label */
+  /** Compact mode for list views, shows just the bar + label */
   compact?: boolean;
   className?: string;
 }

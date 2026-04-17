@@ -9,20 +9,15 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
-
 import { lovable } from "@/integrations/lovable";
-
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters")
 });
-
 const emailSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address")
 });
-
 type Mode = "signin" | "signup" | "forgot" | "reset";
-
 export default function Auth() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -37,7 +32,7 @@ export default function Auth() {
   // Tick down the resend cooldown each second
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const t = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    const t = setInterval(() => setResendCooldown(s => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, [resendCooldown]);
   const navigate = useNavigate();
@@ -45,15 +40,20 @@ export default function Auth() {
 
   // ── Post-auth routing: admins → /hq; new users → /welcome; returning → persisted persona ──
   const resolvePostAuthRoute = async (userId: string): Promise<string> => {
-    console.info("[Auth] resolvePostAuthRoute:start", { userId });
+    console.info("[Auth] resolvePostAuthRoute:start", {
+      userId
+    });
 
-    // 1) Platform admins always go to HQ — bypass returnTo & persona selector entirely.
+    // 1) Platform admins always go to HQ, bypass returnTo & persona selector entirely.
     try {
-      const { data: roleRows, error: roleErr } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-      console.info("[Auth] role lookup", { roleRows, roleErr: roleErr?.message });
+      const {
+        data: roleRows,
+        error: roleErr
+      } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+      console.info("[Auth] role lookup", {
+        roleRows,
+        roleErr: roleErr?.message
+      });
       const isPlatformAdmin = (roleRows || []).some(r => r.role === "platform_admin");
       if (isPlatformAdmin) {
         console.info("[Auth] resolved → /hq/users (platform admin)");
@@ -76,13 +76,14 @@ export default function Auth() {
 
     // 3) Persisted persona → workspace; otherwise persona selector
     try {
-      const { data, error: profErr } = await supabase
-        .from("profiles")
-        .select("selected_persona")
-        .eq("id", userId)
-        .maybeSingle();
-      console.info("[Auth] persona lookup", { persona: data?.selected_persona, profErr: profErr?.message });
-
+      const {
+        data,
+        error: profErr
+      } = await supabase.from("profiles").select("selected_persona").eq("id", userId).maybeSingle();
+      console.info("[Auth] persona lookup", {
+        persona: data?.selected_persona,
+        profErr: profErr?.message
+      });
       const persona = data?.selected_persona;
       if (!persona) return "/welcome";
       if (persona === "developer") return "/developers/keys";
@@ -95,33 +96,37 @@ export default function Auth() {
       return "/welcome";
     }
   };
-
   useEffect(() => {
     const type = searchParams.get("type");
     const code = searchParams.get("code");
-
     if (type === "recovery") {
       setMode("reset");
       toast.info("Enter your new password below");
     } else if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) toast.error(error.message);
-        else toast.success("Your email has been verified. You can now sign in.");
+      supabase.auth.exchangeCodeForSession(code).then(({
+        error
+      }) => {
+        if (error) toast.error(error.message);else toast.success("Your email has been verified. You can now sign in.");
       });
     }
-
     if (searchParams.get("expired") === "1") {
-      toast.warning("Your session expired. Sign in to continue where you left off.", { duration: 8000 });
+      toast.warning("Your session expired. Sign in to continue where you left off.", {
+        duration: 8000
+      });
     } else if (searchParams.get("signedOut") === "1") {
-      toast.info("You've been signed out successfully.", { duration: 5000 });
+      toast.info("You've been signed out successfully.", {
+        duration: 5000
+      });
     }
-
     const timeoutId = setTimeout(() => setPageReady(true), 8000);
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({
+      data: {
+        session
+      }
+    }) => {
       clearTimeout(timeoutId);
       if (session?.user) {
-        // Already signed in — hard-navigate so the destination route's
+        // Already signed in, hard-navigate so the destination route's
         // <RequireAuth> guard sees the persisted session immediately.
         const route = await resolvePostAuthRoute(session.user.id);
         window.location.assign(route);
@@ -151,9 +156,18 @@ export default function Auth() {
     e.preventDefault();
     if (loading) return;
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({
+        email,
+        password
+      });
       setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const {
+        data,
+        error
+      } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       if (error) {
         if (error.message.includes("Email not confirmed")) {
           setVerificationPending(true);
@@ -179,19 +193,18 @@ export default function Auth() {
         return;
       }
     } catch (err) {
-      if (err instanceof z.ZodError) toast.error(err.errors[0].message);
-      else if (err instanceof Error) {
+      if (err instanceof z.ZodError) toast.error(err.errors[0].message);else if (err instanceof Error) {
         const m = err.message;
-        if (m.includes("Invalid login")) toast.error("Incorrect email or password.");
-        else if (m.includes("rate limit") || m.includes("too many") || m.includes("locked")) {
-          toast.error("Too many attempts. Wait 5 minutes, then try again.", { duration: 10000 });
+        if (m.includes("Invalid login")) toast.error("Incorrect email or password.");else if (m.includes("rate limit") || m.includes("too many") || m.includes("locked")) {
+          toast.error("Too many attempts. Wait 5 minutes, then try again.", {
+            duration: 10000
+          });
         } else toast.error(m || "Sign-in failed.");
       }
     } finally {
       setLoading(false);
     }
   };
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -200,19 +213,25 @@ export default function Auth() {
       return;
     }
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({
+        email,
+        password
+      });
       setLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const {
+        error
+      } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
       });
       if (error) throw error;
       setVerificationPending(true);
       toast.success("Check your email to verify your account.");
     } catch (err) {
-      if (err instanceof z.ZodError) toast.error(err.errors[0].message);
-      else if (err instanceof Error) {
+      if (err instanceof z.ZodError) toast.error(err.errors[0].message);else if (err instanceof Error) {
         const lower = err.message.toLowerCase();
         if (lower.includes("already registered") || lower.includes("user already")) {
           toast.error("An account with this email already exists.");
@@ -228,46 +247,52 @@ export default function Auth() {
       setLoading(false);
     }
   };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     try {
-      emailSchema.parse({ email });
+      emailSchema.parse({
+        email
+      });
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const {
+        error
+      } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
       });
       if (error) throw error;
       setResetEmailSent(true);
       toast.success("Check your email for a reset link.");
     } catch (err) {
-      if (err instanceof z.ZodError) toast.error(err.errors[0].message);
-      else toast.info("If an account exists, you'll receive a reset email.");
+      if (err instanceof z.ZodError) toast.error(err.errors[0].message);else toast.info("If an account exists, you'll receive a reset email.");
     } finally {
       setLoading(false);
     }
   };
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     try {
-      authSchema.parse({ email: "reset@placeholder.com", password });
+      authSchema.parse({
+        email: "reset@placeholder.com",
+        password
+      });
       setLoading(true);
-      const { error } = await supabase.auth.updateUser({ password });
+      const {
+        error
+      } = await supabase.auth.updateUser({
+        password
+      });
       if (error) throw error;
       toast.success("Your password has been updated.");
       setMode("signin");
       setPassword("");
     } catch (err) {
-      if (err instanceof z.ZodError) toast.error(err.errors[0].message);
-      else if (err instanceof Error) toast.error(err.message);
+      if (err instanceof z.ZodError) toast.error(err.errors[0].message);else if (err instanceof Error) toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
-
   const resendVerification = async () => {
     if (!email) {
       toast.error("Enter your email first.");
@@ -276,7 +301,12 @@ export default function Auth() {
     if (resendCooldown > 0) return;
     try {
       setLoading(true);
-      const { error } = await supabase.auth.resend({ type: "signup", email });
+      const {
+        error
+      } = await supabase.auth.resend({
+        type: "signup",
+        email
+      });
       if (error) throw error;
       toast.success("Verification email sent.");
       setResendCooldown(60);
@@ -297,63 +327,35 @@ export default function Auth() {
   };
 
   // ── Render ──
-  return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white p-4 sm:p-8"
-      style={{
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-      }}
-    >
+  return <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white p-4 sm:p-8" style={{
+    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+  }}>
       {/* ═══════════════ BACKGROUND LAYERS ═══════════════ */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[820px] w-[1300px] rounded-full blur-3xl"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.06) 40%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute top-0 right-0 h-[520px] w-[620px] rounded-full blur-3xl"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(16,185,129,0.20) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute bottom-0 left-0 h-[440px] w-[540px] rounded-full blur-3xl"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(5,150,105,0.10) 0%, transparent 70%)",
-          }}
-        />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[820px] w-[1300px] rounded-full blur-3xl" style={{
+        background: "radial-gradient(ellipse at center, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.06) 40%, transparent 70%)"
+      }} />
+        <div className="absolute top-0 right-0 h-[520px] w-[620px] rounded-full blur-3xl" style={{
+        background: "radial-gradient(circle, rgba(16,185,129,0.20) 0%, transparent 70%)"
+      }} />
+        <div className="absolute bottom-0 left-0 h-[440px] w-[540px] rounded-full blur-3xl" style={{
+        background: "radial-gradient(circle, rgba(5,150,105,0.10) 0%, transparent 70%)"
+      }} />
       </div>
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-          maskImage:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
-        }}
-      />
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{
+      backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)",
+      backgroundSize: "40px 40px",
+      maskImage: "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
+      WebkitMaskImage: "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)"
+    }} />
 
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
       <div className="relative z-10 w-full max-w-[440px]">
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-8 sm:p-10">
-          {/* Logo (centered, top of card) — links back to landing */}
+          {/* Logo (centered, top of card), links back to landing */}
           <div className="flex flex-col items-center mb-8">
-            <Link
-              to="/"
-              aria-label="Back to Izenzo home"
-              className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-2"
-            >
+            <Link to="/" aria-label="Back to Izenzo home" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-2">
               <div className="w-9 h-9 rounded-md flex items-center justify-center bg-emerald-950">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -365,63 +367,50 @@ export default function Auth() {
             </Link>
           </div>
 
-          {!pageReady ? (
-            <div className="flex items-center justify-center py-12">
+          {!pageReady ? <div className="flex items-center justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-            </div>
-          ) : verificationPending ? (
-            <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
-          ) : mode === "reset" ? (
-            <ResetForm password={password} setPassword={setPassword} loading={loading} onSubmit={handleResetPassword} />
-          ) : mode === "forgot" ? (
-            <ForgotForm
-              email={email}
-              setEmail={setEmail}
-              loading={loading}
-              sent={resetEmailSent}
-              onSubmit={handleForgotPassword}
-              onBack={() => { setMode("signin"); setResetEmailSent(false); }}
-            />
-          ) : (
-            <AuthForm
-              mode={mode}
-              setMode={setMode}
-              email={email}
-              setEmail={setEmail}
-              password={password}
-              setPassword={setPassword}
-              confirmPassword={confirmPassword}
-              setConfirmPassword={setConfirmPassword}
-              loading={loading}
-              onSignIn={handleSignIn}
-              onSignUp={handleSignUp}
-              onForgot={() => setMode("forgot")}
-            />
-          )}
+            </div> : verificationPending ? <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => {
+          setVerificationPending(false);
+          setMode("signin");
+        }} /> : mode === "reset" ? <ResetForm password={password} setPassword={setPassword} loading={loading} onSubmit={handleResetPassword} /> : mode === "forgot" ? <ForgotForm email={email} setEmail={setEmail} loading={loading} sent={resetEmailSent} onSubmit={handleForgotPassword} onBack={() => {
+          setMode("signin");
+          setResetEmailSent(false);
+        }} /> : <AuthForm mode={mode} setMode={setMode} email={email} setEmail={setEmail} password={password} setPassword={setPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} loading={loading} onSignIn={handleSignIn} onSignUp={handleSignUp} onForgot={() => setMode("forgot")} />}
         </div>
 
         <p className="mt-6 text-xs text-slate-400 text-center leading-relaxed">
           POPIA &amp; GDPR-compliant data residency. All sessions cryptographically sealed.
         </p>
       </div>
-    </div>
-  );
+    </div>;
 }
 
 // ─────────────────────────────────────────────────────────
-// Sub-components — kept inline to preserve single-file auth surface
+// Sub-components, kept inline to preserve single-file auth surface
 // ─────────────────────────────────────────────────────────
 
 function AuthForm({
-  mode, setMode, email, setEmail, password, setPassword,
-  confirmPassword, setConfirmPassword, loading,
-  onSignIn, onSignUp, onForgot,
+  mode,
+  setMode,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  loading,
+  onSignIn,
+  onSignUp,
+  onForgot
 }: {
   mode: "signin" | "signup";
   setMode: (m: Mode) => void;
-  email: string; setEmail: (v: string) => void;
-  password: string; setPassword: (v: string) => void;
-  confirmPassword: string; setConfirmPassword: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (v: string) => void;
   loading: boolean;
   onSignIn: (e: React.FormEvent) => void;
   onSignUp: (e: React.FormEvent) => void;
@@ -429,13 +418,12 @@ function AuthForm({
 }) {
   const isSignIn = mode === "signin";
   const [ssoLoading, setSsoLoading] = useState<"google" | "microsoft" | null>(null);
-
   const handleSso = async (provider: "google" | "microsoft") => {
     if (ssoLoading || loading) return;
     setSsoLoading(provider);
     try {
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+        redirect_uri: window.location.origin
       });
       if (result.redirected) return;
       if (result.error) {
@@ -457,9 +445,7 @@ function AuthForm({
       setSsoLoading(null);
     }
   };
-
-  return (
-    <>
+  return <>
       <div className="mb-8 text-center">
         <h1 className="text-[24px] font-semibold text-slate-900 tracking-tight leading-[1.15]">
           {isSignIn ? "Sign in to your account" : "Create your account"}
@@ -471,44 +457,26 @@ function AuthForm({
 
       {/* ─── Enterprise SSO ─── */}
       <div className="space-y-3 mb-6">
-        <button
-          type="button"
-          onClick={() => handleSso("microsoft")}
-          disabled={loading || ssoLoading !== null}
-          className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
-        >
+        <button type="button" onClick={() => handleSso("microsoft")} disabled={loading || ssoLoading !== null} className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
           <span className="absolute left-4 flex items-center">
-            {ssoLoading === "microsoft" ? (
-              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            {ssoLoading === "microsoft" ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                 <rect x="0" y="0" width="7" height="7" fill="#F25022" />
                 <rect x="9" y="0" width="7" height="7" fill="#7FBA00" />
                 <rect x="0" y="9" width="7" height="7" fill="#00A4EF" />
                 <rect x="9" y="9" width="7" height="7" fill="#FFB900" />
-              </svg>
-            )}
+              </svg>}
           </span>
           Continue with Microsoft
         </button>
 
-        <button
-          type="button"
-          onClick={() => handleSso("google")}
-          disabled={loading || ssoLoading !== null}
-          className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
-        >
+        <button type="button" onClick={() => handleSso("google")} disabled={loading || ssoLoading !== null} className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
           <span className="absolute left-4 flex items-center">
-            {ssoLoading === "google" ? (
-              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
-                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
-                <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
-                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
-              </svg>
-            )}
+            {ssoLoading === "google" ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+                <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+              </svg>}
           </span>
           Continue with Google
         </button>
@@ -532,16 +500,7 @@ function AuthForm({
           <Label htmlFor="email" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
             Email
           </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow"
-            placeholder="you@institution.com"
-          />
+          <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="you@institution.com" />
         </div>
 
         <div className="space-y-2">
@@ -549,72 +508,30 @@ function AuthForm({
             <Label htmlFor="password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
               Password
             </Label>
-            {isSignIn && (
-              <button
-                type="button"
-                onClick={onForgot}
-                className="text-xs text-slate-500 hover:text-slate-900 transition-colors"
-              >
+            {isSignIn && <button type="button" onClick={onForgot} className="text-xs text-slate-500 hover:text-slate-900 transition-colors">
                 Forgot?
-              </button>
-            )}
+              </button>}
           </div>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete={isSignIn ? "current-password" : "new-password"}
-            minLength={8}
-            className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow"
-            placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"}
-          />
+          <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={isSignIn ? "current-password" : "new-password"} minLength={8} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"} />
         </div>
 
-        {!isSignIn && (
-          <div className="space-y-2">
+        {!isSignIn && <div className="space-y-2">
             <Label htmlFor="confirm-password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
               Confirm password
             </Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-              minLength={8}
-              className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow"
-              placeholder="Re-enter password"
-            />
-            {confirmPassword.length > 0 && password !== confirmPassword && (
-              <p className="text-xs text-destructive">Passwords do not match.</p>
-            )}
-          </div>
-        )}
+            <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" minLength={8} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="Re-enter password" />
+            {confirmPassword.length > 0 && password !== confirmPassword && <p className="text-xs text-destructive">Passwords do not match.</p>}
+          </div>}
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full h-11 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 hover:shadow-emerald-700/30 font-medium text-[15px] tracking-tight transition-all"
-        >
-          {loading ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait…</>
-          ) : (
-            isSignIn ? "Continue with Email" : "Create account"
-          )}
+        <Button type="submit" disabled={loading} className="w-full h-11 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 hover:shadow-emerald-700/30 font-medium text-[15px] tracking-tight transition-all">
+          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait…</> : isSignIn ? "Continue with Email" : "Create account"}
         </Button>
       </form>
 
       <div className="mt-8 pt-6 border-t border-slate-200 text-center">
         <p className="text-sm text-slate-500">
           {isSignIn ? "New to Izenzo?" : "Already have an account?"}{" "}
-          <button
-            type="button"
-            onClick={() => setMode(isSignIn ? "signup" : "signin")}
-            className="text-slate-900 font-medium hover:text-primary transition-colors"
-          >
+          <button type="button" onClick={() => setMode(isSignIn ? "signup" : "signin")} className="text-slate-900 font-medium hover:text-primary transition-colors">
             {isSignIn ? "Create account" : "Sign in"}
           </button>
         </p>
@@ -623,24 +540,25 @@ function AuthForm({
       <p className="mt-12 text-[11px] text-slate-400 text-center leading-relaxed">
         By continuing you agree to Izenzo's Terms of Service and acknowledge our compliance with POPIA & GDPR data residency standards.
       </p>
-    </>
-  );
+    </>;
 }
-
 function ForgotForm({
-  email, setEmail, loading, sent, onSubmit, onBack,
+  email,
+  setEmail,
+  loading,
+  sent,
+  onSubmit,
+  onBack
 }: {
-  email: string; setEmail: (v: string) => void;
-  loading: boolean; sent: boolean;
+  email: string;
+  setEmail: (v: string) => void;
+  loading: boolean;
+  sent: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onBack: () => void;
 }) {
-  return (
-    <>
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-8"
-      >
+  return <>
+      <button onClick={onBack} className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-8">
         <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
       </button>
 
@@ -651,79 +569,65 @@ function ForgotForm({
         </p>
       </div>
 
-      {sent ? (
-        <div className="p-5 border border-slate-200 rounded-md bg-slate-50">
+      {sent ? <div className="p-5 border border-slate-200 rounded-md bg-slate-50">
           <p className="text-sm font-medium text-slate-900 mb-2">Reset link sent</p>
           <p className="text-sm text-slate-500 leading-relaxed">
             Check <span className="font-medium text-slate-700">{email}</span> for instructions. The link expires in 1 hour.
           </p>
-        </div>
-      ) : (
-        <form onSubmit={onSubmit} className="space-y-5">
+        </div> : <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="reset-email" className="text-xs font-medium text-slate-700 tracking-wide uppercase">Email</Label>
-            <Input
-              id="reset-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="h-12 rounded-md border border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900"
-              placeholder="you@institution.com"
-            />
+            <Input id="reset-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-12 rounded-md border border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900" placeholder="you@institution.com" />
           </div>
           <Button type="submit" disabled={loading} className="w-full h-12 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-none font-medium">
             {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : "Send reset link"}
           </Button>
-        </form>
-      )}
-    </>
-  );
+        </form>}
+    </>;
 }
-
 function ResetForm({
-  password, setPassword, loading, onSubmit,
+  password,
+  setPassword,
+  loading,
+  onSubmit
 }: {
-  password: string; setPassword: (v: string) => void;
-  loading: boolean; onSubmit: (e: React.FormEvent) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  loading: boolean;
+  onSubmit: (e: React.FormEvent) => void;
 }) {
-  return (
-    <>
+  return <>
       <div className="mb-10">
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Set new password</h1>
-        <p className="mt-2 text-sm text-slate-500 leading-relaxed">Choose a strong password — minimum 8 characters.</p>
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed">Choose a strong password: minimum 8 characters.</p>
       </div>
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="new-password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">New password</Label>
-          <Input
-            id="new-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            className="h-12 rounded-md border border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900"
-          />
+          <Input id="new-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} className="h-12 rounded-md border border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900" />
         </div>
         <Button type="submit" disabled={loading} className="w-full h-12 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-none font-medium">
           {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</> : "Update password"}
         </Button>
       </form>
-    </>
-  );
+    </>;
 }
-
 function VerificationPendingBlock({
-  email, onResend, loading, cooldown, onBack,
-}: { email: string; onResend: () => void; loading: boolean; cooldown: number; onBack: () => void }) {
+  email,
+  onResend,
+  loading,
+  cooldown,
+  onBack
+}: {
+  email: string;
+  onResend: () => void;
+  loading: boolean;
+  cooldown: number;
+  onBack: () => void;
+}) {
   const disabled = loading || cooldown > 0;
-  return (
-    <>
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-8"
-      >
+  return <>
+      <button onClick={onBack} className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-8">
         <ArrowLeft className="h-3.5 w-3.5" /> Back
       </button>
       <div className="mb-8">
@@ -732,23 +636,11 @@ function VerificationPendingBlock({
           We sent a verification link to <span className="font-medium text-slate-700">{email || "your inbox"}</span>. Open it to activate your account.
         </p>
       </div>
-      <Button
-        onClick={onResend}
-        disabled={disabled}
-        variant="outline"
-        className="w-full h-12 rounded-md border-slate-200 hover:bg-slate-50 shadow-none font-medium text-slate-900"
-      >
-        {loading
-          ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
-          : cooldown > 0
-            ? `Resend available in ${cooldown}s`
-            : "Resend verification email"}
+      <Button onClick={onResend} disabled={disabled} variant="outline" className="w-full h-12 rounded-md border-slate-200 hover:bg-slate-50 shadow-none font-medium text-slate-900">
+        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend verification email"}
       </Button>
-      {cooldown > 0 && (
-        <p className="mt-3 text-xs text-slate-400 text-center">
+      {cooldown > 0 && <p className="mt-3 text-xs text-slate-400 text-center">
           For security, verification emails are throttled. Check your inbox (and spam folder) while you wait.
-        </p>
-      )}
-    </>
-  );
+        </p>}
+    </>;
 }

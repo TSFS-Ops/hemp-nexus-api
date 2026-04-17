@@ -62,7 +62,7 @@ export class ApiError extends Error {
       if (body.code) code = body.code;
       requestId = body.request_id || body.correlation_id;
     } catch {
-      // body wasn't JSON – use statusText
+      // body wasn't JSON, use statusText
     }
 
     return new ApiError(res.status, message, code, requestId);
@@ -172,7 +172,7 @@ export async function apiFetch<T = unknown>(
 }
 
 /**
- * Public variant of apiFetch — does NOT require auth.
+ * Public variant of apiFetch, does NOT require auth.
  * Uses the anon key for pre-auth endpoints (e.g. liquidity-check).
  */
 export async function apiFetchPublic<T = unknown>(

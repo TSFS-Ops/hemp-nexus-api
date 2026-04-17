@@ -46,7 +46,7 @@ export function AttentionPipeline() {
           : "Unspecified volume";
         return {
           id: m.id,
-          title: `Awaiting your confirmation: ${qty} ${m.commodity ?? "—"}`,
+          title: `Awaiting your confirmation: ${qty} ${m.commodity ?? "-"}`,
           meta: counterparty ? `Counterparty · ${counterparty}` : "Counterparty pending",
           href: `/desk/deals/${m.id}`,
         };
