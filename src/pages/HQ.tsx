@@ -1,19 +1,18 @@
 /**
- * HQ — Sovereign Network Command Center.
+ * Admin Dashboard — Izenzo Platform Administration.
  *
- * The fourth and final persona. Where Trader/Governor/Developer live INSIDE a
- * sidebar workspace, HQ deliberately ABANDONS the sidebar to signal a shift in
- * altitude — the operator is no longer working IN the system, they are looking
- * AT the entire network from above.
+ * Top-level admin workspace for the platform operations team. Provides
+ * functional management surfaces for users, organisations (KYB), disputes,
+ * and platform settings.
  *
- * Layout DNA:
- *   - Top Command Bar (slate-950): brand + network status + exit.
- *   - Tab rail (white, hairline border): four functional command surfaces.
+ * Layout:
+ *   - Top admin bar (slate-950): brand + system status + exit.
+ *   - Tab rail (white, hairline border): four functional admin surfaces.
  *   - Tab content (slate-50): real, wired admin panels — no mocks.
  *
- * Privacy contract: counterparty trade detail remains opaque to HQ by design.
- * Only meta-state surfaces here (KYB status, dispute escalations, system
- * settings). Trade payloads are encrypted at rest and never decoded server-side.
+ * Privacy contract: counterparty trade detail remains opaque to admins by
+ * design. Only meta-state surfaces here (KYB status, dispute escalations,
+ * system settings). Trade payloads are encrypted at rest.
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
@@ -42,16 +41,16 @@ import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 type TabId = "users" | "organisations" | "disputes" | "settings";
 
 const TABS: { id: TabId; label: string; icon: typeof Users; blurb: string }[] = [
-  { id: "users",         label: "Users",         icon: Users,         blurb: "Profiles, role assignments, account suspensions." },
-  { id: "organisations", label: "Organisations", icon: Building2,     blurb: "KYB lifecycle, legal entities, document verification." },
-  { id: "disputes",      label: "Disputes",      icon: AlertTriangle, blurb: "Flagged trades, escalations, force-resolve overrides." },
-  { id: "settings",      label: "Settings",      icon: SettingsIcon,  blurb: "Platform configuration, thresholds, signing keys, overrides." },
+  { id: "users",         label: "User Management",         icon: Users,         blurb: "Profiles, role assignments, account suspensions." },
+  { id: "organisations", label: "Organisation Management", icon: Building2,     blurb: "KYB lifecycle, legal entities, KYC document verification." },
+  { id: "disputes",      label: "Dispute Resolution",      icon: AlertTriangle, blurb: "Flagged trades, escalations, force-resolve overrides." },
+  { id: "settings",      label: "Platform Settings",       icon: SettingsIcon,  blurb: "Platform configuration, approval thresholds, signing keys, overrides." },
 ];
 
 const VALID_TAB_IDS = TABS.map((t) => t.id) as readonly TabId[];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Top Command Bar — the "Air Traffic Control" header.
+// Top admin bar — header for the platform administration workspace.
 // Midnight slate-950 to draw a hard boundary against the bright workspace below.
 // ─────────────────────────────────────────────────────────────────────────────
 function CommandBar() {
@@ -67,22 +66,22 @@ function CommandBar() {
             </div>
             <div className="leading-tight">
               <div className="font-mono text-[11px] tracking-[0.25em] uppercase text-slate-100">
-                Izenzo · HQ
+                Izenzo · Admin
               </div>
               <div className="font-mono text-[9px] tracking-[0.2em] uppercase text-slate-500">
-                Sovereign Network Control
+                Platform Administration
               </div>
             </div>
           </Link>
 
-          {/* Network status badge */}
+          {/* System status badge */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-sm border border-emerald-900/60 bg-emerald-950/40">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
             <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-emerald-300">
-              Network Status: Synchronized
+              System Status: Operational
             </span>
           </div>
         </div>
@@ -90,7 +89,7 @@ function CommandBar() {
         <button
           onClick={signOut}
           className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors"
-          aria-label="Sign out of HQ"
+          aria-label="Sign out of admin dashboard"
         >
           <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
           Sign out
@@ -114,7 +113,7 @@ function TabHeader({ id }: { id: TabId }) {
       </div>
       <div className="min-w-0">
         <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-1">
-          HQ · {meta.label}
+          Admin · {meta.label}
         </p>
         <h1 className="text-2xl font-medium text-slate-900 tracking-tight">
           {meta.label}
@@ -126,7 +125,7 @@ function TabHeader({ id }: { id: TabId }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Surface wrapper — uniform "Command Center" chrome for every wired panel.
+// Surface wrapper — uniform admin chrome for every wired panel.
 // White card on slate-50, hairline border, generous padding. The internal
 // admin panels supply their own tables; we just frame them.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -218,7 +217,7 @@ function DisputesTab() {
 }
 
 function SettingsTab() {
-  // Full Civilisation OS suite: platform config, thresholds, tokens, signing keys, BRD, overrides.
+  // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
   return (
     <>
       <TabHeader id="settings" />
@@ -267,7 +266,7 @@ function SettingsTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HQ Layout — Command Bar + Tab rail. Tab state lives in the URL (/hq/:tab)
+// Admin layout — top bar + tab rail. Tab state lives in the URL (/hq/:tab)
 // so admins can deep-link and bookmark surfaces without losing context.
 // ─────────────────────────────────────────────────────────────────────────────
 function HQLayout() {
@@ -350,12 +349,12 @@ function ForbiddenHQ() {
           403 · Forbidden
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-white mb-4">
-          Restricted airspace
+          Access restricted
         </h1>
         <p className="text-sm text-slate-400 leading-relaxed mb-10">
-          Izenzo HQ is reserved for the platform operations team. Your account does not carry the
+          The Izenzo Admin Dashboard is reserved for the platform operations team. Your account does not carry the
           <span className="font-mono text-slate-300"> platform_admin </span>
-          role required to enter this surface. This attempt has been recorded.
+          role required to enter this area. This attempt has been recorded.
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link
