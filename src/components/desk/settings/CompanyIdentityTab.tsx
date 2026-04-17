@@ -225,7 +225,7 @@ export function CompanyIdentityTab() {
           companyEntityId={companyEntityId}
           onSaved={async () => {
             await refresh();
-            setActiveStep("owners");
+            selectStep("owners");
           }}
         />
       )}
