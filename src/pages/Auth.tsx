@@ -347,9 +347,13 @@ export default function Auth() {
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
       <div className="relative z-10 w-full max-w-[440px]">
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-8 sm:p-10">
-          {/* Logo (centered, top of card) */}
+          {/* Logo (centered, top of card) — links back to landing */}
           <div className="flex flex-col items-center mb-8">
-            <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              aria-label="Back to Izenzo home"
+              className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-2"
+            >
               <div className="w-9 h-9 rounded-md flex items-center justify-center bg-emerald-950">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -358,7 +362,7 @@ export default function Auth() {
                 </svg>
               </div>
               <span className="text-[18px] font-semibold tracking-tight text-slate-900">Izenzo</span>
-            </div>
+            </Link>
           </div>
 
           {!pageReady ? (
