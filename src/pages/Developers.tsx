@@ -264,7 +264,7 @@ export default function DevelopersPage() {
                 transition={{ duration: 0.7, delay: 0.05 }}
                 className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
               >
-                Build on sovereign infrastructure.
+                Build on governance infrastructure.
               </motion.h1>
 
               <motion.p

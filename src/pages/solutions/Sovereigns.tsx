@@ -100,7 +100,7 @@ function MacroDashboardMockup() {
         <header className="px-8 pt-7 pb-5 border-b border-slate-100 flex items-center justify-between">
           <div>
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700">
-              Izenzo · Sovereign Console
+              Izenzo · Governance Console
             </p>
             <h3 className="mt-2 text-lg font-semibold text-slate-900 tracking-tight">
               Macro Telemetry
@@ -257,7 +257,7 @@ export default function SovereignsSolutionsPage() {
                 transition={{ duration: 0.7, delay: 0.3 }}
                 className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
               >
-                Sovereign data residency · Append-only ledger · Macro telemetry
+                Institutional data residency · Append-only ledger · Macro telemetry
               </motion.p>
             </div>
 
@@ -280,7 +280,7 @@ export default function SovereignsSolutionsPage() {
             </h2>
             <p className="mt-6 text-lg text-slate-600 leading-relaxed">
               Three primitives — macro oversight, fraud prevention, and
-              sovereign data control — engineered for institutional trade
+              institutional data control — engineered for institutional trade
               programmes at national scale.
             </p>
           </div>
@@ -362,7 +362,7 @@ export default function SovereignsSolutionsPage() {
               </ul>
             </div>
 
-            {/* Box 3 — Sovereign Data Control */}
+            {/* Box 3 — Institutional Data Control */}
             <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
@@ -417,7 +417,7 @@ export default function SovereignsSolutionsPage() {
             <span className="text-emerald-700">Start governing in real time.</span>
           </h2>
           <p className="mt-8 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Brief our sovereign solutions team on your programme — we'll
+            Brief our institutional solutions team on your programme — we'll
             architect the governance rail end-to-end.
           </p>
           <div className="mt-12">

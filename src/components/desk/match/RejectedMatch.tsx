@@ -148,7 +148,7 @@ export function RejectedMatch() {
                 {/* Header */}
                 <header className="text-center pb-8 border-b border-slate-200">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-300">
-                    Izenzo Sovereign Infrastructure — Deal Record
+                    Izenzo Governance Infrastructure — Deal Record
                   </p>
                   <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-300">
                     Certificate of Intent

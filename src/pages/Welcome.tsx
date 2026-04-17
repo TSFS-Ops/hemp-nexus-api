@@ -32,7 +32,7 @@ const PERSONAS: PersonaCard[] = [
     icon: Terminal,
     title: "Developer & API Integration",
     description:
-      "Generate API keys, configure webhooks, and connect your ERP to the Izenzo sovereign ledger.",
+      "Generate API keys, configure webhooks, and connect your ERP to the Izenzo governance ledger.",
     route: "/developers/keys",
     meta: "For engineers & integration teams",
   },

@@ -155,7 +155,7 @@ export function ComplianceProfile() {
             Profile Incomplete
           </h2>
           <p className="mt-3 text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-            Your sovereign identity record has not been established. Complete
+            Your institutional identity record has not been established. Complete
             onboarding to register your entity, declare beneficial owners, and
             upload regulatory evidence.
           </p>
@@ -213,7 +213,7 @@ export function ComplianceProfile() {
             Compliance Profile
           </h1>
           <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
-            Your sovereign identity record. All counterparties verify against this file
+            Your institutional identity record. All counterparties verify against this file
             before bilateral signature.
           </p>
         </div>
@@ -436,7 +436,7 @@ export function ComplianceProfile() {
           Custodian
         </p>
         <p className="mt-2 text-sm text-slate-700 leading-relaxed max-w-2xl">
-          This profile is held by the Izenzo Sovereign Registry under jurisdiction{" "}
+          This profile is held by the Izenzo Governance Registry under jurisdiction{" "}
           {jurisdiction}. Counterparties may request cryptographic proof of any field
           via the Without-a-Doubt attestation endpoint.
         </p>
