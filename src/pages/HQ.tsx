@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,16 +34,22 @@ import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel";
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+// ── Audit & Health (compliance / observability) ─────────────────────
+import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
+import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
+import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry — single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "disputes" | "settings";
+type TabId = "users" | "organisations" | "disputes" | "audit" | "settings";
 
 const TABS: { id: TabId; label: string; icon: typeof Users; blurb: string }[] = [
   { id: "users",         label: "User Management",         icon: Users,         blurb: "Profiles, role assignments, account suspensions." },
   { id: "organisations", label: "Organisation Management", icon: Building2,     blurb: "KYB lifecycle, legal entities, KYC document verification." },
   { id: "disputes",      label: "Dispute Resolution",      icon: AlertTriangle, blurb: "Flagged trades, escalations, force-resolve overrides." },
+  { id: "audit",         label: "Audit & Health",          icon: Activity,      blurb: "Immutable audit trail, event store, system health monitoring, and platform analytics." },
   { id: "settings",      label: "Platform Settings",       icon: SettingsIcon,  blurb: "Platform configuration, approval thresholds, signing keys, overrides." },
 ];
 
@@ -216,6 +222,43 @@ function DisputesTab() {
   );
 }
 
+function AuditTab() {
+  // Compliance & observability: immutable audit trail, event store, system health, analytics.
+  return (
+    <>
+      <TabHeader id="audit" />
+      <Tabs defaultValue="audit-logs" className="space-y-5">
+        <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
+          <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="health">System Health</TabsTrigger>
+          <TabsTrigger value="event-store">Event Store</TabsTrigger>
+          <TabsTrigger value="analytics">System Analytics</TabsTrigger>
+        </TabsList>
+        <TabsContent value="audit-logs">
+          <Surface label="Immutable audit trail · public.audit_logs">
+            <AdminAuditLogs />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="health">
+          <Surface label="Live subsystem health · /healthz · 30s polling">
+            <AdminHealthMonitor />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="event-store">
+          <Surface label="Append-only event store · public.event_store">
+            <AdminEventStorePanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="analytics">
+          <Surface label="Platform-wide system metrics · users, organisations, API usage">
+            <SystemAnalytics />
+          </Surface>
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}
+
 function SettingsTab() {
   // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
   return (
@@ -325,6 +368,7 @@ function HQLayout() {
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
+          <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
       </Tabs>
