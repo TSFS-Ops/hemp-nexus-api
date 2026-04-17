@@ -8,16 +8,17 @@ interface LogLine {
 }
 
 const PATHS = [
+  "/v1/match.created",
   "/v1/match.sealed",
+  "/v1/poi.sealed",
   "/v1/poi.generate",
+  "/v1/entities/search",
   "/v1/trade.search",
   "/v1/webhooks.deliver",
   "/v1/audit.export",
-  "/v1/entity.verify",
   "/v1/key.rotate",
-  "/v1/dispute.raise",
 ];
-const METHODS: LogLine["method"][] = ["POST", "GET", "POST", "GET", "PUT"];
+const METHODS: LogLine["method"][] = ["POST", "GET", "POST", "GET", "POST"];
 const STATUSES = [200, 200, 200, 200, 201, 204, 404, 429, 500];
 
 function makeLine(): LogLine {
@@ -32,12 +33,12 @@ function makeLine(): LogLine {
 }
 
 const SEED: LogLine[] = [
-  { ts: "2026-04-17 12:21:04", method: "POST", path: "/v1/match.sealed", status: 200 },
-  { ts: "2026-04-17 12:21:02", method: "GET", path: "/v1/trade.search", status: 200 },
-  { ts: "2026-04-17 12:20:58", method: "POST", path: "/v1/poi.generate", status: 201 },
-  { ts: "2026-04-17 12:20:51", method: "POST", path: "/v1/webhooks.deliver", status: 200 },
-  { ts: "2026-04-17 12:20:47", method: "GET", path: "/v1/audit.export", status: 200 },
-  { ts: "2026-04-17 12:20:44", method: "POST", path: "/v1/entity.verify", status: 200 },
+  { ts: "2026-04-17 12:46:11", method: "GET",  path: "/v1/entities/search",  status: 200 },
+  { ts: "2026-04-17 12:45:48", method: "POST", path: "/v1/poi.sealed",       status: 200 },
+  { ts: "2026-04-17 12:45:02", method: "POST", path: "/v1/match.created",    status: 200 },
+  { ts: "2026-04-17 12:44:39", method: "POST", path: "/v1/webhooks.deliver", status: 200 },
+  { ts: "2026-04-17 12:44:11", method: "GET",  path: "/v1/audit.export",     status: 200 },
+  { ts: "2026-04-17 12:43:55", method: "POST", path: "/v1/match.sealed",     status: 201 },
 ];
 
 function statusColor(s: number) {
@@ -67,7 +68,7 @@ export function LiveActivityFeed() {
   useEffect(() => {
     if (paused) return;
     const id = setInterval(() => {
-      setLines((prev) => [makeLine(), ...prev].slice(0, 60));
+      setLines((prev) => [makeLine(), ...prev].slice(0, 80));
     }, 1800);
     return () => clearInterval(id);
   }, [paused]);
@@ -76,56 +77,53 @@ export function LiveActivityFeed() {
     <section>
       <div className="flex items-end justify-between mb-5">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
             §02 / Realtime
           </div>
-          <h2 className="mt-1 text-lg text-slate-100 tracking-tight">
-            Live Activity Feed
+          <h2
+            className="mt-1 text-lg text-slate-100 tracking-tight"
+            style={{ fontFamily: "Inter, sans-serif" }}
+          >
+            Live Event Stream
           </h2>
         </div>
         <button
           onClick={() => setPaused(!paused)}
-          className="text-[11px] uppercase tracking-[0.14em] text-slate-400 hover:text-slate-100 transition-colors"
+          className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 transition-colors"
         >
           {paused ? "▶ resume" : "⏸ pause"}
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-sm">
+      <div className="bg-black border border-slate-800 rounded-sm">
         {/* Terminal chrome */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-rose-500/60" />
             <span className="h-2 w-2 rounded-full bg-amber-500/60" />
             <span className="h-2 w-2 rounded-full bg-emerald-500/60" />
-            <span className="ml-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+            <span className="ml-3 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
               tail -f /var/log/izenzo/api.stream
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-1.5 w-1.5">
-              <span className={`absolute inline-flex h-full w-full rounded-full ${paused ? "bg-slate-600" : "bg-emerald-400 opacity-60 animate-ping"}`} />
-              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${paused ? "bg-slate-600" : "bg-emerald-400"}`} />
+              <span className={`absolute inline-flex h-full w-full rounded-full ${paused ? "bg-slate-600" : "bg-green-500 opacity-60 animate-ping"}`} />
+              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${paused ? "bg-slate-600" : "bg-green-500"}`} />
             </span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
               {paused ? "paused" : "live"}
             </span>
           </div>
         </div>
 
         {/* Log */}
-        <div
-          ref={ref}
-          className="max-h-[420px] overflow-y-auto px-4 py-3 text-[12px] leading-[1.7]"
-        >
+        <div ref={ref} className="max-h-[420px] overflow-y-auto p-4 font-mono text-[12px] leading-[1.7]">
           {lines.map((l, i) => (
-            <div
-              key={`${l.ts}-${i}`}
-              className="flex items-baseline gap-3 whitespace-nowrap"
-            >
+            <div key={`${l.ts}-${i}`} className="flex items-baseline gap-3 whitespace-nowrap">
               <span className="text-blue-400">[{l.ts}]</span>
               <span className="text-slate-400 w-12">{l.method}</span>
-              <span className="text-slate-200">{l.path}</span>
+              <span className="text-slate-100">{l.path}</span>
               <span className="text-slate-600">·</span>
               <span className={statusColor(l.status)}>
                 {l.status} {statusLabel(l.status)}

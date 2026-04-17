@@ -1,11 +1,8 @@
-/**
- * GovernanceEntities — placeholder for the Entity Verification workspace.
- */
-
 import { ShieldCheck } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
-import { GovernancePlaceholder } from "@/components/governance/GovernancePlaceholder";
+import { GovernancePage } from "@/components/governance/GovernancePage";
+import { EntityList } from "@/components/governance/EntityList";
 
 export default function GovernanceEntities() {
   return (
@@ -13,19 +10,18 @@ export default function GovernanceEntities() {
       <div className="min-h-screen w-full flex bg-white">
         <GovernorSidebar />
         <main className="flex-1 min-w-0">
-          <GovernancePlaceholder
+          <GovernancePage
             eyebrow="Governance Layer · 03"
             title="Entity Verification"
-            description="Sovereign view of every registered organisation, beneficial owner, and authorised signatory on the network. Provides UBO graphs, sanctions match history, and authority-bind attestations for regulator export."
+            description="Counterparty register with KYC, UBO chain, authority binding, and risk score. Entities are screened against sanctions and adverse-media feeds at issuance and re-screened on a 90-day cadence."
             icon={ShieldCheck}
-            eta="next sprint"
-            modules={[
-              { code: "ENT_01", label: "Organisation registry with risk band & residency", status: "drafting" },
-              { code: "ENT_02", label: "UBO ownership graph (≥100% coverage check)", status: "scoped" },
-              { code: "ENT_03", label: "Sanctions screen replay (Dilisense · OFAC · UN)", status: "scoped" },
-              { code: "ENT_04", label: "Authority-bind attestation ledger", status: "queued" },
+            meta={[
+              { label: "Verified", value: "4 entities", tone: "good" },
+              { label: "Action Required", value: "2", tone: "bad" },
             ]}
-          />
+          >
+            <EntityList />
+          </GovernancePage>
         </main>
       </div>
     </RequireAuth>

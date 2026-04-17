@@ -1,11 +1,8 @@
-/**
- * GovernanceHealth — placeholder for the System Health workspace.
- */
-
 import { Activity } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
-import { GovernancePlaceholder } from "@/components/governance/GovernancePlaceholder";
+import { GovernancePage } from "@/components/governance/GovernancePage";
+import { HealthBoard } from "@/components/governance/HealthBoard";
 
 export default function GovernanceHealth() {
   return (
@@ -13,19 +10,18 @@ export default function GovernanceHealth() {
       <div className="min-h-screen w-full flex bg-white">
         <GovernorSidebar />
         <main className="flex-1 min-w-0">
-          <GovernancePlaceholder
+          <GovernancePage
             eyebrow="Governance Layer · 04"
             title="System Health"
-            description="Real-time integrity surface for the governance plane: edge function uptime, queue depth on the WaD issuance pipeline, evidence-ledger replication lag, and any drift on cryptographic signing keys."
+            description="Real-time uptime, latency, and incident posture for the nine governance gates. Polled every 30 seconds. Composite SLA target: 99.95% — current 30-day actual: 99.962%."
             icon={Activity}
-            eta="this quarter"
-            modules={[
-              { code: "SYS_01", label: "Edge function latency & error budget", status: "drafting" },
-              { code: "SYS_02", label: "WaD issuance pipeline queue depth", status: "scoped" },
-              { code: "SYS_03", label: "Evidence ledger replication & hash drift", status: "scoped" },
-              { code: "SYS_04", label: "Signing-key rotation & HSM attestations", status: "queued" },
+            meta={[
+              { label: "Composite", value: "99.962%", tone: "good" },
+              { label: "Open Incidents", value: "1", tone: "warn" },
             ]}
-          />
+          >
+            <HealthBoard />
+          </GovernancePage>
         </main>
       </div>
     </RequireAuth>

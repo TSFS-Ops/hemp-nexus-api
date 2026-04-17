@@ -1,11 +1,8 @@
-/**
- * GovernanceAudits — placeholder for the Active Audits workspace.
- */
-
 import { FileSearch } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
-import { GovernancePlaceholder } from "@/components/governance/GovernancePlaceholder";
+import { GovernancePage } from "@/components/governance/GovernancePage";
+import { AuditList } from "@/components/governance/AuditList";
 
 export default function GovernanceAudits() {
   return (
@@ -13,19 +10,18 @@ export default function GovernanceAudits() {
       <div className="min-h-screen w-full flex bg-white">
         <GovernorSidebar />
         <main className="flex-1 min-w-0">
-          <GovernancePlaceholder
+          <GovernancePage
             eyebrow="Governance Layer · 02"
             title="Active Audits"
-            description="Long-running compliance investigations across counterparties, sealed WaD certificates, and regulator-initiated reviews. Each audit will carry its own evidence trail, scoped governor assignments, and time-locked conclusions."
+            description="Long-running compliance investigations across counterparties, sealed WaD certificates, and regulator-initiated reviews. Each audit carries its own evidence trail, scoped officer assignment, and time-locked conclusion."
             icon={FileSearch}
-            eta="next sprint"
-            modules={[
-              { code: "AUD_01", label: "Open audit register with severity routing", status: "drafting" },
-              { code: "AUD_02", label: "Counterparty evidence vault & chain-of-custody", status: "scoped" },
-              { code: "AUD_03", label: "Regulator request inbox (SARS · FIC · SARB)", status: "scoped" },
-              { code: "AUD_04", label: "Audit conclusion ledger with cryptographic seal", status: "queued" },
+            meta={[
+              { label: "Open", value: "5 cases", tone: "warn" },
+              { label: "Sealed (30d)", value: "12", tone: "good" },
             ]}
-          />
+          >
+            <AuditList />
+          </GovernancePage>
         </main>
       </div>
     </RequireAuth>
