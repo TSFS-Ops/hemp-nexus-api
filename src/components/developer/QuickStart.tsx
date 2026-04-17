@@ -12,13 +12,25 @@ const HOST = {
   sandbox: "https://sandbox.api.izenzo.io",
 };
 
+const ORG_ID = {
+  production: "org_4Lp2ZA",
+  sandbox: "org_sbx_demo",
+};
+
 export function QuickStart() {
   const { env } = useEnv();
   const [copied, setCopied] = useState(false);
 
-  const cmd = `curl -X GET ${HOST[env]}/v1/health \\
-  -H "Authorization: Bearer ${SAMPLE_KEY[env]}" \\
-  -H "Content-Type: application/json"`;
+  const cmd = `# 1. Export your institutional credential (never commit this)
+export IZENZO_KEY="${SAMPLE_KEY[env]}"
+
+# 2. Verify the ledger is reachable from your network
+curl -X GET ${HOST[env]}/v1/health \\
+  -H "Authorization: Bearer $IZENZO_KEY" \\
+  -H "X-Org-Id: ${ORG_ID[env]}" \\
+  -H "Content-Type: application/json"
+
+# Expect: { "status": "ok", "ledger": "synchronized" }`;
 
   const copy = async () => {
     await navigator.clipboard.writeText(cmd);
@@ -29,13 +41,17 @@ export function QuickStart() {
   return (
     <section>
       <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-2">
-        // INITIALIZE_CONNECTION
+        // 01_AUTHENTICATE_SESSION
       </div>
+      <p className="text-[12px] text-slate-400 mb-3 max-w-xl" style={{ fontFamily: "Inter, sans-serif" }}>
+        Your first call. Copy the snippet, paste it into a shell, and confirm the ledger handshake.
+        Comments are inline so a new engineer can read it top-to-bottom without docs.
+      </p>
       <div className="bg-black border border-slate-800 rounded-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
-              shell · first call
+              shell · hello world
             </span>
             <span className="font-mono text-[10px] text-slate-600">env={env}</span>
           </div>
@@ -57,20 +73,49 @@ export function QuickStart() {
           </button>
         </div>
         <pre className="p-4 font-mono text-[12px] leading-[1.7] text-slate-100 overflow-x-auto">
-          <span className="text-slate-500">$ </span>
-          <span className="text-cyan-400">curl</span>
-          <span className="text-slate-100"> -X </span>
-          <span className="text-amber-300">GET</span>
-          <span className="text-slate-100"> {HOST[env]}/v1/health \</span>
-          {"\n  "}
-          <span className="text-slate-100">-H </span>
-          <span className="text-green-400">"Authorization: Bearer {SAMPLE_KEY[env]}"</span>
-          <span className="text-slate-100"> \</span>
-          {"\n  "}
-          <span className="text-slate-100">-H </span>
-          <span className="text-green-400">"Content-Type: application/json"</span>
+          <Line>
+            <C># 1. Export your institutional credential (never commit this)</C>
+          </Line>
+          <Line>
+            <K>export</K> <V>IZENZO_KEY</V>=<S>"{SAMPLE_KEY[env]}"</S>
+          </Line>
+          <Line> </Line>
+          <Line>
+            <C># 2. Verify the ledger is reachable from your network</C>
+          </Line>
+          <Line>
+            <K>curl</K> -X <M>GET</M> {HOST[env]}/v1/health \
+          </Line>
+          <Line>{"  "}-H <S>"Authorization: Bearer $IZENZO_KEY"</S> \</Line>
+          <Line>
+            {"  "}-H <S>"X-Org-Id: {ORG_ID[env]}"</S> \
+          </Line>
+          <Line>{"  "}-H <S>"Content-Type: application/json"</S></Line>
+          <Line> </Line>
+          <Line>
+            <C># Expect: {"{ "}<span className="text-amber-300">"status"</span>: <span className="text-amber-300">"ok"</span>, <span className="text-amber-300">"ledger"</span>: <span className="text-amber-300">"synchronized"</span>{" }"}</C>
+          </Line>
         </pre>
       </div>
     </section>
   );
 }
+
+const Line = ({ children }: { children: React.ReactNode }) => (
+  <div className="whitespace-pre">{children}</div>
+);
+const C = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-slate-500">{children}</span>
+);
+const K = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-cyan-400">{children}</span>
+);
+const V = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-blue-400">{children}</span>
+);
+const S = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-green-400">{children}</span>
+);
+const M = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-amber-300">{children}</span>
+);
