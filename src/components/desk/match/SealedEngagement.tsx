@@ -1,34 +1,17 @@
 /**
- * SealedEngagement — Post-POI cryptographic ledger view.
+ * SealedEngagement — Post-POI cryptographic ledger view (HARDENED).
  *
- * Left pane: Engagement Hold-Point timeline tracking counterparty movements
- * + locked, read-only commercial terms.
- * Right pane: Live WaD Certificate with sealed values and pending issuance.
- *
- * Pure presentational mockup — uses hard-coded values for demonstration.
+ * Live data: fetches the match, its poi_engagement, and bound documents from Supabase
+ * using :matchId from the URL. The countdown is calculated from poi_engagements.expires_at.
+ * If the engagement has resolved (accepted/declined/expired), the appropriate state is rendered.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Check, Mail } from "lucide-react";
+import { Link, useParams, Navigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Check, Mail, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-
-// Mock sealed deal payload — would normally come from URL state / DB
-const SEALED = {
-  matchRef: "WAD-7F2A91C8",
-  counterparty: "Aurubis AG",
-  commodity: "Copper Cathode, LME Grade A",
-  volume: "500",
-  price: "9,420",
-  incoterms: "CIF Rotterdam",
-  notes: "Inspection by SGS at load port. Payment via L/C at sight.",
-  sealedAt: "2025-04-16 14:32:07 UTC",
-  notifiedAt: "2025-04-16 14:32:09 UTC",
-  payloadHash: "9a3f8c1e4b7d2056f8e9c3a1b2d4e5f6789012345abcdef0123456789abcdef0",
-  evidenceCount: 3,
-};
-
-const EXPIRES_AT = Date.now() + 30 * 24 * 60 * 60 * 1000 - 60_000; // ~29d 23h 59m
+import { supabase } from "@/integrations/supabase/client";
 
 function fmtCountdown(msRemaining: number) {
   if (msRemaining <= 0) return "Expired";
@@ -40,11 +23,22 @@ function fmtCountdown(msRemaining: number) {
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
 }
 
-const notional = (
-  Number(SEALED.volume.replace(/,/g, "")) * Number(SEALED.price.replace(/,/g, ""))
-).toLocaleString("en-US");
+function fmtNumber(n: number | null | undefined) {
+  if (n === null || n === undefined) return "—";
+  return Number(n).toLocaleString("en-US");
+}
+
+function fmtTimestamp(iso: string | null | undefined) {
+  if (!iso) return "—";
+  return new Date(iso).toISOString().replace("T", " ").slice(0, 19) + " UTC";
+}
+
+function shortRef(matchId: string) {
+  return `WAD-${matchId.slice(0, 8).toUpperCase()}`;
+}
 
 export function SealedEngagement() {
+  const { matchId } = useParams<{ matchId: string }>();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -52,7 +46,131 @@ export function SealedEngagement() {
     return () => clearInterval(id);
   }, []);
 
-  const countdown = useMemo(() => fmtCountdown(EXPIRES_AT - now), [now]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["sealed-engagement", matchId],
+    enabled: !!matchId,
+    queryFn: async () => {
+      const [matchRes, engagementRes, docsRes] = await Promise.all([
+        supabase.from("matches").select("*").eq("id", matchId!).maybeSingle(),
+        supabase
+          .from("poi_engagements")
+          .select("*")
+          .eq("match_id", matchId!)
+          .maybeSingle(),
+        supabase
+          .from("match_documents")
+          .select("id, sha256_hash")
+          .eq("match_id", matchId!)
+          .eq("is_current_version", true),
+      ]);
+      if (matchRes.error) throw matchRes.error;
+      if (!matchRes.data) throw new Error("Match not found");
+      return {
+        match: matchRes.data,
+        engagement: engagementRes.data,
+        documents: docsRes.data ?? [],
+      };
+    },
+  });
+
+  if (!matchId) return <Navigate to="/desk" replace />;
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-y-0 left-[250px] right-0 flex items-center justify-center bg-white">
+        <Loader2 className="h-6 w-6 text-slate-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="fixed inset-y-0 left-[250px] right-0 flex flex-col items-center justify-center bg-white text-center px-8">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+          Sealed Engagement
+        </p>
+        <h2 className="text-2xl font-semibold text-slate-900">Trade not found</h2>
+        <p className="mt-2 text-sm text-slate-600 max-w-md">
+          This sealed engagement could not be loaded. It may have been archived or the
+          reference is invalid.
+        </p>
+        <Link
+          to="/desk"
+          className="mt-8 inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} /> Back to Pipeline
+        </Link>
+      </div>
+    );
+  }
+
+  const { match, engagement, documents } = data;
+  const matchRef = shortRef(match.id);
+  const counterparty = match.buyer_name && match.seller_name
+    ? // Show the side opposite to the creating party — fallback to whichever is set
+      match.buyer_name && match.seller_name
+      ? `${match.buyer_name} ↔ ${match.seller_name}`
+      : (match.buyer_name ?? match.seller_name ?? "Counterparty")
+    : (match.buyer_name ?? match.seller_name ?? "Counterparty");
+  const commodity = match.commodity ?? "—";
+  const volume = match.quantity_amount;
+  const price = match.price_amount;
+  const incoterms = match.terms ?? "—";
+  const notes = (match.metadata as { notes?: string } | null)?.notes ?? "";
+  const sealedAt = fmtTimestamp(match.created_at);
+  const notifiedAt = fmtTimestamp(engagement?.created_at ?? match.created_at);
+  const payloadHash = match.hash;
+  const evidenceCount = documents.length;
+  const notional =
+    volume !== null && volume !== undefined && price !== null && price !== undefined
+      ? Number(volume) * Number(price)
+      : null;
+
+  const expiresAt = engagement?.expires_at
+    ? new Date(engagement.expires_at).getTime()
+    : null;
+  const status = engagement?.engagement_status;
+  const isResolved =
+    status === "accepted" || status === "declined" || status === "expired";
+  const countdown = expiresAt && !isResolved
+    ? fmtCountdown(expiresAt - now)
+    : status === "expired" || (expiresAt && expiresAt - now <= 0 && !isResolved)
+      ? "Expired"
+      : status === "accepted"
+        ? "Accepted"
+        : status === "declined"
+          ? "Declined"
+          : "—";
+
+  const trackerActiveTitle =
+    status === "accepted"
+      ? "Counterparty Accepted"
+      : status === "declined"
+        ? "Counterparty Declined"
+        : status === "expired"
+          ? "Engagement Window Expired"
+          : "Awaiting Counterparty Acceptance";
+
+  const trackerActiveState: "completed" | "active" =
+    status === "accepted" || status === "declined" || status === "expired"
+      ? "completed"
+      : "active";
+
+  const issuanceLabel =
+    status === "accepted"
+      ? "SEALED · COUNTER-SIGNED"
+      : status === "declined"
+        ? "RELEASED · DECLINED"
+        : status === "expired"
+          ? "RELEASED · EXPIRED"
+          : "PENDING COUNTERPARTY SIGNATURE";
+
+  const issuanceTone =
+    status === "accepted"
+      ? "text-emerald-700"
+      : status === "declined" || status === "expired"
+        ? "text-red-700"
+        : "text-amber-700";
 
   return (
     <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
@@ -73,9 +191,17 @@ export function SealedEngagement() {
           </Link>
 
           <div className="flex items-center gap-3 mb-3">
-            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+            <span
+              className={`inline-flex h-1.5 w-1.5 rounded-full ${
+                status === "accepted"
+                  ? "bg-emerald-600"
+                  : status === "declined" || status === "expired"
+                    ? "bg-red-500"
+                    : "bg-amber-500"
+              }`}
+            />
             <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500">
-              Match · {SEALED.matchRef}
+              Match · {matchRef}
             </p>
           </div>
           <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
@@ -88,7 +214,7 @@ export function SealedEngagement() {
 
           <div className="mt-8 inline-flex items-baseline gap-3 rounded-md border border-slate-200 bg-slate-50 px-5 py-3">
             <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
-              Auto-expires in
+              {isResolved ? "Status" : "Auto-expires in"}
             </span>
             <span className="font-mono text-sm tracking-wider text-slate-900 tabular-nums">
               {countdown}
@@ -105,27 +231,26 @@ export function SealedEngagement() {
             </h2>
 
             <ol className="mt-10 relative">
-              {/* vertical rail */}
               <div className="absolute left-[11px] top-3 bottom-3 w-px bg-slate-200" aria-hidden />
 
               <TimelineNode
                 state="completed"
                 title="Proof of Intent Sealed"
-                timestamp={SEALED.sealedAt}
+                timestamp={sealedAt}
                 detail={
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
                     <span className="font-mono">−1 CREDIT</span>
                     <span className="text-slate-300">·</span>
                     <span>R10.00 burn receipt</span>
                     <span className="text-slate-300">·</span>
-                    <span className="font-mono">{SEALED.matchRef}</span>
+                    <span className="font-mono">{matchRef}</span>
                   </div>
                 }
               />
               <TimelineNode
                 state="completed"
                 title="Counterparty Notified"
-                timestamp={SEALED.notifiedAt}
+                timestamp={notifiedAt}
                 detail={
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <Mail className="h-3 w-3" strokeWidth={1.75} />
@@ -134,14 +259,28 @@ export function SealedEngagement() {
                 }
               />
               <TimelineNode
-                state="active"
-                title="Awaiting Counterparty Acceptance"
-                timestamp="In progress"
+                state={trackerActiveState}
+                title={trackerActiveTitle}
+                timestamp={
+                  engagement?.responded_at
+                    ? fmtTimestamp(engagement.responded_at)
+                    : "In progress"
+                }
                 detail={
                   <div className="text-xs text-slate-500 leading-relaxed">
-                    The initiating party may not self-confirm. The deal is held until{" "}
-                    <span className="text-slate-700 font-medium">{SEALED.counterparty}</span>{" "}
-                    responds or the 30-day window elapses.
+                    {status === "accepted" ? (
+                      <>The counterparty counter-signed. WaD certificate has been sealed.</>
+                    ) : status === "declined" ? (
+                      <>The counterparty declined this engagement. Match has been released.</>
+                    ) : status === "expired" ? (
+                      <>The 30-day hold-point window elapsed without response.</>
+                    ) : (
+                      <>
+                        The initiating party may not self-confirm. The deal is held until{" "}
+                        <span className="text-slate-700 font-medium">{counterparty}</span>{" "}
+                        responds or the 30-day window elapses.
+                      </>
+                    )}
                   </div>
                 }
               />
@@ -158,15 +297,27 @@ export function SealedEngagement() {
             </h2>
 
             <dl className="mt-10 space-y-7">
-              <LockedField label="Counterparty" value={SEALED.counterparty} />
-              <LockedField label="Commodity" value={SEALED.commodity} />
+              <LockedField label="Counterparty" value={counterparty} />
+              <LockedField label="Commodity" value={commodity} />
               <div className="grid grid-cols-2 gap-10">
-                <LockedField label="Volume (MT)" value={SEALED.volume} mono />
-                <LockedField label="Price (USD / MT)" value={SEALED.price} mono />
+                <LockedField
+                  label={`Volume${match.quantity_unit ? ` (${match.quantity_unit})` : ""}`}
+                  value={fmtNumber(volume as number | null)}
+                  mono
+                />
+                <LockedField
+                  label={`Price${match.price_currency ? ` (${match.price_currency})` : ""}`}
+                  value={fmtNumber(price as number | null)}
+                  mono
+                />
               </div>
-              <LockedField label="Delivery Incoterms" value={SEALED.incoterms} mono />
-              <LockedField label="Notional (USD)" value={notional} mono />
-              <LockedField label="Notes" value={SEALED.notes} />
+              <LockedField label="Delivery Terms" value={incoterms} mono />
+              <LockedField
+                label={`Notional${match.price_currency ? ` (${match.price_currency})` : ""}`}
+                value={fmtNumber(notional)}
+                mono
+              />
+              {notes && <LockedField label="Notes" value={notes} />}
             </dl>
           </section>
         </div>
@@ -186,7 +337,6 @@ export function SealedEngagement() {
             </p>
 
             <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
-              {/* Header */}
               <header className="text-center pb-8 border-b border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800">
                   Izenzo Sovereign Infrastructure — Deal Record
@@ -194,41 +344,51 @@ export function SealedEngagement() {
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {SEALED.matchRef}</p>
+                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {matchRef}</p>
               </header>
 
-              {/* Sealed data */}
               <dl className="py-8 space-y-1">
-                <CertRow label="Counterparty" value={SEALED.counterparty} />
-                <CertRow label="Commodity" value={SEALED.commodity} />
-                <CertRow label="Volume" value={`${SEALED.volume} MT`} mono />
-                <CertRow label="Price" value={`USD ${SEALED.price} / MT`} mono />
-                <CertRow label="Incoterms" value={SEALED.incoterms} mono />
-                <CertRow label="Notional" value={`USD ${notional}`} mono />
+                <CertRow label="Counterparty" value={counterparty} />
+                <CertRow label="Commodity" value={commodity} />
+                <CertRow
+                  label="Volume"
+                  value={`${fmtNumber(volume as number | null)}${match.quantity_unit ? ` ${match.quantity_unit}` : ""}`}
+                  mono
+                />
+                <CertRow
+                  label="Price"
+                  value={`${match.price_currency ?? ""} ${fmtNumber(price as number | null)}${match.quantity_unit ? ` / ${match.quantity_unit}` : ""}`.trim()}
+                  mono
+                />
+                <CertRow label="Terms" value={incoterms} mono />
+                <CertRow
+                  label="Notional"
+                  value={`${match.price_currency ?? ""} ${fmtNumber(notional)}`.trim()}
+                  mono
+                />
               </dl>
 
-              {/* Notes */}
-              <div className="border-t border-slate-200 py-6">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
-                  Notes
-                </p>
-                <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
-                  {SEALED.notes}
-                </p>
-              </div>
+              {notes && (
+                <div className="border-t border-slate-200 py-6">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                    Notes
+                  </p>
+                  <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                    {notes}
+                  </p>
+                </div>
+              )}
 
-              {/* Evidence */}
               <div className="py-6 border-t border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                   Attached Evidence
                 </p>
                 <p className="text-sm text-slate-900">
-                  {SEALED.evidenceCount} document{SEALED.evidenceCount === 1 ? "" : "s"} bound to
-                  this certificate
+                  {evidenceCount} document{evidenceCount === 1 ? "" : "s"} bound to this
+                  certificate
                 </p>
               </div>
 
-              {/* Cryptographic Seal */}
               <div className="mt-2 pt-6 border-t border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
                   Security & Integrity
@@ -245,7 +405,7 @@ export function SealedEngagement() {
                     POI Payload Hash
                   </p>
                   <p className="font-mono text-[11px] leading-relaxed break-all text-slate-900">
-                    {SEALED.payloadHash}
+                    {payloadHash}
                   </p>
                 </div>
 
@@ -253,8 +413,8 @@ export function SealedEngagement() {
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                     WaD Issuance Status
                   </p>
-                  <p className="font-mono text-[11px] tracking-[0.2em] text-amber-700 font-medium">
-                    PENDING COUNTERPARTY SIGNATURE
+                  <p className={`font-mono text-[11px] tracking-[0.2em] font-medium ${issuanceTone}`}>
+                    {issuanceLabel}
                   </p>
                 </div>
               </div>
@@ -292,7 +452,6 @@ function TimelineNode({
   const isActive = state === "active";
   return (
     <li className="relative pl-10 pb-10 last:pb-0">
-      {/* Node dot */}
       <div className="absolute left-0 top-0.5 z-10">
         {isActive ? (
           <div className="relative flex items-center justify-center w-[23px] h-[23px]">
@@ -368,8 +527,7 @@ function SealRow({
   status: string;
   tone?: "ok" | "pending";
 }) {
-  const toneClass =
-    tone === "ok" ? "text-emerald-700" : "text-amber-700";
+  const toneClass = tone === "ok" ? "text-emerald-700" : "text-amber-700";
   return (
     <li className="flex items-center justify-between">
       <span className="text-slate-800 tracking-wide">{label}</span>
