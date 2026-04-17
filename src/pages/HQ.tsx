@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,16 +34,22 @@ import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel";
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+// ── Audit & Health (compliance / observability) ─────────────────────
+import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
+import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
+import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry — single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "disputes" | "settings";
+type TabId = "users" | "organisations" | "disputes" | "audit" | "settings";
 
 const TABS: { id: TabId; label: string; icon: typeof Users; blurb: string }[] = [
   { id: "users",         label: "User Management",         icon: Users,         blurb: "Profiles, role assignments, account suspensions." },
   { id: "organisations", label: "Organisation Management", icon: Building2,     blurb: "KYB lifecycle, legal entities, KYC document verification." },
   { id: "disputes",      label: "Dispute Resolution",      icon: AlertTriangle, blurb: "Flagged trades, escalations, force-resolve overrides." },
+  { id: "audit",         label: "Audit & Health",          icon: Activity,      blurb: "Immutable audit trail, event store, system health monitoring, and platform analytics." },
   { id: "settings",      label: "Platform Settings",       icon: SettingsIcon,  blurb: "Platform configuration, approval thresholds, signing keys, overrides." },
 ];
 
