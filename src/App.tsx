@@ -29,7 +29,7 @@ const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 const GovernanceAudits = lazy(() => import("@/pages/GovernanceAudits"));
 const GovernanceEntities = lazy(() => import("@/pages/GovernanceEntities"));
 const GovernanceHealth = lazy(() => import("@/pages/GovernanceHealth"));
-const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
+// TradeDealWizard now mounted inside the Desk shell at /desk/wizard.
 const Welcome = lazy(() => import("@/pages/Welcome"));
 const Desk = lazy(() => import("@/pages/Desk"));
 const DeveloperCenter = lazy(() => import("@/pages/DeveloperCenter"));
