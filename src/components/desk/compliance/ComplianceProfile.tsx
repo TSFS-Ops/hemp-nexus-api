@@ -94,7 +94,7 @@ export function ComplianceProfile() {
       supabase
         .from("ubo_links")
         .select(
-          "id,ownership_percentage,status,person_entity_id,entities:person_entity_id(legal_name,jurisdiction_code,entity_type)"
+          "id,ownership_percentage,status,person_entity_id,entities:ubo_links_person_entity_id_fkey(legal_name,jurisdiction_code,entity_type)"
         )
         .eq("org_id", orgId)
         .order("ownership_percentage", { ascending: false }),
