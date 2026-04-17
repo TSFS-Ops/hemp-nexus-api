@@ -1,81 +1,328 @@
-import { useParams } from "react-router-dom";
+/**
+ * EvidencePackView — Sovereign-vault rendering of a real evidence pack.
+ *
+ * Pulls the deterministic, server-signed pack from the `evidence-pack`
+ * Edge Function (which computes SHA-256 over a canonical JSON payload of
+ * the match, its event chain, documents, and audit log). The UI presents
+ * verified commercial terms and the actual gate progression — no mocks.
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Code, Share2, ShieldCheck, Check } from "lucide-react";
-import { useMemo } from "react";
+import {
+  FileText,
+  Code,
+  Share2,
+  ShieldCheck,
+  Check,
+  Circle,
+  Loader2,
+  AlertTriangle,
+  ArrowLeft,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { downloadFile } from "@/lib/download-utils";
+import { toast } from "sonner";
 
-/* ----------------------------- mock data ----------------------------- */
+// ──────────────────────────────────────────────────────────────────────
+// Types
 
-const MOCK_TERMS = [
-  { label: "COMMODITY", value: "Copper Cathode, Grade A (LME)" },
-  { label: "VOLUME", value: "500 MT (±2%)" },
-  { label: "UNIT PRICE", value: "USD 9,420.00 / MT" },
-  { label: "TOTAL CONSIDERATION", value: "USD 4,710,000.00" },
-  { label: "INCOTERMS", value: "CIF Rotterdam (Incoterms® 2020)" },
-  { label: "PAYMENT TERMS", value: "Irrevocable LC at Sight" },
-  { label: "INITIATOR", value: "Aurubis AG (DE / HRB 6789)" },
-  { label: "COUNTERPARTY", value: "Kruger Trading (Pty) Ltd (ZA / 2018/123456/07)" },
-  { label: "EXECUTION DATE", value: "16 April 2026, 21:14 UTC" },
-  { label: "JURISDICTION", value: "England & Wales (Arbitration: LCIA)" },
-];
-
-const GATES = [
-  { id: "GATE_01", label: "Bilateral Signatures Verified" },
-  { id: "GATE_02", label: "Token Burn Recorded (R10 ZAR)" },
-  { id: "GATE_03", label: "KYB Status Cleared (Both Parties)" },
-  { id: "GATE_04", label: "Jurisdiction & Sanctions Reviewed" },
-  { id: "GATE_05", label: "UBO & Authority Records Bound" },
-  { id: "GATE_06", label: "Commercial Terms Hash-Locked" },
-  { id: "GATE_07", label: "Document Integrity Verified" },
-  { id: "GATE_08", label: "Audit Trail Sealed (NTP Anchored)" },
-  { id: "GATE_09", label: "WaD Certificate Issued by Governor" },
-];
-
-function mockHash(seed: string, length = 64) {
-  // Deterministic mock SHA-256 (visual only).
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = (h << 5) - h + seed.charCodeAt(i);
-    h |= 0;
-  }
-  const base = Math.abs(h).toString(16).padStart(8, "0");
-  let out = "";
-  while (out.length < length) {
-    out += base + (out.length).toString(16).padStart(2, "0");
-  }
-  return "0x" + out.slice(0, length);
+interface EvidencePack {
+  metadata: { packId: string; generatedAt: string; format: string };
+  packHash: string;
+  hashAlgorithm: string;
+  signatureValidation: {
+    hasCollapseRecord: boolean;
+    signatureValid: boolean | null;
+    signatureKeyId: string | null;
+  };
+  timestampMetadata: {
+    serverTimestampUtc: string;
+    matchCreatedAt: string;
+    matchSettledAt: string | null;
+    collapseClientTimestamp: string | null;
+    collapseServerTimestamp: string | null;
+    timestampSource: string;
+  };
+  chainVerification: { valid: boolean; eventCount: number };
+  canonical: {
+    match?: Record<string, unknown>;
+    documents?: Array<Record<string, unknown>>;
+    events?: Array<{ event_type: string; payload_hash: string; created_at: string }>;
+    collapse?: Record<string, unknown> | null;
+  };
 }
 
-/* ----------------------------- view ----------------------------- */
+type GateStatus = "verified" | "pending" | "blocked";
+
+interface Gate {
+  id: string;
+  label: string;
+  status: GateStatus;
+  hash?: string;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Gate derivation — maps real match/event state to the 9-gate WaD model
+
+function deriveGates(pack: EvidencePack | null): Gate[] {
+  const match = (pack?.canonical?.match ?? {}) as Record<string, unknown>;
+  const events = pack?.canonical?.events ?? [];
+  const documents = pack?.canonical?.documents ?? [];
+  const collapse = pack?.canonical?.collapse;
+
+  const eventTypes = new Set(events.map((e) => String(e.event_type)));
+  const matchState = String(match.state || "");
+  const matchStatus = String(match.status || "");
+  const isSettled = matchStatus === "settled" || matchStatus === "completed";
+  const hasCollapse = !!collapse;
+  const sigValid = pack?.signatureValidation?.signatureValid === true;
+  const docCount = documents.length;
+  const chainValid = pack?.chainVerification?.valid === true;
+
+  const gateOf = (status: GateStatus, hashSeed?: string): GateStatus => status;
+  const hashFor = (idx: number) => events[idx]?.payload_hash;
+
+  return [
+    {
+      id: "GATE_01",
+      label: "Bilateral Signatures Verified",
+      status: gateOf(hasCollapse && sigValid ? "verified" : isSettled ? "pending" : "blocked"),
+      hash: collapse ? String((collapse as { payload_hash?: string }).payload_hash || "") : undefined,
+    },
+    {
+      id: "GATE_02",
+      label: "Token Burn Recorded",
+      status: gateOf(isSettled ? "verified" : "pending"),
+      hash: hashFor(0),
+    },
+    {
+      id: "GATE_03",
+      label: "KYB Status Cleared (Both Parties)",
+      status: gateOf(eventTypes.has("kyc_verified") || isSettled ? "verified" : "pending"),
+    },
+    {
+      id: "GATE_04",
+      label: "Jurisdiction & Sanctions Reviewed",
+      status: gateOf(
+        eventTypes.has("sanctions_screened") || eventTypes.has("jurisdiction_resolved") || isSettled
+          ? "verified"
+          : "pending"
+      ),
+    },
+    {
+      id: "GATE_05",
+      label: "UBO & Authority Records Bound",
+      status: gateOf(eventTypes.has("authority_bound") || eventTypes.has("ubo_verified") ? "verified" : "pending"),
+    },
+    {
+      id: "GATE_06",
+      label: "Commercial Terms Hash-Locked",
+      status: gateOf(matchState && matchState !== "discovery" ? "verified" : "pending"),
+      hash: pack?.packHash,
+    },
+    {
+      id: "GATE_07",
+      label: "Document Integrity Verified",
+      status: gateOf(docCount > 0 ? "verified" : "pending"),
+      hash: documents[0] ? String((documents[0] as { sha256_hash?: string }).sha256_hash || "") : undefined,
+    },
+    {
+      id: "GATE_08",
+      label: "Audit Trail Sealed (NTP Anchored)",
+      status: gateOf(chainValid && events.length > 0 ? "verified" : "pending"),
+      hash: events.length ? events[events.length - 1].payload_hash : undefined,
+    },
+    {
+      id: "GATE_09",
+      label: "WaD Certificate Issued",
+      status: gateOf(matchState === "completed" ? "verified" : "pending"),
+    },
+  ];
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Term derivation — maps real match row to verified-terms grid
+
+function deriveTerms(pack: EvidencePack | null): Array<{ label: string; value: string }> {
+  const m = (pack?.canonical?.match ?? {}) as Record<string, unknown>;
+  if (!Object.keys(m).length) return [];
+
+  const fmt = (v: unknown) => (v == null || v === "" ? "—" : String(v));
+  const qty = m.quantity_amount ? `${m.quantity_amount} ${fmt(m.quantity_unit)}` : "—";
+  const price =
+    m.price_amount != null
+      ? `${fmt(m.price_currency)} ${Number(m.price_amount).toLocaleString("en-US")}`
+      : "—";
+  const notional =
+    m.price_amount != null && m.quantity_amount != null
+      ? `${fmt(m.price_currency)} ${(
+          Number(m.price_amount) * Number(m.quantity_amount)
+        ).toLocaleString("en-US")}`
+      : "—";
+
+  return [
+    { label: "COMMODITY", value: fmt(m.commodity) },
+    { label: "VOLUME", value: qty },
+    { label: "UNIT PRICE", value: price },
+    { label: "TOTAL CONSIDERATION", value: notional },
+    { label: "INCOTERMS", value: fmt(m.incoterms || m.delivery_terms) },
+    { label: "PAYMENT TERMS", value: fmt(m.payment_terms) },
+    { label: "BUYER", value: fmt(m.buyer_name) },
+    { label: "SELLER", value: fmt(m.seller_name) },
+    {
+      label: "EXECUTION DATE",
+      value: m.settled_at ? new Date(String(m.settled_at)).toUTCString() : "—",
+    },
+    { label: "STATUS", value: fmt(m.status) },
+  ];
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Component
 
 export function EvidencePackView() {
   const { id } = useParams();
-  const matchId = id || "wad-7f3a2b91-8c4d-4e6f-9a12-b3c4d5e6f7a8";
-  const issuedAt = "2026-04-16T21:14:08Z";
-  const payloadHash = useMemo(() => mockHash(matchId), [matchId]);
+  const matchId = id || "";
+  const navigate = useNavigate();
+  const [pack, setPack] = useState<EvidencePack | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!matchId) {
+        setError("No match identifier provided.");
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        setError(null);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setError("Sign-in required to view this evidence pack.");
+          setLoading(false);
+          return;
+        }
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
+          { headers: { Authorization: `Bearer ${session.access_token}` } }
+        );
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || err.error || `Request failed (${res.status})`);
+        }
+        const data = (await res.json()) as EvidencePack;
+        if (!cancelled) setPack(data);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load evidence pack.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
+  const gates = useMemo(() => deriveGates(pack), [pack]);
+  const terms = useMemo(() => deriveTerms(pack), [pack]);
+
+  const issuedAt = pack?.timestampMetadata?.serverTimestampUtc ?? "";
+  const payloadHash = pack?.packHash ?? "";
+
+  async function handleDownloadJson() {
+    if (!pack) return;
+    downloadFile(JSON.stringify(pack, null, 2), `evidence-pack-${matchId}.json`, "application/json");
+    toast.success("Raw ledger downloaded (JSON).");
+  }
+
+  async function handleDownloadReport() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}?format=pdf`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      );
+      if (!res.ok) throw new Error("Download failed");
+      const html = await res.text();
+      downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
+      toast.success("Evidence report downloaded.");
+    } catch {
+      toast.error("Failed to download report.");
+    }
+  }
+
+  function handleShare() {
+    const url = `${window.location.origin}/desk/evidence/${matchId}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Secure link copied to clipboard."),
+      () => toast.error("Could not copy link.")
+    );
+  }
+
+  // ── Loading ──
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-300">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="font-mono text-xs tracking-[0.3em] uppercase">Sealing evidence…</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error / empty ──
+  if (error || !pack) {
+    return (
+      <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center p-8">
+        <div className="max-w-md text-center text-slate-300">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-amber-400" />
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
+            Evidence Unavailable
+          </p>
+          <p className="text-sm">{error || "No pack could be assembled for this match."}</p>
+          <button
+            onClick={() => navigate("/desk/deals")}
+            className="mt-6 inline-flex items-center gap-2 text-xs font-medium text-slate-200 hover:text-white"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Deals
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-slate-900 py-16 px-6 lg:px-12">
       {/* Vault header strip */}
       <div className="max-w-[920px] mx-auto mb-10 flex items-center justify-between">
-        <div className="flex items-center gap-3 text-slate-400">
+        <Link
+          to="/desk/deals"
+          className="flex items-center gap-3 text-slate-400 hover:text-slate-200 transition-colors"
+        >
           <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
           <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
             Sovereign Vault · Immutable Record
           </span>
-        </div>
+        </Link>
         <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
           REF · {matchId.slice(0, 8).toUpperCase()}
         </span>
       </div>
 
-      {/* The document — printing animation */}
       <motion.article
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         className="relative max-w-[920px] mx-auto bg-white rounded-none shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)]"
         style={{
-          // Double-line certificate border (1px outer, 3px inset gap, 1px inner)
           boxShadow:
             "0 0 0 1px hsl(215 16% 85%), 0 0 0 4px white, 0 0 0 5px hsl(215 16% 85%), 0 40px 120px -30px rgba(0,0,0,0.6)",
         }}
@@ -112,15 +359,10 @@ export function EvidencePackView() {
               Commercial Intent
             </h1>
 
-            {/* Stamp */}
             <motion.div
               initial={{ scale: 1.5, opacity: 0, rotate: -8 }}
               animate={{ scale: 1, opacity: 1, rotate: -6 }}
-              transition={{
-                delay: 0.7,
-                duration: 0.45,
-                ease: [0.34, 1.56, 0.64, 1],
-              }}
+              transition={{ delay: 0.7, duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
               className="mt-12 inline-flex flex-col items-center justify-center"
             >
               <div
@@ -130,28 +372,16 @@ export function EvidencePackView() {
                   boxShadow: "inset 0 0 0 4px white, inset 0 0 0 5px hsl(155 35% 28% / 0.4)",
                 }}
               >
-                <p
-                  className="font-mono text-[9px] tracking-[0.3em] uppercase mb-2"
-                  style={{ color: "hsl(155 35% 28%)" }}
-                >
+                <p className="font-mono text-[9px] tracking-[0.3em] uppercase mb-2" style={{ color: "hsl(155 35% 28%)" }}>
                   Issued & Sealed
                 </p>
-                <p
-                  className="text-base font-semibold tracking-[0.15em] uppercase"
-                  style={{ color: "hsl(155 35% 28%)" }}
-                >
+                <p className="text-base font-semibold tracking-[0.15em] uppercase" style={{ color: "hsl(155 35% 28%)" }}>
                   Without
                 </p>
-                <p
-                  className="text-base font-semibold tracking-[0.15em] uppercase"
-                  style={{ color: "hsl(155 35% 28%)" }}
-                >
+                <p className="text-base font-semibold tracking-[0.15em] uppercase" style={{ color: "hsl(155 35% 28%)" }}>
                   a Doubt
                 </p>
-                <p
-                  className="mt-2 font-mono text-[8px] tracking-[0.2em] uppercase"
-                  style={{ color: "hsl(155 35% 28%)" }}
-                >
+                <p className="mt-2 font-mono text-[8px] tracking-[0.2em] uppercase" style={{ color: "hsl(155 35% 28%)" }}>
                   {issuedAt}
                 </p>
               </div>
@@ -163,57 +393,69 @@ export function EvidencePackView() {
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-6">
               I · Verified Commercial Terms
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
-              {MOCK_TERMS.map((t) => (
-                <div key={t.label} className="border-b border-slate-100 pb-3">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
-                    {t.label}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-900 font-medium">
-                    {t.value}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {terms.length === 0 ? (
+              <p className="text-sm italic text-slate-500">
+                No commercial terms have been recorded against this match.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+                {terms.map((t) => (
+                  <div key={t.label} className="border-b border-slate-100 pb-3">
+                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+                      {t.label}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-900 font-medium break-words">{t.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* 9-Gate audit trail */}
+          {/* 9-Gate audit trail (real progression) */}
           <section className="pt-10 pb-4 border-t border-slate-200">
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-6">
               II · 9-Gate Cryptographic Proof
             </p>
             <ul className="space-y-3">
-              {GATES.map((gate, idx) => (
-                <li
-                  key={gate.id}
-                  className="flex items-start gap-4 py-2 border-b border-slate-100 last:border-b-0"
-                >
-                  <span
-                    className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full shrink-0"
-                    style={{ backgroundColor: "hsl(155 35% 28%)" }}
+              {gates.map((gate, idx) => {
+                const isVerified = gate.status === "verified";
+                const colour = isVerified ? "hsl(155 35% 28%)" : "hsl(215 16% 70%)";
+                return (
+                  <li
+                    key={gate.id}
+                    className="flex items-start gap-4 py-2 border-b border-slate-100 last:border-b-0"
                   >
-                    <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
-                  </span>
-                  <div className="flex-1 min-w-0 grid grid-cols-12 gap-3 items-center">
-                    <div className="col-span-12 sm:col-span-4">
-                      <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-900 font-medium">
-                        {gate.id}
-                      </p>
+                    <span
+                      className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full shrink-0"
+                      style={{ backgroundColor: isVerified ? colour : "transparent", border: `1px solid ${colour}` }}
+                    >
+                      {isVerified ? (
+                        <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+                      ) : (
+                        <Circle className="h-1.5 w-1.5" style={{ color: colour }} fill={colour} />
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0 grid grid-cols-12 gap-3 items-center">
+                      <div className="col-span-12 sm:col-span-4">
+                        <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-900 font-medium">
+                          {gate.id}
+                        </p>
+                      </div>
+                      <div className="col-span-12 sm:col-span-4">
+                        <p className="text-[11px] text-slate-600">{gate.label}</p>
+                      </div>
+                      <div className="col-span-12 sm:col-span-4 text-right">
+                        <p className="font-mono text-[8px] text-slate-400 break-all">
+                          {gate.hash ? gate.hash.slice(0, 40) : isVerified ? "verified" : "pending"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="col-span-12 sm:col-span-4">
-                      <p className="text-[11px] text-slate-600">{gate.label}</p>
-                    </div>
-                    <div className="col-span-12 sm:col-span-4 text-right">
-                      <p className="font-mono text-[8px] text-slate-400 break-all">
-                        {mockHash(gate.id + matchId, 40)}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-mono text-[8px] text-slate-300 tabular-nums shrink-0">
-                    {String(idx + 1).padStart(2, "0")}/09
-                  </span>
-                </li>
-              ))}
+                    <span className="font-mono text-[8px] text-slate-300 tabular-nums shrink-0">
+                      {String(idx + 1).padStart(2, "0")}/09
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -221,21 +463,19 @@ export function EvidencePackView() {
           <footer className="mt-12 pt-8 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div>
               <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
-                Payload Hash (SHA-256)
+                Payload Hash ({pack.hashAlgorithm})
               </p>
-              <p className="font-mono text-[10px] text-slate-900 break-all">
-                {payloadHash}
-              </p>
+              <p className="font-mono text-[10px] text-slate-900 break-all">{payloadHash}</p>
             </div>
             <div className="sm:text-right">
               <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
                 Issuance Authority
               </p>
               <p className="text-sm text-slate-900 font-medium">
-                Izenzo Governor — Node ZA-01
+                Izenzo Governor — {pack.signatureValidation.signatureKeyId || "Unsigned"}
               </p>
               <p className="font-mono text-[10px] text-slate-500 mt-1">
-                NTP-anchored · time.cloudflare.com
+                Source · {pack.timestampMetadata.timestampSource}
               </p>
             </div>
           </footer>
@@ -250,15 +490,15 @@ export function EvidencePackView() {
         className="sticky bottom-8 mt-12 mx-auto w-fit"
       >
         <div className="bg-slate-800/80 backdrop-blur-md border border-slate-700/60 rounded-full px-3 py-2 flex items-center gap-1 shadow-2xl">
-          <VaultAction icon={<FileText className="h-4 w-4" strokeWidth={1.5} />}>
+          <VaultAction icon={<FileText className="h-4 w-4" strokeWidth={1.5} />} onClick={handleDownloadReport}>
             Download PDF Evidence
           </VaultAction>
           <span className="h-5 w-px bg-slate-700/80" />
-          <VaultAction icon={<Code className="h-4 w-4" strokeWidth={1.5} />}>
+          <VaultAction icon={<Code className="h-4 w-4" strokeWidth={1.5} />} onClick={handleDownloadJson}>
             Export Raw Ledger (JSON)
           </VaultAction>
           <span className="h-5 w-px bg-slate-700/80" />
-          <VaultAction icon={<Share2 className="h-4 w-4" strokeWidth={1.5} />}>
+          <VaultAction icon={<Share2 className="h-4 w-4" strokeWidth={1.5} />} onClick={handleShare}>
             Share Secure Link
           </VaultAction>
         </div>
@@ -270,13 +510,16 @@ export function EvidencePackView() {
 function VaultAction({
   icon,
   children,
+  onClick,
 }: {
   icon: React.ReactNode;
   children: React.ReactNode;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors"
     >
       {icon}

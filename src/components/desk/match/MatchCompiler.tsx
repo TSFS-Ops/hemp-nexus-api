@@ -4,19 +4,27 @@
  * Editorial layout: numbered marginalia, fillable contract-style inputs,
  * inline signature CTA at the foot of the document, and Framer Motion
  * micro-interactions linking left-pane focus to right-pane highlight.
+ *
+ * Cryptography: real SHA-256 via Web Crypto (`src/lib/crypto.ts`). Hashes
+ * are deterministic over canonicalised commercial terms + per-file digests.
  */
 
-import { useMemo, useState, useRef, ChangeEvent, DragEvent, ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, UploadCloud, FileText, X } from "lucide-react";
+import { useEffect, useMemo, useState, useRef, ChangeEvent, DragEvent, ReactNode } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, UploadCloud, FileText, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditProvisioningPanel } from "./CreditProvisioningPanel";
 import { ProofDrawer } from "@/components/mobile/ProofDrawer";
+import { useMatchDetails } from "@/hooks/use-match-details";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { sha256Hex, sha256HexOfBlob, canonicalTermsPayload, shortHash } from "@/lib/crypto";
 
 type AttachedDoc = {
   name: string;
   size: number;
-  hash: string; // mocked SHA-256
+  hash: string; // real SHA-256 digest of file bytes
 };
 
 type FieldKey =
@@ -30,24 +38,15 @@ type FieldKey =
   | "evidence"
   | null;
 
-// Deterministic mock SHA-256 (visual only — not a real hash)
-function mockSha256(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  const hex = h.toString(16).padStart(8, "0");
-  return (hex + hex + hex + hex + hex + hex + hex + hex).slice(0, 64);
-}
-
-function shortHash(h: string) {
-  return `${h.slice(0, 10)}…${h.slice(-10)}`;
-}
-
 const PLACEHOLDER = "[ Awaiting Input ]";
 
 export function MatchCompiler() {
   const { matchId } = useParams<{ matchId: string }>();
+  const navigate = useNavigate();
+  const { session } = useAuth();
+
+  // ── Hydrate from real match record ──────────────────────────
+  const { match, loading: matchLoading, confirming, handleSettle } = useMatchDetails(matchId);
 
   const [commodity, setCommodity] = useState("");
   const [volume, setVolume] = useState("");
@@ -60,28 +59,99 @@ export function MatchCompiler() {
   const [focusedField, setFocusedField] = useState<FieldKey>(null);
   const [provisioningOpen, setProvisioningOpen] = useState(false);
   const [certDrawerOpen, setCertDrawerOpen] = useState(false);
+  const [certSeal, setCertSeal] = useState<string | null>(null);
+  const [hashing, setHashing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mocked: in production this comes from the user's token balance
-  const creditBalance = 0;
+  // Hydrate inputs once the real match arrives.
+  useEffect(() => {
+    if (!match) return;
+    setCommodity((cur) => cur || String(match.commodity || ""));
+    setVolume((cur) =>
+      cur || (match.quantity_amount != null ? String(match.quantity_amount) : "")
+    );
+    setPrice((cur) => cur || (match.price_amount != null ? String(match.price_amount) : ""));
+    const m = match as unknown as Record<string, unknown>;
+    setIncoterms((cur) => cur || String(m.incoterms || m.delivery_terms || ""));
+    setCounterparty((cur) => cur || String(m.counterparty_name || m.seller_name || m.buyer_name || ""));
+    setNotes((cur) => cur || String(m.notes || ""));
+  }, [match]);
+
+  // ── Live token balance (replaces hardcoded `creditBalance = 0`) ─
+  const { data: tokenData } = useQuery({
+    queryKey: ["token-balance-compiler", session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (!prof?.org_id) return null;
+      const { data: bal } = await supabase
+        .from("token_balances")
+        .select("balance")
+        .eq("org_id", prof.org_id)
+        .maybeSingle();
+      return bal?.balance ?? 0;
+    },
+    enabled: !!session?.user?.id,
+    staleTime: 30_000,
+  });
+  const creditBalance = tokenData ?? 0;
 
   const matchRef = useMemo(
     () => (matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000"),
     [matchId]
   );
 
-  const certSeal = useMemo(() => {
-    const payload = [commodity, volume, price, incoterms, counterparty, notes, ...docs.map((d) => d.hash)].join("|");
-    return payload.trim().length > 0 ? mockSha256(payload) : null;
+  // ── Real cryptographic seal — SHA-256 over canonical payload ──
+  useEffect(() => {
+    let cancelled = false;
+    const payload = canonicalTermsPayload({
+      counterparty,
+      commodity,
+      volume,
+      price,
+      incoterms,
+      notes,
+      documents: docs.map((d) => ({ name: d.name, size: d.size, hash: d.hash })),
+    });
+    const empty =
+      !counterparty.trim() &&
+      !commodity.trim() &&
+      !volume.trim() &&
+      !price.trim() &&
+      !incoterms.trim() &&
+      !notes.trim() &&
+      docs.length === 0;
+    if (empty) {
+      setCertSeal(null);
+      return;
+    }
+    setHashing(true);
+    sha256Hex(payload)
+      .then((h) => {
+        if (!cancelled) setCertSeal(h);
+      })
+      .catch(() => {
+        if (!cancelled) setCertSeal(null);
+      })
+      .finally(() => {
+        if (!cancelled) setHashing(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [commodity, volume, price, incoterms, counterparty, notes, docs]);
 
-  function handleFiles(files: FileList | null) {
+  async function handleFiles(files: FileList | null) {
     if (!files) return;
-    const next: AttachedDoc[] = Array.from(files).map((f) => ({
-      name: f.name,
-      size: f.size,
-      hash: mockSha256(`${f.name}:${f.size}:${f.lastModified}`),
-    }));
+    const next: AttachedDoc[] = [];
+    for (const f of Array.from(files)) {
+      const hash = await sha256HexOfBlob(f);
+      next.push({ name: f.name, size: f.size, hash });
+    }
     setDocs((prev) => [...prev, ...next]);
   }
 
@@ -89,6 +159,19 @@ export function MatchCompiler() {
     e.preventDefault();
     setDragOver(false);
     handleFiles(e.dataTransfer.files);
+  }
+
+  // ── Real POI generation: settles via the existing match hook ──
+  async function generateProof() {
+    if (creditBalance < 1) {
+      setProvisioningOpen(true);
+      return;
+    }
+    if (!matchId || matchId === "new") {
+      navigate("/desk/discover");
+      return;
+    }
+    await handleSettle();
   }
 
   return (
@@ -106,6 +189,11 @@ export function MatchCompiler() {
 
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
             Match · {matchRef}
+            {matchLoading && (
+              <span className="ml-3 inline-flex items-center gap-1 text-slate-400">
+                <Loader2 className="h-3 w-3 animate-spin" /> loading
+              </span>
+            )}
           </p>
           <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
             Draft Commercial Terms
@@ -124,7 +212,7 @@ export function MatchCompiler() {
               onChange={setCounterparty}
               onFocus={() => setFocusedField("counterparty")}
               onBlur={() => setFocusedField(null)}
-              placeholder="Aurubis AG"
+              placeholder="Enter the legal name of your counterparty"
             />
             <EditorField
               label="Commodity"
@@ -133,7 +221,7 @@ export function MatchCompiler() {
               onChange={setCommodity}
               onFocus={() => setFocusedField("commodity")}
               onBlur={() => setFocusedField(null)}
-              placeholder="Copper Cathode, LME Grade A"
+              placeholder="e.g. Copper Cathode, LME Grade A"
             />
             <div className="grid grid-cols-2 gap-10">
               <EditorField
@@ -164,14 +252,14 @@ export function MatchCompiler() {
               onChange={setIncoterms}
               onFocus={() => setFocusedField("incoterms")}
               onBlur={() => setFocusedField(null)}
-              placeholder="CIF Rotterdam"
+              placeholder="e.g. CIF Rotterdam"
             />
           </StepSection>
 
           {/* ── STEP 2: Supporting Documents ──────────────────── */}
           <StepSection number={2} title="Supporting Documents">
             <p className="text-sm text-slate-600 leading-relaxed -mt-2">
-              Attach evidence — each file is hashed on attach and bound to the certificate.
+              Attach evidence — each file is hashed (SHA-256) on attach and bound to the certificate.
             </p>
             <div
               onDragOver={(e) => {
@@ -272,20 +360,25 @@ export function MatchCompiler() {
               whileHover={{ scale: 0.99 }}
               whileTap={{ scale: 0.985 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              onClick={() => {
-                if (creditBalance < 1) {
-                  setProvisioningOpen(true);
-                  return;
-                }
-                // TODO: real POI generation flow
-              }}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow"
+              onClick={generateProof}
+              disabled={confirming || matchLoading}
+              className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Generate Proof of Intent
-              <span className="font-mono text-[11px] tracking-wider opacity-80">1 CREDIT</span>
+              {confirming ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sealing Proof of Intent…
+                </>
+              ) : (
+                <>
+                  Generate Proof of Intent
+                  <span className="font-mono text-[11px] tracking-wider opacity-80">1 CREDIT</span>
+                </>
+              )}
             </motion.button>
             <p className="mt-4 text-center text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
               This action atomically consumes 1 credit and permanently seals the trade intent.
+              Balance: <span className="font-mono">{creditBalance}</span> credits available.
             </p>
           </div>
         </div>
@@ -299,9 +392,7 @@ export function MatchCompiler() {
               Live Preview · Mirrors Left Pane
             </p>
 
-            {/* Physical document card */}
             <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
-              {/* Header */}
               <header className="text-center pb-8 border-b border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800">
                   Izenzo Sovereign Infrastructure — Deal Record
@@ -309,12 +400,9 @@ export function MatchCompiler() {
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-600">
-                  Ref · {matchRef}
-                </p>
+                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {matchRef}</p>
               </header>
 
-              {/* Dynamic data */}
               <dl className="py-8 space-y-1">
                 <CertRow label="Counterparty" value={counterparty} highlight={focusedField === "counterparty"} fieldKey="counterparty" />
                 <CertRow label="Commodity" value={commodity} highlight={focusedField === "commodity"} fieldKey="commodity" />
@@ -334,7 +422,6 @@ export function MatchCompiler() {
                 />
               </dl>
 
-              {/* Notes */}
               <AnimatePresence>
                 {notes.trim().length > 0 && (
                   <motion.div
@@ -347,18 +434,13 @@ export function MatchCompiler() {
                     }`}
                   >
                     <div className="py-6">
-                      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
-                        Notes
-                      </p>
-                      <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
-                        {notes}
-                      </p>
+                      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">Notes</p>
+                      <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">{notes}</p>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Document hashes */}
               <div
                 className={`py-6 border-t border-slate-200 transition-colors -mx-2 px-2 rounded-sm ${
                   focusedField === "evidence" ? "bg-slate-100" : ""
@@ -386,9 +468,7 @@ export function MatchCompiler() {
                           </span>
                           <div className="min-w-0">
                             <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
-                            <p className="font-mono text-[10px] text-slate-600 truncate">
-                              {d.hash}
-                            </p>
+                            <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash}</p>
                           </div>
                         </motion.li>
                       ))}
@@ -397,7 +477,6 @@ export function MatchCompiler() {
                 )}
               </div>
 
-              {/* Cryptographic Seal */}
               <div className="mt-2 pt-6 border-t border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
                   Security & Integrity
@@ -412,6 +491,11 @@ export function MatchCompiler() {
                 <div className="mt-6 pt-5 border-t border-dashed border-slate-200">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                     SHA-256 Seal
+                    {hashing && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-slate-500 normal-case tracking-normal">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      </span>
+                    )}
                   </p>
                   <p
                     className={`font-mono text-[11px] leading-relaxed break-all transition-colors ${
@@ -488,18 +572,9 @@ export function MatchCompiler() {
 
 /* ────────────────────────────────────────────────────────────── */
 
-function StepSection({
-  number,
-  title,
-  children,
-}: {
-  number: number;
-  title: string;
-  children: ReactNode;
-}) {
+function StepSection({ number, title, children }: { number: number; title: string; children: ReactNode }) {
   return (
     <section className="relative mt-20">
-      {/* Marginalia number — pulled into left margin */}
       <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
         {String(number).padStart(2, "0")}
       </span>
