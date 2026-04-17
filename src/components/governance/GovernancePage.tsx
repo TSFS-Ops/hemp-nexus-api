@@ -18,9 +18,9 @@ interface Props {
 
 export function GovernancePage({ eyebrow, title, description, icon: Icon, meta, children }: Props) {
   return (
-    <div className="fixed inset-y-0 left-[260px] right-0 flex flex-col bg-white">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col bg-white pb-16 md:pb-0">
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl px-12 pt-14 pb-16">
+        <div className="max-w-6xl px-6 md:px-12 pt-10 md:pt-14 pb-16">
           {/* Eyebrow */}
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-6">
             {eyebrow}

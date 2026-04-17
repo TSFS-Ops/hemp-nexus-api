@@ -11,6 +11,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, UploadCloud, FileText, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditProvisioningPanel } from "./CreditProvisioningPanel";
+import { ProofDrawer } from "@/components/mobile/ProofDrawer";
 
 type AttachedDoc = {
   name: string;
@@ -58,6 +59,7 @@ export function MatchCompiler() {
   const [dragOver, setDragOver] = useState(false);
   const [focusedField, setFocusedField] = useState<FieldKey>(null);
   const [provisioningOpen, setProvisioningOpen] = useState(false);
+  const [certDrawerOpen, setCertDrawerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Mocked: in production this comes from the user's token balance
@@ -90,10 +92,10 @@ export function MatchCompiler() {
   }
 
   return (
-    <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Deal Editor ─────────────────────────────── */}
-      <section className="w-1/2 overflow-y-auto border-r border-slate-200 bg-white">
-        <div className="px-16 pt-12 pb-24 max-w-2xl">
+      <section className="w-full md:w-1/2 overflow-y-auto md:border-r border-slate-200 bg-white">
+        <div className="px-6 md:px-16 pt-8 md:pt-12 pb-24 max-w-2xl">
           <Link
             to="/desk"
             className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-12"
@@ -290,7 +292,7 @@ export function MatchCompiler() {
       </section>
 
       {/* ── RIGHT PANE: Certificate Preview ─────────────────────── */}
-      <section className="w-1/2 bg-slate-50 overflow-hidden">
+      <section className="hidden md:block w-1/2 bg-slate-50 overflow-hidden">
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
@@ -440,6 +442,46 @@ export function MatchCompiler() {
         onClose={() => setProvisioningOpen(false)}
         currentBalance={creditBalance}
       />
+
+      {/* ── Mobile: Slide-up Certificate Drawer ───────────────────── */}
+      <ProofDrawer
+        open={certDrawerOpen}
+        onOpenChange={setCertDrawerOpen}
+        triggerLabel="View Certificate"
+        triggerKicker={matchRef}
+        title="Certificate of Intent"
+        subtitle="Live preview · mirrors editor"
+        tone="ink"
+      >
+        <div className="px-5 py-6">
+          <article className="bg-white border border-slate-200 rounded-sm p-6">
+            <header className="text-center pb-6 border-b border-slate-200">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-800">
+                Izenzo — Deal Record
+              </p>
+              <h2 className="mt-4 text-base font-semibold tracking-[0.3em] uppercase text-slate-900">
+                Certificate of Intent
+              </h2>
+              <p className="mt-2 font-mono text-[10px] text-slate-600">Ref · {matchRef}</p>
+            </header>
+            <dl className="py-6 space-y-2">
+              <CertRow label="Counterparty" value={counterparty} fieldKey="counterparty" />
+              <CertRow label="Commodity" value={commodity} fieldKey="commodity" />
+              <CertRow label="Volume" value={volume ? `${volume} MT` : ""} mono fieldKey="volume" />
+              <CertRow label="Price" value={price ? `USD ${price} / MT` : ""} mono fieldKey="price" />
+              <CertRow label="Incoterms" value={incoterms} mono fieldKey="incoterms" />
+            </dl>
+            <div className="pt-4 border-t border-dashed border-slate-200">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-700 mb-2">
+                SHA-256 Seal
+              </p>
+              <p className={`font-mono text-[10px] leading-relaxed break-all ${certSeal ? "text-slate-900" : "text-slate-400"}`}>
+                {certSeal ?? "0".repeat(64)}
+              </p>
+            </div>
+          </article>
+        </div>
+      </ProofDrawer>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
 import { GovernancePage } from "@/components/governance/GovernancePage";
 import { AuditList } from "@/components/governance/AuditList";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function GovernanceAudits() {
   return (
@@ -23,6 +24,7 @@ export default function GovernanceAudits() {
             <AuditList />
           </GovernancePage>
         </main>
+        <MobileBottomNav />
       </div>
     </RequireAuth>
   );

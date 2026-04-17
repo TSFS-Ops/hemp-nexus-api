@@ -3,6 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
 import { GovernancePage } from "@/components/governance/GovernancePage";
 import { HealthBoard } from "@/components/governance/HealthBoard";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function GovernanceHealth() {
   return (
@@ -23,6 +24,7 @@ export default function GovernanceHealth() {
             <HealthBoard />
           </GovernancePage>
         </main>
+        <MobileBottomNav />
       </div>
     </RequireAuth>
   );
