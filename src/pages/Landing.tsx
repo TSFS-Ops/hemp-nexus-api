@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
+import { HeroStripeGlow } from "@/components/landing/HeroStripeGlow";
 import { TradeInterestForm, type TradeInterestData } from "@/components/landing/TradeInterestForm";
 import { SearchOutcomes, type LiquidityData } from "@/components/landing/SearchOutcomes";
 import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
@@ -130,22 +131,17 @@ export default function Landing() {
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto relative z-10">
+        {/* Stripe-Glow Hero */}
+        <HeroStripeGlow
+          onGetStarted={isAuthenticated ? () => window.location.assign("/dashboard") : navigateToAuth}
+          onContactSales={() => window.location.assign("mailto:sales@izenzo.co.za")}
+        />
+
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-[860px] mx-auto">
-          {/* Trust badges — above the fold, before any effort is asked */}
+          {/* Trust badges */}
           <div className="mb-5">
             <TrustBadges />
           </div>
-
-          {/* Hero headline */}
-          <h1
-            className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
-            style={{ color: 'var(--lt-text)' }}
-          >
-            Discover Trading Partners. Validate Intent. Execute with Confidence.
-          </h1>
-          <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-xl" style={{ color: 'var(--lt-text-muted)' }}>
-            Izenzo is a pre-execution governance platform that structures trading partners, validates readiness, and improves execution certainty across trade, infrastructure, and institutional systems. It ensures transactions move through a sequenced, auditable process with defined parties and verified authority.
-          </p>
 
           {/* Trade interest form */}
           <div
