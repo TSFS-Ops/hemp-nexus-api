@@ -114,7 +114,7 @@ export function PublicHeader() {
 
               {openMenu === category.key && (
                 <div
-                  className="absolute left-1/2 -translate-x-1/2 top-full pt-2"
+                  className="absolute left-1/2 -translate-x-1/2 top-full pt-2 z-[60]"
                   onMouseEnter={() => handleEnter(category.key)}
                   onMouseLeave={handleLeave}
                 >
