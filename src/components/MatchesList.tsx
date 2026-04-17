@@ -598,7 +598,7 @@ export function MatchesList() {
                 </TableHeader>
                 <TableBody>
                   {matches.map((match) => (
-                    <TableRow key={match.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}>
+                    <TableRow key={match.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/desk/match/${match.id}`)}>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedMatches.has(match.id)}
