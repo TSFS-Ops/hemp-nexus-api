@@ -20,12 +20,27 @@ import { useMatchDetails } from "@/hooks/use-match-details";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { sha256Hex, sha256HexOfBlob, canonicalTermsPayload, shortHash } from "@/lib/crypto";
+import {
+  DEMO_MATCH_ID,
+  DEMO_COMPILER_TERMS,
+  DEMO_COMPILER_DOCS,
+  DEMO_COMPILER_SEAL,
+} from "@/components/desk/_demo/fixtures";
 
 type AttachedDoc = {
   name: string;
   size: number;
   hash: string; // real SHA-256 digest of file bytes
 };
+
+export interface MatchCompilerProps {
+  /**
+   * Marketing-mockup mode. When true, all data fetching, auth, and
+   * mutations are bypassed and the component renders a static, high-fidelity
+   * fixture so the live UI can be used in landing pages / screenshots.
+   */
+  demoMode?: boolean;
+}
 
 type FieldKey =
   | "counterparty"
@@ -40,32 +55,35 @@ type FieldKey =
 
 const PLACEHOLDER = "[ Awaiting Input ]";
 
-export function MatchCompiler() {
-  const { matchId } = useParams<{ matchId: string }>();
+export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
+  const params = useParams<{ matchId: string }>();
+  const matchId = demoMode ? DEMO_MATCH_ID : params.matchId;
   const navigate = useNavigate();
   const { session } = useAuth();
 
-  // ── Hydrate from real match record ──────────────────────────
-  const { match, loading: matchLoading, confirming, handleSettle } = useMatchDetails(matchId);
+  // ── Hydrate from real match record (skipped in demo mode) ────
+  const { match, loading: matchLoading, confirming, handleSettle } = useMatchDetails(
+    demoMode ? undefined : matchId
+  );
 
-  const [commodity, setCommodity] = useState("");
-  const [volume, setVolume] = useState("");
-  const [price, setPrice] = useState("");
-  const [incoterms, setIncoterms] = useState("");
-  const [counterparty, setCounterparty] = useState("");
-  const [notes, setNotes] = useState("");
-  const [docs, setDocs] = useState<AttachedDoc[]>([]);
+  const [commodity, setCommodity] = useState(demoMode ? DEMO_COMPILER_TERMS.commodity : "");
+  const [volume, setVolume] = useState(demoMode ? DEMO_COMPILER_TERMS.volume : "");
+  const [price, setPrice] = useState(demoMode ? DEMO_COMPILER_TERMS.price : "");
+  const [incoterms, setIncoterms] = useState(demoMode ? DEMO_COMPILER_TERMS.incoterms : "");
+  const [counterparty, setCounterparty] = useState(demoMode ? DEMO_COMPILER_TERMS.counterparty : "");
+  const [notes, setNotes] = useState(demoMode ? DEMO_COMPILER_TERMS.notes : "");
+  const [docs, setDocs] = useState<AttachedDoc[]>(demoMode ? [...DEMO_COMPILER_DOCS] : []);
   const [dragOver, setDragOver] = useState(false);
   const [focusedField, setFocusedField] = useState<FieldKey>(null);
   const [provisioningOpen, setProvisioningOpen] = useState(false);
   const [certDrawerOpen, setCertDrawerOpen] = useState(false);
-  const [certSeal, setCertSeal] = useState<string | null>(null);
+  const [certSeal, setCertSeal] = useState<string | null>(demoMode ? DEMO_COMPILER_SEAL : null);
   const [hashing, setHashing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Hydrate inputs once the real match arrives.
+  // Hydrate inputs once the real match arrives (skipped in demo mode).
   useEffect(() => {
-    if (!match) return;
+    if (demoMode || !match) return;
     setCommodity((cur) => cur || String(match.commodity || ""));
     setVolume((cur) =>
       cur || (match.quantity_amount != null ? String(match.quantity_amount) : "")
@@ -75,7 +93,7 @@ export function MatchCompiler() {
     setIncoterms((cur) => cur || String(m.incoterms || m.delivery_terms || ""));
     setCounterparty((cur) => cur || String(m.counterparty_name || m.seller_name || m.buyer_name || ""));
     setNotes((cur) => cur || String(m.notes || ""));
-  }, [match]);
+  }, [match, demoMode]);
 
   // ── Live token balance (replaces hardcoded `creditBalance = 0`) ─
   const { data: tokenData } = useQuery({
@@ -95,10 +113,10 @@ export function MatchCompiler() {
         .maybeSingle();
       return bal?.balance ?? 0;
     },
-    enabled: !!session?.user?.id,
+    enabled: !demoMode && !!session?.user?.id,
     staleTime: 30_000,
   });
-  const creditBalance = tokenData ?? 0;
+  const creditBalance = demoMode ? 250 : (tokenData ?? 0);
 
   const matchRef = useMemo(
     () => (matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000"),
@@ -106,7 +124,9 @@ export function MatchCompiler() {
   );
 
   // ── Real cryptographic seal — SHA-256 over canonical payload ──
+  // In demo mode the seal is pre-baked so we never run hashing.
   useEffect(() => {
+    if (demoMode) return;
     let cancelled = false;
     const payload = canonicalTermsPayload({
       counterparty,
@@ -143,10 +163,10 @@ export function MatchCompiler() {
     return () => {
       cancelled = true;
     };
-  }, [commodity, volume, price, incoterms, counterparty, notes, docs]);
+  }, [commodity, volume, price, incoterms, counterparty, notes, docs, demoMode]);
 
   async function handleFiles(files: FileList | null) {
-    if (!files) return;
+    if (!files || demoMode) return;
     const next: AttachedDoc[] = [];
     for (const f of Array.from(files)) {
       const hash = await sha256HexOfBlob(f);
@@ -158,11 +178,14 @@ export function MatchCompiler() {
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragOver(false);
+    if (demoMode) return;
     handleFiles(e.dataTransfer.files);
   }
 
   // ── Real POI generation: settles via the existing match hook ──
+  // In demo mode this is a no-op so marketing pages never mutate state.
   async function generateProof() {
+    if (demoMode) return;
     if (creditBalance < 1) {
       setProvisioningOpen(true);
       return;

@@ -33,6 +33,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { DEMO_EVIDENCE_PACK, DEMO_MATCH_ID } from "@/components/desk/_demo/fixtures";
+
+export interface EvidencePackViewProps {
+  /**
+   * Marketing-mockup mode. When true, the component renders a static,
+   * high-fidelity fixture pack instead of fetching from the edge function.
+   * Use this for landing pages, screenshots, and marketing visuals so the
+   * production UI can be reused without auth or live data.
+   */
+  demoMode?: boolean;
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // Types
@@ -191,12 +202,14 @@ function deriveTerms(pack: EvidencePack | null): Array<{ label: string; value: s
 // ──────────────────────────────────────────────────────────────────────
 // Component
 
-export function EvidencePackView() {
+export function EvidencePackView({ demoMode = false }: EvidencePackViewProps = {}) {
   const { id } = useParams();
-  const matchId = id || "";
+  const matchId = demoMode ? DEMO_MATCH_ID : (id || "");
   const navigate = useNavigate();
-  const [pack, setPack] = useState<EvidencePack | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [pack, setPack] = useState<EvidencePack | null>(
+    demoMode ? (DEMO_EVIDENCE_PACK as unknown as EvidencePack) : null
+  );
+  const [loading, setLoading] = useState(!demoMode);
   const [error, setError] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
 
@@ -216,6 +229,7 @@ export function EvidencePackView() {
   }
 
   useEffect(() => {
+    if (demoMode) return; // fixture is already loaded — never hit the network.
     let cancelled = false;
     async function load() {
       if (!matchId) {
@@ -252,7 +266,7 @@ export function EvidencePackView() {
     return () => {
       cancelled = true;
     };
-  }, [matchId]);
+  }, [matchId, demoMode]);
 
   const gates = useMemo(() => deriveGates(pack), [pack]);
   const terms = useMemo(() => deriveTerms(pack), [pack]);
