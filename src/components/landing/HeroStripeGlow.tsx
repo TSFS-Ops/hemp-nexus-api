@@ -51,7 +51,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-slate-900 max-w-4xl mx-auto">
-          Sovereign Infrastructure for{" "}
+          Trade infrastructure to{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
@@ -59,14 +59,14 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
                 "linear-gradient(135deg, hsl(160 84% 30%) 0%, hsl(174 72% 42%) 100%)",
             }}
           >
-            Global Trade.
+            prove every deal.
           </span>
         </h1>
 
         {/* Sub-headline — extra breathing room */}
         <p className="mt-12 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Discover partners, automate compliance, and execute trades with cryptographic
-          certainty. The world's first pre-execution governance protocol.
+          Discover counterparties, run compliance, and seal cross-border trades with
+          cryptographic Proof of Intent — from your first match to your ten-thousandth.
         </p>
 
         {/* Dual CTAs */}
