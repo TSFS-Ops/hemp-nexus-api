@@ -407,12 +407,16 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
               Execute
             </p>
             <motion.button
-              whileHover={{ scale: 0.99 }}
-              whileTap={{ scale: 0.985 }}
+              whileHover={demoMode ? undefined : { scale: 0.99 }}
+              whileTap={demoMode ? undefined : { scale: 0.985 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               onClick={generateProof}
-              disabled={confirming || matchLoading}
-              className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={demoMode || confirming || matchLoading}
+              aria-disabled={demoMode || confirming || matchLoading}
+              tabIndex={demoMode ? -1 : 0}
+              className={`w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
+                demoMode ? "pointer-events-none" : ""
+              }`}
             >
               {confirming ? (
                 <>
