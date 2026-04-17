@@ -1,9 +1,9 @@
 /**
- * TriageInbox — Governor's risk-weighted command surface.
+ * TriageInbox — Governor's risk-weighted compliance review surface.
  *
  * Layout: 40 / 60 split.
  *   LEFT  — Triage Queue. White surface, hairline divider, dense rows.
- *   RIGHT — 9-Gate Verification Matrix on slate-50 with sticky sovereign actions.
+ *   RIGHT — 9-Gate Verification Matrix on slate-50 with sticky review actions.
  *
  * Pure presentational mockup. No backend mutations are performed; the actions
  * surface confirmation dialogs only.
@@ -335,7 +335,7 @@ export default function TriageInbox() {
           </AnimatePresence>
         </div>
 
-        {/* Sticky Sovereign Action Footer */}
+        {/* Sticky Review Action Footer */}
         <div className="shrink-0 border-t border-slate-200 bg-white px-12 py-6">
           <div className="max-w-4xl flex items-center justify-between gap-6">
             <button
