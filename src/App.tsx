@@ -24,8 +24,7 @@ const WalkthroughReport = lazy(() => import("@/pages/WalkthroughReport"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Unsubscribe = lazy(() => import("@/pages/Unsubscribe"));
-const DeveloperApiKeys = lazy(() => import("@/pages/DeveloperApiKeys"));
-const DeveloperWebhooks = lazy(() => import("@/pages/DeveloperWebhooks"));
+// DeveloperApiKeys / DeveloperWebhooks pages were removed — superseded by DeveloperCenter.
 const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
 const GovernanceAudits = lazy(() => import("@/pages/GovernanceAudits"));
 const GovernanceEntities = lazy(() => import("@/pages/GovernanceEntities"));
