@@ -356,9 +356,14 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (demoMode) return;
                           setDocs((prev) => prev.filter((_, idx) => idx !== i));
                         }}
-                        className="text-slate-500 hover:text-slate-900 transition-colors"
+                        disabled={demoMode}
+                        tabIndex={demoMode ? -1 : 0}
+                        className={`text-slate-500 hover:text-slate-900 transition-colors ${
+                          demoMode ? "pointer-events-none opacity-40" : ""
+                        }`}
                         aria-label={`Remove ${d.name}`}
                       >
                         <X className="h-4 w-4" strokeWidth={2} />
