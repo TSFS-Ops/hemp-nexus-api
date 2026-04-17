@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     });
 
     // ── Auth ─────────────────────────────────────────────────────────────
-    const authHeader = req.headers.get('Authorisation');
+    const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorisation');
     if (!authHeader) {
       return jsonResponse({ error: 'Unauthorised' }, 401);
     }
