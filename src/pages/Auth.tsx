@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { HashChainMotif } from "@/components/auth/HashChainMotif";
+
 import { lovable } from "@/integrations/lovable";
 
 const authSchema = z.object({
