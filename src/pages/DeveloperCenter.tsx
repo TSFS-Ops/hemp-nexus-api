@@ -40,12 +40,15 @@ function KeysView() {
       <DeveloperHeader section="API Keys" />
       <div className="px-12 py-10 space-y-10">
         <ApiKeysPanel />
-        <QuickStart />
-        <SystemDiagnostics />
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-8">
-          <LiveActivityFeed />
-          <QuickSchema />
+
+        {/* HUD: Quick-Start (left) · Diagnostics (right) */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 items-start">
+          <QuickStart />
+          <SystemDiagnostics />
         </div>
+
+        <LiveActivityFeed />
+        <QuickSchema />
       </div>
     </>
   );
