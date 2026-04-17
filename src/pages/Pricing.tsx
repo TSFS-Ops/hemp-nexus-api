@@ -3,7 +3,7 @@
  *
  * Two-track pricing in the same "Emerald & Airy" Stripe aesthetic as the
  * product pages: pay-as-you-go for operators (R10 ZAR per Trade Request) and
- * a custom Institutional tier for banks, DDIs, and sovereigns.
+ * a custom Institutional tier for banks, DFIs, and sovereigns.
  */
 
 import { Link } from "react-router-dom";
@@ -218,7 +218,7 @@ export default function Pricing() {
                 Institutional
               </div>
               <h3 className="mt-4 text-2xl font-semibold tracking-tight">
-                Banks, DDIs &amp; Sovereigns
+                Banks, DFIs &amp; Sovereigns
               </h3>
               <p className="mt-2 text-sm text-slate-300 leading-relaxed">
                 For public development banks and trade finance underwriters
