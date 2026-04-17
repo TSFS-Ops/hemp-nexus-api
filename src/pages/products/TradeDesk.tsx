@@ -1,468 +1,485 @@
 /**
- * Trade Desk — Product marketing page.
+ * Trade Desk — public product page.
  *
- * Stripe-Infrastructure aesthetic: extreme whitespace, precision grid,
- * emerald-only accents, and the live MatchCompiler component rendered in
- * demoMode so the marketing surface mirrors the production UI byte-for-byte.
+ * "Stripe-Infrastructure" aesthetic: extreme whitespace, whisper-light emerald
+ * mesh, tight-tracked Inter headings, a tactile floating Certificate of
+ * Intent mockup, and a precision background grid. The hero artwork is built
+ * from the same design DNA as the live MatchCompiler but is intentionally
+ * static (no auth, no Supabase, no redirect to /auth) so the page renders
+ * instantly for public visitors.
  */
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Check,
+  CheckCircle2,
   ShieldCheck,
-  Building2,
   Activity,
-  FileSignature,
-  ScanFace,
-  Globe2,
-  Users,
-  Lock,
   FileText,
-  ScrollText,
-  BadgeCheck,
+  Lock,
 } from "lucide-react";
-import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
+import {
+  DEMO_COMPILER_TERMS,
+  DEMO_COMPILER_DOCS,
+  DEMO_COMPILER_SEAL,
+} from "@/components/desk/_demo/fixtures";
 
-/* ─────────────────────────────────────────────────────────────────── */
-/*  GRID BACKDROP — 1px lines every 40px. Communicates 'precision'.    */
-/* ─────────────────────────────────────────────────────────────────── */
+/* ───────────────────────── BACKDROP PIECES ───────────────────────── */
 
-function PrecisionGrid() {
+/** 1px precision grid, 40px cells. Whispered, not shouted. */
+function PrecisionGrid({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0"
+      className={`pointer-events-none absolute inset-0 ${className}`}
       style={{
         backgroundImage:
-          "linear-gradient(to right, rgb(15 23 42 / 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgb(15 23 42 / 0.04) 1px, transparent 1px)",
+          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
         backgroundSize: "40px 40px",
         maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)",
+          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
         WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)",
+          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
       }}
     />
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
-/*  EMERALD MESH — soft radial gradient behind the mockup.              */
-/* ─────────────────────────────────────────────────────────────────── */
-
-function EmeraldMesh() {
+/** A whisper of emerald — soft radial mesh, very low opacity. */
+function EmeraldWhisper() {
   return (
-    <div
-      aria-hidden
-      className="absolute inset-0 -z-10"
-      style={{
-        background:
-          "radial-gradient(60% 50% at 30% 20%, hsl(155 60% 90% / 0.7), transparent 70%), radial-gradient(50% 60% at 80% 70%, hsl(155 70% 85% / 0.6), transparent 70%), linear-gradient(180deg, white, hsl(155 30% 97%))",
-      }}
-    />
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div
+        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
+        }}
+      />
+    </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
-/*  HERO                                                                */
-/* ─────────────────────────────────────────────────────────────────── */
+/* ─────────────────── HERO MOCKUP — Certificate of Intent ─────────────────── */
 
-function Hero() {
+function CertificateMockup() {
+  const docCount = DEMO_COMPILER_DOCS.length;
   return (
-    <section className="relative overflow-hidden border-b border-slate-200/70 bg-white">
-      <PrecisionGrid />
+    <motion.div
+      initial={{ opacity: 0, y: 24, rotate: -2 }}
+      animate={{ opacity: 1, y: 0, rotate: -1 }}
+      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      className="relative w-full max-w-[520px] mx-auto"
+      style={{ transformOrigin: "center center" }}
+    >
+      {/* soft floor shadow */}
+      <div
+        aria-hidden
+        className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
+        }}
+      />
+      <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 overflow-hidden">
+        {/* Header bar */}
+        <header className="px-10 pt-9 pb-6 border-b border-slate-100 text-center">
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700">
+            Izenzo · Trade Desk
+          </p>
+          <h3 className="mt-3 text-xl font-semibold text-slate-900 tracking-tight">
+            Certificate of Intent
+          </h3>
+          <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+            Match · A1B2C3D4 · WaD/A v1.2
+          </p>
+        </header>
 
-      <div className="relative mx-auto max-w-[1280px] px-6 lg:px-12 pt-20 lg:pt-28 pb-24 lg:pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          {/* ── LEFT: Copy ─────────────────────────────────────── */}
-          <div className="lg:col-span-5 lg:pt-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/60 px-3 py-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-emerald-800">
-                Trade Desk · Live
-              </span>
-            </div>
-
-            <h1 className="mt-8 text-[44px] sm:text-[56px] lg:text-[64px] font-semibold tracking-[-0.02em] leading-[1.02] text-slate-900">
-              Sovereign
-              <br />
-              Infrastructure
-              <br />
-              for the{" "}
-              <span className="text-emerald-700">Deal Maker</span>.
-            </h1>
-
-            <p className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
-              The all-in-one terminal for institutional commodity trade. Compile
-              terms, attach evidence, and seal proof — without ever leaving the desk.
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center gap-4">
-              <Link
-                to="/desk"
-                className="group inline-flex items-center gap-2 rounded-md bg-emerald-700 hover:bg-emerald-800 px-6 py-3.5 text-sm font-medium text-white shadow-sm hover:shadow-md transition-all"
-              >
-                Open Your Desk
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
-              </Link>
-              <Link
-                to="/pricing"
-                className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-6 py-3.5 text-sm font-medium text-slate-800 hover:border-slate-400 hover:bg-slate-50 transition-colors"
-              >
-                See Pricing
-              </Link>
-            </div>
-
-            {/* Trust strip */}
-            <dl className="mt-14 grid grid-cols-3 gap-6 max-w-md">
-              <Stat value="9" label="Verification gates" />
-              <Stat value="SHA-256" label="Cryptographic seal" mono />
-              <Stat value="< 200ms" label="P95 settlement" mono />
-            </dl>
+        {/* Body — commercial terms */}
+        <div className="px-10 py-8 space-y-5">
+          <Row label="Counterparty" value={DEMO_COMPILER_TERMS.counterparty} />
+          <Row label="Commodity" value={DEMO_COMPILER_TERMS.commodity} />
+          <div className="grid grid-cols-2 gap-6">
+            <Row label="Volume" value={`${DEMO_COMPILER_TERMS.volume} MT`} mono />
+            <Row label="Price" value={`USD ${DEMO_COMPILER_TERMS.price}`} mono />
           </div>
+          <Row label="Incoterms" value={DEMO_COMPILER_TERMS.incoterms} />
 
-          {/* ── RIGHT: Floating MatchCompiler mockup ───────────── */}
-          <div className="lg:col-span-7 relative">
-            <div className="relative">
-              <EmeraldMesh />
-
-              <motion.div
-                initial={{ y: 24, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                className="relative mx-auto"
-                style={{
-                  filter:
-                    "drop-shadow(0 30px 60px hsl(155 50% 25% / 0.18)) drop-shadow(0 12px 24px hsl(155 50% 25% / 0.12))",
-                }}
-              >
-                {/* Browser chrome */}
-                <div className="rounded-t-xl border border-slate-200 border-b-0 bg-white/90 backdrop-blur px-4 py-3 flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                  </div>
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-1 max-w-[280px] w-full justify-center">
-                      <Lock className="h-3 w-3 text-emerald-700" strokeWidth={2} />
-                      <span className="font-mono text-[10px] text-slate-600 truncate">
-                        izenzo.co.za / desk / match
-                      </span>
-                    </div>
-                  </div>
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-emerald-700">
-                    Live
+          {/* Documents */}
+          <div className="pt-4 border-t border-slate-100">
+            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mb-3">
+              Bound Evidence · {docCount} files
+            </p>
+            <ul className="space-y-2">
+              {DEMO_COMPILER_DOCS.map((d) => (
+                <li
+                  key={d.name}
+                  className="flex items-center gap-3 text-[12px] text-slate-700"
+                >
+                  <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
+                  <span className="truncate flex-1">{d.name}</span>
+                  <span className="font-mono text-[10px] text-slate-400">
+                    {d.hash.slice(0, 8)}…
                   </span>
-                </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
-                {/* Compiler frame — fixed height crops the live component into a hero card */}
-                <div className="relative rounded-b-xl border border-slate-200 bg-white overflow-hidden h-[640px]">
-                  <div className="absolute inset-0 origin-top-left">
-                    {/*
-                      MatchCompiler internally uses `fixed inset-0`. We override
-                      that by putting it inside a relatively-positioned shell;
-                      the component still renders correctly because its inner
-                      panes use overflow-y-auto.
-                    */}
-                    <div className="relative w-full h-full [&>div]:!static [&>div]:!inset-auto [&>div]:!h-full [&>div]:!pb-0 [&>div]:!md:left-0">
-                      <MatchCompiler demoMode />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Caption */}
-              <p className="mt-6 text-center font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500">
-                The actual product · Rendered in demo mode
+        {/* Seal footer */}
+        <footer className="px-10 py-6 bg-slate-50/60 border-t border-slate-100">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 h-8 w-8 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center shrink-0">
+              <Lock className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
+                SHA-256 Cryptographic Seal
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-slate-900 break-all leading-relaxed">
+                {DEMO_COMPILER_SEAL}
               </p>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </footer>
+      </article>
+    </motion.div>
   );
 }
 
-function Stat({ value, label, mono }: { value: string; label: string; mono?: boolean }) {
-  return (
-    <div>
-      <dt className={`text-2xl font-semibold text-slate-900 ${mono ? "font-mono text-xl" : ""}`}>
-        {value}
-      </dt>
-      <dd className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 leading-tight">
-        {label}
-      </dd>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-/*  BENTO                                                               */
-/* ─────────────────────────────────────────────────────────────────── */
-
-const NINE_GATES = [
-  { id: "01", label: "Bilateral Signatures Verified" },
-  { id: "02", label: "Token Burn Recorded" },
-  { id: "03", label: "KYB Status Cleared" },
-  { id: "04", label: "Jurisdiction & Sanctions Reviewed" },
-  { id: "05", label: "UBO & Authority Records Bound" },
-  { id: "06", label: "Commercial Terms Hash-Locked" },
-  { id: "07", label: "Document Integrity Verified" },
-  { id: "08", label: "Audit Trail Sealed (NTP Anchored)" },
-  { id: "09", label: "WaD Certificate Issued" },
-];
-
-function NineGateVisual() {
-  return (
-    <div className="space-y-2.5">
-      {NINE_GATES.map((g, i) => (
-        <motion.div
-          key={g.id}
-          initial={{ opacity: 0, x: -12 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ delay: i * 0.05, duration: 0.4 }}
-          className="flex items-center gap-3"
-        >
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-700 shrink-0">
-            <Check className="h-3 w-3 text-white" strokeWidth={3} />
-          </span>
-          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 w-8 shrink-0">
-            {g.id}
-          </span>
-          <span className="text-sm text-slate-800 font-medium">{g.label}</span>
-          <div className="flex-1 border-b border-dashed border-slate-200" />
-          <span className="font-mono text-[9px] text-emerald-700 tracking-wider">
-            VERIFIED
-          </span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-const KYB_FACETS = [
-  { icon: Building2, label: "Entity Records" },
-  { icon: ScanFace, label: "UBO Identity" },
-  { icon: Globe2, label: "Jurisdiction" },
-  { icon: ScrollText, label: "Authority Letters" },
-  { icon: Users, label: "Director Roster" },
-  { icon: BadgeCheck, label: "Sanctions Screen" },
-];
-
-function KybVisual() {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {KYB_FACETS.map(({ icon: Icon, label }, i) => (
-        <motion.div
-          key={label}
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: i * 0.06, duration: 0.4 }}
-          className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2.5"
-        >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50">
-            <Icon className="h-3.5 w-3.5 text-emerald-700" strokeWidth={1.75} />
-          </span>
-          <span className="text-xs text-slate-700 font-medium">{label}</span>
-          <Check className="h-3 w-3 text-emerald-700 ml-auto shrink-0" strokeWidth={3} />
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-const PULSES = [
-  { dot: "emerald", label: "POI Sealed", meta: "Glencore → Aurubis · Cu/A", time: "just now" },
-  { dot: "emerald", label: "KYB Cleared", meta: "Trafigura PTE", time: "12s" },
-  { dot: "emerald", label: "Sanctions OK", meta: "OFAC + EU + UK", time: "41s" },
-  { dot: "slate", label: "UBO Bound", meta: "Authority Letter v3", time: "1m" },
-  { dot: "slate", label: "Hash Locked", meta: "0x7c1a3d…3b5c", time: "2m" },
-];
-
-function TelemetryVisual() {
-  return (
-    <div className="rounded-md bg-slate-950 p-4 font-mono text-[11px]">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-        <span className="tracking-[0.25em] uppercase text-slate-400 text-[9px]">
-          System Pulse · IZN-DESK-01
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-emerald-400">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          </span>
-          <span className="tracking-[0.2em] uppercase text-[9px]">Live</span>
-        </span>
-      </div>
-      <ul className="mt-3 space-y-2.5">
-        {PULSES.map((p, i) => (
-          <motion.li
-            key={i}
-            initial={{ opacity: 0, x: -6 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.08, duration: 0.35 }}
-            className="flex items-center gap-3"
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                p.dot === "emerald" ? "bg-emerald-400" : "bg-slate-600"
-              }`}
-            />
-            <span className="text-slate-200">{p.label}</span>
-            <span className="text-slate-500 truncate">{p.meta}</span>
-            <span className="ml-auto text-slate-500 shrink-0">{p.time}</span>
-          </motion.li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function FeatureBento() {
-  return (
-    <section className="relative bg-white py-24 lg:py-32 border-b border-slate-200/70">
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-12">
-        {/* Section heading */}
-        <div className="max-w-2xl mb-16">
-          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700 mb-4">
-            Built into every deal
-          </p>
-          <h2 className="text-3xl lg:text-5xl font-semibold tracking-[-0.02em] text-slate-900 leading-[1.05]">
-            Every commercial action is{" "}
-            <span className="text-emerald-700">verified, sealed,</span> and recorded.
-          </h2>
-        </div>
-
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
-          {/* Box 1 — LARGE — 9-Gate Protocol */}
-          <BentoCard
-            className="lg:col-span-2 lg:row-span-2"
-            kicker="Protocol"
-            icon={ShieldCheck}
-            title="The 9-Gate Protocol"
-            body="Every Proof of Intent must clear nine independent verification gates before it is sealed. No deal escapes without a complete cryptographic chain."
-          >
-            <div className="mt-8">
-              <NineGateVisual />
-            </div>
-          </BentoCard>
-
-          {/* Box 2 — KYB Integrated */}
-          <BentoCard
-            kicker="Compliance"
-            icon={FileSignature}
-            title="KYB Integrated"
-            body="Your Compliance Profile — entity records, UBOs, authority letters, sanctions — feeds directly into every deal. Run once. Reuse forever."
-          >
-            <div className="mt-6">
-              <KybVisual />
-            </div>
-          </BentoCard>
-
-          {/* Box 3 — Real-time Telemetry */}
-          <BentoCard
-            kicker="Telemetry"
-            icon={Activity}
-            title="Real-time Telemetry"
-            body="System pulses stream from every desk in your organisation. Watch settlement, KYB clearance, and seal events as they happen."
-          >
-            <div className="mt-6">
-              <TelemetryVisual />
-            </div>
-          </BentoCard>
-        </div>
-
-        {/* Closing CTA strip */}
-        <div className="mt-20 lg:mt-24 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-t border-slate-200 pt-12">
-          <div>
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700 mb-2">
-              Ready when you are
-            </p>
-            <h3 className="text-2xl lg:text-3xl font-semibold text-slate-900 tracking-tight">
-              Open your Trade Desk in under a minute.
-            </h3>
-          </div>
-          <Link
-            to="/desk"
-            className="group inline-flex items-center gap-2 rounded-md bg-emerald-700 hover:bg-emerald-800 px-6 py-3.5 text-sm font-medium text-white shadow-sm hover:shadow-md transition-all shrink-0"
-          >
-            Open Your Desk
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function BentoCard({
-  className = "",
-  kicker,
-  icon: Icon,
-  title,
-  body,
-  children,
+function Row({
+  label,
+  value,
+  mono = false,
 }: {
-  className?: string;
-  kicker: string;
-  icon: typeof FileText;
-  title: string;
-  body: string;
-  children?: React.ReactNode;
+  label: string;
+  value: string;
+  mono?: boolean;
 }) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className={`relative rounded-xl border border-slate-200 bg-white p-7 lg:p-9 hover:border-emerald-300 transition-colors ${className}`}
-    >
-      <div className="flex items-center gap-3 mb-5">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 border border-emerald-100">
-          <Icon className="h-4 w-4 text-emerald-700" strokeWidth={1.75} />
-        </span>
-        <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700">
-          {kicker}
-        </span>
-      </div>
-      <h3 className="text-xl lg:text-2xl font-semibold text-slate-900 tracking-tight">
-        {title}
-      </h3>
-      <p className="mt-3 text-sm lg:text-[15px] text-slate-600 leading-relaxed max-w-md">
-        {body}
+    <div>
+      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+        {label}
       </p>
-      {children}
-    </motion.article>
+      <p
+        className={`mt-1 text-[14px] text-slate-900 ${
+          mono ? "font-mono tabular-nums" : "font-medium"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
-/*  PAGE                                                                */
-/* ─────────────────────────────────────────────────────────────────── */
+/* ─────────────────────── 9-GATE PROTOCOL VISUAL ─────────────────────── */
+
+const GATES = [
+  "Entity Verification",
+  "UBO Disclosure",
+  "Sanctions Screening",
+  "Jurisdiction Resolution",
+  "Authority Binding",
+  "Terms Lock",
+  "Evidence Attachment",
+  "Bilateral Collapse Sign",
+  "WaD Certificate Issuance",
+];
+
+function NineGateProtocol() {
+  return (
+    <div className="space-y-3">
+      {GATES.map((gate, i) => (
+        <motion.div
+          key={gate}
+          initial={{ opacity: 0, x: -8 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ delay: i * 0.04, duration: 0.4 }}
+          className="flex items-center gap-4"
+        >
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-700/70 w-6">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <div className="h-6 w-6 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2} />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] text-slate-800 font-medium">{gate}</p>
+          </div>
+          <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-transparent" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ────────────────── REAL-TIME TELEMETRY (mini live feed) ────────────────── */
+
+const PULSES = [
+  { t: "00:01", evt: "match_created", org: "GLN-SG" },
+  { t: "00:02", evt: "kyc_verified", org: "AUR-DE" },
+  { t: "00:04", evt: "sanctions_screened", org: "AUR-DE" },
+  { t: "00:09", evt: "terms_locked", org: "GLN-SG" },
+  { t: "00:11", evt: "poi_generated", org: "—" },
+];
+
+function TelemetryFeed() {
+  return (
+    <div className="space-y-2.5">
+      {PULSES.map((p, i) => (
+        <motion.div
+          key={p.t + p.evt}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: i * 0.08 }}
+          className="flex items-center gap-3 text-[12px] font-mono"
+        >
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-600" />
+          </span>
+          <span className="text-slate-400 tabular-nums">{p.t}</span>
+          <span className="text-slate-900 truncate flex-1">{p.evt}</span>
+          <span className="text-slate-500">{p.org}</span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function TradeDeskProductPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
-      {/* SEO */}
-      <title>Trade Desk — Sovereign Infrastructure for the Deal Maker | Izenzo</title>
-      <meta
-        name="description"
-        content="The all-in-one terminal for institutional commodity trade. Compile terms, attach evidence, and seal cryptographic Proof of Intent — all in one desk."
-      />
-      <link rel="canonical" href="https://izenzo.co.za/products/trade-desk" />
-
+    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <PublicHeader />
-      <Hero />
-      <FeatureBento />
+
+      {/* ════════════════════════ HERO ════════════════════════ */}
+      <section className="relative overflow-hidden">
+        <PrecisionGrid />
+        <EmeraldWhisper />
+
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-32 lg:pt-36 lg:pb-48">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            {/* Left: copy */}
+            <div>
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                Trade Desk
+              </motion.p>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.05 }}
+                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
+              >
+                Sovereign infrastructure
+                <br />
+                for the deal maker.
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.1 }}
+                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
+              >
+                The all-in-one terminal for institutional commodity trade. Discover
+                counterparties, run compliance, and seal cross-border deals with
+                cryptographic Proof of Intent.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.18 }}
+                className="mt-12 flex flex-wrap items-center gap-4"
+              >
+                <Link
+                  to="/auth"
+                  className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
+                >
+                  Open your desk
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
+                >
+                  See pricing
+                  <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
+                </Link>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
+              >
+                SHA-256 sealed · 9-gate verified · Audit-ready
+              </motion.p>
+            </div>
+
+            {/* Right: floating Certificate of Intent */}
+            <div className="relative">
+              <CertificateMockup />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FEATURE BENTO ═══════════════════ */}
+      <section className="relative bg-slate-50/40 border-y border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44">
+          <div className="max-w-2xl mb-20 lg:mb-28">
+            <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
+              The system
+            </p>
+            <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+              Precision-engineered for institutional throughput.
+            </h2>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed">
+              Three primitives — verification, compliance, and telemetry — composed
+              into a single cohesive workspace.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Box 1 — Large, spans 2 cols */}
+            <div className="lg:col-span-2 lg:row-span-1 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
+                  <ShieldCheck className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                </div>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                  Box 01 · Protocol
+                </p>
+              </div>
+              <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
+                The 9-Gate Protocol.
+              </h3>
+              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md">
+                Every Proof of Intent traverses nine cryptographic gates before it
+                seals — entity, UBO, sanctions, jurisdiction, authority, terms,
+                evidence, dual-collapse, certification.
+              </p>
+
+              <div className="mt-12">
+                <NineGateProtocol />
+              </div>
+            </div>
+
+            {/* Box 2 — KYB */}
+            <div className="rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 shadow-sm flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                </div>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                  Box 02 · Compliance
+                </p>
+              </div>
+              <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
+                KYB integrated.
+              </h3>
+              <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
+                Your Compliance Profile feeds directly into every deal. No second
+                onboarding, no duplicate evidence.
+              </p>
+
+              <ul className="mt-8 space-y-3 text-[13px]">
+                {[
+                  "Entity verification",
+                  "Beneficial-owner disclosure",
+                  "Sanctions & PEP screening",
+                  "Jurisdiction residency lock",
+                ].map((c) => (
+                  <li key={c} className="flex items-center gap-3 text-slate-700">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Box 3 — Telemetry */}
+            <div className="lg:col-span-3 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
+              <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                    </div>
+                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                      Box 03 · Observability
+                    </p>
+                  </div>
+                  <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
+                    Real-time telemetry.
+                  </h3>
+                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md">
+                    A live activity stream surfaces every state transition across
+                    your desk — from match creation to certificate issuance —
+                    with cryptographic provenance on every pulse.
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-8">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-5">
+                    Live · system pulses
+                  </p>
+                  <TelemetryFeed />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ CLOSING CTA ═══════════════════ */}
+      <section className="relative overflow-hidden">
+        <EmeraldWhisper />
+        <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-32 lg:py-44 text-center">
+          <h2 className="text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            Open your desk in minutes.
+          </h2>
+          <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-xl mx-auto">
+            Provision a workspace, complete your compliance profile, and issue your
+            first sealed Proof of Intent today.
+          </p>
+          <div className="mt-12">
+            <Link
+              to="/auth"
+              className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+            >
+              Open your desk
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <PageFooter />
     </div>
   );
