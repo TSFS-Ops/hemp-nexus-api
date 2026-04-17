@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { DocsLayout } from "./DocsLayout";
 
 const SDKS = [
@@ -85,12 +86,12 @@ export default function Sdks() {
                 <code>{sdk.sample}</code>
               </pre>
 
-              <a
-                href="#"
+              <Link
+                to="/docs/api"
                 className="mt-5 inline-flex items-center gap-1 text-[13px] font-medium text-emerald-600 hover:text-emerald-700"
               >
-                View source <ExternalLink className="h-3.5 w-3.5" />
-              </a>
+                View reference <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
             </div>
           ))}
         </div>
