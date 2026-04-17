@@ -143,29 +143,7 @@ export default function Landing() {
             <TrustBadges />
           </div>
 
-          {/* Trade interest form */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              backgroundColor: '#131823',
-              border: '1px solid var(--lt-border)',
-            }}
-          >
-            <TradeInterestForm onSearch={handleSearch} isSearching={isSearching} isLocked={isFormLocked} />
-            <SearchOutcomes
-              isSearching={isSearching}
-              hasSearched={hasSearched}
-              liquidityData={liquidityData}
-              onSignIn={navigateToAuth}
-            />
-          </div>
-
-          {/* 9-step Bento workflow grid */}
-          <div>
-            <WorkflowPipeline />
-          </div>
-
-          {/* Closing CTA removed per request */}
+          {/* Trade interest form and workflow pipeline removed per request */}
         </div>
       </div>
     </div>
