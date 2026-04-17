@@ -130,8 +130,10 @@ export default function Auth() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.info("[Auth] onAuthStateChange", { event, hasUser: !!session?.user });
       if (event === "SIGNED_IN" && session?.user) {
         const route = await resolvePostAuthRoute(session.user.id);
+        console.info("[Auth] navigating →", route);
         navigate(route, { replace: true });
       }
     });
@@ -150,13 +152,24 @@ export default function Auth() {
     try {
       authSchema.parse({ email, password });
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         if (error.message.includes("Email not confirmed")) {
           setVerificationPending(true);
           throw new Error("Please verify your email before signing in.");
         }
         throw error;
+      }
+      // ── Safety net: drive the redirect from the handler, not just the listener.
+      // The onAuthStateChange listener can be torn down by re-renders (deps include
+      // searchParams) and Supabase has been observed to skip a SIGNED_IN replay if
+      // the listener was registered after the event fired. Resolving and navigating
+      // here guarantees a deterministic post-auth redirect.
+      if (data?.user) {
+        console.info("[Auth] signInWithPassword → resolving redirect from handler");
+        const route = await resolvePostAuthRoute(data.user.id);
+        console.info("[Auth] handler navigating →", route);
+        navigate(route, { replace: true });
       }
     } catch (err) {
       if (err instanceof z.ZodError) toast.error(err.errors[0].message);
