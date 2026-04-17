@@ -449,7 +449,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
             <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
               <header className="text-center pb-8 border-b border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800">
-                  Izenzo Sovereign Infrastructure — Deal Record
+                  Izenzo Governance Infrastructure — Deal Record
                 </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
                   Certificate of Intent

@@ -386,7 +386,7 @@ export function EvidencePackView({ demoMode = false }: EvidencePackViewProps = {
           <header className="flex items-start justify-between gap-8 pb-10 border-b border-slate-200">
             <div>
               <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-900 font-medium">
-                Izenzo Sovereign Infrastructure
+                Izenzo Governance Infrastructure
               </p>
               <p className="mt-1 font-mono text-[9px] tracking-[0.25em] uppercase text-slate-400">
                 Without-a-Doubt · Issuance Authority

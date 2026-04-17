@@ -465,7 +465,7 @@ function AuthForm({
           {isSignIn ? "Sign in to your account" : "Create your account"}
         </h1>
         <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-          {isSignIn ? "Continue to your sovereign trade workspace." : "Begin onboarding into the institutional trade network."}
+          {isSignIn ? "Continue to your secure trade workspace." : "Begin onboarding into the institutional trade network."}
         </p>
       </div>
 
