@@ -40,6 +40,7 @@ const AuditLedgerProductPage = lazy(() => import("@/pages/products/AuditLedger")
 const TradersSolutionsPage = lazy(() => import("@/pages/solutions/Traders"));
 const FinanceSolutionsPage = lazy(() => import("@/pages/solutions/Finance"));
 const SovereignsSolutionsPage = lazy(() => import("@/pages/solutions/Sovereigns"));
+const Developers = lazy(() => import("@/pages/Developers"));
 
 /**
  * Root element that renders based on host type:
@@ -133,13 +134,14 @@ function App() {
                   <Route path="/solutions/sovereigns" element={<SovereignsSolutionsPage />} />
                   <Route path="/solutions" element={<Navigate to="/solutions/traders" replace />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
-                  {/* Legacy /developers/* → consolidated /developer Command Center */}
-                  <Route path="/developers" element={<Navigate to="/developer/keys" replace />} />
+                  {/* Public developer hub — landing page for the four dropdown links.
+                      Authenticated tooling lives at /developer/* (DeveloperCenter). */}
+                  <Route path="/developers" element={<Developers />} />
                   <Route path="/developers/keys" element={<Navigate to="/developer/keys" replace />} />
                   <Route path="/developers/webhooks" element={<Navigate to="/developer/webhooks" replace />} />
                   <Route path="/developers/dlq" element={<Navigate to="/developer/webhooks" replace />} />
                   <Route path="/developers/docs" element={<Navigate to="/developer/docs" replace />} />
-                  <Route path="/developers/*" element={<Navigate to="/developer/keys" replace />} />
+                  <Route path="/developers/*" element={<Developers />} />
                   <Route path="/developer/*" element={<DeveloperCenter />} />
                   <Route path="/governance/triage" element={<GovernanceTriage />} />
                   <Route path="/governance/audits" element={<GovernanceAudits />} />
