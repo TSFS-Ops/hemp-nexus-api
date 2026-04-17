@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -15,7 +15,7 @@ import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 
 // Lazy loaded - secondary routes (reduces initial bundle ~40%)
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
+// Dashboard page deleted — every /dashboard/* path now redirects into /desk (see RedirectDashboardMatch + routes below).
 // Admin lazy import removed — /admin/* now redirects to /hq tabs (see routes below).
 const Docs = lazy(() => import("@/pages/Docs"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
