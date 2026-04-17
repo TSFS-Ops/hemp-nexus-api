@@ -204,7 +204,7 @@ export function MatchCompiler({
               <EditorField label="Volume (MT)" hint="Metric tonnes. Numeric only." value={volume} onChange={setVolume} onFocus={() => setFocusedField("volume")} onBlur={() => setFocusedField(null)} placeholder="500" mono readOnly={demoMode} />
               <EditorField label="Price (USD / MT)" hint="Unit price per metric tonne." value={price} onChange={setPrice} onFocus={() => setFocusedField("price")} onBlur={() => setFocusedField(null)} placeholder="9,420" mono readOnly={demoMode} />
             </div>
-            <EditorField label="Delivery Incoterms" hint="Incoterms 2020 standard — e.g. FOB, CIF, DAP, with named port." value={incoterms} onChange={setIncoterms} onFocus={() => setFocusedField("incoterms")} onBlur={() => setFocusedField(null)} placeholder="e.g. CIF Rotterdam" readOnly={demoMode} />
+            <EditorField label="Delivery Incoterms" hint="Incoterms 2020 standard (e.g. FOB, CIF, DAP, with named port)." value={incoterms} onChange={setIncoterms} onFocus={() => setFocusedField("incoterms")} onBlur={() => setFocusedField(null)} placeholder="e.g. CIF Rotterdam" readOnly={demoMode} />
           </StepSection>
 
           {/* ── STEP 2: Supporting Documents ──────────────────── */}

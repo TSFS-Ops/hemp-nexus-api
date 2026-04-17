@@ -69,7 +69,7 @@ export function BillingOverview() {
   }, [user]);
 
   const handlePurchase = (credits: number) => {
-    toast.info(`${credits} credits — checkout coming online soon.`);
+    toast.info(`${credits} credits: checkout coming online soon.`);
   };
 
   const displayBalance = balance ?? 0;

@@ -323,7 +323,7 @@ export function AdminHealthMonitor() {
                     key={i}
                     className={`flex-1 min-w-[3px] rounded-t-sm ${barColor} transition-all`}
                     style={{ height: `${heightPercent}%` }}
-                    title={`${new Date(entry.timestamp).toLocaleTimeString()} — ${entry.status} (${entry.totalResponseTime}ms)`}
+                    title={`${new Date(entry.timestamp).toLocaleTimeString()}: ${entry.status} (${entry.totalResponseTime}ms)`}
                   />
                 );
               })}

@@ -691,7 +691,7 @@ export function MatchesList() {
                 )}
                 <p className="text-sm text-muted-foreground">
                   {totalPages > 1
-                    ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
+                    ? `Showing ${page * PAGE_SIZE + 1} to ${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
                     : `${totalCount} match${totalCount !== 1 ? 'es' : ''} total`}
                 </p>
               </div>

@@ -196,7 +196,7 @@ export default function TriageInbox() {
         label: "GATE_04_JURISDICTION",
         state: (active?.crossBorder ? "alert" : "passed") as GateState,
         note: active?.crossBorder
-          ? `Manual Review Required — ${active.jurisdictionRoute} flagged.`
+          ? `Manual Review Required: ${active.jurisdictionRoute} flagged.`
           : undefined,
       },
       { id: "05", label: "GATE_05_UBO_VALIDATION", state: "passed" as GateState },

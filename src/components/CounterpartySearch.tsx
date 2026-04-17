@@ -214,7 +214,7 @@ export default function CounterpartySearch() {
       }
     } catch (error: any) {
       if (controller.signal.aborted || error?.name === "AbortError") {
-        setSearchError("Search timed out. The server may be busy — please try again.");
+        setSearchError("Search timed out. The server may be busy. Please try again.");
         return;
       }
       console.error("Search error:", error);

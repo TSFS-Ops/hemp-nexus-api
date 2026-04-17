@@ -79,7 +79,7 @@ export function TokenBalanceTab() {
   }, [user]);
 
   const handlePurchase = (pack: string) => {
-    toast.info(`${pack} — checkout coming online soon.`);
+    toast.info(`${pack}: checkout coming online soon.`);
   };
 
   return (

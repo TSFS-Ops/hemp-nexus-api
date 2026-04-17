@@ -100,7 +100,7 @@ export function NewTradeInitiation() {
       return;
     }
     if (!orgId || !user?.id) {
-      toast.error("No organisation context — please refresh");
+      toast.error("No organisation context. Please refresh");
       return;
     }
     setSubmitting(true);

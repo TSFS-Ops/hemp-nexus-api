@@ -211,7 +211,7 @@ export function AdminAuditLogs() {
 
           {auditLogTotalCount > 0 && (
             <p className="text-sm text-muted-foreground mb-3">
-              Showing {auditPage * ADMIN_LOG_LIMIT + 1}–{Math.min((auditPage + 1) * ADMIN_LOG_LIMIT, auditLogTotalCount)} of {auditLogTotalCount} audit logs.
+              Showing {auditPage * ADMIN_LOG_LIMIT + 1} to {Math.min((auditPage + 1) * ADMIN_LOG_LIMIT, auditLogTotalCount)} of {auditLogTotalCount} audit logs.
               {totalAuditPages > 1 && ` Page ${auditPage + 1} of ${totalAuditPages}.`}
             </p>
           )}

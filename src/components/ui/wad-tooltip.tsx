@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Info } from "lucide-react";
 
 const WAD_EXPLANATION =
-  "Without a Doubt (WaD) — a sealed, tamper-evident evidence bundle that confirms the full trade trail. It is not a contract, but an auditable proof bundle.";
+  "Without a Doubt (WaD): a sealed, tamper-evident evidence bundle that confirms the full trade trail. It is not a contract, but an auditable proof bundle.";
 
 interface WadTooltipProps {
   /** Custom label text. Defaults to "WaD". */

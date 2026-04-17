@@ -177,7 +177,7 @@ export function RejectedMatch() {
                   <ul className="space-y-3 font-mono text-[11px]">
                     {["Jurisdiction Check", "UBO Validation", "Sanctions Screen", "Authority Bind"].map(label => <li key={label} className="flex items-center justify-between gap-4">
                         <span className="text-slate-300">{label}</span>
-                        <span className="text-slate-300 tracking-wider">—</span>
+                        <span className="text-slate-300 tracking-wider">-</span>
                       </li>)}
                   </ul>
 
@@ -243,7 +243,7 @@ export function RejectedMatch() {
                     letterSpacing: "0.25em",
                     color: "rgba(140, 18, 18, 0.85)"
                   }}>
-                      — {REJECT_TIMESTAMP} —
+                      {REJECT_TIMESTAMP}
                     </p>
                   </div>
 

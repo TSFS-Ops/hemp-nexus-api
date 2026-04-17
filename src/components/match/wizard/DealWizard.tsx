@@ -114,13 +114,13 @@ export function DealWizard({
   }, {
     id: "poi",
     label: "Proof of Intent",
-    description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement — the process is paused here." : "Generate a Trade Request — 1 credit (R10). Non-binding, irreversible, fully audited.",
+    description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit (R10). Non-binding, irreversible, fully audited.",
     complete: poiComplete && engagementAccepted,
     locked: !matchComplete // Strict: locked until match step complete
   }, {
     id: "wad",
     label: "Signed Deal",
-    description: poiHoldActive ? "Locked — trading partner must accept before you can proceed to Signed Deal." : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
+    description: poiHoldActive ? "Locked. Trading partner must accept before you can proceed to Signed Deal." : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
     complete: wadComplete,
     locked: !poiComplete || poiHoldActive // HOLD POINT: locked until engagement accepted
   }, {
@@ -292,7 +292,7 @@ function StepMatch({
 
   // Label and description for the contextual next prompt
   const nextLabel = isLastSubTab ? "Proceed to Proof of Intent" : `Next: ${subTab === "terms" ? "Documents" : "Notes"}`;
-  const nextDescription = isLastSubTab ? "All required fields complete" : subTab === "terms" ? "Terms saved — review or attach supporting documents" : "Documents reviewed — add any deal notes before proceeding";
+  const nextDescription = isLastSubTab ? "All required fields complete" : subTab === "terms" ? "Terms saved. Review or attach supporting documents" : "Documents reviewed. Add any deal notes before proceeding";
   return <div className="space-y-4">
       {/* Sub-navigation within the match step */}
       <Tabs value={subTab} onValueChange={onSubTabChange}>

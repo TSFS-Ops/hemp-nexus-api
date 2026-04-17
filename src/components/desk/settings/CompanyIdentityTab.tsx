@@ -312,7 +312,7 @@ function EntityDetailsStep({
         if (error) throw error;
       }
 
-      toast.success("Entity details saved — moved to compliance review.");
+      toast.success("Entity details saved. Moved to compliance review.");
       await onSaved();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save entity details");
