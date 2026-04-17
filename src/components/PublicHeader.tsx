@@ -76,6 +76,7 @@ export function PublicHeader() {
   };
 
   return (
+    <>
     <nav
       className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
