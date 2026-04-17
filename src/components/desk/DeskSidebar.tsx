@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut } from "lucide-react";
+import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 
@@ -66,9 +66,21 @@ export function DeskSidebar() {
         <p className="text-xs text-slate-400 font-mono tracking-wide truncate">
           {user?.email}
         </p>
+
+        {/* Quick escape — public marketing site */}
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-600 transition-colors"
+        >
+          <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
+          View Public Site
+        </a>
+
         <div className="flex items-center gap-3">
           <Link
-            to="/dashboard/settings"
+            to="/desk/settings"
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
           >
             <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />

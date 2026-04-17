@@ -16,10 +16,11 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 
 // ── Wired admin panels (no mocks) ───────────────────────────────────
 import UsersManagement from "@/components/admin/UsersManagement";
@@ -63,10 +64,10 @@ function CommandBar() {
   const { signOut } = useAuth();
   return (
     <header className="bg-slate-950 text-slate-100 border-b border-slate-900">
-      <div className="px-6 lg:px-10 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-8">
+      <div className="px-6 lg:px-10 h-14 flex items-center justify-between gap-6">
+        <div className="flex items-center gap-6 min-w-0">
           {/* Wordmark */}
-          <Link to="/hq" className="flex items-center gap-2.5">
+          <Link to="/hq" className="flex items-center gap-2.5 shrink-0">
             <div className="h-6 w-6 rounded-sm bg-emerald-500 flex items-center justify-center">
               <span className="text-slate-950 font-bold text-[10px] font-mono">IZ</span>
             </div>
@@ -80,8 +81,13 @@ function CommandBar() {
             </div>
           </Link>
 
+          {/* Workspace switcher — escape hatch back to Desk / Governance / Developer */}
+          <div className="hidden md:block w-[240px]">
+            <ContextSwitcher tone="dark" />
+          </div>
+
           {/* System status badge */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-sm border border-emerald-900/60 bg-emerald-950/40">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-sm border border-emerald-900/60 bg-emerald-950/40 shrink-0">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -92,14 +98,28 @@ function CommandBar() {
           </div>
         </div>
 
-        <button
-          onClick={signOut}
-          className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors"
-          aria-label="Sign out of admin dashboard"
-        >
-          <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Sign out
-        </button>
+        <div className="flex items-center gap-5 shrink-0">
+          {/* View public marketing site */}
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-emerald-400 transition-colors"
+            aria-label="Open public marketing site in new tab"
+          >
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
+            View Public Site
+          </a>
+
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors"
+            aria-label="Sign out of admin dashboard"
+          >
+            <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Sign out
+          </button>
+        </div>
       </div>
     </header>
   );
