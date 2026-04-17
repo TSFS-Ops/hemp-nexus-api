@@ -203,7 +203,7 @@ export function DocumentSharingDialog({
                     </p>
                     {visibility === "share_with_roles" && (
                       <Badge variant="secondary" className="mt-2">
-                        Advanced sharing coming soon
+                        Standard bilateral sharing is enabled. Advanced multi-party routing is restricted to Enterprise tiers.
                       </Badge>
                     )}
                   </div>

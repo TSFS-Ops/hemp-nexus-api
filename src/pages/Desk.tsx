@@ -64,27 +64,7 @@ function DeskOverview() {
   );
 }
 
-function DeskPlaceholder({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <>
-      <header className="mb-12">
-        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
-          Commercial Trading
-        </p>
-        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">{title}</h1>
-        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">{subtitle}</p>
-      </header>
-      <div className="bg-white rounded-md border border-slate-200 p-12 text-center">
-        <p className="text-sm text-slate-400 font-mono tracking-wide uppercase">
-          Coming soon
-        </p>
-        <p className="mt-3 text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-          This surface is being rebuilt as part of the Deal Desk greenfield programme.
-        </p>
-      </div>
-    </>
-  );
-}
+/* DeskPlaceholder removed — all Desk routes now mount functional components. */
 
 /** Forward legacy /desk/deals/:matchId deep links to the migrated MatchDetails route. */
 function RedirectDealToMatch() {
