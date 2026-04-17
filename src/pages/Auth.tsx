@@ -120,8 +120,11 @@ export default function Auth() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       clearTimeout(timeoutId);
       if (session?.user) {
+        // Already signed in — hard-navigate so the destination route's
+        // <RequireAuth> guard sees the persisted session immediately.
         const route = await resolvePostAuthRoute(session.user.id);
-        navigate(route, { replace: true });
+        window.location.assign(route);
+        return;
       }
       setPageReady(true);
     }).catch(() => {
@@ -129,18 +132,15 @@ export default function Auth() {
       setPageReady(true);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.info("[Auth] onAuthStateChange", { event, hasUser: !!session?.user });
-      if (event === "SIGNED_IN" && session?.user) {
-        const route = await resolvePostAuthRoute(session.user.id);
-        console.info("[Auth] navigating →", route);
-        navigate(route, { replace: true });
-      }
-    });
+    // NOTE: We deliberately do NOT register an onAuthStateChange listener here.
+    // The post-signin redirect is owned by handleSignIn (see below) using a
+    // hard navigation. Adding a SPA navigate() in a SIGNED_IN listener races
+    // with handleSignIn and can land us back on /auth?returnTo=… because the
+    // destination's <RequireAuth> reads AuthContext, which hasn't yet
+    // propagated the new session.
 
     return () => {
       clearTimeout(timeoutId);
-      subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, searchParams]);
