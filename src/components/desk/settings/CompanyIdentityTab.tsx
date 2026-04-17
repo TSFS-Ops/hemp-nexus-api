@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -80,13 +81,36 @@ const DOC_TYPES = [
 
 export function CompanyIdentityTab() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [org, setOrg] = useState<OrgData | null>(null);
   const [companyEntityId, setCompanyEntityId] = useState<string | null>(null);
   const [owners, setOwners] = useState<UboRow[]>([]);
   const [docs, setDocs] = useState<KycDoc[]>([]);
   const [verification, setVerification] = useState<VerificationState>("incomplete");
   const [loading, setLoading] = useState(true);
-  const [activeStep, setActiveStep] = useState<StepKey>("entity");
+
+  // Deep-link: read ?step= from URL on mount and whenever it changes externally
+  const initialStep: StepKey = (() => {
+    const s = searchParams.get("step");
+    return s === "owners" || s === "documents" || s === "entity" ? s : "entity";
+  })();
+  const [activeStep, setActiveStep] = useState<StepKey>(initialStep);
+
+  // Sync URL → state when ?step changes (e.g. user clicks deep link from ComplianceProfile)
+  useEffect(() => {
+    const s = searchParams.get("step");
+    if (s === "owners" || s === "documents" || s === "entity") {
+      setActiveStep(s);
+    }
+  }, [searchParams]);
+
+  // Sync state → URL when user clicks a stepper tab (so deep links remain shareable)
+  const selectStep = (key: StepKey) => {
+    setActiveStep(key);
+    const next = new URLSearchParams(searchParams);
+    next.set("step", key);
+    setSearchParams(next, { replace: true });
+  };
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -180,7 +204,7 @@ export function CompanyIdentityTab() {
             <button
               key={s.key}
               type="button"
-              onClick={() => setActiveStep(s.key)}
+              onClick={() => selectStep(s.key)}
               className={[
                 "px-4 py-3 text-left transition-colors border-b-2 -mb-px",
                 active
@@ -201,7 +225,7 @@ export function CompanyIdentityTab() {
           companyEntityId={companyEntityId}
           onSaved={async () => {
             await refresh();
-            setActiveStep("owners");
+            selectStep("owners");
           }}
         />
       )}
