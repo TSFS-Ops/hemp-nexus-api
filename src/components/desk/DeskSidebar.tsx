@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 
 const NAV = [
   { to: "/desk", label: "Desk", icon: Briefcase, end: true },
@@ -18,13 +19,18 @@ export function DeskSidebar() {
   return (
     <aside className="hidden md:flex w-[250px] shrink-0 flex-col bg-white border-r border-slate-200">
       {/* Wordmark */}
-      <div className="px-8 pt-10 pb-12">
+      <div className="px-6 pt-8 pb-4">
         <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-slate-900 uppercase">
           Izenzo
         </h2>
         <p className="mt-1 text-[10px] tracking-wider text-slate-400 font-mono uppercase">
           Deal Desk
         </p>
+      </div>
+
+      {/* Workspace switcher (Command Bridge) */}
+      <div className="px-4 pb-6">
+        <ContextSwitcher tone="light" />
       </div>
 
       {/* Nav */}
