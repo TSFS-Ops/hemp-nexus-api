@@ -129,27 +129,22 @@ export default function Landing() {
       <PublicHeader />
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto relative z-10">
-        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-[860px] mx-auto">
-          {/* Trust badges — above the fold, before any effort is asked */}
-          <div className="mb-5">
+      <div className="flex-1 overflow-y-auto relative z-10" style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}>
+        {/* Stripe-Glow Hero */}
+        <HeroStripeGlow
+          onGetStarted={isAuthenticated ? () => window.location.assign("/dashboard") : navigateToAuth}
+          onContactSales={() => window.location.assign("mailto:sales@izenzo.co.za")}
+        />
+
+        <div className="px-4 sm:px-6 lg:px-8 py-20 sm:py-28 max-w-[1100px] mx-auto space-y-24 sm:space-y-32">
+          {/* Trust badges */}
+          <div>
             <TrustBadges />
           </div>
 
-          {/* Hero headline */}
-          <h1
-            className="tracking-tighter max-w-none mb-2 leading-[1.08] text-[1.1rem] sm:text-[1.4rem] lg:text-[1.75rem] font-semibold"
-            style={{ color: 'var(--lt-text)' }}
-          >
-            Discover Trading Partners. Validate Intent. Execute with Confidence.
-          </h1>
-          <p className="text-[13px] font-medium leading-relaxed mb-6 max-w-xl" style={{ color: 'var(--lt-text-muted)' }}>
-            Izenzo is a pre-execution governance platform that structures trading partners, validates readiness, and improves execution certainty across trade, infrastructure, and institutional systems. It ensures transactions move through a sequenced, auditable process with defined parties and verified authority.
-          </p>
-
           {/* Trade interest form */}
           <div
-            className="mb-6 rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-hidden"
             style={{
               backgroundColor: '#131823',
               border: '1px solid var(--lt-border)',
@@ -164,8 +159,8 @@ export default function Landing() {
             />
           </div>
 
-          {/* 6-step workflow pipeline — fully visible on mobile */}
-          <div className="mb-6">
+          {/* 9-step Bento workflow grid */}
+          <div>
             <WorkflowPipeline />
           </div>
 
