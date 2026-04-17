@@ -7,7 +7,7 @@
  * the dispute to `escalated`.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, AlertTriangle, FileText, Stamp, Flag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -145,10 +145,12 @@ export default function TriageInbox() {
 
   const queue = queueQuery.data ?? [];
 
-  // Default selection
-  if (queue.length > 0 && !activeId) {
-    setActiveId(queue[0].id);
-  }
+  // Default selection — once data lands, select the first item.
+  useEffect(() => {
+    if (queue.length > 0 && !activeId) {
+      setActiveId(queue[0].id);
+    }
+  }, [queue, activeId]);
 
   const filtered = useMemo(() => {
     if (filter === "high") return queue.filter((q) => q.risk === "high");
