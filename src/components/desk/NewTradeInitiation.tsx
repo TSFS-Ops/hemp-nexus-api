@@ -90,8 +90,8 @@ export function NewTradeInitiation() {
 
   const canSubmit = useMemo(() => {
     const parsed = initiationSchema.safeParse({ commodity, side, counterpartyLabel });
-    return parsed.success && !!org?.id && !submitting;
-  }, [commodity, side, counterpartyLabel, org?.id, submitting]);
+    return parsed.success && !!orgId && !submitting;
+  }, [commodity, side, counterpartyLabel, orgId, submitting]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -100,7 +100,7 @@ export function NewTradeInitiation() {
       toast.error(parsed.error.issues[0]?.message ?? "Validation failed");
       return;
     }
-    if (!org?.id || !user?.id) {
+    if (!orgId || !user?.id) {
       toast.error("No organisation context — please refresh");
       return;
     }
@@ -109,7 +109,7 @@ export function NewTradeInitiation() {
     try {
       // Deterministic hash anchoring this initiation to its commercial intent.
       const hashInput = canonicalTermsPayload({
-        org_id: org.id,
+        org_id: orgId,
         commodity: parsed.data.commodity,
         side: parsed.data.side,
         counterparty_label: parsed.data.counterpartyLabel,
@@ -118,7 +118,7 @@ export function NewTradeInitiation() {
       const hash = await sha256Hex(hashInput);
 
       const insertRow = {
-        org_id: org.id,
+        org_id: orgId,
         created_by: user.id,
         commodity: parsed.data.commodity,
         state: "discovery" as const,
@@ -130,13 +130,13 @@ export function NewTradeInitiation() {
         // counterparty slot is left null until they accept the engagement.
         ...(parsed.data.side === "buyer"
           ? {
-              buyer_org_id: org.id,
-              buyer_name: org.name ?? null,
+              buyer_org_id: orgId,
+              buyer_name: orgName ?? null,
               seller_name: selectedCounterparty?.company_name ?? parsed.data.counterpartyLabel,
             }
           : {
-              seller_org_id: org.id,
-              seller_name: org.name ?? null,
+              seller_org_id: orgId,
+              seller_name: orgName ?? null,
               buyer_name: selectedCounterparty?.company_name ?? parsed.data.counterpartyLabel,
             }),
         metadata: {
