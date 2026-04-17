@@ -294,7 +294,7 @@ export default function TradeDeskProductPage() {
                 transition={{ duration: 0.7, delay: 0.05 }}
                 className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
               >
-                Sovereign infrastructure
+                Governance infrastructure
                 <br />
                 for the deal maker.
               </motion.h1>
