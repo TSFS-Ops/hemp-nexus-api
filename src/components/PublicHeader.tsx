@@ -227,5 +227,8 @@ export function PublicHeader() {
         </div>
       )}
     </nav>
+    {/* Spacer to offset the fixed header height (h-20 = 5rem) */}
+    <div aria-hidden className="h-20" />
+    </>
   );
 }
