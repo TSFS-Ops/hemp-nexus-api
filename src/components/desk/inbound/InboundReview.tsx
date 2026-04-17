@@ -63,15 +63,23 @@ function formatRelativeExpiry(expiresAt: string | null): string {
 export function InboundReview() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const callerOrgId = profile?.org_id ?? "";
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["inbound-review", matchId, callerOrgId],
-    enabled: !!matchId && !!user && !!callerOrgId,
+    queryKey: ["inbound-review", matchId, user?.id],
+    enabled: !!matchId && !!user,
     queryFn: async (): Promise<InboundData | null> => {
-      if (!matchId) return null;
+      if (!matchId || !user) return null;
+
+      // Resolve caller's org via their profile.
+      const { data: callerProfile } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const callerOrgId = callerProfile?.org_id ?? "";
 
       // Match row — RLS scopes us to participating orgs.
       const { data: match, error: matchErr } = await supabase
@@ -79,7 +87,7 @@ export function InboundReview() {
         .select(
           "id, org_id, buyer_org_id, seller_org_id, buyer_name, seller_name, " +
             "commodity, quantity_amount, quantity_unit, price_amount, price_currency, " +
-            "incoterms, notes, state, status, event_chain_hash, created_at"
+            "terms, state, status, event_chain_hash, created_at"
         )
         .eq("id", matchId)
         .maybeSingle();
@@ -108,14 +116,14 @@ export function InboundReview() {
       // Sealed evidence documents on the match.
       const { data: docs } = await supabase
         .from("match_documents")
-        .select("file_name, file_hash, doc_type")
+        .select("filename, sha256_hash, doc_type, title")
         .eq("match_id", matchId)
         .eq("is_current_version", true)
         .order("created_at", { ascending: true });
 
       const documents: InboundDoc[] = (docs ?? []).map((d) => ({
-        name: d.file_name ?? d.doc_type ?? "Document",
-        hash: d.file_hash ?? "",
+        name: d.title || d.filename || d.doc_type || "Document",
+        hash: d.sha256_hash ?? "",
       }));
 
       // Caller is the counterparty if engagement.counterparty_org_id matches
@@ -150,8 +158,8 @@ export function InboundReview() {
         commodity: match.commodity ?? "—",
         volume,
         price,
-        incoterms: match.incoterms ?? "—",
-        notes: match.notes ?? "",
+        incoterms: "—",
+        notes: match.terms ?? "",
         documents,
         engagementId: engagement?.id ?? null,
         engagementStatus: engagement?.engagement_status ?? null,
