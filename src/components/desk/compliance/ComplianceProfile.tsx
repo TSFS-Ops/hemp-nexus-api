@@ -34,7 +34,7 @@ type UboRow = {
   ownership_percentage: number;
   status: string;
   person_entity_id: string;
-  entities: { legal_name: string; jurisdiction_code: string; entity_type: string } | null;
+  person: { legal_name: string; jurisdiction_code: string; entity_type: string } | null;
 };
 
 type KycDoc = {
@@ -94,7 +94,7 @@ export function ComplianceProfile() {
       supabase
         .from("ubo_links")
         .select(
-          "id,ownership_percentage,status,person_entity_id,entities:ubo_links_person_entity_id_fkey(legal_name,jurisdiction_code,entity_type)"
+          "id,ownership_percentage,status,person_entity_id,person:person_entity_id(legal_name,jurisdiction_code,entity_type)"
         )
         .eq("org_id", orgId)
         .order("ownership_percentage", { ascending: false }),
@@ -106,7 +106,7 @@ export function ComplianceProfile() {
     ]).then(([orgRes, uboRes, docsRes]) => {
       if (cancelled) return;
       setOrg((orgRes.data as Org) ?? null);
-      setOwners((uboRes.data as UboRow[]) ?? []);
+      setOwners(((uboRes.data as unknown) as UboRow[]) ?? []);
       setDocs((docsRes.data as KycDoc[]) ?? []);
       setLoading(false);
     });
