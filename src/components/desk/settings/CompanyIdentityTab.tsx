@@ -1,168 +1,687 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+/**
+ * CompanyIdentityTab — KYB Command Center.
+ *
+ * Replaces the prior "status badge + read-only fields" loop with a real
+ * 3-step intake controller:
+ *   §01 Entity Details   → writes to organizations + entities
+ *   §02 Beneficial Owners → writes to entities (person) + ubo_links
+ *   §03 Documents         → uploads to kyc-documents bucket + kyc_documents row
+ *
+ * Verification badge is derived from real KYB signals — never from the
+ * always-"active" organizations.status column.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle2, Clock, ShieldAlert } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  ShieldAlert,
+  Plus,
+  Trash2,
+  Upload,
+  FileCheck2,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { sha256HexOfBlob } from "@/lib/crypto";
+
+// ──────────────────────────────────────────────────────────────────────
+// Types
 
 interface OrgData {
+  id: string;
   legal_name: string | null;
   registration_number: string | null;
   jurisdictions: string[] | null;
   trading_name: string | null;
   vat_number: string | null;
+  tax_number: string | null;
   status: string;
 }
 
+interface UboRow {
+  id: string;
+  ownership_percentage: number;
+  status: string;
+  person: { legal_name: string; jurisdiction_code: string } | null;
+}
+
+interface KycDoc {
+  id: string;
+  doc_type: string;
+  filename: string;
+  status: string;
+  created_at: string;
+}
+
 type VerificationState = "verified" | "in_review" | "incomplete";
+type StepKey = "entity" | "owners" | "documents";
+
+const STEPS: { key: StepKey; index: string; label: string }[] = [
+  { key: "entity", index: "§01", label: "Entity Details" },
+  { key: "owners", index: "§02", label: "Beneficial Owners" },
+  { key: "documents", index: "§03", label: "Documents" },
+];
+
+const DOC_TYPES = [
+  "incorporation_certificate",
+  "tax_clearance",
+  "memorandum_of_incorporation",
+  "directors_register",
+  "proof_of_address",
+] as const;
+
+// ──────────────────────────────────────────────────────────────────────
 
 export function CompanyIdentityTab() {
   const { user } = useAuth();
   const [org, setOrg] = useState<OrgData | null>(null);
+  const [companyEntityId, setCompanyEntityId] = useState<string | null>(null);
+  const [owners, setOwners] = useState<UboRow[]>([]);
+  const [docs, setDocs] = useState<KycDoc[]>([]);
   const [verification, setVerification] = useState<VerificationState>("incomplete");
   const [loading, setLoading] = useState(true);
+  const [activeStep, setActiveStep] = useState<StepKey>("entity");
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!user) return;
-    (async () => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!profile?.org_id) {
-        setLoading(false);
-        return;
-      }
-      const orgId = profile.org_id;
-
-      // Fetch org, KYB entity records, and authority records in parallel.
-      const [{ data: orgData }, { data: entityRows }, { data: authorityRows }] = await Promise.all([
-        supabase
-          .from("organizations")
-          .select("legal_name, registration_number, jurisdictions, trading_name, vat_number, status")
-          .eq("id", orgId)
-          .maybeSingle(),
-        supabase
-          .from("entities")
-          .select("id, status, entity_type")
-          .eq("org_id", orgId)
-          .eq("entity_type", "company"),
-        supabase
-          .from("authority_records")
-          .select("id, status")
-          .eq("org_id", orgId)
-          .eq("status", "verified"),
-      ]);
-
-      setOrg(orgData as OrgData | null);
-
-      // Real KYB signal — never trust `organizations.status` alone (defaults to "active").
-      const hasCoreFields = !!(orgData?.legal_name && orgData?.registration_number);
-      const hasVerifiedEntity = (entityRows ?? []).some((e) => e.status === "verified");
-      const hasVerifiedAuthority = (authorityRows ?? []).length > 0;
-
-      if (hasVerifiedEntity && hasVerifiedAuthority) {
-        setVerification("verified");
-      } else if (hasCoreFields || (entityRows ?? []).some((e) => e.status === "pending")) {
-        setVerification("in_review");
-      } else {
-        setVerification("incomplete");
-      }
-
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.org_id) {
       setLoading(false);
-    })();
+      return;
+    }
+    const orgId = profile.org_id;
+
+    const [{ data: orgData }, { data: entityRows }, { data: docRows }] = await Promise.all([
+      supabase
+        .from("organizations")
+        .select("id, legal_name, registration_number, jurisdictions, trading_name, vat_number, tax_number, status")
+        .eq("id", orgId)
+        .maybeSingle(),
+      supabase
+        .from("entities")
+        .select("id, status, entity_type")
+        .eq("org_id", orgId)
+        .eq("entity_type", "company"),
+      supabase
+        .from("kyc_documents")
+        .select("id, doc_type, filename, status, created_at")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    setOrg(orgData as OrgData | null);
+    setDocs((docRows ?? []) as KycDoc[]);
+
+    const company = (entityRows ?? [])[0];
+    setCompanyEntityId(company?.id ?? null);
+
+    if (company?.id) {
+      const { data: uboRows } = await supabase
+        .from("ubo_links")
+        .select("id, ownership_percentage, status, person:entities!ubo_links_person_entity_id_fkey(legal_name, jurisdiction_code)")
+        .eq("company_entity_id", company.id);
+      setOwners((uboRows ?? []) as unknown as UboRow[]);
+    } else {
+      setOwners([]);
+    }
+
+    // Derive verification — never trust orgData.status alone.
+    const hasCoreFields = !!(orgData?.legal_name && orgData?.registration_number);
+    const hasVerifiedEntity = (entityRows ?? []).some((e) => e.status === "verified");
+    const hasVerifiedDocs = (docRows ?? []).some((d) => d.status === "verified" || d.status === "approved");
+
+    if (hasVerifiedEntity && hasVerifiedDocs) setVerification("verified");
+    else if (hasCoreFields || (entityRows ?? []).some((e) => e.status === "pending")) setVerification("in_review");
+    else setVerification("incomplete");
+
+    setLoading(false);
   }, [user]);
 
-  if (loading) return <div className="text-sm text-slate-400">Loading…</div>;
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-slate-400">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading KYB profile…
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl">
-      {/* Header row with status badge */}
-      <div className="flex items-start justify-between gap-8 mb-12">
+      {/* Header + verification badge */}
+      <div className="flex items-start justify-between gap-8 mb-10">
         <div>
-          <h2 className="text-xl font-medium text-slate-900 tracking-tight">
-            Company Identity
-          </h2>
+          <h2 className="text-xl font-medium text-slate-900 tracking-tight">Company Identity</h2>
           <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-md">
             Your verified Know-Your-Business profile. This identity is bound to every Proof of Intent you generate.
           </p>
         </div>
-        {verification === "verified" ? (
-          <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
-            <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
-            Verified Counterparty
-          </div>
-        ) : verification === "in_review" ? (
-          <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-            <Clock className="h-3.5 w-3.5" strokeWidth={2} />
-            Awaiting Compliance Review
-          </div>
-        ) : (
-          <div className="shrink-0 inline-flex flex-col items-end gap-2">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-              <ShieldAlert className="h-3.5 w-3.5" strokeWidth={2} />
-              KYB Not Started
-            </div>
-            <Link
-              to="/desk/compliance"
-              className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 hover:text-slate-900 transition-colors"
+        <VerificationBadge state={verification} />
+      </div>
+
+      {/* Stepper */}
+      <nav className="mb-10 flex items-center gap-1 border-b border-slate-200">
+        {STEPS.map((s) => {
+          const active = s.key === activeStep;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setActiveStep(s.key)}
+              className={[
+                "px-4 py-3 text-left transition-colors border-b-2 -mb-px",
+                active
+                  ? "border-slate-900 text-slate-900"
+                  : "border-transparent text-slate-500 hover:text-slate-800",
+              ].join(" ")}
             >
-              Begin verification →
-            </Link>
-          </div>
+              <p className="font-mono text-[10px] tracking-[0.25em] uppercase opacity-70">{s.index}</p>
+              <p className="text-sm font-medium mt-0.5">{s.label}</p>
+            </button>
+          );
+        })}
+      </nav>
+
+      {activeStep === "entity" && (
+        <EntityDetailsStep
+          org={org}
+          companyEntityId={companyEntityId}
+          onSaved={async () => {
+            await refresh();
+            setActiveStep("owners");
+          }}
+        />
+      )}
+
+      {activeStep === "owners" && (
+        <OwnersStep
+          orgId={org?.id ?? null}
+          companyEntityId={companyEntityId}
+          owners={owners}
+          onChanged={refresh}
+        />
+      )}
+
+      {activeStep === "documents" && (
+        <DocumentsStep orgId={org?.id ?? null} userId={user?.id ?? null} docs={docs} onChanged={refresh} />
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Step 1 — Entity details
+
+function EntityDetailsStep({
+  org,
+  companyEntityId,
+  onSaved,
+}: {
+  org: OrgData | null;
+  companyEntityId: string | null;
+  onSaved: () => Promise<void> | void;
+}) {
+  const [legalName, setLegalName] = useState(org?.legal_name ?? "");
+  const [tradingName, setTradingName] = useState(org?.trading_name ?? "");
+  const [registration, setRegistration] = useState(org?.registration_number ?? "");
+  const [taxNumber, setTaxNumber] = useState(org?.tax_number ?? org?.vat_number ?? "");
+  const [jurisdiction, setJurisdiction] = useState(org?.jurisdictions?.[0] ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const valid = legalName.trim().length >= 2 && registration.trim().length >= 2 && jurisdiction.trim().length >= 2;
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!org?.id || !valid) return;
+    setSaving(true);
+    try {
+      const jur = jurisdiction.trim().toUpperCase();
+      const { error: orgErr } = await supabase
+        .from("organizations")
+        .update({
+          legal_name: legalName.trim(),
+          trading_name: tradingName.trim() || null,
+          registration_number: registration.trim(),
+          tax_number: taxNumber.trim() || null,
+          jurisdictions: [jur],
+          status: "pending",
+        })
+        .eq("id", org.id);
+      if (orgErr) throw orgErr;
+
+      // Mirror to entities (company) so the KYB graph has a node.
+      if (companyEntityId) {
+        const { error } = await supabase
+          .from("entities")
+          .update({
+            legal_name: legalName.trim(),
+            registration_number: registration.trim(),
+            tax_number: taxNumber.trim() || null,
+            jurisdiction_code: jur,
+            status: "pending",
+          })
+          .eq("id", companyEntityId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("entities").insert({
+          org_id: org.id,
+          entity_type: "company",
+          legal_name: legalName.trim(),
+          registration_number: registration.trim(),
+          tax_number: taxNumber.trim() || null,
+          jurisdiction_code: jur,
+          status: "pending",
+        });
+        if (error) throw error;
+      }
+
+      toast.success("Entity details saved — moved to compliance review.");
+      await onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save entity details");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-6">
+      <FormField label="Legal Entity Name" required>
+        <Input value={legalName} onChange={(e) => setLegalName(e.target.value)} maxLength={200} placeholder="e.g. Acme Trading (Pty) Ltd" />
+      </FormField>
+      <FormField label="Trading Name (optional)">
+        <Input value={tradingName} onChange={(e) => setTradingName(e.target.value)} maxLength={200} placeholder="If different from legal name" />
+      </FormField>
+      <FormField label="Registration Number" required>
+        <Input value={registration} onChange={(e) => setRegistration(e.target.value)} maxLength={80} placeholder="e.g. 2018/123456/07" />
+      </FormField>
+      <FormField label="VAT / Tax Number">
+        <Input value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} maxLength={80} placeholder="e.g. 4123456789" />
+      </FormField>
+      <FormField label="Jurisdiction (ISO-3166)" required>
+        <Input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value.toUpperCase())} maxLength={3} placeholder="ZA · GB · US" />
+      </FormField>
+
+      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+        <p className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+          Saving moves status to <span className="text-slate-700">pending</span>
+        </p>
+        <Button type="submit" disabled={!valid || saving} className="gap-2">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {saving ? "Saving…" : "Save & Continue"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Step 2 — Beneficial owners
+
+function OwnersStep({
+  orgId,
+  companyEntityId,
+  owners,
+  onChanged,
+}: {
+  orgId: string | null;
+  companyEntityId: string | null;
+  owners: UboRow[];
+  onChanged: () => Promise<void> | void;
+}) {
+  const [name, setName] = useState("");
+  const [pct, setPct] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const totalOwnership = useMemo(
+    () => owners.reduce((acc, o) => acc + Number(o.ownership_percentage || 0), 0),
+    [owners]
+  );
+
+  if (!companyEntityId) {
+    return (
+      <div className="rounded-md border border-amber-200 bg-amber-50/60 p-6 text-sm text-amber-900">
+        Save your entity details first (Step §01). The company record must exist before owners can be linked.
+      </div>
+    );
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orgId || !companyEntityId) return;
+    const pctNum = Number(pct);
+    if (!name.trim() || !jurisdiction.trim() || !Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
+      toast.error("Enter a name, valid jurisdiction code, and ownership 0.01–100");
+      return;
+    }
+    setAdding(true);
+    try {
+      const { data: person, error: personErr } = await supabase
+        .from("entities")
+        .insert({
+          org_id: orgId,
+          entity_type: "person",
+          legal_name: name.trim(),
+          jurisdiction_code: jurisdiction.trim().toUpperCase(),
+          status: "pending",
+        })
+        .select("id")
+        .single();
+      if (personErr) throw personErr;
+
+      const { error: linkErr } = await supabase.from("ubo_links").insert({
+        org_id: orgId,
+        company_entity_id: companyEntityId,
+        person_entity_id: person.id,
+        ownership_percentage: pctNum,
+        status: "pending",
+      });
+      if (linkErr) throw linkErr;
+
+      setName("");
+      setPct("");
+      setJurisdiction("");
+      toast.success("Beneficial owner declared.");
+      await onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add owner");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleRemove(linkId: string) {
+    const { error } = await supabase.from("ubo_links").delete().eq("id", linkId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Owner removed.");
+    await onChanged();
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* List */}
+      <div className="rounded-md border border-slate-200 bg-white">
+        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+            Declared Owners ({owners.length})
+          </p>
+          <p className="font-mono text-xs text-slate-700 tabular-nums">
+            Σ {totalOwnership.toFixed(2)}%
+          </p>
+        </div>
+        {owners.length === 0 ? (
+          <p className="px-5 py-8 text-sm text-slate-500 text-center">
+            No beneficial owners declared yet.
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {owners.map((o) => (
+              <li key={o.id} className="px-5 py-4 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-slate-900 font-medium truncate">
+                    {o.person?.legal_name ?? "Unnamed"}
+                  </p>
+                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mt-0.5">
+                    {o.person?.jurisdiction_code ?? "—"} · {o.status}
+                  </p>
+                </div>
+                <p className="font-mono text-sm text-slate-900 tabular-nums">
+                  {Number(o.ownership_percentage).toFixed(2)}%
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(o.id)}
+                  className="p-1.5 rounded-sm text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  aria-label="Remove owner"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
-      {/* Form */}
-      <div className="space-y-10">
-        <ReadOnlyField label="Legal Entity Name" value={org?.legal_name} />
-        <ReadOnlyField label="Trading Name" value={org?.trading_name} />
-        <ReadOnlyField label="Registration Number" value={org?.registration_number} mono />
-        <ReadOnlyField label="VAT / Tax Number" value={org?.vat_number} mono />
-        <div className="space-y-3">
-          <label className="block text-xs font-medium tracking-wider uppercase text-slate-500">
-            Verified Jurisdictions
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {org?.jurisdictions && org.jurisdictions.length > 0 ? (
-              org.jurisdictions.map((j) => (
-                <span
-                  key={j}
-                  className="inline-flex items-center px-3 py-1.5 rounded-md border border-slate-200 bg-white text-xs font-mono tracking-wide text-slate-700"
-                >
-                  {j}
-                </span>
-              ))
-            ) : (
-              <span className="text-sm text-slate-400">No jurisdictions registered.</span>
-            )}
+      {/* Add form */}
+      <form onSubmit={handleAdd} className="rounded-md border border-slate-200 bg-slate-50/40 p-5 space-y-4">
+        <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">Add Beneficial Owner</p>
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          <div className="sm:col-span-6">
+            <Label htmlFor="ubo-name" className="text-xs text-slate-600">Full Legal Name</Label>
+            <Input id="ubo-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={160} placeholder="e.g. Jane Smith" />
+          </div>
+          <div className="sm:col-span-3">
+            <Label htmlFor="ubo-jur" className="text-xs text-slate-600">Jurisdiction</Label>
+            <Input id="ubo-jur" value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value.toUpperCase())} maxLength={3} placeholder="ZA" />
+          </div>
+          <div className="sm:col-span-3">
+            <Label htmlFor="ubo-pct" className="text-xs text-slate-600">Ownership %</Label>
+            <Input id="ubo-pct" type="number" step="0.01" min="0.01" max="100" value={pct} onChange={(e) => setPct(e.target.value)} placeholder="25.00" />
           </div>
         </div>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={adding} className="gap-2">
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {adding ? "Adding…" : "Add Owner"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Step 3 — Documents
+
+function DocumentsStep({
+  orgId,
+  userId,
+  docs,
+  onChanged,
+}: {
+  orgId: string | null;
+  userId: string | null;
+  docs: KycDoc[];
+  onChanged: () => Promise<void> | void;
+}) {
+  const [docType, setDocType] = useState<(typeof DOC_TYPES)[number]>("incorporation_certificate");
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(file: File) {
+    if (!orgId || !userId) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File exceeds 20MB limit.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const sha = await sha256HexOfBlob(file);
+      const safeName = file.name.replace(/[^\w.\-]/g, "_");
+      const path = `${orgId}/${docType}/${Date.now()}-${safeName}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("kyc-documents")
+        .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+      if (uploadErr) throw uploadErr;
+
+      const { error: rowErr } = await supabase.from("kyc_documents").insert({
+        org_id: orgId,
+        uploaded_by: userId,
+        doc_type: docType,
+        filename: file.name,
+        file_size: file.size,
+        mime_type: file.type || "application/octet-stream",
+        storage_path: path,
+        sha256_hash: sha,
+        status: "pending",
+      });
+      if (rowErr) throw rowErr;
+
+      toast.success("Document uploaded. Hash sealed for audit.");
+      await onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Doc type + drop zone */}
+      <div className="rounded-md border border-slate-200 bg-white p-5 space-y-4">
+        <div>
+          <Label htmlFor="doc-type" className="text-xs text-slate-600">Document Type</Label>
+          <select
+            id="doc-type"
+            value={docType}
+            onChange={(e) => setDocType(e.target.value as (typeof DOC_TYPES)[number])}
+            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+          >
+            {DOC_TYPES.map((t) => (
+              <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+            ))}
+          </select>
+        </div>
+
+        <label
+          className={[
+            "block rounded-md border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors",
+            uploading
+              ? "border-slate-300 bg-slate-50 cursor-wait"
+              : "border-slate-300 bg-slate-50/40 hover:border-slate-500 hover:bg-slate-50",
+          ].join(" ")}
+        >
+          <input
+            type="file"
+            className="hidden"
+            disabled={uploading}
+            accept="application/pdf,image/png,image/jpeg"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+              e.target.value = "";
+            }}
+          />
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2 text-slate-600">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <p className="text-sm">Hashing & uploading…</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-slate-600">
+              <Upload className="h-5 w-5" />
+              <p className="text-sm font-medium text-slate-900">Click to upload</p>
+              <p className="text-xs text-slate-500">PDF, PNG or JPG · max 20MB · SHA-256 sealed on upload</p>
+            </div>
+          )}
+        </label>
       </div>
 
-      <div className="mt-12 pt-8 border-t border-slate-200">
-        <p className="text-xs text-slate-400 leading-relaxed max-w-md">
-          To update legal entity information, please contact our compliance team. All changes require re-verification.
-        </p>
+      {/* Existing docs */}
+      <div className="rounded-md border border-slate-200 bg-white">
+        <div className="px-5 py-3 border-b border-slate-100">
+          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+            Submitted Documents ({docs.length})
+          </p>
+        </div>
+        {docs.length === 0 ? (
+          <p className="px-5 py-8 text-sm text-slate-500 text-center">
+            No documents submitted yet.
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {docs.map((d) => (
+              <li key={d.id} className="px-5 py-4 flex items-center gap-4">
+                <FileCheck2 className="h-4 w-4 text-slate-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-slate-900 truncate">{d.filename}</p>
+                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mt-0.5">
+                    {d.doc_type.replace(/_/g, " ")} · {new Date(d.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <span
+                  className={[
+                    "font-mono text-[10px] tracking-[0.2em] uppercase px-2 py-1 rounded-sm",
+                    d.status === "verified" || d.status === "approved"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : d.status === "rejected"
+                        ? "bg-rose-50 text-rose-800 border border-rose-200"
+                        : "bg-amber-50 text-amber-800 border border-amber-200",
+                  ].join(" ")}
+                >
+                  {d.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
 }
 
-function ReadOnlyField({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
-  return (
-    <div className="space-y-3">
-      <label className="block text-xs font-medium tracking-wider uppercase text-slate-500">
-        {label}
-      </label>
-      <div
-        className={[
-          "w-full bg-slate-50 border border-slate-200 rounded-md px-4 py-3 text-sm",
-          mono ? "font-mono text-slate-700" : "text-slate-900",
-        ].join(" ")}
-      >
-        {value || <span className="text-slate-400">Not provided</span>}
+// ──────────────────────────────────────────────────────────────────────
+// Helpers
+
+function VerificationBadge({ state }: { state: VerificationState }) {
+  if (state === "verified") {
+    return (
+      <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+        Verified Counterparty
       </div>
+    );
+  }
+  if (state === "in_review") {
+    return (
+      <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+        <Clock className="h-3.5 w-3.5" strokeWidth={2} />
+        Awaiting Compliance Review
+      </div>
+    );
+  }
+  return (
+    <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+      <ShieldAlert className="h-3.5 w-3.5" strokeWidth={2} />
+      KYB Not Started
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-medium tracking-wider uppercase text-slate-500">
+        {label}
+        {required && <span className="text-rose-500 ml-1">*</span>}
+      </Label>
+      {children}
     </div>
   );
 }
