@@ -18,6 +18,9 @@ import { InboundReview } from "@/components/desk/inbound/InboundReview";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 import { ComplianceProfile } from "@/components/desk/compliance/ComplianceProfile";
 import { BillingOverview } from "@/components/desk/billing/BillingOverview";
+// Migrated from the retired /dashboard shell. Data hooks (useQuery, Supabase) are unchanged.
+import MatchDetails from "@/pages/MatchDetails";
+import TradeDealWizard from "@/pages/TradeDealWizard";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
