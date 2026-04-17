@@ -432,16 +432,61 @@ function Placeholder({ title, blurb, icon: Icon }: { title: string; blurb: strin
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 403 Forbidden — clean, brand-aligned denial state.
+// Shown to authenticated non-admins who navigate directly to /hq via URL.
+// We render a visible explanation rather than a silent redirect so operators
+// understand the boundary; a manual exit returns them to the persona selector.
+// ─────────────────────────────────────────────────────────────────────────────
+function ForbiddenHQ() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6" style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="max-w-md w-full text-center">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-md border border-slate-800 bg-slate-900 mb-8">
+          <Shield className="h-5 w-5 text-rose-400" strokeWidth={1.5} />
+        </div>
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-rose-400 mb-4">
+          403 · Forbidden
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight text-white mb-4">
+          Restricted airspace
+        </h1>
+        <p className="text-sm text-slate-400 leading-relaxed mb-10">
+          Izenzo HQ is reserved for the platform operations team. Your account does not carry the
+          <span className="font-mono text-slate-300"> platform_admin </span>
+          role required to enter this surface. This attempt has been recorded.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <Link
+            to="/desk"
+            className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-white text-slate-950 hover:bg-slate-200 transition-colors rounded-sm"
+          >
+            Return to Desk
+          </Link>
+          <Link
+            to="/welcome"
+            className="px-4 py-2 text-xs font-medium tracking-wide uppercase border border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white transition-colors rounded-sm"
+          >
+            Choose workspace
+          </Link>
+        </div>
+        <p className="mt-12 text-[10px] font-mono tracking-[0.2em] uppercase text-slate-600">
+          Access attempt · SHA-256 logged
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Outer page. Auth-gated to platform admins.
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HQ() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isLoading } = useAuth();
 
   return (
     <RequireAuth>
-      {/* Non-admins are bounced to the standard dashboard with a denied flag. */}
-      {!isAdmin ? (
-        <Navigate to="/dashboard?denied=1" replace />
+      {isLoading ? null : !isAdmin ? (
+        <ForbiddenHQ />
       ) : (
         <div className="min-h-screen bg-slate-50" style={{ fontFamily: "Inter, sans-serif" }}>
           <CommandBar />
@@ -473,11 +518,12 @@ export default function HQ() {
               element={
                 <Placeholder
                   title="Anomaly Alerts"
-                  blurb="Network-level red flags: unusual API velocity, cross-jurisdiction surges, repeated Gate-4 escalations, and signing-key anomalies — all surfaced without inspecting trade contents."
+                  blurb="Real-time detection of out-of-band behaviour: velocity spikes, jurisdictional drift, signature mismatches, and break-glass invocations across the network."
                   icon={AlertTriangle}
                 />
               }
             />
+            <Route path="*" element={<Navigate to="/hq" replace />} />
           </Routes>
         </div>
       )}
