@@ -117,6 +117,9 @@ function App() {
                   <Route path={ROUTES.DOCS} element={<Docs />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                   <Route path={ROUTES.PRICING} element={<Pricing />} />
+                  {/* Public product pages */}
+                  <Route path="/products/trade-desk" element={<TradeDeskProductPage />} />
+                  <Route path="/products" element={<Navigate to="/products/trade-desk" replace />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
                   {/* Legacy /developers/* → consolidated /developer Command Center */}
                   <Route path="/developers" element={<Navigate to="/developer/keys" replace />} />
