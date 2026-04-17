@@ -33,6 +33,7 @@ const GovernanceHealth = lazy(() => import("@/pages/GovernanceHealth"));
 const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
 const Welcome = lazy(() => import("@/pages/Welcome"));
 const Desk = lazy(() => import("@/pages/Desk"));
+const DeveloperCenter = lazy(() => import("@/pages/DeveloperCenter"));
 
 /**
  * Root element that renders based on host type:
@@ -77,6 +78,7 @@ function App() {
                   <Route path="/developers/keys" element={<DeveloperApiKeys />} />
                   <Route path="/developers/webhooks" element={<DeveloperWebhooks />} />
                   <Route path="/developers" element={<Navigate to="/developers/keys" replace />} />
+                  <Route path="/developer/*" element={<DeveloperCenter />} />
                   <Route path="/governance/triage" element={<GovernanceTriage />} />
                   <Route path="/governance/audits" element={<GovernanceAudits />} />
                   <Route path="/governance/entities" element={<GovernanceEntities />} />
