@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { PublicHeader } from "@/components/PublicHeader";
 import { AnimatedBackground } from "@/components/landing/AnimatedBackground";
+import { HeroStripeGlow } from "@/components/landing/HeroStripeGlow";
 import { TradeInterestForm, type TradeInterestData } from "@/components/landing/TradeInterestForm";
 import { SearchOutcomes, type LiquidityData } from "@/components/landing/SearchOutcomes";
 import { WorkflowPipeline } from "@/components/landing/WorkflowPipeline";
