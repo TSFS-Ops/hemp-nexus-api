@@ -88,7 +88,7 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
             </div>
             <div className="flex items-center gap-3 pt-1">
               <NavLink
-                to="/settings"
+                to="/dashboard/settings"
                 className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-slate-100 transition-colors"
               >
                 <Settings className="h-3 w-3" strokeWidth={1.5} />
