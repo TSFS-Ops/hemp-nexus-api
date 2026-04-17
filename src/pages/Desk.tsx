@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate, useParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { DeskLayout } from "@/components/desk/DeskLayout";
