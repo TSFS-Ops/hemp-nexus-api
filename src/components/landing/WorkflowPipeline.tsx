@@ -1,119 +1,149 @@
 /**
- * Bento-style 3x3 feature grid mapping the platform's 9-step trade lifecycle.
- * Clean white cards, subtle shadows, minimalist Lucide icons, lift on hover.
+ * Trade workflow pipeline — 9 steps matching the platform's actual lifecycle.
+ * Responsive: compact 2-column grid on mobile, horizontal row on desktop.
  */
 
-import {
-  FileText,
-  ClipboardList,
-  Upload,
-  Search,
-  ListChecks,
-  Eye,
-  Handshake,
-  ShieldCheck,
-  Award,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, FileText, Search, ShieldCheck, Eye, Users, UserCheck, Handshake, Award, BookOpen } from "lucide-react";
+import { motion } from "framer-motion";
 
-type Step = {
-  label: string;
-  description: string;
-  Icon: LucideIcon;
-};
-
-const STEPS: Step[] = [
-  {
-    label: "Trade Interest",
-    description: "Capture buy- or sell-side intent. Structured signal, not a chat thread.",
-    Icon: FileText,
-  },
-  {
-    label: "Details",
-    description: "Bind commercial terms, jurisdiction and entity. Every field is auditable.",
-    Icon: ClipboardList,
-  },
-  {
-    label: "Upload",
-    description: "Attach supporting documents. Stored sealed and tamper-evident from day one.",
-    Icon: Upload,
-  },
-  {
-    label: "Search",
-    description: "Discover verified counterparties across the registered partner network.",
-    Icon: Search,
-  },
-  {
-    label: "Choice",
-    description: "Compare candidates with transparent scoring. No black-box rankings.",
-    Icon: ListChecks,
-  },
-  {
-    label: "Surface",
-    description: "Reveal mutual interest only when both sides clear the governance gate.",
-    Icon: Eye,
-  },
-  {
-    label: "Match",
-    description: "Formal bilateral creation. Both parties cryptographically committed.",
-    Icon: Handshake,
-  },
-  {
-    label: "Proof of Intent",
-    description: "Generate the binding pre-execution attestation. The platform's hold-point.",
-    Icon: ShieldCheck,
-  },
-  {
-    label: "Evidence",
-    description: "Sealed Without-a-Doubt bundle. Bankable, exportable, regulator-ready.",
-    Icon: Award,
-  },
+const PIPELINE_STEPS = [
+  { label: "Trade Interest", subtitle: "Intent capture", Icon: FileText },
+  { label: "Details", subtitle: "Entity & terms", Icon: BookOpen },
+  { label: "Upload Docs", subtitle: "Supporting files", Icon: FileText },
+  { label: "Search", subtitle: "Find partners", Icon: Search },
+  { label: "Choice", subtitle: "Select from results", Icon: Users },
+  { label: "Surface", subtitle: "Reveal match", Icon: UserCheck },
+  { label: "Match", subtitle: "Formal creation", Icon: Handshake },
+  { label: "Proof of Intent", subtitle: "Generate proof", Icon: ShieldCheck },
+  { label: "Without a Doubt", subtitle: "Evidence bundle", Icon: Award },
 ];
 
 export function WorkflowPipeline() {
   return (
-    <section
-      className="relative rounded-2xl bg-white border border-slate-200 p-6 sm:p-8"
-      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+    <div
+      className="rounded-2xl p-4 sm:p-5"
+      style={{
+        backgroundColor: 'rgba(15, 20, 32, 0.5)',
+        border: '1px solid var(--lt-border)',
+        backdropFilter: 'blur(8px)',
+      }}
     >
-      {/* Section eyebrow */}
-      <div className="mb-6 sm:mb-8">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          The Protocol
-        </div>
-        <h2 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
-          Nine governance gates. One execution path.
-        </h2>
-        <p className="mt-1.5 text-sm text-slate-600 max-w-xl">
-          Every trade moves through the same sequenced, auditable lifecycle — from interest to sealed evidence.
-        </p>
+      {/* Section label */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lt-emerald)' }} />
+        <span className="text-[11px] font-mono uppercase tracking-wider font-semibold" style={{ color: 'var(--lt-text-muted)' }}>
+          How it works — 9 steps
+        </span>
       </div>
 
-      {/* 3x3 Bento grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {STEPS.map((step, i) => (
-          <article
-            key={step.label}
-            className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:-translate-y-1 hover:border-slate-300 transition-all duration-200"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-slate-900 group-hover:border-slate-900 transition-colors">
-                <step.Icon className="h-[18px] w-[18px] text-slate-700 group-hover:text-white transition-colors" strokeWidth={1.75} />
-              </div>
-              <span className="text-[11px] font-mono font-semibold text-slate-400 tabular-nums">
-                0{i + 1}
-              </span>
-            </div>
-            <h3 className="text-[15px] font-semibold text-slate-900 tracking-tight">
-              {step.label}
-            </h3>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600 line-clamp-2">
-              {step.description}
-            </p>
-          </article>
-        ))}
+      {/* Desktop: horizontal row */}
+      <div className="hidden lg:flex items-center justify-between gap-0.5">
+        {PIPELINE_STEPS.map((step, i) => {
+          const isFinal = i === PIPELINE_STEPS.length - 1;
+          return (
+            <motion.div
+              key={step.label}
+              className="flex items-center gap-0.5 flex-shrink-0"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: i * 0.08, ease: "easeOut" }}
+            >
+              <StepItem step={step} isFinal={isFinal} stepNumber={i + 1} />
+              {i < PIPELINE_STEPS.length - 1 && (
+                <ArrowRight className="h-3 w-3 flex-shrink-0 mx-0.5" style={{ color: 'var(--lt-border-hover)' }} />
+              )}
+            </motion.div>
+          );
+        })}
       </div>
-    </section>
+
+      {/* Mobile/Tablet: compact 3-column grid */}
+      <div className="lg:hidden grid grid-cols-3 gap-2">
+        {PIPELINE_STEPS.map((step, i) => {
+          const isFinal = i === PIPELINE_STEPS.length - 1;
+          return (
+            <motion.div
+              key={step.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
+            >
+              <div
+                className="flex flex-col items-center text-center gap-1.5 px-2 py-2.5 rounded-xl"
+                style={isFinal ? {
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid var(--lt-emerald-dark)',
+                } : {
+                  backgroundColor: 'var(--lt-panel)',
+                  border: '1px solid var(--lt-border)',
+                }}
+              >
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{
+                    border: isFinal
+                      ? '1.5px solid var(--lt-emerald)'
+                      : '1px solid var(--lt-border-hover)',
+                    backgroundColor: isFinal
+                      ? 'rgba(16, 185, 129, 0.15)'
+                      : 'transparent',
+                  }}
+                >
+                  <step.Icon
+                    style={{
+                      color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)',
+                      width: '12px',
+                      height: '12px',
+                    }}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold leading-tight block" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>
+                    {i + 1}. {step.label}
+                  </span>
+                  <span className="text-[9px] font-medium leading-tight block" style={{ color: 'var(--lt-text-dim)' }}>
+                    {step.subtitle}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepItem({ step, isFinal, stepNumber }: { step: typeof PIPELINE_STEPS[number]; isFinal: boolean; stepNumber: number }) {
+  return (
+    <div
+      className="flex flex-col items-center text-center min-w-[70px] px-1.5 py-2.5 rounded-xl transition-all duration-200"
+      style={isFinal ? {
+        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+        border: '1px solid var(--lt-emerald-dark)',
+      } : {}}
+    >
+      <div
+        className="w-10 h-10 rounded-full flex items-center justify-center mb-1.5"
+        style={{
+          border: isFinal
+            ? '1.5px solid var(--lt-emerald)'
+            : '1px solid var(--lt-border-hover)',
+          backgroundColor: isFinal
+            ? 'rgba(16, 185, 129, 0.15)'
+            : 'var(--lt-panel)',
+        }}
+      >
+        <step.Icon
+          style={{
+            color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)',
+            width: '16px',
+            height: '16px',
+          }}
+        />
+      </div>
+      <span className="text-[10px] font-semibold leading-tight" style={{ color: isFinal ? 'var(--lt-emerald)' : 'var(--lt-text)' }}>{stepNumber}. {step.label}</span>
+      <span className="text-[9px] font-medium leading-tight mt-0.5" style={{ color: 'var(--lt-text-dim)' }}>{step.subtitle}</span>
+    </div>
   );
 }
