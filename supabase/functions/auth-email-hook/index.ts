@@ -79,6 +79,35 @@ const SAMPLE_DATA: Record<string, object> = {
   },
 }
 
+function buildRecoveryConfirmationUrl(rawUrl: string | undefined, fallbackRedirectTo: string): string {
+  if (!rawUrl) return fallbackRedirectTo
+
+  try {
+    const parsedUrl = new URL(rawUrl)
+    const hashParams = new URLSearchParams(parsedUrl.hash.startsWith('#') ? parsedUrl.hash.slice(1) : parsedUrl.hash)
+    const tokenHash =
+      parsedUrl.searchParams.get('token_hash') ??
+      parsedUrl.searchParams.get('token') ??
+      hashParams.get('token_hash') ??
+      hashParams.get('token')
+    const type = parsedUrl.searchParams.get('type') ?? hashParams.get('type') ?? 'recovery'
+    const redirectTo =
+      parsedUrl.searchParams.get('redirect_to') ??
+      hashParams.get('redirect_to') ??
+      fallbackRedirectTo
+
+    if (!tokenHash) return rawUrl
+
+    const appUrl = new URL(redirectTo)
+    appUrl.searchParams.set('token_hash', tokenHash)
+    appUrl.searchParams.set('type', type)
+    return appUrl.toString()
+  } catch (error) {
+    console.error('Failed to build recovery URL', { error, rawUrl })
+    return rawUrl
+  }
+}
+
 // Preview endpoint handler - returns rendered HTML without sending email
 async function handlePreview(req: Request): Promise<Response> {
   const previewCorsHeaders = {
@@ -218,11 +247,17 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   // Build template props from payload.data (HookData structure)
+  const siteUrl = `https://${ROOT_DOMAIN}`
+  const recoveryFallbackUrl = payload.data.redirect_to ?? `${siteUrl}/reset-password`
+  const confirmationUrl = emailType === 'recovery'
+    ? buildRecoveryConfirmationUrl(payload.data.url, recoveryFallbackUrl)
+    : payload.data.url
+
   const templateProps = {
     siteName: SITE_NAME,
-    siteUrl: `https://${ROOT_DOMAIN}`,
+    siteUrl,
     recipient: payload.data.email,
-    confirmationUrl: payload.data.url,
+    confirmationUrl,
     token: payload.data.token,
     email: payload.data.email,
     newEmail: payload.data.new_email,

@@ -45,8 +45,13 @@ export default function ResetPassword() {
     });
 
     (async () => {
-      // 1) PKCE flow: ?code=... in query string
-      const code = searchParams.get("code");
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const hashParams = new URLSearchParams(hash);
+
+      // 1) PKCE flow: ?code=... in query string (or hash fallback)
+      const code = searchParams.get("code") ?? hashParams.get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
@@ -58,19 +63,18 @@ export default function ResetPassword() {
       }
 
       // 2) Error returned in hash (e.g. expired/invalid OTP from Supabase verify)
-      const hash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
-      const hashParams = new URLSearchParams(hash);
       const hashError = hashParams.get("error_description") || hashParams.get("error");
       if (hashError) {
         markExpired(decodeURIComponent(hashError.replace(/\+/g, " ")));
         return;
       }
 
-      // 3) token_hash flow: ?token_hash=...&type=recovery
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type");
+      // 3) token_hash / token flow: query string or hash fragment
+      const tokenHash = searchParams.get("token_hash")
+        ?? searchParams.get("token")
+        ?? hashParams.get("token_hash")
+        ?? hashParams.get("token");
+      const type = searchParams.get("type") ?? hashParams.get("type");
       if (tokenHash && type) {
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
@@ -84,7 +88,23 @@ export default function ResetPassword() {
         return;
       }
 
-      // 4) Implicit flow already established a session, or hash contains access_token
+      // 4) Implicit flow with tokens in the hash fragment
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) {
+          markExpired(error.message);
+        } else {
+          markReady();
+        }
+        return;
+      }
+
+      // 5) Implicit flow already established a session
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         markReady();
