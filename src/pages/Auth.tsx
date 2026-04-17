@@ -44,16 +44,22 @@ export default function Auth() {
 
   // ── Post-auth routing: admins → /hq; new users → /welcome; returning → persisted persona ──
   const resolvePostAuthRoute = async (userId: string): Promise<string> => {
+    console.info("[Auth] resolvePostAuthRoute:start", { userId });
+
     // 1) Platform admins always go to HQ — bypass returnTo & persona selector entirely.
     try {
-      const { data: roleRows } = await supabase
+      const { data: roleRows, error: roleErr } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId);
+      console.info("[Auth] role lookup", { roleRows, roleErr: roleErr?.message });
       const isPlatformAdmin = (roleRows || []).some(r => r.role === "platform_admin");
-      if (isPlatformAdmin) return "/hq/users";
-    } catch {
-      // Non-fatal — fall through to standard routing
+      if (isPlatformAdmin) {
+        console.info("[Auth] resolved → /hq/users (platform admin)");
+        return "/hq/users";
+      }
+    } catch (e) {
+      console.warn("[Auth] role lookup threw — falling through", e);
     }
 
     // 2) Honour returnTo for non-admins (deep-link recovery)
@@ -61,17 +67,20 @@ export default function Auth() {
     if (returnTo) {
       const safe = getSafeReturnTo(returnTo);
       if (safe && safe !== "/dashboard") {
-        return `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
+        const final = `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
+        console.info("[Auth] resolved → returnTo", final);
+        return final;
       }
     }
 
     // 3) Persisted persona → workspace; otherwise persona selector
     try {
-      const { data } = await supabase
+      const { data, error: profErr } = await supabase
         .from("profiles")
         .select("selected_persona")
         .eq("id", userId)
         .maybeSingle();
+      console.info("[Auth] persona lookup", { persona: data?.selected_persona, profErr: profErr?.message });
 
       const persona = data?.selected_persona;
       if (!persona) return "/welcome";
@@ -80,7 +89,8 @@ export default function Auth() {
       // trade
       if (hasPreAuthState()) return "/desk?resume=1";
       return "/desk";
-    } catch {
+    } catch (e) {
+      console.warn("[Auth] persona lookup threw — defaulting to /welcome", e);
       return "/welcome";
     }
   };
