@@ -13,7 +13,7 @@ const MEGA_NAV: MegaCategory[] = [
     key: "products",
     label: "Products",
     items: [
-      { label: "Trade Desk", description: "Operational workspace for live deals", to: "/desk" },
+      { label: "Trade Desk", description: "Operational workspace for live deals", to: "/products/trade-desk" },
       { label: "Compliance Engine", description: "KYB, sanctions & jurisdictional gates", to: ROUTES.DASHBOARD_COMPLIANCE },
       { label: "Evidence Vault", description: "Cryptographically sealed deal records", to: ROUTES.DOCS },
       { label: "API & SDK", description: "Programmatic access for institutions", to: ROUTES.DOCS },
