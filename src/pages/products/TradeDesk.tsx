@@ -1,12 +1,10 @@
 /**
  * Trade Desk — public product page.
  *
- * "Stripe-Infrastructure" aesthetic: extreme whitespace, whisper-light emerald
- * mesh, tight-tracked Inter headings, a tactile floating Certificate of
- * Intent mockup, and a precision background grid. The hero artwork is built
- * from the same design DNA as the live MatchCompiler but is intentionally
- * static (no auth, no Supabase, no redirect to /auth) so the page renders
- * instantly for public visitors.
+ * "Emerald Infrastructure" aesthetic — extreme whitespace, whisper-light
+ * emerald/mint mesh, tight-tracked Inter headings, 1px slate-100 bento cards
+ * with emerald-600 icons. The hero mounts the LIVE MatchCompiler in
+ * `demoMode` so visitors see the actual product UI (no auth, no DB).
  */
 
 import { Link } from "react-router-dom";
@@ -16,174 +14,57 @@ import {
   CheckCircle2,
   ShieldCheck,
   Activity,
-  FileText,
-  Lock,
 } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
-import {
-  DEMO_COMPILER_TERMS,
-  DEMO_COMPILER_DOCS,
-  DEMO_COMPILER_SEAL,
-} from "@/components/desk/_demo/fixtures";
+import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 
-/* ───────────────────────── BACKDROP PIECES ───────────────────────── */
+const INTER =
+  "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
-/** 1px precision grid, 40px cells. Whispered, not shouted. */
-function PrecisionGrid({ className = "" }: { className?: string }) {
+/* ───────────────────── BACKDROP — whisper mesh + grid ───────────────────── */
+
+function PrecisionGrid() {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute inset-0 ${className}`}
+      className="pointer-events-none absolute inset-0"
       style={{
         backgroundImage:
-          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
+          "linear-gradient(to right, rgba(15,23,42,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.04) 1px, transparent 1px)",
         backgroundSize: "40px 40px",
         maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+          "radial-gradient(ellipse 80% 60% at 50% 40%, black 35%, transparent 100%)",
         WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+          "radial-gradient(ellipse 80% 60% at 50% 40%, black 35%, transparent 100%)",
       }}
     />
   );
 }
 
-/** A whisper of emerald — soft radial mesh, very low opacity. */
+/** A whisper of green — emerald-50/20 + mint-50/10. */
 function EmeraldWhisper() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
+        className="absolute -top-40 left-1/2 -translate-x-1/2 h-[760px] w-[1200px] rounded-full blur-3xl"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(236,253,245,0.9) 0%, rgba(209,250,229,0.35) 35%, transparent 70%)",
         }}
       />
       <div
-        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
+        className="absolute top-60 right-0 h-[480px] w-[560px] rounded-full blur-3xl"
         style={{
           background:
-            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(167,243,208,0.18) 0%, transparent 70%)",
         }}
       />
     </div>
   );
 }
 
-/* ─────────────────── HERO MOCKUP — Certificate of Intent ─────────────────── */
-
-function CertificateMockup() {
-  const docCount = DEMO_COMPILER_DOCS.length;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, rotate: -2 }}
-      animate={{ opacity: 1, y: 0, rotate: -1 }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-[520px] mx-auto"
-      style={{ transformOrigin: "center center" }}
-    >
-      {/* soft floor shadow */}
-      <div
-        aria-hidden
-        className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
-        }}
-      />
-      <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 overflow-hidden">
-        {/* Header bar */}
-        <header className="px-10 pt-9 pb-6 border-b border-slate-100 text-center">
-          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700">
-            Izenzo · Trade Desk
-          </p>
-          <h3 className="mt-3 text-xl font-semibold text-slate-900 tracking-tight">
-            Certificate of Intent
-          </h3>
-          <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
-            Match · A1B2C3D4 · WaD/A v1.2
-          </p>
-        </header>
-
-        {/* Body — commercial terms */}
-        <div className="px-10 py-8 space-y-5">
-          <Row label="Counterparty" value={DEMO_COMPILER_TERMS.counterparty} />
-          <Row label="Commodity" value={DEMO_COMPILER_TERMS.commodity} />
-          <div className="grid grid-cols-2 gap-6">
-            <Row label="Volume" value={`${DEMO_COMPILER_TERMS.volume} MT`} mono />
-            <Row label="Price" value={`USD ${DEMO_COMPILER_TERMS.price}`} mono />
-          </div>
-          <Row label="Incoterms" value={DEMO_COMPILER_TERMS.incoterms} />
-
-          {/* Documents */}
-          <div className="pt-4 border-t border-slate-100">
-            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mb-3">
-              Bound Evidence · {docCount} files
-            </p>
-            <ul className="space-y-2">
-              {DEMO_COMPILER_DOCS.map((d) => (
-                <li
-                  key={d.name}
-                  className="flex items-center gap-3 text-[12px] text-slate-700"
-                >
-                  <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
-                  <span className="truncate flex-1">{d.name}</span>
-                  <span className="font-mono text-[10px] text-slate-400">
-                    {d.hash.slice(0, 8)}…
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Seal footer */}
-        <footer className="px-10 py-6 bg-slate-50/60 border-t border-slate-100">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 h-8 w-8 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center shrink-0">
-              <Lock className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
-                SHA-256 Cryptographic Seal
-              </p>
-              <p className="mt-1 font-mono text-[11px] text-slate-900 break-all leading-relaxed">
-                {DEMO_COMPILER_SEAL}
-              </p>
-            </div>
-          </div>
-        </footer>
-      </article>
-    </motion.div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div>
-      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-[14px] text-slate-900 ${
-          mono ? "font-mono tabular-nums" : "font-medium"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-/* ─────────────────────── 9-GATE PROTOCOL VISUAL ─────────────────────── */
+/* ───────────────────────── 9-GATE PROTOCOL ───────────────────────── */
 
 const GATES = [
   "Entity Verification",
@@ -210,24 +91,22 @@ function NineGateProtocol() {
           className="flex items-center gap-4"
         >
           <div className="flex items-center gap-3 shrink-0">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-700/70 w-6">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-700/60 w-6">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <div className="h-6 w-6 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center">
+            <div className="h-6 w-6 rounded-full bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2} />
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] text-slate-800 font-medium">{gate}</p>
-          </div>
-          <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-transparent" />
+          <p className="text-[13px] text-slate-700 font-medium flex-1 min-w-0">{gate}</p>
+          <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-emerald-100 to-transparent" />
         </motion.div>
       ))}
     </div>
   );
 }
 
-/* ────────────────── REAL-TIME TELEMETRY (mini live feed) ────────────────── */
+/* ──────────────────── REAL-TIME TELEMETRY (mini live feed) ──────────────────── */
 
 const PULSES = [
   { t: "00:01", evt: "match_created", org: "GLN-SG" },
@@ -266,7 +145,10 @@ function TelemetryFeed() {
 
 export default function TradeDeskProductPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+    <div
+      className="min-h-screen bg-white text-slate-900 antialiased"
+      style={{ fontFamily: INTER }}
+    >
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -274,10 +156,10 @@ export default function TradeDeskProductPage() {
         <PrecisionGrid />
         <EmeraldWhisper />
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-32 lg:pt-36 lg:pb-48">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-            {/* Left: copy */}
-            <div>
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-32 pb-40 lg:pt-44 lg:pb-56">
+          <div className="grid lg:grid-cols-12 gap-16 lg:gap-20 items-center">
+            {/* Left: copy — 5 cols */}
+            <div className="lg:col-span-5">
               <motion.p
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -292,18 +174,16 @@ export default function TradeDeskProductPage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
+                className="mt-8 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
               >
-                Sovereign infrastructure
-                <br />
-                for the deal maker.
+                Sovereign infrastructure for the deal maker.
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
+                className="mt-10 text-lg lg:text-xl text-slate-500 leading-relaxed max-w-lg"
               >
                 The all-in-one terminal for institutional commodity trade. Discover
                 counterparties, run compliance, and seal cross-border deals with
@@ -314,7 +194,7 @@ export default function TradeDeskProductPage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.18 }}
-                className="mt-12 flex flex-wrap items-center gap-4"
+                className="mt-14 flex flex-wrap items-center gap-4"
               >
                 <Link
                   to="/auth"
@@ -336,31 +216,49 @@ export default function TradeDeskProductPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.3 }}
-                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
+                className="mt-12 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-400"
               >
                 SHA-256 sealed · 9-gate verified · Audit-ready
               </motion.p>
             </div>
 
-            {/* Right: floating Certificate of Intent */}
-            <div className="relative">
-              <CertificateMockup />
+            {/* Right: live MatchCompiler in demo mode — 7 cols */}
+            <div className="lg:col-span-7 relative">
+              {/* soft floor shadow to anchor the 3D card */}
+              <div
+                aria-hidden
+                className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-50"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at 50% 70%, rgba(16,185,129,0.16) 0%, transparent 70%)",
+                }}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 24, rotate: -2 }}
+                animate={{ opacity: 1, y: 0, rotate: 1 }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                className="origin-center"
+              >
+                <div className="rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 overflow-hidden">
+                  <MatchCompiler demoMode />
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════ FEATURE BENTO ═══════════════════ */}
-      <section className="relative bg-slate-50/40 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44">
-          <div className="max-w-2xl mb-20 lg:mb-28">
+      <section className="relative bg-white border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48">
+          <div className="max-w-2xl mb-24 lg:mb-32">
             <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
               The system
             </p>
-            <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            <h2 className="mt-6 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               Precision-engineered for institutional throughput.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed">
+            <p className="mt-6 text-lg text-slate-500 leading-relaxed">
               Three primitives — verification, compliance, and telemetry — composed
               into a single cohesive workspace.
             </p>
@@ -368,19 +266,19 @@ export default function TradeDeskProductPage() {
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Box 1 — Large, spans 2 cols */}
-            <div className="lg:col-span-2 lg:row-span-1 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                  <ShieldCheck className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+            <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <ShieldCheck className="h-4.5 w-4.5 text-emerald-600" strokeWidth={2} />
                 </div>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
                   Box 01 · Protocol
                 </p>
               </div>
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
                 The 9-Gate Protocol.
               </h3>
-              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md">
+              <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-md">
                 Every Proof of Intent traverses nine cryptographic gates before it
                 seals — entity, UBO, sanctions, jurisdiction, authority, terms,
                 evidence, dual-collapse, certification.
@@ -392,31 +290,31 @@ export default function TradeDeskProductPage() {
             </div>
 
             {/* Box 2 — KYB */}
-            <div className="rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 shadow-sm flex flex-col">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+            <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" strokeWidth={2} />
                 </div>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
                   Box 02 · Compliance
                 </p>
               </div>
               <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
                 KYB integrated.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
+              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
                 Your Compliance Profile feeds directly into every deal. No second
                 onboarding, no duplicate evidence.
               </p>
 
-              <ul className="mt-8 space-y-3 text-[13px]">
+              <ul className="mt-10 space-y-3 text-[13px]">
                 {[
                   "Entity verification",
                   "Beneficial-owner disclosure",
                   "Sanctions & PEP screening",
                   "Jurisdiction residency lock",
                 ].map((c) => (
-                  <li key={c} className="flex items-center gap-3 text-slate-700">
+                  <li key={c} className="flex items-center gap-3 text-slate-600">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                     {c}
                   </li>
@@ -425,28 +323,28 @@ export default function TradeDeskProductPage() {
             </div>
 
             {/* Box 3 — Telemetry */}
-            <div className="lg:col-span-3 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
+            <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                      <Activity className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                      <Activity className="h-4.5 w-4.5 text-emerald-600" strokeWidth={2} />
                     </div>
-                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
                       Box 03 · Observability
                     </p>
                   </div>
                   <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
                     Real-time telemetry.
                   </h3>
-                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md">
+                  <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-md">
                     A live activity stream surfaces every state transition across
                     your desk — from match creation to certificate issuance —
                     with cryptographic provenance on every pulse.
                   </p>
                 </div>
-                <div className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-8">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-5">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-8">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400 mb-5">
                     Live · system pulses
                   </p>
                   <TelemetryFeed />
@@ -458,13 +356,13 @@ export default function TradeDeskProductPage() {
       </section>
 
       {/* ═══════════════════ CLOSING CTA ═══════════════════ */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden border-t border-slate-100">
         <EmeraldWhisper />
-        <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-32 lg:py-44 text-center">
+        <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-32 lg:py-48 text-center">
           <h2 className="text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
             Open your desk in minutes.
           </h2>
-          <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-xl mx-auto">
+          <p className="mt-6 text-lg text-slate-500 leading-relaxed max-w-xl mx-auto">
             Provision a workspace, complete your compliance profile, and issue your
             first sealed Proof of Intent today.
           </p>
