@@ -1,46 +1,240 @@
 /**
  * InboundReview — The counterparty-side review of a sealed Proof of Intent.
  *
- * Left pane: Read-only locked terms + bilateral action footer (Decline / Counter-Sign).
- * Right pane: Live WaD Certificate with asymmetric seal — initiator sealed in green,
- * counterparty slot pulsing amber awaiting signature.
+ * Hardened (Prompt 34): no more mock data, no more hollow buttons.
+ * - Fetches the real `matches` row + linked `poi_engagements` + `match_documents`
+ *   for `:matchId`, scoped by RLS.
+ * - "Decline & Release" → POST /poi-engagements/respond/:matchId { action: "declined" }
+ * - "Counter-Sign & Seal" → POST /poi-engagements/respond/:matchId { action: "accepted" }
+ *   (The accept handler atomically fills the vacant buyer/seller slot on the match,
+ *    enabling the initiator to chain through to POI generation.)
  *
- * Pure presentational mockup — uses hard-coded values for demonstration.
+ * The right pane renders a live WaD certificate populated from the database row,
+ * with the asymmetric seal: initiator hash sealed in green, counterparty slot
+ * pulsing amber until the user counter-signs.
  */
-
-import { Link } from "react-router-dom";
-import { ArrowLeft, FileText, Download, Check, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { ArrowLeft, FileText, Download, Check, X, Loader2 } from "lucide-react";
 
-const INBOUND = {
-  matchRef: "WAD-7F2A91C8",
-  initiator: "Aurubis AG",
-  initiatorRegistration: "REG: HRB 6789 · DE",
-  initiatorHash: "9a3f8c1e4b7d2056f8e9c3a1b2d4e5f6789012345abcdef0123456789abcdef0",
-  receivedAt: "2025-04-16 14:32:09 UTC",
-  expiresIn: "29d 23h 41m",
-  commodity: "Copper Cathode, LME Grade A",
-  volume: "500",
-  price: "9,420",
-  incoterms: "CIF Rotterdam",
-  notes: "Inspection by SGS at load port. Payment via L/C at sight.",
-  documents: [
-    {
-      name: "Aurubis_Quality_Spec_LME_GradeA.pdf",
-      hash: "4f1a8e9c2b7d6053a8e9c3a1b2d4e5f6789012345abcdef0123456789abcdef0",
-    },
-    {
-      name: "Loading_Schedule_Hamburg_Q2.pdf",
-      hash: "7d2e5f8a1c4b9056e8d9c3a1b2d4e5f6789012345abcdef0123456789abcdef0",
-    },
-  ],
-};
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import { ErrorState } from "@/components/ui/error-state";
 
-const notional = (
-  Number(INBOUND.volume.replace(/,/g, "")) * Number(INBOUND.price.replace(/,/g, ""))
-).toLocaleString("en-US");
+interface InboundDoc {
+  name: string;
+  hash: string;
+}
+
+interface InboundData {
+  matchRef: string;
+  matchId: string;
+  initiator: string;
+  initiatorOrgId: string | null;
+  initiatorHash: string;
+  receivedAt: string;
+  expiresIn: string;
+  commodity: string;
+  volume: string;
+  price: string;
+  incoterms: string;
+  notes: string;
+  documents: InboundDoc[];
+  engagementId: string | null;
+  engagementStatus: string | null;
+  callerIsCounterparty: boolean;
+  callerOrgId: string;
+}
+
+function formatRelativeExpiry(expiresAt: string | null): string {
+  if (!expiresAt) return "—";
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (Number.isNaN(ms)) return "—";
+  if (ms <= 0) return "expired";
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const mins = Math.floor((ms % 3_600_000) / 60_000);
+  return `${days}d ${hours}h ${mins}m`;
+}
 
 export function InboundReview() {
+  const { matchId } = useParams<{ matchId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["inbound-review", matchId, user?.id],
+    enabled: !!matchId && !!user,
+    queryFn: async (): Promise<InboundData | null> => {
+      if (!matchId || !user) return null;
+
+      // Resolve caller's org via their profile.
+      const { data: callerProfile } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const callerOrgId = callerProfile?.org_id ?? "";
+
+      // Match row — RLS scopes us to participating orgs.
+      const { data: match, error: matchErr } = await supabase
+        .from("matches")
+        .select("id, org_id, buyer_org_id, seller_org_id, buyer_name, seller_name, commodity, quantity_amount, quantity_unit, price_amount, price_currency, terms, state, status, event_chain_hash, created_at")
+        .eq("id", matchId)
+        .maybeSingle();
+
+      if (matchErr) throw matchErr;
+      if (!match) throw new Error("Match not found or you do not have access.");
+
+      // Engagement (counterparty hold-point record).
+      const { data: engagement } = await supabase
+        .from("poi_engagements")
+        .select("id, engagement_status, expires_at, counterparty_org_id, counterparty_email, created_at")
+        .eq("match_id", matchId)
+        .maybeSingle();
+
+      // Initiating-org name (for display).
+      let initiatorName = match.org_id === match.buyer_org_id ? match.buyer_name : match.seller_name;
+      if (!initiatorName) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", match.org_id)
+          .maybeSingle();
+        initiatorName = org?.name ?? "Counterparty";
+      }
+
+      // Sealed evidence documents on the match.
+      const { data: docs } = await supabase
+        .from("match_documents")
+        .select("filename, sha256_hash, doc_type, title")
+        .eq("match_id", matchId)
+        .eq("is_current_version", true)
+        .order("created_at", { ascending: true });
+
+      const documents: InboundDoc[] = (docs ?? []).map((d) => ({
+        name: d.title || d.filename || d.doc_type || "Document",
+        hash: d.sha256_hash ?? "",
+      }));
+
+      // Caller is the counterparty if engagement.counterparty_org_id matches
+      // OR if they're a party to the match but NOT the initiator.
+      const isCounterparty =
+        (engagement?.counterparty_org_id && engagement.counterparty_org_id === callerOrgId) ||
+        (match.org_id !== callerOrgId &&
+          (match.buyer_org_id === callerOrgId || match.seller_org_id === callerOrgId));
+
+      const volume =
+        match.quantity_amount != null
+          ? `${Number(match.quantity_amount).toLocaleString()}${
+              match.quantity_unit ? ` ${match.quantity_unit}` : ""
+            }`
+          : "—";
+
+      const price =
+        match.price_amount != null
+          ? `${Number(match.price_amount).toLocaleString()}${
+              match.price_currency ? ` ${match.price_currency}` : ""
+            }`
+          : "—";
+
+      return {
+        matchRef: `WAD-${match.id.slice(0, 8).toUpperCase()}`,
+        matchId: match.id,
+        initiator: initiatorName ?? "Counterparty",
+        initiatorOrgId: match.org_id,
+        initiatorHash: match.event_chain_hash ?? "—",
+        receivedAt: new Date(match.created_at).toISOString().replace("T", " ").slice(0, 19) + " UTC",
+        expiresIn: formatRelativeExpiry(engagement?.expires_at ?? null),
+        commodity: match.commodity ?? "—",
+        volume,
+        price,
+        incoterms: "—",
+        notes: match.terms ?? "",
+        documents,
+        engagementId: engagement?.id ?? null,
+        engagementStatus: engagement?.engagement_status ?? null,
+        callerIsCounterparty: !!isCounterparty,
+        callerOrgId,
+      };
+    },
+  });
+
+  const respond = useMutation({
+    mutationFn: async (action: "accepted" | "declined") => {
+      if (!matchId) throw new Error("Missing match id");
+      const { data: result, error: invokeErr } = await supabase.functions.invoke(
+        `poi-engagements/respond/${matchId}`,
+        { body: { action } }
+      );
+      if (invokeErr) throw invokeErr;
+      return { action, result };
+    },
+    onSuccess: ({ action }) => {
+      queryClient.invalidateQueries({ queryKey: ["inbound-review", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["desk-attention"] });
+      queryClient.invalidateQueries({ queryKey: ["desk-pipeline"] });
+      if (action === "accepted") {
+        toast({
+          title: "Trade counter-signed",
+          description: "The deal is sealed bilaterally and queued for POI generation.",
+        });
+        navigate(`/desk/match/${matchId}`);
+      } else {
+        toast({
+          title: "Inbound request declined",
+          description: "The match has been released. The counterparty has been notified.",
+        });
+        navigate("/desk");
+      }
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Action failed",
+        description: err?.message ?? "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const notional = useMemo(() => {
+    if (!data) return "—";
+    const q = parseFloat(data.volume.replace(/[^0-9.]/g, ""));
+    const p = parseFloat(data.price.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(q) || !Number.isFinite(p)) return "—";
+    return (q * p).toLocaleString("en-US");
+  }, [data]);
+
+  if (!matchId) {
+    return <ErrorState title="No match selected" message="Open this view from a pipeline item." onRetry={() => navigate("/desk")} />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <ErrorState
+        title="Unable to load inbound request"
+        message={(error as Error)?.message ?? "Please try again."}
+        onRetry={() => { refetch(); }}
+      />
+    );
+  }
+
+  const alreadyResponded = data.engagementStatus === "accepted" || data.engagementStatus === "declined";
+  const canAct = data.callerIsCounterparty && !alreadyResponded;
+
   return (
     <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Review & Action ─────────────────────────── */}
@@ -60,7 +254,6 @@ export function InboundReview() {
               Back to Pipeline
             </Link>
 
-            {/* Action-required badge */}
             <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
               <span className="relative flex h-1.5 w-1.5">
                 <motion.span
@@ -71,7 +264,9 @@ export function InboundReview() {
                 <span className="relative h-1.5 w-1.5 rounded-full bg-amber-500" />
               </span>
               <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-amber-800 font-medium">
-                Action Required · Inbound Request
+                {alreadyResponded
+                  ? `Engagement ${data.engagementStatus}`
+                  : "Action Required · Inbound Request"}
               </span>
             </div>
 
@@ -79,22 +274,22 @@ export function InboundReview() {
               Review Trade Intent
             </h1>
             <p className="mt-6 text-base text-slate-600 leading-relaxed max-w-lg">
-              <span className="text-slate-900 font-medium">{INBOUND.initiator}</span> has generated
+              <span className="text-slate-900 font-medium">{data.initiator}</span> has generated
               a cryptographically sealed Proof of Intent and proposed the following terms.
             </p>
 
-            <div className="mt-6 flex items-center gap-6 font-mono text-[11px] text-slate-500">
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-slate-500">
               <span>
-                <span className="text-slate-400">Ref ·</span> {INBOUND.matchRef}
+                <span className="text-slate-400">Ref ·</span> {data.matchRef}
               </span>
               <span className="text-slate-300">|</span>
               <span>
-                <span className="text-slate-400">Received ·</span> {INBOUND.receivedAt}
+                <span className="text-slate-400">Received ·</span> {data.receivedAt}
               </span>
               <span className="text-slate-300">|</span>
               <span>
                 <span className="text-slate-400">Expires in ·</span>{" "}
-                <span className="text-amber-700 font-medium">{INBOUND.expiresIn}</span>
+                <span className="text-amber-700 font-medium">{data.expiresIn}</span>
               </span>
             </div>
 
@@ -108,13 +303,13 @@ export function InboundReview() {
               </h2>
 
               <dl className="mt-8 grid grid-cols-2 gap-x-10 gap-y-7">
-                <LockedField label="Counterparty" value={INBOUND.initiator} wide />
-                <LockedField label="Commodity" value={INBOUND.commodity} wide />
-                <LockedField label="Volume (MT)" value={INBOUND.volume} mono />
-                <LockedField label="Price (USD / MT)" value={INBOUND.price} mono />
-                <LockedField label="Incoterms" value={INBOUND.incoterms} mono />
-                <LockedField label="Notional (USD)" value={notional} mono />
-                <LockedField label="Notes" value={INBOUND.notes} wide />
+                <LockedField label="Counterparty" value={data.initiator} wide />
+                <LockedField label="Commodity" value={data.commodity} wide />
+                <LockedField label="Volume" value={data.volume} mono />
+                <LockedField label="Price" value={data.price} mono />
+                <LockedField label="Incoterms" value={data.incoterms} mono />
+                <LockedField label="Notional" value={notional} mono />
+                {data.notes && <LockedField label="Notes" value={data.notes} wide />}
               </dl>
             </section>
 
@@ -127,27 +322,38 @@ export function InboundReview() {
                 Attached Evidence
               </h2>
 
-              <ul className="mt-8 space-y-3">
-                {INBOUND.documents.map((d, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-4 rounded-md border border-slate-200 bg-white px-4 py-3"
-                  >
-                    <FileText className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={1.5} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-900 truncate font-medium">{d.name}</p>
-                      <p className="font-mono text-[11px] text-slate-500 truncate">
-                        sha256:{d.hash}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {data.documents.length === 0 ? (
+                <p className="mt-8 text-sm text-slate-500 italic">
+                  No documents attached to this proof of intent.
+                </p>
+              ) : (
+                <ul className="mt-8 space-y-3">
+                  {data.documents.map((d, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-4 rounded-md border border-slate-200 bg-white px-4 py-3"
+                    >
+                      <FileText className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={1.5} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-900 truncate font-medium">{d.name}</p>
+                        <p className="font-mono text-[11px] text-slate-500 truncate">
+                          sha256:{d.hash || "—"}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-              <button className="mt-5 inline-flex items-center gap-2 text-xs font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-400 rounded-md px-4 py-2.5 transition-colors">
-                <Download className="h-3.5 w-3.5" strokeWidth={2} />
-                Download & Verify Evidence
-              </button>
+              {data.documents.length > 0 && (
+                <button
+                  onClick={() => navigate(`/desk/match/${data.matchId}`)}
+                  className="mt-5 inline-flex items-center gap-2 text-xs font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-400 rounded-md px-4 py-2.5 transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" strokeWidth={2} />
+                  Open Match Workspace
+                </button>
+              )}
             </section>
           </div>
         </div>
@@ -155,23 +361,43 @@ export function InboundReview() {
         {/* ── Sticky Bilateral Action Footer ────────────────── */}
         <div className="shrink-0 border-t border-slate-200 bg-white p-6">
           <div className="max-w-2xl mx-auto flex items-stretch gap-4">
-            <button className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
-              <X className="h-4 w-4" strokeWidth={2} />
-              Decline & Release Match
+            <button
+              onClick={() => respond.mutate("declined")}
+              disabled={!canAct || respond.isPending}
+              className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            >
+              {respond.isPending && respond.variables === "declined" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <X className="h-4 w-4" strokeWidth={2} />
+              )}
+              Decline &amp; Release Match
             </button>
             <motion.button
-              whileHover={{ scale: 0.99 }}
-              whileTap={{ scale: 0.985 }}
+              onClick={() => respond.mutate("accepted")}
+              disabled={!canAct || respond.isPending}
+              whileHover={canAct ? { scale: 0.99 } : undefined}
+              whileTap={canAct ? { scale: 0.985 } : undefined}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="flex-1 inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow"
+              className="flex-1 inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Counter-Sign & Seal Trade
-              <Check className="h-4 w-4" strokeWidth={2.5} />
+              {respond.isPending && respond.variables === "accepted" ? (
+                <>
+                  Sealing… <Loader2 className="h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                <>
+                  Counter-Sign &amp; Seal Trade <Check className="h-4 w-4" strokeWidth={2.5} />
+                </>
+              )}
             </motion.button>
           </div>
           <p className="mt-3 text-center text-xs text-slate-500 leading-relaxed max-w-xl mx-auto">
-            Signing this locks the commercial intent bilaterally and submits the payload to the
-            9-Gate validation engine.
+            {canAct
+              ? "Signing this locks the commercial intent bilaterally and submits the payload to the 9-Gate validation engine."
+              : alreadyResponded
+                ? `This engagement has already been ${data.engagementStatus}. No further action required.`
+                : "Only the named counterparty may respond to this engagement."}
           </p>
         </div>
       </motion.section>
@@ -190,7 +416,6 @@ export function InboundReview() {
             </p>
 
             <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
-              {/* Header */}
               <header className="text-center pb-8 border-b border-slate-200">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800">
                   Izenzo Sovereign Infrastructure — Deal Record
@@ -198,50 +423,49 @@ export function InboundReview() {
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-600">
-                  Ref · {INBOUND.matchRef}
-                </p>
+                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {data.matchRef}</p>
               </header>
 
-              {/* Populated data */}
               <dl className="py-8 space-y-1">
-                <CertRow label="Counterparty" value={INBOUND.initiator} />
-                <CertRow label="Commodity" value={INBOUND.commodity} />
-                <CertRow label="Volume" value={`${INBOUND.volume} MT`} mono />
-                <CertRow label="Price" value={`USD ${INBOUND.price} / MT`} mono />
-                <CertRow label="Incoterms" value={INBOUND.incoterms} mono />
-                <CertRow label="Notional" value={`USD ${notional}`} mono />
+                <CertRow label="Counterparty" value={data.initiator} />
+                <CertRow label="Commodity" value={data.commodity} />
+                <CertRow label="Volume" value={data.volume} mono />
+                <CertRow label="Price" value={data.price} mono />
+                <CertRow label="Incoterms" value={data.incoterms} mono />
+                <CertRow label="Notional" value={notional} mono />
               </dl>
 
-              {/* Notes */}
-              <div className="border-t border-slate-200 py-6">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
-                  Notes
-                </p>
-                <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
-                  {INBOUND.notes}
-                </p>
-              </div>
+              {data.notes && (
+                <div className="border-t border-slate-200 py-6">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                    Notes
+                  </p>
+                  <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                    {data.notes}
+                  </p>
+                </div>
+              )}
 
-              {/* Evidence */}
-              <div className="py-6 border-t border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
-                  Attached Evidence
-                </p>
-                <ul className="space-y-2">
-                  {INBOUND.documents.map((d, i) => (
-                    <li key={i} className="flex items-baseline gap-3">
-                      <span className="font-mono text-[10px] text-slate-600 shrink-0">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
-                        <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {data.documents.length > 0 && (
+                <div className="py-6 border-t border-slate-200">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                    Attached Evidence
+                  </p>
+                  <ul className="space-y-2">
+                    {data.documents.map((d, i) => (
+                      <li key={i} className="flex items-baseline gap-3">
+                        <span className="font-mono text-[10px] text-slate-600 shrink-0">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
+                          <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash || "—"}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* ── Asymmetric Seal Section ─────────────────── */}
               <div className="mt-2 pt-6 border-t border-slate-200">
@@ -249,11 +473,10 @@ export function InboundReview() {
                   Bilateral Cryptographic Seal
                 </p>
 
-                {/* Initiator — sealed */}
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between gap-4">
                     <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-700">
-                      Initiator · {INBOUND.initiator}
+                      Initiator · {data.initiator}
                     </p>
                     <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.2em] text-emerald-700 font-medium">
                       <Check className="h-3 w-3" strokeWidth={3} />
@@ -261,27 +484,32 @@ export function InboundReview() {
                     </span>
                   </div>
                   <p className="font-mono text-[11px] leading-relaxed break-all text-slate-900">
-                    {INBOUND.initiatorHash}
+                    {data.initiatorHash}
                   </p>
                 </div>
 
-                {/* Counterparty — pending */}
                 <div className="mt-6 pt-5 border-t border-dashed border-slate-200 space-y-3">
                   <div className="flex items-baseline justify-between gap-4">
                     <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-700">
                       Counterparty · You
                     </p>
-                    <span className="font-mono text-[10px] tracking-[0.2em] text-amber-700 font-medium">
-                      AWAITING
+                    <span
+                      className={`font-mono text-[10px] tracking-[0.2em] font-medium ${
+                        alreadyResponded ? "text-slate-500" : "text-amber-700"
+                      }`}
+                    >
+                      {alreadyResponded ? data.engagementStatus?.toUpperCase() : "AWAITING"}
                     </span>
                   </div>
                   <motion.div
-                    animate={{ opacity: [0.55, 1, 0.55] }}
+                    animate={alreadyResponded ? undefined : { opacity: [0.55, 1, 0.55] }}
                     transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
                     className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3"
                   >
                     <p className="font-mono text-[11px] tracking-[0.15em] text-amber-800 text-center">
-                      [ AWAITING YOUR CRYPTOGRAPHIC SIGNATURE ]
+                      {alreadyResponded
+                        ? `[ COUNTERPARTY ${data.engagementStatus?.toUpperCase()} ]`
+                        : "[ AWAITING YOUR CRYPTOGRAPHIC SIGNATURE ]"}
                     </p>
                   </motion.div>
                 </div>
@@ -289,7 +517,9 @@ export function InboundReview() {
 
               <footer className="mt-8 pt-6 border-t border-slate-200 text-center">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-700">
-                  Half-Sealed · Binding Upon Counter-signature
+                  {alreadyResponded
+                    ? "Engagement Closed"
+                    : "Half-Sealed · Binding Upon Counter-signature"}
                 </p>
               </footer>
             </article>
