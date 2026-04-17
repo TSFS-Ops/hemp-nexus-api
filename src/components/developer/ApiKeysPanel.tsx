@@ -1,132 +1,294 @@
 import { useState } from "react";
-import { Copy, RefreshCw, Eye, EyeOff, Check, Plus } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Copy, RefreshCw, Check, Plus, Pencil, Trash2, AlertTriangle, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
-interface KeyRow {
+interface ApiKeyRow {
   id: string;
-  label: string;
-  env: "live" | "test";
-  /** masked-display fragments around the bullets */
-  prefix: string;
-  suffix: string;
-  /** raw value for clipboard only */
-  raw: string;
+  name: string;
   scopes: string[];
-  lastUsed: string;
+  created_at: string;
+  last_used_at: string | null;
+  status: string;
+  environment: string | null;
+  expires_at: string | null;
 }
 
-const KEYS: KeyRow[] = [
-  {
-    id: "1",
-    label: "Production · Backend",
-    env: "live",
-    prefix: "iz_live_77f4",
-    suffix: "3a21",
-    raw: "iz_live_77f4Hq2X9Bm4KLp8R2Wn3a21",
-    scopes: ["trade:read", "trade:write", "poi:generate"],
-    lastUsed: "12s ago",
-  },
-  {
-    id: "2",
-    label: "Staging · CI Pipeline",
-    env: "test",
-    prefix: "iz_test_3lp8",
-    suffix: "8e02",
-    raw: "iz_test_3lp8R2Wn1V9Tk4M6Yc8Q8e02",
-    scopes: ["trade:read", "webhooks:manage"],
-    lastUsed: "4m ago",
-  },
-  {
-    id: "3",
-    label: "Analytics · Worker",
-    env: "live",
-    prefix: "iz_live_9tk4",
-    suffix: "1f9c",
-    raw: "iz_live_9tk4M6Yc8Q2Fz1N5Jb7P1f9c",
-    scopes: ["audit:read"],
-    lastUsed: "1h ago",
-  },
-];
+interface RevealedKey {
+  id: string;
+  name: string;
+  key: string;
+  rotated?: boolean;
+}
 
-function KeyCard({ row }: { row: KeyRow }) {
-  const [revealed, setRevealed] = useState(false);
+async function callKeysFn<T = unknown>(
+  method: "GET" | "POST" | "PATCH" | "DELETE",
+  path = "",
+  body?: Record<string, unknown>
+): Promise<T> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Not authenticated");
+
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const url = `https://${projectId}.supabase.co/functions/v1/api-keys${path}`;
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (res.status === 204) return undefined as T;
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json?.error?.message || json?.message || `Request failed (${res.status})`);
+  }
+  return json as T;
+}
+
+function maskedKeyDisplay(name: string) {
+  // We never store plaintext, so always show a stable visual placeholder
+  return `iz_live_••••••••••••••••${name.slice(0, 4).padEnd(4, "x").toLowerCase()}`;
+}
+
+function RevealModal({ data, onClose }: { data: RevealedKey; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
 
-  const masked = `${row.prefix}••••••••••••••••${row.suffix}`;
-  const display = revealed ? row.raw : masked;
-
   const copy = async () => {
-    await navigator.clipboard.writeText(row.raw);
+    await navigator.clipboard.writeText(data.key);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-sm">
+        <div className="flex items-start justify-between border-b border-slate-800 px-6 py-4">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-400">
+              {data.rotated ? "Key rotated" : "Key created"}
+            </div>
+            <h3 className="mt-1 text-sm text-slate-100">{data.name}</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-500 hover:text-slate-100 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 rounded-sm">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+            <p className="font-mono text-[11px] text-amber-200 leading-relaxed">
+              Save this key now. For security, it will <strong>never be shown again</strong>.
+              {data.rotated && " The previous key has been revoked."}
+            </p>
+          </div>
+
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-2">
+              Secret Key (one-time display)
+            </div>
+            <div className="flex items-stretch gap-2">
+              <div className="flex-1 bg-black border border-slate-800 px-3 py-2.5 font-mono text-[12px] text-green-400 break-all rounded-sm">
+                {data.key}
+              </div>
+              <button
+                onClick={copy}
+                className="px-3 bg-black border border-slate-700 text-slate-400 hover:text-green-400 hover:border-slate-600 transition-colors rounded-sm"
+                aria-label="Copy key"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
+          <button
+            onClick={onClose}
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 bg-green-600/20 border border-green-500/40 hover:bg-green-600/30 px-4 py-1.5 rounded-sm transition-colors"
+          >
+            I&apos;ve saved it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  destructive,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-sm">
+        <div className="px-6 py-4 border-b border-slate-800">
+          <h3 className="text-sm text-slate-100">{title}</h3>
+        </div>
+        <div className="px-6 py-4">
+          <p className="text-[13px] text-slate-300 leading-relaxed">{message}</p>
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
+          <button
+            onClick={onCancel}
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 px-3 py-1.5 rounded-sm transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={[
+              "font-mono text-[11px] uppercase tracking-[0.16em] px-4 py-1.5 rounded-sm border transition-colors",
+              destructive
+                ? "text-rose-300 border-rose-500/40 hover:bg-rose-500/10"
+                : "text-amber-300 border-amber-500/40 hover:bg-amber-500/10",
+            ].join(" ")}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KeyCard({
+  row,
+  onRename,
+  onRotate,
+  onRevoke,
+}: {
+  row: ApiKeyRow;
+  onRename: (id: string, name: string) => void;
+  onRotate: (id: string) => void;
+  onRevoke: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(row.name);
+  const env = (row.environment || "live").toLowerCase();
+  const masked = maskedKeyDisplay(row.id);
+  const lastUsed = row.last_used_at
+    ? formatDistanceToNow(new Date(row.last_used_at), { addSuffix: true })
+    : "never";
+
+  const submitRename = () => {
+    const next = draft.trim();
+    if (!next || next === row.name) {
+      setEditing(false);
+      setDraft(row.name);
+      return;
+    }
+    onRename(row.id, next);
+    setEditing(false);
   };
 
   return (
     <div className="bg-slate-900 border border-slate-800 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <span
             className={[
-              "font-mono text-[10px] uppercase tracking-[0.2em] px-1.5 py-0.5 border",
-              row.env === "live"
+              "font-mono text-[10px] uppercase tracking-[0.2em] px-1.5 py-0.5 border shrink-0",
+              env === "live"
                 ? "text-green-400 border-green-500/40"
                 : "text-amber-300 border-amber-500/40",
             ].join(" ")}
           >
-            {row.env}
+            {env}
           </span>
-          <span className="text-[13px] text-slate-100" style={{ fontFamily: "Inter, sans-serif" }}>
-            {row.label}
-          </span>
+          {editing ? (
+            <input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={submitRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitRename();
+                if (e.key === "Escape") {
+                  setEditing(false);
+                  setDraft(row.name);
+                }
+              }}
+              maxLength={100}
+              className="flex-1 min-w-0 bg-black border border-slate-700 text-[13px] text-slate-100 px-2 py-1 rounded-sm focus:outline-none focus:border-green-500/50"
+            />
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="text-[13px] text-slate-100 hover:text-green-400 transition-colors flex items-center gap-1.5 truncate"
+              title="Click to rename"
+            >
+              <span className="truncate">{row.name}</span>
+              <Pencil className="h-3 w-3 text-slate-500 shrink-0" strokeWidth={1.5} />
+            </button>
+          )}
         </div>
-        <span className="font-mono text-[11px] text-slate-400">last used {row.lastUsed}</span>
+        <span className="font-mono text-[11px] text-slate-400 shrink-0 ml-3">
+          last used {lastUsed}
+        </span>
       </div>
 
-      {/* Key field */}
       <div>
         <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-2">
-          Live Secret Key
+          Secret Key (hashed at rest)
         </div>
         <div className="flex items-stretch gap-2">
-          <div className="flex-1 bg-black border border-slate-800 px-3 py-2.5 font-mono text-[13px] text-green-400 overflow-x-auto whitespace-nowrap rounded-sm">
-            {display}
+          <div className="flex-1 bg-black border border-slate-800 px-3 py-2.5 font-mono text-[13px] text-slate-500 overflow-x-auto whitespace-nowrap rounded-sm">
+            {masked}
           </div>
-          <button
-            onClick={() => setRevealed(!revealed)}
-            className="px-3 bg-black border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-slate-600 transition-colors rounded-sm"
-            title={revealed ? "Hide" : "Reveal"}
-            aria-label={revealed ? "Hide key" : "Reveal key"}
-          >
-            {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            onClick={copy}
-            className="px-3 bg-black border border-slate-700 text-slate-400 hover:text-green-400 hover:border-slate-600 transition-colors rounded-sm"
-            title="Copy"
-            aria-label="Copy key"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
         </div>
 
-        {/* Scopes */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {row.scopes.map((s) => (
-            <span
-              key={s}
-              className="font-mono text-[10px] tracking-tight text-slate-400 bg-black border border-slate-800 px-1.5 py-0.5 rounded-sm"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
+        {row.scopes.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {row.scopes.map((s) => (
+              <span
+                key={s}
+                className="font-mono text-[10px] tracking-tight text-slate-400 bg-black border border-slate-800 px-1.5 py-0.5 rounded-sm"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Actions */}
       <div className="flex items-center justify-end gap-2 mt-5">
-        <button className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-amber-300 border border-slate-700 hover:border-amber-500/50 px-3 py-1.5 rounded-sm transition-colors flex items-center gap-1.5">
+        <button
+          onClick={() => onRotate(row.id)}
+          className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-amber-300 border border-slate-700 hover:border-amber-500/50 px-3 py-1.5 rounded-sm transition-colors flex items-center gap-1.5"
+        >
           <RefreshCw className="h-3 w-3" />
-          Rotate Key
+          Rotate
+        </button>
+        <button
+          onClick={() => onRevoke(row.id)}
+          className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/50 px-3 py-1.5 rounded-sm transition-colors flex items-center gap-1.5"
+        >
+          <Trash2 className="h-3 w-3" />
+          Revoke
         </button>
       </div>
     </div>
@@ -134,6 +296,64 @@ function KeyCard({ row }: { row: KeyRow }) {
 }
 
 export function ApiKeysPanel() {
+  const qc = useQueryClient();
+  const [revealed, setRevealed] = useState<RevealedKey | null>(null);
+  const [confirm, setConfirm] = useState<
+    | { kind: "rotate" | "revoke"; id: string; name: string }
+    | null
+  >(null);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["developer-api-keys"],
+    queryFn: async () => {
+      const res = await callKeysFn<{ data: ApiKeyRow[] }>("GET");
+      return res.data || [];
+    },
+  });
+
+  const renameMut = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      callKeysFn("PATCH", `/${id}`, { name }),
+    onSuccess: () => {
+      toast.success("Key renamed");
+      qc.invalidateQueries({ queryKey: ["developer-api-keys"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rotateMut = useMutation({
+    mutationFn: (id: string) => callKeysFn<RevealedKey>("POST", `/${id}/rotate`),
+    onSuccess: (res) => {
+      setRevealed({ id: res.id, name: res.name, key: res.key, rotated: true });
+      qc.invalidateQueries({ queryKey: ["developer-api-keys"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const revokeMut = useMutation({
+    mutationFn: (id: string) => callKeysFn("DELETE", `/${id}`),
+    onSuccess: () => {
+      toast.success("Key revoked");
+      qc.invalidateQueries({ queryKey: ["developer-api-keys"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const createMut = useMutation({
+    mutationFn: (name: string) => callKeysFn<RevealedKey>("POST", "", { name }),
+    onSuccess: (res) => {
+      setRevealed({ id: res.id, name: res.name, key: res.key });
+      setCreating(false);
+      setNewName("");
+      qc.invalidateQueries({ queryKey: ["developer-api-keys"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const keys = data || [];
+
   return (
     <section>
       <div className="flex items-end justify-between mb-5">
@@ -141,24 +361,131 @@ export function ApiKeysPanel() {
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
             §01 / Authentication
           </div>
-          <h2
-            className="mt-1 text-lg text-slate-100 tracking-tight"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
+          <h2 className="mt-1 text-lg text-slate-100 tracking-tight">
             Production Infrastructure Keys
           </h2>
         </div>
-        <button className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 border border-slate-700 hover:border-green-400/60 hover:text-green-400 px-3 py-1.5 rounded-sm flex items-center gap-1.5 transition-colors">
+        <button
+          onClick={() => setCreating(true)}
+          className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 border border-slate-700 hover:border-green-400/60 hover:text-green-400 px-3 py-1.5 rounded-sm flex items-center gap-1.5 transition-colors"
+        >
           <Plus className="h-3 w-3" />
           New Key
         </button>
       </div>
 
-      <div className="space-y-3">
-        {KEYS.map((k) => (
-          <KeyCard key={k.id} row={k} />
-        ))}
-      </div>
+      {isLoading && (
+        <div className="bg-slate-900 border border-slate-800 px-6 py-8 text-center font-mono text-[12px] text-slate-400">
+          Loading keys…
+        </div>
+      )}
+
+      {error && !isLoading && (
+        <div className="bg-rose-950/40 border border-rose-500/40 px-6 py-4 font-mono text-[12px] text-rose-300">
+          Failed to load: {(error as Error).message}
+        </div>
+      )}
+
+      {!isLoading && !error && keys.length === 0 && (
+        <div className="bg-slate-900 border border-slate-800 border-dashed px-6 py-10 text-center">
+          <p className="font-mono text-[12px] text-slate-400">
+            No API keys yet. Create one to start integrating.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && keys.length > 0 && (
+        <div className="space-y-3">
+          {keys.map((k) => (
+            <KeyCard
+              key={k.id}
+              row={k}
+              onRename={(id, name) => renameMut.mutate({ id, name })}
+              onRotate={(id) => setConfirm({ kind: "rotate", id, name: k.name })}
+              onRevoke={(id) => setConfirm({ kind: "revoke", id, name: k.name })}
+            />
+          ))}
+        </div>
+      )}
+
+      {confirm?.kind === "rotate" && (
+        <ConfirmDialog
+          title={`Rotate "${confirm.name}"?`}
+          message="A new key will be issued and shown once. The current key will stop working immediately. Update your integrations before any in-flight requests fail."
+          confirmLabel="Rotate Now"
+          onConfirm={() => {
+            rotateMut.mutate(confirm.id);
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {confirm?.kind === "revoke" && (
+        <ConfirmDialog
+          title={`Revoke "${confirm.name}"?`}
+          message="This key will be permanently disabled. Any service using it will fail authentication. This cannot be undone."
+          confirmLabel="Revoke Key"
+          destructive
+          onConfirm={() => {
+            revokeMut.mutate(confirm.id);
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {creating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-sm">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-sm text-slate-100">Create new key</h3>
+              <button onClick={() => setCreating(false)} className="text-slate-500 hover:text-slate-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-3">
+              <label className="block">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 block mb-2">
+                  Label (e.g. ERP Integration)
+                </span>
+                <input
+                  autoFocus
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  maxLength={100}
+                  placeholder="Production · Backend"
+                  className="w-full bg-black border border-slate-700 text-[13px] text-slate-100 px-3 py-2.5 rounded-sm focus:outline-none focus:border-green-500/50 font-mono"
+                />
+              </label>
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
+              <button
+                onClick={() => {
+                  setCreating(false);
+                  setNewName("");
+                }}
+                className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 px-3 py-1.5 rounded-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const n = newName.trim();
+                  if (!n) return toast.error("Label is required");
+                  createMut.mutate(n);
+                }}
+                disabled={createMut.isPending}
+                className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 bg-green-600/20 border border-green-500/40 hover:bg-green-600/30 px-4 py-1.5 rounded-sm transition-colors disabled:opacity-50"
+              >
+                {createMut.isPending ? "Creating…" : "Create Key"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {revealed && <RevealModal data={revealed} onClose={() => setRevealed(null)} />}
     </section>
   );
 }
