@@ -5,6 +5,10 @@ import { LiveActivityFeed } from "@/components/developer/LiveActivityFeed";
 import WebhookLogs from "@/components/developer/WebhookLogs";
 import SchemaExplorer from "@/components/developer/SchemaExplorer";
 import IntegrationDocs from "@/components/developer/IntegrationDocs";
+import { EnvProvider, EnvSwitcher } from "@/components/developer/EnvSwitcher";
+import { QuickStart } from "@/components/developer/QuickStart";
+import { SystemDiagnostics } from "@/components/developer/SystemDiagnostics";
+import { QuickSchema } from "@/components/developer/QuickSchema";
 
 function DeveloperHeader({ section, badge }: { section: string; badge?: string }) {
   return (
@@ -18,15 +22,12 @@ function DeveloperHeader({ section, badge }: { section: string; badge?: string }
             {section}
           </h1>
         </div>
-        <div className="flex items-center gap-6 font-mono text-[11px] text-slate-400">
-          <div>
-            <span className="text-slate-500 uppercase tracking-[0.16em] mr-2">env</span>
-            <span className="text-green-400">production</span>
-          </div>
-          <div>
+        <div className="flex items-center gap-6">
+          <div className="font-mono text-[11px] text-slate-400">
             <span className="text-slate-500 uppercase tracking-[0.16em] mr-2">api</span>
             <span className="text-slate-100">{badge ?? "v1.4.2"}</span>
           </div>
+          <EnvSwitcher />
         </div>
       </div>
     </header>
@@ -37,9 +38,14 @@ function KeysView() {
   return (
     <>
       <DeveloperHeader section="API Keys" />
-      <div className="px-12 py-10 space-y-12">
+      <div className="px-12 py-10 space-y-10">
         <ApiKeysPanel />
-        <LiveActivityFeed />
+        <QuickStart />
+        <SystemDiagnostics />
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-8">
+          <LiveActivityFeed />
+          <QuickSchema />
+        </div>
       </div>
     </>
   );
@@ -80,14 +86,16 @@ function DocsView() {
 
 export default function DeveloperCenter() {
   return (
-    <DeveloperShell>
-      <Routes>
-        <Route index element={<Navigate to="keys" replace />} />
-        <Route path="keys" element={<KeysView />} />
-        <Route path="webhooks" element={<WebhooksView />} />
-        <Route path="schema" element={<SchemaView />} />
-        <Route path="docs" element={<DocsView />} />
-      </Routes>
-    </DeveloperShell>
+    <EnvProvider>
+      <DeveloperShell>
+        <Routes>
+          <Route index element={<Navigate to="keys" replace />} />
+          <Route path="keys" element={<KeysView />} />
+          <Route path="webhooks" element={<WebhooksView />} />
+          <Route path="schema" element={<SchemaView />} />
+          <Route path="docs" element={<DocsView />} />
+        </Routes>
+      </DeveloperShell>
+    </EnvProvider>
   );
 }
