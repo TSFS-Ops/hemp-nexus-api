@@ -354,7 +354,7 @@ export default function AuditLedgerProductPage() {
                   </p>
                 </div>
 
-                <ul className="space-y-2.5">
+                <ul className="flex flex-wrap gap-2">
                   {[
                     "Entity verification",
                     "UBO disclosure",
@@ -366,12 +366,15 @@ export default function AuditLedgerProductPage() {
                     "Bilateral collapse signature",
                     "WaD certificate issuance",
                   ].map((g, i) => (
-                    <li key={g} className="flex items-center gap-3 text-[13px]">
-                      <span className="font-mono text-[10px] text-emerald-700/70 tabular-nums w-6">
+                    <li
+                      key={g}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-100 px-2.5 py-1 text-[11px] text-slate-700"
+                    >
+                      <span className="font-mono text-[9px] text-emerald-700/70 tabular-nums">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
-                      <span className="text-slate-700">{g}</span>
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" strokeWidth={2} />
+                      <span>{g}</span>
                     </li>
                   ))}
                 </ul>
