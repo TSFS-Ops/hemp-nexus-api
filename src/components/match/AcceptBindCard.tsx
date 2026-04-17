@@ -198,7 +198,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
                   <li>This converts a unilateral intent into a bilateral intent.</li>
-                  <li>The action is cryptographically recorded and cannot be reversed.</li>
+                  <li>The action is tamper-proofally recorded and cannot be reversed.</li>
                   <li>Both parties can negotiate terms after binding.</li>
                 </ul>
               </div>

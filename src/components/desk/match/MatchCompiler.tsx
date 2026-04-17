@@ -104,7 +104,7 @@ export function MatchCompiler({
   const creditBalance = demoMode ? 250 : tokenData ?? 0;
   const matchRef = useMemo(() => matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000", [matchId]);
 
-  // ── Real cryptographic seal, SHA-256 over canonical payload ──
+  // ── Real tamper-proof seal, SHA-256 over canonical payload ──
   // In demo mode the seal is pre-baked so we never run hashing.
   useEffect(() => {
     if (demoMode) return;

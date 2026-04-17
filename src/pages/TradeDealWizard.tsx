@@ -197,7 +197,7 @@ export default function TradeDealWizard() {
                       Seal this Trade Intent
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Final review before cryptographic commitment.
+                      Final review before tamper-proof commitment.
                     </p>
                     <Button
                       size="lg"
@@ -207,7 +207,7 @@ export default function TradeDealWizard() {
                     </Button>
                     <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
                       Generating this Proof of Intent will atomically consume 1 Credit
-                      (R10 ZAR) and generate a cryptographic hash of this payload.
+                      (R10 ZAR) and generate a tamper-proof hash of this payload.
                       This action cannot be undone.
                     </p>
                   </div>

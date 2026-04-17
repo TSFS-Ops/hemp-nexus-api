@@ -379,7 +379,7 @@ export default function Auth() {
         </div>
 
         <p className="mt-6 text-xs text-slate-400 text-center leading-relaxed">
-          POPIA &amp; GDPR-compliant data residency. All sessions cryptographically sealed.
+          POPIA &amp; GDPR-compliant data residency. All sessions tamper-proofally sealed.
         </p>
       </div>
     </div>;

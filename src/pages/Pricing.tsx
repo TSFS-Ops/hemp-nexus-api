@@ -76,7 +76,7 @@ const INSTITUTIONAL_FEATURES = [
 const ALWAYS_INCLUDED = [
   {
     icon: ShieldCheck,
-    title: "Cryptographic Security",
+    title: "Tamper-Proof Security",
     desc: "SHA-256 sealing on every state transition. Tamper-evident, append-only.",
   },
   {
@@ -136,7 +136,7 @@ export default function Pricing() {
             transition={{ duration: 0.6, delay: 0.12 }}
             className="mt-8 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed"
           >
-            Pay only for the cryptographic deals you execute. No opaque
+            Pay only for the tamper-proof deals you execute. No opaque
             licenses, no hidden fees. Volume pricing available for institutions.
           </motion.p>
         </div>

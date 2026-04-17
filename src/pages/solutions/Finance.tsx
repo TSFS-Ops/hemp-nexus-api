@@ -159,7 +159,7 @@ export default function FinanceSolutionsPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               The end of forensic auditing.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (cryptographic proof, automated underwriting, and instant audit resolution) engineered for institutional capital deployment. </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (tamper-proof proof, automated underwriting, and instant audit resolution) engineered for institutional capital deployment. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -177,7 +177,7 @@ export default function FinanceSolutionsPage() {
                 Immutable proof (SHA-256).
               </h3>
               <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
-                Every sealed deal carries a 256-bit cryptographic fingerprint
+                Every sealed deal carries a 256-bit tamper-proof fingerprint
                 that any third party can independently re-compute and verify.
                 No more notarised PDFs. No more chasing wet-ink signatures
                 across three time zones.

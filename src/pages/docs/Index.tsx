@@ -40,7 +40,7 @@ export default function DocsIndex() {
           Izenzo Documentation
         </h1>
         <p className="text-lg text-slate-500 leading-relaxed mb-12">
-          Everything you need to integrate cryptographic trade governance, automated KYB, and
+          Everything you need to integrate tamper-proof trade governance, automated KYB, and
           instant match execution into your institutional systems.
         </p>
 
@@ -70,7 +70,7 @@ export default function DocsIndex() {
           <p className="text-slate-500 leading-relaxed mb-6">
             Izenzo is built around three primitives: <strong className="text-slate-900 font-medium">Counterparties</strong> (verified
             organisations), <strong className="text-slate-900 font-medium">Matches</strong> (bilateral trade intent), and{" "}
-            <strong className="text-slate-900 font-medium">Evidence Packs</strong> (cryptographically sealed audit records).
+            <strong className="text-slate-900 font-medium">Evidence Packs</strong> (tamper-proofally sealed audit records).
             Every state transition is signed, timestamped and append-only.
           </p>
           <Link

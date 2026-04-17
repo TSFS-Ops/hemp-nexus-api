@@ -164,7 +164,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
                 <li>Trade request timestamps and parties</li>
                 <li>Document hashes and evidence bundle</li>
                 <li>Multi-party attestations</li>
-                <li>Cryptographic seal</li>
+                <li>Tamper-Proof seal</li>
               </ul>
               {selectedJurisdiction && (
                 <div className="pt-2 border-t">

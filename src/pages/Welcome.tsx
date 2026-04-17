@@ -23,7 +23,7 @@ const PERSONAS: PersonaCard[] = [
     icon: Handshake,
     title: "Commercial Trading",
     description:
-      "Search for verified counterparties, negotiate terms, and execute cryptographically sealed Proofs of Intent.",
+      "Search for verified counterparties, negotiate terms, and execute tamper-proofally sealed Proofs of Intent.",
     route: "/desk",
     meta: "For buyers, sellers & deal originators",
   },

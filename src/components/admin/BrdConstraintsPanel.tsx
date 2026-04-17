@@ -120,7 +120,7 @@ export function BrdConstraintsPanel() {
           <CardTitle className="text-base">Governance Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• <strong>Retention:</strong> Minimum 7 years, then cold storage with cryptographic integrity preserved.</p>
+          <p>• <strong>Retention:</strong> Minimum 7 years, then cold storage with tamper-proof integrity preserved.</p>
           <p>• <strong>Data residency:</strong> Region selectable at onboarding. No cross-border movement without explicit consent.</p>
           <p>• <strong>RPO/RTO:</strong> Collapse ledger RPO = 0 (synchronous replication). RTO ≤ 60 minutes.</p>
           <p>• <strong>Immutability:</strong> Collapse ledger and break-glass logs are append-only with database-level triggers preventing UPDATE/DELETE.</p>
