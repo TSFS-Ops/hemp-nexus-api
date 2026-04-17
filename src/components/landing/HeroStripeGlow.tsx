@@ -36,14 +36,6 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
               "radial-gradient(circle at center, hsl(215 40% 35% / 0.55) 0%, hsl(215 40% 35% / 0) 70%)",
           }}
         />
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #0f172a 1px, transparent 1px), linear-gradient(to bottom, #0f172a 1px, transparent 1px)",
-            backgroundSize: "56px 56px",
-          }}
-        />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-white" />
       </div>
 
