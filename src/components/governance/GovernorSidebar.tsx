@@ -1,7 +1,8 @@
 /**
- * GovernorSidebar — Dedicated sidebar for the Governor / Compliance Officer
- * persona. Mirrors the Deal Desk visual language but with governance-focused
- * navigation.
+ * GovernorSidebar — dedicated navigation rail for the Governance persona.
+ * Civilisation OS aesthetic: white surface, hairline borders, JetBrains Mono
+ * for IDs and certification status. Footer carries the Governor's official ID
+ * and certification grade so it reads like an institutional control room.
  */
 
 import { NavLink } from "react-router-dom";
@@ -18,14 +19,19 @@ const NAV = [
 export function GovernorSidebar() {
   const { signOut, user } = useAuth();
 
+  // Deterministic Governor identifier derived from the user id (last 8 chars).
+  const officialId = user?.id
+    ? `GOV-${user.id.replace(/-/g, "").slice(-8).toUpperCase()}`
+    : "GOV-PENDING";
+
   return (
-    <aside className="hidden md:flex w-[250px] shrink-0 flex-col bg-white border-r border-slate-200">
+    <aside className="hidden md:flex w-[260px] shrink-0 flex-col bg-white border-r border-slate-200">
       {/* Wordmark */}
       <div className="px-8 pt-10 pb-12">
         <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-slate-900 uppercase">
           Izenzo
         </h2>
-        <p className="mt-1 text-[10px] tracking-wider text-slate-400 font-mono uppercase">
+        <p className="mt-1 text-[10px] tracking-[0.2em] text-slate-400 font-mono uppercase">
           Governance Console
         </p>
       </div>
@@ -58,17 +64,38 @@ export function GovernorSidebar() {
         </ul>
       </nav>
 
-      {/* User footer */}
-      <div className="px-6 py-6 border-t border-slate-200">
-        <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400 font-mono mb-1">
-          Governor
-        </p>
-        <p className="text-xs text-slate-700 font-mono tracking-wide truncate mb-3">
-          {user?.email}
-        </p>
+      {/* Governor identity & certification footer */}
+      <div className="px-6 py-6 border-t border-slate-200 space-y-4">
+        <div>
+          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400 font-mono mb-1.5">
+            Officer ID
+          </p>
+          <p className="text-xs text-slate-900 font-mono tracking-wider">
+            {officialId}
+          </p>
+          <p className="mt-0.5 text-[10px] text-slate-500 font-mono truncate">
+            {user?.email}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400 font-mono mb-1.5">
+            Certification
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-hidden />
+            <p className="text-[11px] text-slate-700 font-mono tracking-wide">
+              FATF · Tier II · Active
+            </p>
+          </div>
+          <p className="mt-1 text-[10px] text-slate-400 font-mono">
+            Expires 2027-03-31
+          </p>
+        </div>
+
         <button
           onClick={signOut}
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors pt-2"
         >
           <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
           Sign out
