@@ -84,11 +84,7 @@ export function InboundReview() {
       // Match row — RLS scopes us to participating orgs.
       const { data: match, error: matchErr } = await supabase
         .from("matches")
-        .select(
-          "id, org_id, buyer_org_id, seller_org_id, buyer_name, seller_name, " +
-            "commodity, quantity_amount, quantity_unit, price_amount, price_currency, " +
-            "terms, state, status, event_chain_hash, created_at"
-        )
+        .select("id, org_id, buyer_org_id, seller_org_id, buyer_name, seller_name, commodity, quantity_amount, quantity_unit, price_amount, price_currency, terms, state, status, event_chain_hash, created_at")
         .eq("id", matchId)
         .maybeSingle();
 
@@ -215,7 +211,7 @@ export function InboundReview() {
   }, [data]);
 
   if (!matchId) {
-    return <ErrorState title="No match selected" description="Open this view from a pipeline item." onRetry={() => navigate("/desk")} retryLabel="Back to Pipeline" />;
+    return <ErrorState title="No match selected" message="Open this view from a pipeline item." onRetry={() => navigate("/desk")} />;
   }
 
   if (isLoading) {
@@ -230,8 +226,8 @@ export function InboundReview() {
     return (
       <ErrorState
         title="Unable to load inbound request"
-        description={(error as Error)?.message ?? "Please try again."}
-        onRetry={() => refetch()}
+        message={(error as Error)?.message ?? "Please try again."}
+        onRetry={() => { refetch(); }}
       />
     );
   }
