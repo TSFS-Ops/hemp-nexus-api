@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { KeyRound, Radio, Database, BookOpen, Terminal } from "lucide-react";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 /**
  * DeveloperShell — pure dark-mode terminal environment.
@@ -77,8 +78,9 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="flex-1 min-w-0 pb-16 md:pb-0">{children}</main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }
