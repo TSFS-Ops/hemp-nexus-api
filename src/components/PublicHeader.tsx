@@ -76,8 +76,9 @@ export function PublicHeader() {
   };
 
   return (
+    <>
     <nav
-      className="sticky top-0 z-50 bg-white border-b border-slate-200"
+      className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
     >
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -114,7 +115,7 @@ export function PublicHeader() {
 
               {openMenu === category.key && (
                 <div
-                  className="absolute left-1/2 -translate-x-1/2 top-full pt-2"
+                  className="absolute left-1/2 -translate-x-1/2 top-full pt-2 z-[60]"
                   onMouseEnter={() => handleEnter(category.key)}
                   onMouseLeave={handleLeave}
                 >
@@ -226,5 +227,8 @@ export function PublicHeader() {
         </div>
       )}
     </nav>
+    {/* Spacer to offset the fixed header height (h-20 = 5rem) */}
+    <div aria-hidden className="h-20" />
+    </>
   );
 }
