@@ -339,18 +339,33 @@ export function EvidencePackView({ demoMode = false }: EvidencePackViewProps = {
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-900 py-16 px-6 lg:px-12">
+    <div
+      className={
+        demoMode
+          ? "relative w-full bg-slate-900 py-10 px-6 rounded-2xl overflow-hidden"
+          : "min-h-screen w-full bg-slate-900 py-16 px-6 lg:px-12"
+      }
+    >
       {/* Vault header strip */}
       <div className="max-w-[920px] mx-auto mb-10 flex items-center justify-between">
-        <Link
-          to="/desk/deals"
-          className="flex items-center gap-3 text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
-            Sovereign Vault · Immutable Record
+        {demoMode ? (
+          <span className="flex items-center gap-3 text-slate-400">
+            <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
+            <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
+              Audit Ledger · Immutable Record
+            </span>
           </span>
-        </Link>
+        ) : (
+          <Link
+            to="/desk/deals"
+            className="flex items-center gap-3 text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
+            <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
+              Audit Ledger · Immutable Record
+            </span>
+          </Link>
+        )}
         <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
           REF · {matchId.slice(0, 8).toUpperCase()}
         </span>
@@ -580,7 +595,8 @@ export function EvidencePackView({ demoMode = false }: EvidencePackViewProps = {
         </DialogContent>
       </Dialog>
 
-      {/* Floating control bar */}
+      {/* Floating control bar — hidden in demo mode (museum / public page embed) */}
+      {!demoMode && (
       <motion.div
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -601,6 +617,7 @@ export function EvidencePackView({ demoMode = false }: EvidencePackViewProps = {
           </VaultAction>
         </div>
       </motion.div>
+      )}
     </div>
   );
 }

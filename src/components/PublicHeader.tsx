@@ -13,10 +13,9 @@ const MEGA_NAV: MegaCategory[] = [
     key: "products",
     label: "Products",
     items: [
-      { label: "Trade Desk", description: "Operational workspace for live deals", to: "/desk" },
+      { label: "Trade Desk", description: "Operational workspace for live deals", to: "/products/trade-desk" },
       { label: "Compliance Engine", description: "KYB, sanctions & jurisdictional gates", to: "/products/compliance-engine" },
-      { label: "Evidence Vault", description: "Cryptographically sealed deal records", to: ROUTES.DOCS },
-      { label: "API & SDK", description: "Programmatic access for institutions", to: ROUTES.DOCS },
+      { label: "Audit Ledger", description: "Immutable, cryptographically sealed deal records", to: "/products/audit-ledger" },
     ],
   },
   {
@@ -34,8 +33,8 @@ const MEGA_NAV: MegaCategory[] = [
     items: [
       { label: "Documentation", description: "Guides, concepts & quickstarts", to: ROUTES.DOCS },
       { label: "API Reference", description: "Full endpoint specification", to: ROUTES.DOCS },
+      { label: "SDKs & Libraries", description: "TypeScript SDK, code samples & client libs", to: ROUTES.DOCS },
       { label: "System Status", description: "Live platform health & uptime", to: "/admin/health" },
-      { label: "Integrations", description: "Webhooks, SDKs and partners", to: ROUTES.DOCS },
     ],
   },
   {
