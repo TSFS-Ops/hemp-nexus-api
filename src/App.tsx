@@ -27,6 +27,9 @@ const Unsubscribe = lazy(() => import("@/pages/Unsubscribe"));
 const DeveloperApiKeys = lazy(() => import("@/pages/DeveloperApiKeys"));
 const DeveloperWebhooks = lazy(() => import("@/pages/DeveloperWebhooks"));
 const GovernanceTriage = lazy(() => import("@/pages/GovernanceTriage"));
+const GovernanceAudits = lazy(() => import("@/pages/GovernanceAudits"));
+const GovernanceEntities = lazy(() => import("@/pages/GovernanceEntities"));
+const GovernanceHealth = lazy(() => import("@/pages/GovernanceHealth"));
 const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
 const Welcome = lazy(() => import("@/pages/Welcome"));
 const Desk = lazy(() => import("@/pages/Desk"));
@@ -75,6 +78,9 @@ function App() {
                   <Route path="/developers/webhooks" element={<DeveloperWebhooks />} />
                   <Route path="/developers" element={<Navigate to="/developers/keys" replace />} />
                   <Route path="/governance/triage" element={<GovernanceTriage />} />
+                  <Route path="/governance/audits" element={<GovernanceAudits />} />
+                  <Route path="/governance/entities" element={<GovernanceEntities />} />
+                  <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   <Route path="/trade/wizard" element={<TradeDealWizard />} />
                   {/* 404 for unknown routes */}
