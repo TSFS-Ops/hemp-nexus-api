@@ -23,7 +23,6 @@ import { WizardStepper, type WizardStepDef } from "./WizardStepper";
 import { MatchDocuments } from "@/components/match/MatchDocuments";
 import { DealTermsPanel } from "@/components/match/DealTermsPanel";
 import { MatchNotes } from "@/components/match/MatchNotes";
-
 import { StateProgressionCard } from "@/components/match/StateProgressionCard";
 import { GovernanceDocSubmit } from "@/components/match/GovernanceDocSubmit";
 import { WadModule } from "@/components/wad/WadModule";
@@ -35,9 +34,7 @@ import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, Arro
 import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import type { Match } from "@/hooks/use-match-details";
-
 export type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
-
 interface DealWizardProps {
   match: Match;
   canConfirm: boolean;
@@ -49,7 +46,6 @@ interface DealWizardProps {
   /** Engagement status — null means no engagement record exists */
   engagementStatus?: EngagementStatus;
 }
-
 export function DealWizard({
   match,
   canConfirm,
@@ -58,7 +54,7 @@ export function DealWizard({
   onConfirm,
   onStateAction,
   onRefresh,
-  engagementStatus,
+  engagementStatus
 }: DealWizardProps) {
   const currentState = match.state || "discovery";
   const isSettled = match.status === "settled";
@@ -75,7 +71,6 @@ export function DealWizard({
     const hasPrice = match.price_amount != null && match.price_amount > 0;
     return hasCommodity && hasBuyer && hasSeller && hasQuantity && hasPrice;
   }, [match]);
-
   const poiComplete = useMemo(() => {
     return isSettled || ["intent_declared", "counterparty_sighted", "committed", "completed"].includes(currentState);
   }, [currentState, isSettled]);
@@ -87,75 +82,60 @@ export function DealWizard({
 
   // ── WaD COMPLIANCE GATE ──
   // Query actual wads table to determine if WaD is sealed
-  const { data: wadRecord } = useQuery({
+  const {
+    data: wadRecord
+  } = useQuery({
     queryKey: ["wad-status", match.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("wads")
-        .select("id, status")
-        .eq("poi_id", match.id)
-        .neq("status", "revoked")
-        .neq("status", "superseded")
-        .maybeSingle();
+      const {
+        data,
+        error
+      } = await supabase.from("wads").select("id, status").eq("poi_id", match.id).neq("status", "revoked").neq("status", "superseded").maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: poiComplete && engagementAccepted,
+    enabled: poiComplete && engagementAccepted
   });
-
   const wadSealed = wadRecord?.status === "sealed";
   const wadComplete = wadSealed || isCompleted;
-
   const evidenceComplete = isCompleted;
-
-  const steps: WizardStepDef[] = useMemo(() => [
-    {
-      id: "search",
-      label: "Search",
-      description: "A trading partner has been identified and a match record created.",
-      complete: searchComplete,
-      locked: false,
-    },
-    {
-      id: "match",
-      label: "Match",
-      description: "Review trading partner details, negotiate terms, and attach supporting documents.",
-      complete: matchComplete,
-      locked: false,
-    },
-    {
-      id: "poi",
-      label: "Proof of Intent",
-      description: poiHoldActive
-        ? "Trade request generated. Awaiting trading partner engagement — the process is paused here."
-        : "Generate a Trade Request — 1 credit (R10). Non-binding, irreversible, fully audited.",
-      complete: poiComplete && engagementAccepted,
-      locked: !matchComplete, // Strict: locked until match step complete
-    },
-    {
-      id: "wad",
-      label: "Signed Deal",
-      description: poiHoldActive
-        ? "Locked — trading partner must accept before you can proceed to Signed Deal."
-        : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
-      complete: wadComplete,
-      locked: !poiComplete || poiHoldActive, // HOLD POINT: locked until engagement accepted
-    },
-    {
-      id: "evidence",
-      label: "Evidence Pack",
-      description: "Generate a SHA-256 hashed, tamper-evident evidence bundle for regulatory finality.",
-      complete: evidenceComplete,
-      locked: !wadComplete, // Strict: locked until WaD sealed
-    },
-  ], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted]);
+  const steps: WizardStepDef[] = useMemo(() => [{
+    id: "search",
+    label: "Search",
+    description: "A trading partner has been identified and a match record created.",
+    complete: searchComplete,
+    locked: false
+  }, {
+    id: "match",
+    label: "Match",
+    description: "Review trading partner details, negotiate terms, and attach supporting documents.",
+    complete: matchComplete,
+    locked: false
+  }, {
+    id: "poi",
+    label: "Proof of Intent",
+    description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement — the process is paused here." : "Generate a Trade Request — 1 credit (R10). Non-binding, irreversible, fully audited.",
+    complete: poiComplete && engagementAccepted,
+    locked: !matchComplete // Strict: locked until match step complete
+  }, {
+    id: "wad",
+    label: "Signed Deal",
+    description: poiHoldActive ? "Locked — trading partner must accept before you can proceed to Signed Deal." : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
+    complete: wadComplete,
+    locked: !poiComplete || poiHoldActive // HOLD POINT: locked until engagement accepted
+  }, {
+    id: "evidence",
+    label: "Evidence Pack",
+    description: "Generate a SHA-256 hashed, tamper-evident evidence bundle for regulatory finality.",
+    complete: evidenceComplete,
+    locked: !wadComplete // Strict: locked until WaD sealed
+  }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted]);
 
   // Auto-select the first incomplete, unlocked step
   const defaultStep = useMemo(() => {
     const firstIncomplete = steps.findIndex(s => !s.complete && !s.locked);
     return firstIncomplete >= 0 ? firstIncomplete : steps.length - 1;
   }, [steps]);
-
   const [activeStep, setActiveStep] = useState(() => {
     // Land on the Match step (1) whenever POI has not yet been generated, even if
     // all commercial fields are already filled. This keeps the user inside Terms →
@@ -169,7 +149,6 @@ export function DealWizard({
 
   // Lifted sub-tab state for Match step so stepper can intercept
   const [matchSubTab, setMatchSubTab] = useState("terms");
-
   const handleStepClick = useCallback((idx: number) => {
     if (steps[idx].locked) return;
     // If user is on Match step and clicks POI, guide them to Notes first
@@ -179,64 +158,35 @@ export function DealWizard({
     }
     setActiveStep(idx);
   }, [steps, activeStep, matchSubTab]);
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Wizard Stepper */}
       <Card>
         <CardContent className="pt-5 pb-4">
-          <WizardStepper
-            steps={steps}
-            activeStep={activeStep}
-            onStepClick={handleStepClick}
-          />
+          <WizardStepper steps={steps} activeStep={activeStep} onStepClick={handleStepClick} />
         </CardContent>
       </Card>
 
       {/* Step Content */}
-      {activeStep === 0 && (
-        <StepSearch match={match} />
-      )}
-      {activeStep === 1 && (
-        <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />
-      )}
-      {activeStep === 2 && (
-        <div className="space-y-4">
-          <StepPoi
-            match={match}
-            onStateAction={onStateAction}
-            loading={stateActionLoading || confirming}
-            engagementStatus={engagementStatus}
-          />
+      {activeStep === 0 && <StepSearch match={match} />}
+      {activeStep === 1 && <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
+      {activeStep === 2 && <div className="space-y-4">
+          <StepPoi match={match} onStateAction={onStateAction} loading={stateActionLoading || confirming} engagementStatus={engagementStatus} />
           {/* Hold-point notice shown on POI step since WaD step is locked */}
-          {poiHoldActive && (
-            <Card className="border-dashed border-primary/30">
+          {poiHoldActive && <Card className="border-dashed border-primary/30">
               <CardContent className="py-6 text-center space-y-3">
                 <ShieldAlert className="h-7 w-7 text-primary mx-auto" />
-                <h3 className="font-semibold text-sm">Signed Deal Step Locked — Awaiting Trading Partner</h3>
+                <h3 className="font-semibold text-sm">Signed Deal Step Locked, Awaiting Trading Partner</h3>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                   The trade request has been generated. The next step (Signed Deal) is locked until the trading partner engagement is accepted.
                 </p>
-                {engagementStatus && (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
-                    <span className={`h-2 w-2 rounded-full ${
-                      engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" :
-                      "bg-amber-500 animate-pulse"
-                    }`} />
-                    Current status: {engagementStatus === "notification_sent" ? "Notification sent" :
-                      engagementStatus === "contacted" ? "Contacted" :
-                      engagementStatus === "declined" ? "Declined" :
-                      engagementStatus === "expired" ? "Expired" : engagementStatus}
-                  </div>
-                )}
+                {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
+                    <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
+                    Current status: {engagementStatus === "notification_sent" ? "Notification sent" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
+                  </div>}
               </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-      {activeStep === 3 && (
-        poiHoldActive ? (
-          <Card className="border-dashed border-primary/30">
+            </Card>}
+        </div>}
+      {activeStep === 3 && (poiHoldActive ? <Card className="border-dashed border-primary/30">
             <CardContent className="py-8 text-center space-y-3">
               <ShieldAlert className="h-8 w-8 text-primary mx-auto" />
               <h3 className="font-semibold">Awaiting Trading Partner Engagement</h3>
@@ -245,34 +195,23 @@ export function DealWizard({
                 This step is paused until the trading partner has been engaged and has responded.
               </p>
               {/* Inline engagement status — no need to scroll up */}
-              {engagementStatus && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
-                  <span className={`h-2 w-2 rounded-full ${
-                    engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" :
-                    "bg-amber-500 animate-pulse"
-                  }`} />
-                  Current status: {engagementStatus === "notification_sent" ? "Notification sent" :
-                    engagementStatus === "contacted" ? "Contacted" :
-                    engagementStatus === "declined" ? "Declined" :
-                    engagementStatus === "expired" ? "Expired" : engagementStatus}
-                </div>
-              )}
+              {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
+                  <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
+                  Current status: {engagementStatus === "notification_sent" ? "Notification sent" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
+                </div>}
             </CardContent>
-          </Card>
-        ) : (
-          <StepWad match={match} onRefresh={onRefresh} />
-        )
-      )}
-      {activeStep === 4 && (
-        <StepEvidence match={match} currentState={currentState} />
-      )}
-    </div>
-  );
+          </Card> : <StepWad match={match} onRefresh={onRefresh} />)}
+      {activeStep === 4 && <StepEvidence match={match} currentState={currentState} />}
+    </div>;
 }
 
 // ─── Step 1: Search (Complete) ──────────────────────────────────────
 
-function StepSearch({ match }: { match: Match }) {
+function StepSearch({
+  match
+}: {
+  match: Match;
+}) {
   const isRevealed = true; // Names are always visible per client requirement
   const userOrgId = useUserOrg();
   const inferredRole = getMatchRole(userOrgId, match as any);
@@ -284,17 +223,13 @@ function StepSearch({ match }: { match: Match }) {
   } else if (inferredRole === "seller") {
     roleBadgeLabel = "Seller";
   }
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-lg">Trading Partner Identified</CardTitle>
-          {roleBadgeLabel && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-primary/30 bg-primary/5 text-primary">
+          {roleBadgeLabel && <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-primary/30 bg-primary/5 text-primary">
               Your role: {roleBadgeLabel}
-            </span>
-          )}
+            </span>}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -320,23 +255,33 @@ function StepSearch({ match }: { match: Match }) {
           This match was created via the search or bilateral matching flow. Proceed to the next step to review terms.
         </p>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
 
 // ─── Step 2: Match Details ──────────────────────────────────────────
 
-function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab, onSubTabChange }: { match: Match; currentState: string; onMatchUpdated?: () => void; onProceedToPoi?: () => void; subTab: string; onSubTabChange: (tab: string) => void }) {
+function StepMatch({
+  match,
+  currentState,
+  onMatchUpdated,
+  onProceedToPoi,
+  subTab,
+  onSubTabChange
+}: {
+  match: Match;
+  currentState: string;
+  onMatchUpdated?: () => void;
+  onProceedToPoi?: () => void;
+  subTab: string;
+  onSubTabChange: (tab: string) => void;
+}) {
   // Check if all required fields are complete
-  const allComplete = !!match.commodity && !!match.buyer_name && !!match.seller_name
-    && match.quantity_amount != null && match.quantity_amount > 0
-    && match.price_amount != null && match.price_amount > 0;
+  const allComplete = !!match.commodity && !!match.buyer_name && !!match.seller_name && match.quantity_amount != null && match.quantity_amount > 0 && match.price_amount != null && match.price_amount > 0;
 
   // Sequential sub-tab navigation: Terms → Documents → Notes → POI
   const subTabOrder = ["terms", "documents", "notes"] as const;
   const currentSubIndex = subTabOrder.indexOf(subTab as any);
   const isLastSubTab = currentSubIndex === subTabOrder.length - 1;
-
   const handleNextSubTab = () => {
     if (isLastSubTab && onProceedToPoi) {
       onProceedToPoi();
@@ -347,14 +292,8 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab
 
   // Label and description for the contextual next prompt
   const nextLabel = isLastSubTab ? "Proceed to Proof of Intent" : `Next: ${subTab === "terms" ? "Documents" : "Notes"}`;
-  const nextDescription = isLastSubTab
-    ? "All required fields complete"
-    : subTab === "terms"
-      ? "Terms saved — review or attach supporting documents"
-      : "Documents reviewed — add any deal notes before proceeding";
-
-  return (
-    <div className="space-y-4">
+  const nextDescription = isLastSubTab ? "All required fields complete" : subTab === "terms" ? "Terms saved — review or attach supporting documents" : "Documents reviewed — add any deal notes before proceeding";
+  return <div className="space-y-4">
       {/* Sub-navigation within the match step */}
       <Tabs value={subTab} onValueChange={onSubTabChange}>
         <TabsList className="flex-wrap h-auto gap-1">
@@ -384,8 +323,7 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab
       </Tabs>
 
       {/* Contextual next-step prompt — only when required commercial fields are complete */}
-      {allComplete && (
-        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+      {allComplete && <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
             <p className="text-sm font-medium text-foreground">{nextDescription}</p>
@@ -394,10 +332,8 @@ function StepMatch({ match, currentState, onMatchUpdated, onProceedToPoi, subTab
             {nextLabel}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 }
 
 // ─── Step 3: POI ────────────────────────────────────────────────────
@@ -406,45 +342,46 @@ function StepPoi({
   match,
   onStateAction,
   loading,
-  engagementStatus,
+  engagementStatus
 }: {
   match: Match;
   onStateAction: (action: string) => Promise<void>;
   loading: boolean;
   engagementStatus?: EngagementStatus;
 }) {
-  return (
-    <div className="space-y-4">
-      <StateProgressionCard
-        match={match}
-        onAction={onStateAction}
-        loading={loading}
-        engagementStatus={engagementStatus}
-      />
-    </div>
-  );
+  return <div className="space-y-4">
+      <StateProgressionCard match={match} onAction={onStateAction} loading={loading} engagementStatus={engagementStatus} />
+    </div>;
 }
 
 // ─── Step 4: WaD ────────────────────────────────────────────────────
 
-function StepWad({ match, onRefresh }: { match: Match; onRefresh: () => void }) {
-  return (
-    <div className="space-y-4">
+function StepWad({
+  match,
+  onRefresh
+}: {
+  match: Match;
+  onRefresh: () => void;
+}) {
+  return <div className="space-y-4">
       <GovernanceDocSubmit matchId={match.id} orgId={match.org_id} />
       <WadModule match={match} onWadCreated={onRefresh} />
-    </div>
-  );
+    </div>;
 }
 
 // ─── Step 5: Evidence Pack ──────────────────────────────────────────
 
-function StepEvidence({ match, currentState }: { match: Match; currentState: string }) {
-  return (
-    <div className="space-y-4">
+function StepEvidence({
+  match,
+  currentState
+}: {
+  match: Match;
+  currentState: string;
+}) {
+  return <div className="space-y-4">
       <EvidencePackPanel matchId={match.id} matchStatus={match.status} matchState={currentState} />
       <Separator />
       <MatchTimeline matchId={match.id} />
       <PoiEventsTimeline matchId={match.id} />
-    </div>
-  );
+    </div>;
 }

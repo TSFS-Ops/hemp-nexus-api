@@ -8,84 +8,53 @@
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ShieldCheck,
-  Lock,
-  FileText,
-  Search,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, Lock, FileText, Search, Zap } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
-import {
-  DEMO_COMPILER_TERMS,
-  DEMO_COMPILER_DOCS,
-  DEMO_COMPILER_SEAL,
-} from "@/components/desk/_demo/fixtures";
+import { DEMO_COMPILER_TERMS, DEMO_COMPILER_DOCS, DEMO_COMPILER_SEAL } from "@/components/desk/_demo/fixtures";
 
 /* ───────────────────────── BACKDROP PIECES ───────────────────────── */
 
 function PrecisionGrid() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0"
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-        maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-      }}
-    />
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0" style={{
+    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    maskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+    WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)"
+  }} />;
 }
-
 function EmeraldWhisper() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
-        }}
-      />
-    </div>
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)"
+    }} />
+      <div className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)"
+    }} />
+    </div>;
 }
 
 /* ─────────────── HERO MOCKUP — Static Certificate of Intent ─────────────── */
 
 function CertificateMockup() {
   const docCount = DEMO_COMPILER_DOCS.length;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, rotate: 0 }}
-      animate={{ opacity: 1, y: 0, rotate: 1 }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-[520px] mx-auto"
-      style={{ transformOrigin: "center center" }}
-    >
-      <div
-        aria-hidden
-        className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
-        }}
-      />
+  return <motion.div initial={{
+    opacity: 0,
+    y: 24,
+    rotate: 0
+  }} animate={{
+    opacity: 1,
+    y: 0,
+    rotate: 1
+  }} transition={{
+    duration: 0.9,
+    ease: [0.16, 1, 0.3, 1]
+  }} className="relative w-full max-w-[520px] mx-auto" style={{
+    transformOrigin: "center center"
+  }}>
+      <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
+      background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
+    }} />
       <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden">
         <header className="px-10 pt-9 pb-6 border-b border-slate-100 text-center">
           <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700">
@@ -113,18 +82,13 @@ function CertificateMockup() {
               Bound Evidence · {docCount} files
             </p>
             <ul className="space-y-2">
-              {DEMO_COMPILER_DOCS.map((d) => (
-                <li
-                  key={d.name}
-                  className="flex items-center gap-3 text-[12px] text-slate-700"
-                >
+              {DEMO_COMPILER_DOCS.map(d => <li key={d.name} className="flex items-center gap-3 text-[12px] text-slate-700">
                   <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
                   <span className="truncate flex-1">{d.name}</span>
                   <span className="font-mono text-[10px] text-slate-400">
                     {d.hash.slice(0, 8)}…
                   </span>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
         </div>
@@ -145,40 +109,31 @@ function CertificateMockup() {
           </div>
         </footer>
       </article>
-    </motion.div>
-  );
+    </motion.div>;
 }
-
 function Row({
   label,
   value,
-  mono = false,
+  mono = false
 }: {
   label: string;
   value: string;
   mono?: boolean;
 }) {
-  return (
-    <div>
+  return <div>
       <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
         {label}
       </p>
-      <p
-        className={`mt-1 text-[14px] text-slate-900 ${
-          mono ? "font-mono tabular-nums" : "font-medium"
-        }`}
-      >
+      <p className={`mt-1 text-[14px] text-slate-900 ${mono ? "font-mono tabular-nums" : "font-medium"}`}>
         {value}
       </p>
-    </div>
-  );
+    </div>;
 }
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function TradersSolutionsPage() {
-  return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -189,63 +144,74 @@ export default function TradersSolutionsPage() {
         <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-32 lg:pt-36 lg:pb-48">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 8
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.6
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 For Commodity Traders & Corporates
               </motion.p>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
-              >
+              <motion.h1 initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.05
+            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Execute with absolute certainty.
               </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.1
+            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
                 Discover verified counterparties, negotiate terms, and seal
                 cross-border commodity deals in a unified, secure terminal.
               </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.18 }}
-                className="mt-12 flex flex-wrap items-center gap-4"
-              >
-                <Link
-                  to="/auth"
-                  className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
-                >
+              <motion.div initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.18
+            }} className="mt-12 flex flex-wrap items-center gap-4">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
                   Open your desk
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link
-                  to="/products/trade-desk"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-                >
+                <Link to="/products/trade-desk" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
                   See the product
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
               </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
-              >
+              <motion.p initial={{
+              opacity: 0
+            }} animate={{
+              opacity: 1
+            }} transition={{
+              duration: 0.7,
+              delay: 0.3
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
                 Verified liquidity · Hash-locked terms · Zero-friction compliance
               </motion.p>
             </div>
@@ -295,21 +261,21 @@ export default function TradersSolutionsPage() {
               </p>
 
               <div className="mt-10 grid sm:grid-cols-3 gap-4">
-                {[
-                  { label: "Verified counterparties", value: "1,200+" },
-                  { label: "Active commodities", value: "80" },
-                  { label: "Jurisdictions", value: "42" },
-                ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-5"
-                  >
+                {[{
+                label: "Verified counterparties",
+                value: "1,200+"
+              }, {
+                label: "Active commodities",
+                value: "80"
+              }, {
+                label: "Jurisdictions",
+                value: "42"
+              }].map(s => <div key={s.label} className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-5">
                     <p className="text-2xl font-semibold tracking-tighter text-slate-900 tabular-nums">
                       {s.value}
                     </p>
                     <p className="mt-1 text-[12px] text-slate-500">{s.label}</p>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
 
@@ -326,24 +292,13 @@ export default function TradersSolutionsPage() {
               <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
                 Hash-locked negotiations.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
-                Every term iteration is signed and chained. No silent edits, no
-                "he said / she said" — the canonical version is always provably
-                the latest.
-              </p>
+              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed"> Every term iteration is signed and chained. No silent edits, no "he said / she said", the canonical version is always provably the latest. </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {[
-                  "Versioned commercial terms",
-                  "Bilateral signature collapse",
-                  "Tamper-evident audit trail",
-                  "SHA-256 sealed at issuance",
-                ].map((c) => (
-                  <li key={c} className="flex items-center gap-3 text-slate-700">
+                {["Versioned commercial terms", "Bilateral signature collapse", "Tamper-evident audit trail", "SHA-256 sealed at issuance"].map(c => <li key={c} className="flex items-center gap-3 text-slate-700">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                     {c}
-                  </li>
-                ))}
+                  </li>)}
               </ul>
             </div>
 
@@ -371,21 +326,13 @@ export default function TradersSolutionsPage() {
                 </div>
 
                 <ul className="space-y-2.5">
-                  {[
-                    "Single KYB profile, all counterparties",
-                    "Auto-screened against OFAC, EU, UK lists",
-                    "Jurisdictional routing on every deal",
-                    "Authority binding via verifiable credentials",
-                    "Compliance evidence travels with the trade",
-                  ].map((g, i) => (
-                    <li key={g} className="flex items-center gap-3 text-[13px]">
+                  {["Single KYB profile, all counterparties", "Auto-screened against OFAC, EU, UK lists", "Jurisdictional routing on every deal", "Authority binding via verifiable credentials", "Compliance evidence travels with the trade"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
                       <span className="font-mono text-[10px] text-emerald-700/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                       <span className="text-slate-700">{g}</span>
-                    </li>
-                  ))}
+                    </li>)}
                 </ul>
               </div>
             </div>
@@ -406,10 +353,7 @@ export default function TradersSolutionsPage() {
             first cross-border match today.
           </p>
           <div className="mt-12">
-            <Link
-              to="/auth"
-              className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-            >
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
               Open your desk
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>
@@ -418,6 +362,5 @@ export default function TradersSolutionsPage() {
       </section>
 
       <PageFooter />
-    </div>
-  );
+    </div>;
 }

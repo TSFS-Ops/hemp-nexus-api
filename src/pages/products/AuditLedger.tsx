@@ -10,68 +10,41 @@
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ShieldCheck,
-  Lock,
-  FileJson,
-  FileText,
-  FileSpreadsheet,
-  Hash,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, Lock, FileJson, FileText, FileSpreadsheet, Hash } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 
 /* ───────────────────────── BACKDROP PIECES ───────────────────────── */
 
-function PrecisionGrid({ className = "" }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute inset-0 ${className}`}
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-        maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-      }}
-    />
-  );
+function PrecisionGrid({
+  className = ""
+}: {
+  className?: string;
+}) {
+  return <div aria-hidden className={`pointer-events-none absolute inset-0 ${className}`} style={{
+    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    maskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+    WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)"
+  }} />;
 }
-
 function EmeraldWhisper() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
-        }}
-      />
-    </div>
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)"
+    }} />
+      <div className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)"
+    }} />
+    </div>;
 }
 
 /* ───────────────── BENTO VISUAL — payload → SHA-256 hash ───────────────── */
 
 const HASH_VALUE = "0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b";
-
 function PayloadToHash() {
-  return (
-    <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-center">
+  return <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-center">
       {/* Canonical JSON payload */}
       <div className="rounded-xl bg-slate-50/60 ring-1 ring-slate-100 p-5 font-mono text-[11px] leading-relaxed text-slate-700 overflow-hidden">
         <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-400 mb-3">
@@ -116,38 +89,32 @@ function PayloadToHash() {
           <span className="font-mono tracking-wider">Immutable · 256-bit</span>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
 
 /* ─────────────── BENTO — Bank-Ready Exports ─────────────── */
 
-const EXPORT_FORMATS = [
-  {
-    icon: FileJson,
-    label: "JSON",
-    desc: "Machine-readable canonical payload",
-    use: "REST · webhook · API ingest",
-  },
-  {
-    icon: FileText,
-    label: "PDF",
-    desc: "Sealed human-readable certificate",
-    use: "Bank credit committee",
-  },
-  {
-    icon: FileSpreadsheet,
-    label: "CSV",
-    desc: "Structured row export for ledgers",
-    use: "Treasury · reconciliation",
-  },
-];
+const EXPORT_FORMATS = [{
+  icon: FileJson,
+  label: "JSON",
+  desc: "Machine-readable canonical payload",
+  use: "REST · webhook · API ingest"
+}, {
+  icon: FileText,
+  label: "PDF",
+  desc: "Sealed human-readable certificate",
+  use: "Bank credit committee"
+}, {
+  icon: FileSpreadsheet,
+  label: "CSV",
+  desc: "Structured row export for ledgers",
+  use: "Treasury · reconciliation"
+}];
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function AuditLedgerProductPage() {
-  return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -159,88 +126,101 @@ export default function AuditLedgerProductPage() {
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             {/* Left: copy */}
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 8
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.6
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 Audit Ledger
               </motion.p>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
-              >
+              <motion.h1 initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.05
+            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Cryptographic truth
                 <br />
                 for trade finance.
               </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.1
+            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
                 Provide banks, DDIs, and insurers with mathematically provable
                 deal records. Eliminate manual auditing, eradicate fraud, and
                 accelerate capital deployment.
               </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.18 }}
-                className="mt-12 flex flex-wrap items-center gap-4"
-              >
-                <Link
-                  to="/auth"
-                  className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
-                >
+              <motion.div initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.18
+            }} className="mt-12 flex flex-wrap items-center gap-4">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
                   Issue your first ledger
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link
-                  to="/docs"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-                >
+                <Link to="/docs" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
                   Read the spec
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
               </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
-              >
+              <motion.p initial={{
+              opacity: 0
+            }} animate={{
+              opacity: 1
+            }} transition={{
+              duration: 0.7,
+              delay: 0.3
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
                 SHA-256 sealed · 9-gate verified · Bank-ready exports
               </motion.p>
             </div>
 
             {/* Right: floating Audit Ledger mockup (real component, demo mode) */}
             <div className="relative">
-              <motion.div
-                initial={{ opacity: 0, y: 24, rotate: -2 }}
-                animate={{ opacity: 1, y: 0, rotate: -1 }}
-                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                className="relative w-full"
-                style={{ transformOrigin: "center center" }}
-              >
+              <motion.div initial={{
+              opacity: 0,
+              y: 24,
+              rotate: -2
+            }} animate={{
+              opacity: 1,
+              y: 0,
+              rotate: -1
+            }} transition={{
+              duration: 0.9,
+              ease: [0.16, 1, 0.3, 1]
+            }} className="relative w-full" style={{
+              transformOrigin: "center center"
+            }}>
                 {/* soft floor shadow */}
-                <div
-                  aria-hidden
-                  className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
-                  }}
-                />
+                <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
+                background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
+              }} />
                 {/* Masked container — locks height + fade-out so the long doc doesn't blow out the layout */}
                 <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-slate-950">
                   <EvidencePackView demoMode />
@@ -262,10 +242,7 @@ export default function AuditLedgerProductPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               An immutable record. A bankable proof.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed">
-              Three primitives — deterministic hashing, multi-format export, and
-              gated ingest — composed into a single audit-grade ledger.
-            </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (deterministic hashing, multi-format export, and gated ingest) composed into a single audit-grade ledger. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -306,16 +283,12 @@ export default function AuditLedgerProductPage() {
               <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
                 Bank-ready exports.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
-                Deliver evidence in the formats trade finance institutions
-                already ingest — no bespoke integration required.
-              </p>
+              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed"> Deliver evidence in the formats trade finance institutions already ingest: no bespoke integration required. </p>
 
               <ul className="mt-8 space-y-4">
-                {EXPORT_FORMATS.map((f) => {
-                  const Icon = f.icon;
-                  return (
-                    <li key={f.label} className="flex items-start gap-3">
+                {EXPORT_FORMATS.map(f => {
+                const Icon = f.icon;
+                return <li key={f.label} className="flex items-start gap-3">
                       <div className="mt-0.5 h-7 w-7 rounded-md bg-slate-50 ring-1 ring-slate-100 flex items-center justify-center shrink-0">
                         <Icon className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2} />
                       </div>
@@ -326,9 +299,8 @@ export default function AuditLedgerProductPage() {
                           {f.use}
                         </p>
                       </div>
-                    </li>
-                  );
-                })}
+                    </li>;
+              })}
               </ul>
             </div>
 
@@ -355,28 +327,13 @@ export default function AuditLedgerProductPage() {
                 </div>
 
                 <ul className="flex flex-wrap gap-2">
-                  {[
-                    "Entity verification",
-                    "UBO disclosure",
-                    "Sanctions & PEP screening",
-                    "Jurisdiction resolution",
-                    "Authority binding",
-                    "Terms lock",
-                    "Evidence attachment",
-                    "Bilateral collapse signature",
-                    "WaD certificate issuance",
-                  ].map((g, i) => (
-                    <li
-                      key={g}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-100 px-2.5 py-1 text-[11px] text-slate-700"
-                    >
+                  {["Entity verification", "UBO disclosure", "Sanctions & PEP screening", "Jurisdiction resolution", "Authority binding", "Terms lock", "Evidence attachment", "Bilateral collapse signature", "WaD certificate issuance"].map((g, i) => <li key={g} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-100 px-2.5 py-1 text-[11px] text-slate-700">
                       <span className="font-mono text-[9px] text-emerald-700/70 tabular-nums">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" strokeWidth={2} />
                       <span>{g}</span>
-                    </li>
-                  ))}
+                    </li>)}
                 </ul>
               </div>
             </div>
@@ -396,17 +353,11 @@ export default function AuditLedgerProductPage() {
             The Audit Ledger is included with every Izenzo Trade Desk seat.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/auth"
-              className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-            >
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
               Open your desk
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>
-            <Link
-              to="/pricing"
-              className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-            >
+            <Link to="/pricing" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
               See pricing
               <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
             </Link>
@@ -415,6 +366,5 @@ export default function AuditLedgerProductPage() {
       </section>
 
       <PageFooter />
-    </div>
-  );
+    </div>;
 }

@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
 interface DealCard {
   id: string;
   commodity: string;
@@ -11,7 +10,6 @@ interface DealCard {
   state: string;
   created_at: string;
 }
-
 interface PipelineLane {
   id: string;
   title: string;
@@ -21,75 +19,68 @@ interface PipelineLane {
 }
 
 // Mapping the 9-step WaD workflow into three editorial buckets
-const LANE_DEFS = [
-  {
-    id: "draft",
-    title: "Draft Interests",
-    subtitle: "Steps 1–3 · Intent captured",
-    states: ["draft", "interest_logged", "match_proposed"],
-  },
-  {
-    id: "pending",
-    title: "Pending Counterparty",
-    subtitle: "Steps 4–7 · In negotiation",
-    states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending"],
-  },
-  {
-    id: "poi",
-    title: "Proofs of Intent Generated",
-    subtitle: "Steps 8–9 · Sealed",
-    states: ["pending_finality", "settled", "poi_generated", "finalised"],
-  },
-];
-
+const LANE_DEFS = [{
+  id: "draft",
+  title: "Draft Interests",
+  subtitle: "Steps 1 to 3 · Intent captured",
+  states: ["draft", "interest_logged", "match_proposed"]
+}, {
+  id: "pending",
+  title: "Pending Counterparty",
+  subtitle: "Steps 4 to 7 · In negotiation",
+  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending"]
+}, {
+  id: "poi",
+  title: "Proofs of Intent Generated",
+  subtitle: "Steps 8 to 9 · Sealed",
+  states: ["pending_finality", "settled", "poi_generated", "finalised"]
+}];
 export function DealPipeline() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading
+  } = useQuery({
     queryKey: ["desk-pipeline", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<PipelineLane[]> => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user!.id)
-        .maybeSingle();
-      if (!profile?.org_id) return LANE_DEFS.map((l) => ({ ...l, deals: [] }));
-
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at")
-        .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id}`)
-        .order("created_at", { ascending: false })
-        .limit(60);
-
-      const cards: DealCard[] = (matches ?? []).map((m) => {
+      const {
+        data: profile
+      } = await supabase.from("profiles").select("org_id").eq("id", user!.id).maybeSingle();
+      if (!profile?.org_id) return LANE_DEFS.map(l => ({
+        ...l,
+        deals: []
+      }));
+      const {
+        data: matches
+      } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id}`).order("created_at", {
+        ascending: false
+      }).limit(60);
+      const cards: DealCard[] = (matches ?? []).map(m => {
         const isBuyer = m.buyer_org_id === profile.org_id;
         return {
           id: m.id,
           commodity: m.commodity ?? "Unspecified commodity",
           counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
-          volume:
-            m.quantity_amount && m.quantity_unit
-              ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}`
-              : "—",
+          volume: m.quantity_amount && m.quantity_unit ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}` : "—",
           state: m.state ?? "draft",
-          created_at: m.created_at,
+          created_at: m.created_at
         };
       });
-
-      return LANE_DEFS.map((lane) => ({
+      return LANE_DEFS.map(lane => ({
         ...lane,
-        deals: cards.filter((c) => lane.states.includes(c.state)),
+        deals: cards.filter(c => lane.states.includes(c.state))
       }));
-    },
+    }
   });
-
-  const lanes = data ?? LANE_DEFS.map((l) => ({ ...l, deals: [] }));
-
-  return (
-    <section>
+  const lanes = data ?? LANE_DEFS.map(l => ({
+    ...l,
+    deals: []
+  }));
+  return <section>
       <div className="mb-8 flex items-baseline justify-between">
         <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
           Active Deal Pipeline
@@ -100,8 +91,7 @@ export function DealPipeline() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {lanes.map((lane) => (
-          <div key={lane.id} className="flex flex-col gap-6">
+        {lanes.map(lane => <div key={lane.id} className="flex flex-col gap-6">
             {/* Lane header */}
             <div className="px-2">
               <h3 className="text-sm font-medium text-slate-900 mb-1">{lane.title}</h3>
@@ -112,37 +102,25 @@ export function DealPipeline() {
 
             {/* Cards */}
             <div className="flex flex-col gap-4 min-h-[200px]">
-              {isLoading ? (
-                <SkeletonCard />
-              ) : lane.deals.length === 0 ? (
-                <LaneEmptyState />
-              ) : (
-                lane.deals.map((deal) => (
-                  <DealDocumentCard
-                    key={deal.id}
-                    deal={deal}
-                    onClick={() => navigate(`/desk/deals/${deal.id}`)}
-                  />
-                ))
-              )}
+              {isLoading ? <SkeletonCard /> : lane.deals.length === 0 ? <LaneEmptyState /> : lane.deals.map(deal => <DealDocumentCard key={deal.id} deal={deal} onClick={() => navigate(`/desk/deals/${deal.id}`)} />)}
             </div>
-          </div>
-        ))}
+          </div>)}
       </div>
-    </section>
-  );
+    </section>;
 }
-
-function DealDocumentCard({ deal, onClick }: { deal: DealCard; onClick: () => void }) {
+function DealDocumentCard({
+  deal,
+  onClick
+}: {
+  deal: DealCard;
+  onClick: () => void;
+}) {
   const date = new Date(deal.created_at).toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
   });
-
-  return (
-    <button
-      onClick={onClick}
-      className="text-left bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors p-6 group"
-    >
+  return <button onClick={onClick} className="text-left bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors p-6 group">
       {/* Top mono row — like a document header */}
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
         <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-400">
@@ -170,26 +148,19 @@ function DealDocumentCard({ deal, onClick }: { deal: DealCard; onClick: () => vo
           Open →
         </span>
       </div>
-    </button>
-  );
+    </button>;
 }
-
 function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-md border border-slate-200 p-6 animate-pulse">
+  return <div className="bg-white rounded-md border border-slate-200 p-6 animate-pulse">
       <div className="h-3 w-24 bg-slate-100 rounded mb-6" />
       <div className="h-4 w-3/4 bg-slate-100 rounded mb-3" />
       <div className="h-3 w-1/2 bg-slate-100 rounded" />
-    </div>
-  );
+    </div>;
 }
-
 function LaneEmptyState() {
-  return (
-    <div className="bg-white rounded-md border border-dashed border-slate-200 p-8 text-center">
+  return <div className="bg-white rounded-md border border-dashed border-slate-200 p-8 text-center">
       <p className="text-xs text-slate-400 font-mono tracking-wide uppercase">
         No deals
       </p>
-    </div>
-  );
+    </div>;
 }

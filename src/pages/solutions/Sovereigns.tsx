@@ -8,93 +8,85 @@
 
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ShieldCheck,
-  Lock,
-  Globe2,
-  Activity,
-  AlertTriangle,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, Lock, Globe2, Activity, AlertTriangle, TrendingUp } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { PageFooter } from "@/components/PageFooter";
 
 /* ───────────────────────── BACKDROP PIECES ───────────────────────── */
 
 function PrecisionGrid() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0"
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-        maskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-      }}
-    />
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0" style={{
+    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    maskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
+    WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)"
+  }} />;
 }
-
 function EmeraldWhisper() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
-        }}
-      />
-    </div>
-  );
+  return <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)"
+    }} />
+      <div className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl" style={{
+      background: "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)"
+    }} />
+    </div>;
 }
 
 /* ─────────────── HERO MOCKUP — Macro Telemetry Dashboard ─────────────── */
 
-const PROGRAMME_PULSES = [
-  { t: "10:42", evt: "programme_disbursement", amt: "USD 12.4M" },
-  { t: "10:41", evt: "milestone_verified", amt: "ZAR 8.1M" },
-  { t: "10:39", evt: "kyb_re_attestation", amt: "—" },
-  { t: "10:36", evt: "sanctions_clear", amt: "—" },
-  { t: "10:34", evt: "fund_flow_recorded", amt: "USD 3.2M" },
-];
-
-const PROGRAMME_KPIS = [
-  { label: "Programmes active", value: "47", trend: "+3" },
-  { label: "Capital under governance", value: "$2.4B", trend: "+12%" },
-  { label: "Breach rate", value: "0.02%", trend: "−0.4%" },
-];
-
+const PROGRAMME_PULSES = [{
+  t: "10:42",
+  evt: "programme_disbursement",
+  amt: "USD 12.4M"
+}, {
+  t: "10:41",
+  evt: "milestone_verified",
+  amt: "ZAR 8.1M"
+}, {
+  t: "10:39",
+  evt: "kyb_re_attestation",
+  amt: "—"
+}, {
+  t: "10:36",
+  evt: "sanctions_clear",
+  amt: "—"
+}, {
+  t: "10:34",
+  evt: "fund_flow_recorded",
+  amt: "USD 3.2M"
+}];
+const PROGRAMME_KPIS = [{
+  label: "Programmes active",
+  value: "47",
+  trend: "+3"
+}, {
+  label: "Capital under governance",
+  value: "$2.4B",
+  trend: "+12%"
+}, {
+  label: "Breach rate",
+  value: "0.02%",
+  trend: "−0.4%"
+}];
 function MacroDashboardMockup() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, rotate: -2 }}
-      animate={{ opacity: 1, y: 0, rotate: -1 }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-[560px] mx-auto"
-      style={{ transformOrigin: "center center" }}
-    >
-      <div
-        aria-hidden
-        className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
-        }}
-      />
+  return <motion.div initial={{
+    opacity: 0,
+    y: 24,
+    rotate: -2
+  }} animate={{
+    opacity: 1,
+    y: 0,
+    rotate: -1
+  }} transition={{
+    duration: 0.9,
+    ease: [0.16, 1, 0.3, 1]
+  }} className="relative w-full max-w-[560px] mx-auto" style={{
+    transformOrigin: "center center"
+  }}>
+      <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
+      background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
+    }} />
       <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden">
         {/* Header */}
         <header className="px-8 pt-7 pb-5 border-b border-slate-100 flex items-center justify-between">
@@ -119,8 +111,7 @@ function MacroDashboardMockup() {
 
         {/* KPI strip */}
         <div className="px-8 py-6 grid grid-cols-3 gap-4 border-b border-slate-100">
-          {PROGRAMME_KPIS.map((k) => (
-            <div key={k.label}>
+          {PROGRAMME_KPIS.map(k => <div key={k.label}>
               <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-slate-500">
                 {k.label}
               </p>
@@ -130,8 +121,7 @@ function MacroDashboardMockup() {
               <p className="mt-0.5 font-mono text-[10px] text-emerald-700">
                 {k.trend} · 24h
               </p>
-            </div>
-          ))}
+            </div>)}
         </div>
 
         {/* Programme verification card */}
@@ -152,7 +142,9 @@ function MacroDashboardMockup() {
             12 participants · 142 milestones · USD 480M deployed
           </p>
           <div className="mt-3 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <div className="h-full bg-emerald-500" style={{ width: "78%" }} />
+            <div className="h-full bg-emerald-500" style={{
+            width: "78%"
+          }} />
           </div>
           <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-slate-500">
             <span>78% disbursed · 9/9 gates passed</span>
@@ -166,29 +158,22 @@ function MacroDashboardMockup() {
             Live Programme Events
           </p>
           <ul className="space-y-2">
-            {PROGRAMME_PULSES.map((p) => (
-              <li
-                key={p.t + p.evt}
-                className="flex items-center gap-3 text-[11px] font-mono"
-              >
+            {PROGRAMME_PULSES.map(p => <li key={p.t + p.evt} className="flex items-center gap-3 text-[11px] font-mono">
                 <span className="text-slate-400 tabular-nums w-10">{p.t}</span>
                 <span className="h-1 w-1 rounded-full bg-emerald-500 shrink-0" />
                 <span className="text-slate-900 truncate flex-1">{p.evt}</span>
                 <span className="text-slate-500 tabular-nums">{p.amt}</span>
-              </li>
-            ))}
+              </li>)}
           </ul>
         </div>
       </article>
-    </motion.div>
-  );
+    </motion.div>;
 }
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function SovereignsSolutionsPage() {
-  return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -199,64 +184,75 @@ export default function SovereignsSolutionsPage() {
         <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-32 lg:pt-36 lg:pb-48">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             <div>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 8
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.6
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 For Sovereigns & PDBs
               </motion.p>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900"
-              >
+              <motion.h1 initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.05
+            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Govern institutional trade at scale.
               </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl"
-              >
+              <motion.p initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.1
+            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
                 Secure national and cross-border trade programmes with
                 end-to-end provenance, automated compliance, and real-time
                 macro telemetry.
               </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.18 }}
-                className="mt-12 flex flex-wrap items-center gap-4"
-              >
-                <Link
-                  to="/auth"
-                  className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
-                >
+              <motion.div initial={{
+              opacity: 0,
+              y: 12
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.7,
+              delay: 0.18
+            }} className="mt-12 flex flex-wrap items-center gap-4">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
                   Request a briefing
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link
-                  to="/products/audit-ledger"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
-                >
+                <Link to="/products/audit-ledger" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
                   See the architecture
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
               </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500"
-              >
+              <motion.p initial={{
+              opacity: 0
+            }} animate={{
+              opacity: 1
+            }} transition={{
+              duration: 0.7,
+              delay: 0.3
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
                 Institutional data residency · Append-only ledger · Macro telemetry
               </motion.p>
             </div>
@@ -278,11 +274,7 @@ export default function SovereignsSolutionsPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               See the whole programme. In real time.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed">
-              Three primitives — macro oversight, fraud prevention, and
-              institutional data control — engineered for institutional trade
-              programmes at national scale.
-            </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (macro oversight, fraud prevention, and institutional data control) engineered for institutional trade programmes at national scale. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -299,32 +291,27 @@ export default function SovereignsSolutionsPage() {
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
                 Macro-level oversight.
               </h3>
-              <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
-                Track every participant, milestone, and disbursement across an
-                entire trade programme — in real time, without waiting for
-                end-of-quarter reports. Drill from a national KPI down to a
-                single signed event in three clicks.
-              </p>
+              <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl"> Track every participant, milestone, and disbursement across an entire trade programme, in real time, without waiting for end-of-quarter reports. Drill from a national KPI down to a single signed event in three clicks. </p>
 
               <div className="mt-10 grid sm:grid-cols-3 gap-4">
-                {[
-                  { icon: TrendingUp, label: "Live KPI dashboards" },
-                  { icon: Activity, label: "Append-only event stream" },
-                  { icon: ShieldCheck, label: "Cryptographic provenance" },
-                ].map((s) => {
-                  const Icon = s.icon;
-                  return (
-                    <div
-                      key={s.label}
-                      className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-5"
-                    >
+                {[{
+                icon: TrendingUp,
+                label: "Live KPI dashboards"
+              }, {
+                icon: Activity,
+                label: "Append-only event stream"
+              }, {
+                icon: ShieldCheck,
+                label: "Cryptographic provenance"
+              }].map(s => {
+                const Icon = s.icon;
+                return <div key={s.label} className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-5">
                       <Icon className="h-4 w-4 text-emerald-600 mb-3" strokeWidth={2} />
                       <p className="text-[12px] text-slate-700 leading-snug font-medium">
                         {s.label}
                       </p>
-                    </div>
-                  );
-                })}
+                    </div>;
+              })}
               </div>
             </div>
 
@@ -341,24 +328,13 @@ export default function SovereignsSolutionsPage() {
               <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
                 Fraud & leakage prevention.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
-                Every disbursement is gated by milestone verification. Every
-                signature is bound to a verified principal. Every event is
-                hash-chained — making tampering mathematically detectable.
-              </p>
+              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed"> Every disbursement is gated by milestone verification. Every signature is bound to a verified principal. Every event is hash-chained: making tampering mathematically detectable. </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {[
-                  "Milestone-gated fund flows",
-                  "Authority-bound signatures",
-                  "Hash-chained event store",
-                  "Automated breach detection",
-                ].map((c) => (
-                  <li key={c} className="flex items-center gap-3 text-slate-700">
+                {["Milestone-gated fund flows", "Authority-bound signatures", "Hash-chained event store", "Automated breach detection"].map(c => <li key={c} className="flex items-center gap-3 text-slate-700">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                     {c}
-                  </li>
-                ))}
+                  </li>)}
               </ul>
             </div>
 
@@ -386,21 +362,13 @@ export default function SovereignsSolutionsPage() {
                 </div>
 
                 <ul className="space-y-2.5">
-                  {[
-                    "Jurisdiction-locked data residency",
-                    "Role-based access (RBAC + break-glass)",
-                    "POPIA / GDPR retention enforcement",
-                    "Cold-storage archival pipeline",
-                    "Independent regulator export endpoints",
-                  ].map((g, i) => (
-                    <li key={g} className="flex items-center gap-3 text-[13px]">
+                  {["Jurisdiction-locked data residency", "Role-based access (RBAC + break-glass)", "POPIA / GDPR retention enforcement", "Cold-storage archival pipeline", "Independent regulator export endpoints"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
                       <span className="font-mono text-[10px] text-emerald-700/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
                       <span className="text-slate-700">{g}</span>
-                    </li>
-                  ))}
+                    </li>)}
                 </ul>
               </div>
             </div>
@@ -416,15 +384,9 @@ export default function SovereignsSolutionsPage() {
             <br />
             <span className="text-emerald-700">Start governing in real time.</span>
           </h2>
-          <p className="mt-8 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Brief our institutional solutions team on your programme — we'll
-            architect the governance rail end-to-end.
-          </p>
+          <p className="mt-8 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed"> Brief our institutional solutions team on your programme, we'll architect the governance rail end-to-end. </p>
           <div className="mt-12">
-            <Link
-              to="/auth"
-              className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-            >
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
               Request a briefing
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>
@@ -433,6 +395,5 @@ export default function SovereignsSolutionsPage() {
       </section>
 
       <PageFooter />
-    </div>
-  );
+    </div>;
 }

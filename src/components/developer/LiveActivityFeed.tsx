@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
 interface LogRow {
   id: string;
   created_at: string;
@@ -10,14 +9,12 @@ interface LogRow {
   status_code: number;
   response_time_ms: number | null;
 }
-
 function statusColor(s: number) {
   if (s >= 500) return "text-rose-400";
   if (s >= 400) return "text-amber-400";
   if (s >= 300) return "text-cyan-400";
   return "text-green-400";
 }
-
 function statusLabel(s: number) {
   if (s >= 500) return "ERROR";
   if (s === 429) return "RATE LIMITED";
@@ -28,68 +25,60 @@ function statusLabel(s: number) {
   if (s >= 200) return "OK";
   return "";
 }
-
 function formatTs(iso: string) {
   return iso.replace("T", " ").slice(0, 19);
 }
-
 export function LiveActivityFeed() {
   const [paused, setPaused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [lastBeat, setLastBeat] = useState<string>(new Date().toISOString());
-
-  const { data: lines = [], isLoading } = useQuery<LogRow[]>({
+  const {
+    data: lines = [],
+    isLoading
+  } = useQuery<LogRow[]>({
     queryKey: ["live-activity-feed"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("api_request_logs")
-        .select("id, created_at, method, endpoint, status_code, response_time_ms")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const {
+        data,
+        error
+      } = await supabase.from("api_request_logs").select("id, created_at, method, endpoint, status_code, response_time_ms").order("created_at", {
+        ascending: false
+      }).limit(50);
       if (error) throw error;
       setLastBeat(new Date().toISOString());
       return (data ?? []) as LogRow[];
     },
     refetchInterval: paused ? false : 5000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false
   });
 
   // Realtime subscription for instant updates
   useEffect(() => {
     if (paused) return;
-    const channel = supabase
-      .channel("api_request_logs_stream")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "api_request_logs" },
-        () => {
-          setLastBeat(new Date().toISOString());
-        }
-      )
-      .subscribe();
+    const channel = supabase.channel("api_request_logs_stream").on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "api_request_logs"
+    }, () => {
+      setLastBeat(new Date().toISOString());
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [paused]);
-
-  return (
-    <section>
+  return <section>
       <div className="flex items-end justify-between mb-5">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
             §02 / Realtime
           </div>
-          <h2
-            className="mt-1 text-lg text-slate-100 tracking-tight"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
+          <h2 className="mt-1 text-lg text-slate-100 tracking-tight" style={{
+          fontFamily: "Inter, sans-serif"
+        }}>
             Live Event Stream
           </h2>
         </div>
-        <button
-          onClick={() => setPaused(!paused)}
-          className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 transition-colors"
-        >
+        <button onClick={() => setPaused(!paused)} className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 transition-colors">
           {paused ? "▶ resume" : "⏸ pause"}
         </button>
       </div>
@@ -118,21 +107,13 @@ export function LiveActivityFeed() {
 
         {/* Log */}
         <div ref={ref} className="max-h-[420px] overflow-y-auto p-4 font-mono text-[12px] leading-[1.7]">
-          {isLoading && lines.length === 0 ? (
-            <div className="text-slate-500">connecting to telemetry stream…</div>
-          ) : lines.length === 0 ? (
-            <div className="space-y-2">
+          {isLoading && lines.length === 0 ? <div className="text-slate-500">connecting to telemetry stream…</div> : lines.length === 0 ? <div className="space-y-2">
               <div className="text-slate-500">// zero activity in window</div>
               <div className="text-slate-600">
                 last heartbeat: <span className="text-slate-400">{formatTs(lastBeat)}</span>
               </div>
-              <div className="text-slate-600">
-                awaiting first request on /v1/* — no API traffic recorded yet.
-              </div>
-            </div>
-          ) : (
-            lines.map((l) => (
-              <div key={l.id} className="flex items-baseline gap-3 whitespace-nowrap">
+              <div className="text-slate-600"> awaiting first request on /v1/*, no API traffic recorded yet. </div>
+            </div> : lines.map(l => <div key={l.id} className="flex items-baseline gap-3 whitespace-nowrap">
                 <span className="text-blue-400">[{formatTs(l.created_at)}]</span>
                 <span className="text-slate-400 w-12">{l.method}</span>
                 <span className="text-slate-100">{l.endpoint}</span>
@@ -140,17 +121,12 @@ export function LiveActivityFeed() {
                 <span className={statusColor(l.status_code)}>
                   {l.status_code} {statusLabel(l.status_code)}
                 </span>
-                {l.response_time_ms != null && (
-                  <>
+                {l.response_time_ms != null && <>
                     <span className="text-slate-600">·</span>
                     <span className="text-slate-500">{l.response_time_ms}ms</span>
-                  </>
-                )}
-              </div>
-            ))
-          )}
+                  </>}
+              </div>)}
         </div>
       </div>
-    </section>
-  );
+    </section>;
 }

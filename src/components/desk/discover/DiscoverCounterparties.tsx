@@ -8,10 +8,8 @@
  */
 
 import CounterpartySearch from "@/components/CounterpartySearch";
-
 export function DiscoverCounterparties() {
-  return (
-    <>
+  return <>
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="mb-10">
         <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
@@ -20,14 +18,10 @@ export function DiscoverCounterparties() {
         <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
           Discover Counterparties
         </h1>
-        <p className="mt-5 text-base text-slate-600 leading-relaxed max-w-2xl">
-          Search the verified institutional network. Use natural language — the system parses
-          commodity, jurisdiction, role, and liquidity signals.
-        </p>
+        <p className="mt-5 text-base text-slate-600 leading-relaxed max-w-2xl"> Search the verified institutional network. Use natural language, the system parses commodity, jurisdiction, role, and liquidity signals. </p>
       </header>
 
       {/* ── Live Search (legacy logic, preserved) ───────────── */}
       <CounterpartySearch />
-    </>
-  );
+    </>;
 }

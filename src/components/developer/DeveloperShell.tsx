@@ -11,20 +11,37 @@ import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
  * Background: slate-950. Sidebar: slate-900. Inter for nav, JetBrains Mono for data.
  */
 
-const NAV = [
-  { to: "/developer/keys", label: "API Keys", icon: KeyRound },
-  { to: "/developer/webhooks", label: "Webhook Logs", icon: Radio },
-  { to: "/developer/schema", label: "Schema Explorer", icon: Database },
-  { to: "/developer/docs", label: "Integration Docs", icon: BookOpen },
-];
-
-export function DeveloperShell({ children }: { children: ReactNode }) {
+const NAV = [{
+  to: "/developer/keys",
+  label: "API Keys",
+  icon: KeyRound
+}, {
+  to: "/developer/webhooks",
+  label: "Webhook Logs",
+  icon: Radio
+}, {
+  to: "/developer/schema",
+  label: "Schema Explorer",
+  icon: Database
+}, {
+  to: "/developer/docs",
+  label: "Integration Docs",
+  icon: BookOpen
+}];
+export function DeveloperShell({
+  children
+}: {
+  children: ReactNode;
+}) {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const {
+    user,
+    signOut
+  } = useAuth();
   const devId = user?.id ? `DEV-${user.id.replace(/-/g, "").slice(-8).toUpperCase()}` : "DEV-PENDING";
-
-  return (
-    <div className="min-h-screen w-full bg-slate-950 text-slate-100 antialiased" style={{ fontFamily: "Inter, sans-serif" }}>
+  return <div className="min-h-screen w-full bg-slate-950 text-slate-100 antialiased" style={{
+    fontFamily: "Inter, sans-serif"
+  }}>
       <div className="flex min-h-screen">
         {/* Sidebar */}
         <aside className="hidden md:flex w-60 shrink-0 flex-col bg-slate-900 border-r border-slate-800">
@@ -36,7 +53,7 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
                 izenzo / dev
               </span>
             </div>
-            <div className="mt-2 text-sm text-slate-100">Command Center</div>
+            <div className="mt-2 text-sm text-slate-100">Command Centre</div>
           </div>
 
           {/* Workspace switcher (Command Bridge) */}
@@ -46,27 +63,14 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
 
           {/* Nav */}
           <nav className="flex-1 px-3 py-4 space-y-0.5">
-            {NAV.map((item) => {
-              const active =
-                location.pathname === item.to ||
-                location.pathname.startsWith(item.to + "/");
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={[
-                    "flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-sm transition-colors",
-                    active
-                      ? "bg-slate-800 text-green-400 border-l-2 border-green-500"
-                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border-l-2 border-transparent",
-                  ].join(" ")}
-                >
+            {NAV.map(item => {
+            const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
+            const Icon = item.icon;
+            return <NavLink key={item.to} to={item.to} className={["flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-sm transition-colors", active ? "bg-slate-800 text-green-400 border-l-2 border-green-500" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border-l-2 border-transparent"].join(" ")}>
                   <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />
                   <span className="tracking-tight">{item.label}</span>
-                </NavLink>
-              );
-            })}
+                </NavLink>;
+          })}
           </nav>
 
           {/* System status — pulsing green LED */}
@@ -93,18 +97,12 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
               <p className="font-mono text-[10px] text-slate-500 truncate mt-0.5">{user?.email}</p>
             </div>
             <div className="flex items-center gap-3 pt-1">
-              <NavLink
-                to="/dashboard/settings"
-                className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-slate-100 transition-colors"
-              >
+              <NavLink to="/dashboard/settings" className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-slate-100 transition-colors">
                 <Settings className="h-3 w-3" strokeWidth={1.5} />
                 Settings
               </NavLink>
               <span className="text-slate-700">·</span>
-              <button
-                onClick={signOut}
-                className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-red-400 transition-colors"
-              >
+              <button onClick={signOut} className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-red-400 transition-colors">
                 <LogOut className="h-3 w-3" strokeWidth={1.5} />
                 Sign out
               </button>
@@ -116,6 +114,5 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
         <main className="flex-1 min-w-0 pb-16 md:pb-0">{children}</main>
       </div>
       <MobileBottomNav />
-    </div>
-  );
+    </div>;
 }

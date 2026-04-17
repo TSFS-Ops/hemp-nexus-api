@@ -45,25 +45,48 @@ import SystemAnalytics from "@/components/admin/SystemAnalytics";
 // Tab registry — single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
 type TabId = "users" | "organisations" | "disputes" | "audit" | "settings";
-
-const TABS: { id: TabId; label: string; icon: typeof Users; blurb: string }[] = [
-  { id: "users",         label: "User Management",         icon: Users,         blurb: "Profiles, role assignments, account suspensions." },
-  { id: "organisations", label: "Organisation Management", icon: Building2,     blurb: "KYB lifecycle, legal entities, KYC document verification." },
-  { id: "disputes",      label: "Dispute Resolution",      icon: AlertTriangle, blurb: "Flagged trades, escalations, force-resolve overrides." },
-  { id: "audit",         label: "Audit & Health",          icon: Activity,      blurb: "Immutable audit trail, event store, system health monitoring, and platform analytics." },
-  { id: "settings",      label: "Platform Settings",       icon: SettingsIcon,  blurb: "Platform configuration, approval thresholds, signing keys, overrides." },
-];
-
-const VALID_TAB_IDS = TABS.map((t) => t.id) as readonly TabId[];
+const TABS: {
+  id: TabId;
+  label: string;
+  icon: typeof Users;
+  blurb: string;
+}[] = [{
+  id: "users",
+  label: "User Management",
+  icon: Users,
+  blurb: "Profiles, role assignments, account suspensions."
+}, {
+  id: "organisations",
+  label: "Organisation Management",
+  icon: Building2,
+  blurb: "KYB lifecycle, legal entities, KYC document verification."
+}, {
+  id: "disputes",
+  label: "Dispute Resolution",
+  icon: AlertTriangle,
+  blurb: "Flagged trades, escalations, force-resolve overrides."
+}, {
+  id: "audit",
+  label: "Audit & Health",
+  icon: Activity,
+  blurb: "Immutable audit trail, event store, system health monitoring, and platform analytics."
+}, {
+  id: "settings",
+  label: "Platform Settings",
+  icon: SettingsIcon,
+  blurb: "Platform configuration, approval thresholds, signing keys, overrides."
+}];
+const VALID_TAB_IDS = TABS.map(t => t.id) as readonly TabId[];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Top admin bar — header for the platform administration workspace.
 // Midnight slate-950 to draw a hard boundary against the bright workspace below.
 // ─────────────────────────────────────────────────────────────────────────────
 function CommandBar() {
-  const { signOut } = useAuth();
-  return (
-    <header className="bg-slate-950 text-slate-100 border-b border-slate-900">
+  const {
+    signOut
+  } = useAuth();
+  return <header className="bg-slate-950 text-slate-100 border-b border-slate-900">
       <div className="px-6 lg:px-10 h-14 flex items-center justify-between gap-6">
         <div className="flex items-center gap-6 min-w-0">
           {/* Wordmark */}
@@ -100,40 +123,32 @@ function CommandBar() {
 
         <div className="flex items-center gap-5 shrink-0">
           {/* View public marketing site */}
-          <a
-            href="/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-emerald-400 transition-colors"
-            aria-label="Open public marketing site in new tab"
-          >
+          <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-emerald-400 transition-colors" aria-label="Open public marketing site in new tab">
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
             View Public Site
           </a>
 
-          <button
-            onClick={signOut}
-            className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors"
-            aria-label="Sign out of admin dashboard"
-          >
+          <button onClick={signOut} className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors" aria-label="Sign out of admin dashboard">
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
             Sign out
           </button>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section header — renders inside each tab. Anchors the operator with a
 // breadcrumb-equivalent and a one-line description of the surface.
 // ─────────────────────────────────────────────────────────────────────────────
-function TabHeader({ id }: { id: TabId }) {
-  const meta = TABS.find((t) => t.id === id)!;
+function TabHeader({
+  id
+}: {
+  id: TabId;
+}) {
+  const meta = TABS.find(t => t.id === id)!;
   const Icon = meta.icon;
-  return (
-    <div className="flex items-start gap-4 mb-8">
+  return <div className="flex items-start gap-4 mb-8">
       <div className="inline-flex items-center justify-center w-10 h-10 rounded-sm border border-slate-200 bg-white shrink-0">
         <Icon className="h-4 w-4 text-slate-700" strokeWidth={1.5} />
       </div>
@@ -146,8 +161,7 @@ function TabHeader({ id }: { id: TabId }) {
         </h1>
         <p className="text-sm text-slate-500 mt-1 max-w-2xl">{meta.blurb}</p>
       </div>
-    </div>
-  );
+    </div>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -155,41 +169,39 @@ function TabHeader({ id }: { id: TabId }) {
 // White card on slate-50, hairline border, generous padding. The internal
 // admin panels supply their own tables; we just frame them.
 // ─────────────────────────────────────────────────────────────────────────────
-function Surface({ children, label }: { children: React.ReactNode; label?: string }) {
-  return (
-    <section className="bg-white border border-slate-200 rounded-sm">
-      {label && (
-        <header className="px-5 py-3 border-b border-slate-200 bg-slate-50/50">
+function Surface({
+  children,
+  label
+}: {
+  children: React.ReactNode;
+  label?: string;
+}) {
+  return <section className="bg-white border border-slate-200 rounded-sm">
+      {label && <header className="px-5 py-3 border-b border-slate-200 bg-slate-50/50">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
             {label}
           </p>
-        </header>
-      )}
+        </header>}
       <div className="p-3 sm:p-5" data-admin-table>
         {children}
       </div>
-    </section>
-  );
+    </section>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab content — each panel is the legacy admin component, restyled by Surface.
 // ─────────────────────────────────────────────────────────────────────────────
 function UsersTab() {
-  return (
-    <>
+  return <>
       <TabHeader id="users" />
       <Surface label="Profiles & role assignments · auth.users · public.user_roles">
         <UsersManagement />
       </Surface>
-    </>
-  );
+    </>;
 }
-
 function OrganisationsTab() {
   // Sub-tabs: Orgs (token balances + suspension) · Legal Entities · KYB Docs
-  return (
-    <>
+  return <>
       <TabHeader id="organisations" />
       <Tabs defaultValue="orgs" className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm">
@@ -198,7 +210,7 @@ function OrganisationsTab() {
           <TabsTrigger value="kyb">KYB Documents</TabsTrigger>
         </TabsList>
         <TabsContent value="orgs">
-          <Surface label="Registered organisations · public.organizations">
+          <Surface label="Registered organisations · public.organisations">
             <OrgsManagement />
           </Surface>
         </TabsContent>
@@ -213,14 +225,11 @@ function OrganisationsTab() {
           </Surface>
         </TabsContent>
       </Tabs>
-    </>
-  );
+    </>;
 }
-
 function DisputesTab() {
   // Sub-tabs: Disputes (raised, status, override) · Trade Approvals (pending intervention)
-  return (
-    <>
+  return <>
       <TabHeader id="disputes" />
       <Tabs defaultValue="disputes" className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm">
@@ -238,14 +247,11 @@ function DisputesTab() {
           </Surface>
         </TabsContent>
       </Tabs>
-    </>
-  );
+    </>;
 }
-
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  return (
-    <>
+  return <>
       <TabHeader id="audit" />
       <Tabs defaultValue="audit-logs" className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
@@ -275,14 +281,11 @@ function AuditTab() {
           </Surface>
         </TabsContent>
       </Tabs>
-    </>
-  );
+    </>;
 }
-
 function SettingsTab() {
   // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
-  return (
-    <>
+  return <>
       <TabHeader id="settings" />
       <Tabs defaultValue="platform" className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
@@ -324,8 +327,7 @@ function SettingsTab() {
           </Surface>
         </TabsContent>
       </Tabs>
-    </>
-  );
+    </>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -334,17 +336,20 @@ function SettingsTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 function HQLayout() {
   const navigate = useNavigate();
-  const { tab } = useParams<{ tab?: string }>();
-  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "")
-    ? (tab as TabId)
-    : "users";
-
+  const {
+    tab
+  } = useParams<{
+    tab?: string;
+  }>();
+  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "users";
   const handleTabChange = (next: string) => {
-    navigate(`/hq/${next}`, { replace: false });
+    navigate(`/hq/${next}`, {
+      replace: false
+    });
   };
-
-  return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "Inter, sans-serif" }}>
+  return <div className="min-h-screen bg-slate-50" style={{
+    fontFamily: "Inter, sans-serif"
+  }}>
       <CommandBar />
 
       {/* Tab rail — replaces the old SecondaryNav. Mirrors the Command Bar's
@@ -353,13 +358,9 @@ function HQLayout() {
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
           <div className="px-6 lg:px-10 overflow-x-auto">
             <TabsList className="h-12 bg-transparent p-0 gap-8 rounded-none">
-              {TABS.map((t) => {
-                const Icon = t.icon;
-                return (
-                  <TabsTrigger
-                    key={t.id}
-                    value={t.id}
-                    className="
+              {TABS.map(t => {
+              const Icon = t.icon;
+              return <TabsTrigger key={t.id} value={t.id} className="
                       relative h-12 px-0 rounded-none bg-transparent
                       text-sm text-slate-500 hover:text-slate-900
                       data-[state=active]:text-slate-900
@@ -373,13 +374,11 @@ function HQLayout() {
                       data-[state=active]:after:h-0.5
                       data-[state=active]:after:bg-slate-900
                       transition-colors
-                    "
-                  >
+                    ">
                     <Icon className="h-3.5 w-3.5 mr-2" strokeWidth={1.5} />
                     {t.label}
-                  </TabsTrigger>
-                );
-              })}
+                  </TabsTrigger>;
+            })}
             </TabsList>
           </div>
         </div>
@@ -392,8 +391,7 @@ function HQLayout() {
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
       </Tabs>
-    </div>
-  );
+    </div>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -403,8 +401,9 @@ function HQLayout() {
 // understand the boundary; a manual exit returns them to the persona selector.
 // ─────────────────────────────────────────────────────────────────────────────
 function ForbiddenHQ() {
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6" style={{ fontFamily: "Inter, sans-serif" }}>
+  return <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6" style={{
+    fontFamily: "Inter, sans-serif"
+  }}>
       <div className="max-w-md w-full text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-md border border-slate-800 bg-slate-900 mb-8">
           <Shield className="h-5 w-5 text-rose-400" strokeWidth={1.5} />
@@ -421,16 +420,10 @@ function ForbiddenHQ() {
           role required to enter this area. This attempt has been recorded.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <Link
-            to="/desk"
-            className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-white text-slate-950 hover:bg-slate-200 transition-colors rounded-sm"
-          >
+          <Link to="/desk" className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-white text-slate-950 hover:bg-slate-200 transition-colors rounded-sm">
             Return to Desk
           </Link>
-          <Link
-            to="/welcome"
-            className="px-4 py-2 text-xs font-medium tracking-wide uppercase border border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white transition-colors rounded-sm"
-          >
+          <Link to="/welcome" className="px-4 py-2 text-xs font-medium tracking-wide uppercase border border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white transition-colors rounded-sm">
             Choose workspace
           </Link>
         </div>
@@ -438,8 +431,7 @@ function ForbiddenHQ() {
           Access attempt · SHA-256 logged
         </p>
       </div>
-    </div>
-  );
+    </div>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -447,13 +439,12 @@ function ForbiddenHQ() {
 // Routes: /hq → users (default) · /hq/:tab → that tab.
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HQ() {
-  const { isAdmin, isLoading } = useAuth();
-
+  const {
+    isAdmin,
+    isLoading
+  } = useAuth();
   if (isLoading) return null;
-
-  return (
-    <RequireAuth>
+  return <RequireAuth>
       {!isAdmin ? <ForbiddenHQ /> : <HQLayout />}
-    </RequireAuth>
-  );
+    </RequireAuth>;
 }
