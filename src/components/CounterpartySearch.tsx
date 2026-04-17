@@ -419,10 +419,10 @@ export default function CounterpartySearch() {
       if (failed === 0 && duplicates === 0) {
         if (created === 1 && lastMatchId) {
           toast.success("Draft match created - add commercial terms and documents, then send a trade request.");
-          navigate(`/dashboard/matches/${lastMatchId}`);
+          navigate(`/desk/match/${lastMatchId}`);
         } else {
           toast.success(`${created} draft matches created. Add commercial terms in each match before sending a trade request.`);
-          navigate("/dashboard/matches");
+          navigate("/desk/deals");
         }
       } else if (failed === 0) {
         if (created > 0) {
@@ -430,13 +430,13 @@ export default function CounterpartySearch() {
         } else {
           toast.info(`All ${duplicates} match${duplicates > 1 ? "es" : ""} already exist - no duplicates created. View them in your matches.`);
         }
-        navigate("/dashboard/matches");
+        navigate("/desk/deals");
       } else if (created > 0 || duplicates > 0) {
         const ok = created + duplicates;
         toast.warning(
           `${ok} of ${total} processed (${created} new, ${duplicates} already existed). ${failed} failed: ${failedNames.slice(0, 2).join(", ")}${failedNames.length > 2 ? "…" : ""}. You can retry the failed items.`
         );
-        navigate("/dashboard/matches");
+        navigate("/desk/deals");
       } else {
         toast.error("All match creation attempts failed. Please try again or contact support at support@izenzo.co.za.");
       }
