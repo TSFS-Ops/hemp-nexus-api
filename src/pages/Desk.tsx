@@ -21,7 +21,7 @@ import { BillingOverview } from "@/components/desk/billing/BillingOverview";
 // Migrated from the retired /dashboard shell. Data hooks (useQuery, Supabase) are unchanged.
 import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
-import MatchesList from "@/components/MatchesList";
+import { MatchesList } from "@/components/MatchesList";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
