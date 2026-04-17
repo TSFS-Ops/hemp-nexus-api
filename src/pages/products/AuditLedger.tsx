@@ -241,8 +241,10 @@ export default function AuditLedgerProductPage() {
                       "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
                   }}
                 />
-                <div className="rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden bg-slate-900">
+                {/* Masked container — locks height + fade-out so the long doc doesn't blow out the layout */}
+                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-slate-950">
                   <EvidencePackView demoMode />
+                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950 to-transparent z-10 pointer-events-none" />
                 </div>
               </motion.div>
             </div>
@@ -352,7 +354,7 @@ export default function AuditLedgerProductPage() {
                   </p>
                 </div>
 
-                <ul className="space-y-2.5">
+                <ul className="flex flex-wrap gap-2">
                   {[
                     "Entity verification",
                     "UBO disclosure",
@@ -364,12 +366,15 @@ export default function AuditLedgerProductPage() {
                     "Bilateral collapse signature",
                     "WaD certificate issuance",
                   ].map((g, i) => (
-                    <li key={g} className="flex items-center gap-3 text-[13px]">
-                      <span className="font-mono text-[10px] text-emerald-700/70 tabular-nums w-6">
+                    <li
+                      key={g}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-100 px-2.5 py-1 text-[11px] text-slate-700"
+                    >
+                      <span className="font-mono text-[9px] text-emerald-700/70 tabular-nums">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
-                      <span className="text-slate-700">{g}</span>
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" strokeWidth={2} />
+                      <span>{g}</span>
                     </li>
                   ))}
                 </ul>
