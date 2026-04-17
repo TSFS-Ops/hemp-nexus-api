@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { HashChainMotif } from "@/components/auth/HashChainMotif";
+import { lovable } from "@/integrations/lovable";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -451,9 +452,39 @@ function AuthForm({
   onForgot: () => void;
 }) {
   const isSignIn = mode === "signin";
+  const [ssoLoading, setSsoLoading] = useState<"google" | "microsoft" | null>(null);
+
+  const handleSso = async (provider: "google" | "microsoft") => {
+    if (ssoLoading || loading) return;
+    setSsoLoading(provider);
+    try {
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
+      });
+      if (result.redirected) return;
+      if (result.error) {
+        const msg = result.error.message || "";
+        if (provider === "microsoft") {
+          toast.info("Microsoft Entra SSO is provisioned per-tenant. Contact institutional@izenzo.co.za to enable it for your organisation.");
+        } else {
+          toast.error(msg || `Unable to continue with ${provider}.`);
+        }
+      }
+    } catch (err) {
+      if (provider === "microsoft") {
+        toast.info("Microsoft Entra SSO is provisioned per-tenant. Contact institutional@izenzo.co.za to enable it for your organisation.");
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(msg || `Unable to continue with ${provider}.`);
+      }
+    } finally {
+      setSsoLoading(null);
+    }
+  };
+
   return (
     <>
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="text-[28px] font-semibold text-slate-900 tracking-tighter leading-[1.1]">
           {isSignIn ? "Sign in to your desk" : "Create your account"}
         </h1>
@@ -461,6 +492,64 @@ function AuthForm({
           {isSignIn ? "Continue to your sovereign trade workspace." : "Begin onboarding into the institutional trade network."}
         </p>
       </div>
+
+      {/* ─── Enterprise SSO ─── */}
+      <div className="space-y-3 mb-6">
+        <button
+          type="button"
+          onClick={() => handleSso("microsoft")}
+          disabled={loading || ssoLoading !== null}
+          className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+        >
+          <span className="absolute left-4 flex items-center">
+            {ssoLoading === "microsoft" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="0" y="0" width="7" height="7" fill="#F25022" />
+                <rect x="9" y="0" width="7" height="7" fill="#7FBA00" />
+                <rect x="0" y="9" width="7" height="7" fill="#00A4EF" />
+                <rect x="9" y="9" width="7" height="7" fill="#FFB900" />
+              </svg>
+            )}
+          </span>
+          Continue with Microsoft
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSso("google")}
+          disabled={loading || ssoLoading !== null}
+          className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+        >
+          <span className="absolute left-4 flex items-center">
+            {ssoLoading === "google" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+              </svg>
+            )}
+          </span>
+          Continue with Google
+        </button>
+      </div>
+
+      {/* ─── Divider ─── */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-slate-200" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-white px-3 text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium">
+            or continue with email
+          </span>
+        </div>
+      </div>
+
 
       <form onSubmit={isSignIn ? onSignIn : onSignUp} className="space-y-5">
         <div className="space-y-2">
