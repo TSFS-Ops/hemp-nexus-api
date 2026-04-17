@@ -1,87 +1,114 @@
 /**
- * TriageInbox — Governor workspace for risk-weighted trade review.
+ * TriageInbox — Governor's risk-weighted command surface.
  *
- * Layout: 40/60 split.
- *   Left  — Risk-weighted queue of pending bilateral seals.
- *   Right — 9-Gate reviewer with integrity score + audit trail.
+ * Layout: 40 / 60 split.
+ *   LEFT  — Triage Queue. White surface, hairline divider, dense rows.
+ *   RIGHT — 9-Gate Verification Matrix on slate-50 with sticky sovereign actions.
  *
- * Pure presentational mockup — pre-execution governance demo.
+ * Pure presentational mockup. No backend mutations are performed; the actions
+ * surface confirmation dialogs only.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, AlertTriangle, Flag, Stamp } from "lucide-react";
+import { Check, AlertTriangle, FileText, Stamp, Flag } from "lucide-react";
+import { toast } from "sonner";
+
+/* ───────────── Types & Mock Data ───────────── */
 
 type Risk = "high" | "medium" | "low";
+type GateState = "passed" | "alert" | "pending";
+type FilterKey = "all" | "high" | "cross-border";
 
 type QueueItem = {
   id: string;
-  matchRef: string;
-  parties: string;
+  matchUuid: string;
+  partyA: string;
+  partyB: string;
   commodity: string;
   notional: string;
   jurisdictionRoute: string;
   riskScore: number;
   risk: Risk;
+  crossBorder: boolean;
   flag: string;
+};
+
+type EvidenceDoc = {
+  label: string;
+  filename: string;
+  size: string;
+  hash: string;
+  sealed: boolean;
 };
 
 const QUEUE: QueueItem[] = [
   {
     id: "wad-7f2a91c8",
-    matchRef: "WAD-7F2A91C8",
-    parties: "Kruger Trading ↔ Aurubis",
+    matchUuid: "7f2a91c8-4b3d-4e21-9c11-8a3f0d2bce17",
+    partyA: "Kruger Trading",
+    partyB: "Aurubis AG",
     commodity: "Copper Cathode · 500 MT",
     notional: "USD 4,710,000",
     jurisdictionRoute: "ZA → DE",
     riskScore: 88,
     risk: "high",
+    crossBorder: true,
     flag: "Cross-border · Non-SADC",
   },
   {
     id: "wad-3b1f04ae",
-    matchRef: "WAD-3B1F04AE",
-    parties: "KSB Mining ↔ Trafigura",
+    matchUuid: "3b1f04ae-7c92-4ad5-bb02-1e6c9f4870aa",
+    partyA: "KSB Mining",
+    partyB: "Trafigura Pte",
     commodity: "Manganese Ore · 12,000 MT",
     notional: "USD 2,160,000",
     jurisdictionRoute: "ZA → SG",
     riskScore: 74,
     risk: "high",
+    crossBorder: true,
     flag: "PEP-adjacent UBO",
   },
   {
     id: "wad-9c5d23ef",
-    matchRef: "WAD-9C5D23EF",
-    parties: "BHP Billiton ↔ Glencore",
+    matchUuid: "9c5d23ef-2a18-4f0b-8d77-b3c01ea66f29",
+    partyA: "BHP Billiton",
+    partyB: "Glencore International",
     commodity: "Iron Ore Fines · 80,000 MT",
     notional: "USD 8,400,000",
     jurisdictionRoute: "AU → CH",
     riskScore: 62,
     risk: "medium",
+    crossBorder: true,
     flag: "High notional",
   },
   {
     id: "wad-1e8a47bc",
-    matchRef: "WAD-1E8A47BC",
-    parties: "Rio Tinto ↔ Norsk Hydro",
+    matchUuid: "1e8a47bc-6d34-4392-a5fc-9b8e4f2c1d05",
+    partyA: "Rio Tinto",
+    partyB: "Norsk Hydro",
     commodity: "Bauxite · 25,000 MT",
     notional: "USD 1,875,000",
     jurisdictionRoute: "AU → NO",
     riskScore: 55,
     risk: "medium",
+    crossBorder: true,
     flag: "Sanctions watchlist proximity",
   },
+  {
+    id: "wad-4f0c91d2",
+    matchUuid: "4f0c91d2-8e76-4a91-bc41-2f53d8b91e0c",
+    partyA: "Sasol Chemicals",
+    partyB: "Engen Petroleum",
+    commodity: "Polypropylene · 1,200 MT",
+    notional: "ZAR 18,400,000",
+    jurisdictionRoute: "ZA → ZA",
+    riskScore: 24,
+    risk: "low",
+    crossBorder: false,
+    flag: "Domestic · Low risk",
+  },
 ];
-
-const INTEGRITY_FACTORS = [
-  { label: "Sanctions Screen", status: "CLEAR", tone: "ok" as const },
-  { label: "Jurisdiction", status: "ALERT", tone: "alert" as const },
-  { label: "PEP Exposure", status: "CLEAR", tone: "ok" as const },
-  { label: "UBO Transparency", status: "CLEAR", tone: "ok" as const },
-  { label: "Authority Bind", status: "VERIFIED", tone: "ok" as const },
-];
-
-type GateState = "passed" | "alert" | "pending";
 
 const GATES: Array<{ id: string; label: string; state: GateState; note?: string }> = [
   { id: "01", label: "GATE_01_BILATERAL_SEAL", state: "passed" },
@@ -91,26 +118,59 @@ const GATES: Array<{ id: string; label: string; state: GateState; note?: string 
     id: "04",
     label: "GATE_04_JURISDICTION",
     state: "alert",
-    note: "Manual review required — Non-SADC jurisdiction route (ZA → DE).",
+    note: "Manual Review Required — Non-SADC route flagged.",
   },
-  { id: "05", label: "GATE_05_UBO_VALIDATION", state: "pending" },
-  { id: "06", label: "GATE_06_AUTHORITY_BIND", state: "pending" },
-  { id: "07", label: "GATE_07_DOC_INTEGRITY", state: "pending" },
+  { id: "05", label: "GATE_05_UBO_VALIDATION", state: "passed" },
+  { id: "06", label: "GATE_06_AUTHORITY_BIND", state: "passed" },
+  { id: "07", label: "GATE_07_DOC_INTEGRITY", state: "passed" },
   { id: "08", label: "GATE_08_GOVERNOR_SIGNATURE", state: "pending" },
   { id: "09", label: "GATE_09_WAD_ISSUANCE", state: "pending" },
 ];
 
-const AUDIT_TRAIL = [
-  "[2026-04-16 21:04:07] Bilateral signatures verified. HASH: 0x8f3c7e1a…b09d",
-  "[2026-04-16 21:04:08] Payload bound to certificate. SEAL: 0x9a3f8c1e…ef0",
-  "[2026-04-16 21:04:09] Sanctions screen executed against OFAC, EU, UK lists. Result: CLEAR.",
-  "[2026-04-16 21:04:11] Jurisdiction route ZA → DE flagged for governor review.",
-  "[2026-04-16 21:04:12] Trade routed to triage queue. Severity: HIGH.",
+const EVIDENCE: EvidenceDoc[] = [
+  {
+    label: "SAHPRA Section 22C License",
+    filename: "sahpra-22c-2026.pdf",
+    size: "412 KB",
+    hash: "8f3c7e1a9b04d2f6c8e7a1b3d5f2a4c9e1b8d7c6a5f4e3b2d1c0a9b8e7d6c5f4",
+    sealed: true,
+  },
+  {
+    label: "Bill of Lading · MAEU-983412",
+    filename: "bol-maeu-983412.pdf",
+    size: "187 KB",
+    hash: "9a3f8c1e5d72bc04ef02a8f7c1e3d5b6a4f2e1c8d7b0a9e6f5d4c3b2a1f0e9d8",
+    sealed: true,
+  },
+  {
+    label: "Commercial Invoice",
+    filename: "invoice-kt-aurubis-2026.pdf",
+    size: "94 KB",
+    hash: "c1e4d8b3f7a902e5d6c8b7a1f4e3d2c5b8a7e6f5d4c3b2a1e0d9c8b7a6f5e4d3",
+    sealed: true,
+  },
+  {
+    label: "KYC Export Pack",
+    filename: "kyc-export-aurubis.zip",
+    size: "1.4 MB",
+    hash: "e2d5b8f1c4a7039d6e8b1f4c7a2e5d8b1c4f7a0e3d6b9c2f5a8e1d4c7b0a3f6",
+    sealed: true,
+  },
 ];
+
+/* ───────────── Component ───────────── */
 
 export default function TriageInbox() {
   const [activeId, setActiveId] = useState<string>(QUEUE[0].id);
+  const [filter, setFilter] = useState<FilterKey>("all");
   const [alertAcknowledged, setAlertAcknowledged] = useState(false);
+
+  const filtered = useMemo(() => {
+    if (filter === "high") return QUEUE.filter((q) => q.risk === "high");
+    if (filter === "cross-border") return QUEUE.filter((q) => q.crossBorder);
+    return QUEUE;
+  }, [filter]);
+
   const active = QUEUE.find((q) => q.id === activeId)!;
 
   function selectItem(id: string) {
@@ -119,9 +179,21 @@ export default function TriageInbox() {
     setAlertAcknowledged(false);
   }
 
+  function handleReject() {
+    toast.error(`${active.matchUuid.slice(0, 8)} flagged. Entity escalated for investigation.`, {
+      description: "Counterparties have been notified. POI revoked.",
+    });
+  }
+
+  function handleSeal() {
+    toast.success(`WaD certificate issued for ${active.matchUuid.slice(0, 8)}`, {
+      description: "Cryptographically sealed. All counterparties notified.",
+    });
+  }
+
   return (
-    <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
-      {/* ── LEFT PANE: Queue (40%) ─────────────────────────────── */}
+    <div className="fixed inset-y-0 left-[260px] right-0 flex bg-white">
+      {/* ── LEFT PANE: Risk Queue (40%) ─────────────────────────── */}
       <section className="w-2/5 flex flex-col border-r border-slate-200 bg-white">
         <div className="px-10 pt-12 pb-6">
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
@@ -130,31 +202,59 @@ export default function TriageInbox() {
           <h1 className="text-3xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
             Triage Queue
           </h1>
-          <div className="mt-5 flex items-center gap-3 text-xs text-slate-500">
-            <span className="font-mono uppercase tracking-[0.2em] text-[10px] text-slate-400">
-              Showing
-            </span>
-            <span className="text-slate-700">High Risk & Cross-Border</span>
-            <span className="text-slate-300">·</span>
-            <span className="font-mono text-slate-500">{QUEUE.length} pending</span>
+
+          {/* Status toggle */}
+          <div className="mt-6 inline-flex items-center gap-px rounded-sm border border-slate-200 bg-slate-50 p-0.5">
+            {([
+              { key: "all", label: "All" },
+              { key: "high", label: "High Risk" },
+              { key: "cross-border", label: "Cross-Border" },
+            ] as Array<{ key: FilterKey; label: string }>).map((opt) => {
+              const active = filter === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => setFilter(opt.key)}
+                  className={`px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase rounded-sm transition-colors ${
+                    active
+                      ? "bg-white text-slate-900 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
+
+          <p className="mt-4 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+            {filtered.length} pending · {QUEUE.filter((q) => q.risk === "high").length} flagged high
+          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-8">
-          <ul className="space-y-1">
-            {QUEUE.map((item) => (
-              <QueueRow
-                key={item.id}
-                item={item}
-                active={item.id === activeId}
-                onClick={() => selectItem(item.id)}
-              />
-            ))}
-          </ul>
+          {filtered.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="font-mono text-[11px] tracking-wider uppercase text-slate-400">
+                No trades match this filter.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-1">
+              {filtered.map((item) => (
+                <QueueRow
+                  key={item.id}
+                  item={item}
+                  active={item.id === activeId}
+                  onClick={() => selectItem(item.id)}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
-      {/* ── RIGHT PANE: 9-Gate Reviewer (60%) ──────────────────── */}
+      {/* ── RIGHT PANE: 9-Gate Auditor (60%) ────────────────────── */}
       <section className="w-3/5 flex flex-col bg-slate-50">
         <div className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
@@ -168,47 +268,30 @@ export default function TriageInbox() {
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-8 mb-10 pb-8 border-b border-slate-200">
-                <div>
-                  <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-2">
-                    Reviewing · {active.matchRef}
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500 mb-2">
+                    Reviewing
                   </p>
                   <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">
-                    {active.parties}
+                    {active.partyA} <span className="text-slate-400">↔</span> {active.partyB}
                   </h2>
-                  <p className="mt-2 text-sm text-slate-600">
+                  <p className="mt-2 font-mono text-[11px] text-slate-500 tracking-wide break-all">
+                    {active.matchUuid}
+                  </p>
+                  <p className="mt-3 text-sm text-slate-600">
                     {active.commodity} ·{" "}
-                    <span className="font-mono">{active.notional}</span> ·{" "}
-                    <span className="font-mono">{active.jurisdictionRoute}</span>
+                    <span className="font-mono text-slate-900">{active.notional}</span> ·{" "}
+                    <span className="font-mono text-slate-900">{active.jurisdictionRoute}</span>
                   </p>
                 </div>
                 <RiskBadge risk={active.risk} score={active.riskScore} large />
               </div>
 
-              {/* Section 1 — Integrity Score */}
-              <Section number="01" title="Integrity Score">
-                <div className="grid grid-cols-5 gap-px bg-slate-200 border border-slate-200 rounded-sm overflow-hidden">
-                  {INTEGRITY_FACTORS.map((f) => (
-                    <div key={f.label} className="bg-white p-4">
-                      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mb-2">
-                        {f.label}
-                      </p>
-                      <p
-                        className={`font-mono text-xs font-medium tracking-[0.15em] ${
-                          f.tone === "ok" ? "text-emerald-700" : "text-amber-700"
-                        }`}
-                      >
-                        {f.status}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-
-              {/* Section 2 — 9-Gate Checklist */}
-              <Section number="02" title="9-Gate Without-a-Doubt Checklist">
-                <div className="grid grid-cols-2 gap-3">
+              {/* Section 01 — 9-Gate Matrix */}
+              <Section number="01" title="9-Gate Verification Matrix">
+                <div className="grid grid-cols-3 gap-3">
                   {GATES.map((gate) => (
-                    <GateRow
+                    <GateBlock
                       key={gate.id}
                       gate={gate}
                       acknowledged={gate.state === "alert" && alertAcknowledged}
@@ -222,31 +305,49 @@ export default function TriageInbox() {
                 </div>
               </Section>
 
-              {/* Section 3 — Audit Trail */}
-              <Section number="03" title="Audit Trail">
-                <div className="rounded-sm border border-slate-200 bg-white p-5">
-                  <ul className="space-y-2 font-mono text-[11px] text-slate-700 leading-relaxed">
-                    {AUDIT_TRAIL.map((line, i) => (
-                      <li key={i} className="break-all">
-                        {line}
-                      </li>
-                    ))}
-                  </ul>
+              {/* Section 02 — Evidence Feed */}
+              <Section number="02" title="Evidence Feed">
+                <div className="rounded-sm border border-slate-200 bg-white divide-y divide-slate-100">
+                  {EVIDENCE.map((doc) => (
+                    <div key={doc.filename} className="flex items-start gap-4 p-5">
+                      <FileText className="h-4 w-4 mt-0.5 text-slate-400 shrink-0" strokeWidth={1.5} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-4">
+                          <p className="text-sm font-medium text-slate-900 truncate">{doc.label}</p>
+                          {doc.sealed && (
+                            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-emerald-700">
+                              Sealed
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 font-mono text-[10px] text-slate-500">
+                          {doc.filename} · {doc.size}
+                        </p>
+                        <p className="mt-2 font-mono text-[10px] text-slate-400 break-all leading-relaxed">
+                          sha256: {doc.hash}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </Section>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Sticky Governor Action Footer */}
-        <div className="shrink-0 border-t border-slate-200 bg-white p-6">
+        {/* Sticky Sovereign Action Footer */}
+        <div className="shrink-0 border-t border-slate-200 bg-white px-12 py-6">
           <div className="max-w-4xl flex items-center justify-between gap-6">
-            <button className="inline-flex items-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors">
+            <button
+              onClick={handleReject}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
+            >
               <Flag className="h-4 w-4" strokeWidth={2} />
-              Flag for Investigation
+              Reject &amp; Flag Entity
             </button>
 
             <motion.button
+              onClick={handleSeal}
               whileHover={alertAcknowledged ? { scale: 0.99 } : undefined}
               whileTap={alertAcknowledged ? { scale: 0.985 } : undefined}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
@@ -258,14 +359,14 @@ export default function TriageInbox() {
               }`}
             >
               <Stamp className="h-4 w-4" strokeWidth={2} />
-              Override & Issue WaD Certificate
+              Seal &amp; Issue WaD Certificate
             </motion.button>
           </div>
-          {!alertAcknowledged && (
-            <p className="mt-3 text-xs text-slate-500 max-w-4xl">
-              Acknowledge the Gate 04 alert above to enable WaD issuance.
-            </p>
-          )}
+          <p className="mt-3 max-w-4xl font-mono text-[10px] tracking-wider text-slate-500 leading-relaxed">
+            {alertAcknowledged
+              ? "Clicking Seal will cryptographically sign this record and notify all counterparties."
+              : "Acknowledge the Gate 04 alert above to enable WaD issuance."}
+          </p>
         </div>
       </section>
     </div>
@@ -296,12 +397,14 @@ function QueueRow({
         )}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-slate-900 font-medium truncate">{item.parties}</p>
+            <p className="text-sm text-slate-900 font-medium truncate">
+              {item.partyA} <span className="text-slate-400">↔</span> {item.partyB}
+            </p>
             <p className="mt-1 text-xs text-slate-600 truncate">
               {item.commodity} · <span className="font-mono">{item.notional}</span>
             </p>
-            <div className="mt-2.5 flex items-center gap-2 font-mono text-[10px] text-slate-500">
-              <span>{item.matchRef}</span>
+            <div className="mt-2 flex items-center gap-2 font-mono text-[10px] text-slate-500">
+              <span className="truncate">{item.matchUuid.slice(0, 18)}…</span>
               <span className="text-slate-300">·</span>
               <span>{item.jurisdictionRoute}</span>
             </div>
@@ -339,9 +442,7 @@ function RiskBadge({
       >
         {score}
       </div>
-      <span
-        className={`font-mono text-[9px] tracking-[0.2em] uppercase font-medium ${tone.text}`}
-      >
+      <span className={`font-mono text-[9px] tracking-[0.2em] uppercase font-medium ${tone.text}`}>
         {tone.label}
       </span>
     </div>
@@ -370,7 +471,7 @@ function Section({
   );
 }
 
-function GateRow({
+function GateBlock({
   gate,
   acknowledged,
   onAcknowledge,
@@ -389,8 +490,8 @@ function GateRow({
         effectivePassed
           ? "border-emerald-200 bg-white"
           : isAlert
-            ? "border-amber-200 bg-amber-50/50"
-            : "border-slate-200 bg-slate-50/60 opacity-60"
+            ? "border-amber-300 bg-amber-50/60"
+            : "border-slate-200 bg-slate-50/70 opacity-70"
       }`}
     >
       <div className="flex items-start gap-3">
@@ -417,30 +518,28 @@ function GateRow({
 
         <div className="min-w-0 flex-1">
           <p
-            className={`font-mono text-[11px] tracking-wide font-medium ${
-              effectivePassed
-                ? "text-slate-900"
-                : isAlert
-                  ? "text-amber-900"
-                  : "text-slate-500"
+            className={`font-mono text-[10px] tracking-wider font-medium leading-tight ${
+              effectivePassed ? "text-slate-900" : isAlert ? "text-amber-900" : "text-slate-500"
             }`}
           >
             {gate.label}
           </p>
-          {gate.note && (
-            <p className="mt-1.5 text-[11px] text-amber-800 leading-relaxed">{gate.note}</p>
+          {isAlert && (
+            <>
+              <p className="mt-1.5 text-[10px] text-amber-800 leading-relaxed">{gate.note}</p>
+              {onAcknowledge && (
+                <button
+                  onClick={onAcknowledge}
+                  className="mt-2 text-[10px] font-medium text-amber-900 hover:text-amber-950 underline underline-offset-2"
+                >
+                  {acknowledged ? "✓ Acknowledged" : "Acknowledge"}
+                </button>
+              )}
+            </>
           )}
-          {isAlert && onAcknowledge && (
-            <button
-              onClick={onAcknowledge}
-              className="mt-2.5 text-[11px] font-medium text-amber-900 hover:text-amber-950 underline underline-offset-2"
-            >
-              {acknowledged ? "✓ Acknowledged" : "Acknowledge alert"}
-            </button>
-          )}
-          {gate.state === "pending" && (
-            <p className="mt-1 font-mono text-[10px] tracking-wider uppercase text-slate-400">
-              Pending Gate 04
+          {gate.state === "pending" && !effectivePassed && (
+            <p className="mt-1 font-mono text-[9px] tracking-wider uppercase text-slate-400">
+              Awaiting Gate 04
             </p>
           )}
         </div>
