@@ -371,11 +371,11 @@ export default function SovereignsSolutionsPage() {
                       <Globe2 className="h-4 w-4 text-emerald-600" strokeWidth={2} />
                     </div>
                     <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
-                      Box 03 · Sovereignty
+                      Box 03 · Data Control
                     </p>
                   </div>
                   <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
-                    Sovereign data control.
+                    Institutional data control.
                   </h3>
                   <p className="mt-4 text-base text-slate-500 leading-relaxed">
                     Programme data, KYB records, and trade evidence remain
