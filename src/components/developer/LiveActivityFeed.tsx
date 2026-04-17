@@ -1,45 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-interface LogLine {
-  ts: string;
-  method: "POST" | "GET" | "PUT" | "DELETE";
-  path: string;
-  status: number;
+interface LogRow {
+  id: string;
+  created_at: string;
+  method: string;
+  endpoint: string;
+  status_code: number;
+  response_time_ms: number | null;
 }
-
-const PATHS = [
-  "/v1/match.created",
-  "/v1/match.sealed",
-  "/v1/poi.sealed",
-  "/v1/poi.generate",
-  "/v1/entities/search",
-  "/v1/trade.search",
-  "/v1/webhooks.deliver",
-  "/v1/audit.export",
-  "/v1/key.rotate",
-];
-const METHODS: LogLine["method"][] = ["POST", "GET", "POST", "GET", "POST"];
-const STATUSES = [200, 200, 200, 200, 201, 204, 404, 429, 500];
-
-function makeLine(): LogLine {
-  const now = new Date();
-  const ts = now.toISOString().replace("T", " ").slice(0, 19);
-  return {
-    ts,
-    method: METHODS[Math.floor(Math.random() * METHODS.length)],
-    path: PATHS[Math.floor(Math.random() * PATHS.length)],
-    status: STATUSES[Math.floor(Math.random() * STATUSES.length)],
-  };
-}
-
-const SEED: LogLine[] = [
-  { ts: "2026-04-17 12:46:11", method: "GET",  path: "/v1/entities/search",  status: 200 },
-  { ts: "2026-04-17 12:45:48", method: "POST", path: "/v1/poi.sealed",       status: 200 },
-  { ts: "2026-04-17 12:45:02", method: "POST", path: "/v1/match.created",    status: 200 },
-  { ts: "2026-04-17 12:44:39", method: "POST", path: "/v1/webhooks.deliver", status: 200 },
-  { ts: "2026-04-17 12:44:11", method: "GET",  path: "/v1/audit.export",     status: 200 },
-  { ts: "2026-04-17 12:43:55", method: "POST", path: "/v1/match.sealed",     status: 201 },
-];
 
 function statusColor(s: number) {
   if (s >= 500) return "text-rose-400";
@@ -49,28 +19,57 @@ function statusColor(s: number) {
 }
 
 function statusLabel(s: number) {
-  switch (s) {
-    case 200: return "OK";
-    case 201: return "CREATED";
-    case 204: return "NO CONTENT";
-    case 404: return "NOT FOUND";
-    case 429: return "RATE LIMITED";
-    case 500: return "ERROR";
-    default: return "";
-  }
+  if (s >= 500) return "ERROR";
+  if (s === 429) return "RATE LIMITED";
+  if (s === 404) return "NOT FOUND";
+  if (s >= 400) return "BAD REQUEST";
+  if (s === 204) return "NO CONTENT";
+  if (s === 201) return "CREATED";
+  if (s >= 200) return "OK";
+  return "";
+}
+
+function formatTs(iso: string) {
+  return iso.replace("T", " ").slice(0, 19);
 }
 
 export function LiveActivityFeed() {
-  const [lines, setLines] = useState<LogLine[]>(SEED);
   const [paused, setPaused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [lastBeat, setLastBeat] = useState<string>(new Date().toISOString());
 
+  const { data: lines = [], isLoading } = useQuery<LogRow[]>({
+    queryKey: ["live-activity-feed"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("api_request_logs")
+        .select("id, created_at, method, endpoint, status_code, response_time_ms")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      setLastBeat(new Date().toISOString());
+      return (data ?? []) as LogRow[];
+    },
+    refetchInterval: paused ? false : 5000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Realtime subscription for instant updates
   useEffect(() => {
     if (paused) return;
-    const id = setInterval(() => {
-      setLines((prev) => [makeLine(), ...prev].slice(0, 80));
-    }, 1800);
-    return () => clearInterval(id);
+    const channel = supabase
+      .channel("api_request_logs_stream")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "api_request_logs" },
+        () => {
+          setLastBeat(new Date().toISOString());
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [paused]);
 
   return (
@@ -119,17 +118,37 @@ export function LiveActivityFeed() {
 
         {/* Log */}
         <div ref={ref} className="max-h-[420px] overflow-y-auto p-4 font-mono text-[12px] leading-[1.7]">
-          {lines.map((l, i) => (
-            <div key={`${l.ts}-${i}`} className="flex items-baseline gap-3 whitespace-nowrap">
-              <span className="text-blue-400">[{l.ts}]</span>
-              <span className="text-slate-400 w-12">{l.method}</span>
-              <span className="text-slate-100">{l.path}</span>
-              <span className="text-slate-600">·</span>
-              <span className={statusColor(l.status)}>
-                {l.status} {statusLabel(l.status)}
-              </span>
+          {isLoading && lines.length === 0 ? (
+            <div className="text-slate-500">connecting to telemetry stream…</div>
+          ) : lines.length === 0 ? (
+            <div className="space-y-2">
+              <div className="text-slate-500">// zero activity in window</div>
+              <div className="text-slate-600">
+                last heartbeat: <span className="text-slate-400">{formatTs(lastBeat)}</span>
+              </div>
+              <div className="text-slate-600">
+                awaiting first request on /v1/* — no API traffic recorded yet.
+              </div>
             </div>
-          ))}
+          ) : (
+            lines.map((l) => (
+              <div key={l.id} className="flex items-baseline gap-3 whitespace-nowrap">
+                <span className="text-blue-400">[{formatTs(l.created_at)}]</span>
+                <span className="text-slate-400 w-12">{l.method}</span>
+                <span className="text-slate-100">{l.endpoint}</span>
+                <span className="text-slate-600">·</span>
+                <span className={statusColor(l.status_code)}>
+                  {l.status_code} {statusLabel(l.status_code)}
+                </span>
+                {l.response_time_ms != null && (
+                  <>
+                    <span className="text-slate-600">·</span>
+                    <span className="text-slate-500">{l.response_time_ms}ms</span>
+                  </>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>
