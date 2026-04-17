@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { KeyRound, Radio, Database, BookOpen, Terminal } from "lucide-react";
+import { KeyRound, Radio, Database, BookOpen, Terminal, Settings, LogOut } from "lucide-react";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * DeveloperShell — pure dark-mode terminal environment.
@@ -18,6 +19,8 @@ const NAV = [
 
 export function DeveloperShell({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const devId = user?.id ? `DEV-${user.id.replace(/-/g, "").slice(-8).toUpperCase()}` : "DEV-PENDING";
 
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-100 antialiased" style={{ fontFamily: "Inter, sans-serif" }}>
@@ -60,7 +63,7 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* System status footer — pulsing green LED */}
+          {/* System status — pulsing green LED */}
           <div className="px-5 py-4 border-t border-slate-800">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
@@ -73,6 +76,32 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
             </div>
             <div className="mt-1.5 font-mono text-[10px] text-slate-400">
               p99 84ms · 0 incidents · 99.992%
+            </div>
+          </div>
+
+          {/* Identity & exit */}
+          <div className="px-5 py-4 border-t border-slate-800 space-y-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Operator</p>
+              <p className="font-mono text-[11px] text-slate-200 tracking-wider">{devId}</p>
+              <p className="font-mono text-[10px] text-slate-500 truncate mt-0.5">{user?.email}</p>
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <NavLink
+                to="/settings"
+                className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-slate-100 transition-colors"
+              >
+                <Settings className="h-3 w-3" strokeWidth={1.5} />
+                Settings
+              </NavLink>
+              <span className="text-slate-700">·</span>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-red-400 transition-colors"
+              >
+                <LogOut className="h-3 w-3" strokeWidth={1.5} />
+                Sign out
+              </button>
             </div>
           </div>
         </aside>

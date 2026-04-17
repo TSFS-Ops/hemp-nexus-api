@@ -197,6 +197,44 @@ Deno.serve(async (req) => {
       );
     }
 
+    // PATCH /:id - Rename API key
+    if (req.method === 'PATCH' && parts.length === 1) {
+      const keyId = parts[0];
+      const body = await req.json();
+      const newName = typeof body?.name === 'string' ? body.name.trim() : '';
+      if (!newName || newName.length > 100) {
+        throw new ApiException('VALIDATION_ERROR', 'name must be 1-100 chars', 400);
+      }
+
+      const { data, error } = await supabase
+        .from('api_keys')
+        .update({ name: newName })
+        .eq('id', keyId)
+        .eq('org_id', authCtx.orgId)
+        .eq('status', 'active')
+        .select('id, name')
+        .single();
+
+      if (error || !data) {
+        throw new ApiException('NOT_FOUND', 'API key not found', 404);
+      }
+
+      await supabase.from('audit_logs').insert({
+        org_id: authCtx.orgId,
+        actor_user_id: actorUserId,
+        actor_api_key_id: actorApiKeyId,
+        action: 'api_key.renamed',
+        entity_type: 'api_key',
+        entity_id: keyId,
+        metadata: { name: newName, request_id: requestId },
+      });
+
+      return new Response(
+        JSON.stringify({ id: data.id, name: data.name }),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...headers } }
+      );
+    }
+
     // DELETE /:id - Revoke API key
     if (req.method === 'DELETE' && parts.length === 1) {
       const keyId = parts[0];
