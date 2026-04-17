@@ -40,8 +40,21 @@ interface CounterpartyHit {
 export function NewTradeInitiation() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { org } = useUserOrg();
+  const orgId = useUserOrg();
+  const [orgName, setOrgName] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!orgId) {
+      setOrgName(null);
+      return;
+    }
+    supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .maybeSingle()
+      .then(({ data }) => setOrgName(data?.name ?? null));
+  }, [orgId]);
   const [commodity, setCommodity] = useState("");
   const [side, setSide] = useState<"buyer" | "seller">("buyer");
   const [counterpartyLabel, setCounterpartyLabel] = useState("");
