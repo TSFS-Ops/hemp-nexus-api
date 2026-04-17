@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
