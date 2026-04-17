@@ -1,70 +1,348 @@
-import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+/**
+ * Pricing — Institutional infrastructure framing.
+ *
+ * Two-track pricing in the same "Emerald & Airy" Stripe aesthetic as the
+ * product pages: pay-as-you-go for operators (R10 ZAR per Trade Request) and
+ * a custom Institutional tier for banks, DDIs, and sovereigns.
+ */
 
-import { getConsoleUrl } from "@/lib/hostname";
-import { PublicPageLayout } from "@/components/PublicPageLayout";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  Check,
+  ShieldCheck,
+  Globe,
+  Activity,
+} from "lucide-react";
+import { PublicHeader } from "@/components/PublicHeader";
+import { PageFooter } from "@/components/PageFooter";
 
-const POI_PRICE_ZAR = 10;
+/* ───────────────────────── BACKDROP ───────────────────────── */
+
+function PrecisionGrid({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute inset-0 ${className}`}
+      style={{
+        backgroundImage:
+          "linear-gradient(to right, rgba(15,23,42,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.04) 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
+        maskImage:
+          "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
+      }}
+    />
+  );
+}
+
+function EmeraldWhisper() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div
+        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute top-40 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%)",
+        }}
+      />
+    </div>
+  );
+}
+
+/* ───────────────────────── DATA ───────────────────────── */
+
+const PAYG_FEATURES = [
+  "Live Match Compiler",
+  "Automated KYB & Sanctions",
+  "SHA-256 Proof of Intent",
+  "Standard API Access",
+];
+
+const INSTITUTIONAL_FEATURES = [
+  "Audit Ledger API Access",
+  "Custom Sanctions Matrix",
+  "Dedicated Infrastructure & SLA",
+  "Enterprise Account Manager",
+];
+
+const ALWAYS_INCLUDED = [
+  {
+    icon: ShieldCheck,
+    title: "Cryptographic Security",
+    desc: "SHA-256 sealing on every state transition. Tamper-evident, append-only.",
+  },
+  {
+    icon: Globe,
+    title: "Global Compliance",
+    desc: "Continuous OFAC, EU, UK HMT, and DPL background screening.",
+  },
+  {
+    icon: Activity,
+    title: "99.99% Uptime",
+    desc: "Enterprise-grade reliability with real-time platform health.",
+  },
+];
+
+/* ───────────────────────── PAGE ───────────────────────── */
 
 export default function Pricing() {
-  const consoleAuthUrl = getConsoleUrl("/auth");
-  const consoleBillingUrl = getConsoleUrl("/billing");
-
   return (
-    <PublicPageLayout>
+    <div
+      className="min-h-screen bg-white text-slate-900"
+      style={{
+        fontFamily:
+          "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      }}
+    >
+      <PublicHeader />
 
-      {/* Hero */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
-            Simple, Transparent Pricing
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-2">
-            One price. No tiers. No hidden fees.
+      {/* ════════════════ HERO ════════════════ */}
+      <section className="relative overflow-hidden">
+        <EmeraldWhisper />
+        <PrecisionGrid />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-12 pt-32 pb-20 lg:pt-44 lg:pb-28 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50/70 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-700"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Pricing
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.05 }}
+            className="mt-8 text-5xl lg:text-6xl font-semibold tracking-tighter leading-[1.05] text-slate-900"
+          >
+            Infrastructure pricing.
+            <br />
+            <span className="text-emerald-700">Scalable and predictable.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+            className="mt-8 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed"
+          >
+            Pay only for the cryptographic deals you execute. No opaque
+            licenses, no hidden fees. Volume pricing available for institutions.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* ════════════════ PRICING CARDS ════════════════ */}
+      <section className="relative">
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-12 pb-24 lg:pb-32">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* ── CARD 1: Pay-as-you-go ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5 }}
+              className="relative rounded-2xl border border-slate-200 bg-white p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-shadow"
+            >
+              <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                Pay-as-you-go
+              </div>
+              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+                Operators &amp; Traders
+              </h3>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                For trading desks and corporates executing verified
+                cross-border matches.
+              </p>
+
+              <div className="mt-10 flex items-baseline gap-2">
+                <span className="text-6xl font-semibold tracking-tighter text-slate-900">
+                  R10.00
+                </span>
+                <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-emerald-700">
+                  ZAR
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-500">per Trade Request</p>
+
+              <Link
+                to="/auth"
+                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
+              >
+                Get Started
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  strokeWidth={2}
+                />
+              </Link>
+
+              <div className="mt-10 h-px bg-slate-100" />
+
+              <ul className="mt-8 space-y-3.5">
+                {PAYG_FEATURES.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-start gap-3 text-sm text-slate-700"
+                  >
+                    <Check
+                      className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600"
+                      strokeWidth={2.5}
+                    />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* ── CARD 2: Institutional ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5, delay: 0.08 }}
+              className="relative rounded-2xl border border-slate-900/90 bg-slate-950 p-10 text-white shadow-[0_8px_30px_rgba(15,23,42,0.18)]"
+            >
+              <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Institutional
+              </div>
+              <h3 className="mt-4 text-2xl font-semibold tracking-tight">
+                Banks, DDIs &amp; Sovereigns
+              </h3>
+              <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                For public development banks and trade finance underwriters
+                requiring oversight.
+              </p>
+
+              <div className="mt-10 flex items-baseline gap-2">
+                <span className="text-6xl font-semibold tracking-tighter">
+                  Custom
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-400">tailored to your volume</p>
+
+              <a
+                href="mailto:institutional@izenzo.co.za"
+                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-medium text-white hover:bg-white/10 hover:border-white/25 transition-all backdrop-blur"
+              >
+                Contact Sales
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  strokeWidth={2}
+                />
+              </a>
+
+              <div className="mt-10 h-px bg-white/10" />
+
+              <ul className="mt-8 space-y-3.5">
+                {INSTITUTIONAL_FEATURES.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-start gap-3 text-sm text-slate-200"
+                  >
+                    <Check
+                      className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400"
+                      strokeWidth={2.5}
+                    />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+
+          {/* Footnote */}
+          <p className="mt-10 text-center text-xs text-slate-500">
+            All prices in ZAR. Pay-as-you-go billed per successful Proof of
+            Intent. Institutional contracts include volume commitments and
+            dedicated SLAs.
           </p>
         </div>
       </section>
 
-      {/* Single Price Card */}
-      <section className="pb-16 md:pb-24">
-        <div className="max-w-md mx-auto px-4 sm:px-6">
-          <Card className="border-primary shadow-lg">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-xl">Trade Request</CardTitle>
-              <CardDescription>Per transaction, pay as you go</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center mb-6">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-5xl font-bold text-foreground">R{POI_PRICE_ZAR}</span>
-                  <span className="text-muted-foreground">ZAR</span>
+      {/* ════════════════ ALWAYS INCLUDED ════════════════ */}
+      <section className="relative bg-slate-50/50 border-y border-slate-100">
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-12 py-24 lg:py-32">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+              Always included
+            </div>
+            <h2 className="mt-6 text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
+              Every plan ships with the platform foundation.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {ALWAYS_INCLUDED.map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.4, delay: i * 0.06 }}
+                className="rounded-xl border border-slate-100 bg-white p-7 hover:border-slate-200 transition-colors"
+              >
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                  <item.icon className="h-4.5 w-4.5" strokeWidth={2} />
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">per Trade Request</p>
-              </div>
-              <ul className="space-y-3">
-                {[
-                  "Full API access",
-                  "Webhook integrations",
-                  "Email support",
-                  "All prices in ZAR - no hidden fees",
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <a href={consoleBillingUrl}>Get Started</a>
-              </Button>
-            </CardFooter>
-          </Card>
+                <h3 className="mt-5 text-base font-semibold tracking-tight text-slate-900">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  {item.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-    </PublicPageLayout>
+      {/* ════════════════ CLOSING CTA ════════════════ */}
+      <section className="relative overflow-hidden">
+        <EmeraldWhisper />
+        <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-32 text-center">
+          <h2 className="text-3xl lg:text-4xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            Not sure which tier fits?
+          </h2>
+          <p className="mt-6 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Speak to our institutional team. We'll size the right contract for
+            your trade volume and governance requirements.
+          </p>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="mailto:institutional@izenzo.co.za"
+              className="group inline-flex items-center gap-2 rounded-md bg-slate-900 px-6 py-3.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
+            >
+              Contact Sales
+              <ArrowRight
+                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                strokeWidth={2}
+              />
+            </a>
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
+            >
+              Start with pay-as-you-go
+              <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <PageFooter />
+    </div>
   );
 }
