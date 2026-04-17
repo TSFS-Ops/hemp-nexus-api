@@ -295,23 +295,30 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
             </p>
             <div
               onDragOver={(e) => {
+                if (demoMode) return;
                 e.preventDefault();
                 setDragOver(true);
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (demoMode) return;
+                fileInputRef.current?.click();
+              }}
               onMouseEnter={() => setFocusedField("evidence")}
               onMouseLeave={() => setFocusedField(null)}
-              className={`cursor-pointer rounded-md border border-dashed p-10 text-center transition-colors ${
-                dragOver
-                  ? "border-primary bg-primary/5"
-                  : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"
+              aria-disabled={demoMode}
+              className={`rounded-md border border-dashed p-10 text-center transition-colors ${
+                demoMode
+                  ? "cursor-default border-slate-200 bg-slate-50/50 opacity-80"
+                  : dragOver
+                    ? "cursor-pointer border-primary bg-primary/5"
+                    : "cursor-pointer border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"
               }`}
             >
               <UploadCloud className="h-6 w-6 mx-auto text-slate-500" strokeWidth={1.5} />
               <p className="mt-4 text-sm text-slate-700 font-medium">
-                Drag and drop supporting documents
+                {demoMode ? "Evidence sealed · 3 documents bound" : "Drag and drop supporting documents"}
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 PDF, DOCX · Each file is hashed on attach
@@ -321,6 +328,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
                 type="file"
                 multiple
                 accept=".pdf,.docx,.doc"
+                disabled={demoMode}
                 className="hidden"
                 onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
               />
