@@ -85,6 +85,12 @@ function DeskPlaceholder({ title, subtitle }: { title: string; subtitle: string 
   );
 }
 
+/** Forward legacy /desk/deals/:matchId deep links to the migrated MatchDetails route. */
+function RedirectDealToMatch() {
+  const { matchId } = useParams();
+  return <Navigate to={`/desk/match/${matchId ?? ""}`} replace />;
+}
+
 export default function Desk() {
   return (
     <RequireAuth>
