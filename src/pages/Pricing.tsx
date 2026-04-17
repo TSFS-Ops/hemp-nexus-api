@@ -233,7 +233,7 @@ export default function Pricing() {
               <p className="mt-2 text-sm text-slate-400">tailored to your volume</p>
 
               <a
-                href="mailto:institutional@izenzo.co.za"
+                href="mailto:support@izenzo.co.za"
                 className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-medium text-white hover:bg-white/10 hover:border-white/25 transition-all backdrop-blur"
               >
                 Contact Sales
@@ -322,7 +322,7 @@ export default function Pricing() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <a
-              href="mailto:institutional@izenzo.co.za"
+              href="mailto:support@izenzo.co.za"
               className="group inline-flex items-center gap-2 rounded-md bg-slate-900 px-6 py-3.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
             >
               Contact Sales
