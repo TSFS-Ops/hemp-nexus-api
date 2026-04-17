@@ -618,6 +618,7 @@ function EditorField({
   onBlur,
   placeholder,
   mono,
+  readOnly,
 }: {
   label: string;
   hint?: string;
@@ -627,6 +628,7 @@ function EditorField({
   onBlur?: () => void;
   placeholder?: string;
   mono?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <div>
@@ -640,9 +642,12 @@ function EditorField({
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder={placeholder}
+        readOnly={readOnly}
+        aria-readonly={readOnly}
+        tabIndex={readOnly ? -1 : 0}
         className={`w-full bg-white border-0 border-b border-slate-300 px-0 py-2 text-lg text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors ${
           mono ? "font-mono" : ""
-        }`}
+        } ${readOnly ? "cursor-default pointer-events-none select-text" : ""}`}
       />
       {hint && <p className="mt-2 text-xs text-slate-500 leading-relaxed">{hint}</p>}
     </div>
