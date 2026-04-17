@@ -23,10 +23,10 @@ function PrecisionGrid({
   className?: string;
 }) {
   return <div aria-hidden className={`pointer-events-none absolute inset-0 ${className}`} style={{
-    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.05) 1px, transparent 1px)",
-    backgroundSize: "40px 40px",
-    maskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)",
-    WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%)"
+    backgroundImage: "radial-gradient(circle, rgba(15,23,42,0.06) 1px, transparent 1.2px)",
+    backgroundSize: "28px 28px",
+    maskImage: "radial-gradient(ellipse 75% 55% at 50% 40%, black 35%, transparent 100%)",
+    WebkitMaskImage: "radial-gradient(ellipse 75% 55% at 50% 40%, black 35%, transparent 100%)"
   }} />;
 }
 function EmeraldWhisper() {
