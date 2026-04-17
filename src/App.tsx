@@ -38,17 +38,28 @@ const HQ = lazy(() => import("@/pages/HQ"));
 /**
  * Root element that renders based on host type:
  * - Public domain: Landing page
- * - Console domain: Redirect to Dashboard
+ * - Console domain: Redirect to Trade Desk
  * - Preview: Landing page (for testing)
  */
 function RootElement() {
   const hostType = getHostType();
-  
+
   if (hostType === 'console') {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
+    return <Navigate to="/desk" replace />;
   }
-  
+
   return <Landing />;
+}
+
+/**
+ * Legacy /dashboard/matches/:matchId → /desk/match/:matchId.
+ * React Router's <Navigate to="..."> does not substitute :params, so
+ * we resolve the param explicitly while preserving search + hash.
+ */
+function RedirectDashboardMatch() {
+  const { matchId } = useParams();
+  const { search, hash } = useLocation();
+  return <Navigate to={`/desk/match/${matchId ?? ""}${search}${hash}`} replace />;
 }
 
 function App() {
@@ -66,9 +77,27 @@ function App() {
                   <Route path={ROUTES.AUTH} element={<Auth />} />
                   <Route path="/welcome" element={<Welcome />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  {/* Billing now nested under dashboard */}
-                  <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
-                  <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
+                  {/* Billing now lives under the Trade Desk shell */}
+                  <Route path="/billing" element={<Navigate to="/desk/billing" replace />} />
+
+                  {/* ─── Legacy /dashboard/* → /desk redirect map ───
+                      The Dashboard page has been retired. Every legacy sub-route
+                      forwards to its closest Trade Desk equivalent so existing
+                      bookmarks, notification deep-links, and audit trails keep
+                      working. */}
+                  <Route path="/dashboard" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/matches/:matchId" element={<RedirectDashboardMatch />} />
+                  <Route path="/dashboard/matches" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/search" element={<Navigate to="/desk/discover" replace />} />
+                  <Route path="/dashboard/order-book" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/settings" element={<Navigate to="/desk/settings" replace />} />
+                  <Route path="/dashboard/account" element={<Navigate to="/desk/settings/company" replace />} />
+                  <Route path="/dashboard/billing" element={<Navigate to="/desk/billing" replace />} />
+                  <Route path="/dashboard/compliance" element={<Navigate to="/desk/compliance" replace />} />
+                  <Route path="/dashboard/programmes" element={<Navigate to="/desk" replace />} />
+                  {/* Catch-all: any other /dashboard/* path lands on the Desk overview */}
+                  <Route path="/dashboard/*" element={<Navigate to="/desk" replace />} />
+
                   <Route path="/desk/*" element={<Desk />} />
                   {/* Legacy /admin/* — every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
