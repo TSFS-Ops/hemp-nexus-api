@@ -326,11 +326,11 @@ export function ComplianceProfile() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-base text-slate-900 font-medium truncate">
-                            {owner.entities?.legal_name ?? "Unnamed Owner"}
+                            {owner.person?.legal_name ?? "Unnamed Owner"}
                           </p>
                           <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
-                            {(owner.entities?.entity_type ?? "owner")} ·{" "}
-                            {owner.entities?.jurisdiction_code ?? "—"}
+                            {(owner.person?.entity_type ?? "owner")} ·{" "}
+                            {owner.person?.jurisdiction_code ?? "—"}
                           </p>
                         </div>
                       </div>
