@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate, useParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { DeskLayout } from "@/components/desk/DeskLayout";
@@ -21,6 +21,7 @@ import { BillingOverview } from "@/components/desk/billing/BillingOverview";
 // Migrated from the retired /dashboard shell. Data hooks (useQuery, Supabase) are unchanged.
 import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
+import { MatchesList } from "@/components/MatchesList";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -82,6 +83,12 @@ function DeskPlaceholder({ title, subtitle }: { title: string; subtitle: string 
       </div>
     </>
   );
+}
+
+/** Forward legacy /desk/deals/:matchId deep links to the migrated MatchDetails route. */
+function RedirectDealToMatch() {
+  const { matchId } = useParams();
+  return <Navigate to={`/desk/match/${matchId ?? ""}`} replace />;
 }
 
 export default function Desk() {
@@ -155,21 +162,23 @@ export default function Desk() {
                 <Route
                   path="deals"
                   element={
-                    <DeskPlaceholder
-                      title="My Deals"
-                      subtitle="The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent."
-                    />
+                    <>
+                      <header className="mb-8">
+                        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+                          Commercial Trading
+                        </p>
+                        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">My Deals</h1>
+                        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
+                          The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent.
+                        </p>
+                      </header>
+                      <MatchesList />
+                    </>
                   }
                 />
-                <Route
-                  path="deals/:matchId"
-                  element={
-                    <DeskPlaceholder
-                      title="Deal Details"
-                      subtitle="The 9-step Without-a-Doubt workflow for this trade."
-                    />
-                  }
-                />
+                {/* Legacy /desk/deals/:matchId — forward to the migrated MatchDetails surface. */}
+                <Route path="deals/:matchId" element={<RedirectDealToMatch />} />
+                {/* Deep links to a specific deal route through the migrated MatchDetails surface. */}
                 <Route path="compliance" element={<ComplianceProfile />} />
                 <Route path="billing" element={<BillingOverview />} />
                 <Route path="settings" element={<DeskSettingsLayout />}>

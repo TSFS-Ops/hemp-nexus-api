@@ -563,7 +563,7 @@ export function MatchesList() {
                       variant="ghost"
                       size="sm"
                       className="h-9 touch-target"
-                      onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
+                      onClick={() => navigate(`/desk/match/${match.id}`)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       View
@@ -598,7 +598,7 @@ export function MatchesList() {
                 </TableHeader>
                 <TableBody>
                   {matches.map((match) => (
-                    <TableRow key={match.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}>
+                    <TableRow key={match.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/desk/match/${match.id}`)}>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedMatches.has(match.id)}
@@ -670,7 +670,7 @@ export function MatchesList() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`${ROUTES.DASHBOARD_MATCHES}/${match.id}`)}
+                            onClick={() => navigate(`/desk/match/${match.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View
@@ -738,7 +738,7 @@ export function MatchesList() {
             <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
               Matches appear here when you create one from search results, or when a trading partner invites you to a deal. Search for a trading partner to begin.
             </p>
-            <Button onClick={() => navigate(ROUTES.DASHBOARD_SEARCH)} className="gap-2">
+            <Button onClick={() => navigate("/desk/discover")} className="gap-2">
               <Search className="h-4 w-4" />
               Search trading partners
             </Button>
