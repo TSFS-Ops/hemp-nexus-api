@@ -75,9 +75,13 @@ function App() {
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                   <Route path={ROUTES.PRICING} element={<Pricing />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
-                  <Route path="/developers/keys" element={<DeveloperApiKeys />} />
-                  <Route path="/developers/webhooks" element={<DeveloperWebhooks />} />
-                  <Route path="/developers" element={<Navigate to="/developers/keys" replace />} />
+                  {/* Legacy /developers/* → consolidated /developer Command Center */}
+                  <Route path="/developers" element={<Navigate to="/developer/keys" replace />} />
+                  <Route path="/developers/keys" element={<Navigate to="/developer/keys" replace />} />
+                  <Route path="/developers/webhooks" element={<Navigate to="/developer/webhooks" replace />} />
+                  <Route path="/developers/dlq" element={<Navigate to="/developer/webhooks" replace />} />
+                  <Route path="/developers/docs" element={<Navigate to="/developer/docs" replace />} />
+                  <Route path="/developers/*" element={<Navigate to="/developer/keys" replace />} />
                   <Route path="/developer/*" element={<DeveloperCenter />} />
                   <Route path="/governance/triage" element={<GovernanceTriage />} />
                   <Route path="/governance/audits" element={<GovernanceAudits />} />
