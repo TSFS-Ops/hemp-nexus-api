@@ -41,6 +41,10 @@ const TradersSolutionsPage = lazy(() => import("@/pages/solutions/Traders"));
 const FinanceSolutionsPage = lazy(() => import("@/pages/solutions/Finance"));
 const SovereignsSolutionsPage = lazy(() => import("@/pages/solutions/Sovereigns"));
 const Developers = lazy(() => import("@/pages/Developers"));
+const DocsIndex = lazy(() => import("@/pages/docs/Index"));
+const DocsApiReference = lazy(() => import("@/pages/docs/ApiReference"));
+const DocsSdks = lazy(() => import("@/pages/docs/Sdks"));
+const Status = lazy(() => import("@/pages/Status"));
 
 /**
  * Root element that renders based on host type:
@@ -120,7 +124,12 @@ function App() {
                   <Route path="/admin/overrides" element={<Navigate to="/hq/settings" replace />} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
                   <Route path="/admin/*" element={<Navigate to="/hq/users" replace />} />
-                  <Route path={ROUTES.DOCS} element={<Docs />} />
+                  {/* Public docs hub — Stripe-style sidebar layout */}
+                  <Route path="/docs" element={<DocsIndex />} />
+                  <Route path="/docs/api" element={<DocsApiReference />} />
+                  <Route path="/docs/sdks" element={<DocsSdks />} />
+                  <Route path="/docs/legacy" element={<Docs />} />
+                  <Route path="/status" element={<Status />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                   <Route path={ROUTES.PRICING} element={<Pricing />} />
                   {/* Public product pages */}
