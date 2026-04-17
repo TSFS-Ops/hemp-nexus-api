@@ -170,6 +170,8 @@ export default function Desk() {
                     </>
                   }
                 />
+                {/* Legacy /desk/deals/:matchId — forward to the migrated MatchDetails surface. */}
+                <Route path="deals/:matchId" element={<RedirectDealToMatch />} />
                 {/* Deep links to a specific deal route through the migrated MatchDetails surface. */}
                 <Route path="compliance" element={<ComplianceProfile />} />
                 <Route path="billing" element={<BillingOverview />} />
