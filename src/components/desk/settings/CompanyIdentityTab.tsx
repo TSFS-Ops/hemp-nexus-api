@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock, ShieldAlert } from "lucide-react";
 
 interface OrgData {
   legal_name: string | null;
@@ -12,9 +13,12 @@ interface OrgData {
   status: string;
 }
 
+type VerificationState = "verified" | "in_review" | "incomplete";
+
 export function CompanyIdentityTab() {
   const { user } = useAuth();
   const [org, setOrg] = useState<OrgData | null>(null);
+  const [verification, setVerification] = useState<VerificationState>("incomplete");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,19 +33,47 @@ export function CompanyIdentityTab() {
         setLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("organizations")
-        .select("legal_name, registration_number, jurisdictions, trading_name, vat_number, status")
-        .eq("id", profile.org_id)
-        .maybeSingle();
-      setOrg(data as OrgData | null);
+      const orgId = profile.org_id;
+
+      // Fetch org, KYB entity records, and authority records in parallel.
+      const [{ data: orgData }, { data: entityRows }, { data: authorityRows }] = await Promise.all([
+        supabase
+          .from("organizations")
+          .select("legal_name, registration_number, jurisdictions, trading_name, vat_number, status")
+          .eq("id", orgId)
+          .maybeSingle(),
+        supabase
+          .from("entities")
+          .select("id, status, entity_type")
+          .eq("org_id", orgId)
+          .eq("entity_type", "company"),
+        supabase
+          .from("authority_records")
+          .select("id, status")
+          .eq("org_id", orgId)
+          .eq("status", "verified"),
+      ]);
+
+      setOrg(orgData as OrgData | null);
+
+      // Real KYB signal — never trust `organizations.status` alone (defaults to "active").
+      const hasCoreFields = !!(orgData?.legal_name && orgData?.registration_number);
+      const hasVerifiedEntity = (entityRows ?? []).some((e) => e.status === "verified");
+      const hasVerifiedAuthority = (authorityRows ?? []).length > 0;
+
+      if (hasVerifiedEntity && hasVerifiedAuthority) {
+        setVerification("verified");
+      } else if (hasCoreFields || (entityRows ?? []).some((e) => e.status === "pending")) {
+        setVerification("in_review");
+      } else {
+        setVerification("incomplete");
+      }
+
       setLoading(false);
     })();
   }, [user]);
 
   if (loading) return <div className="text-sm text-slate-400">Loading…</div>;
-
-  const isVerified = org?.status === "active" || org?.status === "verified";
 
   return (
     <div className="max-w-3xl">
@@ -55,15 +87,28 @@ export function CompanyIdentityTab() {
             Your verified Know-Your-Business profile. This identity is bound to every Proof of Intent you generate.
           </p>
         </div>
-        {isVerified ? (
+        {verification === "verified" ? (
           <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
             <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
             Verified Counterparty
           </div>
-        ) : (
+        ) : verification === "in_review" ? (
           <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
             <Clock className="h-3.5 w-3.5" strokeWidth={2} />
             Awaiting Compliance Review
+          </div>
+        ) : (
+          <div className="shrink-0 inline-flex flex-col items-end gap-2">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+              <ShieldAlert className="h-3.5 w-3.5" strokeWidth={2} />
+              KYB Not Started
+            </div>
+            <Link
+              to="/desk/compliance"
+              className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              Begin verification →
+            </Link>
           </div>
         )}
       </div>
