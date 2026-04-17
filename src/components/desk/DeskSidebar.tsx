@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -56,17 +56,27 @@ export function DeskSidebar() {
       </nav>
 
       {/* User footer */}
-      <div className="px-6 py-6 border-t border-slate-200">
-        <p className="text-xs text-slate-400 font-mono tracking-wide truncate mb-3">
+      <div className="px-6 py-6 border-t border-slate-200 space-y-3">
+        <p className="text-xs text-slate-400 font-mono tracking-wide truncate">
           {user?.email}
         </p>
-        <button
-          onClick={signOut}
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors"
-        >
-          <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard/settings"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Settings
+          </Link>
+          <span className="text-slate-300">·</span>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Sign out
+          </button>
+        </div>
       </div>
     </aside>
   );
