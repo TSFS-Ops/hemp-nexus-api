@@ -241,8 +241,10 @@ export default function AuditLedgerProductPage() {
                       "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)",
                   }}
                 />
-                <div className="rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden bg-slate-900">
+                {/* Masked container — locks height + fade-out so the long doc doesn't blow out the layout */}
+                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-slate-950">
                   <EvidencePackView demoMode />
+                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950 to-transparent z-10 pointer-events-none" />
                 </div>
               </motion.div>
             </div>
