@@ -22,9 +22,9 @@ const MEGA_NAV: MegaCategory[] = [
     key: "solutions",
     label: "Solutions",
     items: [
-      { label: "Supply Chain", description: "Counterparty discovery and verification", to: ROUTES.DOCS },
-      { label: "Trade Finance", description: "Bankable evidence for credit lines", to: ROUTES.DOCS },
-      { label: "Institutional Governance", description: "Programme-level oversight & audit", to: ROUTES.DASHBOARD_PROGRAMMES },
+      { label: "Commodity Traders & Corporates", description: "Execute cross-border deals with verified counterparties.", to: "/solutions/traders" },
+      { label: "Trade Finance & Insurance", description: "De-risk letters of credit with cryptographically sealed proof.", to: "/solutions/finance" },
+      { label: "Sovereigns & PDBs", description: "Govern institutional trade programmes at scale.", to: "/solutions/sovereigns" },
     ],
   },
   {
