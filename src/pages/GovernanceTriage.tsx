@@ -6,6 +6,7 @@
 import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
 import TriageInbox from "@/components/governance/TriageInbox";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function GovernanceTriage() {
   return (
@@ -15,6 +16,7 @@ export default function GovernanceTriage() {
         <main className="flex-1 min-w-0">
           <TriageInbox />
         </main>
+        <MobileBottomNav />
       </div>
     </RequireAuth>
   );
