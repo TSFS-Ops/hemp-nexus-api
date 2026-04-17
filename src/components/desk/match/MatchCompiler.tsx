@@ -240,6 +240,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
               onFocus={() => setFocusedField("counterparty")}
               onBlur={() => setFocusedField(null)}
               placeholder="Enter the legal name of your counterparty"
+              readOnly={demoMode}
             />
             <EditorField
               label="Commodity"
@@ -249,6 +250,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
               onFocus={() => setFocusedField("commodity")}
               onBlur={() => setFocusedField(null)}
               placeholder="e.g. Copper Cathode, LME Grade A"
+              readOnly={demoMode}
             />
             <div className="grid grid-cols-2 gap-10">
               <EditorField
@@ -260,6 +262,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
                 onBlur={() => setFocusedField(null)}
                 placeholder="500"
                 mono
+                readOnly={demoMode}
               />
               <EditorField
                 label="Price (USD / MT)"
@@ -270,6 +273,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
                 onBlur={() => setFocusedField(null)}
                 placeholder="9,420"
                 mono
+                readOnly={demoMode}
               />
             </div>
             <EditorField
@@ -280,6 +284,7 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
               onFocus={() => setFocusedField("incoterms")}
               onBlur={() => setFocusedField(null)}
               placeholder="e.g. CIF Rotterdam"
+              readOnly={demoMode}
             />
           </StepSection>
 
