@@ -71,7 +71,20 @@ function App() {
                   <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
                   <Route path={`${ROUTES.DASHBOARD}/*`} element={<Dashboard />} />
                   <Route path="/desk/*" element={<Desk />} />
-                  <Route path={`${ROUTES.ADMIN}/*`} element={<Admin />} />
+                  {/* Legacy /admin/* — every section now lives under /hq.
+                      We map sub-routes to their HQ tab equivalent so old
+                      bookmarks, audit logs, and outbound links keep working. */}
+                  <Route path="/admin" element={<Navigate to="/hq/users" replace />} />
+                  <Route path="/admin/users" element={<Navigate to="/hq/users" replace />} />
+                  <Route path="/admin/orgs" element={<Navigate to="/hq/organisations" replace />} />
+                  <Route path="/admin/entities" element={<Navigate to="/hq/organisations" replace />} />
+                  <Route path="/admin/compliance" element={<Navigate to="/hq/disputes" replace />} />
+                  <Route path="/admin/deals" element={<Navigate to="/hq/disputes" replace />} />
+                  <Route path="/admin/settings" element={<Navigate to="/hq/settings" replace />} />
+                  <Route path="/admin/data-governance" element={<Navigate to="/hq/settings" replace />} />
+                  <Route path="/admin/overrides" element={<Navigate to="/hq/settings" replace />} />
+                  {/* Catch-all: anything else under /admin lands on Users (default tab) */}
+                  <Route path="/admin/*" element={<Navigate to="/hq/users" replace />} />
                   <Route path={ROUTES.DOCS} element={<Docs />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
                   <Route path={ROUTES.PRICING} element={<Pricing />} />
@@ -90,7 +103,10 @@ function App() {
                   <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   <Route path="/trade/wizard" element={<TradeDealWizard />} />
-                  <Route path="/hq/*" element={<HQ />} />
+                  {/* HQ — Sovereign Network Command Center.
+                      Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
+                  <Route path="/hq" element={<HQ />} />
+                  <Route path="/hq/:tab" element={<HQ />} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
