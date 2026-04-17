@@ -161,7 +161,7 @@ export function ComplianceProfile() {
           </p>
           <button
             type="button"
-            onClick={() => navigate("/desk/settings/company")}
+            onClick={() => navigate("/desk/settings/company?step=entity")}
             className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             Complete Onboarding
@@ -219,7 +219,7 @@ export function ComplianceProfile() {
         </div>
         <button
           type="button"
-          onClick={() => navigate("/desk/settings/company")}
+          onClick={() => navigate("/desk/settings/company?step=entity")}
           className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors border-b border-transparent hover:border-slate-900"
         >
           Request Data Update
@@ -299,7 +299,7 @@ export function ComplianceProfile() {
               title="No beneficial owners declared"
               hint="Declare ownership during onboarding to satisfy KYB."
               cta="Declare Owners"
-              onClick={() => navigate("/desk/settings/company")}
+              onClick={() => navigate("/desk/settings/company?step=owners")}
             />
           ) : (
             <>
@@ -366,7 +366,7 @@ export function ComplianceProfile() {
               title="No regulatory documents uploaded"
               hint="Upload your registration certificate, tax clearance and KYC pack."
               cta="Upload Documents"
-              onClick={() => navigate("/desk/settings/company")}
+              onClick={() => navigate("/desk/settings/company?step=documents")}
             />
           ) : (
             <>

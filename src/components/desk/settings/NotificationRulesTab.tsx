@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Rule {
   key: string;
@@ -41,14 +44,57 @@ const RULES: Rule[] = [
   },
 ];
 
-export function NotificationRulesTab() {
-  const [state, setState] = useState<Record<string, boolean>>(
-    Object.fromEntries(RULES.map((r) => [r.key, r.defaultOn])),
-  );
+const DEFAULTS = Object.fromEntries(RULES.map((r) => [r.key, r.defaultOn]));
 
-  const toggle = (key: string) => {
-    setState((s) => ({ ...s, [key]: !s[key] }));
-    toast.success("Notification preference saved");
+export function NotificationRulesTab() {
+  const { user } = useAuth();
+  const [state, setState] = useState<Record<string, boolean>>(DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  // Hydrate from DB
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("notification_preferences")
+        .select("preferences")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        toast.error("Could not load preferences");
+      } else if (data?.preferences) {
+        const stored = data.preferences as Record<string, boolean>;
+        setState({ ...DEFAULTS, ...stored });
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const toggle = async (key: string) => {
+    if (!user) return;
+    const next = { ...state, [key]: !state[key] };
+    setState(next);
+    setSavingKey(key);
+    const { error } = await supabase
+      .from("notification_preferences")
+      .upsert(
+        { user_id: user.id, preferences: next },
+        { onConflict: "user_id" },
+      );
+    setSavingKey(null);
+    if (error) {
+      // Revert on failure
+      setState(state);
+      toast.error("Could not save preference");
+      return;
+    }
+    toast.success("Preference saved");
   };
 
   return (
@@ -62,32 +108,54 @@ export function NotificationRulesTab() {
         </p>
       </div>
 
-      <ul className="divide-y divide-slate-200 border-y border-slate-200">
-        {RULES.map((rule) => (
-          <li key={rule.key} className="py-6 flex items-start justify-between gap-8">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900">{rule.title}</p>
-              <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
-                {rule.description}
-              </p>
-            </div>
-            <Toggle on={state[rule.key]} onChange={() => toggle(rule.key)} />
-          </li>
-        ))}
-      </ul>
+      {loading ? (
+        <div className="flex items-center gap-2 py-8 text-sm text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading preferences…
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-200 border-y border-slate-200">
+          {RULES.map((rule) => (
+            <li key={rule.key} className="py-6 flex items-start justify-between gap-8">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900">{rule.title}</p>
+                <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+                  {rule.description}
+                </p>
+              </div>
+              <Toggle
+                on={state[rule.key]}
+                pending={savingKey === rule.key}
+                onChange={() => toggle(rule.key)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+function Toggle({
+  on,
+  pending,
+  onChange,
+}: {
+  on: boolean;
+  pending: boolean;
+  onChange: () => void;
+}) {
   return (
     <button
       onClick={onChange}
+      disabled={pending}
       role="switch"
       aria-checked={on}
+      aria-busy={pending}
       className={[
         "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
         on ? "bg-primary" : "bg-slate-200",
+        pending ? "opacity-60" : "",
       ].join(" ")}
     >
       <span
