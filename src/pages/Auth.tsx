@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { hasPreAuthState } from "@/lib/pre-auth-state";
 import { getSafeReturnTo } from "@/lib/safe-redirect";
 import { supabase } from "@/integrations/supabase/client";
