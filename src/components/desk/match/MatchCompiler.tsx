@@ -388,7 +388,12 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
                 onBlur={() => setFocusedField(null)}
                 placeholder="Inspection by SGS at load port. Payment via L/C at sight."
                 rows={4}
-                className="w-full bg-white border-0 border-b border-slate-300 px-0 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors resize-none"
+                readOnly={demoMode}
+                aria-readonly={demoMode}
+                tabIndex={demoMode ? -1 : 0}
+                className={`w-full bg-white border-0 border-b border-slate-300 px-0 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors resize-none ${
+                  demoMode ? "pointer-events-none cursor-default select-text" : ""
+                }`}
               />
               <p className="mt-2 text-xs text-slate-500 leading-relaxed">
                 Optional. Notes are included in the sealed payload and visible to your counterparty.
