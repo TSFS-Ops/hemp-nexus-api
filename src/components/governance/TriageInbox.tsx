@@ -192,9 +192,9 @@ export default function TriageInbox() {
   }
 
   return (
-    <div className="fixed inset-y-0 left-[260px] right-0 flex bg-white">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Risk Queue (40%) ─────────────────────────── */}
-      <section className="w-2/5 flex flex-col border-r border-slate-200 bg-white">
+      <section className="w-full md:w-2/5 max-h-[40vh] md:max-h-none flex flex-col md:border-r border-b md:border-b-0 border-slate-200 bg-white">
         <div className="px-10 pt-12 pb-6">
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
             Governance Layer
@@ -255,7 +255,7 @@ export default function TriageInbox() {
       </section>
 
       {/* ── RIGHT PANE: 9-Gate Auditor (60%) ────────────────────── */}
-      <section className="w-3/5 flex flex-col bg-slate-50">
+      <section className="w-full md:w-3/5 flex-1 flex flex-col bg-slate-50">
         <div className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
@@ -289,7 +289,7 @@ export default function TriageInbox() {
 
               {/* Section 01 — 9-Gate Matrix */}
               <Section number="01" title="9-Gate Verification Matrix">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
                   {GATES.map((gate) => (
                     <GateBlock
                       key={gate.id}

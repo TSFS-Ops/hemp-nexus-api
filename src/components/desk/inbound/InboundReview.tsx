@@ -42,13 +42,13 @@ const notional = (
 
 export function InboundReview() {
   return (
-    <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Review & Action ─────────────────────────── */}
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-1/2 flex flex-col border-r border-slate-200 bg-white"
+        className="w-full md:w-1/2 flex flex-col md:border-r border-slate-200 bg-white"
       >
         <div className="flex-1 overflow-y-auto">
           <div className="px-16 pt-12 pb-12 max-w-2xl">
@@ -181,7 +181,7 @@ export function InboundReview() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
-        className="w-1/2 bg-slate-50 overflow-hidden"
+        className="hidden md:block w-1/2 bg-slate-50 overflow-hidden"
       >
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">

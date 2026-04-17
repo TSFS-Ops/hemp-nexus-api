@@ -90,10 +90,10 @@ export function MatchCompiler() {
   }
 
   return (
-    <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Deal Editor ─────────────────────────────── */}
-      <section className="w-1/2 overflow-y-auto border-r border-slate-200 bg-white">
-        <div className="px-16 pt-12 pb-24 max-w-2xl">
+      <section className="w-full md:w-1/2 overflow-y-auto md:border-r border-slate-200 bg-white">
+        <div className="px-6 md:px-16 pt-8 md:pt-12 pb-24 max-w-2xl">
           <Link
             to="/desk"
             className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-12"
@@ -290,7 +290,7 @@ export function MatchCompiler() {
       </section>
 
       {/* ── RIGHT PANE: Certificate Preview ─────────────────────── */}
-      <section className="w-1/2 bg-slate-50 overflow-hidden">
+      <section className="hidden md:block w-1/2 bg-slate-50 overflow-hidden">
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
