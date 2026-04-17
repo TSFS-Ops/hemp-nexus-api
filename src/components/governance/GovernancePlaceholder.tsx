@@ -41,7 +41,7 @@ export function GovernancePlaceholder({
               <h1 className="text-3xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
                 {title}
               </h1>
-              <p className="mt-3 text-sm text-slate-600 leading-relaxed max-w-xl">
+              <p className="mt-3 text-sm text-slate-700 leading-relaxed max-w-xl">
                 {description}
               </p>
             </div>
@@ -96,10 +96,10 @@ export function GovernancePlaceholder({
 function StatusPill({ status }: { status: "scoped" | "drafting" | "queued" }) {
   const tone =
     status === "drafting"
-      ? { ring: "ring-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50" }
+      ? { ring: "ring-emerald-200", text: "text-emerald-800", bg: "bg-emerald-50" }
       : status === "scoped"
-        ? { ring: "ring-slate-200", text: "text-slate-700", bg: "bg-slate-50" }
-        : { ring: "ring-slate-200", text: "text-slate-400", bg: "bg-white" };
+        ? { ring: "ring-slate-300", text: "text-slate-900", bg: "bg-slate-50" }
+        : { ring: "ring-slate-200", text: "text-slate-900", bg: "bg-slate-100/70" };
 
   return (
     <span
