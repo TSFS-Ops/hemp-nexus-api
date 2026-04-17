@@ -34,6 +34,7 @@ const Welcome = lazy(() => import("@/pages/Welcome"));
 const Desk = lazy(() => import("@/pages/Desk"));
 const DeveloperCenter = lazy(() => import("@/pages/DeveloperCenter"));
 const HQ = lazy(() => import("@/pages/HQ"));
+const TradeDeskProductPage = lazy(() => import("@/pages/products/TradeDesk"));
 
 /**
  * Root element that renders based on host type:
