@@ -85,7 +85,7 @@ export function GovernancePlaceholder({
           </section>
 
           <p className="mt-10 font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
-            Build sequence governed by Civilisation OS roadmap
+            Build sequence governed by Izenzo platform roadmap
           </p>
         </div>
       </div>

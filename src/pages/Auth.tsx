@@ -278,7 +278,7 @@ export default function Auth() {
               Izenzo
             </h2>
             <p className="mt-1 text-xs text-slate-500 tracking-wide">
-              Sovereign Trade Infrastructure
+              Trade Compliance Platform
             </p>
           </div>
 
@@ -343,7 +343,7 @@ export default function Auth() {
 
             {/* Statement */}
             <h1 className="font-mono text-4xl lg:text-5xl xl:text-6xl font-medium tracking-tight text-white leading-[1.1]">
-              Sovereign Infrastructure
+              Compliant Infrastructure
               <br />
               <span className="text-white/60">for Trade.</span>
             </h1>
@@ -395,7 +395,7 @@ function AuthForm({
           {isSignIn ? "Sign in to Izenzo" : "Create your account"}
         </h1>
         <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-          {isSignIn ? "Continue to your sovereign trade workspace." : "Begin onboarding into the institutional trade network."}
+          {isSignIn ? "Continue to your trade workspace." : "Begin onboarding into the institutional trade network."}
         </p>
       </div>
 

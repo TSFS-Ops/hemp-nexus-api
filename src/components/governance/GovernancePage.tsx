@@ -1,6 +1,6 @@
 /**
  * GovernancePage — shared layout shell for Governor sub-surfaces.
- * Maintains the "ink-on-paper" Civilisation OS aesthetic: white surface,
+ * Maintains the "ink-on-paper" Izenzo aesthetic: white surface,
  * hairline borders, JetBrains Mono for IDs/eyebrows.
  */
 

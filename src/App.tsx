@@ -103,7 +103,7 @@ function App() {
                   <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   <Route path="/trade/wizard" element={<TradeDealWizard />} />
-                  {/* HQ — Sovereign Network Command Center.
+                  {/* Admin Dashboard — Izenzo Platform Administration.
                       Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
                   <Route path="/hq" element={<HQ />} />
                   <Route path="/hq/:tab" element={<HQ />} />
