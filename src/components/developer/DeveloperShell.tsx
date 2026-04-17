@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { KeyRound, Radio, Database, BookOpen, Terminal, Settings, LogOut } from "lucide-react";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 
 /**
  * DeveloperShell — pure dark-mode terminal environment.
@@ -36,6 +37,11 @@ export function DeveloperShell({ children }: { children: ReactNode }) {
               </span>
             </div>
             <div className="mt-2 text-sm text-slate-100">Command Center</div>
+          </div>
+
+          {/* Workspace switcher (Command Bridge) */}
+          <div className="px-3 py-3 border-b border-slate-800">
+            <ContextSwitcher tone="dark" />
           </div>
 
           {/* Nav */}

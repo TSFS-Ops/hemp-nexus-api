@@ -8,6 +8,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { Inbox, FileSearch, ShieldCheck, Activity, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 
 const NAV = [
   { to: "/governance/triage", label: "Triage Queue", icon: Inbox, end: true },
@@ -27,13 +28,18 @@ export function GovernorSidebar() {
   return (
     <aside className="hidden md:flex w-[260px] shrink-0 flex-col bg-white border-r border-slate-200">
       {/* Wordmark */}
-      <div className="px-8 pt-10 pb-12">
+      <div className="px-6 pt-8 pb-4">
         <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-slate-900 uppercase">
           Izenzo
         </h2>
         <p className="mt-1 text-[10px] tracking-[0.2em] text-slate-400 font-mono uppercase">
           Governance Console
         </p>
+      </div>
+
+      {/* Workspace switcher (Command Bridge) */}
+      <div className="px-4 pb-6">
+        <ContextSwitcher tone="light" />
       </div>
 
       {/* Nav */}
