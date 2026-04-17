@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { HashChainMotif } from "@/components/auth/HashChainMotif";
+
 import { lovable } from "@/integrations/lovable";
 
 const authSchema = z.object({
@@ -299,135 +299,107 @@ export default function Auth() {
   // ── Render ──
   return (
     <div
-      className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-white"
+      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white p-4 sm:p-8"
       style={{
         fontFamily:
           "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
       }}
     >
-      {/* ═══════════════ LEFT — THE GATE (form) ═══════════════ */}
-      <section className="relative flex flex-col bg-white px-6 sm:px-12 lg:px-20 xl:px-24 py-10 lg:py-12 min-h-screen">
-        {/* Top: logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md flex items-center justify-center bg-emerald-950">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <span className="text-[17px] font-semibold tracking-tight text-slate-900">Izenzo</span>
-        </div>
-
-        {/* Center: form */}
-        <div className="flex-1 flex flex-col justify-center">
-          <div className="w-full max-w-sm mx-auto py-12">
-            {!pageReady ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-              </div>
-            ) : verificationPending ? (
-              <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
-            ) : mode === "reset" ? (
-              <ResetForm password={password} setPassword={setPassword} loading={loading} onSubmit={handleResetPassword} />
-            ) : mode === "forgot" ? (
-              <ForgotForm
-                email={email}
-                setEmail={setEmail}
-                loading={loading}
-                sent={resetEmailSent}
-                onSubmit={handleForgotPassword}
-                onBack={() => { setMode("signin"); setResetEmailSent(false); }}
-              />
-            ) : (
-              <AuthForm
-                mode={mode}
-                setMode={setMode}
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-                loading={loading}
-                onSignIn={handleSignIn}
-                onSignUp={handleSignUp}
-                onForgot={() => setMode("forgot")}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Bottom: residency disclaimer */}
-        <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-          POPIA &amp; GDPR-compliant data residency. All sessions cryptographically sealed.
-        </p>
-      </section>
-
-      {/* ═══════════════ RIGHT — THE VAULT (brand) ═══════════════ */}
-      <aside className="relative hidden lg:flex flex-col justify-between p-12 xl:p-16 bg-slate-50 border-l border-slate-100 overflow-hidden">
-        {/* Emerald mesh wash */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div
-            className="absolute -top-32 left-1/2 -translate-x-1/2 h-[680px] w-[1100px] rounded-full blur-3xl"
-            style={{
-              background:
-                "radial-gradient(ellipse at center, rgba(16,185,129,0.14) 0%, rgba(16,185,129,0.05) 40%, transparent 70%)",
-            }}
-          />
-          <div
-            className="absolute bottom-0 right-0 h-[420px] w-[520px] rounded-full blur-3xl"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(5,150,105,0.10) 0%, transparent 70%)",
-            }}
-          />
-        </div>
-
-        {/* 40px precision grid */}
+      {/* ═══════════════ BACKGROUND LAYERS ═══════════════ */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
+          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[820px] w-[1300px] rounded-full blur-3xl"
           style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-            maskImage:
-              "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
+            background:
+              "radial-gradient(ellipse at center, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.06) 40%, transparent 70%)",
           }}
         />
+        <div
+          className="absolute top-0 right-0 h-[520px] w-[620px] rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(16,185,129,0.20) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-0 h-[440px] w-[540px] rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(5,150,105,0.10) 0%, transparent 70%)",
+          }}
+        />
+      </div>
 
-        {/* Top: status pill */}
-        <div className="relative z-10 flex items-center gap-2 self-start rounded-full border border-emerald-100 bg-white/80 backdrop-blur px-3 py-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-75 animate-ping" />
-            <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          </span>
-          System Status · All systems operational
-        </div>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+          maskImage:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 75%)",
+        }}
+      />
 
-        {/* Center: pull-quote */}
-        <div className="relative z-10 max-w-lg">
-          <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-700 mb-8">
-            ❝
-          </p>
-          <blockquote className="text-3xl xl:text-4xl font-semibold tracking-tighter leading-[1.15] text-slate-900">
-            Izenzo provides the cryptographic certainty required to deploy
-            capital at scale.
-          </blockquote>
-          <div className="mt-10 flex items-center gap-3">
-            <div className="h-px w-10 bg-slate-300" />
-            <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
-              Institutional Trade Finance
-            </span>
+      {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
+      <div className="relative z-10 w-full max-w-[440px]">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-8 sm:p-10">
+          {/* Logo (centered, top of card) */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-md flex items-center justify-center bg-emerald-950">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <span className="text-[18px] font-semibold tracking-tight text-slate-900">Izenzo</span>
+            </div>
           </div>
+
+          {!pageReady ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+            </div>
+          ) : verificationPending ? (
+            <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => { setVerificationPending(false); setMode("signin"); }} />
+          ) : mode === "reset" ? (
+            <ResetForm password={password} setPassword={setPassword} loading={loading} onSubmit={handleResetPassword} />
+          ) : mode === "forgot" ? (
+            <ForgotForm
+              email={email}
+              setEmail={setEmail}
+              loading={loading}
+              sent={resetEmailSent}
+              onSubmit={handleForgotPassword}
+              onBack={() => { setMode("signin"); setResetEmailSent(false); }}
+            />
+          ) : (
+            <AuthForm
+              mode={mode}
+              setMode={setMode}
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              confirmPassword={confirmPassword}
+              setConfirmPassword={setConfirmPassword}
+              loading={loading}
+              onSignIn={handleSignIn}
+              onSignUp={handleSignUp}
+              onForgot={() => setMode("forgot")}
+            />
+          )}
         </div>
 
-        {/* Bottom: hash motif */}
-        <div className="relative z-10 self-start">
-          <HashChainMotif />
-        </div>
-      </aside>
+        <p className="mt-6 text-xs text-slate-400 text-center leading-relaxed">
+          POPIA &amp; GDPR-compliant data residency. All sessions cryptographically sealed.
+        </p>
+      </div>
     </div>
   );
 }
@@ -484,11 +456,11 @@ function AuthForm({
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tighter leading-[1.1]">
-          {isSignIn ? "Sign in to your desk" : "Create your account"}
+      <div className="mb-8 text-center">
+        <h1 className="text-[24px] font-semibold text-slate-900 tracking-tight leading-[1.15]">
+          {isSignIn ? "Sign in to your account" : "Create your account"}
         </h1>
-        <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
           {isSignIn ? "Continue to your sovereign trade workspace." : "Begin onboarding into the institutional trade network."}
         </p>
       </div>
