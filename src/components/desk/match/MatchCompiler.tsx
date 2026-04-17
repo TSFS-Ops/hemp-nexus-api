@@ -124,7 +124,9 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
   );
 
   // ── Real cryptographic seal — SHA-256 over canonical payload ──
+  // In demo mode the seal is pre-baked so we never run hashing.
   useEffect(() => {
+    if (demoMode) return;
     let cancelled = false;
     const payload = canonicalTermsPayload({
       counterparty,
@@ -161,10 +163,10 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
     return () => {
       cancelled = true;
     };
-  }, [commodity, volume, price, incoterms, counterparty, notes, docs]);
+  }, [commodity, volume, price, incoterms, counterparty, notes, docs, demoMode]);
 
   async function handleFiles(files: FileList | null) {
-    if (!files) return;
+    if (!files || demoMode) return;
     const next: AttachedDoc[] = [];
     for (const f of Array.from(files)) {
       const hash = await sha256HexOfBlob(f);
@@ -176,11 +178,14 @@ export function MatchCompiler({ demoMode = false }: MatchCompilerProps = {}) {
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragOver(false);
+    if (demoMode) return;
     handleFiles(e.dataTransfer.files);
   }
 
   // ── Real POI generation: settles via the existing match hook ──
+  // In demo mode this is a no-op so marketing pages never mutate state.
   async function generateProof() {
+    if (demoMode) return;
     if (creditBalance < 1) {
       setProvisioningOpen(true);
       return;
