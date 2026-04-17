@@ -42,8 +42,21 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // ── Post-auth routing: new users → /welcome; returning → persisted persona ──
+  // ── Post-auth routing: admins → /hq; new users → /welcome; returning → persisted persona ──
   const resolvePostAuthRoute = async (userId: string): Promise<string> => {
+    // 1) Platform admins always go to HQ — bypass returnTo & persona selector entirely.
+    try {
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      const isPlatformAdmin = (roleRows || []).some(r => r.role === "platform_admin");
+      if (isPlatformAdmin) return "/hq";
+    } catch {
+      // Non-fatal — fall through to standard routing
+    }
+
+    // 2) Honour returnTo for non-admins (deep-link recovery)
     const returnTo = searchParams.get("returnTo");
     if (returnTo) {
       const safe = getSafeReturnTo(returnTo);
@@ -52,6 +65,7 @@ export default function Auth() {
       }
     }
 
+    // 3) Persisted persona → workspace; otherwise persona selector
     try {
       const { data } = await supabase
         .from("profiles")

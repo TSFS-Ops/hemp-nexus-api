@@ -163,6 +163,18 @@ function WelcomeContent() {
           <p className="mt-20 text-center text-xs text-slate-400 font-mono tracking-wider">
             YOUR SELECTION IS RECORDED IN YOUR PROFILE · CHANGEABLE FROM SETTINGS · ATTESTED BY SHA-256
           </p>
+
+          {/* Internal HQ access — minimal, intentional dev-phase escape hatch.
+              The route itself is RBAC-guarded so non-admins receive a 403 on arrival. */}
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={() => navigate("/hq")}
+              className="text-xs text-slate-400 hover:text-slate-700 underline-offset-4 hover:underline transition-colors"
+            >
+              Internal HQ Access
+            </button>
+          </div>
         </div>
       </main>
     </div>
