@@ -34,6 +34,7 @@ const TradeDealWizard = lazy(() => import("@/pages/TradeDealWizard"));
 const Welcome = lazy(() => import("@/pages/Welcome"));
 const Desk = lazy(() => import("@/pages/Desk"));
 const DeveloperCenter = lazy(() => import("@/pages/DeveloperCenter"));
+const HQ = lazy(() => import("@/pages/HQ"));
 
 /**
  * Root element that renders based on host type:
@@ -89,6 +90,7 @@ function App() {
                   <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   <Route path="/trade/wizard" element={<TradeDealWizard />} />
+                  <Route path="/hq/*" element={<HQ />} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
