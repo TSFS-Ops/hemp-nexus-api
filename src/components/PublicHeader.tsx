@@ -151,7 +151,7 @@ export function PublicHeader() {
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-gradient-to-b from-slate-800 to-slate-950 shadow-sm hover:shadow transition-all"
+              className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all"
             >
               Dashboard
               <ArrowRight className="h-3.5 w-3.5" />
@@ -161,7 +161,7 @@ export function PublicHeader() {
               <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors">
                 Log In
               </AuthLink>
-              <AuthLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-gradient-to-b from-slate-800 to-slate-950 shadow-sm hover:shadow-md hover:from-slate-700 hover:to-slate-900 transition-all">
+              <AuthLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950 shadow-sm hover:shadow-md hover:bg-emerald-900 transition-all">
                 Create Account
                 <ArrowRight className="h-3.5 w-3.5" />
               </AuthLink>
@@ -174,12 +174,12 @@ export function PublicHeader() {
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1 px-3 h-9 text-sm font-medium rounded-md text-white bg-gradient-to-b from-slate-800 to-slate-950"
+              className="inline-flex items-center gap-1 px-3 h-9 text-sm font-medium rounded-md text-white bg-emerald-950"
             >
               Dashboard
             </Link>
           ) : (
-            <AuthLink className="inline-flex items-center gap-1 px-3 h-9 text-sm font-semibold rounded-md text-white bg-gradient-to-b from-slate-800 to-slate-950">
+            <AuthLink className="inline-flex items-center gap-1 px-3 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950">
               Log In
             </AuthLink>
           )}
@@ -218,7 +218,7 @@ export function PublicHeader() {
             ))}
             {!isAuthenticated && (
               <div className="pt-3 border-t border-slate-200">
-                <AuthLink className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-gradient-to-b from-slate-800 to-slate-950">
+                <AuthLink className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950">
                   Create Account
                   <ArrowRight className="h-3.5 w-3.5" />
                 </AuthLink>
