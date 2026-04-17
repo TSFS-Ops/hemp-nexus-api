@@ -130,7 +130,8 @@ function App() {
                   <Route path="/governance/entities" element={<GovernanceEntities />} />
                   <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
-                  <Route path="/trade/wizard" element={<TradeDealWizard />} />
+                  {/* Legacy /trade/wizard → consolidated under the Trade Desk shell */}
+                  <Route path="/trade/wizard" element={<Navigate to="/desk/wizard" replace />} />
                   {/* Admin Dashboard — Izenzo Platform Administration.
                       Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
                   <Route path="/hq" element={<HQ />} />
