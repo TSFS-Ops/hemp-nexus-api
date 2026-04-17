@@ -3,6 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
 import { GovernancePage } from "@/components/governance/GovernancePage";
 import { EntityList } from "@/components/governance/EntityList";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function GovernanceEntities() {
   return (
@@ -23,6 +24,7 @@ export default function GovernanceEntities() {
             <EntityList />
           </GovernancePage>
         </main>
+        <MobileBottomNav />
       </div>
     </RequireAuth>
   );
