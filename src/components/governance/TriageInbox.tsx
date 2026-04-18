@@ -83,10 +83,11 @@ export default function TriageInbox() {
   const [alertAcknowledged, setAlertAcknowledged] = useState(false);
 
   // ── Queue: open disputes joined to match metadata ──
+  const QUEUE_LIMIT = 100;
   const queueQuery = useQuery({
     queryKey: ["triage-queue"],
-    queryFn: async (): Promise<QueueItem[]> => {
-      const { data: disputes, error } = await supabase
+    queryFn: async (): Promise<{ items: QueueItem[]; totalCount: number; limit: number }> => {
+      const { data: disputes, error, count } = await supabase
         .from("disputes")
         .select(
           `id, match_id, reason, created_at, status,
@@ -95,14 +96,15 @@ export default function TriageInbox() {
              quantity_amount, quantity_unit, price_amount, price_currency,
              declared_value_usd, origin_country, destination_country
            )`,
+          { count: "exact" },
         )
         .in("status", ["open", "escalated"])
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(QUEUE_LIMIT);
 
       if (error) throw error;
 
-      return (disputes ?? [])
+      const items = (disputes ?? [])
         .filter((d) => d.matches)
         .map((d) => {
           const m = d.matches as {
@@ -140,10 +142,13 @@ export default function TriageInbox() {
             flag: d.reason || (crossBorder ? "Cross-border review" : "Compliance review"),
           };
         });
+      return { items, totalCount: count ?? items.length, limit: QUEUE_LIMIT };
     },
   });
 
-  const queue = queueQuery.data ?? [];
+  const queue = queueQuery.data?.items ?? [];
+  const queueTotal = queueQuery.data?.totalCount ?? 0;
+  const queueLimit = queueQuery.data?.limit ?? QUEUE_LIMIT;
 
   // Default selection, once data lands, select the first item.
   useEffect(() => {
@@ -385,6 +390,11 @@ export default function TriageInbox() {
           <p className="mt-4 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
             {filtered.length} pending · {queue.filter((q) => q.risk === "high").length} flagged high
           </p>
+          {queueTotal > queueLimit && (
+            <p className="mt-2 font-mono text-[10px] tracking-[0.15em] uppercase text-amber-700">
+              Showing {queueLimit} of {queueTotal} open disputes — apply filters to see all
+            </p>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-8">

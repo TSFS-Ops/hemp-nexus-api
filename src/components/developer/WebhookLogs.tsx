@@ -207,19 +207,24 @@ function RequestInspector({ row }: { row: ApiRequestLog | null }) {
 }
 
 export default function WebhookLogs() {
+  const REQ_LIMIT = 100;
+  const AUDIT_LIMIT = 100;
   const [tab, setTab] = useState<Tab>("requests");
   const [selected, setSelected] = useState<ApiRequestLog | null>(null);
 
   const requests = useQuery({
     queryKey: ["developer-api-request-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("api_request_logs")
-        .select("id, endpoint, method, status_code, response_time_ms, created_at, ip_address, request_id, error_message")
+        .select(
+          "id, endpoint, method, status_code, response_time_ms, created_at, ip_address, request_id, error_message",
+          { count: "exact" },
+        )
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(REQ_LIMIT);
       if (error) throw error;
-      return (data || []) as ApiRequestLog[];
+      return { rows: (data || []) as ApiRequestLog[], totalCount: count ?? data?.length ?? 0 };
     },
     enabled: tab === "requests",
   });
@@ -227,19 +232,21 @@ export default function WebhookLogs() {
   const audit = useQuery({
     queryKey: ["developer-audit-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("audit_logs")
-        .select("id, action, entity_type, entity_id, created_at, metadata")
+        .select("id, action, entity_type, entity_id, created_at, metadata", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(AUDIT_LIMIT);
       if (error) throw error;
-      return (data || []) as AuditLog[];
+      return { rows: (data || []) as AuditLog[], totalCount: count ?? data?.length ?? 0 };
     },
     enabled: tab === "audit",
   });
 
-  const reqRows = requests.data || [];
-  const auditRows = audit.data || [];
+  const reqRows = requests.data?.rows || [];
+  const auditRows = audit.data?.rows || [];
+  const reqTotal = requests.data?.totalCount ?? 0;
+  const auditTotal = audit.data?.totalCount ?? 0;
 
   // Auto-select first row when data loads
   useEffect(() => {
@@ -318,7 +325,14 @@ export default function WebhookLogs() {
             )}
 
             {!requests.isLoading && reqRows.length > 0 && (
-              <RequestsTable rows={reqRows} selectedId={selected?.id} onSelect={setSelected} />
+              <>
+                {reqTotal > REQ_LIMIT && (
+                  <div className="mb-3 font-mono text-[11px] text-amber-300">
+                    Showing {REQ_LIMIT} of {reqTotal.toLocaleString()} requests · refine with filters
+                  </div>
+                )}
+                <RequestsTable rows={reqRows} selectedId={selected?.id} onSelect={setSelected} />
+              </>
             )}
           </div>
 
@@ -353,7 +367,16 @@ export default function WebhookLogs() {
             <EmptyState label="No audit events recorded yet for this organisation." />
           )}
 
-          {!audit.isLoading && auditRows.length > 0 && <AuditTable rows={auditRows} />}
+          {!audit.isLoading && auditRows.length > 0 && (
+            <>
+              {auditTotal > AUDIT_LIMIT && (
+                <div className="mb-3 font-mono text-[11px] text-amber-300">
+                  Showing {AUDIT_LIMIT} of {auditTotal.toLocaleString()} audit events
+                </div>
+              )}
+              <AuditTable rows={auditRows} />
+            </>
+          )}
         </div>
       )}
     </div>

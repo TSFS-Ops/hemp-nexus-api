@@ -44,6 +44,8 @@ export function UsageBillingSection() {
   const [loading, setLoading] = useState(true);
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [ledgerTotalCount, setLedgerTotalCount] = useState(0);
+  const LEDGER_LIMIT = 100;
   
   const [endpointFilter, setEndpointFilter] = useState<string>("all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
@@ -78,7 +80,7 @@ export function UsageBillingSection() {
       
       let query = supabase
         .from("token_ledger")
-        .select("*")
+        .select("*", { count: "exact" })
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false })
         .limit(100);
@@ -91,9 +93,10 @@ export function UsageBillingSection() {
         query = query.eq("outcome", outcomeFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
+      setLedgerTotalCount(count ?? data?.length ?? 0);
       
       const mappedData: CreditLedgerEntry[] = (data || []).map((entry) => ({
         id: entry.id,
@@ -373,6 +376,11 @@ export function UsageBillingSection() {
             </div>
           ) : (
             <div className="rounded-md border">
+              {ledgerTotalCount > LEDGER_LIMIT && (
+                <div className="border-b bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Showing {LEDGER_LIMIT} of {ledgerTotalCount.toLocaleString()} entries — narrow the date range or filter to see all.
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow>

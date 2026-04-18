@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Webhook, AlertCircle, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { Loader2, RefreshCw, Webhook, AlertCircle, AlertTriangle, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,14 +45,15 @@ export default function WebhookDeliveryLogs() {
     }
   };
 
-  const { data: logs, isLoading, refetch } = useQuery({
+  const DELIVERY_LIMIT = 50;
+  const { data: result, isLoading, refetch } = useQuery({
     queryKey: ["webhook-deliveries", statusFilter],
     queryFn: async () => {
       let query = supabase
         .from("webhook_deliveries")
-        .select("*, webhook_endpoints_safe!inner(url)")
+        .select("*, webhook_endpoints_safe!inner(url)", { count: "exact" })
         .order("delivered_at", { ascending: false })
-        .limit(50);
+        .limit(DELIVERY_LIMIT);
 
       if (statusFilter === "success") {
         query = query.gte("response_status_code", 200).lt("response_status_code", 300);
@@ -60,12 +61,14 @@ export default function WebhookDeliveryLogs() {
         query = query.or("response_status_code.is.null,response_status_code.lt.200,response_status_code.gte.300");
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
-      return data as WebhookDeliveryLog[];
+      return { rows: (data ?? []) as WebhookDeliveryLog[], totalCount: count ?? data?.length ?? 0 };
     },
   });
+  const logs = result?.rows;
+  const logsTotal = result?.totalCount ?? 0;
 
   const getStatusBadge = (log: WebhookDeliveryLog) => {
     if (log.error_message) {
@@ -141,6 +144,12 @@ export default function WebhookDeliveryLogs() {
           </div>
         ) : logs && logs.length > 0 ? (
           <>
+            {logsTotal > DELIVERY_LIMIT && (
+              <div className="mb-3 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Showing {DELIVERY_LIMIT} of {logsTotal.toLocaleString()} deliveries — apply a status filter to narrow results.
+              </div>
+            )}
             {/* Mobile card view */}
             <div className="space-y-3 md:hidden">
               {logs.map((log) => (

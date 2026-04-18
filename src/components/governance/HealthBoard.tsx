@@ -65,20 +65,25 @@ function Sparkline({ series }: { series: number[] }) {
 }
 
 export function HealthBoard() {
-  const { data: incidents = [], isLoading, dataUpdatedAt } = useQuery<RiskItem[]>({
+  const INCIDENT_LIMIT = 20;
+  const { data: incidentResult, isLoading, dataUpdatedAt } = useQuery<{ items: RiskItem[]; totalCount: number }>({
     queryKey: ["governance-risk-items"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("admin_risk_items")
-        .select("id, title, description, severity, status, created_at, resolved_at")
+        .select("id, title, description, severity, status, created_at, resolved_at", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(INCIDENT_LIMIT);
       if (error) throw error;
-      return (data ?? []) as RiskItem[];
+      const items = (data ?? []) as RiskItem[];
+      return { items, totalCount: count ?? items.length };
     },
     refetchInterval: 30000,
     refetchOnWindowFocus: false,
   });
+
+  const incidents = incidentResult?.items ?? [];
+  const incidentTotal = incidentResult?.totalCount ?? 0;
 
   const operational = GATES.filter(g => g.status === "operational").length;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;
@@ -139,7 +144,11 @@ export function HealthBoard() {
       <section className="mt-10">
         <div className="flex items-baseline justify-between pb-3 border-b border-slate-200 mb-0">
           <h2 className="text-base font-medium text-slate-900 tracking-tight">Incident Ledger</h2>
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">last 20 records</p>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+            {incidentTotal > INCIDENT_LIMIT
+              ? `showing ${INCIDENT_LIMIT} of ${incidentTotal} records`
+              : "last 20 records"}
+          </p>
         </div>
         <ul className="divide-y divide-slate-100 border border-slate-200 border-t-0 bg-white">
           {isLoading ? (
