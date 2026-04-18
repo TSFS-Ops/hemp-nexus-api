@@ -186,7 +186,9 @@ export function MatchCompiler({
     }
     await handleSettle();
   }
-  return <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
+  return <>
+    {GuardDialog}
+    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
       {/* ── LEFT PANE: Deal Editor ─────────────────────────────── */}
       <section className="w-full md:w-1/2 overflow-y-auto md:border-r border-slate-200 bg-white">
         <div className="px-6 md:px-16 pt-8 md:pt-12 pb-24 max-w-2xl">
@@ -462,7 +464,8 @@ export function MatchCompiler({
           </article>
         </div>
       </ProofDrawer>
-    </div>;
+    </div>
+  </>;
 }
 
 /* ────────────────────────────────────────────────────────────── */
