@@ -136,7 +136,7 @@ export function CompanyIdentityTab() {
         .from("entities")
         .select("id, status, entity_type")
         .eq("org_id", orgId)
-        .eq("entity_type", "company"),
+        .eq("entity_type", "COMPANY"),
       supabase
         .from("kyc_documents")
         .select("id, doc_type, filename, status, created_at")
