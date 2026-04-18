@@ -159,46 +159,91 @@ export function AdminDisputesPanel() {
           ) : disputes.length === 0 ? (
             <EmptyState title="No disputes" message="No disputes have been raised yet." />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Match</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Raised</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile card view */}
+              <div className="space-y-3 md:hidden">
                 {disputes.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-mono text-xs">{d.id.slice(0, 8)}…</TableCell>
-                    <TableCell className="font-mono text-xs">{d.match_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="max-w-[250px] truncate">{d.reason}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_COLOURS[d.status] || "secondary"}>{d.status.replace("_", " ")}</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{format(new Date(d.created_at), "dd MMM yyyy HH:mm")}</TableCell>
-                    <TableCell>
+                  <div key={d.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium line-clamp-2">{d.reason}</p>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                          <span className="font-mono">#{d.id.slice(0, 8)}</span>
+                          <span>·</span>
+                          <span className="font-mono">match {d.match_id.slice(0, 8)}</span>
+                        </div>
+                      </div>
+                      <Badge variant={STATUS_COLOURS[d.status] || "secondary"} className="shrink-0 text-[10px]">
+                        {d.status.replace("_", " ")}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t gap-2">
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(d.created_at), "dd MMM yyyy HH:mm")}
+                      </span>
                       {(d.status === "open" || d.status === "under_review" || d.status === "escalated") ? (
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-9 touch-target"
                           onClick={() => { setActionDispute(d); setResolution(""); setOutcomeNotes(""); }}
                         >
                           Resolve
                         </Button>
                       ) : (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground truncate">
                           {d.resolution_outcome ? d.resolution_outcome.slice(0, 30) + (d.resolution_outcome.length > 30 ? "…" : "") : "-"}
                         </span>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop table view */}
+              <div className="overflow-x-auto hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Match</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Raised</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {disputes.map((d) => (
+                      <TableRow key={d.id}>
+                        <TableCell className="font-mono text-xs">{d.id.slice(0, 8)}…</TableCell>
+                        <TableCell className="font-mono text-xs">{d.match_id.slice(0, 8)}…</TableCell>
+                        <TableCell className="max-w-[250px] truncate">{d.reason}</TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_COLOURS[d.status] || "secondary"}>{d.status.replace("_", " ")}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">{format(new Date(d.created_at), "dd MMM yyyy HH:mm")}</TableCell>
+                        <TableCell>
+                          {(d.status === "open" || d.status === "under_review" || d.status === "escalated") ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setActionDispute(d); setResolution(""); setOutcomeNotes(""); }}
+                            >
+                              Resolve
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {d.resolution_outcome ? d.resolution_outcome.slice(0, 30) + (d.resolution_outcome.length > 30 ? "…" : "") : "-"}
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
