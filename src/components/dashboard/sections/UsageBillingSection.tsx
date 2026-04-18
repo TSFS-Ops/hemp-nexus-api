@@ -44,6 +44,8 @@ export function UsageBillingSection() {
   const [loading, setLoading] = useState(true);
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [ledgerTotalCount, setLedgerTotalCount] = useState(0);
+  const LEDGER_LIMIT = 100;
   
   const [endpointFilter, setEndpointFilter] = useState<string>("all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
