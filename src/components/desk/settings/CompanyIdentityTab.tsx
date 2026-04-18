@@ -339,11 +339,11 @@ function EntityDetailsStep({
         <Input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value.toUpperCase())} maxLength={3} placeholder="ZA · GB · US" />
       </FormField>
 
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
         <p className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
           Saving moves status to <span className="text-slate-700">pending</span>
         </p>
-        <Button type="submit" disabled={!valid || saving} className="gap-2">
+        <Button type="submit" disabled={!valid || saving} className="gap-2 w-full sm:w-auto">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
           {saving ? "Saving…" : "Save & Continue"}
         </Button>
@@ -577,7 +577,7 @@ function DocumentsStep({
             id="doc-type"
             value={docType}
             onChange={(e) => setDocType(e.target.value as (typeof DOC_TYPES)[number])}
-            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-base md:text-sm min-h-[44px]"
           >
             {DOC_TYPES.map((t) => (
               <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
