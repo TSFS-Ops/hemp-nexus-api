@@ -1,9 +1,10 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { Building2, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+
 interface DealCard {
   id: string;
   commodity: string;
@@ -11,6 +12,7 @@ interface DealCard {
   volume: string;
   state: string;
   created_at: string;
+  laneId?: string;
 }
 interface PipelineLane {
   id: string;
@@ -21,8 +23,6 @@ interface PipelineLane {
 }
 
 // Mapping the 9-step WaD workflow into three editorial buckets.
-// Lane 1: pre-POI drafts. Lane 2: POI generated, awaiting trading-partner
-// engagement (the hold-point). Lane 3: POI sealed and engagement accepted.
 const POI_STATES = [
   "committed",
   "intent_declared",
@@ -59,34 +59,49 @@ const LANE_META = [
     subtitle: "Step 9 · Engagement accepted",
   },
 ] as const;
+
+// Semantic badge variants per lane.
+const LANE_BADGE: Record<string, string> = {
+  draft: "bg-slate-100 text-slate-700",
+  awaiting: "bg-amber-50 text-amber-700 border border-amber-200/60",
+  poi: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
+};
+
+const LANE_PILL_LABEL: Record<string, string> = {
+  draft: "Draft",
+  awaiting: "Awaiting",
+  poi: "Sealed",
+};
+
 export function DealPipeline() {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const {
-    data,
-    isLoading
-  } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["desk-pipeline", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<PipelineLane[]> => {
-      const emptyLanes: PipelineLane[] = LANE_META.map(l => ({ ...l, states: [], deals: [] }));
-      const {
-        data: profile
-      } = await supabase.from("profiles").select("org_id").eq("id", user!.id).maybeSingle();
+      const emptyLanes: PipelineLane[] = LANE_META.map((l) => ({ ...l, states: [], deals: [] }));
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", user!.id)
+        .maybeSingle();
       if (!profile?.org_id) return emptyLanes;
-      const {
-        data: matches
-      } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`).order("created_at", {
-        ascending: false
-      }).limit(60);
+      const { data: matches } = await supabase
+        .from("matches")
+        .select(
+          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at",
+        )
+        .or(
+          `buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`,
+        )
+        .order("created_at", { ascending: false })
+        .limit(60);
       const matchList = matches ?? [];
 
-      // Fetch engagement status for POI'd matches so we can split sealed vs awaiting.
       const poiMatchIds = matchList
-        .filter(m => POI_STATES.includes(m.state ?? ""))
-        .map(m => m.id);
+        .filter((m) => POI_STATES.includes(m.state ?? ""))
+        .map((m) => m.id);
       const engagementByMatch = new Map<string, string>();
       if (poiMatchIds.length > 0) {
         const { data: engagements } = await supabase
@@ -100,10 +115,10 @@ export function DealPipeline() {
         }
       }
 
-      const cards = matchList.map(m => {
+      const cards: DealCard[] = matchList.map((m) => {
         const isBuyer = m.buyer_org_id === profile.org_id;
         const state = m.state ?? "draft";
-        let laneId: string = "draft";
+        let laneId = "draft";
         if (POI_STATES.includes(state)) {
           const eng = engagementByMatch.get(m.id);
           laneId = eng === "accepted" ? "poi" : "awaiting";
@@ -114,101 +129,153 @@ export function DealPipeline() {
           id: m.id,
           commodity: m.commodity ?? "Unspecified commodity",
           counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
-          volume: m.quantity_amount && m.quantity_unit ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}` : "-",
+          volume:
+            m.quantity_amount && m.quantity_unit
+              ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}`
+              : "-",
           state,
           created_at: m.created_at,
           laneId,
         };
       });
-      return LANE_META.map(meta => ({
+      return LANE_META.map((meta) => ({
         ...meta,
         states: [],
-        deals: cards.filter(c => c.laneId === meta.id),
+        deals: cards.filter((c) => c.laneId === meta.id),
       }));
-    }
+    },
   });
-  const lanes = data ?? LANE_META.map(l => ({ ...l, states: [], deals: [] }));
-  return <section>
-      <div className="mb-8 flex items-baseline justify-between">
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+  const lanes = data ?? LANE_META.map((l) => ({ ...l, states: [], deals: [] }));
+
+  return (
+    <section>
+      <div className="mb-6 flex items-baseline justify-between">
+        <h2 className="text-base font-semibold text-slate-900 tracking-tight">
           Active Deal Pipeline
         </h2>
-        <p className="text-xs text-slate-400 font-mono tracking-wider uppercase">
+        <p className="text-[11px] text-slate-500 font-mono tracking-widest uppercase">
           9-Step WaD Workflow
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {lanes.map(lane => <div key={lane.id} className="flex flex-col gap-3 md:gap-6">
-            {/* Lane header */}
-            <div className="px-2">
-              <h3 className="text-sm font-medium text-slate-900 mb-1">{lane.title}</h3>
-              <p className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
-                {lane.subtitle}
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        {lanes.map((lane) => (
+          <div key={lane.id} className="flex flex-col gap-3">
+            {/* Column header */}
+            <div className="flex items-center justify-between px-1">
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-slate-900 leading-tight">
+                  {lane.title}
+                </h3>
+                <p className="mt-0.5 text-[10px] font-mono tracking-widest uppercase text-slate-500">
+                  {lane.subtitle}
+                </p>
+              </div>
+              <span className="shrink-0 ml-2 bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                {lane.deals.length}
+              </span>
             </div>
 
             {/* Cards */}
-            <div className="flex flex-col gap-3 md:gap-4 min-h-[80px] md:min-h-[200px]">
-              {isLoading ? <SkeletonCard /> : lane.deals.length === 0 ? <LaneEmptyState /> : lane.deals.map(deal => <DealDocumentCard key={deal.id} deal={deal} onClick={() => navigate(`/desk/deals/${deal.id}`)} />)}
+            <div className="flex flex-col gap-3 min-h-[80px] md:min-h-[200px]">
+              {isLoading ? (
+                <SkeletonCard />
+              ) : lane.deals.length === 0 ? (
+                <LaneEmptyState />
+              ) : (
+                lane.deals.map((deal) => (
+                  <DealDocumentCard
+                    key={deal.id}
+                    deal={deal}
+                    laneId={lane.id}
+                    onClick={() => navigate(`/desk/deals/${deal.id}`)}
+                  />
+                ))
+              )}
             </div>
-          </div>)}
+          </div>
+        ))}
       </div>
-    </section>;
+    </section>
+  );
 }
+
 function DealDocumentCard({
   deal,
-  onClick
+  laneId,
+  onClick,
 }: {
   deal: DealCard;
+  laneId: string;
   onClick: () => void;
 }) {
   const date = new Date(deal.created_at).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
-    year: "numeric"
+    year: "numeric",
   });
-  return <button onClick={onClick} className="text-left bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors p-6 group">
-      {/* Top mono row, like a document header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-400">
+  return (
+    <button
+      onClick={onClick}
+      className="text-left bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group"
+    >
+      {/* Header row: ref + status pill */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-500">
           {deal.id.slice(0, 8)}
         </span>
-        <span className="font-mono text-[10px] tracking-wider text-slate-400">
-          {date}
+        <span
+          className={cn(
+            "px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide",
+            LANE_BADGE[laneId],
+          )}
+        >
+          {LANE_PILL_LABEL[laneId]}
         </span>
       </div>
 
-      {/* Body */}
-      <p className="text-[15px] font-medium text-slate-900 leading-snug mb-3">
+      {/* Commodity */}
+      <p className="text-[15px] font-semibold text-slate-900 leading-snug mb-2">
         {deal.commodity}
       </p>
-      <p className="text-xs text-slate-500 leading-relaxed mb-6">
-        with <span className="text-slate-700">{deal.counterparty}</span>
-      </p>
 
-      {/* Footer mono volume */}
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-        <span className="font-mono text-xs text-slate-700 tracking-tight">
-          {deal.volume}
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400 group-hover:text-primary transition-colors">
-          Open →
+      {/* Counterparty with icon anchor */}
+      <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-4">
+        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
+        <span className="truncate">
+          with <span className="text-slate-900 font-medium">{deal.counterparty}</span>
         </span>
       </div>
-    </button>;
+
+      {/* Footer */}
+      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <span className="font-mono text-xs text-slate-700 tracking-tight">{deal.volume}</span>
+        <span className="text-[10px] font-mono text-slate-500 tracking-wide">{date}</span>
+      </div>
+
+      {/* Open hint */}
+      <div className="mt-2 flex items-center justify-end text-[10px] font-medium text-slate-500 group-hover:text-emerald-700 transition-colors">
+        Open
+        <ArrowUpRight className="h-3 w-3 ml-0.5" strokeWidth={2} />
+      </div>
+    </button>
+  );
 }
+
 function SkeletonCard() {
-  return <div className="bg-white rounded-md border border-slate-200 p-6 animate-pulse">
-      <div className="h-3 w-24 bg-slate-100 rounded mb-6" />
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 animate-pulse">
+      <div className="h-3 w-24 bg-slate-100 rounded mb-4" />
       <div className="h-4 w-3/4 bg-slate-100 rounded mb-3" />
       <div className="h-3 w-1/2 bg-slate-100 rounded" />
-    </div>;
+    </div>
+  );
 }
+
 function LaneEmptyState() {
-  return <div className="bg-white rounded-md border border-dashed border-slate-200 p-8 text-center">
-      <p className="text-xs text-slate-400 font-mono tracking-wide uppercase">
-        No deals
-      </p>
-    </div>;
+  return (
+    <div className="bg-white rounded-lg border border-dashed border-slate-200 p-6 text-center">
+      <p className="text-[11px] text-slate-500 font-mono tracking-wide uppercase">No deals</p>
+    </div>
+  );
 }

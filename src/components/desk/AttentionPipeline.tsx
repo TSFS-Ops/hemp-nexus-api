@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -19,7 +19,6 @@ export function AttentionPipeline() {
     queryKey: ["desk-attention", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<AttentionItem[]> => {
-      // Pull profile org first
       const { data: profile } = await supabase
         .from("profiles")
         .select("org_id")
@@ -27,8 +26,6 @@ export function AttentionPipeline() {
         .maybeSingle();
       if (!profile?.org_id) return [];
 
-      // Matches awaiting commitment from this org.
-      // Include creator slot (`org_id`) — buyer/seller_org_id are often null until counterparty resolves.
       const { data: matches } = await supabase
         .from("matches")
         .select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id")
@@ -56,24 +53,35 @@ export function AttentionPipeline() {
   });
 
   return (
-    <section className="bg-white rounded-md border border-slate-200 mb-8">
-      <div className="px-6 pt-4 pb-3 border-b border-slate-100">
-        <h2 className="text-xs font-mono tracking-[0.2em] uppercase text-slate-400">
-          Requires Your Attention
-        </h2>
+    <section className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden mb-8">
+      <div className="bg-slate-50/80 border-b border-slate-100 px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-3.5 w-3.5 text-amber-600" strokeWidth={2} />
+          <h2 className="text-xs font-bold tracking-widest uppercase text-slate-500">
+            Requires Your Attention
+          </h2>
+        </div>
+        {data && data.length > 0 && (
+          <span className="bg-amber-50 text-amber-700 border border-amber-200/60 text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide">
+            {data.length} open
+          </span>
+        )}
       </div>
 
       <div className="p-2">
         {isLoading ? (
-          <div className="p-6 text-center text-sm text-slate-400">Loading…</div>
+          <div className="p-6 text-center text-sm text-slate-500">Loading…</div>
         ) : !data || data.length === 0 ? (
           <EmptyState />
         ) : (
           <ul className="divide-y divide-slate-100">
             {data.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50/60 rounded-md transition-colors">
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50 rounded-md transition-colors"
+              >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-900 leading-snug mb-0.5">
+                  <p className="text-sm text-slate-900 font-medium leading-snug mb-1">
                     {item.title}
                   </p>
                   <p className="text-[11px] text-slate-500 font-mono tracking-wide">
@@ -82,7 +90,7 @@ export function AttentionPipeline() {
                 </div>
                 <button
                   onClick={() => navigate(item.href)}
-                  className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                  className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-sm transition-colors"
                 >
                   Review &amp; Seal
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -99,12 +107,12 @@ export function AttentionPipeline() {
 function EmptyState() {
   return (
     <div className="px-6 py-6 flex items-center gap-3">
-      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 shrink-0">
-        <CheckCircle2 className="h-4 w-4 text-slate-400" strokeWidth={1.5} />
+      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 shrink-0">
+        <CheckCircle2 className="h-4 w-4 text-emerald-600" strokeWidth={2} />
       </div>
       <div className="min-w-0">
-        <p className="text-sm text-slate-700 font-medium leading-tight">You are all caught up.</p>
-        <p className="text-xs text-slate-400 leading-snug">
+        <p className="text-sm text-slate-900 font-semibold leading-tight">You are all caught up.</p>
+        <p className="text-xs text-slate-500 leading-snug">
           New activity will surface here automatically.
         </p>
       </div>
