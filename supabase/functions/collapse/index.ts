@@ -365,11 +365,11 @@ Deno.serve(async (req: Request) => {
         JSON.stringify(offenders)
       );
       throw new ApiException(
-        "WEBHOOK_BREAKER_TRIPPED",
-        "Settlement blocked: one or more participants have auto-disabled webhook endpoints. " +
-          "Re-enable the endpoint (clear disabled_at and set status='active') before retrying.",
+        "WEBHOOK_PRIMARY_BREAKER_TRIPPED",
+        "Settlement blocked: one or more participants have an auto-disabled PRIMARY webhook endpoint. " +
+          "Re-enable the primary endpoint (clear disabled_at and set status='active'), or elect a healthy endpoint as primary, before retrying.",
         409,
-        { tripped_endpoints: offenders }
+        { tripped_primary_endpoints: offenders }
       );
     }
 
