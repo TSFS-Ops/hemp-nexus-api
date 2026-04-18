@@ -90,8 +90,8 @@ export function DealPipeline() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {lanes.map(lane => <div key={lane.id} className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        {lanes.map(lane => <div key={lane.id} className="flex flex-col gap-3 md:gap-6">
             {/* Lane header */}
             <div className="px-2">
               <h3 className="text-sm font-medium text-slate-900 mb-1">{lane.title}</h3>
@@ -101,7 +101,7 @@ export function DealPipeline() {
             </div>
 
             {/* Cards */}
-            <div className="flex flex-col gap-4 min-h-[200px]">
+            <div className="flex flex-col gap-3 md:gap-4 min-h-[80px] md:min-h-[200px]">
               {isLoading ? <SkeletonCard /> : lane.deals.length === 0 ? <LaneEmptyState /> : lane.deals.map(deal => <DealDocumentCard key={deal.id} deal={deal} onClick={() => navigate(`/desk/deals/${deal.id}`)} />)}
             </div>
           </div>)}
