@@ -18,10 +18,18 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // Validate internal cron key
+    // SECURITY: Internal cron auth — INTERNAL_CRON_KEY must be set in production.
+    // No fallback to ANON_KEY (which ships in browser bundle) or SERVICE_ROLE_KEY.
     const cronKey = req.headers.get("x-internal-key") || req.headers.get("authorization")?.replace("Bearer ", "");
-    const expectedKey = Deno.env.get("INTERNAL_CRON_KEY") || Deno.env.get("SUPABASE_ANON_KEY");
-    
+    const expectedKey = Deno.env.get("INTERNAL_CRON_KEY");
+    if (!expectedKey) {
+      console.error("[engagement-reminder] INTERNAL_CRON_KEY is not configured — refusing to run.");
+      return new Response(JSON.stringify({ error: "Server not configured" }), { status: 503, headers });
+    }
+    if (!cronKey || cronKey !== expectedKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
