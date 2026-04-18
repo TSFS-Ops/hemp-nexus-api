@@ -204,12 +204,12 @@ export function ComplianceProfile() {
   return (
     <>
       {/* ── HEADER ────────────────────────────────────────────── */}
-      <header className="flex items-start justify-between gap-8 mb-10">
+      <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-10">
         <div>
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
             Identity & Governance
           </p>
-          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
             Compliance Profile
           </h1>
           <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
@@ -220,7 +220,7 @@ export function ComplianceProfile() {
         <button
           type="button"
           onClick={() => navigate("/desk/settings/company?step=entity")}
-          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors border-b border-transparent hover:border-slate-900"
+          className="self-start md:shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors border-b border-transparent hover:border-slate-900"
         >
           Request Data Update
         </button>
