@@ -345,7 +345,7 @@ export default function Auth() {
   };
 
   // ── Render ──
-  return <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white p-4 sm:p-8" style={{
+  return <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white p-3 sm:p-4" style={{
     fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
   }}>
       {/* ═══════════════ BACKGROUND LAYERS ═══════════════ */}
@@ -370,18 +370,18 @@ export default function Auth() {
 
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
       <div className="relative z-10 w-full max-w-[440px]">
-        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-6 sm:p-8">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-5 sm:p-6">
           {/* Logo (centered, top of card), links back to landing */}
-          <div className="flex flex-col items-center mb-5">
+          <div className="flex flex-col items-center mb-3">
             <Link to="/" aria-label="Back to Izenzo home" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-2">
-              <div className="w-9 h-9 rounded-md flex items-center justify-center bg-emerald-950">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-8 h-8 rounded-md flex items-center justify-center bg-emerald-950">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
               </div>
-              <span className="text-[18px] font-semibold tracking-tight text-slate-900">Izenzo</span>
+              <span className="text-[16px] font-semibold tracking-tight text-slate-900">Izenzo</span>
             </Link>
           </div>
 
@@ -396,7 +396,7 @@ export default function Auth() {
         }} /> : <AuthForm mode={mode} setMode={setMode} email={email} setEmail={setEmail} password={password} setPassword={setPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} loading={loading} onSignIn={handleSignIn} onSignUp={handleSignUp} onForgot={() => setMode("forgot")} />}
         </div>
 
-        <p className="mt-6 text-xs text-slate-400 text-center leading-relaxed">
+        <p className="mt-3 text-[11px] text-slate-400 text-center leading-relaxed">
           POPIA &amp; GDPR-compliant data residency. All sessions tamper-proofally sealed.
         </p>
       </div>
