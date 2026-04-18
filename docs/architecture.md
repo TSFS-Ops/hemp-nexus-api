@@ -1,8 +1,6 @@
 # Compliance Matching API Technical Architecture
 
-**Last Updated**: 2026-04-18
-
-> **v1.5 fact-patch (preserves audit trail)**: WaD issuance engine now enforces **9 hard-gates** (was 7); edge function count is **74** (was "12 total" in legacy diagram); token model is **R10/credit, 1 credit per POI generation** (replaces the 5,000-token minimum balance model). Original structural narrative below is unchanged.
+**Last Updated**: 2025-12-06
 
 ---
 
@@ -57,7 +55,7 @@ Compliance Matching API is a modern B2B API platform built on **Supabase** (Post
 │  │ signals │ │ match   │ │ webhooks│ │ api-keys │ │  orgs   │ │
 │  └─────────┘ └─────────┘ └─────────┘ └──────────┘ └─────────┘ │
 │  ┌──────────┐ ┌────────────┐ ┌──────────────┐                  │
-│  │  consents│ │data-sources│ │ audit-logs   │  ... (74 total)  │
+│  │  consents│ │data-sources│ │ audit-logs   │  ... (12 total)  │
 │  └──────────┘ └────────────┘ └──────────────┘                  │
 └─────────────────────────────────────────────────────────────────┘
                               │

@@ -41,7 +41,7 @@ const MEGA_NAV: MegaCategory[] = [
     key: "resources",
     label: "Resources",
     items: [
-      { label: "Pricing", description: "Token economics & plan tiers", to: ROUTES.PRICING },
+      { label: "Pricing", description: "Credits & pricing", to: ROUTES.PRICING },
       { label: "Platform Walkthrough", description: "End-to-end product tour", to: ROUTES.WALKTHROUGH },
     ],
   },

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Code, Boxes, Zap, Shield, Webhook, FileCheck } from "lucide-react";
+import { ArrowRight, BookOpen, Code, Zap, Shield, Webhook, FileCheck } from "lucide-react";
 import { DocsLayout } from "./DocsLayout";
 import { DocEyebrow, DocH1, DocLede } from "./_shared";
 
@@ -17,16 +17,16 @@ const QUICK_LINKS = [
     desc: "API keys, scopes, rate limits, and the lockout policy.",
   },
   {
+    to: "/docs/webhooks",
+    icon: Webhook,
+    title: "Webhooks",
+    desc: "Signed HMAC-SHA256 callbacks for state changes, with automatic retries and dead-letter queue.",
+  },
+  {
     to: "/docs/api",
     icon: Code,
     title: "API Reference",
     desc: "Every endpoint, parameter, response shape, and error code.",
-  },
-  {
-    to: "/docs/sdks",
-    icon: Boxes,
-    title: "Client libraries",
-    desc: "Official @izenzo/sdk for Node and TypeScript, plus copy-paste curl, fetch, and Python.",
   },
 ];
 

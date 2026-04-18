@@ -31,7 +31,6 @@ const SECTIONS: DocSection[] = [
     title: "Reference",
     links: [
       { to: "/docs/api", label: "API Reference" },
-      { to: "/docs/sdks", label: "Client libraries" },
       { to: "/docs/errors", label: "Errors" },
     ],
   },

@@ -261,19 +261,17 @@ paths:
   /p3-wad:
     post:
       tags: [WaD]
-      summary: Issue a Without-a-Doubt certificate
+      summary: Issue a Willing-and-Able Deal
       operationId: issueWad
       description: |
-        Runs 9 deterministic hard-gates. All must pass for issuance:
-        1. POI_STATE — match in `committed` state, both parties' POI signed
-        2. ENTITY_STATUS — both buyer and seller entities ACTIVE
-        3. UBO_COMPLETENESS — verified beneficial ownership ≥ 100% on both sides
-        4. AUTHORITY_TO_BIND — active, verified ATB record for the signing party on each side
-        5. JURISDICTION_SELECTION — origin and destination jurisdictions resolved and not embargoed
-        6. GOVERNANCE_DOCUMENTS — all mandatory governance documents validated and on file
-        7. COMPLIANCE_CLEAR — zero open compliance cases against either party
-        8. TOKEN_BALANCE — sufficient credit balance to cover settlement burn
-        9. DISCOVERY_ELIGIBILITY — both parties remain mutually discoverable (no opt-outs since match creation)
+        Runs 7 deterministic hard-gates:
+        1. Intent state = COMPLETED
+        2. Both entities ACTIVE
+        3. UBO integrity verified
+        4. Authority-to-Bind records present
+        5. Mandatory governance docs validated
+        6. Zero open compliance cases
+        7. Sufficient token liquidity
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -289,9 +287,9 @@ paths:
                   format: uuid
       responses:
         '201':
-          description: WaD issued or denied with per-gate results
+          description: WaD issued or denied with gate results
         '422':
-          description: Hard-gate failure (response includes `denial_reasons` array naming each failed gate)
+          description: Hard-gate failure
 
   /pods:
     post:
