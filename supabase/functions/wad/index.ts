@@ -208,6 +208,44 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Hard-gate 10: WEBHOOK_CONNECTIVITY ──
+      // A trade cannot certify (or settle) if a participant cannot receive the proof.
+      // Block when EITHER party has a PRIMARY webhook endpoint that has been
+      // auto-disabled by the circuit breaker (status='inactive' AND disabled_at NOT NULL).
+      const { data: brokenWebhooks, error: brokenWhErr } = await supabase
+        .from("webhook_endpoints")
+        .select("id, org_id, url, disabled_at, consecutive_failures")
+        .in("org_id", partyOrgIds)
+        .eq("is_primary", true)
+        .eq("status", "inactive")
+        .not("disabled_at", "is", null);
+
+      if (brokenWhErr) {
+        throw new ApiException(
+          "INTERNAL_ERROR",
+          "Failed to verify webhook connectivity for WaD Gate 10",
+          500,
+          { detail: brokenWhErr.message }
+        );
+      }
+
+      if (brokenWebhooks && brokenWebhooks.length > 0) {
+        const offenders = brokenWebhooks.map((e) => ({
+          endpoint_id: e.id,
+          org_id: e.org_id,
+          role: e.org_id === poi.buyer_org_id ? "buyer" : e.org_id === poi.seller_org_id ? "seller" : "party",
+          disabled_at: e.disabled_at,
+          consecutive_failures: e.consecutive_failures,
+        }));
+        console.warn(`[WaD Gate 10 FAIL] WEBHOOK_CONNECTIVITY_BROKEN`, JSON.stringify(offenders));
+        throw new ApiException(
+          "HARD_GATE_FAILED",
+          "WaD Gate 10 Failure: WEBHOOK_CONNECTIVITY_BROKEN. One or more participants have a disabled primary webhook endpoint. Resolve at /developer/webhooks before re-issuing.",
+          422,
+          { gate: "WEBHOOK_CONNECTIVITY", broken_endpoints: offenders }
+        );
+      }
+
       // Check if active WaD already exists
       const { data: existingWad } = await supabase
         .from("wads")
