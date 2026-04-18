@@ -73,17 +73,7 @@ function MatchTypeBadge({ match }: { match: Match }) {
   return null;
 }
 
-/** Badge showing the user's role in a match, intentionally tiny + subtle. */
-function MatchRoleBadge({ match, orgId }: { match: Match; orgId: string | null }) {
-  const role = getMatchRole(orgId, match as any);
-  if (!role || role === "creator") return null;
-  const labels: Record<string, string> = { buyer: "You: Buyer", seller: "You: Seller" };
-  return (
-    <span className="ml-2 bg-slate-100 text-slate-500 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded">
-      {labels[role]}
-    </span>
-  );
-}
+/** MatchRoleBadge removed — Buyer/Seller columns already convey role. */
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
@@ -524,7 +514,6 @@ export function MatchesList() {
                           disabled={!MatchState.canDo(match.status, "select_for_bulk")}
                        />
                       <span className="font-medium text-sm">{match.commodity}</span>
-                      <MatchRoleBadge match={match} orgId={userOrgId} />
                     </div>
                     <div className="flex items-center gap-1.5">
                       {activeDisputeIds.has(match.id) && (
@@ -620,7 +609,6 @@ export function MatchesList() {
                         <div className="flex items-center gap-2">
                           {match.commodity}
                           <MatchTypeBadge match={match} />
-                          <MatchRoleBadge match={match} orgId={userOrgId} />
                         </div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell px-4 py-3 text-slate-700 whitespace-nowrap">{revealGuard(match, "buyer_name")}</TableCell>
