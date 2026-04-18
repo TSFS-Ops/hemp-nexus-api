@@ -117,12 +117,12 @@ function App() {
                   <Route path="/admin" element={<Navigate to="/hq/users" replace />} />
                   <Route path="/admin/users" element={<Navigate to="/hq/users" replace />} />
                   <Route path="/admin/orgs" element={<Navigate to="/hq/organisations" replace />} />
-                  <Route path="/admin/entities" element={<Navigate to="/hq/organisations" replace />} />
-                  <Route path="/admin/compliance" element={<Navigate to="/hq/disputes" replace />} />
-                  <Route path="/admin/deals" element={<Navigate to="/hq/disputes" replace />} />
-                  <Route path="/admin/settings" element={<Navigate to="/hq/settings" replace />} />
-                  <Route path="/admin/data-governance" element={<Navigate to="/hq/settings" replace />} />
-                  <Route path="/admin/overrides" element={<Navigate to="/hq/settings" replace />} />
+                  <Route path="/admin/entities" element={<Navigate to="/hq/organisations?sub=entities" replace />} />
+                  <Route path="/admin/compliance" element={<Navigate to="/hq/disputes?sub=disputes" replace />} />
+                  <Route path="/admin/deals" element={<Navigate to="/hq/disputes?sub=approvals" replace />} />
+                  <Route path="/admin/settings" element={<Navigate to="/hq/settings?sub=platform" replace />} />
+                  <Route path="/admin/data-governance" element={<Navigate to="/hq/settings?sub=platform" replace />} />
+                  <Route path="/admin/overrides" element={<Navigate to="/hq/settings?sub=overrides" replace />} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
                   <Route path="/admin/*" element={<Navigate to="/hq/users" replace />} />
                   {/* Public docs hub, Stripe-style sidebar layout */}
