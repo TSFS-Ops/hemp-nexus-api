@@ -45,7 +45,7 @@ function DeskOverview() {
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
             Commercial Trading
           </p>
-          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight whitespace-nowrap">
             Your Deal Desk
           </h1>
         </div>
