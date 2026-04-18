@@ -137,12 +137,9 @@ export function DealWizard({
     return firstIncomplete >= 0 ? firstIncomplete : steps.length - 1;
   }, [steps]);
   const [activeStep, setActiveStep] = useState(() => {
-    // Land on the Match step (1) whenever POI has not yet been generated, even if
-    // all commercial fields are already filled. This keeps the user inside Terms →
-    // Documents → Notes so they can naturally complete the optional sub-steps and
-    // explicitly opt-in to Proof of Intent via the in-page CTA, they should never
-    // be silently skipped past Documents and Notes.
-    if (!poiComplete) return 1;
+    // Low-friction landing: jump to the first incomplete, unlocked step.
+    // If commercial fields are already filled, skip Match and land on POI.
+    // Users can still navigate back to Match via the stepper.
     const first = steps.findIndex(s => !s.complete && !s.locked);
     return first >= 0 ? first : steps.length - 1;
   });
