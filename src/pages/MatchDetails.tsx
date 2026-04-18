@@ -124,16 +124,16 @@ function MatchDetailsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center flex-wrap gap-2 min-w-0">
           <Breadcrumbs items={breadcrumbs} />
           {matchRole && matchRole !== "creator" && (
-            <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+            <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground shrink-0">
               You: {matchRole === "buyer" ? "Buyer" : "Seller"}
             </Badge>
           )}
         </div>
-        <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="All Matches" />
+        <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="All Matches" className="self-start sm:self-auto" />
       </div>
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />

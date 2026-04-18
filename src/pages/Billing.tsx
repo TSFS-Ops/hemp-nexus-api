@@ -309,14 +309,14 @@ function BillingContent() {
         {paymentCancelled && (
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-4">
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div>
                 <p className="font-medium text-foreground">Payment cancelled</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   Your payment was not processed and no credits were charged. You can select a package below to try again.
                 </p>
               </div>
-              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setPaymentCancelled(false)}>
+              <Button variant="ghost" size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setPaymentCancelled(false)}>
                 Dismiss
               </Button>
             </AlertDescription>
@@ -327,9 +327,9 @@ function BillingContent() {
         {paymentFailure && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-4">
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <span>{paymentFailure}</span>
-              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setPaymentFailure(null)}>
+              <Button variant="ghost" size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setPaymentFailure(null)}>
                 Dismiss
               </Button>
             </AlertDescription>
