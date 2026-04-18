@@ -27,12 +27,13 @@ export function AttentionPipeline() {
         .maybeSingle();
       if (!profile?.org_id) return [];
 
-      // Matches awaiting commitment from this org
+      // Matches awaiting commitment from this org.
+      // Include creator slot (`org_id`) — buyer/seller_org_id are often null until counterparty resolves.
       const { data: matches } = await supabase
         .from("matches")
-        .select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id")
-        .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id}`)
-        .in("state", ["counterparty_sighted", "buyer_committed", "seller_committed", "pending_finality"])
+        .select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id")
+        .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`)
+        .in("state", ["counterparty_sighted", "buyer_committed", "seller_committed", "pending_finality", "terms_pending", "committed"])
         .order("created_at", { ascending: false })
         .limit(5);
 
