@@ -7,7 +7,7 @@ type DocSection = { title: string; links: DocLink[] };
 
 const SECTIONS: DocSection[] = [
   {
-    title: "Get started",
+    title: "Onboarding",
     links: [
       { to: "/docs", label: "Introduction" },
       { to: "/docs/quickstart", label: "Quickstart" },

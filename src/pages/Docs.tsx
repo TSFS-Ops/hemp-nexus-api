@@ -86,7 +86,7 @@ export default function Docs() {
               Quick Start
             </CardTitle>
             <CardDescription>
-              Get started with the Trade Request flow in 3 steps
+              Initiate the Trade Request flow in three steps.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

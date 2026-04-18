@@ -318,10 +318,10 @@ export function ApiKeysSection() {
               <div className="text-center py-12 space-y-3">
                 <Key className="h-12 w-12 mx-auto text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No API keys yet
+                  No API keys provisioned
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Create your first API key to get started
+                  Issue your first credential to begin programmatic integration.
                 </p>
               </div>
             ) : (

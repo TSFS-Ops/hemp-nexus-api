@@ -215,7 +215,7 @@ export function WebhookManagement() {
             <DialogHeader>
               <DialogTitle>Create Webhook Endpoint</DialogTitle>
               <DialogDescription>
-                Add a new endpoint to receive event notifications. Make sure your endpoint can handle POST requests.
+                Register an endpoint to receive event notifications. The endpoint must accept HTTP POST requests.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
