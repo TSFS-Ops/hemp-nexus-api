@@ -352,7 +352,7 @@ export default function Auth() {
 
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
       <div className="relative z-10 w-full max-w-[440px]">
-        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-8 sm:p-10">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-6 sm:p-10">
           {/* Logo (centered, top of card), links back to landing */}
           <div className="flex flex-col items-center mb-8">
             <Link to="/" aria-label="Back to Izenzo home" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-2">
@@ -500,7 +500,7 @@ function AuthForm({
           <Label htmlFor="email" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
             Email
           </Label>
-          <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="you@institution.com" />
+          <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="h-11 rounded-md border border-slate-200 bg-white px-4 text-base sm:text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="you@institution.com" />
         </div>
 
         <div className="space-y-2">
@@ -512,14 +512,14 @@ function AuthForm({
                 Forgot?
               </button>}
           </div>
-          <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={isSignIn ? "current-password" : "new-password"} minLength={8} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"} />
+          <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={isSignIn ? "current-password" : "new-password"} minLength={8} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-base sm:text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"} />
         </div>
 
         {!isSignIn && <div className="space-y-2">
             <Label htmlFor="confirm-password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
               Confirm password
             </Label>
-            <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" minLength={8} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="Re-enter password" />
+            <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" minLength={8} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-base sm:text-[15px] text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="Re-enter password" />
             {confirmPassword.length > 0 && password !== confirmPassword && <p className="text-xs text-destructive">Passwords do not match.</p>}
           </div>}
 
@@ -577,7 +577,7 @@ function ForgotForm({
         </div> : <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="reset-email" className="text-xs font-medium text-slate-700 tracking-wide uppercase">Email</Label>
-            <Input id="reset-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-12 rounded-md border border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900" placeholder="you@institution.com" />
+            <Input id="reset-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-12 rounded-md border border-slate-200 bg-white px-4 text-base sm:text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900" placeholder="you@institution.com" />
           </div>
           <Button type="submit" disabled={loading} className="w-full h-12 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-none font-medium">
             {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : "Send reset link"}
@@ -604,7 +604,7 @@ function ResetForm({
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="new-password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">New password</Label>
-          <Input id="new-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} className="h-12 rounded-md border border-slate-200 bg-white px-4 text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900" />
+          <Input id="new-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} className="h-12 rounded-md border border-slate-200 bg-white px-4 text-base sm:text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:border-slate-900" />
         </div>
         <Button type="submit" disabled={loading} className="w-full h-12 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-none font-medium">
           {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</> : "Update password"}

@@ -147,7 +147,7 @@ export default function AuditLedgerProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.05
-            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
+            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Tamper-Proof truth
                 <br />
                 for trade finance.
@@ -238,8 +238,8 @@ export default function AuditLedgerProductPage() {
 
       {/* ════════════════ FINAL CTA ════════════════ */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44 text-center">
-          <h2 className="text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
             Stop auditing paperwork.
             <br />
             <span className="text-emerald-700">Start verifying mathematics.</span>
