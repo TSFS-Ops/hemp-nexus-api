@@ -20,22 +20,23 @@ interface PipelineLane {
   deals: DealCard[];
 }
 
-// Mapping the 9-step WaD workflow into three editorial buckets
+// Mapping the 9-step WaD workflow into three editorial buckets.
+// `states` are matched against the live `matches.state` enum values.
 const LANE_DEFS = [{
   id: "draft",
   title: "Draft Interests",
   subtitle: "Steps 1 to 3 · Intent captured",
-  states: ["draft", "interest_logged", "match_proposed"]
+  states: ["draft", "interest_logged", "match_proposed", "discovery"]
 }, {
   id: "pending",
   title: "Pending Counterparty",
   subtitle: "Steps 4 to 7 · In negotiation",
-  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending"]
+  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending", "committed"]
 }, {
   id: "poi",
   title: "Proofs of Intent Generated",
   subtitle: "Steps 8 to 9 · Sealed",
-  states: ["pending_finality", "settled", "poi_generated", "finalised"]
+  states: ["pending_finality", "settled", "poi_generated", "finalised", "completed"]
 }];
 export function DealPipeline() {
   const {
@@ -58,7 +59,7 @@ export function DealPipeline() {
       }));
       const {
         data: matches
-      } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id}`).order("created_at", {
+      } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`).order("created_at", {
         ascending: false
       }).limit(60);
       const cards: DealCard[] = (matches ?? []).map(m => {
