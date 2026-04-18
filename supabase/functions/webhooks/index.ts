@@ -47,6 +47,25 @@ Deno.serve(async (req) => {
 
     // POST / - Create webhook endpoint
     if (req.method === "POST" && parts.length === 0) {
+      // Server-side idempotency check (header is required for POST)
+      const idempotencyKey = req.headers.get("Idempotency-Key") || req.headers.get("idempotency-key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required for POST", 400);
+      }
+      const { data: existing } = await supabase
+        .from("idempotency_keys")
+        .select("response_data, response_status_code")
+        .eq("org_id", authCtx.orgId)
+        .eq("idempotency_key", idempotencyKey)
+        .eq("endpoint", "POST /webhooks")
+        .maybeSingle();
+      if (existing) {
+        return new Response(JSON.stringify(existing.response_data), {
+          status: existing.response_status_code,
+          headers: { "Content-Type": "application/json", ...headers },
+        });
+      }
+
       const rawBody = await req.json();
       const body = webhookCreateSchema.parse(rawBody);
 
@@ -80,20 +99,32 @@ Deno.serve(async (req) => {
         metadata: { url: body.url, events: body.events },
       });
 
-      return new Response(
-        JSON.stringify({
-          id: webhook.id,
-          url: webhook.url,
-          events: webhook.events,
-          status: webhook.status,
-          secret: body.secret ? undefined : secret, // Only return secret if auto-generated
-          created_at: webhook.created_at,
-          message: body.secret 
-            ? "Webhook created with your secret" 
-            : "Webhook created. Save the secret - you won't see it again!",
-        }),
-        { status: 201, headers: { "Content-Type": "application/json", ...headers } }
-      );
+      const responsePayload = {
+        id: webhook.id,
+        url: webhook.url,
+        events: webhook.events,
+        status: webhook.status,
+        secret: body.secret ? undefined : secret, // Only return secret if auto-generated
+        created_at: webhook.created_at,
+        message: body.secret
+          ? "Webhook created with your secret"
+          : "Webhook created. Save the secret - you won't see it again!",
+      };
+
+      // Persist idempotency record so a retry returns the same response
+      await supabase.from("idempotency_keys").insert({
+        org_id: authCtx.orgId,
+        idempotency_key: idempotencyKey,
+        endpoint: "POST /webhooks",
+        request_hash: "n/a",
+        response_data: responsePayload,
+        response_status_code: 201,
+      });
+
+      return new Response(JSON.stringify(responsePayload), {
+        status: 201,
+        headers: { "Content-Type": "application/json", ...headers },
+      });
     }
 
     // GET / - List webhook endpoints
