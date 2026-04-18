@@ -329,6 +329,48 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── Webhook circuit-breaker guard ──
+    // Block settlement if EITHER participant has any auto-disabled webhook endpoint
+    // (status='inactive' AND disabled_at IS NOT NULL). A tripped breaker means the
+    // counterparty cannot reliably receive settlement notifications, which would
+    // break the evidence-delivery chain.
+    const { data: trippedEndpoints, error: trippedErr } = await adminClient
+      .from("webhook_endpoints")
+      .select("id, org_id, url, disabled_at, consecutive_failures")
+      .in("org_id", [org_id, counterparty_org_id])
+      .eq("status", "inactive")
+      .not("disabled_at", "is", null);
+
+    if (trippedErr) {
+      throw new ApiException(
+        "INTERNAL_ERROR",
+        "Failed to verify webhook delivery health",
+        500,
+        { detail: trippedErr.message }
+      );
+    }
+
+    if (trippedEndpoints && trippedEndpoints.length > 0) {
+      const offenders = trippedEndpoints.map((e) => ({
+        endpoint_id: e.id,
+        org_id: e.org_id,
+        role: e.org_id === org_id ? "requesting_org" : "counterparty",
+        disabled_at: e.disabled_at,
+        consecutive_failures: e.consecutive_failures,
+      }));
+      console.warn(
+        `[SETTLEMENT BLOCKED] Tripped webhook endpoints detected:`,
+        JSON.stringify(offenders)
+      );
+      throw new ApiException(
+        "WEBHOOK_BREAKER_TRIPPED",
+        "Settlement blocked: one or more participants have auto-disabled webhook endpoints. " +
+          "Re-enable the endpoint (clear disabled_at and set status='active') before retrying.",
+        409,
+        { tripped_endpoints: offenders }
+      );
+    }
+
     // ── CAP partition check - consistency first ──
     const partition = await checkPartitionHealth(adminClient);
     if (!partition.healthy) {
