@@ -47,8 +47,15 @@ export function NewTradeInitiation() {
       return;
     }
     supabase.from("organizations").select("name").eq("id", orgId).maybeSingle().then(({
-      data
-    }) => setOrgName(data?.name ?? null));
+      data,
+      error
+    }) => {
+      if (error) {
+        toast.error("Could not load your organisation name", { description: error.message });
+        return;
+      }
+      setOrgName(data?.name ?? null);
+    });
   }, [orgId]);
   const [commodity, setCommodity] = useState("");
   const [side, setSide] = useState<"buyer" | "seller">("buyer");
@@ -73,7 +80,12 @@ export function NewTradeInitiation() {
         error
       } = await supabase.from("counterparties").select("id, company_name, jurisdiction").ilike("company_name", `%${debouncedQuery.trim()}%`).limit(6);
       if (cancelled) return;
-      if (!error && data) setHits(data as CounterpartyHit[]);
+      if (error) {
+        toast.error("Counterparty search failed", { description: error.message });
+        setHits([]);
+      } else if (data) {
+        setHits(data as CounterpartyHit[]);
+      }
       setSearching(false);
     })();
     return () => {

@@ -84,23 +84,34 @@ export function MatchCompiler({
 
   // ── Live token balance (replaces hardcoded `creditBalance = 0`) ─
   const {
-    data: tokenData
+    data: tokenData,
+    isError: tokenIsError,
+    error: tokenError
   } = useQuery({
     queryKey: ["token-balance-compiler", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
       const {
-        data: prof
+        data: prof,
+        error: profErr
       } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
+      if (profErr) throw new Error(`Profile lookup failed: ${profErr.message}`);
       if (!prof?.org_id) return null;
       const {
-        data: bal
+        data: bal,
+        error: balErr
       } = await supabase.from("token_balances").select("balance").eq("org_id", prof.org_id).maybeSingle();
+      if (balErr) throw new Error(`Token balance lookup failed: ${balErr.message}`);
       return bal?.balance ?? 0;
     },
     enabled: !demoMode && !!session?.user?.id,
     staleTime: 30_000
   });
+  useEffect(() => {
+    if (tokenIsError && tokenError instanceof Error) {
+      toast.error("Could not load token balance", { description: tokenError.message });
+    }
+  }, [tokenIsError, tokenError]);
   const creditBalance = demoMode ? 250 : tokenData ?? 0;
   const matchRef = useMemo(() => matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000", [matchId]);
 

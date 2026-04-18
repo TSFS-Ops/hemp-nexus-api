@@ -80,8 +80,10 @@ export function InboundReview() {
 
       // Resolve caller's org via their profile.
       const {
-        data: callerProfile
+        data: callerProfile,
+        error: profileErr
       } = await supabase.from("profiles").select("org_id").eq("id", user.id).maybeSingle();
+      if (profileErr) throw new Error(`Profile lookup failed: ${profileErr.message}`);
       const callerOrgId = callerProfile?.org_id ?? "";
 
       // Match row, RLS scopes us to participating orgs.
@@ -94,24 +96,30 @@ export function InboundReview() {
 
       // Engagement (counterparty hold-point record).
       const {
-        data: engagement
+        data: engagement,
+        error: engagementErr
       } = await supabase.from("poi_engagements").select("id, engagement_status, expires_at, counterparty_org_id, counterparty_email, created_at").eq("match_id", matchId).maybeSingle();
+      if (engagementErr) throw new Error(`Engagement lookup failed: ${engagementErr.message}`);
 
       // Initiating-org name (for display).
       let initiatorName = match.org_id === match.buyer_org_id ? match.buyer_name : match.seller_name;
       if (!initiatorName) {
         const {
-          data: org
+          data: org,
+          error: orgErr
         } = await supabase.from("organizations").select("name").eq("id", match.org_id).maybeSingle();
+        if (orgErr) throw new Error(`Organisation lookup failed: ${orgErr.message}`);
         initiatorName = org?.name ?? "Counterparty";
       }
 
       // Sealed evidence documents on the match.
       const {
-        data: docs
+        data: docs,
+        error: docsErr
       } = await supabase.from("match_documents").select("filename, sha256_hash, doc_type, title").eq("match_id", matchId).eq("is_current_version", true).order("created_at", {
         ascending: true
       });
+      if (docsErr) throw new Error(`Could not load evidence documents: ${docsErr.message}`);
       const documents: InboundDoc[] = (docs ?? []).map(d => ({
         name: d.title || d.filename || d.doc_type || "Document",
         hash: d.sha256_hash ?? ""
