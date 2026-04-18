@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState, useRef, ChangeEvent, DragEvent, ReactNode
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, UploadCloud, FileText, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditProvisioningPanel } from "./CreditProvisioningPanel";
 import { ProofDrawer } from "@/components/mobile/ProofDrawer";
