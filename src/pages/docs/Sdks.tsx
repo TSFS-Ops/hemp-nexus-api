@@ -1,100 +1,149 @@
-import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import { DocsLayout } from "./DocsLayout";
+import { DocEyebrow, DocH1, DocH2, DocLede, DocP, CodePanel, Callout, InlineCode } from "./_shared";
 
-const SDKS = [
-  {
-    name: "Node.js",
-    pkg: "@izenzo/sdk",
-    install: "npm install @izenzo/sdk",
-    sample: `import { Izenzo } from "@izenzo/sdk";
+const NODE_INSTALL = `npm install @izenzo/sdk`;
 
-const izenzo = new Izenzo(process.env.IZENZO_KEY);
+const NODE_SAMPLE = `import { IzenzoClient } from "@izenzo/sdk";
 
-const match = await izenzo.matches.create({
-  counterparty_id: "cp_8f3a...",
-  commodity: "iron_ore_62fe",
-  side: "bid",
-  quantity: 50000
-});`,
-    runtime: "Node 18+ · TypeScript",
+const client = new IzenzoClient({
+  apiKey: process.env.IZENZO_KEY!,
+});
+
+const match = await client.matches.create({
+  buyer:  { id: "B001", name: "Aurubis AG" },
+  seller: { id: "S001", name: "Glencore Singapore Pte Ltd" },
+  commodity: "Copper Cathode · LME Grade A",
+  quantity:  { amount: 500,  unit: "MT" },
+  price:     { amount: 9420, currency: "USD" },
+});`;
+
+const CURL_SAMPLE = `curl https://api.izenzo.co.za/functions/v1/match \\
+  -H "X-API-Key: $IZENZO_KEY" \\
+  -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: $(uuidgen)" \\
+  -d '{
+    "buyer":  { "id": "B001", "name": "Aurubis AG" },
+    "seller": { "id": "S001", "name": "Glencore Singapore Pte Ltd" },
+    "commodity": "Copper Cathode · LME Grade A",
+    "quantity": { "amount": 500, "unit": "MT" },
+    "price":    { "amount": 9420, "currency": "USD" }
+  }'`;
+
+const FETCH_SAMPLE = `const res = await fetch("https://api.izenzo.co.za/functions/v1/match", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.IZENZO_KEY!,
+    "Content-Type": "application/json",
+    "Idempotency-Key": crypto.randomUUID(),
   },
-  {
-    name: "Python",
-    pkg: "izenzo",
-    install: "pip install izenzo",
-    sample: `from izenzo import Izenzo
+  body: JSON.stringify({
+    buyer:  { id: "B001", name: "Aurubis AG" },
+    seller: { id: "S001", name: "Glencore Singapore Pte Ltd" },
+    commodity: "Copper Cathode · LME Grade A",
+    quantity:  { amount: 500,  unit: "MT" },
+    price:     { amount: 9420, currency: "USD" },
+  }),
+});
 
-izenzo = Izenzo(api_key=os.environ["IZENZO_KEY"])
+if (!res.ok) throw new Error(\`Izenzo \${res.status}\`);
+const match = await res.json();`;
 
-match = izenzo.matches.create(
-    counterparty_id="cp_8f3a...",
-    commodity="iron_ore_62fe",
-    side="bid",
-    quantity=50000,
-)`,
-    runtime: "Python 3.10+",
-  },
-  {
-    name: "Go",
-    pkg: "github.com/izenzo/izenzo-go",
-    install: "go get github.com/izenzo/izenzo-go",
-    sample: `client := izenzo.NewClient(os.Getenv("IZENZO_KEY"))
+const PYTHON_SAMPLE = `import os, uuid, requests
 
-match, err := client.Matches.Create(ctx, &izenzo.MatchParams{
-    CounterpartyID: "cp_8f3a...",
-    Commodity:      "iron_ore_62fe",
-    Side:           "bid",
-    Quantity:       50000,
-})`,
-    runtime: "Go 1.21+",
-  },
-];
+resp = requests.post(
+    "https://api.izenzo.co.za/functions/v1/match",
+    headers={
+        "X-API-Key":        os.environ["IZENZO_KEY"],
+        "Content-Type":     "application/json",
+        "Idempotency-Key":  str(uuid.uuid4()),
+    },
+    json={
+        "buyer":  {"id": "B001", "name": "Aurubis AG"},
+        "seller": {"id": "S001", "name": "Glencore Singapore Pte Ltd"},
+        "commodity": "Copper Cathode · LME Grade A",
+        "quantity": {"amount": 500,  "unit": "MT"},
+        "price":    {"amount": 9420, "currency": "USD"},
+    },
+    timeout=30,
+)
+resp.raise_for_status()
+match = resp.json()`;
 
 export default function Sdks() {
   return (
     <DocsLayout>
-      <div className="max-w-5xl">
-        <p className="text-[13px] font-medium text-emerald-600 tracking-wider uppercase mb-3">
-          Reference
+      <div className="max-w-4xl">
+        <DocEyebrow>Reference</DocEyebrow>
+        <DocH1>Client libraries</DocH1>
+        <DocLede>
+          A first-class TypeScript SDK ships with the platform. For other runtimes, the API is
+          designed to be straightforward to call directly — every example below produces an
+          identical signed request.
+        </DocLede>
+
+        <DocH2 id="node">@izenzo/sdk · Node & TypeScript</DocH2>
+        <DocP>
+          Type-safe request builders, automatic retries with exponential backoff, and webhook
+          signature helpers. Targets Node 18+ and any modern bundler.
+        </DocP>
+        <CodePanel title="Install" language="bash" code={NODE_INSTALL} />
+        <CodePanel title="Usage" language="typescript" code={NODE_SAMPLE} />
+        <p className="text-[13px] text-slate-500 -mt-2">
+          Source on{" "}
+          <a
+            href="https://www.npmjs.com/package/@izenzo/sdk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium"
+          >
+            npm <ExternalLink className="h-3 w-3" />
+          </a>
+          .
         </p>
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-slate-900 mb-5">
-          Libraries & SDKs
-        </h1>
-        <p className="text-lg text-slate-500 leading-relaxed mb-12 max-w-2xl">
-          Official client libraries with type-safe request builders, automatic retries, and
-          signature verification helpers built in.
-        </p>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          {SDKS.map((sdk) => (
-            <div
-              key={sdk.name}
-              className="rounded-xl border border-slate-100 bg-white p-6 flex flex-col"
-            >
-              <div className="flex items-baseline justify-between mb-1">
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{sdk.name}</h3>
-                <span className="text-[11px] text-slate-400 uppercase tracking-wider">{sdk.runtime}</span>
-              </div>
-              <code className="text-[12.5px] font-mono text-slate-500 mb-5">{sdk.pkg}</code>
+        <DocH2 id="other-runtimes">Other runtimes</DocH2>
+        <DocP>
+          The HTTP surface is small enough that a hand-rolled client is usually the right call.
+          Each snippet below is a complete, copy-pasteable example.
+        </DocP>
 
-              <div className="rounded-md bg-slate-950 border border-slate-800 p-3 mb-4">
-                <code className="text-[11.5px] font-mono text-slate-300">{sdk.install}</code>
-              </div>
+        <h3 className="text-[14px] font-semibold text-slate-900 mt-8 mb-2">curl</h3>
+        <CodePanel language="bash" code={CURL_SAMPLE} />
 
-              <pre className="text-[11.5px] leading-relaxed font-mono text-slate-700 bg-slate-50 border border-slate-100 rounded-md p-4 overflow-x-auto flex-1">
-                <code>{sdk.sample}</code>
-              </pre>
+        <h3 className="text-[14px] font-semibold text-slate-900 mt-8 mb-2">Browser / Deno · fetch</h3>
+        <CodePanel language="javascript" code={FETCH_SAMPLE} />
 
-              <Link
-                to="/docs/api"
-                className="mt-5 inline-flex items-center gap-1 text-[13px] font-medium text-emerald-600 hover:text-emerald-700"
-              >
-                View reference <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          ))}
-        </div>
+        <h3 className="text-[14px] font-semibold text-slate-900 mt-8 mb-2">Python · requests</h3>
+        <CodePanel language="python" code={PYTHON_SAMPLE} />
+
+        <Callout>
+          Building in Go, Ruby, .NET, or Rust? The OpenAPI spec at{" "}
+          <InlineCode>/openapi.yaml</InlineCode> generates idiomatic clients via{" "}
+          <a
+            href="https://openapi-generator.tech/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-600 hover:text-emerald-700 font-medium"
+          >
+            openapi-generator
+          </a>{" "}
+          for 50+ targets. We're happy to review the result before you deploy.
+        </Callout>
+
+        <DocH2 id="next">Next</DocH2>
+        <DocP>
+          Wire up signed callbacks (
+          <Link to="/docs/webhooks" className="text-emerald-600 hover:text-emerald-700 font-medium">
+            Webhooks
+          </Link>
+          ), or browse the full surface in the{" "}
+          <Link to="/docs/api" className="text-emerald-600 hover:text-emerald-700 font-medium">
+            API Reference
+          </Link>
+          .
+        </DocP>
       </div>
     </DocsLayout>
   );

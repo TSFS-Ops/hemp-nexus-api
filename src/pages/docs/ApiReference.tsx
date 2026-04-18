@@ -1,143 +1,147 @@
+import { Link } from "react-router-dom";
 import { DocsLayout } from "./DocsLayout";
+import { DocEyebrow, DocH1, DocH2, DocLede, DocP, CodePanel, EndpointBadge, InlineCode } from "./_shared";
 
-const CREATE_MATCH_CURL = `curl https://api.izenzo.co.za/v1/matches \\
-  -H "Authorization: Bearer sk_live_..." \\
+const CREATE_MATCH_CURL = `curl https://api.izenzo.co.za/functions/v1/match \\
+  -H "X-API-Key: sk_live_..." \\
   -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: 9f86d081-884c-7d65-9a2f-eaa0c55ad015" \\
   -d '{
-    "counterparty_id": "cp_8f3a...",
-    "commodity": "iron_ore_62fe",
-    "side": "bid",
-    "quantity": 50000,
-    "unit": "MT",
-    "price_usd": 102.50,
-    "incoterms": "CFR",
-    "delivery_port": "Qingdao"
+    "buyer":  { "id": "B001", "name": "Aurubis AG" },
+    "seller": { "id": "S001", "name": "Glencore Singapore Pte Ltd" },
+    "commodity": "Copper Cathode · LME Grade A",
+    "quantity": { "amount": 500, "unit": "MT" },
+    "price":    { "amount": 9420, "currency": "USD" }
   }'`;
 
 const CREATE_MATCH_RESPONSE = `{
-  "id": "match_01HX7Z...",
-  "status": "pending_poi",
-  "counterparty": {
-    "id": "cp_8f3a...",
-    "verified": true,
-    "jurisdiction": "ZA"
-  },
-  "evidence_pack_url": null,
-  "created_at": "2026-04-17T09:14:22Z",
-  "signature": "sha256:9e1c...a7"
+  "id": "match_01HX7Z9K3M2P4Q6R8T0V2X4Y6A",
+  "status": "matched",
+  "state":  "discovery",
+  "hash":   "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "created_at": "2026-04-18T09:14:22.000Z"
 }`;
 
-function CodeBlock({ code, title }: { code: string; title: string }) {
-  return (
-    <div className="rounded-xl bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
-        <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{title}</span>
-        <div className="flex gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
-          <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-        </div>
-      </div>
-      <pre className="p-5 text-[12.5px] leading-relaxed text-slate-100 font-mono overflow-x-auto">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-const ENDPOINTS = [
+const ENDPOINTS: { section: string; href: string; items: { method: string; path: string; desc: string }[] }[] = [
   {
     section: "Matches",
+    href: "/docs/matches",
     items: [
-      { method: "POST", path: "/v1/matches", desc: "Create a bilateral trade intent." },
-      { method: "GET", path: "/v1/matches/:id", desc: "Retrieve a match by ID." },
-      { method: "POST", path: "/v1/matches/:id/poi", desc: "Generate Proof of Intent." },
+      { method: "POST",   path: "/match",            desc: "Record bilateral trade intent." },
+      { method: "GET",    path: "/match/:id",        desc: "Retrieve a match by ID." },
+      { method: "POST",   path: "/match/:id/settle", desc: "Confirm intent and seal the collapse ledger." },
+      { method: "GET",    path: "/matches",          desc: "List matches scoped to your organisation." },
     ],
   },
   {
     section: "Counterparties",
+    href: "/docs/counterparties",
     items: [
-      { method: "POST", path: "/v1/counterparties", desc: "Register and verify a counterparty." },
-      { method: "GET", path: "/v1/counterparties/:id", desc: "Retrieve KYB status." },
+      { method: "POST",   path: "/entities",        desc: "Register a legal entity." },
+      { method: "GET",    path: "/entities",        desc: "List or fetch entities." },
+      { method: "POST",   path: "/authority-bind",  desc: "Manage UBO and Authority-to-Bind records." },
+      { method: "POST",   path: "/trade-approval",  desc: "Issue, renew, or revoke a trade approval." },
+      { method: "GET",    path: "/trade-status",    desc: "Read current trade-approval status." },
     ],
   },
   {
-    section: "Evidence",
+    section: "Discovery & signals",
+    href: "/docs/api",
     items: [
-      { method: "GET", path: "/v1/matches/:id/evidence", desc: "Download the signed evidence pack." },
+      { method: "POST",   path: "/signals",            desc: "Create a buyer or seller signal." },
+      { method: "GET",    path: "/signals/:id",        desc: "Retrieve a signal with its option set." },
+      { method: "POST",   path: "/signals/:id/select", desc: "Select an option to advance into engagement." },
+      { method: "POST",   path: "/search",             desc: "Discover counterparties matching a query." },
+    ],
+  },
+  {
+    section: "Settlement & evidence",
+    href: "/docs/evidence",
+    items: [
+      { method: "POST",   path: "/p3-wad",                desc: "Issue a Without-a-Doubt certificate (9 hard-gates)." },
+      { method: "GET",    path: "/evidence-pack/:matchId",desc: "Download the sealed evidence pack." },
+      { method: "POST",   path: "/pods",                  desc: "Open a Proof-of-Delivery with milestones." },
+    ],
+  },
+  {
+    section: "Webhooks",
+    href: "/docs/webhooks",
+    items: [
+      { method: "POST",   path: "/webhooks",     desc: "Register a webhook endpoint." },
+      { method: "GET",    path: "/webhooks",     desc: "List registered endpoints." },
+      { method: "DELETE", path: "/webhooks/:id", desc: "Remove an endpoint." },
+    ],
+  },
+  {
+    section: "Operational",
+    href: "/docs/authentication",
+    items: [
+      { method: "GET",    path: "/healthz",   desc: "Service health check (unauthenticated)." },
+      { method: "POST",   path: "/api-keys",  desc: "Provision an API key (JWT auth)." },
+      { method: "GET",    path: "/api-keys",  desc: "List API keys for your organisation." },
+      { method: "DELETE", path: "/api-keys/:id", desc: "Revoke an API key." },
+      { method: "GET",    path: "/audit-logs",   desc: "Read audit log entries scoped to your org." },
     ],
   },
 ];
-
-const METHOD_COLORS: Record<string, string> = {
-  GET: "text-emerald-600 bg-emerald-50",
-  POST: "text-blue-600 bg-blue-50",
-};
 
 export default function ApiReference() {
   return (
     <DocsLayout>
       <div className="max-w-5xl">
-        <p className="text-[13px] font-medium text-emerald-600 tracking-wider uppercase mb-3">
-          Reference
-        </p>
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-slate-900 mb-5">
-          API Reference
-        </h1>
-        <p className="text-lg text-slate-500 leading-relaxed mb-12 max-w-2xl">
-          The Izenzo API is organised around REST. All requests are authenticated with bearer tokens
-          and responses are JSON-encoded with deterministic SHA-256 signatures.
-        </p>
+        <DocEyebrow>Reference</DocEyebrow>
+        <DocH1>API Reference</DocH1>
+        <DocLede>
+          The Izenzo API is REST over HTTPS. All requests authenticate with an{" "}
+          <InlineCode>X-API-Key</InlineCode> header, all bodies are JSON, and every state-changing
+          response carries a deterministic SHA-256 hash for offline verification.
+        </DocLede>
 
-        {/* Two-column: text + code */}
         <section className="grid lg:grid-cols-2 gap-10 mb-16">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
-              Create a match
-            </h2>
-            <p className="text-slate-500 leading-relaxed mb-4">
-              Creates a new bilateral trade intent between your organisation and a verified
-              counterparty. The match enters a <code className="text-[12.5px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono">pending_poi</code> state until both
-              sides confirm intent.
+            <DocH2 id="example">Worked example: create a match</DocH2>
+            <DocP>
+              Records bilateral intent between two registered counterparties. Returns the
+              canonical match record with its content hash. Pass an{" "}
+              <InlineCode>Idempotency-Key</InlineCode> on every write so retries are safe.
+            </DocP>
+            <p className="text-[13px] text-slate-500 mt-4">
+              Full parameter reference and lifecycle:{" "}
+              <Link to="/docs/matches" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                Matches
+              </Link>
+              .
             </p>
-            <h3 className="text-[13px] font-semibold text-slate-900 mb-2 mt-6">Parameters</h3>
-            <ul className="space-y-2 text-[13.5px] text-slate-600">
-              <li><code className="font-mono text-slate-900">counterparty_id</code> <span className="text-slate-400">string · required</span></li>
-              <li><code className="font-mono text-slate-900">commodity</code> <span className="text-slate-400">string · required</span></li>
-              <li><code className="font-mono text-slate-900">side</code> <span className="text-slate-400">enum · bid | offer</span></li>
-              <li><code className="font-mono text-slate-900">quantity</code> <span className="text-slate-400">number · required</span></li>
-              <li><code className="font-mono text-slate-900">price_usd</code> <span className="text-slate-400">number · optional</span></li>
-            </ul>
           </div>
           <div className="space-y-4">
-            <CodeBlock code={CREATE_MATCH_CURL} title="Request" />
-            <CodeBlock code={CREATE_MATCH_RESPONSE} title="Response · 200" />
+            <CodePanel title="Request" language="bash" code={CREATE_MATCH_CURL} />
+            <CodePanel title="Response · 200" language="json" code={CREATE_MATCH_RESPONSE} />
           </div>
         </section>
 
-        {/* Endpoint index */}
         <section className="border-t border-slate-100 pt-12">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-6">
-            All endpoints
-          </h2>
+          <DocH2 id="all-endpoints">All endpoints</DocH2>
+          <p className="text-[13.5px] text-slate-500 mb-6">
+            Base URL: <InlineCode>https://api.izenzo.co.za/functions/v1</InlineCode>. Endpoints
+            in the discovery, settlement, and webhook groups have dedicated guides linked above.
+          </p>
           <div className="space-y-8">
             {ENDPOINTS.map((group) => (
               <div key={group.section}>
-                <h3 className="text-[13px] uppercase tracking-wider font-semibold text-slate-400 mb-3">
-                  {group.section}
-                </h3>
+                <div className="flex items-baseline justify-between mb-3">
+                  <h3 className="text-[13px] uppercase tracking-wider font-semibold text-slate-400">
+                    {group.section}
+                  </h3>
+                  <Link to={group.href} className="text-[12px] font-medium text-emerald-600 hover:text-emerald-700">
+                    Guide →
+                  </Link>
+                </div>
                 <div className="border border-slate-100 rounded-xl divide-y divide-slate-100">
                   {group.items.map((ep) => (
-                    <div key={ep.path} className="flex items-center gap-4 px-4 py-3">
-                      <span
-                        className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded ${
-                          METHOD_COLORS[ep.method] || "text-slate-600 bg-slate-100"
-                        }`}
-                      >
-                        {ep.method}
-                      </span>
+                    <div key={`${ep.method}-${ep.path}`} className="flex items-center gap-4 px-4 py-3">
+                      <EndpointBadge method={ep.method} />
                       <code className="text-[13px] font-mono text-slate-900">{ep.path}</code>
-                      <span className="text-[13px] text-slate-500 ml-auto">{ep.desc}</span>
+                      <span className="text-[13px] text-slate-500 ml-auto text-right">{ep.desc}</span>
                     </div>
                   ))}
                 </div>
