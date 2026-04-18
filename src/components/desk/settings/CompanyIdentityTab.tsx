@@ -420,10 +420,10 @@ function OwnersStep({
         .from("entities")
         .insert({
           org_id: orgId,
-          entity_type: "person",
+          entity_type: "INDIVIDUAL",
           legal_name: name.trim(),
           jurisdiction_code: jurisdiction.trim().toUpperCase(),
-          status: "pending",
+          status: "PENDING",
         })
         .select("id")
         .single();
