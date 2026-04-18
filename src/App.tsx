@@ -100,40 +100,40 @@ function App() {
                       forwards to its closest Trade Desk equivalent so existing
                       bookmarks, notification deep-links, and audit trails keep
                       working. */}
-                  <Route path="/dashboard" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard" element={<LegacyRedirect to="/desk" label="Dashboard" />} />
                   <Route path="/dashboard/matches/:matchId" element={<RedirectDashboardMatch />} />
-                  <Route path="/dashboard/matches" element={<Navigate to="/desk" replace />} />
-                  <Route path="/dashboard/search" element={<Navigate to="/desk/discover" replace />} />
-                  <Route path="/dashboard/order-book" element={<Navigate to="/desk" replace />} />
-                  <Route path="/dashboard/settings" element={<Navigate to="/desk/settings" replace />} />
-                  <Route path="/dashboard/account" element={<Navigate to="/desk/settings/company" replace />} />
-                  <Route path="/dashboard/billing" element={<Navigate to="/desk/billing" replace />} />
-                  <Route path="/dashboard/compliance" element={<Navigate to="/desk/compliance" replace />} />
-                  <Route path="/dashboard/programmes" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/matches" element={<LegacyRedirect to="/desk" label="Matches" />} />
+                  <Route path="/dashboard/search" element={<LegacyRedirect to="/desk/discover" label="Search" />} />
+                  <Route path="/dashboard/order-book" element={<LegacyRedirect to="/desk" label="Order Book" />} />
+                  <Route path="/dashboard/settings" element={<LegacyRedirect to="/desk/settings" label="Settings" />} />
+                  <Route path="/dashboard/account" element={<LegacyRedirect to="/desk/settings/company" label="Account" />} />
+                  <Route path="/dashboard/billing" element={<LegacyRedirect to="/desk/billing" label="Billing" />} />
+                  <Route path="/dashboard/compliance" element={<LegacyRedirect to="/desk/compliance" label="Compliance" />} />
+                  <Route path="/dashboard/programmes" element={<LegacyRedirect to="/desk" label="Programmes" />} />
                   {/* Catch-all: any other /dashboard/* path lands on the Desk overview */}
-                  <Route path="/dashboard/*" element={<Navigate to="/desk" replace />} />
+                  <Route path="/dashboard/*" element={<LegacyRedirect to="/desk" label="Dashboard" />} />
 
                   <Route path="/desk/*" element={<Desk />} />
                   {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
                       bookmarks, audit logs, and outbound links keep working. */}
-                  <Route path="/admin" element={<Navigate to="/hq/users" replace />} />
-                  <Route path="/admin/users" element={<Navigate to="/hq/users" replace />} />
-                  <Route path="/admin/orgs" element={<Navigate to="/hq/organisations" replace />} />
-                  <Route path="/admin/entities" element={<Navigate to="/hq/organisations?sub=entities" replace />} />
-                  <Route path="/admin/compliance" element={<Navigate to="/hq/disputes?sub=disputes" replace />} />
-                  <Route path="/admin/deals" element={<Navigate to="/hq/disputes?sub=approvals" replace />} />
-                  <Route path="/admin/settings" element={<Navigate to="/hq/settings?sub=platform" replace />} />
-                  <Route path="/admin/data-governance" element={<Navigate to="/hq/settings?sub=platform" replace />} />
-                  <Route path="/admin/overrides" element={<Navigate to="/hq/settings?sub=overrides" replace />} />
+                  <Route path="/admin" element={<LegacyRedirect to="/hq/users" label="Admin Console" />} />
+                  <Route path="/admin/users" element={<LegacyRedirect to="/hq/users" label="Admin Users" />} />
+                  <Route path="/admin/orgs" element={<LegacyRedirect to="/hq/organisations" label="Admin Organisations" />} />
+                  <Route path="/admin/entities" element={<LegacyRedirect to="/hq/organisations?sub=entities" label="Admin Entities" />} />
+                  <Route path="/admin/compliance" element={<LegacyRedirect to="/hq/disputes?sub=disputes" label="Admin Compliance" />} />
+                  <Route path="/admin/deals" element={<LegacyRedirect to="/hq/disputes?sub=approvals" label="Admin Deals" />} />
+                  <Route path="/admin/settings" element={<LegacyRedirect to="/hq/settings?sub=platform" label="Admin Settings" />} />
+                  <Route path="/admin/data-governance" element={<LegacyRedirect to="/hq/settings?sub=platform" label="Data Governance" />} />
+                  <Route path="/admin/overrides" element={<LegacyRedirect to="/hq/settings?sub=overrides" label="Admin Overrides" />} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
-                  <Route path="/admin/*" element={<Navigate to="/hq/users" replace />} />
+                  <Route path="/admin/*" element={<LegacyRedirect to="/hq/users" label="Admin Console" />} />
                   {/* Public docs hub, Stripe-style sidebar layout */}
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/quickstart" element={<DocsQuickstart />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
                   {/* Legacy /docs/sdks redirects to API reference; the platform is REST-first. */}
-                  <Route path="/docs/sdks" element={<Navigate to="/docs/api" replace />} />
+                  <Route path="/docs/sdks" element={<LegacyRedirect to="/docs/api" label="SDK documentation" />} />
                   <Route path="/docs/legacy" element={<Docs />} />
                   <Route path="/status" element={<Status />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
@@ -152,10 +152,10 @@ function App() {
                   {/* Public developer hub, landing page for the four dropdown links.
                       Authenticated tooling lives at /developer/* (DeveloperCenter). */}
                   <Route path="/developers" element={<Developers />} />
-                  <Route path="/developers/keys" element={<Navigate to="/developer/keys" replace />} />
-                  <Route path="/developers/webhooks" element={<Navigate to="/developer/webhooks" replace />} />
-                  <Route path="/developers/dlq" element={<Navigate to="/developer/webhooks" replace />} />
-                  <Route path="/developers/docs" element={<Navigate to="/developer/docs" replace />} />
+                  <Route path="/developers/keys" element={<LegacyRedirect to="/developer/keys" label="API keys" />} />
+                  <Route path="/developers/webhooks" element={<LegacyRedirect to="/developer/webhooks" label="Webhooks" />} />
+                  <Route path="/developers/dlq" element={<LegacyRedirect to="/developer/webhooks" label="Dead-letter queue" />} />
+                  <Route path="/developers/docs" element={<LegacyRedirect to="/developer/docs" label="Developer docs" />} />
                   <Route path="/developers/*" element={<Developers />} />
                   <Route path="/developer/*" element={<DeveloperCenter />} />
                   <Route path="/governance/triage" element={<GovernanceTriage />} />
@@ -164,7 +164,7 @@ function App() {
                   <Route path="/governance/health" element={<GovernanceHealth />} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   {/* Legacy /trade/wizard → consolidated under the Trade Desk shell */}
-                  <Route path="/trade/wizard" element={<Navigate to="/desk/wizard" replace />} />
+                  <Route path="/trade/wizard" element={<LegacyRedirect to="/desk/wizard" label="Trade Wizard" />} />
                   {/* Admin Dashboard, Izenzo Platform Administration.
                       Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
                   <Route path="/hq" element={<HQ />} />
