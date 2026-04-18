@@ -4764,7 +4764,7 @@ export type Database = {
       }
       token_ledger: {
         Row: {
-          action_type: string | null
+          action_type: string
           api_key_id: string | null
           created_at: string
           endpoint: string
@@ -4778,7 +4778,7 @@ export type Database = {
           tokens_burned: number
         }
         Insert: {
-          action_type?: string | null
+          action_type: string
           api_key_id?: string | null
           created_at?: string
           endpoint: string
@@ -4792,7 +4792,7 @@ export type Database = {
           tokens_burned?: number
         }
         Update: {
-          action_type?: string | null
+          action_type?: string
           api_key_id?: string | null
           created_at?: string
           endpoint?: string
