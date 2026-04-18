@@ -80,9 +80,9 @@ Deno.serve(async (req) => {
     // GET (or POST without action): list all users
     return await handleListUsers(supabaseAdmin);
   } catch (error) {
+    // Log full error server-side for debugging, but never leak details to caller
     console.error('Error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return jsonResponse({ error: message }, 500);
+    return jsonResponse({ error: 'Internal server error' }, 500);
   }
 });
 

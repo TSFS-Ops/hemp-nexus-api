@@ -35,6 +35,21 @@ function fuzzyMatch(a: string, b: string): boolean {
   return a.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(a.toLowerCase());
 }
 
+// ── One-way hash for sensitive ID numbers (POPIA/GDPR PII) ──
+// Replaces reversible base64 encoding. Uses SHA-256 with an optional
+// server-side pepper so hashes cannot be brute-forced from a leaked DB.
+async function hashIdNumber(idNumber: string | null | undefined): Promise<string | null> {
+  if (!idNumber) return null;
+  const pepper = Deno.env.get("ID_NUMBER_PEPPER") ?? "";
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(idNumber + pepper),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
