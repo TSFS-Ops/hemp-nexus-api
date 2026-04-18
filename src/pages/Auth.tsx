@@ -473,75 +473,77 @@ function AuthForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-200">
         {/* ─── Enterprise SSO ─── */}
-        <div className="space-y-3">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left">
+        <div className="flex flex-col sm:pr-8">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
             Single sign-on
           </p>
-          <button type="button" onClick={() => handleSso("microsoft")} disabled={loading || ssoLoading !== null} className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
-            <span className="absolute left-4 flex items-center">
-              {ssoLoading === "microsoft" ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                  <rect x="0" y="0" width="7" height="7" fill="#F25022" />
-                  <rect x="9" y="0" width="7" height="7" fill="#7FBA00" />
-                  <rect x="0" y="9" width="7" height="7" fill="#00A4EF" />
-                  <rect x="9" y="9" width="7" height="7" fill="#FFB900" />
-                </svg>}
-            </span>
-            Continue with Microsoft
-          </button>
+          <div className="space-y-2.5">
+            <button type="button" onClick={() => handleSso("microsoft")} disabled={loading || ssoLoading !== null} className="relative w-full h-10 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
+              <span className="absolute left-4 flex items-center">
+                {ssoLoading === "microsoft" ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                    <rect x="0" y="0" width="7" height="7" fill="#F25022" />
+                    <rect x="9" y="0" width="7" height="7" fill="#7FBA00" />
+                    <rect x="0" y="9" width="7" height="7" fill="#00A4EF" />
+                    <rect x="9" y="9" width="7" height="7" fill="#FFB900" />
+                  </svg>}
+              </span>
+              Continue with Microsoft
+            </button>
 
-          <button type="button" onClick={() => handleSso("google")} disabled={loading || ssoLoading !== null} className="relative w-full h-11 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
-            <span className="absolute left-4 flex items-center">
-              {ssoLoading === "google" ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-                  <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-                  <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
-                  <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
-                  <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
-                </svg>}
-            </span>
-            Continue with Google
-          </button>
-          <p className="text-[11px] text-slate-400 leading-relaxed pt-1 hidden sm:block">
+            <button type="button" onClick={() => handleSso("google")} disabled={loading || ssoLoading !== null} className="relative w-full h-10 rounded-md border border-slate-200 bg-white text-slate-700 text-[14px] font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
+              <span className="absolute left-4 flex items-center">
+                {ssoLoading === "google" ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+                    <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+                    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+                    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+                  </svg>}
+              </span>
+              Continue with Google
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed mt-auto pt-4 hidden sm:block">
             Recommended for institutional accounts. SSO enforces your organisation's security policy.
           </p>
         </div>
 
         {/* ─── Email form ─── */}
-        <div className="sm:border-l sm:border-slate-200 sm:pl-8">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium mb-3 text-center sm:text-left">
+        <div className="mt-6 sm:mt-0 sm:pl-8 flex flex-col">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
             Continue with email
           </p>
-          <form onSubmit={isSignIn ? onSignIn : onSignUp} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
+          <form onSubmit={isSignIn ? onSignIn : onSignUp} className="space-y-2.5 flex-1 flex flex-col">
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-[11px] font-medium text-slate-500 tracking-wide uppercase">
                 Email
               </Label>
               <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="you@institution.com" />
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between h-4">
+                <Label htmlFor="password" className="text-[11px] font-medium text-slate-500 tracking-wide uppercase">
                   Password
                 </Label>
-                {isSignIn && <button type="button" onClick={onForgot} className="text-xs text-slate-500 hover:text-slate-900 transition-colors">
+                {isSignIn && <button type="button" onClick={onForgot} className="text-[11px] text-slate-500 hover:text-slate-900 transition-colors">
                     Forgot?
                   </button>}
               </div>
               <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={isSignIn ? "current-password" : "new-password"} minLength={8} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"} />
             </div>
 
-            {!isSignIn && <div className="space-y-1.5">
-                <Label htmlFor="confirm-password" className="text-xs font-medium text-slate-700 tracking-wide uppercase">
+            {!isSignIn && <div className="space-y-1">
+                <Label htmlFor="confirm-password" className="text-[11px] font-medium text-slate-500 tracking-wide uppercase">
                   Confirm password
                 </Label>
                 <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" minLength={8} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 focus-visible:border-emerald-600 transition-shadow" placeholder="Re-enter password" />
-                {confirmPassword.length > 0 && password !== confirmPassword && <p className="text-xs text-destructive">Passwords do not match.</p>}
+                {confirmPassword.length > 0 && password !== confirmPassword && <p className="text-[11px] text-destructive">Passwords do not match.</p>}
               </div>}
 
-            <Button type="submit" disabled={loading} className="w-full h-10 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 hover:shadow-emerald-700/30 font-medium text-[14px] tracking-tight transition-all">
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait…</> : isSignIn ? "Continue with Email" : "Create account"}
+            <Button type="submit" disabled={loading} className="w-full h-10 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 hover:shadow-emerald-700/30 font-medium text-[14px] tracking-tight transition-all mt-1">
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait…</> : isSignIn ? "Sign in" : "Create account"}
             </Button>
           </form>
         </div>
