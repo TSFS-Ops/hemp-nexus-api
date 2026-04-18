@@ -369,7 +369,7 @@ export default function Auth() {
     }} />
 
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
-      <div className="relative z-10 w-full max-w-[860px]">
+      <div className="relative z-10 w-full max-w-[440px]">
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-6 sm:p-8">
           {/* Logo (centered, top of card), links back to landing */}
           <div className="flex flex-col items-center mb-5">
