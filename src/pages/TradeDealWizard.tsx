@@ -23,8 +23,35 @@ const ACTIVE_STEP = 8; // 1-indexed: Generate POI
 
 function ProgressBar() {
   return (
-    <div className="border-b border-border bg-background px-8 py-5">
-      <div className="flex items-center justify-between max-w-5xl mx-auto">
+    <div className="border-b border-border bg-background px-4 md:px-8 py-4 md:py-5">
+      {/* Mobile: compact "Step N of M · label" */}
+      <div className="md:hidden flex items-center justify-between max-w-5xl mx-auto">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-background text-xs font-semibold shrink-0">
+            {ACTIVE_STEP}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Step {ACTIVE_STEP} of {STEPS.length}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{STEPS[ACTIVE_STEP - 1]}</p>
+          </div>
+        </div>
+        <div className="flex gap-0.5 shrink-0">
+          {STEPS.map((_, idx) => (
+            <span
+              key={idx}
+              className={cn(
+                "h-1 w-3 rounded-full",
+                idx + 1 < ACTIVE_STEP && "bg-foreground",
+                idx + 1 === ACTIVE_STEP && "bg-foreground",
+                idx + 1 > ACTIVE_STEP && "bg-border",
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: full stepper */}
+      <div className="hidden md:flex items-center justify-between max-w-5xl mx-auto">
         {STEPS.map((label, idx) => {
           const stepNum = idx + 1;
           const isCompleted = stepNum < ACTIVE_STEP;
@@ -86,11 +113,11 @@ export default function TradeDealWizard() {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-14 items-center gap-3 border-b border-border bg-background px-6">
+          <header className="flex h-14 items-center gap-3 border-b border-border bg-background px-4 md:px-6">
             <SidebarTrigger />
-            <div>
-              <h1 className="text-sm font-semibold tracking-tight">Trade Deal Wizard</h1>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold tracking-tight truncate">Trade Deal Wizard</h1>
+              <p className="text-xs text-muted-foreground truncate">
                 Match #M-2024-0847 · Aurubis AG
               </p>
             </div>
@@ -99,7 +126,7 @@ export default function TradeDealWizard() {
           <ProgressBar />
 
           {/* Main interface */}
-          <main className="flex-1 px-8 py-8">
+          <main className="flex-1 px-4 md:px-8 py-6 md:py-8">
             <div className="max-w-4xl mx-auto">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold tracking-tight">
