@@ -84,18 +84,16 @@ Deno.serve(async (req: Request) => {
     const corsResponse = handleCors(req, allowedOrigins);
     if (corsResponse) return corsResponse;
 
-    // Auth: allow cron key, service role, or anon key (for pg_cron)
+    // Auth: cron key or service role only (anon key fallback removed for security)
     const internalKey = req.headers.get("x-internal-key");
     const expectedKey = Deno.env.get("INTERNAL_CRON_KEY");
     const authHeader = req.headers.get("authorization");
 
     const isServiceRole = authHeader?.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "___none___");
     const isCronKey = expectedKey && internalKey === expectedKey;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const isAnon = authHeader?.includes(anonKey || "___none___");
 
-    if (!isServiceRole && !isCronKey && !isAnon) {
-      throw new ApiException("UNAUTHORIZED", "This endpoint requires internal or service-role access", 401);
+    if (!isServiceRole && !isCronKey) {
+      throw new ApiException("UNAUTHORIZED", "Internal access only. Provide x-internal-key header or service-role authorization.", 401);
     }
 
     // Parse query params
