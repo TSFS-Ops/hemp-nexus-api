@@ -20,22 +20,23 @@ interface PipelineLane {
   deals: DealCard[];
 }
 
-// Mapping the 9-step WaD workflow into three editorial buckets
+// Mapping the 9-step WaD workflow into three editorial buckets.
+// `states` are matched against the live `matches.state` enum values.
 const LANE_DEFS = [{
   id: "draft",
   title: "Draft Interests",
   subtitle: "Steps 1 to 3 · Intent captured",
-  states: ["draft", "interest_logged", "match_proposed"]
+  states: ["draft", "interest_logged", "match_proposed", "discovery"]
 }, {
   id: "pending",
   title: "Pending Counterparty",
   subtitle: "Steps 4 to 7 · In negotiation",
-  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending"]
+  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending", "committed"]
 }, {
   id: "poi",
   title: "Proofs of Intent Generated",
   subtitle: "Steps 8 to 9 · Sealed",
-  states: ["pending_finality", "settled", "poi_generated", "finalised"]
+  states: ["pending_finality", "settled", "poi_generated", "finalised", "completed"]
 }];
 export function DealPipeline() {
   const {
