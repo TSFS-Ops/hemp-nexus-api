@@ -134,6 +134,11 @@ function CommandBar() {
           </button>
         </div>
       </div>
+
+      {/* Mobile-only workspace switcher row, surfaced because the desktop slot is hidden < md */}
+      <div className="md:hidden px-4 pb-3 -mt-1">
+        <ContextSwitcher tone="dark" />
+      </div>
     </header>;
 }
 
