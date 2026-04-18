@@ -100,15 +100,15 @@ Deno.serve(async (req: Request) => {
         return json({ error: "directors array is required" }, 400);
       }
 
-      const rows = directors.map((d: any) => ({
+      const rows = await Promise.all(directors.map(async (d: any) => ({
         org_id: targetOrg,
         full_name: d.full_name,
         role: d.role || "director",
         nationality: d.nationality || null,
-        id_number_hash: d.id_number ? btoa(d.id_number) : null, // simple encoding; prod would hash
+        id_number_hash: await hashIdNumber(d.id_number), // SHA-256 + pepper (one-way)
         ownership_percentage: d.ownership_percentage || null,
         is_pep: d.is_pep || false,
-      }));
+      })));
 
       const { data, error } = await admin.from("org_directors").insert(rows).select();
       if (error) return json({ error: error.message }, 500);
@@ -185,7 +185,7 @@ Deno.serve(async (req: Request) => {
         expiry_date: expiry_date || null,
         mime_type: mime_type || null,
         file_size: file_size || null,
-        id_number_hash: id_number ? btoa(id_number) : null,
+        id_number_hash: await hashIdNumber(id_number), // SHA-256 + pepper (one-way)
         uploaded_by: user.id,
         extracted_metadata: { doc_type, issuing_country, expiry_date },
       }).select().single();
