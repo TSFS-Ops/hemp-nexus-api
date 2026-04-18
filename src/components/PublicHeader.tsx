@@ -194,7 +194,10 @@ export function PublicHeader() {
 
       {/* Mobile dropdown */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white max-h-[calc(100vh-4rem)] overflow-y-auto">
+        // Header is `h-20` (5rem) — the dropdown's max-height must subtract the
+        // *actual* header height, not 4rem, otherwise the last item is clipped
+        // below the fold on short viewports (e.g. iPhone SE landscape).
+        <div className="lg:hidden border-t border-slate-200 bg-white max-h-[calc(100dvh-5rem)] overflow-y-auto">
           <div className="px-4 py-4 space-y-5">
             {MEGA_NAV.map((category) => (
               <div key={category.key}>
