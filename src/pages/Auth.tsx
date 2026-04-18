@@ -475,7 +475,7 @@ function AuthForm({
 
       <div className="space-y-6">
         {/* ─── Enterprise SSO ─── */}
-        <div className="flex flex-col sm:pr-8">
+        <div className="flex flex-col">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
             Single sign-on
           </p>
@@ -504,13 +504,17 @@ function AuthForm({
               Continue with Google
             </button>
           </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed mt-auto pt-4 hidden sm:block">
-            Recommended for institutional accounts. SSO enforces your organisation's security policy.
-          </p>
         </div>
 
         {/* ─── Email form ─── */}
-        <div className="mt-6 sm:mt-0 sm:pl-8 flex flex-col">
+        <div className="relative">
+          <div className="absolute inset-x-0 -top-3 flex items-center justify-center">
+            <span className="bg-white/95 px-3 text-[10px] uppercase tracking-[0.16em] text-slate-400 font-medium">or</span>
+          </div>
+          <div className="border-t border-slate-200" />
+        </div>
+
+        <div className="flex flex-col">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
             Continue with email
           </p>
