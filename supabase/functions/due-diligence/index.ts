@@ -35,6 +35,21 @@ function fuzzyMatch(a: string, b: string): boolean {
   return a.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(a.toLowerCase());
 }
 
+// ── One-way hash for sensitive ID numbers (POPIA/GDPR PII) ──
+// Replaces reversible base64 encoding. Uses SHA-256 with an optional
+// server-side pepper so hashes cannot be brute-forced from a leaked DB.
+async function hashIdNumber(idNumber: string | null | undefined): Promise<string | null> {
+  if (!idNumber) return null;
+  const pepper = Deno.env.get("ID_NUMBER_PEPPER") ?? "";
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(idNumber + pepper),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -85,15 +100,15 @@ Deno.serve(async (req: Request) => {
         return json({ error: "directors array is required" }, 400);
       }
 
-      const rows = directors.map((d: any) => ({
+      const rows = await Promise.all(directors.map(async (d: any) => ({
         org_id: targetOrg,
         full_name: d.full_name,
         role: d.role || "director",
         nationality: d.nationality || null,
-        id_number_hash: d.id_number ? btoa(d.id_number) : null, // simple encoding; prod would hash
+        id_number_hash: await hashIdNumber(d.id_number), // SHA-256 + pepper (one-way)
         ownership_percentage: d.ownership_percentage || null,
         is_pep: d.is_pep || false,
-      }));
+      })));
 
       const { data, error } = await admin.from("org_directors").insert(rows).select();
       if (error) return json({ error: error.message }, 500);
@@ -170,7 +185,7 @@ Deno.serve(async (req: Request) => {
         expiry_date: expiry_date || null,
         mime_type: mime_type || null,
         file_size: file_size || null,
-        id_number_hash: id_number ? btoa(id_number) : null,
+        id_number_hash: await hashIdNumber(id_number), // SHA-256 + pepper (one-way)
         uploaded_by: user.id,
         extracted_metadata: { doc_type, issuing_country, expiry_date },
       }).select().single();
