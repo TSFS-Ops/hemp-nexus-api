@@ -303,7 +303,6 @@ function EntityDetailsStep({
           registration_number: registration.trim(),
           tax_number: taxNumber.trim() || null,
           jurisdictions: [jur],
-          status: "pending",
         })
         .eq("id", org.id);
       if (orgErr) throw orgErr;
