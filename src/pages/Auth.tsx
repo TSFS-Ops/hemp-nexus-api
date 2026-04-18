@@ -473,7 +473,7 @@ function AuthForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-200">
+      <div className="space-y-6">
         {/* ─── Enterprise SSO ─── */}
         <div className="flex flex-col sm:pr-8">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
