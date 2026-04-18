@@ -11,7 +11,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
       className="relative overflow-hidden bg-white"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif" }}
     >
-      {/* Airy emerald/mint mesh gradient */}
+      {/* Airy emerald/mint mesh gradient with indigo aurora accent for tonal depth */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         {/* Emerald wash, top-left */}
         <div
@@ -29,12 +29,28 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
               "radial-gradient(circle at center, hsl(166 76% 84% / 0.6) 0%, hsl(166 76% 84% / 0) 70%)",
           }}
         />
+        {/* Indigo aurora, bottom-left, sparse — adds 'developer/cryptography' tonal weight */}
+        <div
+          className="absolute -bottom-24 -left-40 w-[680px] h-[680px] rounded-full opacity-35 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at center, hsl(231 70% 78% / 0.5) 0%, hsl(231 70% 78% / 0) 70%)",
+          }}
+        />
         {/* Soft teal wash, bottom-center */}
         <div
           className="absolute -bottom-44 left-1/4 w-[820px] h-[620px] rounded-full opacity-45 blur-3xl"
           style={{
             background:
               "radial-gradient(circle at center, hsl(160 84% 88% / 0.6) 0%, hsl(160 84% 88% / 0) 70%)",
+          }}
+        />
+        {/* Indigo whisper, top-right offset — pairs with bottom-left for diagonal aurora rhythm */}
+        <div
+          className="absolute top-40 -right-24 w-[520px] h-[520px] rounded-full opacity-25 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at center, hsl(224 76% 82% / 0.45) 0%, hsl(224 76% 82% / 0) 70%)",
           }}
         />
         <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-b from-transparent to-white" />
