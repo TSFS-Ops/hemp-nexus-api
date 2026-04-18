@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Building2, ArrowUpRight } from "lucide-react";
+import { Building2, ArrowUpRight, Inbox, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { EmptyStateCard } from "@/components/ui/empty-state-card";
 
 interface DealCard {
   id: string;
@@ -149,6 +150,41 @@ export function DealPipeline() {
   });
   const lanes = data ?? LANE_META.map((l) => ({ ...l, states: [], deals: [] }));
 
+  // Whole-pipeline empty: no deals across all three lanes after load completes.
+  // Treated separately from lane-level empties because it implies the org has
+  // never initiated a trade, not just that one stage is quiet.
+  const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
+  const showPipelineEmpty = !isLoading && totalDeals === 0;
+
+  if (showPipelineEmpty) {
+    return (
+      <section>
+        <div className="mb-6 flex items-baseline justify-between">
+          <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+            Active Deal Pipeline
+          </h2>
+          <p className="text-[11px] text-slate-500 font-mono tracking-widest uppercase">
+            9-Step WaD Workflow
+          </p>
+        </div>
+        <EmptyStateCard
+          kicker="Pipeline Idle"
+          title="No active pipeline"
+          description="Discover verified counterparty liquidity, then initiate a trade request to populate your desk."
+          icon={<Compass className="h-5 w-5" strokeWidth={1.75} />}
+          primaryAction={{
+            label: "Discover Counterparties",
+            onClick: () => navigate("/desk/discover"),
+          }}
+          secondaryAction={{
+            label: "Initiate Trade Request",
+            onClick: () => navigate("/desk/initiate"),
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="mb-6 flex items-baseline justify-between">
@@ -274,10 +310,18 @@ function SkeletonCard() {
   );
 }
 
+/**
+ * Lane-level empty state. Compact density so three columns balance
+ * visually without dominating the desk. Copy is generic across lanes;
+ * the lane title above already communicates which stage is empty.
+ */
 function LaneEmptyState() {
   return (
-    <div className="bg-white rounded-lg border border-dashed border-slate-200 p-6 text-center">
-      <p className="text-[11px] text-slate-500 font-mono tracking-wide uppercase">No deals</p>
-    </div>
+    <EmptyStateCard
+      density="compact"
+      kicker="No Records"
+      title="Lane empty"
+      description="No trade requests have entered this stage."
+    />
   );
 }
