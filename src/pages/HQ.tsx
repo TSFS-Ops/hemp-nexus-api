@@ -21,6 +21,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
+import { useUrlTab } from "@/hooks/use-url-tab";
 
 // ── Wired admin panels (no mocks) ───────────────────────────────────
 import UsersManagement from "@/components/admin/UsersManagement";
@@ -206,9 +207,12 @@ function UsersTab() {
 }
 function OrganisationsTab() {
   // Sub-tabs: Orgs (token balances + suspension) · Legal Entities · KYB Docs
+  // Sub-tab state lives in ?sub= so legacy redirects (e.g. /admin/entities) and
+  // bookmarks land on the right surface.
+  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb"]);
   return <>
       <TabHeader id="organisations" />
-      <Tabs defaultValue="orgs" className="space-y-5">
+      <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm">
           <TabsTrigger value="orgs">Organisations</TabsTrigger>
           <TabsTrigger value="entities">Legal Entities</TabsTrigger>
@@ -234,9 +238,10 @@ function OrganisationsTab() {
 }
 function DisputesTab() {
   // Sub-tabs: Disputes (raised, status, override) · Trade Approvals (pending intervention)
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "approvals"]);
   return <>
       <TabHeader id="disputes" />
-      <Tabs defaultValue="disputes" className="space-y-5">
+      <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm">
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
           <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
@@ -256,9 +261,10 @@ function DisputesTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
+  const [sub, setSub] = useUrlTab("sub", "audit-logs", ["audit-logs", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
-      <Tabs defaultValue="audit-logs" className="space-y-5">
+      <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
@@ -290,9 +296,10 @@ function AuditTab() {
 }
 function SettingsTab() {
   // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
+  const [sub, setSub] = useUrlTab("sub", "platform", ["platform", "thresholds", "tokens", "signing", "brd", "overrides"]);
   return <>
       <TabHeader id="settings" />
-      <Tabs defaultValue="platform" className="space-y-5">
+      <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
           <TabsTrigger value="platform">Platform</TabsTrigger>
           <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
