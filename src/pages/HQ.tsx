@@ -181,13 +181,13 @@ function Surface({
   children: React.ReactNode;
   label?: string;
 }) {
-  return <section className="bg-white border border-slate-200 rounded-sm">
-      {label && <header className="px-5 py-3 border-b border-slate-200 bg-slate-50/50">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
+  return <section className="bg-white border border-slate-200 rounded-sm overflow-hidden">
+      {label && <header className="px-4 sm:px-5 py-3 border-b border-slate-200 bg-slate-50/50">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600 break-words">
             {label}
           </p>
         </header>}
-      <div className="p-3 sm:p-5" data-admin-table>
+      <div className="p-3 sm:p-5 min-w-0" data-admin-table>
         {children}
       </div>
     </section>;
@@ -361,12 +361,12 @@ function HQLayout() {
           horizontal language; sticky so admins always have the four levers in view. */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-          <div className="px-6 lg:px-10 overflow-x-auto">
-            <TabsList className="h-12 bg-transparent p-0 gap-8 rounded-none">
+          <div className="px-4 sm:px-6 lg:px-10 overflow-x-auto no-scrollbar">
+            <TabsList className="h-12 bg-transparent p-0 gap-6 sm:gap-8 rounded-none">
               {TABS.map(t => {
               const Icon = t.icon;
               return <TabsTrigger key={t.id} value={t.id} className="
-                      relative h-12 px-0 rounded-none bg-transparent
+                      relative h-12 px-0 rounded-none bg-transparent shrink-0
                       text-sm text-slate-500 hover:text-slate-900
                       data-[state=active]:text-slate-900
                       data-[state=active]:font-medium
@@ -388,7 +388,7 @@ function HQLayout() {
           </div>
         </div>
 
-        <main className="px-6 lg:px-10 py-8 max-w-[1600px] mx-auto">
+        <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto">
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>

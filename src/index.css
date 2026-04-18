@@ -420,10 +420,31 @@
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Tap target alias for the existing .touch-target utility (44pt iOS minimum). */
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 /* Prevent horizontal overflow on all major containers */
 .overflow-x-guard {
   overflow-x: hidden;
   max-width: 100vw;
+}
+
+/* Mobile Safari hardening: prevents text auto-zoom, removes tap flash,
+   blocks rubber-band overscroll on the page body, and stops accidental
+   horizontal scrolling caused by deeply nested children. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (max-width: 767px) {
@@ -432,11 +453,20 @@
     overflow-x: hidden;
     max-width: 100vw;
   }
-  
+
   /* Mobile toast positioning - avoid header collision */
   [data-sonner-toaster] {
     top: 56px !important;
     bottom: auto !important;
+  }
+
+  /* Disable user-select on chrome elements that often live behind a sticky
+     bottom nav, so a long-press doesn't trigger iOS's native callout menu. */
+  nav[aria-label],
+  header,
+  [role="tablist"] {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 
