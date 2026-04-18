@@ -316,19 +316,19 @@ function EntityDetailsStep({
             registration_number: registration.trim(),
             tax_number: taxNumber.trim() || null,
             jurisdiction_code: jur,
-            status: "pending",
+            status: "PENDING",
           })
           .eq("id", companyEntityId);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("entities").insert({
           org_id: org.id,
-          entity_type: "company",
+          entity_type: "COMPANY",
           legal_name: legalName.trim(),
           registration_number: registration.trim(),
           tax_number: taxNumber.trim() || null,
           jurisdiction_code: jur,
-          status: "pending",
+          status: "PENDING",
         });
         if (error) throw error;
       }
