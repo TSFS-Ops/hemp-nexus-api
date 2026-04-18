@@ -148,7 +148,7 @@ export default function AuditLedgerProductPage() {
               duration: 0.7,
               delay: 0.05
             }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
-                Tamper-Proof truth
+                Immutable ledger
                 <br />
                 for trade finance.
               </motion.h1>
