@@ -5619,7 +5619,9 @@ export type Database = {
       }
       webhook_endpoints: {
         Row: {
+          consecutive_failures: number
           created_at: string
+          disabled_at: string | null
           events: string[]
           id: string
           last_delivery_at: string | null
@@ -5630,7 +5632,9 @@ export type Database = {
           url: string
         }
         Insert: {
+          consecutive_failures?: number
           created_at?: string
+          disabled_at?: string | null
           events?: string[]
           id?: string
           last_delivery_at?: string | null
@@ -5641,7 +5645,9 @@ export type Database = {
           url: string
         }
         Update: {
+          consecutive_failures?: number
           created_at?: string
+          disabled_at?: string | null
           events?: string[]
           id?: string
           last_delivery_at?: string | null
