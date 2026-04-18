@@ -123,7 +123,7 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.05 }}
-            className="mt-8 text-5xl lg:text-6xl font-semibold tracking-tighter leading-[1.05] text-slate-900"
+            className="mt-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter leading-[1.05] text-slate-900"
           >
             Infrastructure pricing.
             <br />
@@ -273,7 +273,7 @@ export default function Pricing() {
 
       {/* ════════════════ ALWAYS INCLUDED ════════════════ */}
       <section className="relative bg-slate-50/50 border-y border-slate-100">
-        <div className="relative max-w-6xl mx-auto px-6 lg:px-12 py-24 lg:py-32">
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-12 py-12 sm:py-16 md:py-24 lg:py-32">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
@@ -312,7 +312,7 @@ export default function Pricing() {
       {/* ════════════════ CLOSING CTA ════════════════ */}
       <section className="relative overflow-hidden">
         <EmeraldWhisper />
-        <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-32 text-center">
+        <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 text-center">
           <h2 className="text-3xl lg:text-4xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
             Not sure which tier fits?
           </h2>

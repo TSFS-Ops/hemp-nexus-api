@@ -319,7 +319,7 @@ export default function ComplianceEngineProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.05
-            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
+            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 Institutional identity.
                 <br />
                 Resolved.
@@ -382,12 +382,12 @@ export default function ComplianceEngineProductPage() {
 
       {/* ═══════════════════ COMPLIANCE BENTO ═══════════════════ */}
       <section className="relative bg-slate-50/40 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44">
           <div className="max-w-2xl mb-20 lg:mb-28">
             <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
               The system
             </p>
-            <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               Three primitives. One verified counterparty.
             </h2>
             <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Document intelligence, ownership graphing, and continuous sanctions screening: composed into a single auditable record. </p>
@@ -526,9 +526,9 @@ export default function ComplianceEngineProductPage() {
       {/* ═══════════════════ CLOSING CTA ═══════════════════ */}
       <section className="relative overflow-hidden">
         <EmeraldWhisper />
-        <div className="relative max-w-5xl mx-auto px-6 lg:px-12 py-32 lg:py-44 text-center">
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44 text-center">
           <ShieldCheck className="h-10 w-10 text-emerald-600 mx-auto mb-8" strokeWidth={1.5} />
-          <h2 className="text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
             Compliance, as infrastructure.
           </h2>
           <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">

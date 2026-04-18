@@ -70,7 +70,7 @@ export default function FinanceSolutionsPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.05
-            }} className="mt-6 text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
+            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
                 De-risk capital deployment.
               </motion.h1>
 
@@ -151,12 +151,12 @@ export default function FinanceSolutionsPage() {
 
       {/* ═══════════════════ FEATURE BENTO ═══════════════════ */}
       <section className="relative bg-slate-50/40 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44">
           <div className="max-w-2xl mb-20 lg:mb-28">
             <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
               For underwriters, lenders, and insurers
             </p>
-            <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               The end of forensic auditing.
             </h2>
             <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (tamper-proof proof, automated underwriting, and instant audit resolution) engineered for institutional capital deployment. </p>
@@ -264,8 +264,8 @@ export default function FinanceSolutionsPage() {
 
       {/* ════════════════ FINAL CTA ════════════════ */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44 text-center">
-          <h2 className="text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
             Stop underwriting paperwork.
             <br />
             <span className="text-emerald-700">Start underwriting truth.</span>
