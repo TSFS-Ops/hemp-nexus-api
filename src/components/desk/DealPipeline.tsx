@@ -246,19 +246,21 @@ export function DealPipeline() {
   const navigate = useNavigate();
   const { data: orgId } = useOrgId();
   const [sealedPage, setSealedPage] = useState(0);
+  const [activePage, setActivePage] = useState(0);
 
-  const activeQ = useActiveLanes(orgId ?? null);
+  const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
 
-  const isLoading = activeQ.isLoading || (sealedQ.isLoading && !sealedQ.data);
+  const isLoading = (activeQ.isLoading && !activeQ.data) || (sealedQ.isLoading && !sealedQ.data);
   const isSealedFetching = sealedQ.isFetching;
+  const isActiveFetching = activeQ.isFetching;
 
   const lanes = useMemo(() => {
-    const activeCards = activeQ.data ?? [];
+    const activeCards = activeQ.data?.cards ?? [];
     const sealedCards = sealedQ.data?.cards ?? [];
-    // De-dupe: the active query bounded at 60 may have already returned some
-    // sealed records that the paginated sealed query also returns. Sealed page
-    // wins because it owns that lane's growth.
+    // De-dupe: the active query may have already returned some sealed records
+    // that the paginated sealed query also returns. Sealed page wins because
+    // it owns that lane's growth.
     const sealedIds = new Set(sealedCards.map((c) => c.id));
     return LANE_META.map((meta) => {
       if (meta.id === "poi") {
@@ -297,11 +299,16 @@ export function DealPipeline() {
   }
 
   // Sealed pagination state derived from the server count, not from page-size guesses.
-  // Note: count is approximate for "sealed" because we filter accepted engagements
-  // client-side; we expose it as "matched POIs in window" rather than asserting truth.
   const sealedLoaded = sealedQ.data?.cards.length ?? 0;
   const sealedWindow = (sealedPage + 1) * SEALED_PAGE_SIZE;
   const sealedHasMore = (sealedQ.data?.totalSealedish ?? 0) > sealedWindow;
+
+  // Active-lane pagination — `totalActive` is the server-side count of *all*
+  // matches in DRAFT_STATES ∪ POI_STATES. We display "Load more" on Draft
+  // and Awaiting lanes whenever the cumulative window has not yet covered it.
+  const activeLoaded = activeQ.data?.cards.length ?? 0;
+  const activeWindow = (activePage + 1) * ACTIVE_PAGE_INCREMENT;
+  const activeHasMore = (activeQ.data?.totalActive ?? 0) > activeWindow;
 
   return (
     <section>
@@ -338,7 +345,7 @@ export function DealPipeline() {
               )}
             </div>
 
-            {/* Pagination affordance — only the Sealed lane grows without bound. */}
+            {/* Sealed pagination affordance. */}
             {lane.id === "poi" && !isLoading && lane.deals.length > 0 && (
               <div className="px-1 pt-1 flex items-center justify-between gap-3">
                 <p className="text-[10px] font-mono tracking-widest uppercase text-slate-500">
@@ -358,6 +365,31 @@ export function DealPipeline() {
                 )}
               </div>
             )}
+
+            {/* Active-lane pagination — appears on Draft and Awaiting lanes
+                whenever the org has more active records than the current window.
+                The footer is rendered once per active lane (not once for the
+                pair) so the user sees the affordance wherever the overflow
+                visually lives. */}
+            {(lane.id === "draft" || lane.id === "awaiting") &&
+              !isLoading &&
+              activeQ.data &&
+              activeHasMore && (
+                <div className="px-1 pt-1 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-mono tracking-widest uppercase text-slate-500">
+                    Showing {activeLoaded} of {activeQ.data.totalActive} active
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActivePage((p) => p + 1)}
+                    disabled={isActiveFetching}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                  >
+                    {isActiveFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
+                    Load more
+                  </button>
+                </div>
+              )}
           </div>
         ))}
       </div>
