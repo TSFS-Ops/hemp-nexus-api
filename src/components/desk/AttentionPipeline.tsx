@@ -55,33 +55,33 @@ export function AttentionPipeline() {
   });
 
   return (
-    <section className="bg-white rounded-md border border-slate-200 mb-12">
-      <div className="px-8 pt-8 pb-6 border-b border-slate-100">
-        <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-slate-400">
+    <section className="bg-white rounded-md border border-slate-200 mb-8">
+      <div className="px-6 pt-4 pb-3 border-b border-slate-100">
+        <h2 className="text-xs font-mono tracking-[0.2em] uppercase text-slate-400">
           Requires Your Attention
         </h2>
       </div>
 
       <div className="p-2">
         {isLoading ? (
-          <div className="p-12 text-center text-sm text-slate-400">Loading…</div>
+          <div className="p-6 text-center text-sm text-slate-400">Loading…</div>
         ) : !data || data.length === 0 ? (
           <EmptyState />
         ) : (
           <ul className="divide-y divide-slate-100">
             {data.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-6 p-6 hover:bg-slate-50/60 rounded-md transition-colors">
+              <li key={item.id} className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50/60 rounded-md transition-colors">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] text-slate-900 leading-relaxed mb-1">
+                  <p className="text-sm text-slate-900 leading-snug mb-0.5">
                     {item.title}
                   </p>
-                  <p className="text-xs text-slate-500 font-mono tracking-wide">
+                  <p className="text-[11px] text-slate-500 font-mono tracking-wide">
                     {item.meta} · <span className="text-slate-400">{item.id.slice(0, 8)}</span>
                   </p>
                 </div>
                 <button
                   onClick={() => navigate(item.href)}
-                  className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                  className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
                 >
                   Review &amp; Seal
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -97,14 +97,16 @@ export function AttentionPipeline() {
 
 function EmptyState() {
   return (
-    <div className="px-12 py-20 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 mb-6">
-        <CheckCircle2 className="h-5 w-5 text-slate-400" strokeWidth={1.5} />
+    <div className="px-6 py-6 flex items-center gap-3">
+      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 shrink-0">
+        <CheckCircle2 className="h-4 w-4 text-slate-400" strokeWidth={1.5} />
       </div>
-      <p className="text-base text-slate-700 mb-2 font-medium">You are all caught up.</p>
-      <p className="text-sm text-slate-400 leading-relaxed max-w-sm mx-auto">
-        No deals require your attention. New activity will surface here automatically.
-      </p>
+      <div className="min-w-0">
+        <p className="text-sm text-slate-700 font-medium leading-tight">You are all caught up.</p>
+        <p className="text-xs text-slate-400 leading-snug">
+          New activity will surface here automatically.
+        </p>
+      </div>
     </div>
   );
 }
