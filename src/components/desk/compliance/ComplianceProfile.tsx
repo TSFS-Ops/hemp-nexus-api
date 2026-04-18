@@ -220,7 +220,7 @@ export function ComplianceProfile() {
         <button
           type="button"
           onClick={() => navigate("/desk/settings/company?step=entity")}
-          className="self-start md:shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors border-b border-transparent hover:border-slate-900"
+          className="self-start md:shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm"
         >
           Request Data Update
         </button>
