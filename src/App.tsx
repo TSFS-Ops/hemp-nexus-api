@@ -45,6 +45,12 @@ const Developers = lazy(() => import("@/pages/Developers"));
 const DocsIndex = lazy(() => import("@/pages/docs/Index"));
 const DocsQuickstart = lazy(() => import("@/pages/docs/Quickstart"));
 const DocsApiReference = lazy(() => import("@/pages/docs/ApiReference"));
+const DocsAuthentication = lazy(() => import("@/pages/docs/Authentication"));
+const DocsWebhooks = lazy(() => import("@/pages/docs/Webhooks"));
+const DocsMatches = lazy(() => import("@/pages/docs/Matches"));
+const DocsCounterparties = lazy(() => import("@/pages/docs/Counterparties"));
+const DocsEvidence = lazy(() => import("@/pages/docs/Evidence"));
+const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const Status = lazy(() => import("@/pages/Status"));
 
 /**
