@@ -117,6 +117,26 @@ export function MatchCompiler({
   const creditBalance = demoMode ? 250 : tokenData ?? 0;
   const matchRef = useMemo(() => matchId && matchId !== "new" ? matchId.slice(0, 8).toUpperCase() : "DRAFT-000", [matchId]);
 
+  // ── Unsaved-changes guard ──
+  // Treat any non-empty trade input or attached evidence as "dirty work".
+  // Suppressed in demo mode (marketing fixtures should never block nav).
+  const isDirty = !demoMode && (
+    counterparty.trim().length > 0 ||
+    commodity.trim().length > 0 ||
+    volume.trim().length > 0 ||
+    price.trim().length > 0 ||
+    incoterms.trim().length > 0 ||
+    notes.trim().length > 0 ||
+    docs.length > 0
+  );
+  const { GuardDialog } = useUnsavedChangesGuard(isDirty, {
+    title: "Unsaved trade details",
+    message:
+      "You have unsaved trade terms or attached evidence. If you leave now, this draft will be lost.",
+    confirmLabel: "Discard and leave",
+    cancelLabel: "Stay on page",
+  });
+
   // ── Real tamper-proof seal, SHA-256 over canonical payload ──
   // In demo mode the seal is pre-baked so we never run hashing.
   useEffect(() => {
