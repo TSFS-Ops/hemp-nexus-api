@@ -1,11 +1,9 @@
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, ShieldCheck, Globe2, Database } from "lucide-react";
 
 interface HeroStripeGlowProps {
   onGetStarted: () => void;
   onContactSales?: () => void;
 }
-
-const PARTNER_LOGOS = ["NVIDIA", "Amazon", "Ford", "Google", "Siemens", "Shell"];
 
 export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowProps) {
   return (
