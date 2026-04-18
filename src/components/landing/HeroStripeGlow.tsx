@@ -46,7 +46,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 mb-12 shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Pre-Execution Governance Protocol
+          Izenzo Governance Network
         </div>
 
         {/* Headline */}
