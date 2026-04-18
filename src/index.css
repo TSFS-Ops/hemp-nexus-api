@@ -410,13 +410,39 @@
     background-size: 14px 14px;
   }
 
-/* Safe area insets for iOS */
-.safe-area-bottom {
+/* Safe area insets for iOS — explicit utilities and the `pb-safe` / `pt-safe`
+   shorthands that the rest of the codebase already references. Previously
+   `pb-safe` resolved to nothing, so the mobile bottom nav sat directly on
+   the iPhone home indicator. */
+.safe-area-bottom,
+.pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.safe-area-top {
+.safe-area-top,
+.pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Reserve space at the bottom of scrollable pages so the last row is never
+   covered by the fixed mobile bottom nav (≈ 56px nav + safe-area inset). */
+.pb-mobile-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .pb-mobile-nav { padding-bottom: 0; }
+}
+
+/* iOS Safari zooms the viewport on focus when an input renders below 16px.
+   Force the minimum font-size on every interactive form element on mobile.
+   This is defense-in-depth — most primitives already use `text-base md:text-sm`
+   but custom inputs (e.g. landing terminal, file inputs) sometimes don't. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Tap target alias for the existing .touch-target utility (44pt iOS minimum). */

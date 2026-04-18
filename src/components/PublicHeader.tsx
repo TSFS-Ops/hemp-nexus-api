@@ -169,22 +169,22 @@ export function PublicHeader() {
         </div>
 
         {/* Mobile actions */}
-        <div className="lg:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-1.5">
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1 px-3 h-9 text-sm font-medium rounded-md text-white bg-emerald-950"
+              className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950"
             >
               Dashboard
             </Link>
           ) : (
-            <AuthLink className="inline-flex items-center gap-1 px-3 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950">
+            <AuthLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
               Log In
             </AuthLink>
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-md text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 transition-colors"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
