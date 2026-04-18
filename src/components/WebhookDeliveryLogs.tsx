@@ -144,6 +144,12 @@ export default function WebhookDeliveryLogs() {
           </div>
         ) : logs && logs.length > 0 ? (
           <>
+            {logsTotal > DELIVERY_LIMIT && (
+              <div className="mb-3 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Showing {DELIVERY_LIMIT} of {logsTotal.toLocaleString()} deliveries — apply a status filter to narrow results.
+              </div>
+            )}
             {/* Mobile card view */}
             <div className="space-y-3 md:hidden">
               {logs.map((log) => (

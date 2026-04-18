@@ -144,7 +144,11 @@ export function HealthBoard() {
       <section className="mt-10">
         <div className="flex items-baseline justify-between pb-3 border-b border-slate-200 mb-0">
           <h2 className="text-base font-medium text-slate-900 tracking-tight">Incident Ledger</h2>
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">last 20 records</p>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+            {incidentTotal > INCIDENT_LIMIT
+              ? `showing ${INCIDENT_LIMIT} of ${incidentTotal} records`
+              : "last 20 records"}
+          </p>
         </div>
         <ul className="divide-y divide-slate-100 border border-slate-200 border-t-0 bg-white">
           {isLoading ? (

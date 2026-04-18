@@ -325,7 +325,14 @@ export default function WebhookLogs() {
             )}
 
             {!requests.isLoading && reqRows.length > 0 && (
-              <RequestsTable rows={reqRows} selectedId={selected?.id} onSelect={setSelected} />
+              <>
+                {reqTotal > REQ_LIMIT && (
+                  <div className="mb-3 font-mono text-[11px] text-amber-300">
+                    Showing {REQ_LIMIT} of {reqTotal.toLocaleString()} requests · refine with filters
+                  </div>
+                )}
+                <RequestsTable rows={reqRows} selectedId={selected?.id} onSelect={setSelected} />
+              </>
             )}
           </div>
 
@@ -360,7 +367,16 @@ export default function WebhookLogs() {
             <EmptyState label="No audit events recorded yet for this organisation." />
           )}
 
-          {!audit.isLoading && auditRows.length > 0 && <AuditTable rows={auditRows} />}
+          {!audit.isLoading && auditRows.length > 0 && (
+            <>
+              {auditTotal > AUDIT_LIMIT && (
+                <div className="mb-3 font-mono text-[11px] text-amber-300">
+                  Showing {AUDIT_LIMIT} of {auditTotal.toLocaleString()} audit events
+                </div>
+              )}
+              <AuditTable rows={auditRows} />
+            </>
+          )}
         </div>
       )}
     </div>
