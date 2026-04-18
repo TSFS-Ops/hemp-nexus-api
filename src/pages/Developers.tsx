@@ -298,7 +298,7 @@ export default function DevelopersPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               From first request to production scale.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Four primitives (guides, reference, SDKs, and live status) composed into a single, hard-engineering surface. </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Four primitives (guides, reference, webhooks, and live status) composed into a single, hard-engineering surface. </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
