@@ -1,19 +1,41 @@
-const QUICKSTART = `# 1. Install the SDK
-npm install @izenzo/sdk
+const QUICKSTART = `# 1. Issue an API key from /developer/keys
+export IZENZO_KEY="sk_live_..."
 
-# 2. Authenticate
-import { Izenzo } from "@izenzo/sdk";
-const iz = new Izenzo({ apiKey: process.env.IZENZO_KEY });
+# 2. Authenticate every call with the X-API-Key header
+curl https://api.izenzo.co.za/functions/v1/healthz \\
+  -H "X-API-Key: $IZENZO_KEY"
 
-# 3. First call
-const trade = await iz.trade.create({
-  side: "buy",
-  commodity: "maize.yellow.za",
-  quantity_mt: 5000,
-  price_zar: 4250,
+# 3. Record bilateral trade intent
+curl https://api.izenzo.co.za/functions/v1/match \\
+  -H "X-API-Key: $IZENZO_KEY" \\
+  -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: $(uuidgen)" \\
+  -d '{
+    "buyer":  { "id": "B001", "name": "Aurubis AG" },
+    "seller": { "id": "S001", "name": "Glencore Singapore Pte Ltd" },
+    "commodity": "Copper Cathode · LME Grade A",
+    "quantity": { "amount": 500, "unit": "MT" },
+    "price":    { "amount": 9420, "currency": "USD" }
+  }'`;
+
+const FETCH_SAMPLE = `const res = await fetch("https://api.izenzo.co.za/functions/v1/match", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.IZENZO_KEY,
+    "Content-Type": "application/json",
+    "Idempotency-Key": crypto.randomUUID(),
+  },
+  body: JSON.stringify({
+    buyer:  { id: "B001", name: "Aurubis AG" },
+    seller: { id: "S001", name: "Glencore Singapore Pte Ltd" },
+    commodity: "Copper Cathode · LME Grade A",
+    quantity:  { amount: 500,  unit: "MT" },
+    price:     { amount: 9420, currency: "USD" },
+  }),
 });
 
-console.log(trade.trade_id); // trd_77f4`;
+if (!res.ok) throw new Error(\`Izenzo \${res.status}\`);
+const match = await res.json();`;
 
 const CONNECTORS = [
   { name: "SAP S/4HANA",  status: "GA",       lang: "ABAP / OData",   ver: "v2.4" },
@@ -22,13 +44,6 @@ const CONNECTORS = [
   { name: "Sage X3",      status: "Beta",     lang: "REST",            ver: "v0.8" },
   { name: "Custom Webhook", status: "GA",     lang: "HTTPS / JSON",    ver: "v1.0" },
   { name: "Apache Kafka", status: "Preview",  lang: "Avro / Schema R", ver: "v0.3" },
-];
-
-const SDKS = [
-  { lang: "TypeScript", pkg: "@izenzo/sdk",    install: "npm install @izenzo/sdk" },
-  { lang: "Python",     pkg: "izenzo",         install: "pip install izenzo" },
-  { lang: "Go",         pkg: "github.com/izenzo/go-sdk", install: "go get github.com/izenzo/go-sdk" },
-  { lang: "Java",       pkg: "co.za.izenzo:sdk", install: "implementation 'co.za.izenzo:sdk:1.4.2'" },
 ];
 
 function statusTone(s: string) {
@@ -43,25 +58,25 @@ export default function IntegrationDocs() {
       {/* Quickstart */}
       <section>
         <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">§01 / Quickstart</div>
-        <h2 className="mt-1 text-lg text-slate-100 tracking-tight mb-5">Five-minute integration</h2>
+        <h2 className="mt-1 text-lg text-slate-100 tracking-tight mb-5">Five-minute integration · REST</h2>
         <pre className="bg-black border border-slate-800 rounded-sm p-5 font-mono text-[12px] leading-relaxed text-slate-100 overflow-x-auto">{QUICKSTART}</pre>
       </section>
 
-      {/* SDKs */}
+      {/* fetch example */}
       <section>
-        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">§02 / SDKs</div>
-        <h2 className="mt-1 text-lg text-slate-100 tracking-tight mb-5">Official client libraries</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {SDKS.map((s) => (
-            <div key={s.lang} className="bg-slate-900 border border-slate-800 rounded-sm p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] text-slate-100">{s.lang}</span>
-                <span className="font-mono text-[10px] text-slate-400">{s.pkg}</span>
-              </div>
-              <pre className="bg-black border border-slate-800 rounded-sm px-3 py-2 font-mono text-[11px] text-green-400 overflow-x-auto">{s.install}</pre>
-            </div>
-          ))}
-        </div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">§02 / Browser & Node · fetch</div>
+        <h2 className="mt-1 text-lg text-slate-100 tracking-tight mb-5">No SDK required</h2>
+        <p className="text-[13px] text-slate-400 leading-relaxed mb-4 max-w-2xl">
+          The API surface is intentionally small. Any HTTP client — <span className="font-mono text-slate-300">fetch</span>,{" "}
+          <span className="font-mono text-slate-300">requests</span>, <span className="font-mono text-slate-300">curl</span>,{" "}
+          <span className="font-mono text-slate-300">HttpClient</span> — works without ceremony.
+        </p>
+        <pre className="bg-black border border-slate-800 rounded-sm p-5 font-mono text-[12px] leading-relaxed text-slate-100 overflow-x-auto">{FETCH_SAMPLE}</pre>
+        <p className="mt-4 font-mono text-[11px] text-slate-500">
+          Generating clients from the OpenAPI spec at <span className="text-slate-300">/openapi.yaml</span> is supported via{" "}
+          <a href="https://openapi-generator.tech/" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300">openapi-generator</a>{" "}
+          for 50+ languages.
+        </p>
       </section>
 
       {/* ERP connectors */}
