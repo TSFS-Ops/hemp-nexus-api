@@ -21,6 +21,7 @@ import { useMatchDetails } from "@/hooks/use-match-details";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { sha256Hex, sha256HexOfBlob, canonicalTermsPayload, shortHash } from "@/lib/crypto";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { DEMO_MATCH_ID, DEMO_COMPILER_TERMS, DEMO_COMPILER_DOCS, DEMO_COMPILER_SEAL } from "@/components/desk/_demo/fixtures";
 type AttachedDoc = {
   name: string;
