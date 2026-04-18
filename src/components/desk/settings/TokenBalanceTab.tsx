@@ -85,17 +85,17 @@ export function TokenBalanceTab() {
   return (
     <div>
       {/* Balance */}
-      <div className="mb-16">
-        <p className="text-xs font-medium tracking-wider uppercase text-slate-500 mb-4">
+      <div className="mb-12 md:mb-16">
+        <p className="text-xs font-medium tracking-wider uppercase text-slate-500 mb-3 md:mb-4">
           Current Balance
         </p>
-        <div className="flex items-baseline gap-3">
-          <span className="font-mono text-6xl font-semibold text-slate-900 tracking-tight">
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="font-mono text-4xl md:text-6xl font-semibold text-slate-900 tracking-tight">
             {loading ? "-" : balance?.toLocaleString() ?? "0"}
           </span>
           <span className="text-base text-slate-500">credits</span>
         </div>
-        <p className="mt-4 text-sm text-slate-500 leading-relaxed max-w-md">
+        <p className="mt-3 md:mt-4 text-sm text-slate-500 leading-relaxed max-w-md">
           Each Proof of Intent costs <span className="font-mono text-slate-900">1 credit (R10)</span>. Credits never expire.
         </p>
       </div>
@@ -144,7 +144,47 @@ export function TokenBalanceTab() {
         <h3 className="text-sm font-medium tracking-wider uppercase text-slate-500 mb-6">
           Recent Activity
         </h3>
-        <div className="border border-slate-200 rounded-md overflow-hidden">
+
+        {/* Mobile: cardified rows */}
+        <div className="md:hidden space-y-3">
+          {loading && (
+            <div className="border border-slate-200 rounded-md px-4 py-8 text-sm text-slate-400 text-center">Loading…</div>
+          )}
+          {!loading && ledger.length === 0 && (
+            <div className="border border-slate-200 rounded-md px-4 py-10 text-center">
+              <p className="text-sm text-slate-500">No activity yet.</p>
+              <p className="mt-1 text-xs text-slate-400">Your first Proof of Intent will appear here.</p>
+            </div>
+          )}
+          {ledger.map((row) => {
+            const burned = Number(row.tokens_burned ?? 0);
+            const isBurn = burned > 0;
+            return (
+              <div key={row.id} className="border border-slate-200 rounded-md p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-medium text-slate-900 leading-snug">
+                    {row.action_type === "purchase"
+                      ? "Credits purchased"
+                      : isBurn
+                        ? "Proof of Intent generated"
+                        : (row.action_type ?? "Activity")}
+                  </p>
+                  <span className={["text-sm font-mono shrink-0", isBurn ? "text-rose-700" : "text-emerald-700"].join(" ")}>
+                    {isBurn ? `-${burned}` : `+${burned || 0}`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                  <span>{new Date(row.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                  <span className="text-slate-700">Bal {Number(row.remaining_balance ?? 0).toLocaleString()}</span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-mono">Ref {row.id.slice(0, 8)}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: full table */}
+        <div className="hidden md:block border border-slate-200 rounded-md overflow-hidden">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
