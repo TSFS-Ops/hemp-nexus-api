@@ -303,7 +303,7 @@ function SettingsTab() {
         <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
           <TabsTrigger value="platform">Platform</TabsTrigger>
           <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
-          <TabsTrigger value="tokens">Token Management</TabsTrigger>
+          <TabsTrigger value="tokens">Credit Management</TabsTrigger>
           <TabsTrigger value="signing">Signing Keys</TabsTrigger>
           <TabsTrigger value="brd">BRD Constraints</TabsTrigger>
           <TabsTrigger value="overrides">Manual Overrides</TabsTrigger>
@@ -319,7 +319,7 @@ function SettingsTab() {
           </Surface>
         </TabsContent>
         <TabsContent value="tokens">
-          <Surface label="Token balance administration · public.token_balances">
+          <Surface label="Credit balance administration · public.token_balances">
             <AdminTokenManagement />
           </Surface>
         </TabsContent>

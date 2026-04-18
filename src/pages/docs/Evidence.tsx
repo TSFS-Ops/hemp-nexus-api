@@ -88,7 +88,7 @@ export default function DocsEvidence() {
             { name: "5. JURISDICTION_SELECTION", type: "gate", desc: "Origin and destination jurisdictions resolved and not on the embargo register." },
             { name: "6. GOVERNANCE_DOCUMENTS", type: "gate", desc: "All mandatory governance documents validated and on file." },
             { name: "7. COMPLIANCE_CLEAR",     type: "gate", desc: "Zero open compliance cases against either party." },
-            { name: "8. TOKEN_BALANCE",        type: "gate", desc: "Sufficient token balance to cover the settlement burn." },
+            { name: "8. TOKEN_BALANCE",        type: "gate", desc: "Sufficient credit balance to cover the settlement burn. (Gate identifier preserved for API contract stability.)" },
             { name: "9. DISCOVERY_ELIGIBILITY",type: "gate", desc: "Both parties remain discoverable to each other (no opt-outs or blocks since match creation)." },
           ]}
         />

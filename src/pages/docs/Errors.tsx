@@ -39,7 +39,7 @@ export default function DocsErrors() {
             { name: "403", type: "Forbidden",             desc: "Authenticated, but the key lacks the scope for this endpoint." },
             { name: "404", type: "Not Found",             desc: "Resource doesn't exist or isn't visible to your organisation." },
             { name: "409", type: "Conflict",              desc: "State-machine violation (e.g. attempting to settle a match still pending engagement)." },
-            { name: "422", type: "Unprocessable",         desc: "Business-rule failure (e.g. WaD gate denial, insufficient tokens)." },
+            { name: "422", type: "Unprocessable",         desc: "Business-rule failure (e.g. WaD gate denial, insufficient credits)." },
             { name: "429", type: "Too Many Requests",     desc: "Rate limit hit. Honour the Retry-After header." },
             { name: "500", type: "Internal Server Error", desc: "Transient platform failure. Safe to retry with the same Idempotency-Key." },
             { name: "503", type: "Service Unavailable",   desc: "Maintenance or upstream dependency outage. Retry with backoff." },
@@ -59,7 +59,7 @@ export default function DocsErrors() {
             { name: "STATE_TRANSITION_INVALID", type: "409", desc: "Tried to advance a match to a state it can't reach from its current state." },
             { name: "TRADE_APPROVAL_MISSING",   type: "422", desc: "Counterparty has no active trade approval. Issue one or renew." },
             { name: "WAD_GATE_FAILURE",         type: "422", desc: "One or more WaD hard-gates failed. details.failedGates lists each." },
-            { name: "INSUFFICIENT_TOKENS",      type: "422", desc: "Token balance below the minimum required for this action." },
+            { name: "INSUFFICIENT_TOKENS",      type: "422", desc: "Credit balance below the minimum required for this action. (Code name preserved for API contract stability.)" },
             { name: "RATE_LIMIT_EXCEEDED",      type: "429", desc: "Too many requests. The Retry-After header tells you when to try again." },
           ]}
         />

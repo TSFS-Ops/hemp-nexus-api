@@ -44,7 +44,6 @@ const Developers = lazy(() => import("@/pages/Developers"));
 const DocsIndex = lazy(() => import("@/pages/docs/Index"));
 const DocsQuickstart = lazy(() => import("@/pages/docs/Quickstart"));
 const DocsApiReference = lazy(() => import("@/pages/docs/ApiReference"));
-const DocsSdks = lazy(() => import("@/pages/docs/Sdks"));
 const Status = lazy(() => import("@/pages/Status"));
 
 /**
@@ -129,7 +128,8 @@ function App() {
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/quickstart" element={<DocsQuickstart />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
-                  <Route path="/docs/sdks" element={<DocsSdks />} />
+                  {/* Legacy /docs/sdks redirects to API reference; the platform is REST-first. */}
+                  <Route path="/docs/sdks" element={<Navigate to="/docs/api" replace />} />
                   <Route path="/docs/legacy" element={<Docs />} />
                   <Route path="/status" element={<Status />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />

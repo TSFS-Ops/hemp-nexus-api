@@ -573,7 +573,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>Need API access?</strong> You can create API keys anytime from Settings → API Keys. The SDK documentation is available under Docs.
+                  <strong>Need API access?</strong> You can create API keys anytime from Settings → API Keys. The full API Reference is available under Docs.
                 </AlertDescription>
               </Alert>
 

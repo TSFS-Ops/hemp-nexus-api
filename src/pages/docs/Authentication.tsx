@@ -60,7 +60,7 @@ export default function DocsAuthentication() {
           Endpoints that originate from a signed-in user (for example: provisioning new API keys
           from the dashboard) accept a Supabase-issued JWT in the standard{" "}
           <InlineCode>Authorization</InlineCode> header. Token rotation and refresh are handled
-          by the official Supabase client SDKs.
+          by the official Supabase client libraries.
         </DocP>
         <CodePanel
           title="Header"
