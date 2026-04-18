@@ -390,6 +390,11 @@ export default function TriageInbox() {
           <p className="mt-4 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
             {filtered.length} pending · {queue.filter((q) => q.risk === "high").length} flagged high
           </p>
+          {queueTotal > queueLimit && (
+            <p className="mt-2 font-mono text-[10px] tracking-[0.15em] uppercase text-amber-700">
+              Showing {queueLimit} of {queueTotal} open disputes — apply filters to see all
+            </p>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-8">
