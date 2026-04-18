@@ -61,8 +61,10 @@ const LANE_META = [
 ] as const;
 
 // Semantic badge variants per lane.
+// Indigo = system/draft state · Amber = pending human action · Emerald = sealed/active.
+// Using a tight semantic palette so a glance at the desk reveals what needs attention.
 const LANE_BADGE: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-700",
+  draft: "bg-indigo-50 text-indigo-700 border border-indigo-200/60",
   awaiting: "bg-amber-50 text-amber-700 border border-amber-200/60",
   poi: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
 };
