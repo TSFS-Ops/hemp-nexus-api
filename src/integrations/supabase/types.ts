@@ -3311,6 +3311,7 @@ export type Database = {
           sandbox_enabled: boolean | null
           status: string
           tax_number: string | null
+          token_opening_balance: number
           trading_name: string | null
           updated_at: string
           vat_number: string | null
@@ -3337,6 +3338,7 @@ export type Database = {
           sandbox_enabled?: boolean | null
           status?: string
           tax_number?: string | null
+          token_opening_balance?: number
           trading_name?: string | null
           updated_at?: string
           vat_number?: string | null
@@ -3363,6 +3365,7 @@ export type Database = {
           sandbox_enabled?: boolean | null
           status?: string
           tax_number?: string | null
+          token_opening_balance?: number
           trading_name?: string | null
           updated_at?: string
           vat_number?: string | null
