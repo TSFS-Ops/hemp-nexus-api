@@ -514,7 +514,6 @@ export function MatchesList() {
                           disabled={!MatchState.canDo(match.status, "select_for_bulk")}
                        />
                       <span className="font-medium text-sm">{match.commodity}</span>
-                      <MatchRoleBadge match={match} orgId={userOrgId} />
                     </div>
                     <div className="flex items-center gap-1.5">
                       {activeDisputeIds.has(match.id) && (
