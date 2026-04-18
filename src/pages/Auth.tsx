@@ -44,7 +44,14 @@ export default function Auth() {
       userId
     });
 
-    // 1) Platform admins always go to HQ, bypass returnTo & persona selector entirely.
+    // 1) Platform admins always go to HQ, bypass returnTo & persona selector.
+    //    Rationale: an admin socially-engineered into clicking a Resend deep
+    //    link should not be silently dropped onto a tenant surface. We force
+    //    them to HQ instead.
+    //    UX caveat: bypassing returnTo is invisible to the user — they may
+    //    have legitimately wanted to open the link. We surface a toast so
+    //    they know the redirect happened and can re-open the original target
+    //    manually.
     try {
       const {
         data: roleRows,
@@ -56,6 +63,17 @@ export default function Auth() {
       });
       const isPlatformAdmin = (roleRows || []).some(r => r.role === "platform_admin");
       if (isPlatformAdmin) {
+        const requestedReturn = searchParams.get("returnTo");
+        if (requestedReturn) {
+          // Sanitise before echoing back into the toast — never render raw user input.
+          const safeRequested = getSafeReturnTo(requestedReturn, "");
+          toast.info(
+            safeRequested
+              ? `Admin session — redirected to HQ. Original link: ${safeRequested}`
+              : "Admin session — redirected to HQ instead of the requested page.",
+            { duration: 10000 }
+          );
+        }
         console.info("[Auth] resolved → /hq/users (platform admin)");
         return "/hq/users";
       }
