@@ -94,3 +94,31 @@ jobs:
 
       - name: Run drift check
         run: bun run check:drift
+
+  dependency-audit:
+    # Fails the build on HIGH or CRITICAL CVEs in production deps.
+    # Dev-only vulnerabilities are surfaced in logs but do not block.
+    # Out-of-cycle bumps land via Dependabot (see .github/dependabot.yml).
+    name: Dependency audit (HIGH/CRITICAL gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Audit production dependencies
+        # `npm audit` reads package-lock; --omit=dev scopes to runtime risk.
+        # `--audit-level=high` means HIGH or CRITICAL fails the job.
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit dev dependencies (advisory only)
+        if: always()
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
