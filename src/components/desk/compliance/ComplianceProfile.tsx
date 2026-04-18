@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, FileWarning, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg } from "@/hooks/use-user-org";
+import { EmptyStateCard } from "@/components/ui/empty-state-card";
 
 type Org = {
   id: string;
@@ -147,6 +148,9 @@ export function ComplianceProfile() {
   const isComplete = hasIdentity && owners.length > 0 && docs.length > 0;
 
   // ── Empty state ────────────────────────────────────────────
+  // Triggered only when the org has *no* identity, *no* declared owners
+  // and *no* uploaded documents. Once any one of the three is present we
+  // fall through to the populated layout so partial progress remains visible.
   if (!isComplete && owners.length === 0 && docs.length === 0 && !hasIdentity) {
     return (
       <>
@@ -159,26 +163,16 @@ export function ComplianceProfile() {
           </h1>
         </header>
 
-        <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-12 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-700 mb-5">
-            <FileWarning className="h-5 w-5" />
-          </div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
-            Profile Incomplete
-          </h2>
-          <p className="mt-3 text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-            Your institutional identity record has not been established. Complete
-            onboarding to register your entity, declare beneficial owners, and
-            upload regulatory evidence.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate("/desk/settings/company?step=entity")}
-            className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-sm transition-colors"
-          >
-            Complete Onboarding
-          </button>
-        </div>
+        <EmptyStateCard
+          kicker="Profile Incomplete"
+          title="Institutional identity not established"
+          description="Register your entity, declare beneficial owners and upload regulatory evidence. Counterparties verify against this record before bilateral signature."
+          icon={<FileWarning className="h-5 w-5" strokeWidth={1.75} />}
+          primaryAction={{
+            label: "Complete Onboarding",
+            onClick: () => navigate("/desk/settings/company?step=entity"),
+          }}
+        />
       </>
     );
   }
