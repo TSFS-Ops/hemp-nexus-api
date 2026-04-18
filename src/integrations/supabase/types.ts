@@ -5803,6 +5803,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_send_log_masked: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string | null
+          message_id: string | null
+          metadata: Json | null
+          recipient_domain: string | null
+          recipient_email_masked: string | null
+          status: string | null
+          template_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string | null
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_domain?: never
+          recipient_email_masked?: never
+          status?: string | null
+          template_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string | null
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_domain?: never
+          recipient_email_masked?: never
+          status?: string | null
+          template_name?: string | null
+        }
+        Relationships: []
+      }
       match_evidence: {
         Row: {
           event_timeline: Json | null
@@ -6169,6 +6205,7 @@ export type Database = {
         }
         Returns: number
       }
+      purge_old_email_send_log: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
