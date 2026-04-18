@@ -6232,6 +6232,17 @@ export type Database = {
           match_id: string
         }[]
       }
+      webhook_record_failure: {
+        Args: { p_endpoint_id: string; p_threshold?: number }
+        Returns: {
+          new_consecutive_failures: number
+          tripped: boolean
+        }[]
+      }
+      webhook_record_success: {
+        Args: { p_endpoint_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
