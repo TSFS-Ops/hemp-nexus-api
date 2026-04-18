@@ -137,6 +137,12 @@ function App() {
                   {/* Public docs hub, Stripe-style sidebar layout */}
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/quickstart" element={<DocsQuickstart />} />
+                  <Route path="/docs/authentication" element={<DocsAuthentication />} />
+                  <Route path="/docs/webhooks" element={<DocsWebhooks />} />
+                  <Route path="/docs/matches" element={<DocsMatches />} />
+                  <Route path="/docs/counterparties" element={<DocsCounterparties />} />
+                  <Route path="/docs/evidence" element={<DocsEvidence />} />
+                  <Route path="/docs/errors" element={<DocsErrors />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
                   {/* Legacy /docs/sdks redirects to API reference; the platform is REST-first. */}
                   <Route path="/docs/sdks" element={<LegacyRedirect to="/docs/api" label="SDK documentation" />} />
