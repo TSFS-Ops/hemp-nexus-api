@@ -50,7 +50,6 @@ export default function Landing() {
         <div className="container mx-auto px-4 flex justify-center items-center">
           <p className="text-[11px] sm:text-xs text-slate-500 tracking-wide text-center">
             Izenzo is the trading name of Starfair162 (Pty) Ltd Reg: 2018 / 331720 / 07.
-            <span className="text-slate-400 ml-1">A proudly African Company.</span>
           </p>
         </div>
       </footer>
