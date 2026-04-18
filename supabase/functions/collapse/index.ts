@@ -329,15 +329,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── Webhook circuit-breaker guard ──
-    // Block settlement if EITHER participant has any auto-disabled webhook endpoint
-    // (status='inactive' AND disabled_at IS NOT NULL). A tripped breaker means the
-    // counterparty cannot reliably receive settlement notifications, which would
-    // break the evidence-delivery chain.
+    // ── Webhook circuit-breaker guard (PRIMARY endpoints only) ──
+    // Block settlement if EITHER participant has their PRIMARY webhook endpoint
+    // auto-disabled (status='inactive' AND disabled_at IS NOT NULL). A tripped
+    // primary breaker means the participant's canonical delivery channel is
+    // dead and settlement evidence cannot be reliably broadcast.
+    // Non-primary (secondary/backup) endpoints being disabled does not block.
     const { data: trippedEndpoints, error: trippedErr } = await adminClient
       .from("webhook_endpoints")
-      .select("id, org_id, url, disabled_at, consecutive_failures")
+      .select("id, org_id, url, disabled_at, consecutive_failures, is_primary")
       .in("org_id", [org_id, counterparty_org_id])
+      .eq("is_primary", true)
       .eq("status", "inactive")
       .not("disabled_at", "is", null);
 
