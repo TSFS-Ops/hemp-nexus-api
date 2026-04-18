@@ -87,7 +87,7 @@ function CommandBar() {
     signOut
   } = useAuth();
   return <header className="bg-slate-950 text-slate-100 border-b border-slate-900">
-      <div className="px-6 lg:px-10 h-14 flex items-center justify-between gap-6">
+      <div className="px-4 sm:px-6 lg:px-10 h-14 flex items-center justify-between gap-6">
         <div className="flex items-center gap-6 min-w-0">
           {/* Wordmark */}
           <Link to="/hq" className="flex items-center gap-2.5 shrink-0">
