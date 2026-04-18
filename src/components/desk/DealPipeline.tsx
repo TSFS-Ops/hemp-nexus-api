@@ -59,7 +59,7 @@ export function DealPipeline() {
       }));
       const {
         data: matches
-      } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id}`).order("created_at", {
+      } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`).order("created_at", {
         ascending: false
       }).limit(60);
       const cards: DealCard[] = (matches ?? []).map(m => {
