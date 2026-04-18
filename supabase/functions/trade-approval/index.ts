@@ -70,6 +70,10 @@ Deno.serve(async (req: Request) => {
       let query = admin.from("trade_approvals").select("*").order("created_at", { ascending: false });
 
       if (targetOrgId) {
+        // Enforce ownership: non-admins may only query their own org
+        if (!isAdmin && targetOrgId !== orgId) {
+          throw new ApiException("FORBIDDEN", "Access denied: cannot query trade approvals for another organisation", 403);
+        }
         query = query.eq("org_id", targetOrgId);
       } else if (!isAdmin) {
         // Non-admin can only see own org
