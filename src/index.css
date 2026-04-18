@@ -515,3 +515,74 @@ button:focus-visible,
   outline-offset: 2px;
   border-radius: var(--radius);
 }
+
+/* ============================================================
+   GLOBAL INTERACTION SYSTEM — "Institutional Premium" hover taxonomy
+   Four personalities: commitment | navigation | discovery | critical
+   All animations use Google Material standard easing.
+   Respects prefers-reduced-motion. All colors via semantic HSL tokens.
+   ============================================================ */
+:root {
+  --hover-duration: 0.2s;
+  --hover-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-hover] {
+  transition:
+    transform var(--hover-duration) var(--hover-timing),
+    box-shadow var(--hover-duration) var(--hover-timing),
+    background-color var(--hover-duration) var(--hover-timing),
+    color var(--hover-duration) var(--hover-timing),
+    filter var(--hover-duration) var(--hover-timing),
+    padding-left var(--hover-duration) var(--hover-timing);
+}
+
+/* 1. Commitment — primary CTAs (Confirm, Issue POI, Settle) */
+@media (hover: hover) and (pointer: fine) {
+  [data-hover="commitment"]:hover:not(:disabled):not([aria-disabled="true"]) {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 1px hsl(var(--emerald) / 0.15), 0 6px 20px -8px hsl(var(--emerald) / 0.45);
+    filter: brightness(1.05);
+  }
+  [data-hover="commitment"]:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: scale(0.99);
+    filter: brightness(0.98);
+  }
+
+  /* 2. Navigation — sidebar, tabs, breadcrumbs, nav links */
+  [data-hover="navigation"]:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: hsl(var(--accent) / 0.6);
+  }
+
+  /* 3. Discovery — info, tooltips, view actions, secondary chips */
+  [data-hover="discovery"]:hover:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -4px hsl(var(--foreground) / 0.12);
+  }
+
+  /* 4. Critical — destructive actions (Delete, Revoke, Freeze) */
+  [data-hover="critical"]:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: hsl(var(--destructive) / 0.08);
+    color: hsl(var(--destructive));
+    animation: hover-shake 0.3s var(--hover-timing);
+  }
+}
+
+@keyframes hover-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-hover] {
+    transition: background-color var(--hover-duration) ease, color var(--hover-duration) ease;
+  }
+  [data-hover="commitment"]:hover,
+  [data-hover="discovery"]:hover,
+  [data-hover="critical"]:hover {
+    transform: none;
+    animation: none;
+  }
+}

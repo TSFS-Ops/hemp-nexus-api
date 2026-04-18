@@ -36,10 +36,36 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+/**
+ * Map button variant → global interaction personality.
+ * Consumers can override by passing their own `data-hover` prop.
+ *  - default / secondary       → commitment (primary CTAs)
+ *  - destructive               → critical
+ *  - outline                   → discovery
+ *  - ghost / link              → navigation
+ */
+const variantHoverMap: Record<string, "commitment" | "navigation" | "discovery" | "critical"> = {
+  default: "commitment",
+  secondary: "commitment",
+  destructive: "critical",
+  outline: "discovery",
+  ghost: "navigation",
+  link: "navigation",
+};
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+    const resolvedVariant = variant ?? "default";
+    const hoverPersonality = variantHoverMap[resolvedVariant] ?? "commitment";
+    return (
+      <Comp
+        data-hover={hoverPersonality}
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...(props as Record<string, unknown>)}
+      />
+    );
   },
 );
 Button.displayName = "Button";
