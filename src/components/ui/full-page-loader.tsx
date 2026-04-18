@@ -18,9 +18,21 @@ interface FullPageLoaderProps {
 
 export function FullPageLoader({ message, className }: FullPageLoaderProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center min-h-screen gap-3", className)}>
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className={cn(
+        "fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white",
+        className
+      )}
+    >
+      <p className="font-mono text-[11px] tracking-[0.4em] uppercase text-slate-900">
+        IZENZO
+      </p>
+      <Loader2 className="h-8 w-8 animate-spin text-emerald-600" strokeWidth={2} />
+      {message && <p className="text-sm text-slate-500">{message}</p>}
+      <span className="sr-only">Verifying your session…</span>
     </div>
   );
 }
