@@ -474,7 +474,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               <div className="space-y-2">
                 <h3 className="text-xl font-bold">Run Your First Search</h3>
                 <p className="text-muted-foreground">
-                  The fastest way to get started is to search for a trading partner. Try entering a commodity you trade (e.g. "chrome ore South Africa") on the Search page.
+                  Initiate counterparty discovery by submitting a commodity query (e.g. "chrome ore South Africa") on the Search page.
                 </p>
               </div>
 
