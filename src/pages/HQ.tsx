@@ -39,6 +39,7 @@ import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
+import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
@@ -278,7 +279,10 @@ function AuditTab() {
         </TabsContent>
         <TabsContent value="health">
           <Surface label="Live subsystem health · /healthz · 30s polling">
-            <AdminHealthMonitor />
+            <div className="space-y-4">
+              <AdminHealthMonitor />
+              <EmailRetentionHealth />
+            </div>
           </Surface>
         </TabsContent>
         <TabsContent value="event-store">
