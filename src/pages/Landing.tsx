@@ -130,7 +130,7 @@ export default function Landing() {
       <main className="flex-1">
         <HeroStripeGlow
           onGetStarted={isAuthenticated ? () => window.location.assign("/dashboard") : navigateToAuth}
-          onContactSales={() => window.location.assign("mailto:support@izenzo.co.za")}
+          onContactSales={() => window.location.assign("/docs")}
         />
       </main>
     </div>
