@@ -1,18 +1,21 @@
 # Compliance Matching API Reference
 
-**Current Version**: v1.5  
-**Base URL**: `https://api.izenzo.co.za/functions/v1`  
-**Last Updated**: 11 January 2026
+**Current Version**: v1.5
+**Base URL**: `https://api.izenzo.co.za/functions/v1`
+**Last Updated**: 18 April 2026
 
 ---
 
 ## Changelog
 
+### v1.5 (2026-04-18)
+- WaD issuance engine extended to **9 hard-gates** (added JURISDICTION_SELECTION and DISCOVERY_ELIGIBILITY)
+- Token economics rebased: **R10 ZAR per credit, 1 credit per POI generation** (replaces 5,000-token minimum balance model)
+- All client-library framing dropped from public docs; `@izenzo/sdk` for Node remains the only published SDK
+- New consolidated `/docs` surface (Quickstart, Authentication, Matches, Counterparties, Evidence, Webhooks, Errors)
+
 ### v1.4 (2026-01-11)
-- Added token metering with 1 token per billable API call
-- Minimum token balance requirement of 5,000 tokens
-- Low balance webhook notifications at 6,000, 5,500, and 5,001 tokens
-- Added `token.low_balance` webhook event
+- Added token metering with 1 token per billable API call (superseded in v1.5 by R10/credit model)
 - Confirm Intent now requires eligibility validation with clear denial reasons
 - Added document verification workflow for matches
 
@@ -94,56 +97,43 @@ API keys support scope-based access control:
 
 ---
 
-## Token Metering
+## Token Economics (v1.5)
 
-All billable API endpoints consume **1 token per call**. Your organisation must maintain a **minimum balance of 5,000 tokens** to make API calls.
+The platform operates on a flat-rate token model:
 
-### Billable Endpoints
+- **Price**: R10 ZAR per credit
+- **Burn**: 1 credit consumed at the moment a Proof of Intent (POI) is generated
+- **All other endpoints are free** (read operations, webhook management, KYB submission, evidence pack download)
 
-| Endpoint | Tokens |
-|----------|--------|
-| `/signals` | 1 token |
-| `/search` | 1 token |
-| `/match` | 1 token |
-| `/sr-discover` | 1 token |
+### Billable Actions
+
+| Action | Endpoint | Credits |
+|--------|----------|---------|
+| Generate Proof of Intent | `POST /poi-transition` (state → `issued`) | 1 |
+| Issue WaD certificate | `POST /p3-wad` | 0 (gated by org credit balance, see Gate #8) |
 
 ### Non-Billable Endpoints
 
-The following endpoints do not consume tokens:
-- `/healthz` - Health check
-- `/api-keys` - API key management
-- `/webhooks` - Webhook management
-- `/audit-logs` - Audit log queries
-- `/evidence-pack` - Evidence pack generation
-- `/consents` - Consent management
-- `/data-sources` - Data source management
+Every other endpoint — including `/match`, `/signals`, `/search`, `/entities`, `/webhooks`, `/audit-logs`, `/evidence-pack`, `/consents`, `/data-sources` — does not consume credits.
 
 ### Insufficient Balance Response (HTTP 402)
 
 ```json
 {
   "code": "INSUFFICIENT_TOKENS",
-  "message": "Insufficient token balance. Current: 4500, Required minimum: 5000",
+  "message": "Credit balance too low to generate Proof of Intent.",
   "requestId": "123e4567-e89b-12d3-a456-426614174000",
   "details": {
-    "currentBalance": 4500,
-    "minimumRequired": 5000,
-    "endpoint": "signals"
+    "currentBalance": 0,
+    "creditsRequired": 1,
+    "topUpRateZar": 10
   }
 }
 ```
 
-### Low Balance Webhooks
+### Top-up
 
-When your token balance crosses warning thresholds, a `token.low_balance` webhook is triggered:
-
-| Threshold | Urgency |
-|-----------|---------|
-| 6,000 tokens | Warning |
-| 5,500 tokens | Urgent |
-| 5,001 tokens | Critical |
-
-See [Webhook Events](#webhook-events) for payload format.
+Credits are purchased in the Trade Desk → Billing screen, or programmatically via `POST /token-purchase`. Founder/admin exemptions follow the documented 10-point decision sheet.
 
 ---
 

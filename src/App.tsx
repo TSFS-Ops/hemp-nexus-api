@@ -45,6 +45,12 @@ const DocsIndex = lazy(() => import("@/pages/docs/Index"));
 const DocsQuickstart = lazy(() => import("@/pages/docs/Quickstart"));
 const DocsApiReference = lazy(() => import("@/pages/docs/ApiReference"));
 const DocsSdks = lazy(() => import("@/pages/docs/Sdks"));
+const DocsAuthentication = lazy(() => import("@/pages/docs/Authentication"));
+const DocsMatches = lazy(() => import("@/pages/docs/Matches"));
+const DocsCounterparties = lazy(() => import("@/pages/docs/Counterparties"));
+const DocsEvidence = lazy(() => import("@/pages/docs/Evidence"));
+const DocsWebhooks = lazy(() => import("@/pages/docs/Webhooks"));
+const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const Status = lazy(() => import("@/pages/Status"));
 
 /**
@@ -128,8 +134,16 @@ function App() {
                   {/* Public docs hub, Stripe-style sidebar layout */}
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/quickstart" element={<DocsQuickstart />} />
+                  <Route path="/docs/authentication" element={<DocsAuthentication />} />
+                  <Route path="/docs/matches" element={<DocsMatches />} />
+                  <Route path="/docs/counterparties" element={<DocsCounterparties />} />
+                  <Route path="/docs/evidence" element={<DocsEvidence />} />
+                  <Route path="/docs/webhooks" element={<DocsWebhooks />} />
+                  <Route path="/docs/errors" element={<DocsErrors />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
                   <Route path="/docs/sdks" element={<DocsSdks />} />
+                  {/* Legacy: getting-started consolidated into Quickstart */}
+                  <Route path="/docs/getting-started" element={<Navigate to="/docs/quickstart" replace />} />
                   <Route path="/docs/legacy" element={<Docs />} />
                   <Route path="/status" element={<Status />} />
                   <Route path={ROUTES.WALKTHROUGH} element={<WalkthroughReport />} />
