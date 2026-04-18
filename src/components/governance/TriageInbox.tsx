@@ -104,7 +104,7 @@ export default function TriageInbox() {
 
       if (error) throw error;
 
-      return (disputes ?? [])
+      const items = (disputes ?? [])
         .filter((d) => d.matches)
         .map((d) => {
           const m = d.matches as {
@@ -142,10 +142,13 @@ export default function TriageInbox() {
             flag: d.reason || (crossBorder ? "Cross-border review" : "Compliance review"),
           };
         });
+      return { items, totalCount: count ?? items.length, limit: QUEUE_LIMIT };
     },
   });
 
-  const queue = queueQuery.data ?? [];
+  const queue = queueQuery.data?.items ?? [];
+  const queueTotal = queueQuery.data?.totalCount ?? 0;
+  const queueLimit = queueQuery.data?.limit ?? QUEUE_LIMIT;
 
   // Default selection, once data lands, select the first item.
   useEffect(() => {
