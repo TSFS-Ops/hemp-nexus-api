@@ -119,6 +119,7 @@ export function AdminTokenManagement() {
           tokens_burned: -amount,
           remaining_balance: selectedOrg.balance + amount, // approximate - ledger is the record of truth
           outcome: "credit",
+          action_type: "administrative_adjustment",
           metadata: {
             type: "admin_top_up",
             amount,
