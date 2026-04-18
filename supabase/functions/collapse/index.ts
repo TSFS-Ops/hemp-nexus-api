@@ -329,15 +329,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── Webhook circuit-breaker guard ──
-    // Block settlement if EITHER participant has any auto-disabled webhook endpoint
-    // (status='inactive' AND disabled_at IS NOT NULL). A tripped breaker means the
-    // counterparty cannot reliably receive settlement notifications, which would
-    // break the evidence-delivery chain.
+    // ── Webhook circuit-breaker guard (PRIMARY endpoints only) ──
+    // Block settlement if EITHER participant has their PRIMARY webhook endpoint
+    // auto-disabled (status='inactive' AND disabled_at IS NOT NULL). A tripped
+    // primary breaker means the participant's canonical delivery channel is
+    // dead and settlement evidence cannot be reliably broadcast.
+    // Non-primary (secondary/backup) endpoints being disabled does not block.
     const { data: trippedEndpoints, error: trippedErr } = await adminClient
       .from("webhook_endpoints")
-      .select("id, org_id, url, disabled_at, consecutive_failures")
+      .select("id, org_id, url, disabled_at, consecutive_failures, is_primary")
       .in("org_id", [org_id, counterparty_org_id])
+      .eq("is_primary", true)
       .eq("status", "inactive")
       .not("disabled_at", "is", null);
 
@@ -363,11 +365,11 @@ Deno.serve(async (req: Request) => {
         JSON.stringify(offenders)
       );
       throw new ApiException(
-        "WEBHOOK_BREAKER_TRIPPED",
-        "Settlement blocked: one or more participants have auto-disabled webhook endpoints. " +
-          "Re-enable the endpoint (clear disabled_at and set status='active') before retrying.",
+        "WEBHOOK_PRIMARY_BREAKER_TRIPPED",
+        "Settlement blocked: one or more participants have an auto-disabled PRIMARY webhook endpoint. " +
+          "Re-enable the primary endpoint (clear disabled_at and set status='active'), or elect a healthy endpoint as primary, before retrying.",
         409,
-        { tripped_endpoints: offenders }
+        { tripped_primary_endpoints: offenders }
       );
     }
 

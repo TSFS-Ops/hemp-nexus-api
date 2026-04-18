@@ -5624,6 +5624,7 @@ export type Database = {
           disabled_at: string | null
           events: string[]
           id: string
+          is_primary: boolean
           last_delivery_at: string | null
           org_id: string
           secret_hash: string
@@ -5637,6 +5638,7 @@ export type Database = {
           disabled_at?: string | null
           events?: string[]
           id?: string
+          is_primary?: boolean
           last_delivery_at?: string | null
           org_id: string
           secret_hash: string
@@ -5650,6 +5652,7 @@ export type Database = {
           disabled_at?: string | null
           events?: string[]
           id?: string
+          is_primary?: boolean
           last_delivery_at?: string | null
           org_id?: string
           secret_hash?: string
