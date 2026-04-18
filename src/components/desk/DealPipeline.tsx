@@ -31,12 +31,12 @@ const LANE_DEFS = [{
   id: "pending",
   title: "Pending Counterparty",
   subtitle: "Steps 4 to 7 · In negotiation",
-  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending", "committed"]
+  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending"]
 }, {
   id: "poi",
   title: "Proofs of Intent Generated",
   subtitle: "Steps 8 to 9 · Sealed",
-  states: ["pending_finality", "settled", "poi_generated", "finalised", "completed"]
+  states: ["committed", "intent_declared", "pending_finality", "settled", "poi_generated", "finalised", "completed"]
 }];
 export function DealPipeline() {
   const {
