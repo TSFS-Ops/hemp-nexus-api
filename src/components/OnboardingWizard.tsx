@@ -450,17 +450,23 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
               <Button onClick={async () => {
                 try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (session) {
-                    const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
-                    if (profile?.org_id) {
-                      await supabase.from("organizations").update({ data_residency_region: selectedRegion } as any).eq("id", profile.org_id);
-                    }
+                  const { error } = await (supabase as any).rpc("set_org_data_residency", {
+                    _region: selectedRegion,
+                  });
+                  if (error) {
+                    console.error("Failed to save region preference:", error);
+                    toast.error(
+                      error.message?.includes("residency_already_locked")
+                        ? "Data residency is already locked. Contact support@izenzo.co.za to change it."
+                        : "Could not save your region. Please try again."
+                    );
+                    return;
                   }
+                  setCurrentStep(3);
                 } catch (e) {
                   console.error("Failed to save region preference:", e);
+                  toast.error("Could not save your region. Please try again.");
                 }
-                setCurrentStep(3);
               }} size="lg" className="w-full">
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
