@@ -1,87 +1,95 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Terminal } from "lucide-react";
 import { DocsLayout } from "./DocsLayout";
+import { DocEyebrow, DocH1, DocH2, DocLede, DocP, InlineCode, CodePanel, Callout } from "./_shared";
+
+const CURL_EXAMPLE = `curl https://api.izenzo.co.za/functions/v1/healthz \\
+  -H "X-API-Key: sk_live_..."`;
+
+const RESPONSE_EXAMPLE = `{
+  "status": "healthy",
+  "timestamp": "2026-04-18T09:42:17.000Z",
+  "checks": [
+    { "name": "database",       "status": "healthy", "responseTime": 12 },
+    { "name": "edge_functions", "status": "healthy", "responseTime":  4 }
+  ]
+}`;
+
+const CREATE_MATCH = `curl https://api.izenzo.co.za/functions/v1/match \\
+  -H "X-API-Key: sk_live_..." \\
+  -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: 9f86d081-884c-7d65-9a2f-eaa0c55ad015" \\
+  -d '{
+    "buyer":  { "id": "B001", "name": "Aurubis AG" },
+    "seller": { "id": "S001", "name": "Glencore Singapore Pte Ltd" },
+    "commodity": "Copper Cathode · LME Grade A",
+    "quantity": { "amount": 500, "unit": "MT" },
+    "price":    { "amount": 9420, "currency": "USD" }
+  }'`;
 
 export default function DocsQuickstart() {
   return (
     <DocsLayout>
       <div className="max-w-3xl">
-        <p className="text-[13px] font-medium text-emerald-600 tracking-wider uppercase mb-3">
-          Quickstart
-        </p>
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-slate-900 mb-5">
-          Your first authenticated request
-        </h1>
-        <p className="text-lg text-slate-500 leading-relaxed mb-10">
-          Issue an API key, sign a request, and read your organisation profile in under five minutes.
-        </p>
+        <DocEyebrow>Quickstart</DocEyebrow>
+        <DocH1>Your first authenticated request</DocH1>
+        <DocLede>
+          Provision an API key, make an authenticated health check, and then record a bilateral
+          trade match. End-to-end in under five minutes.
+        </DocLede>
 
-        <ol className="space-y-10">
-          <li>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
-              1. Create an API key
-            </h2>
-            <p className="text-slate-500 leading-relaxed mb-3">
-              Open the Developer Centre and generate a key scoped to <code className="text-[13px] bg-slate-100 px-1.5 py-0.5 rounded">orgs:read</code>.
-              Keys are shown once at creation; store the secret in your secrets manager.
-            </p>
-            <Link
-              to="/developer/keys"
-              className="inline-flex items-center gap-1.5 text-[14px] font-medium text-emerald-600 hover:text-emerald-700"
-            >
-              Open Developer Centre <ArrowRight className="h-4 w-4" />
-            </Link>
-          </li>
+        <DocH2 id="step-1">1. Create an API key</DocH2>
+        <DocP>
+          Open the Developer Centre and generate a key. Choose a scope that matches what your
+          integration needs to read or write — keys default to least privilege. The full secret
+          is shown <strong className="text-slate-900 font-medium">once</strong> at creation; store
+          it in your secrets manager immediately.
+        </DocP>
+        <Link
+          to="/developer/keys"
+          className="inline-flex items-center gap-1.5 text-[14px] font-medium text-emerald-600 hover:text-emerald-700"
+        >
+          Open Developer Centre <ArrowRight className="h-4 w-4" />
+        </Link>
+        <Callout>
+          Keys are prefixed <InlineCode>sk_live_</InlineCode> for production and{" "}
+          <InlineCode>sk_test_</InlineCode> for the test environment. The prefix is never sensitive
+          — log it freely for support and debugging.
+        </Callout>
 
-          <li>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
-              2. Call the API
-            </h2>
-            <p className="text-slate-500 leading-relaxed mb-3">
-              Pass the key in the <code className="text-[13px] bg-slate-100 px-1.5 py-0.5 rounded">Authorization</code> header.
-              All endpoints accept and return JSON.
-            </p>
-            <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 text-[13px] font-mono leading-relaxed overflow-x-auto">
-              <code>{`curl https://api.trade.izenzo.co.za/v1/orgs \\
-  -H "Authorization: Bearer izenzo_live_..." \\
-  -H "Content-Type: application/json"`}</code>
-            </pre>
-          </li>
+        <DocH2 id="step-2">2. Verify the key with a health check</DocH2>
+        <DocP>
+          Pass the secret in the <InlineCode>X-API-Key</InlineCode> header. Every endpoint accepts
+          and returns JSON.
+        </DocP>
+        <CodePanel title="Request" language="bash" code={CURL_EXAMPLE} />
+        <CodePanel title="Response · 200" language="json" code={RESPONSE_EXAMPLE} />
 
-          <li>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
-              3. Inspect the response
-            </h2>
-            <p className="text-slate-500 leading-relaxed mb-3">
-              A successful call returns the organisations visible to the key, along with a request ID
-              for cross-referencing in the audit ledger.
-            </p>
-            <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 text-[13px] font-mono leading-relaxed overflow-x-auto">
-              <code>{`{
-  "data": [
-    { "id": "org_…", "name": "Acme Trading", "status": "active" }
-  ]
-}`}</code>
-            </pre>
-          </li>
-        </ol>
+        <DocH2 id="step-3">3. Record a match</DocH2>
+        <DocP>
+          A match represents bilateral trade intent between two organisations. Provide an{" "}
+          <InlineCode>Idempotency-Key</InlineCode> on every write so retries are safe.
+        </DocP>
+        <CodePanel title="POST /match" language="bash" code={CREATE_MATCH} />
 
         <section className="border-t border-slate-100 mt-14 pt-10">
           <div className="flex items-start gap-3">
             <Terminal className="h-5 w-5 text-emerald-600 mt-0.5" strokeWidth={1.75} />
             <div>
               <h3 className="text-[15px] font-semibold text-slate-900 mb-1.5 tracking-tight">
-                Next: explore the full reference
+                Next steps
               </h3>
               <p className="text-[13.5px] text-slate-500 leading-relaxed mb-3">
-                Every endpoint, parameter and response shape is documented in the API reference.
+                Read{" "}
+                <Link to="/docs/authentication" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                  Authentication
+                </Link>{" "}
+                for scope reference and rate limits, or jump straight into{" "}
+                <Link to="/docs/matches" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                  Matches
+                </Link>{" "}
+                for the full state machine.
               </p>
-              <Link
-                to="/docs/api"
-                className="inline-flex items-center gap-1.5 text-[14px] font-medium text-emerald-600 hover:text-emerald-700"
-              >
-                Open API reference <ArrowRight className="h-4 w-4" />
-              </Link>
             </div>
           </div>
         </section>

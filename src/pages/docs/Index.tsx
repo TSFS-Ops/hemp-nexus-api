@@ -1,31 +1,59 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Code, Boxes, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Code, Boxes, Zap, Shield, Webhook, FileCheck } from "lucide-react";
 import { DocsLayout } from "./DocsLayout";
+import { DocEyebrow, DocH1, DocLede } from "./_shared";
 
 const QUICK_LINKS = [
   {
     to: "/docs/quickstart",
     icon: Zap,
     title: "Quickstart",
-    desc: "Make your first authenticated API call in under five minutes.",
+    desc: "Issue an API key and make your first authenticated call in under five minutes.",
+  },
+  {
+    to: "/docs/authentication",
+    icon: Shield,
+    title: "Authentication",
+    desc: "API keys, scopes, rate limits, and the lockout policy.",
   },
   {
     to: "/docs/api",
     icon: Code,
     title: "API Reference",
-    desc: "Browse every endpoint, parameter and response schema.",
+    desc: "Every endpoint, parameter, response shape, and error code.",
   },
   {
     to: "/docs/sdks",
     icon: Boxes,
-    title: "SDKs & Libraries",
-    desc: "Official Node.js, Python and Go clients.",
+    title: "Client libraries",
+    desc: "Official @izenzo/sdk for Node and TypeScript, plus copy-paste curl, fetch, and Python.",
+  },
+];
+
+const CONCEPTS = [
+  {
+    to: "/docs/matches",
+    icon: FileCheck,
+    title: "Matches",
+    desc: "Bilateral trade intent between two verified organisations. State machine, transitions, terms.",
   },
   {
-    to: "/docs/authentication",
+    to: "/docs/counterparties",
     icon: BookOpen,
-    title: "Authentication",
-    desc: "API keys, scopes and signed-request verification.",
+    title: "Counterparties",
+    desc: "Verified organisations you can transact with. KYB, UBO, Authority-to-Bind.",
+  },
+  {
+    to: "/docs/evidence",
+    icon: FileCheck,
+    title: "Evidence Packs",
+    desc: "Append-only, SHA-256-sealed audit record for every settled deal. Includes WaD certificate.",
+  },
+  {
+    to: "/docs/webhooks",
+    icon: Webhook,
+    title: "Webhooks",
+    desc: "Signed HTTP callbacks for state changes. HMAC-SHA256 verification, automatic retries.",
   },
 ];
 
@@ -33,16 +61,13 @@ export default function DocsIndex() {
   return (
     <DocsLayout>
       <div className="max-w-3xl">
-        <p className="text-[13px] font-medium text-emerald-600 tracking-wider uppercase mb-3">
-          Documentation
-        </p>
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-slate-900 mb-5">
-          Izenzo Documentation
-        </h1>
-        <p className="text-lg text-slate-500 leading-relaxed mb-12">
-          Everything you need to integrate tamper-proof trade governance, automated KYB, and
-          instant match execution into your institutional systems.
-        </p>
+        <DocEyebrow>Documentation</DocEyebrow>
+        <DocH1>Izenzo Developer Docs</DocH1>
+        <DocLede>
+          Izenzo is governance infrastructure for cross-border trade. Use the API to verify
+          counterparties, record bilateral intent, generate cryptographically sealed Proof of
+          Intent, and produce tamper-evident evidence packs your auditors can verify offline.
+        </DocLede>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-16">
           {QUICK_LINKS.map(({ to, icon: Icon, title, desc }) => (
@@ -57,28 +82,53 @@ export default function DocsIndex() {
               </h3>
               <p className="text-[13.5px] text-slate-500 leading-relaxed mb-4">{desc}</p>
               <span className="inline-flex items-center gap-1 text-[13px] font-medium text-emerald-600 group-hover:gap-1.5 transition-all">
-                View <ArrowRight className="h-3.5 w-3.5" />
+                Open <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </Link>
           ))}
         </div>
 
+        <section className="border-t border-slate-100 pt-12 mb-16">
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
+            Core resources
+          </h2>
+          <p className="text-slate-500 leading-relaxed mb-6 max-w-2xl">
+            Every API call manipulates one of four primitives. Read these once and the rest of
+            the surface area follows naturally.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {CONCEPTS.map(({ to, icon: Icon, title, desc }) => (
+              <Link
+                key={to}
+                to={to}
+                className="group block p-5 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <Icon className="h-4 w-4 text-slate-400 mt-1 shrink-0" strokeWidth={1.75} />
+                  <div>
+                    <h3 className="text-[14px] font-semibold text-slate-900 mb-1 tracking-tight">
+                      {title}
+                    </h3>
+                    <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <section className="border-t border-slate-100 pt-12">
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
-            Platform concepts
+            Base URL & versioning
           </h2>
-          <p className="text-slate-500 leading-relaxed mb-6">
-            Izenzo is built around three primitives: <strong className="text-slate-900 font-medium">Counterparties</strong> (verified
-            organisations), <strong className="text-slate-900 font-medium">Matches</strong> (bilateral trade intent), and{" "}
-            <strong className="text-slate-900 font-medium">Evidence Packs</strong> (tamper-proofally sealed audit records).
-            Every state transition is signed, timestamped and append-only.
+          <p className="text-slate-500 leading-relaxed mb-3 max-w-2xl">
+            All endpoints are served from a single base URL. The API is unversioned at the path
+            level; backwards-incompatible changes are announced 90 days in advance via the
+            developer changelog and your account contact.
           </p>
-          <Link
-            to="/docs/quickstart"
-            className="inline-flex items-center gap-1.5 text-[14px] font-medium text-emerald-600 hover:text-emerald-700"
-          >
-            Start with the Quickstart <ArrowRight className="h-4 w-4" />
-          </Link>
+          <pre className="bg-slate-950 text-slate-100 rounded-lg p-4 text-[13px] font-mono leading-relaxed overflow-x-auto">
+            <code>https://api.izenzo.co.za/functions/v1</code>
+          </pre>
         </section>
       </div>
     </DocsLayout>
