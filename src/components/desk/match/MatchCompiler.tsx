@@ -196,12 +196,15 @@ export function MatchCompiler({
   // In demo mode this is a no-op so marketing pages never mutate state.
   async function generateProof() {
     if (demoMode) return;
-    if (creditBalance < 1) {
-      setProvisioningOpen(true);
+    if (!matchId || matchId === "new") {
+      toast.error("No active match", {
+        description: "Pick a counterparty from Discover before sealing a Proof of Intent.",
+        action: { label: "Discover", onClick: () => navigate("/desk/discover") },
+      });
       return;
     }
-    if (!matchId || matchId === "new") {
-      navigate("/desk/discover");
+    if (creditBalance < 1) {
+      setProvisioningOpen(true);
       return;
     }
     await handleSettle();
