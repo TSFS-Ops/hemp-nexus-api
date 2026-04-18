@@ -158,9 +158,9 @@ export function QuickstartGuide({ onStartWizard, onSectionChange }: QuickstartGu
       {/* Code Examples */}
       <Card>
         <CardHeader>
-          <CardTitle>Try It Out</CardTitle>
+          <CardTitle>Reference Implementation</CardTitle>
           <CardDescription>
-            Choose your preferred language and run the example code
+            Select a language to review a sample integration request.
           </CardDescription>
         </CardHeader>
         <CardContent>
