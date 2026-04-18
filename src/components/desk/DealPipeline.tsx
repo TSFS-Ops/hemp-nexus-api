@@ -21,23 +21,44 @@ interface PipelineLane {
 }
 
 // Mapping the 9-step WaD workflow into three editorial buckets.
-// `states` are matched against the live `matches.state` enum values.
-const LANE_DEFS = [{
-  id: "draft",
-  title: "Draft Interests",
-  subtitle: "Steps 1 to 3 · Intent captured",
-  states: ["draft", "interest_logged", "match_proposed", "discovery"]
-}, {
-  id: "pending",
-  title: "Pending Counterparty",
-  subtitle: "Steps 4 to 7 · In negotiation",
-  states: ["counterparty_sighted", "buyer_committed", "seller_committed", "terms_pending"]
-}, {
-  id: "poi",
-  title: "Proofs of Intent Generated",
-  subtitle: "Steps 8 to 9 · Sealed",
-  states: ["committed", "intent_declared", "pending_finality", "settled", "poi_generated", "finalised", "completed"]
-}];
+// Lane 1: pre-POI drafts. Lane 2: POI generated, awaiting trading-partner
+// engagement (the hold-point). Lane 3: POI sealed and engagement accepted.
+const POI_STATES = [
+  "committed",
+  "intent_declared",
+  "pending_finality",
+  "settled",
+  "poi_generated",
+  "finalised",
+  "completed",
+];
+const DRAFT_STATES = [
+  "draft",
+  "interest_logged",
+  "match_proposed",
+  "discovery",
+  "counterparty_sighted",
+  "buyer_committed",
+  "seller_committed",
+  "terms_pending",
+];
+const LANE_META = [
+  {
+    id: "draft",
+    title: "Draft Interests",
+    subtitle: "Steps 1 to 7 · Intent captured",
+  },
+  {
+    id: "awaiting",
+    title: "Awaiting Engagement",
+    subtitle: "Step 8 · POI sent, hold-point active",
+  },
+  {
+    id: "poi",
+    title: "Proofs of Intent Sealed",
+    subtitle: "Step 9 · Engagement accepted",
+  },
+] as const;
 export function DealPipeline() {
   const {
     user
@@ -50,39 +71,63 @@ export function DealPipeline() {
     queryKey: ["desk-pipeline", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<PipelineLane[]> => {
+      const emptyLanes: PipelineLane[] = LANE_META.map(l => ({ ...l, states: [], deals: [] }));
       const {
         data: profile
       } = await supabase.from("profiles").select("org_id").eq("id", user!.id).maybeSingle();
-      if (!profile?.org_id) return LANE_DEFS.map(l => ({
-        ...l,
-        deals: []
-      }));
+      if (!profile?.org_id) return emptyLanes;
       const {
         data: matches
       } = await supabase.from("matches").select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at").or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`).order("created_at", {
         ascending: false
       }).limit(60);
-      const cards: DealCard[] = (matches ?? []).map(m => {
+      const matchList = matches ?? [];
+
+      // Fetch engagement status for POI'd matches so we can split sealed vs awaiting.
+      const poiMatchIds = matchList
+        .filter(m => POI_STATES.includes(m.state ?? ""))
+        .map(m => m.id);
+      const engagementByMatch = new Map<string, string>();
+      if (poiMatchIds.length > 0) {
+        const { data: engagements } = await supabase
+          .from("poi_engagements")
+          .select("match_id, engagement_status")
+          .in("match_id", poiMatchIds);
+        for (const e of engagements ?? []) {
+          if (e.match_id && e.engagement_status) {
+            engagementByMatch.set(e.match_id, e.engagement_status);
+          }
+        }
+      }
+
+      const cards = matchList.map(m => {
         const isBuyer = m.buyer_org_id === profile.org_id;
+        const state = m.state ?? "draft";
+        let laneId: string = "draft";
+        if (POI_STATES.includes(state)) {
+          const eng = engagementByMatch.get(m.id);
+          laneId = eng === "accepted" ? "poi" : "awaiting";
+        } else if (DRAFT_STATES.includes(state)) {
+          laneId = "draft";
+        }
         return {
           id: m.id,
           commodity: m.commodity ?? "Unspecified commodity",
           counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
           volume: m.quantity_amount && m.quantity_unit ? `${Number(m.quantity_amount).toLocaleString()} ${m.quantity_unit}` : "-",
-          state: m.state ?? "draft",
-          created_at: m.created_at
+          state,
+          created_at: m.created_at,
+          laneId,
         };
       });
-      return LANE_DEFS.map(lane => ({
-        ...lane,
-        deals: cards.filter(c => lane.states.includes(c.state))
+      return LANE_META.map(meta => ({
+        ...meta,
+        states: [],
+        deals: cards.filter(c => c.laneId === meta.id),
       }));
     }
   });
-  const lanes = data ?? LANE_DEFS.map(l => ({
-    ...l,
-    deals: []
-  }));
+  const lanes = data ?? LANE_META.map(l => ({ ...l, states: [], deals: [] }));
   return <section>
       <div className="mb-8 flex items-baseline justify-between">
         <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
