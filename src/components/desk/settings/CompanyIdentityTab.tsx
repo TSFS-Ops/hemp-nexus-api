@@ -186,18 +186,18 @@ export function CompanyIdentityTab() {
   return (
     <div className="max-w-3xl">
       {/* Header + verification badge */}
-      <div className="flex items-start justify-between gap-8 mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 md:mb-10">
         <div>
-          <h2 className="text-xl font-medium text-slate-900 tracking-tight">Company Identity</h2>
+          <h2 className="text-lg md:text-xl font-medium text-slate-900 tracking-tight">Company Identity</h2>
           <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-md">
             Your verified Know-Your-Business profile. This identity is bound to every Proof of Intent you generate.
           </p>
         </div>
-        <VerificationBadge state={verification} />
+        <div className="self-start"><VerificationBadge state={verification} /></div>
       </div>
 
       {/* Stepper */}
-      <nav className="mb-10 flex items-center gap-1 border-b border-slate-200">
+      <nav className="mb-8 md:mb-10 flex items-center gap-1 border-b border-slate-200 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-none">
         {STEPS.map((s) => {
           const active = s.key === activeStep;
           return (
@@ -206,7 +206,7 @@ export function CompanyIdentityTab() {
               type="button"
               onClick={() => selectStep(s.key)}
               className={[
-                "px-4 py-3 text-left transition-colors border-b-2 -mb-px",
+                "px-4 py-3 text-left transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap",
                 active
                   ? "border-slate-900 text-slate-900"
                   : "border-transparent text-slate-500 hover:text-slate-800",
