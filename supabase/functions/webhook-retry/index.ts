@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         const responseBody = await response.text();
 
         if (response.ok) {
-          // Success - update delivery record
+          // Success - update delivery record + reset breaker
           await supabase
             .from("webhook_deliveries")
             .update({
@@ -134,6 +134,8 @@ Deno.serve(async (req) => {
               error_message: null,
             })
             .eq("id", delivery.id);
+
+          await supabase.rpc("webhook_record_success", { p_endpoint_id: endpoint.id });
 
           successCount++;
           console.log(`✓ Retry successful for ${endpoint.url} (attempt ${attempt})`);
@@ -153,6 +155,18 @@ Deno.serve(async (req) => {
               error_message: isMaxed ? `Max retries (${attempt}) exceeded` : null,
             })
             .eq("id", delivery.id);
+
+          // Circuit breaker: increment + maybe trip
+          const { data: breakerResult } = await supabase.rpc("webhook_record_failure", {
+            p_endpoint_id: endpoint.id,
+            p_threshold: 10,
+          });
+          const tripped = Array.isArray(breakerResult) ? breakerResult[0]?.tripped : false;
+          if (tripped) {
+            console.warn(
+              `[CIRCUIT BREAKER] Tripped for endpoint ${endpoint.id} (${endpoint.url}) on retry path.`
+            );
+          }
 
           if (isMaxed) {
             deadLetterCount++;
@@ -178,6 +192,18 @@ Deno.serve(async (req) => {
             error_message: isMaxed ? `Max retries: ${errorMessage}` : errorMessage,
           })
           .eq("id", delivery.id);
+
+        // Circuit breaker: network errors count as failures
+        const { data: breakerResult } = await supabase.rpc("webhook_record_failure", {
+          p_endpoint_id: endpoint.id,
+          p_threshold: 10,
+        });
+        const tripped = Array.isArray(breakerResult) ? breakerResult[0]?.tripped : false;
+        if (tripped) {
+          console.warn(
+            `[CIRCUIT BREAKER] Tripped for endpoint ${endpoint.id} (${endpoint.url}) due to network errors.`
+          );
+        }
 
         if (isMaxed) {
           deadLetterCount++;
