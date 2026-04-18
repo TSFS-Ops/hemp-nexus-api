@@ -268,6 +268,27 @@ function EntityDetailsStep({
 
   const valid = legalName.trim().length >= 2 && registration.trim().length >= 2 && jurisdiction.trim().length >= 2;
 
+  // ── Unsaved-changes guard ──
+  // Compares each local form field against the loaded org snapshot.
+  // After a successful save the parent refresh() updates `org`, which
+  // realigns the snapshot and clears dirty.
+  const isDirty =
+    !saving &&
+    (
+      legalName.trim() !== (org?.legal_name ?? "").trim() ||
+      tradingName.trim() !== (org?.trading_name ?? "").trim() ||
+      registration.trim() !== (org?.registration_number ?? "").trim() ||
+      taxNumber.trim() !== (org?.tax_number ?? org?.vat_number ?? "").trim() ||
+      jurisdiction.trim() !== (org?.jurisdictions?.[0] ?? "").trim()
+    );
+  const { GuardDialog } = useUnsavedChangesGuard(isDirty, {
+    title: "Unsaved entity details",
+    message:
+      "You have unsaved changes to your company KYB profile. If you leave now, your edits will be discarded.",
+    confirmLabel: "Discard and leave",
+    cancelLabel: "Stay on page",
+  });
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!org?.id || !valid) return;
