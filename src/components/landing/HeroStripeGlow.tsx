@@ -89,26 +89,41 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest text-center mb-8">
             Platform Architecture & Standards
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
-            <div className="flex items-center gap-3 text-slate-500">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-mono tracking-tight">SYSTEM: OPERATIONAL</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-500">
-              <ShieldCheck className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
-              <span className="text-sm font-mono tracking-tight">LEDGER: SHA-256</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-500">
-              <Globe2 className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
-              <span className="text-sm font-mono tracking-tight">RESIDENCY: POPIA / GDPR</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-500">
-              <Database className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
-              <span className="text-sm font-mono tracking-tight">STATE: ATOMIC</span>
+          <div className="relative overflow-hidden max-w-4xl mx-auto">
+            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+            <div className="flex gap-x-12 animate-[telemetry_28s_linear_infinite] whitespace-nowrap w-max">
+              {[0, 1].map((dup) => (
+                <div key={dup} className="flex gap-x-12 shrink-0">
+                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-sm font-mono tracking-tight">SYSTEM: OPERATIONAL</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+                    <span className="text-sm font-mono tracking-tight">LEDGER: SHA-256</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
+                    <Globe2 className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+                    <span className="text-sm font-mono tracking-tight">RESIDENCY: POPIA / GDPR</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
+                    <Database className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+                    <span className="text-sm font-mono tracking-tight">STATE: ATOMIC</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes telemetry {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </section>
   );
 }
