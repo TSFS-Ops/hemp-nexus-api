@@ -549,8 +549,6 @@ function AuthForm({
           </button>
         </p>
       </div>
-        By continuing you agree to Izenzo's Terms of Service and acknowledge our compliance with POPIA & GDPR data residency standards.
-      </p>
     </>;
 }
 function ForgotForm({
