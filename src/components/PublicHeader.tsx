@@ -33,7 +33,7 @@ const MEGA_NAV: MegaCategory[] = [
     items: [
       { label: "Documentation", description: "Guides, concepts & quickstarts", to: "/docs" },
       { label: "API Reference", description: "Full endpoint specification", to: "/docs/api" },
-      { label: "SDKs & Libraries", description: "TypeScript SDK, code samples & client libs", to: "/docs/sdks" },
+      { label: "Webhooks", description: "Signed callbacks & event catalogue", to: "/docs/webhooks" },
       { label: "System Status", description: "Live platform health & uptime", to: "/status" },
     ],
   },

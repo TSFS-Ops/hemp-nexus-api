@@ -181,10 +181,10 @@ const HUB_CARDS: HubCard[] = [{
   cta: "Browse the API"
 }, {
   icon: Box,
-  title: "SDKs & Libraries",
-  description: "Official TypeScript and Python client libraries.",
-  href: ROUTES.DOCS,
-  cta: "Install the SDK"
+  title: "Webhooks",
+  description: "Signed HTTP callbacks for every state transition.",
+  href: "/docs/webhooks",
+  cta: "Wire up webhooks"
 }, {
   icon: Activity,
   title: "System Status",
@@ -277,7 +277,7 @@ export default function DevelopersPage() {
               duration: 0.7,
               delay: 0.3
             }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
-                REST · Webhooks · TypeScript SDK · Idempotent
+                REST · Webhooks · Idempotent · Signed
               </motion.p>
             </div>
 
@@ -298,7 +298,7 @@ export default function DevelopersPage() {
             <h2 className="mt-5 text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
               From first request to production scale.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Four primitives (guides, reference, SDKs, and live status) composed into a single, hard-engineering surface. </p>
+            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Four primitives (guides, reference, webhooks, and live status) composed into a single, hard-engineering surface. </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

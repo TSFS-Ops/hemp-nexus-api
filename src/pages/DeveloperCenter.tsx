@@ -79,7 +79,7 @@ function SchemaView() {
 function DocsView() {
   return (
     <>
-      <DeveloperHeader section="Integration Docs" badge="SDK 1.4.2" />
+      <DeveloperHeader section="Integration Docs" badge="REST API" />
       <div className="px-12 py-10">
         <IntegrationDocs />
       </div>
