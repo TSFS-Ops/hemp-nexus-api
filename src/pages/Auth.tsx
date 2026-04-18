@@ -369,7 +369,7 @@ export default function Auth() {
     }} />
 
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
-      <div className="relative z-10 w-full max-w-[860px]">
+      <div className="relative z-10 w-full max-w-[440px]">
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-6 sm:p-8">
           {/* Logo (centered, top of card), links back to landing */}
           <div className="flex flex-col items-center mb-5">
@@ -473,9 +473,9 @@ function AuthForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-200">
+      <div className="space-y-6">
         {/* ─── Enterprise SSO ─── */}
-        <div className="flex flex-col sm:pr-8">
+        <div className="flex flex-col">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
             Single sign-on
           </p>
@@ -504,13 +504,17 @@ function AuthForm({
               Continue with Google
             </button>
           </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed mt-auto pt-4 hidden sm:block">
-            Recommended for institutional accounts. SSO enforces your organisation's security policy.
-          </p>
         </div>
 
         {/* ─── Email form ─── */}
-        <div className="mt-6 sm:mt-0 sm:pl-8 flex flex-col">
+        <div className="relative">
+          <div className="absolute inset-x-0 -top-3 flex items-center justify-center">
+            <span className="bg-white/95 px-3 text-[10px] uppercase tracking-[0.16em] text-slate-400 font-medium">or</span>
+          </div>
+          <div className="border-t border-slate-200" />
+        </div>
+
+        <div className="flex flex-col">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-medium text-center sm:text-left mb-3 h-4">
             Continue with email
           </p>
