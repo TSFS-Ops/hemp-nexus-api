@@ -1,35 +1,64 @@
 // CORS configuration for Compliance Matching API
+// Strict origin enforcement: only whitelisted production domains are allowed.
+// Wildcard ('*') is permitted ONLY when ALLOWED_ORIGINS is explicitly set to '*' (dev/test).
+
+const BASE_HEADERS = {
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, idempotency-key, x-request-id, x-internal-key',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Expose-Headers': 'X-Idempotent-Replay, X-Match-Duplicate',
+  'Vary': 'Origin',
+};
+
+export const isOriginAllowed = (allowedOrigins: string, origin: string | null): boolean => {
+  const allowedList = allowedOrigins.split(',').map(o => o.trim()).filter(Boolean);
+  if (allowedList.includes('*')) return true;
+  if (!origin) return false;
+  return allowedList.includes(origin);
+};
+
 export const corsHeaders = (allowedOrigins: string, origin: string | null = null) => {
   const allowedList = allowedOrigins.split(',').map(o => o.trim()).filter(Boolean);
-  
-  // If no origins configured or wildcard, use wildcard (for development only)
-  if (allowedList.length === 0 || allowedList.includes('*')) {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, idempotency-key, x-request-id',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Expose-Headers': 'X-Idempotent-Replay, X-Match-Duplicate',
-  };
+
+  // Explicit wildcard (dev only)
+  if (allowedList.includes('*')) {
+    return {
+      'Access-Control-Allow-Origin': '*',
+      ...BASE_HEADERS,
+    };
   }
-  
-  // Validate origin against whitelist
-  const allowedOrigin = origin && allowedList.includes(origin) ? origin : allowedList[0];
-  
+
+  // Strict mode: only echo origin if whitelisted; otherwise return first allowed (request will be rejected)
+  if (origin && allowedList.includes(origin)) {
+    return {
+      'Access-Control-Allow-Origin': origin,
+      ...BASE_HEADERS,
+    };
+  }
+
+  // Origin not whitelisted - return restrictive headers (no Allow-Origin echo)
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, idempotency-key, x-request-id',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Expose-Headers': 'X-Idempotent-Replay, X-Match-Duplicate',
+    'Access-Control-Allow-Origin': allowedList[0] || 'null',
+    ...BASE_HEADERS,
   };
 };
 
 export const handleCors = (req: Request, allowedOrigins: string) => {
   if (req.method === 'OPTIONS') {
     const origin = req.headers.get('origin');
-    return new Response(null, { 
+
+    // Reject preflight from non-whitelisted origins
+    if (!isOriginAllowed(allowedOrigins, origin)) {
+      return new Response(null, {
+        status: 403,
+        headers: { 'Vary': 'Origin' },
+      });
+    }
+
+    return new Response(null, {
       status: 204,
-      headers: corsHeaders(allowedOrigins, origin) 
+      headers: corsHeaders(allowedOrigins, origin),
     });
   }
   return null;
 };
+
