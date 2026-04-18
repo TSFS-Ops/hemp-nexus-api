@@ -1,0 +1,40 @@
+# Dependabot — weekly security & version drift checks for Izenzo platform.
+# Scope: npm dependencies (root + SDK package) and GitHub Actions used in CI.
+# Security advisories from GitHub Advisory Database trigger PRs out-of-cycle.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security-review"
+    groups:
+      radix:
+        patterns: ["@radix-ui/*"]
+      supabase:
+        patterns: ["@supabase/*"]
+      tanstack:
+        patterns: ["@tanstack/*"]
+
+  - package-ecosystem: "npm"
+    directory: "/packages/sdk"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "sdk"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "ci"
