@@ -349,6 +349,7 @@ function EntityDetailsStep({
           {saving ? "Saving…" : "Save & Continue"}
         </Button>
       </div>
+      {GuardDialog}
     </form>
   );
 }
