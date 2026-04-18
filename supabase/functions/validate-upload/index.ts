@@ -49,10 +49,33 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ blocked: false, error: "bucket and storage_path required" }), { status: 400, headers });
     }
 
+    // Allowlist of buckets that may be validated through this endpoint.
+    // Prevents authenticated users from probing arbitrary buckets via the
+    // service-role admin client (which bypasses storage RLS).
+    const ALLOWED_BUCKETS = ["match-documents", "kyc-documents", "governance-documents", "vault-documents"];
+    if (!ALLOWED_BUCKETS.includes(bucket)) {
+      return new Response(JSON.stringify({
+        blocked: true,
+        reason: "Invalid bucket",
+      }), { status: 400, headers });
+    }
+
+    const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
+
+    // Confirm the caller has access via their own JWT (storage RLS applies).
+    // Only after that do we fall back to the service-role client to read
+    // the magic bytes (the SDK download API does not expose Range requests).
+    const { error: callerAccessError } = await userClient.storage.from(bucket).download(filePath);
+    if (callerAccessError) {
+      return new Response(JSON.stringify({
+        blocked: true,
+        reason: "Caller does not have access to this file",
+      }), { status: 403, headers });
+    }
+
     const admin = createClient(supabaseUrl, serviceKey);
 
     // Download the file (just need first 16 bytes but storage SDK downloads all)
-    const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
     const { data: fileData, error: dlError } = await admin.storage.from(bucket).download(filePath);
 
     if (dlError || !fileData) {
