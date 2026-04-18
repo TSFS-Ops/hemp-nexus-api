@@ -50,8 +50,8 @@ export function AuthorityBindDialog({ open, onOpenChange, companyEntity, onSucce
   const loadEntities = async () => {
     setLoadingEntities(true);
     const [compRes, indRes] = await Promise.all([
-      supabase.from("entities").select("id, legal_name, entity_type").eq("entity_type", "COMPANY").eq("status", "active").order("legal_name").limit(200),
-      supabase.from("entities").select("id, legal_name, entity_type").eq("entity_type", "INDIVIDUAL").eq("status", "active").order("legal_name").limit(200),
+      supabase.from("entities").select("id, legal_name, entity_type").eq("entity_type", "COMPANY").eq("status", "VERIFIED").order("legal_name").limit(200),
+      supabase.from("entities").select("id, legal_name, entity_type").eq("entity_type", "INDIVIDUAL").eq("status", "VERIFIED").order("legal_name").limit(200),
     ]);
     setCompanies(compRes.data || []);
     setIndividuals(indRes.data || []);
