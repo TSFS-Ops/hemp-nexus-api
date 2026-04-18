@@ -92,7 +92,7 @@ export function WizardStepper({ steps, activeStep, onStepClick }: WizardStepperP
       </div>
 
       {/* Mobile: compact pill stepper */}
-      <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
+      <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
         {steps.map((step, idx) => {
           const isActive = idx === activeStep;
           const isComplete = step.complete;

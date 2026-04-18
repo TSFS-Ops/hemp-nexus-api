@@ -197,7 +197,7 @@ export function CompanyIdentityTab() {
       </div>
 
       {/* Stepper */}
-      <nav className="mb-8 md:mb-10 flex items-center gap-1 border-b border-slate-200 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-none">
+      <nav className="mb-8 md:mb-10 flex items-center gap-1 border-b border-slate-200 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-hide">
         {STEPS.map((s) => {
           const active = s.key === activeStep;
           return (
