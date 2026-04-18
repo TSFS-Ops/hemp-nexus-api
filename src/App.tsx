@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { HostnameRouter } from "@/components/HostnameRouter";
 import { getHostType } from "@/lib/hostname";
 import { ROUTES } from "@/lib/constants";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
+import { LegacyRedirect } from "@/components/LegacyRedirect";
 
 // Eagerly loaded - critical path
 import Landing from "@/pages/Landing";
@@ -64,13 +65,16 @@ function RootElement() {
 
 /**
  * Legacy /dashboard/matches/:matchId → /desk/match/:matchId.
- * React Router's <Navigate to="..."> does not substitute :params, so
- * we resolve the param explicitly while preserving search + hash.
+ * Uses LegacyRedirect so the user sees a one-shot explanation toast.
  */
 function RedirectDashboardMatch() {
-  const { matchId } = useParams();
-  const { search, hash } = useLocation();
-  return <Navigate to={`/desk/match/${matchId ?? ""}${search}${hash}`} replace />;
+  return (
+    <LegacyRedirect
+      to="/desk/match"
+      label="Match Details"
+      resolveTo={(p) => `/desk/match/${p.matchId ?? ""}`}
+    />
+  );
 }
 
 function App() {
