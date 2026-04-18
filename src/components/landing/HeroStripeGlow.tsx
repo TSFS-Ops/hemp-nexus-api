@@ -56,15 +56,15 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
         <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-b from-transparent to-white" />
       </div>
 
-      <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-40 sm:pt-24 sm:pb-52 text-center">
+      <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:min-h-[calc(100vh-80px)] md:py-12 flex flex-col justify-center items-center text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 mb-12 shadow-sm">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 mb-6 shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           Izenzo Governance Network
         </div>
 
         {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-slate-900 max-w-4xl mx-auto">
+        <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-slate-900 max-w-4xl mx-auto mb-6">
           The Governance Infrastructure for{" "}
           <span
             className="bg-clip-text text-transparent"
@@ -77,13 +77,13 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
           </span>
         </h1>
 
-        {/* Sub-headline, extra breathing room */}
-        <p className="mt-12 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+        {/* Sub-headline — wider so it wraps to 2 lines on desktop */}
+        <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed mb-10">
           One cryptographic network. Access it via our turnkey Trade Desk, manage risk through the Compliance Profile, or build directly on the API. All backed by mathematically provable execution.
         </p>
 
         {/* Dual CTAs */}
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={onGetStarted}
             className="inline-flex items-center justify-center gap-1.5 px-6 h-12 rounded-md text-sm font-semibold text-white bg-emerald-950 shadow-md hover:bg-emerald-900 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
@@ -101,8 +101,8 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
         </div>
 
         {/* Network Telemetry & Standards */}
-        <div className="mt-24">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest text-center mb-8">
+        <div className="mt-16 w-full">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest text-center mb-6">
             Platform Architecture & Standards
           </p>
           <div className="relative overflow-hidden max-w-4xl mx-auto">
