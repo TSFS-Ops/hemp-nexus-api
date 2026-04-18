@@ -40,7 +40,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
         <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-b from-transparent to-white" />
       </div>
 
-      <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-40 sm:pt-44 sm:pb-52 text-center">
+      <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-40 sm:pt-24 sm:pb-52 text-center">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 mb-12 shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -90,11 +90,11 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
             Platform Architecture & Standards
           </p>
           <div className="relative overflow-hidden max-w-4xl mx-auto">
-            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
-            <div className="flex gap-x-12 animate-[telemetry_28s_linear_infinite] whitespace-nowrap w-max">
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white via-white/95 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white via-white/95 to-transparent z-10 pointer-events-none" />
+            <div className="flex animate-[telemetry_28s_linear_infinite] whitespace-nowrap w-max">
               {[0, 1].map((dup) => (
-                <div key={dup} className="flex gap-x-12 shrink-0">
+                <div key={dup} className="flex gap-x-12 shrink-0 pr-12">
                   <div className="flex items-center gap-3 text-slate-500 shrink-0">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-sm font-mono tracking-tight">SYSTEM: OPERATIONAL</span>
