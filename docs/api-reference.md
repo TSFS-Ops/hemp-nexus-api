@@ -97,56 +97,43 @@ API keys support scope-based access control:
 
 ---
 
-## Token Metering
+## Token Economics (v1.5)
 
-All billable API endpoints consume **1 token per call**. Your organisation must maintain a **minimum balance of 5,000 tokens** to make API calls.
+The platform operates on a flat-rate token model:
 
-### Billable Endpoints
+- **Price**: R10 ZAR per credit
+- **Burn**: 1 credit consumed at the moment a Proof of Intent (POI) is generated
+- **All other endpoints are free** (read operations, webhook management, KYB submission, evidence pack download)
 
-| Endpoint | Tokens |
-|----------|--------|
-| `/signals` | 1 token |
-| `/search` | 1 token |
-| `/match` | 1 token |
-| `/sr-discover` | 1 token |
+### Billable Actions
+
+| Action | Endpoint | Credits |
+|--------|----------|---------|
+| Generate Proof of Intent | `POST /poi-transition` (state → `issued`) | 1 |
+| Issue WaD certificate | `POST /p3-wad` | 0 (gated by org credit balance, see Gate #8) |
 
 ### Non-Billable Endpoints
 
-The following endpoints do not consume tokens:
-- `/healthz` - Health check
-- `/api-keys` - API key management
-- `/webhooks` - Webhook management
-- `/audit-logs` - Audit log queries
-- `/evidence-pack` - Evidence pack generation
-- `/consents` - Consent management
-- `/data-sources` - Data source management
+Every other endpoint — including `/match`, `/signals`, `/search`, `/entities`, `/webhooks`, `/audit-logs`, `/evidence-pack`, `/consents`, `/data-sources` — does not consume credits.
 
 ### Insufficient Balance Response (HTTP 402)
 
 ```json
 {
   "code": "INSUFFICIENT_TOKENS",
-  "message": "Insufficient token balance. Current: 4500, Required minimum: 5000",
+  "message": "Credit balance too low to generate Proof of Intent.",
   "requestId": "123e4567-e89b-12d3-a456-426614174000",
   "details": {
-    "currentBalance": 4500,
-    "minimumRequired": 5000,
-    "endpoint": "signals"
+    "currentBalance": 0,
+    "creditsRequired": 1,
+    "topUpRateZar": 10
   }
 }
 ```
 
-### Low Balance Webhooks
+### Top-up
 
-When your token balance crosses warning thresholds, a `token.low_balance` webhook is triggered:
-
-| Threshold | Urgency |
-|-----------|---------|
-| 6,000 tokens | Warning |
-| 5,500 tokens | Urgent |
-| 5,001 tokens | Critical |
-
-See [Webhook Events](#webhook-events) for payload format.
+Credits are purchased in the Trade Desk → Billing screen, or programmatically via `POST /token-purchase`. Founder/admin exemptions follow the documented 10-point decision sheet.
 
 ---
 
