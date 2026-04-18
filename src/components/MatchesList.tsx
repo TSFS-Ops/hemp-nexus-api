@@ -73,15 +73,15 @@ function MatchTypeBadge({ match }: { match: Match }) {
   return null;
 }
 
-/** Badge showing the user's role in a match */
+/** Badge showing the user's role in a match, intentionally tiny + subtle. */
 function MatchRoleBadge({ match, orgId }: { match: Match; orgId: string | null }) {
   const role = getMatchRole(orgId, match as any);
   if (!role || role === "creator") return null;
   const labels: Record<string, string> = { buyer: "You: Buyer", seller: "You: Seller" };
   return (
-    <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+    <span className="ml-2 bg-slate-100 text-slate-500 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded">
       {labels[role]}
-    </Badge>
+    </span>
   );
 }
 
@@ -412,16 +412,17 @@ export function MatchesList() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="px-3 sm:px-6">
+      <Card className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <CardHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/60">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <CardTitle>Matches</CardTitle>
+            <CardTitle className="text-base font-semibold text-slate-900">Matches</CardTitle>
             <div className="flex flex-wrap gap-2">
               {selectedMatches.size > 0 && (
                 <Button
                   size="sm"
                   onClick={() => setShowSettleDialog(true)}
                   disabled={isSettling}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 >
                   {isSettling ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -434,7 +435,12 @@ export function MatchesList() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={exportToCSV}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportToCSV}
+                      className="border-slate-200 text-slate-700 hover:bg-slate-50 bg-white"
+                    >
                       <Download className="h-4 w-4 sm:mr-2" />
                       <span className="hidden sm:inline">Export CSV {totalPages > 1 ? "(this page)" : ""}</span>
                     </Button>
@@ -449,38 +455,38 @@ export function MatchesList() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-3 sm:px-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by commodity..."
-              value={commoditySearch}
-              onChange={(e) => setParam("q", e.target.value)}
-              className="pl-10"
-              aria-label="Search matches by commodity"
-            />
+        <CardContent className="p-0">
+          <div className="p-4 flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by commodity..."
+                value={commoditySearch}
+                onChange={(e) => setParam("q", e.target.value)}
+                className="h-9 pl-10 bg-white border-slate-200 text-sm shadow-sm focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                aria-label="Search matches by commodity"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setParam("status", v)}>
+              <SelectTrigger className="h-9 w-full md:w-[180px] bg-white border-slate-200 text-sm shadow-sm">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value={MATCH_STATUS.MATCHED}>Matched</SelectItem>
+                <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(v) => setParam("sort", v)}>
+              <SelectTrigger className="h-9 w-full md:w-[180px] bg-white border-slate-200 text-sm shadow-sm">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Date Created</SelectItem>
+                <SelectItem value="commodity">Commodity</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setParam("status", v)}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value={MATCH_STATUS.MATCHED}>Matched</SelectItem>
-              <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={(v) => setParam("sort", v)}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="created_at">Date Created</SelectItem>
-              <SelectItem value="commodity">Commodity</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <div className="min-h-[400px]">
         {isError && !paginationError ? (
