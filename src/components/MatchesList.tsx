@@ -73,15 +73,15 @@ function MatchTypeBadge({ match }: { match: Match }) {
   return null;
 }
 
-/** Badge showing the user's role in a match */
+/** Badge showing the user's role in a match, intentionally tiny + subtle. */
 function MatchRoleBadge({ match, orgId }: { match: Match; orgId: string | null }) {
   const role = getMatchRole(orgId, match as any);
   if (!role || role === "creator") return null;
   const labels: Record<string, string> = { buyer: "You: Buyer", seller: "You: Seller" };
   return (
-    <Badge variant="outline" className="text-xs border-accent-foreground/30 bg-accent/50 text-accent-foreground">
+    <span className="ml-2 bg-slate-100 text-slate-500 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded">
       {labels[role]}
-    </Badge>
+    </span>
   );
 }
 
@@ -412,16 +412,17 @@ export function MatchesList() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="px-3 sm:px-6">
+      <Card className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <CardHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/60">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <CardTitle>Matches</CardTitle>
+            <CardTitle className="text-base font-semibold text-slate-900">Matches</CardTitle>
             <div className="flex flex-wrap gap-2">
               {selectedMatches.size > 0 && (
                 <Button
                   size="sm"
                   onClick={() => setShowSettleDialog(true)}
                   disabled={isSettling}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 >
                   {isSettling ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -434,7 +435,12 @@ export function MatchesList() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={exportToCSV}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportToCSV}
+                      className="border-slate-200 text-slate-700 hover:bg-slate-50 bg-white"
+                    >
                       <Download className="h-4 w-4 sm:mr-2" />
                       <span className="hidden sm:inline">Export CSV {totalPages > 1 ? "(this page)" : ""}</span>
                     </Button>
@@ -449,38 +455,38 @@ export function MatchesList() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-3 sm:px-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by commodity..."
-              value={commoditySearch}
-              onChange={(e) => setParam("q", e.target.value)}
-              className="pl-10"
-              aria-label="Search matches by commodity"
-            />
+        <CardContent className="p-0">
+          <div className="p-4 flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by commodity..."
+                value={commoditySearch}
+                onChange={(e) => setParam("q", e.target.value)}
+                className="h-9 pl-10 bg-white border-slate-200 text-sm shadow-sm focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                aria-label="Search matches by commodity"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setParam("status", v)}>
+              <SelectTrigger className="h-9 w-full md:w-[180px] bg-white border-slate-200 text-sm shadow-sm">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value={MATCH_STATUS.MATCHED}>Matched</SelectItem>
+                <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(v) => setParam("sort", v)}>
+              <SelectTrigger className="h-9 w-full md:w-[180px] bg-white border-slate-200 text-sm shadow-sm">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Date Created</SelectItem>
+                <SelectItem value="commodity">Commodity</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setParam("status", v)}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value={MATCH_STATUS.MATCHED}>Matched</SelectItem>
-              <SelectItem value={MATCH_STATUS.SETTLED}>Confirmed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={(v) => setParam("sort", v)}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="created_at">Date Created</SelectItem>
-              <SelectItem value="commodity">Commodity</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <div className="min-h-[400px]">
         {isError && !paginationError ? (
@@ -574,54 +580,58 @@ export function MatchesList() {
             </div>
 
             {/* Desktop table view for ≥768px */}
-            <div className="rounded-md border hidden md:block overflow-x-auto">
+            <div className="hidden md:block w-full overflow-x-auto overflow-y-hidden border-t border-slate-200">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                     <TableHead className="w-12">
-                       <Checkbox
-                         checked={allUnsettledSelected}
-                         onCheckedChange={toggleSelectAll}
-                         disabled={unsettledMatches.length === 0}
-                       />
-                     </TableHead>
-                     <TableHead>Commodity</TableHead>
-                     <TableHead className="hidden lg:table-cell">Buyer</TableHead>
-                     <TableHead className="hidden lg:table-cell">Seller</TableHead>
-                     <TableHead>Quantity</TableHead>
-                     <TableHead>Price</TableHead>
-                     <TableHead>Status</TableHead>
-                     <TableHead className="hidden xl:table-cell">Evidence</TableHead>
-                     <TableHead className="hidden lg:table-cell">Created</TableHead>
-                     <TableHead className="text-right">Actions</TableHead>
-                   </TableRow>
+                  <TableRow className="border-b border-slate-200 hover:bg-transparent">
+                    <TableHead className="w-12 px-4 py-3 bg-slate-50">
+                      <Checkbox
+                        checked={allUnsettledSelected}
+                        onCheckedChange={toggleSelectAll}
+                        disabled={unsettledMatches.length === 0}
+                      />
+                    </TableHead>
+                    <TableHead className="px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Commodity</TableHead>
+                    <TableHead className="hidden lg:table-cell px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Buyer</TableHead>
+                    <TableHead className="hidden lg:table-cell px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Seller</TableHead>
+                    <TableHead className="px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Quantity</TableHead>
+                    <TableHead className="px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Price</TableHead>
+                    <TableHead className="px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</TableHead>
+                    <TableHead className="hidden xl:table-cell px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Evidence</TableHead>
+                    <TableHead className="hidden lg:table-cell px-4 py-3 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Created</TableHead>
+                    <TableHead className="px-4 py-3 bg-slate-50 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Actions</TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {matches.map((match) => (
-                    <TableRow key={match.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/desk/match/${match.id}`)}>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableRow
+                      key={match.id}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/desk/match/${match.id}`)}
+                    >
+                      <TableCell className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedMatches.has(match.id)}
                           onCheckedChange={() => toggleMatchSelection(match.id)}
                           disabled={!MatchState.canDo(match.status, "select_for_bulk")}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-4 py-3 text-slate-900 font-medium whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {match.commodity}
                           <MatchTypeBadge match={match} />
                           <MatchRoleBadge match={match} orgId={userOrgId} />
                         </div>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">{revealGuard(match, "buyer_name")}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{revealGuard(match, "seller_name")}</TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="hidden lg:table-cell px-4 py-3 text-slate-700 whitespace-nowrap">{revealGuard(match, "buyer_name")}</TableCell>
+                      <TableCell className="hidden lg:table-cell px-4 py-3 text-slate-700 whitespace-nowrap">{revealGuard(match, "seller_name")}</TableCell>
+                      <TableCell className="px-4 py-3 text-slate-700 whitespace-nowrap font-mono text-xs">
                         {match.quantity_amount ?? "-"} {match.quantity_unit ?? ""}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="px-4 py-3 text-slate-700 whitespace-nowrap font-mono text-xs">
                         {match.price_currency} {match.price_amount?.toLocaleString() ?? "-"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           {activeDisputeIds.has(match.id) && (
                             <TooltipProvider>
@@ -636,17 +646,20 @@ export function MatchesList() {
                           {getStatusBadge(match.status)}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden xl:table-cell">
+                      <TableCell className="hidden xl:table-cell px-4 py-3">
                         <EvidenceChainIndicator matchId={match.id} compact />
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">{format(new Date(match.created_at), "MMM dd, yyyy")}</TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="hidden lg:table-cell px-4 py-3 text-slate-500 whitespace-nowrap font-mono text-xs">
+                        {format(new Date(match.created_at), "MMM dd, yyyy")}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                                 onClick={() => {
                                   const row = [
                                     match.id, match.commodity, match.buyer_id, match.buyer_name,
@@ -670,6 +683,7 @@ export function MatchesList() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="text-slate-700 hover:text-slate-900 hover:bg-slate-100"
                             onClick={() => navigate(`/desk/match/${match.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
@@ -684,12 +698,12 @@ export function MatchesList() {
             </div>
 
             {/* Pagination */}
-            <div className={`flex items-center justify-between mt-4 pt-3 border-t border-border transition-opacity ${isFetching && !isLoading ? 'opacity-60' : ''}`}>
+            <div className={`flex items-center justify-between px-4 py-3 border-t border-slate-200 transition-opacity ${isFetching && !isLoading ? 'opacity-60' : ''}`}>
               <div className="flex items-center gap-2">
                 {isFetching && !isLoading && (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
                 )}
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-slate-500">
                   {totalPages > 1
                     ? `Showing ${page * PAGE_SIZE + 1} to ${Math.min((page + 1) * PAGE_SIZE, totalCount)} of ${totalCount} matches`
                     : `${totalCount} match${totalCount !== 1 ? 'es' : ''} total`}
