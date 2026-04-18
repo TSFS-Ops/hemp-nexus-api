@@ -517,72 +517,126 @@ button:focus-visible,
 }
 
 /* ============================================================
-   GLOBAL INTERACTION SYSTEM — "Institutional Premium" hover taxonomy
+   GLOBAL INTERACTION SYSTEM — "Kinetic Brand" hover taxonomy
    Four personalities: commitment | navigation | discovery | critical
-   All animations use Google Material standard easing.
-   Respects prefers-reduced-motion. All colors via semantic HSL tokens.
+   - Spring easing for premium "felt" weight
+   - Hardware-accelerated transforms (will-change, backface-visibility)
+   - Glassmorphic slide for navigation
+   - Selected/active items get a softened (50%) hover to reduce noise
+   - Respects prefers-reduced-motion + touch-only devices
+   - All colors via semantic HSL tokens (no hardcoded values)
    ============================================================ */
 :root {
-  --hover-duration: 0.2s;
-  --hover-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  --hover-duration: 0.25s;
+  --hover-timing: cubic-bezier(0.4, 0, 0.2, 1.4);
+  --hover-timing-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 [data-hover] {
   transition:
     transform var(--hover-duration) var(--hover-timing),
     box-shadow var(--hover-duration) var(--hover-timing),
-    background-color var(--hover-duration) var(--hover-timing),
-    color var(--hover-duration) var(--hover-timing),
-    filter var(--hover-duration) var(--hover-timing),
-    padding-left var(--hover-duration) var(--hover-timing);
+    background-color var(--hover-duration) var(--hover-timing-out),
+    color var(--hover-duration) var(--hover-timing-out),
+    border-color var(--hover-duration) var(--hover-timing-out),
+    filter var(--hover-duration) var(--hover-timing-out),
+    padding var(--hover-duration) var(--hover-timing);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
-/* 1. Commitment — primary CTAs (Confirm, Issue POI, Settle) */
+/* Hover-only on devices that actually support hover (desktop / trackpad) */
 @media (hover: hover) and (pointer: fine) {
+
+  /* 1. COMMITMENT — primary CTAs (Confirm, Issue POI, Settle Trade) */
   [data-hover="commitment"]:hover:not(:disabled):not([aria-disabled="true"]) {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 1px hsl(var(--emerald) / 0.15), 0 6px 20px -8px hsl(var(--emerald) / 0.45);
-    filter: brightness(1.05);
+    transform: translateY(-1px) scale(1.015);
+    box-shadow:
+      0 0 0 1px hsl(var(--emerald) / 0.25),
+      0 0 22px -6px hsl(var(--emerald) / 0.45),
+      0 4px 14px -6px hsl(var(--emerald) / 0.35);
+    filter: brightness(1.04);
   }
   [data-hover="commitment"]:active:not(:disabled):not([aria-disabled="true"]) {
-    transform: scale(0.99);
-    filter: brightness(0.98);
+    transform: translateY(0) scale(0.99);
+    filter: brightness(0.97);
   }
 
-  /* 2. Navigation — sidebar, tabs, breadcrumbs, nav links */
+  /* 2. NAVIGATION — sidebar, tabs, breadcrumbs, top-nav, footer links
+     Glass slide via ::after; needs position:relative + isolation
+     (declared once on the base selector below). */
+  [data-hover="navigation"] {
+    position: relative;
+    isolation: isolate;
+  }
+  [data-hover="navigation"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: hsl(var(--accent) / 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transform: translateX(-101%);
+    transition: transform 0.3s var(--hover-timing-out);
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  [data-hover="navigation"]:hover:not(:disabled):not([aria-disabled="true"])::after {
+    transform: translateX(0);
+  }
   [data-hover="navigation"]:hover:not(:disabled):not([aria-disabled="true"]) {
-    background-color: hsl(var(--accent) / 0.6);
+    color: hsl(var(--primary));
   }
 
-  /* 3. Discovery — info, tooltips, view actions, secondary chips */
+  /* 3. DISCOVERY — clickable cards, "View" actions, info chips, tooltips */
   [data-hover="discovery"]:hover:not(:disabled):not([aria-disabled="true"]) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px -4px hsl(var(--foreground) / 0.12);
+    transform: translateY(-3px) rotate(-0.4deg);
+    box-shadow: 0 10px 25px -10px hsl(var(--foreground) / 0.18);
+    background-color: hsl(var(--secondary) / 0.85);
   }
 
-  /* 4. Critical — destructive actions (Delete, Revoke, Freeze) */
+  /* 4. CRITICAL — destructive actions (Delete, Revoke, Freeze, Deny) */
   [data-hover="critical"]:hover:not(:disabled):not([aria-disabled="true"]) {
-    background-color: hsl(var(--destructive) / 0.08);
+    background-color: hsl(var(--destructive) / 0.06);
     color: hsl(var(--destructive));
-    animation: hover-shake 0.3s var(--hover-timing);
+    border-color: hsl(var(--destructive) / 0.45);
+    animation: kinetic-tension 0.45s var(--hover-timing-out) infinite;
   }
-}
 
-@keyframes hover-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-1px); }
-  75% { transform: translateX(1px); }
-}
-
-/* Accessibility: respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  [data-hover] {
-    transition: background-color var(--hover-duration) ease, color var(--hover-duration) ease;
-  }
-  [data-hover="commitment"]:hover,
-  [data-hover="discovery"]:hover,
-  [data-hover="critical"]:hover {
+  /* Selected / active items get a 50% softer hover to avoid noise */
+  [data-hover][aria-selected="true"]:hover,
+  [data-hover][aria-current="page"]:hover,
+  [data-hover][data-state="active"]:hover,
+  [data-hover][data-active="true"]:hover {
+    filter: none;
+    box-shadow: none;
     transform: none;
     animation: none;
+  }
+  [data-hover="navigation"][aria-current="page"]::after,
+  [data-hover="navigation"][data-state="active"]::after {
+    background: hsl(var(--accent) / 0.3);
+  }
+}
+
+@keyframes kinetic-tension {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(0.985); }
+}
+
+/* Accessibility: honour reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-hover] {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    will-change: auto;
+  }
+  [data-hover]:hover {
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  [data-hover="navigation"]::after {
+    display: none;
   }
 }
