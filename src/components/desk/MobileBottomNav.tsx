@@ -47,7 +47,7 @@ export function MobileBottomNav() {
   return (
     <>
       <nav
-        className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white/80 backdrop-blur-md border-t border-slate-200 pb-safe"
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/80 backdrop-blur-md border-t border-slate-200 pb-safe"
         aria-label="Desk primary"
       >
         <div className="flex items-center justify-between px-6 h-16">
