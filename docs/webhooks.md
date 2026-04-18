@@ -19,10 +19,15 @@ When you register a webhook endpoint, the Compliance Matching API will send HTTP
 | `signal.created` | Triggered when a new signal is created | `signalId`, `product`, `quantity`, `unit`, `status` |
 | `option.selected` | Triggered when an option is selected for a signal | `signalId`, `optionId`, `selectionId`, `dataSourceType`, `sourceLink` |
 | `match.created` | Triggered when a new match is created | `matchId`, `commodity`, `buyer`, `seller`, `quantity`, `price`, `hash` |
-| `match.settled` | Triggered when a match is settled | `matchId`, `hash`, `settledAt`, `commodity`, `quantity` |
-| `intent.confirmed` | Triggered when intent is confirmed (alias for match.settled) | `matchId`, `hash`, `settledAt`, `commodity`, `quantity` |
+| `match.counterparty_bound` | Counterparty engagement accepted; hold-point cleared | `matchId`, `counterpartyOrgId`, `boundAt` |
+| `counterparty.sighted` | Counterparty has acknowledged a match they are party to | `matchId`, `counterpartyOrgId`, `sightedAt` |
+| `poi.generated` | Proof of Intent issued for a match (1 credit burned) | `matchId`, `poiId`, `issuedAt` |
+| `intent.confirmed` | Triggered when intent is confirmed (alias for legacy `match.settled`) | `matchId`, `hash`, `settledAt`, `commodity`, `quantity` |
 | `intent.received` | Triggered when counterparty receives intent notification | `matchId`, `counterpartyOrgId`, `notifiedAt` |
-| `token.low_balance` | Triggered when token balance crosses warning threshold | `currentBalance`, `threshold`, `minimumRequired`, `urgency`, `message` |
+| `transaction.committed` | Match advanced to committed; terms now immutable | `matchId`, `committedAt` |
+| `transaction.completed` | WaD certificate issued; evidence pack available | `matchId`, `wadId`, `completedAt` |
+| `unilateral.stale` | A unilateral signal expired without engagement | `signalId`, `expiredAt` |
+| `token.low_balance` | Triggered when credit balance crosses warning threshold | `currentBalance`, `threshold`, `creditsRequired`, `topUpRateZar` |
 
 ## Managing Webhooks
 
@@ -109,28 +114,25 @@ All webhook deliveries follow this format:
 
 ### Token Low Balance Payload
 
-The `token.low_balance` event is triggered when your organisation's token balance crosses warning thresholds:
+The `token.low_balance` event is triggered when your organisation's credit balance falls below the threshold required to generate the next Proof of Intent:
 
 ```json
 {
   "event": "token.low_balance",
   "data": {
-    "currentBalance": 5500,
-    "threshold": 5500,
-    "minimumRequired": 5000,
-    "urgency": "urgent",
-    "message": "Your token balance is running low. Top up soon to avoid service interruption.",
-    "topUpUrl": "https://dashboard.example.com/billing"
+    "currentBalance": 0,
+    "creditsRequired": 1,
+    "topUpRateZar": 10,
+    "urgency": "critical",
+    "message": "Credit balance is empty. Top up to continue generating Proofs of Intent.",
+    "topUpUrl": "https://www.izenzo.co.za/desk/billing"
   },
-  "timestamp": "2026-01-11T10:30:00.000Z",
+  "timestamp": "2026-04-18T10:30:00.000Z",
   "orgId": "org-uuid"
 }
 ```
 
-**Threshold Levels**:
-- **6,000 tokens** (Warning): Early warning to plan top-up
-- **5,500 tokens** (Urgent): Top up soon to avoid interruption
-- **5,001 tokens** (Critical): Immediate action required
+**Pricing model**: R10 ZAR per credit, 1 credit per POI generation. Read operations and webhook management are free.
 
 ## Webhook Headers
 
@@ -287,7 +289,7 @@ For local development, use tools like [ngrok](https://ngrok.com/) to expose your
 ngrok http 3000
 
 # Use the ngrok URL in your webhook registration
-curl -X POST https://api.trade-izenzo.com/webhooks \
+curl -X POST https://api.izenzo.co.za/functions/v1/webhooks \
   -H "X-API-Key: your_key" \
   -H "Content-Type: application/json" \
   -d '{

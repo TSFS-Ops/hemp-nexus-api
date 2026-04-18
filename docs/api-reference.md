@@ -1,18 +1,21 @@
 # Compliance Matching API Reference
 
-**Current Version**: v1.5  
-**Base URL**: `https://api.izenzo.co.za/functions/v1`  
-**Last Updated**: 11 January 2026
+**Current Version**: v1.5
+**Base URL**: `https://api.izenzo.co.za/functions/v1`
+**Last Updated**: 18 April 2026
 
 ---
 
 ## Changelog
 
+### v1.5 (2026-04-18)
+- WaD issuance engine extended to **9 hard-gates** (added JURISDICTION_SELECTION and DISCOVERY_ELIGIBILITY)
+- Token economics rebased: **R10 ZAR per credit, 1 credit per POI generation** (replaces 5,000-token minimum balance model)
+- All client-library framing dropped from public docs; `@izenzo/sdk` for Node remains the only published SDK
+- New consolidated `/docs` surface (Quickstart, Authentication, Matches, Counterparties, Evidence, Webhooks, Errors)
+
 ### v1.4 (2026-01-11)
-- Added token metering with 1 token per billable API call
-- Minimum token balance requirement of 5,000 tokens
-- Low balance webhook notifications at 6,000, 5,500, and 5,001 tokens
-- Added `token.low_balance` webhook event
+- Added token metering with 1 token per billable API call (superseded in v1.5 by R10/credit model)
 - Confirm Intent now requires eligibility validation with clear denial reasons
 - Added document verification workflow for matches
 
