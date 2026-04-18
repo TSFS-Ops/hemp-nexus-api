@@ -176,18 +176,26 @@ export async function triggerWebhooks(
         supabase
       );
 
-      // Update last_delivery_at
-      await supabase
-        .from("webhook_endpoints")
-        .update({ last_delivery_at: new Date().toISOString() })
-        .eq("id", endpoint.id);
-
-      if (!result.success) {
-        console.error(
-          `Webhook delivery failed for ${endpoint.url}: ${result.error || result.statusCode}`
-        );
-      } else {
+      // Circuit breaker: atomic success/failure tracking
+      if (result.success) {
+        await supabase.rpc("webhook_record_success", { p_endpoint_id: endpoint.id });
         console.log(`Webhook delivered successfully to ${endpoint.url}`);
+      } else {
+        const { data: breakerResult } = await supabase.rpc("webhook_record_failure", {
+          p_endpoint_id: endpoint.id,
+          p_threshold: 10,
+        });
+        const tripped = Array.isArray(breakerResult) ? breakerResult[0]?.tripped : false;
+        const newCount = Array.isArray(breakerResult) ? breakerResult[0]?.new_consecutive_failures : null;
+
+        if (tripped) {
+          console.warn(
+            `[CIRCUIT BREAKER] Tripped for endpoint ${endpoint.id} (${endpoint.url}) after ${newCount} consecutive failures.`
+          );
+        }
+        console.error(
+          `Webhook delivery failed for ${endpoint.url}: ${result.error || result.statusCode} (consecutive_failures=${newCount})`
+        );
       }
 
       return result;
