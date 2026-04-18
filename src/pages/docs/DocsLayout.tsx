@@ -5,9 +5,13 @@ import { PublicHeader } from "@/components/PublicHeader";
 type DocLink = { to: string; label: string };
 type DocSection = { title: string; links: DocLink[] };
 
+/**
+ * Sidebar reflects ONLY routes that actually exist in App.tsx.
+ * Every link below resolves to a real page — no dead ends.
+ */
 const SECTIONS: DocSection[] = [
   {
-    title: "Onboarding",
+    title: "Get started",
     links: [
       { to: "/docs", label: "Introduction" },
       { to: "/docs/quickstart", label: "Quickstart" },
@@ -27,7 +31,7 @@ const SECTIONS: DocSection[] = [
     title: "Reference",
     links: [
       { to: "/docs/api", label: "API Reference" },
-      { to: "/docs/sdks", label: "SDKs & Libraries" },
+      { to: "/docs/sdks", label: "Client libraries" },
       { to: "/docs/errors", label: "Errors" },
     ],
   },
@@ -41,7 +45,6 @@ export function DocsLayout({ children }: { children: ReactNode }) {
     >
       <PublicHeader />
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex">
-        {/* Sticky sidebar */}
         <aside className="hidden md:block w-64 shrink-0 border-r border-slate-100 py-12 pr-8">
           <div className="sticky top-28 space-y-8">
             {SECTIONS.map((section) => (
@@ -73,10 +76,7 @@ export function DocsLayout({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 min-w-0 py-12 md:pl-12">
-          {children}
-        </main>
+        <main className="flex-1 min-w-0 py-12 md:pl-12">{children}</main>
       </div>
     </div>
   );
