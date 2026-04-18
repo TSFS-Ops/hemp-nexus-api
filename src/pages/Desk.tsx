@@ -40,18 +40,18 @@ function DeskOverview() {
   return (
     <>
       {/* Header */}
-      <header className="flex items-start justify-between gap-8 mb-12">
-        <div>
+      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 sm:mb-12">
+        <div className="min-w-0">
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
             Commercial Trading
           </p>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight whitespace-nowrap">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight break-words">
             Your Deal Desk
           </h1>
         </div>
         <button
           onClick={() => navigate("/desk/discover")}
-          className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
           Start New Trade
