@@ -1,0 +1,136 @@
+import { DocsLayout } from "./DocsLayout";
+import { DocEyebrow, DocH1, DocH2, DocH3, DocLede, DocP, InlineCode, CodePanel, Callout, ParamTable, EndpointBadge } from "./_shared";
+
+const CREATE = `POST /match
+X-API-Key: sk_live_...
+Idempotency-Key: 9f86d081-884c-7d65-9a2f-eaa0c55ad015
+Content-Type: application/json
+
+{
+  "buyer":  { "id": "B001", "name": "Aurubis AG" },
+  "seller": { "id": "S001", "name": "Glencore Singapore Pte Ltd" },
+  "commodity": "Copper Cathode · LME Grade A",
+  "quantity": { "amount": 500, "unit": "MT" },
+  "price":    { "amount": 9420, "currency": "USD" },
+  "terms": "CIF Rotterdam, L/C at sight"
+}`;
+
+const RESPONSE = `{
+  "id": "match_01HX7Z9K3M2P4Q6R8T0V2X4Y6A",
+  "status": "matched",
+  "state":  "discovery",
+  "hash":   "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "buyer_name":  "Aurubis AG",
+  "seller_name": "Glencore Singapore Pte Ltd",
+  "commodity":   "Copper Cathode · LME Grade A",
+  "quantity_amount": 500,
+  "quantity_unit":   "MT",
+  "price_amount":    9420,
+  "price_currency":  "USD",
+  "created_at": "2026-04-18T09:14:22.000Z"
+}`;
+
+export default function DocsMatches() {
+  return (
+    <DocsLayout>
+      <div className="max-w-3xl">
+        <DocEyebrow>Core resources</DocEyebrow>
+        <DocH1>Matches</DocH1>
+        <DocLede>
+          A match is the canonical record of bilateral trade intent between two organisations.
+          Every state transition emits a signed event into the audit ledger, and the final
+          settlement produces an evidence pack any auditor can verify offline.
+        </DocLede>
+
+        <DocH2 id="lifecycle">Lifecycle</DocH2>
+        <DocP>
+          Matches advance through five deterministic states. Transitions are guarded server-side
+          and cannot be skipped or reversed.
+        </DocP>
+        <ParamTable
+          rows={[
+            { name: "discovery",            type: "initial", desc: "Both parties identified. Terms may still be amended." },
+            { name: "intent_declared",      type: "next",    desc: "Initiating party has confirmed intent. Counterparty has been notified." },
+            { name: "counterparty_sighted", type: "next",    desc: "Counterparty has acknowledged the match. Hold-point cleared." },
+            { name: "committed",            type: "next",    desc: "Both parties have signed Proof of Intent. Terms are now immutable." },
+            { name: "completed",            type: "final",   desc: "WaD certificate issued. Evidence pack sealed and downloadable." },
+          ]}
+        />
+
+        <DocH2 id="create">Create a match</DocH2>
+        <div className="flex items-center gap-3 mb-3">
+          <EndpointBadge method="POST" />
+          <code className="text-[13.5px] font-mono text-slate-900">/match</code>
+        </div>
+        <DocP>
+          Records bilateral intent. Both parties must already exist as counterparties in your
+          organisation. Pass an <InlineCode>Idempotency-Key</InlineCode> so network retries don't
+          create duplicate matches.
+        </DocP>
+
+        <DocH3>Required parameters</DocH3>
+        <ParamTable
+          rows={[
+            { name: "buyer.id",        type: "string", required: true,  desc: "Counterparty identifier for the buy side." },
+            { name: "buyer.name",      type: "string", required: true,  desc: "Display name; stored verbatim on the audit record." },
+            { name: "seller.id",       type: "string", required: true,  desc: "Counterparty identifier for the sell side." },
+            { name: "seller.name",     type: "string", required: true,  desc: "Display name." },
+            { name: "commodity",       type: "string", required: true,  desc: "Free-form description; commodity taxonomy is applied server-side." },
+            { name: "quantity.amount", type: "number", required: true,  desc: "Positive number." },
+            { name: "quantity.unit",   type: "string", required: true,  desc: "ISO unit (e.g. MT, BBL, OZ_T)." },
+            { name: "price.amount",    type: "number", required: true,  desc: "Per-unit price." },
+            { name: "price.currency",  type: "string", required: true,  desc: "ISO 4217 currency code." },
+            { name: "terms",           type: "string", desc: "Optional commercial terms (Incoterms, payment, inspection)." },
+            { name: "metadata",        type: "object", desc: "Up to 8 KB of arbitrary key/value pairs returned verbatim on read." },
+          ]}
+        />
+
+        <CodePanel title="Request" language="http" code={CREATE} />
+        <CodePanel title="Response · 200" language="json" code={RESPONSE} />
+
+        <Callout variant="warning">
+          Once a match enters <InlineCode>committed</InlineCode>, terms are sealed in the
+          collapse ledger and cannot be amended. Create a new match if commercial terms need to
+          change.
+        </Callout>
+
+        <DocH2 id="retrieve">Retrieve a match</DocH2>
+        <div className="flex items-center gap-3 mb-3">
+          <EndpointBadge method="GET" />
+          <code className="text-[13.5px] font-mono text-slate-900">/match/:id</code>
+        </div>
+        <DocP>
+          Returns the canonical match record including current state, hash, and embedded
+          counterparty references.
+        </DocP>
+
+        <DocH2 id="confirm-intent">Confirm intent</DocH2>
+        <div className="flex items-center gap-3 mb-3">
+          <EndpointBadge method="POST" />
+          <code className="text-[13.5px] font-mono text-slate-900">/match/:id/settle</code>
+        </div>
+        <DocP>
+          Advances a match to <InlineCode>completed</InlineCode>. This call burns 1 token from
+          your balance, generates the Proof of Intent, seals the collapse ledger entry, and
+          triggers the <InlineCode>intent.confirmed</InlineCode> webhook.
+        </DocP>
+        <Callout>
+          Confirm Intent is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
+          until the counterparty has acknowledged the match. See{" "}
+          <a href="/docs/counterparties" className="text-emerald-600 hover:text-emerald-700 font-medium">Counterparties</a>{" "}
+          for the engagement flow.
+        </Callout>
+
+        <DocH2 id="list">List matches</DocH2>
+        <div className="flex items-center gap-3 mb-3">
+          <EndpointBadge method="GET" />
+          <code className="text-[13.5px] font-mono text-slate-900">/matches</code>
+        </div>
+        <DocP>
+          Paginated. Filter by <InlineCode>status</InlineCode>, <InlineCode>commodity</InlineCode>,
+          and date range. Results are scoped to the calling key's organisation.
+        </DocP>
+      </div>
+    </DocsLayout>
+  );
+}
