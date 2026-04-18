@@ -51,7 +51,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-slate-900 max-w-4xl mx-auto">
-          Trade infrastructure to{" "}
+          The Governance Infrastructure for{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
@@ -59,13 +59,13 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
                 "linear-gradient(135deg, hsl(160 84% 30%) 0%, hsl(174 72% 42%) 100%)",
             }}
           >
-            prove every deal.
+            Institutional Trade.
           </span>
         </h1>
 
         {/* Sub-headline, extra breathing room */}
         <p className="mt-12 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Discover Trading Partners, Validate Intent. Execute with Confidence, Run compliance and seal cross-border trades with immutable Proof of Intent.
+          One cryptographic network. Access it via our turnkey Trade Desk, manage risk through the Compliance Profile, or build directly on the API. All backed by mathematically provable execution.
         </p>
 
         {/* Dual CTAs */}
@@ -74,14 +74,14 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
             onClick={onGetStarted}
             className="inline-flex items-center justify-center gap-1.5 px-6 h-12 rounded-md text-sm font-semibold text-white bg-emerald-950 shadow-md hover:bg-emerald-900 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
           >
-            Get Started
+            Provision Workspace
             <ArrowRight className="h-4 w-4" />
           </button>
           <button
             onClick={onContactSales}
             className="inline-flex items-center justify-center gap-1 px-5 h-12 rounded-md text-sm font-semibold text-emerald-900 bg-white/80 backdrop-blur border border-emerald-100 hover:bg-white hover:border-emerald-200 shadow-sm transition-all w-full sm:w-auto"
           >
-            Contact Sales
+            Read the Docs
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
