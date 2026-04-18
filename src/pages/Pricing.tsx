@@ -123,7 +123,7 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.05 }}
-            className="mt-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter leading-[1.05] text-slate-900"
+            className="mt-8 text-3xl sm:text-4xl md:text-5xl lg:text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.05] text-slate-900"
           >
             Infrastructure pricing.
             <br />
@@ -167,7 +167,7 @@ export default function Pricing() {
               </p>
 
               <div className="mt-10 flex items-baseline gap-2">
-                <span className="text-6xl font-semibold tracking-tighter text-slate-900">
+                <span className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter text-slate-900">
                   R10.00
                 </span>
                 <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-emerald-700">
@@ -226,7 +226,7 @@ export default function Pricing() {
               </p>
 
               <div className="mt-10 flex items-baseline gap-2">
-                <span className="text-6xl font-semibold tracking-tighter">
+                <span className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter">
                   Custom
                 </span>
               </div>
