@@ -103,6 +103,16 @@ export default function Desk() {
         />
         {/* Legacy mock route, redirect to deals overview */}
         <Route path="inbound/review" element={<Navigate to="/desk" replace />} />
+        {/* New trade initiation, must be defined BEFORE /match/:matchId so the
+            literal "new" segment is not interpreted as a match UUID. */}
+        <Route
+          path="match/new"
+          element={
+            <DeskFullBleed>
+              <NewTradeInitiation />
+            </DeskFullBleed>
+          }
+        />
         {/* MatchDetails, migrated from /dashboard/matches/:matchId.
             Backend hooks (useMatchDetails, useQuery for engagements) are unchanged;
             only the surrounding shell is now the Desk layout. */}
