@@ -19,7 +19,7 @@ import {
 import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { EmptyState } from "@/components/ui/error-state";
+import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 
 const DISPUTE_LIMIT = 200;
@@ -157,7 +157,14 @@ export function AdminDisputesPanel() {
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : disputes.length === 0 ? (
-            <EmptyState title="No disputes" message="No disputes have been raised yet." />
+            // Admin disputes empty: a desirable steady state. No CTA — disputes
+            // are raised by counterparties, not initiated from this panel.
+            <EmptyStateCard
+              kicker="Resolution Queue"
+              title="No active disputes"
+              description="No counterparty disputes are pending review. New filings from trading partners will appear here for adjudication."
+              icon={<ShieldAlert className="h-5 w-5" strokeWidth={1.75} />}
+            />
           ) : (
             <>
               {/* Mobile card view */}
