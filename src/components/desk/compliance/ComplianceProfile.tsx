@@ -70,6 +70,18 @@ function formatAddress(addr: Org["address"]): string | null {
   return [addr.line1, addr.city, addr.postcode, addr.country].filter(Boolean).join(", ") || null;
 }
 
+/** Map the org status string to a semantic pill. */
+function statusPill(status: string) {
+  const s = (status || "pending").toLowerCase();
+  if (s === "active" || s === "verified" || s === "approved") {
+    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  }
+  if (s === "blocked" || s === "rejected" || s === "suspended") {
+    return "bg-rose-50 text-rose-700 border border-rose-200";
+  }
+  return "bg-amber-50 text-amber-700 border border-amber-200";
+}
+
 export function ComplianceProfile() {
   const orgId = useUserOrg();
   const navigate = useNavigate();
@@ -121,7 +133,7 @@ export function ComplianceProfile() {
     return (
       <div className="flex items-center gap-3 py-24 text-slate-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="font-mono text-[11px] tracking-[0.25em] uppercase">
+        <span className="text-xs font-semibold tracking-wider uppercase">
           Loading compliance profile…
         </span>
       </div>
@@ -138,16 +150,16 @@ export function ComplianceProfile() {
   if (!isComplete && owners.length === 0 && docs.length === 0 && !hasIdentity) {
     return (
       <>
-        <header className="mb-10">
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+        <header className="mb-8">
+          <p className="text-xs font-semibold tracking-wider uppercase text-slate-500 mb-2">
             Identity & Governance
           </p>
-          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight leading-tight">
             Compliance Profile
           </h1>
         </header>
 
-        <div className="bg-white border border-slate-200 rounded-sm p-12 text-center">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-12 text-center">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-700 mb-5">
             <FileWarning className="h-5 w-5" />
           </div>
@@ -162,7 +174,7 @@ export function ComplianceProfile() {
           <button
             type="button"
             onClick={() => navigate("/desk/settings/company?step=entity")}
-            className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-sm transition-colors"
           >
             Complete Onboarding
           </button>
@@ -187,32 +199,29 @@ export function ComplianceProfile() {
   const legalRows = [
     { label: "Legal Name", value: org?.legal_name || org?.name || "-" },
     { label: "Trading As", value: org?.trading_name || "-" },
-    {
-      label: "Reg Number",
-      value: org?.registration_number || "-",
-      mono: true,
-    },
+    { label: "Reg Number", value: org?.registration_number || "-", mono: true },
     { label: "VAT Number", value: org?.vat_number || "-", mono: true },
     {
       label: "Registered Address",
       value: formattedAddress || "Not on file",
       full: true,
+      placeholder: !formattedAddress,
     },
     { label: "Jurisdiction", value: jurisdiction },
-  ];
+  ] as Array<{ label: string; value: string; mono?: boolean; full?: boolean; placeholder?: boolean }>;
 
   return (
     <>
       {/* ── HEADER ────────────────────────────────────────────── */}
-      <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-10">
+      <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
         <div>
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+          <p className="text-xs font-semibold tracking-wider uppercase text-slate-500 mb-2">
             Identity & Governance
           </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight leading-tight">
             Compliance Profile
           </h1>
-          <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
+          <p className="mt-3 text-sm text-slate-500 leading-relaxed max-w-xl">
             Your institutional identity record. All counterparties verify against this file
             before bilateral signature.
           </p>
@@ -220,222 +229,207 @@ export function ComplianceProfile() {
         <button
           type="button"
           onClick={() => navigate("/desk/settings/company?step=entity")}
-          className="self-start md:shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm"
+          className="self-start md:shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-sm transition-colors"
         >
           Request Data Update
         </button>
       </header>
 
       {/* ── STATUS BANNER ─────────────────────────────────────── */}
-      <div className="mb-12 flex items-center justify-between gap-6 px-6 py-4 bg-white border border-slate-200 rounded-sm">
-        <div className="flex items-baseline gap-4">
-          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-white border border-slate-200 shadow-sm rounded-lg">
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-semibold tracking-wider uppercase text-slate-500">
             Entity Status
           </p>
-          <span className="font-mono text-[10px] text-slate-400">
-            Last review · {lastReview} UTC
+          <span className="text-xs text-slate-500">
+            Last review · <span className="font-mono text-slate-700">{lastReview} UTC</span>
           </span>
         </div>
         <span
-          className="inline-flex items-center gap-2 rounded-sm px-3 py-1.5"
-          style={{
-            backgroundColor: "hsl(38 92% 50% / 0.08)",
-            color: "hsl(28 80% 30%)",
-          }}
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusPill(
+            org?.status ?? "pending"
+          )}`}
         >
-          <span className="relative flex h-1.5 w-1.5">
-            <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
-              style={{ backgroundColor: "hsl(38 92% 50%)" }}
-            />
-            <span
-              className="relative inline-flex rounded-full h-1.5 w-1.5"
-              style={{ backgroundColor: "hsl(28 80% 40%)" }}
-            />
-          </span>
-          <span className="font-mono text-[10px] tracking-[0.25em] uppercase font-medium">
-            {statusLabel}
-          </span>
+          {statusLabel}
         </span>
       </div>
 
       {/* ── CARDS ─────────────────────────────────────────────── */}
       <div className="space-y-6">
         {/* Card 1 · Registered Identity */}
-        <article className="bg-white border border-slate-200 rounded-sm p-8 lg:p-10">
+        <article className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
           <CardHeader index="01" title="Registered Identity" kicker="Statutory Record" />
-          <dl className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-7">
-            {legalRows.map((item) => (
-              <div
-                key={item.label}
-                className={`border-b border-slate-100 pb-4 ${
-                  item.full ? "sm:col-span-2" : ""
-                }`}
-              >
-                <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
-                  {item.label}
-                </dt>
-                <dd
-                  className={`mt-2 text-slate-900 font-medium ${
-                    item.mono ? "font-mono text-sm" : "text-base"
-                  }`}
-                >
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <div className="p-6">
+            <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              {legalRows.map((item) => (
+                <div key={item.label} className={item.full ? "md:col-span-2" : ""}>
+                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    {item.label}
+                  </dt>
+                  <dd
+                    className={
+                      item.placeholder
+                        ? "text-sm italic text-slate-400"
+                        : `text-sm font-medium text-slate-900 ${item.mono ? "font-mono" : ""}`
+                    }
+                  >
+                    {item.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </article>
 
         {/* Card 2 · Ownership (UBO) */}
-        <article className="bg-white border border-slate-200 rounded-sm p-8 lg:p-10">
+        <article className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
           <CardHeader
             index="02"
             title="Ownership (UBO)"
             kicker="Ultimate Beneficial Owners"
           />
-          {owners.length === 0 ? (
-            <EmptyRow
-              title="No beneficial owners declared"
-              hint="Declare ownership during onboarding to satisfy KYB."
-              cta="Declare Owners"
-              onClick={() => navigate("/desk/settings/company?step=owners")}
-            />
-          ) : (
-            <>
-              <ul className="mt-8 divide-y divide-slate-100">
-                {owners.map((owner) => {
-                  const verified = owner.status === "verified";
-                  return (
-                    <li
-                      key={owner.id}
-                      className="grid grid-cols-12 gap-4 items-center py-5 first:pt-0 last:pb-0"
-                    >
-                      <div className="col-span-12 sm:col-span-7 flex items-center gap-3 min-w-0">
-                        <span
-                          className="inline-flex items-center justify-center h-5 w-5 rounded-full shrink-0"
-                          style={{
-                            backgroundColor: verified
-                              ? "hsl(155 35% 28% / 0.1)"
-                              : "hsl(38 92% 50% / 0.12)",
-                            color: verified ? "hsl(155 35% 25%)" : "hsl(28 80% 35%)",
-                          }}
-                          aria-label={verified ? "Verified" : "Pending"}
-                        >
-                          <Check className="h-3 w-3" strokeWidth={2.5} />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-base text-slate-900 font-medium truncate">
-                            {owner.person?.legal_name ?? "Unnamed Owner"}
+          <div className="p-6">
+            {owners.length === 0 ? (
+              <EmptyRow
+                title="No beneficial owners declared"
+                hint="Declare ownership during onboarding to satisfy KYB."
+                cta="Declare Owners"
+                onClick={() => navigate("/desk/settings/company?step=owners")}
+              />
+            ) : (
+              <>
+                <ul className="divide-y divide-slate-100">
+                  {owners.map((owner) => {
+                    const verified = owner.status === "verified";
+                    return (
+                      <li
+                        key={owner.id}
+                        className="grid grid-cols-12 gap-4 items-center py-4 first:pt-0 last:pb-0"
+                      >
+                        <div className="col-span-12 sm:col-span-7 flex items-center gap-3 min-w-0">
+                          <span
+                            className={`inline-flex items-center justify-center h-5 w-5 rounded-full shrink-0 ${
+                              verified
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                            }`}
+                            aria-label={verified ? "Verified" : "Pending"}
+                          >
+                            <Check className="h-3 w-3" strokeWidth={2.5} />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">
+                              {owner.person?.legal_name ?? "Unnamed Owner"}
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              {(owner.person?.entity_type ?? "owner")} ·{" "}
+                              {owner.person?.jurisdiction_code ?? "-"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="col-span-12 sm:col-span-5 sm:text-right">
+                          <p className="font-mono text-sm font-medium text-slate-900 tabular-nums">
+                            {Number(owner.ownership_percentage).toFixed(2)}%
                           </p>
-                          <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
-                            {(owner.person?.entity_type ?? "owner")} ·{" "}
-                            {owner.person?.jurisdiction_code ?? "-"}
+                          <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">
+                            Ownership
                           </p>
                         </div>
-                      </div>
-                      <div className="col-span-12 sm:col-span-5 sm:text-right">
-                        <p className="font-mono text-base text-slate-900 tabular-nums font-medium">
-                          {Number(owner.ownership_percentage).toFixed(2)}%
-                        </p>
-                        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mt-0.5">
-                          Ownership
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
-                  Aggregate Verified Ownership
-                </p>
-                <p className="font-mono text-sm text-slate-900 tabular-nums font-medium">
-                  {totalOwnership.toFixed(2)}%
-                </p>
-              </div>
-            </>
-          )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Aggregate Verified Ownership
+                  </p>
+                  <p className="font-mono text-sm font-medium text-slate-900 tabular-nums">
+                    {totalOwnership.toFixed(2)}%
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
         </article>
 
         {/* Card 3 · Regulatory Evidence */}
-        <article className="bg-white border border-slate-200 rounded-sm p-8 lg:p-10">
+        <article className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
           <CardHeader index="03" title="Regulatory Evidence" kicker="Active Licences" />
-          {docs.length === 0 ? (
-            <EmptyRow
-              title="No regulatory documents uploaded"
-              hint="Upload your registration certificate, tax clearance and KYC pack."
-              cta="Upload Documents"
-              onClick={() => navigate("/desk/settings/company?step=documents")}
-            />
-          ) : (
-            <>
-              <ul className="mt-8 divide-y divide-slate-100">
-                {docs.map((doc) => {
-                  const sealed = doc.status === "verified" || doc.status === "approved";
-                  const shortHash = `0x${doc.sha256_hash.slice(0, 40)}`;
-                  return (
-                    <li
-                      key={doc.id}
-                      className="grid grid-cols-12 gap-4 items-start py-5 first:pt-0 last:pb-0"
-                    >
-                      <div className="col-span-12 sm:col-span-5 min-w-0">
-                        <p className="text-sm text-slate-900 font-medium truncate">
-                          {prettyDocType(doc.doc_type)}
-                        </p>
-                        <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
-                          {doc.expiry_date
-                            ? `Expires ${doc.expiry_date}`
-                            : `Status · ${doc.status}`}
-                        </p>
-                      </div>
+          <div className="p-6">
+            {docs.length === 0 ? (
+              <EmptyRow
+                title="No regulatory documents uploaded"
+                hint="Upload your registration certificate, tax clearance and KYC pack."
+                cta="Upload Documents"
+                onClick={() => navigate("/desk/settings/company?step=documents")}
+              />
+            ) : (
+              <>
+                <ul className="divide-y divide-slate-100">
+                  {docs.map((doc) => {
+                    const sealed = doc.status === "verified" || doc.status === "approved";
+                    const shortHash = `0x${doc.sha256_hash.slice(0, 40)}`;
+                    return (
+                      <li
+                        key={doc.id}
+                        className="grid grid-cols-12 gap-4 items-start py-4 first:pt-0 last:pb-0"
+                      >
+                        <div className="col-span-12 sm:col-span-5 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">
+                            {prettyDocType(doc.doc_type)}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {doc.expiry_date
+                              ? `Expires ${doc.expiry_date}`
+                              : `Status · ${doc.status}`}
+                          </p>
+                        </div>
 
-                      <div className="col-span-12 sm:col-span-6">
-                        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-400 mb-1">
-                          SHA-256
-                        </p>
-                        <p className="font-mono text-[10px] text-slate-700 break-all leading-snug">
-                          {shortHash}
-                        </p>
-                      </div>
+                        <div className="col-span-12 sm:col-span-6">
+                          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                            SHA-256
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-700 break-all leading-snug">
+                            {shortHash}
+                          </p>
+                        </div>
 
-                      <div className="col-span-12 sm:col-span-1 sm:text-right">
-                        <span
-                          className="inline-flex items-center justify-center h-5 w-5 rounded-full"
-                          style={{
-                            backgroundColor: sealed
-                              ? "hsl(155 35% 28% / 0.1)"
-                              : "hsl(38 92% 50% / 0.12)",
-                            color: sealed ? "hsl(155 35% 25%)" : "hsl(28 80% 35%)",
-                          }}
-                          aria-label={sealed ? "Sealed" : "Pending review"}
-                        >
-                          <Check className="h-3 w-3" strokeWidth={2.5} />
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
-                  Vault Integrity · Chain Verified
-                </p>
-                <p className="font-mono text-[11px] text-slate-900">
-                  {docs.length} document{docs.length === 1 ? "" : "s"} on file
-                </p>
-              </div>
-            </>
-          )}
+                        <div className="col-span-12 sm:col-span-1 sm:text-right">
+                          <span
+                            className={`inline-flex items-center justify-center h-5 w-5 rounded-full ${
+                              sealed
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                            }`}
+                            aria-label={sealed ? "Sealed" : "Pending review"}
+                          >
+                            <Check className="h-3 w-3" strokeWidth={2.5} />
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Vault Integrity · Chain Verified
+                  </p>
+                  <p className="font-mono text-xs text-slate-900">
+                    {docs.length} document{docs.length === 1 ? "" : "s"} on file
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
         </article>
       </div>
 
       {/* Footer attestation */}
-      <footer className="mt-12 pt-8 border-t border-slate-200">
-        <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400">
+      <footer className="mt-10 pt-6 border-t border-slate-200">
+        <p className="text-xs font-semibold tracking-wider uppercase text-slate-500">
           Custodian
         </p>
-        <p className="mt-2 text-sm text-slate-700 leading-relaxed max-w-2xl">
+        <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-2xl">
           This profile is held by the Izenzo Governance Registry under jurisdiction{" "}
           {jurisdiction}. Counterparties may request tamper-proof proof of any field
           via the Without-a-Doubt attestation endpoint.
@@ -455,14 +449,16 @@ function CardHeader({
   kicker: string;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-6 pb-4 border-b border-slate-200">
-      <div className="flex items-baseline gap-5">
-        <span className="font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-4">
+      <div className="flex items-baseline gap-3 min-w-0">
+        <span className="font-mono text-[11px] text-slate-400 select-none shrink-0">
           {index}
         </span>
-        <h2 className="text-lg font-medium text-slate-900 tracking-tight">{title}</h2>
+        <h2 className="text-sm font-semibold text-slate-900 tracking-tight truncate">
+          {title}
+        </h2>
       </div>
-      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">
         {kicker}
       </p>
     </div>
@@ -481,17 +477,15 @@ function EmptyRow({
   onClick: () => void;
 }) {
   return (
-    <div className="mt-8 flex items-center justify-between gap-6 py-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2">
       <div>
-        <p className="text-sm text-slate-900 font-medium">{title}</p>
-        <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
-          {hint}
-        </p>
+        <p className="text-sm font-medium text-slate-900">{title}</p>
+        <p className="mt-1 text-xs text-slate-500">{hint}</p>
       </div>
       <button
         type="button"
         onClick={onClick}
-        className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300 text-xs font-medium text-slate-700 hover:border-slate-900 hover:text-slate-900 transition-colors"
+        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-sm font-medium shadow-sm transition-colors"
       >
         {cta}
       </button>
