@@ -37,6 +37,11 @@ interface DealCard {
 
 const ACTIVE_PAGE_SIZE = 60;
 const SEALED_PAGE_SIZE = 20;
+// Active lanes are bounded by business reality but not by physics — an org can
+// theoretically accumulate hundreds of stale drafts. We cap the first window at
+// ACTIVE_PAGE_SIZE and surface a "Load more" affordance when the server count
+// exceeds it, so neither lane is ever silently truncated.
+const ACTIVE_PAGE_INCREMENT = 60;
 
 // State buckets — these mirror the 9-step WaD workflow.
 // ACCEPTED engagements live in "poi"; pending engagements in "awaiting".
@@ -112,20 +117,22 @@ function useOrgId() {
  * a few dozen in-flight intents). We pull both lanes in one round-trip filtered
  * by state to avoid yanking historical sealed trades into the active view.
  */
-function useActiveLanes(orgId: string | null) {
+function useActiveLanes(orgId: string | null, page: number) {
   return useQuery({
-    queryKey: ["desk-pipeline-active", orgId],
+    queryKey: ["desk-pipeline-active", orgId, page],
     enabled: !!orgId,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
     queryFn: async () => {
       const activeStates = [...DRAFT_STATES, ...POI_STATES];
-      const { data: matches } = await supabase
+      const to = (page + 1) * ACTIVE_PAGE_INCREMENT - 1;
+      const { data: matches, count } = await supabase
         .from("matches")
-        .select(MATCH_COLUMNS)
+        .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", activeStates)
         .order("created_at", { ascending: false })
-        .limit(ACTIVE_PAGE_SIZE);
+        .range(0, to);
 
       const list = matches ?? [];
 
@@ -164,7 +171,7 @@ function useActiveLanes(orgId: string | null) {
           laneId,
         };
       });
-      return cards;
+      return { cards, totalActive: count ?? cards.length };
     },
   });
 }
