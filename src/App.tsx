@@ -45,6 +45,12 @@ const Developers = lazy(() => import("@/pages/Developers"));
 const DocsIndex = lazy(() => import("@/pages/docs/Index"));
 const DocsQuickstart = lazy(() => import("@/pages/docs/Quickstart"));
 const DocsApiReference = lazy(() => import("@/pages/docs/ApiReference"));
+const DocsAuthentication = lazy(() => import("@/pages/docs/Authentication"));
+const DocsWebhooks = lazy(() => import("@/pages/docs/Webhooks"));
+const DocsMatches = lazy(() => import("@/pages/docs/Matches"));
+const DocsCounterparties = lazy(() => import("@/pages/docs/Counterparties"));
+const DocsEvidence = lazy(() => import("@/pages/docs/Evidence"));
+const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const Status = lazy(() => import("@/pages/Status"));
 
 /**
@@ -131,6 +137,12 @@ function App() {
                   {/* Public docs hub, Stripe-style sidebar layout */}
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/quickstart" element={<DocsQuickstart />} />
+                  <Route path="/docs/authentication" element={<DocsAuthentication />} />
+                  <Route path="/docs/webhooks" element={<DocsWebhooks />} />
+                  <Route path="/docs/matches" element={<DocsMatches />} />
+                  <Route path="/docs/counterparties" element={<DocsCounterparties />} />
+                  <Route path="/docs/evidence" element={<DocsEvidence />} />
+                  <Route path="/docs/errors" element={<DocsErrors />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
                   {/* Legacy /docs/sdks redirects to API reference; the platform is REST-first. */}
                   <Route path="/docs/sdks" element={<LegacyRedirect to="/docs/api" label="SDK documentation" />} />
