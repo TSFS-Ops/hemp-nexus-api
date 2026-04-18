@@ -180,7 +180,7 @@ export default function Pricing() {
                 to="/auth"
                 className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
               >
-                Get Started
+                Provision Workspace
                 <ArrowRight
                   className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                   strokeWidth={2}
