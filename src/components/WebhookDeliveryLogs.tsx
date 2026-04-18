@@ -45,14 +45,15 @@ export default function WebhookDeliveryLogs() {
     }
   };
 
-  const { data: logs, isLoading, refetch } = useQuery({
+  const DELIVERY_LIMIT = 50;
+  const { data: result, isLoading, refetch } = useQuery({
     queryKey: ["webhook-deliveries", statusFilter],
     queryFn: async () => {
       let query = supabase
         .from("webhook_deliveries")
-        .select("*, webhook_endpoints_safe!inner(url)")
+        .select("*, webhook_endpoints_safe!inner(url)", { count: "exact" })
         .order("delivered_at", { ascending: false })
-        .limit(50);
+        .limit(DELIVERY_LIMIT);
 
       if (statusFilter === "success") {
         query = query.gte("response_status_code", 200).lt("response_status_code", 300);
@@ -60,12 +61,14 @@ export default function WebhookDeliveryLogs() {
         query = query.or("response_status_code.is.null,response_status_code.lt.200,response_status_code.gte.300");
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
-      return data as WebhookDeliveryLog[];
+      return { rows: (data ?? []) as WebhookDeliveryLog[], totalCount: count ?? data?.length ?? 0 };
     },
   });
+  const logs = result?.rows;
+  const logsTotal = result?.totalCount ?? 0;
 
   const getStatusBadge = (log: WebhookDeliveryLog) => {
     if (log.error_message) {

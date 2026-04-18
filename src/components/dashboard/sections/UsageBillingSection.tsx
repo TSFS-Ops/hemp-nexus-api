@@ -78,7 +78,7 @@ export function UsageBillingSection() {
       
       let query = supabase
         .from("token_ledger")
-        .select("*")
+        .select("*", { count: "exact" })
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false })
         .limit(100);
@@ -91,9 +91,10 @@ export function UsageBillingSection() {
         query = query.eq("outcome", outcomeFilter);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
+      setLedgerTotalCount(count ?? data?.length ?? 0);
       
       const mappedData: CreditLedgerEntry[] = (data || []).map((entry) => ({
         id: entry.id,

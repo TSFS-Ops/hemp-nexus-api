@@ -65,20 +65,25 @@ function Sparkline({ series }: { series: number[] }) {
 }
 
 export function HealthBoard() {
-  const { data: incidents = [], isLoading, dataUpdatedAt } = useQuery<RiskItem[]>({
+  const INCIDENT_LIMIT = 20;
+  const { data: incidentResult, isLoading, dataUpdatedAt } = useQuery<{ items: RiskItem[]; totalCount: number }>({
     queryKey: ["governance-risk-items"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("admin_risk_items")
-        .select("id, title, description, severity, status, created_at, resolved_at")
+        .select("id, title, description, severity, status, created_at, resolved_at", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(INCIDENT_LIMIT);
       if (error) throw error;
-      return (data ?? []) as RiskItem[];
+      const items = (data ?? []) as RiskItem[];
+      return { items, totalCount: count ?? items.length };
     },
     refetchInterval: 30000,
     refetchOnWindowFocus: false,
   });
+
+  const incidents = incidentResult?.items ?? [];
+  const incidentTotal = incidentResult?.totalCount ?? 0;
 
   const operational = GATES.filter(g => g.status === "operational").length;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;

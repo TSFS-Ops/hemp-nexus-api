@@ -53,18 +53,25 @@ export function DocumentAccessLogs({
     }
   }, [open, documentId]);
 
+  const ACCESS_LOG_LIMIT = 50;
+  const [logsTotal, setLogsTotal] = useState(0);
+
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("document_access_logs")
-        .select("id, accessor_user_id, accessor_org_id, action, access_reason, is_admin_access, ip_address, created_at")
+        .select(
+          "id, accessor_user_id, accessor_org_id, action, access_reason, is_admin_access, ip_address, created_at",
+          { count: "exact" },
+        )
         .eq("document_id", documentId)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(ACCESS_LOG_LIMIT);
 
       if (error) throw error;
       setLogs(data || []);
+      setLogsTotal(count ?? data?.length ?? 0);
     } catch (err) {
       console.error("Error fetching access logs:", err);
     } finally {
