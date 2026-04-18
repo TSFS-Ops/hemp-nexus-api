@@ -211,96 +211,179 @@ export function AdminEntitiesPanel() {
           ) : filtered.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No entities found</p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Legal Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Jurisdiction</TableHead>
-                    <TableHead>Reg. No.</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Screening</TableHead>
-                     <TableHead className="text-right">UBO</TableHead>
-                     <TableHead className="text-right">ATB</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((entity) => (
-                    <TableRow key={entity.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate">
-                        {entity.legal_name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {entity.entity_type === "COMPANY" ? (
-                            <Building2 className="h-3 w-3 mr-1" />
-                          ) : (
-                            <User className="h-3 w-3 mr-1" />
-                          )}
-                          {entity.entity_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{entity.jurisdiction_code}</TableCell>
-                      <TableCell className="text-xs">{entity.registration_number || "-"}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={entity.status} />
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(entity.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
+            <>
+              {/* Mobile card view */}
+              <div className="space-y-3 md:hidden">
+                {filtered.map((entity) => (
+                  <div key={entity.id} className="border rounded-lg p-3 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{entity.legal_name}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <Badge variant="outline" className="text-[10px]">
+                            {entity.entity_type === "COMPANY" ? (
+                              <Building2 className="h-2.5 w-2.5 mr-0.5" />
+                            ) : (
+                              <User className="h-2.5 w-2.5 mr-0.5" />
+                            )}
+                            {entity.entity_type}
+                          </Badge>
+                          <span className="font-mono text-[10px] text-muted-foreground">{entity.jurisdiction_code}</span>
+                          <StatusBadge status={entity.status} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Reg. No.</span>
+                        <p className="truncate">{entity.registration_number || "-"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Created</span>
+                        <p>{new Date(entity.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2 border-t">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 min-w-[100px] h-9 touch-target"
+                        onClick={() => runScreening(entity.id)}
+                        disabled={screeningEntity === entity.id || entity.status === "archived"}
+                      >
+                        {screeningEntity === entity.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                          <ShieldCheck className="h-3 w-3 mr-1" />
+                        )}
+                        Screen
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 min-w-[100px] h-9 touch-target"
+                        onClick={() => verifyUbo(entity.id)}
+                        disabled={verifyingEntity === entity.id || entity.status === "archived"}
+                      >
+                        {verifyingEntity === entity.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                          <LinkIcon className="h-3 w-3 mr-1" />
+                        )}
+                        UBO
+                      </Button>
+                      {entity.entity_type === "COMPANY" && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => runScreening(entity.id)}
-                          disabled={screeningEntity === entity.id || entity.status === "archived"}
+                          className="flex-1 min-w-[100px] h-9 touch-target"
+                          onClick={() => {
+                            setBindTarget(entity);
+                            setBindDialogOpen(true);
+                          }}
+                          disabled={entity.status === "archived"}
                         >
-                          {screeningEntity === entity.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <ShieldCheck className="h-3 w-3 mr-1" />
-                          )}
-                          Screen
+                          <Link2 className="h-3 w-3 mr-1" />
+                          Bind ATB
                         </Button>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => verifyUbo(entity.id)}
-                          disabled={verifyingEntity === entity.id || entity.status === "archived"}
-                        >
-                          {verifyingEntity === entity.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <LinkIcon className="h-3 w-3 mr-1" />
-                          )}
-                          Verify
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {entity.entity_type === "COMPANY" && (
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="overflow-x-auto hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Legal Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Jurisdiction</TableHead>
+                      <TableHead>Reg. No.</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Screening</TableHead>
+                      <TableHead className="text-right">UBO</TableHead>
+                      <TableHead className="text-right">ATB</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((entity) => (
+                      <TableRow key={entity.id}>
+                        <TableCell className="font-medium max-w-[200px] truncate">
+                          {entity.legal_name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {entity.entity_type === "COMPANY" ? (
+                              <Building2 className="h-3 w-3 mr-1" />
+                            ) : (
+                              <User className="h-3 w-3 mr-1" />
+                            )}
+                            {entity.entity_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{entity.jurisdiction_code}</TableCell>
+                        <TableCell className="text-xs">{entity.registration_number || "-"}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={entity.status} />
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(entity.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setBindTarget(entity);
-                              setBindDialogOpen(true);
-                            }}
-                            disabled={entity.status === "archived"}
+                            onClick={() => runScreening(entity.id)}
+                            disabled={screeningEntity === entity.id || entity.status === "archived"}
                           >
-                            <Link2 className="h-3 w-3 mr-1" />
-                            Bind
+                            {screeningEntity === entity.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <ShieldCheck className="h-3 w-3 mr-1" />
+                            )}
+                            Screen
                           </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => verifyUbo(entity.id)}
+                            disabled={verifyingEntity === entity.id || entity.status === "archived"}
+                          >
+                            {verifyingEntity === entity.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <LinkIcon className="h-3 w-3 mr-1" />
+                            )}
+                            Verify
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {entity.entity_type === "COMPANY" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setBindTarget(entity);
+                                setBindDialogOpen(true);
+                              }}
+                              disabled={entity.status === "archived"}
+                            >
+                              <Link2 className="h-3 w-3 mr-1" />
+                              Bind
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

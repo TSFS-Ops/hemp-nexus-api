@@ -151,67 +151,119 @@ export default function OrgsManagement() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Users</TableHead>
-                  <TableHead>API Keys</TableHead>
-                  <TableHead>Sandbox</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrgs.map((org) => (
-                  <TableRow key={org.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      {org.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{org._count?.profiles || 0}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{org._count?.api_keys || 0}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {org.sandbox_enabled ? (
-                        <Badge variant="default" className="flex items-center gap-1 w-fit">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Enabled
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Disabled
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={org.status}
-                        onValueChange={(value) => handleUpdateStatus(org.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="suspended">Suspended</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(org.created_at).toLocaleDateString()}
-                    </TableCell>
+          <>
+            {/* Mobile card view */}
+            <div className="space-y-3 md:hidden">
+              {filteredOrgs.map((org) => (
+                <div key={org.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <p className="font-medium text-sm truncate">{org.name}</p>
+                    </div>
+                    {org.sandbox_enabled ? (
+                      <Badge variant="default" className="flex items-center gap-1 shrink-0 text-[10px]">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        Sandbox
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground text-[10px] uppercase">Users</span>
+                      <p className="font-medium">{org._count?.profiles || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-[10px] uppercase">API Keys</span>
+                      <p className="font-medium">{org._count?.api_keys || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-[10px] uppercase">Created</span>
+                      <p className="text-[11px]">{new Date(org.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t">
+                    <Select
+                      value={org.status}
+                      onValueChange={(value) => handleUpdateStatus(org.id, value)}
+                    >
+                      <SelectTrigger className="w-full h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="border rounded-lg hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Users</TableHead>
+                    <TableHead>API Keys</TableHead>
+                    <TableHead>Sandbox</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrgs.map((org) => (
+                    <TableRow key={org.id}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        {org.name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{org._count?.profiles || 0}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{org._count?.api_keys || 0}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {org.sandbox_enabled ? (
+                          <Badge variant="default" className="flex items-center gap-1 w-fit">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Enabled
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                            <XCircle className="h-3 w-3" />
+                            Disabled
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={org.status}
+                          onValueChange={(value) => handleUpdateStatus(org.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="suspended">Suspended</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(org.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
 
         {!loading && filteredOrgs.length === 0 && (
