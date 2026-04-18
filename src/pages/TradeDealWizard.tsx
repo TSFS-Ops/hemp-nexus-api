@@ -166,7 +166,7 @@ export default function TradeDealWizard() {
                     <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">
                       Commercial Terms
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       <div>
                         <div className="text-xs text-muted-foreground">Commodity</div>
                         <div className="text-sm font-medium mt-0.5">Copper Cathode</div>
@@ -175,7 +175,7 @@ export default function TradeDealWizard() {
                         <div className="text-xs text-muted-foreground">Volume</div>
                         <div className="text-sm font-medium mt-0.5 font-mono">500 MT</div>
                       </div>
-                      <div>
+                      <div className="col-span-2 sm:col-span-1">
                         <div className="text-xs text-muted-foreground">Price</div>
                         <div className="text-sm font-medium mt-0.5 font-mono">
                           USD 8,500 / MT
@@ -218,7 +218,7 @@ export default function TradeDealWizard() {
                 </div>
 
                 {/* BOTTOM SECTION, Commercial Action */}
-                <div className="border-t border-border bg-secondary/40 p-6">
+                <div className="border-t border-border bg-secondary/40 p-5 md:p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h3 className="text-base font-bold text-foreground">
                       Seal this Trade Intent
@@ -228,7 +228,7 @@ export default function TradeDealWizard() {
                     </p>
                     <Button
                       size="lg"
-                      className="mt-4 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold"
+                      className="mt-4 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold min-h-[44px]"
                     >
                       Generate POI (1 Credit)
                     </Button>
