@@ -83,10 +83,11 @@ export default function TriageInbox() {
   const [alertAcknowledged, setAlertAcknowledged] = useState(false);
 
   // ── Queue: open disputes joined to match metadata ──
+  const QUEUE_LIMIT = 100;
   const queueQuery = useQuery({
     queryKey: ["triage-queue"],
-    queryFn: async (): Promise<QueueItem[]> => {
-      const { data: disputes, error } = await supabase
+    queryFn: async (): Promise<{ items: QueueItem[]; totalCount: number; limit: number }> => {
+      const { data: disputes, error, count } = await supabase
         .from("disputes")
         .select(
           `id, match_id, reason, created_at, status,
@@ -95,10 +96,11 @@ export default function TriageInbox() {
              quantity_amount, quantity_unit, price_amount, price_currency,
              declared_value_usd, origin_country, destination_country
            )`,
+          { count: "exact" },
         )
         .in("status", ["open", "escalated"])
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(QUEUE_LIMIT);
 
       if (error) throw error;
 
