@@ -99,8 +99,8 @@ export function NotificationRulesTab() {
 
   return (
     <div className="max-w-3xl">
-      <div className="mb-10">
-        <h2 className="text-xl font-medium text-slate-900 tracking-tight">
+      <div className="mb-8 md:mb-10">
+        <h2 className="text-lg md:text-xl font-medium text-slate-900 tracking-tight">
           Notification Rules
         </h2>
         <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-md">
@@ -116,7 +116,7 @@ export function NotificationRulesTab() {
       ) : (
         <ul className="divide-y divide-slate-200 border-y border-slate-200">
           {RULES.map((rule) => (
-            <li key={rule.key} className="py-6 flex items-start justify-between gap-8">
+            <li key={rule.key} className="py-5 md:py-6 flex items-start justify-between gap-4 md:gap-8">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900">{rule.title}</p>
                 <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">

@@ -323,12 +323,12 @@ function StepMatch({
       </Tabs>
 
       {/* Contextual next-step prompt, only when required commercial fields are complete */}
-      {allComplete && <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
-          <div className="flex items-center gap-2">
+      {allComplete && <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-2 min-w-0">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
             <p className="text-sm font-medium text-foreground">{nextDescription}</p>
           </div>
-          <Button size="sm" onClick={handleNextSubTab} className="gap-1.5 shrink-0">
+          <Button size="sm" onClick={handleNextSubTab} className="gap-1.5 shrink-0 w-full sm:w-auto">
             {nextLabel}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>

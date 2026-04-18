@@ -92,7 +92,7 @@ export function WizardStepper({ steps, activeStep, onStepClick }: WizardStepperP
       </div>
 
       {/* Mobile: compact pill stepper */}
-      <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto pb-2">
+      <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
         {steps.map((step, idx) => {
           const isActive = idx === activeStep;
           const isComplete = step.complete;
@@ -105,7 +105,7 @@ export function WizardStepper({ steps, activeStep, onStepClick }: WizardStepperP
               onClick={() => !isLocked && !isActive && onStepClick(idx)}
               disabled={isLocked}
               className={cn(
-                "flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+                "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0 min-h-[36px]",
                 isActive && "bg-primary text-primary-foreground",
                 isComplete && !isActive && "bg-primary/10 text-primary",
                 isLocked && "bg-muted/30 text-muted-foreground/50 cursor-not-allowed",
@@ -115,7 +115,7 @@ export function WizardStepper({ steps, activeStep, onStepClick }: WizardStepperP
               {isComplete && <CheckCircle2 className="h-3 w-3" />}
               {isLocked && <Lock className="h-3 w-3" />}
               {!isComplete && !isLocked && <span className="font-bold">{idx + 1}</span>}
-              <span className="hidden xs:inline">{step.label}</span>
+              <span>{step.label}</span>
             </button>
           );
         })}

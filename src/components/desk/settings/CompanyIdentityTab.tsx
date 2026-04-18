@@ -186,18 +186,18 @@ export function CompanyIdentityTab() {
   return (
     <div className="max-w-3xl">
       {/* Header + verification badge */}
-      <div className="flex items-start justify-between gap-8 mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 md:mb-10">
         <div>
-          <h2 className="text-xl font-medium text-slate-900 tracking-tight">Company Identity</h2>
+          <h2 className="text-lg md:text-xl font-medium text-slate-900 tracking-tight">Company Identity</h2>
           <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-md">
             Your verified Know-Your-Business profile. This identity is bound to every Proof of Intent you generate.
           </p>
         </div>
-        <VerificationBadge state={verification} />
+        <div className="self-start"><VerificationBadge state={verification} /></div>
       </div>
 
       {/* Stepper */}
-      <nav className="mb-10 flex items-center gap-1 border-b border-slate-200">
+      <nav className="mb-8 md:mb-10 flex items-center gap-1 border-b border-slate-200 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-hide">
         {STEPS.map((s) => {
           const active = s.key === activeStep;
           return (
@@ -206,7 +206,7 @@ export function CompanyIdentityTab() {
               type="button"
               onClick={() => selectStep(s.key)}
               className={[
-                "px-4 py-3 text-left transition-colors border-b-2 -mb-px",
+                "px-4 py-3 text-left transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap",
                 active
                   ? "border-slate-900 text-slate-900"
                   : "border-transparent text-slate-500 hover:text-slate-800",
@@ -339,11 +339,11 @@ function EntityDetailsStep({
         <Input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value.toUpperCase())} maxLength={3} placeholder="ZA · GB · US" />
       </FormField>
 
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
         <p className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
           Saving moves status to <span className="text-slate-700">pending</span>
         </p>
-        <Button type="submit" disabled={!valid || saving} className="gap-2">
+        <Button type="submit" disabled={!valid || saving} className="gap-2 w-full sm:w-auto">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
           {saving ? "Saving…" : "Save & Continue"}
         </Button>
@@ -577,7 +577,7 @@ function DocumentsStep({
             id="doc-type"
             value={docType}
             onChange={(e) => setDocType(e.target.value as (typeof DOC_TYPES)[number])}
-            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-base md:text-sm min-h-[44px]"
           >
             {DOC_TYPES.map((t) => (
               <option key={t} value={t}>{t.replace(/_/g, " ")}</option>

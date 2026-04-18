@@ -39,12 +39,12 @@ export function MyProfileTab() {
   }
 
   return (
-    <div className="space-y-10 max-w-2xl">
+    <div className="space-y-8 md:space-y-10 max-w-2xl">
       <Field label="Full name">
         <input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full bg-white border border-slate-200 rounded-md px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+          className="w-full bg-white border border-slate-200 rounded-md px-4 py-3 text-base md:text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
           placeholder="Your full legal name"
         />
       </Field>
@@ -52,14 +52,14 @@ export function MyProfileTab() {
         <input
           value={user?.email ?? ""}
           disabled
-          className="w-full bg-slate-50 border border-slate-200 rounded-md px-4 py-3 text-sm text-slate-500 font-mono"
+          className="w-full bg-slate-50 border border-slate-200 rounded-md px-4 py-3 text-base md:text-sm text-slate-500 font-mono"
         />
       </Field>
       <div className="pt-2">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 min-h-[44px]"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>
