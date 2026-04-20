@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,7 +47,7 @@ import SystemAnalytics from "@/components/admin/SystemAnalytics";
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "disputes" | "audit" | "settings";
+type TabId = "users" | "organisations" | "engagements" | "disputes" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -63,6 +63,11 @@ const TABS: {
   label: "Organisation Management",
   icon: Building2,
   blurb: "KYB lifecycle, legal entities, KYC document verification."
+}, {
+  id: "engagements",
+  label: "Engagements",
+  icon: Inbox,
+  blurb: "POI hold-point queue · counterparty outreach and activation."
 }, {
   id: "disputes",
   label: "Dispute Resolution",
@@ -238,22 +243,24 @@ function OrganisationsTab() {
       </Tabs>
     </>;
 }
+function EngagementsTab() {
+  return <>
+      <TabHeader id="engagements" />
+      <Surface label="POI hold-point queue · public.poi_engagements · counterparty outreach">
+        <AdminPendingEngagementsPanel />
+      </Surface>
+    </>;
+}
 function DisputesTab() {
-  // Sub-tabs: Engagements (POI hold-point queue) · Disputes · Trade Approvals
-  const [sub, setSub] = useUrlTab("sub", "engagements", ["engagements", "disputes", "approvals"]);
+  // Sub-tabs: Disputes · Trade Approvals
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "approvals"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm">
-          <TabsTrigger value="engagements">Pending Engagements</TabsTrigger>
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
           <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
         </TabsList>
-        <TabsContent value="engagements">
-          <Surface label="POI hold-point queue · public.poi_engagements · counterparty outreach">
-            <AdminPendingEngagementsPanel />
-          </Surface>
-        </TabsContent>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
             <AdminDisputesPanel />
@@ -409,6 +416,7 @@ function HQLayout() {
         <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto">
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
+          <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
