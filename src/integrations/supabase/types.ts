@@ -6096,7 +6096,7 @@ export type Database = {
         Args: never
         Returns: {
           details: string
-          engagement_id: string
+          eng_id: string
           issue_type: string
         }[]
       }
