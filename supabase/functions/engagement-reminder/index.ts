@@ -50,52 +50,50 @@ Deno.serve(async (req) => {
 
     if (fetchErr) throw fetchErr;
 
-    if (!staleEngagements || staleEngagements.length === 0) {
-      console.log(`[${requestId}] No stale engagements found.`);
-      return new Response(JSON.stringify({ processed: 0 }), {
-        status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
-      });
+    // NOTE: Do NOT early-return here — auto-expiry below must always run regardless
+    // of whether there are stale (≥7-day) engagements needing reminders.
+    const hasStale = staleEngagements && staleEngagements.length > 0;
+    if (!hasStale) {
+      console.log(`[${requestId}] No stale engagements found — proceeding to auto-expiry sweep.`);
     }
 
     console.log(`[${requestId}] Found ${staleEngagements.length} stale engagement(s).`);
 
-    // 2. Create admin notifications for each stale engagement
-    const notifications = staleEngagements.map((eng: any) => ({
-      user_id: null, // Admin-targeted (null = system)
-      type: "engagement_reminder",
-      title: "Stale engagement - 7 days without contact",
-      message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
-      metadata: {
-        engagement_id: eng.id,
-        match_id: eng.match_id,
-        org_id: eng.org_id,
-        days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
-      },
-      read: false,
-    }));
+    // 2. Create admin notifications for each stale engagement (skip when none)
+    if (hasStale) {
+      const notifications = staleEngagements!.map((eng: any) => ({
+        user_id: null, // Admin-targeted (null = system)
+        type: "engagement_reminder",
+        title: "Stale engagement - 7 days without contact",
+        message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
+        metadata: {
+          engagement_id: eng.id,
+          match_id: eng.match_id,
+          org_id: eng.org_id,
+          days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+        },
+        read: false,
+      }));
 
-    // Insert notifications (best-effort — table may not exist in all envs)
-    const { error: notifErr } = await supabase
-      .from("notifications")
-      .insert(notifications);
+      const { error: notifErr } = await supabase
+        .from("notifications")
+        .insert(notifications);
+      if (notifErr) {
+        console.warn(`[${requestId}] Could not insert notifications: ${notifErr.message}`);
+      }
 
-    if (notifErr) {
-      console.warn(`[${requestId}] Could not insert notifications: ${notifErr.message}`);
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: null,
+        action: "engagement.reminder_batch",
+        target_type: "poi_engagement",
+        target_id: null,
+        details: {
+          request_id: requestId,
+          stale_count: staleEngagements!.length,
+          engagement_ids: staleEngagements!.map((e: any) => e.id),
+        },
+      });
     }
-
-    // 3. Audit trail
-    await supabase.from("admin_audit_logs").insert({
-      admin_user_id: null,
-      action: "engagement.reminder_batch",
-      target_type: "poi_engagement",
-      target_id: null,
-      details: {
-        request_id: requestId,
-        stale_count: staleEngagements.length,
-        engagement_ids: staleEngagements.map((e: any) => e.id),
-      },
-    });
 
     // 4. Auto-expire engagements past their expires_at date
     const now = new Date().toISOString();
