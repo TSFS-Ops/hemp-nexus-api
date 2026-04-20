@@ -383,6 +383,7 @@ function HQLayout() {
     fontFamily: "Inter, sans-serif"
   }}>
       <CommandBar />
+      <TopRightBell tone="dark" />
 
       {/* Tab rail, replaces the old SecondaryNav. Mirrors the Command Bar's
           horizontal language; sticky so admins always have the four levers in view. */}
