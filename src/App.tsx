@@ -10,6 +10,10 @@ import { getHostType } from "@/lib/hostname";
 import { ROUTES } from "@/lib/constants";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { LegacyRedirect } from "@/components/LegacyRedirect";
+import { RequireAuth } from "@/components/RequireAuth";
+
+/** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
+const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
 
 // Eagerly loaded - critical path
 import Landing from "@/pages/Landing";
@@ -170,10 +174,12 @@ function App() {
                   <Route path="/developers/docs" element={<LegacyRedirect to="/developer/docs" label="Developer docs" />} />
                   <Route path="/developers/*" element={<Developers />} />
                   <Route path="/developer/*" element={<DeveloperCenter />} />
-                  <Route path="/governance/triage" element={<GovernanceTriage />} />
-                  <Route path="/governance/audits" element={<GovernanceAudits />} />
-                  <Route path="/governance/entities" element={<GovernanceEntities />} />
-                  <Route path="/governance/health" element={<GovernanceHealth />} />
+                  {/* Governance Console, restricted to platform_admin / auditor / org_admin.
+                      Unauthorised users are bounced to /desk with denied=1 (see RequireAuth). */}
+                  <Route path="/governance/triage" element={<RequireAuth role={[...GOVERNANCE_ROLES]} fallbackRoute="/desk"><GovernanceTriage /></RequireAuth>} />
+                  <Route path="/governance/audits" element={<RequireAuth role={[...GOVERNANCE_ROLES]} fallbackRoute="/desk"><GovernanceAudits /></RequireAuth>} />
+                  <Route path="/governance/entities" element={<RequireAuth role={[...GOVERNANCE_ROLES]} fallbackRoute="/desk"><GovernanceEntities /></RequireAuth>} />
+                  <Route path="/governance/health" element={<RequireAuth role={[...GOVERNANCE_ROLES]} fallbackRoute="/desk"><GovernanceHealth /></RequireAuth>} />
                   <Route path="/governance" element={<Navigate to="/governance/triage" replace />} />
                   {/* Legacy /trade/wizard → consolidated under the Trade Desk shell */}
                   <Route path="/trade/wizard" element={<LegacyRedirect to="/desk/wizard" label="Trade Wizard" />} />
