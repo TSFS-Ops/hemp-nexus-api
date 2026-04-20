@@ -29,8 +29,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History,
+  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
