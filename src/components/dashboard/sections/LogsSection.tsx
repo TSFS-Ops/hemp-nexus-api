@@ -293,7 +293,7 @@ export function LogsSection() {
                         <td className="px-4 py-3 text-right">
                           {(log.action === "intent.confirmed" || log.action === "match.created") && log.entity_id && (
                             <Button variant="ghost" size="sm" className="h-7 px-2" asChild>
-                              <Link to={`/dashboard/matches/${log.entity_id}`}>
+                              <Link to={`/desk/match/${log.entity_id}`}>
                                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                                 Open Proof
                               </Link>

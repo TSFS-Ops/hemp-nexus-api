@@ -73,7 +73,7 @@ const PoiSupportDeskNotifyEmail = ({
           )}
         </Section>
         <Button
-          href={`https://compliance-matching.lovable.app/dashboard/matches/${matchId || ''}`}
+          href={`https://compliance-matching.lovable.app/desk/match/${matchId || ''}`}
           style={button}
         >
           View in Console
