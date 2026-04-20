@@ -109,39 +109,41 @@ Deno.serve(async (req) => {
     if (fetchExpireErr) {
       console.warn(`[${requestId}] Auto-expire fetch error: ${fetchExpireErr.message}`);
     } else if (toExpire && toExpire.length > 0) {
-      const ids = toExpire.map((e: any) => e.id);
-      const { error: expireErr } = await supabase
-        .from("poi_engagements")
-        .update({ engagement_status: "expired" })
-        .in("id", ids);
-
-      if (expireErr) {
-        console.warn(`[${requestId}] Auto-expire update error: ${expireErr.message}`);
-      } else {
-        expired = toExpire.map((e: any) => ({ id: e.id }));
-        console.log(`[${requestId}] Auto-expired ${expired.length} engagement(s).`);
-
-        // Immutable outreach log: one system_action row per expired engagement.
-        const logRows = toExpire.map((e: any) => ({
-          engagement_id: e.id,
-          actor_type: "system",
-          admin_user_id: null,
-          admin_email: null,
-          admin_name: "Lifecycle Scheduler",
-          entry_type: "system_action",
-          contact_method: null,
-          contact_detail: null,
-          previous_status: e.engagement_status,
-          new_status: "expired",
-          notes: `Auto-expired by lifecycle scheduler at ${now}`,
-        }));
-        const { error: logErr } = await supabase
-          .from("engagement_outreach_logs")
-          .insert(logRows);
-        if (logErr) {
-          console.warn(`[${requestId}] Outreach log write failed: ${logErr.message}`);
+      // ── Atomic per-row expiry via transactional RPC ──
+      // Eliminates the race where a row could be marked 'expired' without its outreach log row.
+      // Each call wraps update + outreach log + audit log in one transaction with an advisory lock.
+      const expiredIds: string[] = [];
+      const failedIds: string[] = [];
+      for (const e of toExpire as any[]) {
+        const { data: txnResult, error: txnErr } = await supabase.rpc(
+          "atomic_engagement_transition",
+          {
+            p_engagement_id: e.id,
+            p_actor_type: "system",
+            p_actor_user_id: null,
+            p_actor_email: null,
+            p_actor_name: "Lifecycle Scheduler",
+            p_new_status: "expired",
+            p_entry_type: "system_action",
+            p_contact_method: null,
+            p_contact_detail: null,
+            p_notes: `Auto-expired by lifecycle scheduler at ${now}`,
+            p_audit_action: null,
+            p_audit_org_id: null,
+          }
+        );
+        const txn = txnResult as { success: boolean; error?: string } | null;
+        if (txnErr || !txn?.success) {
+          failedIds.push(e.id);
+          console.warn(`[${requestId}] Atomic expiry failed for ${e.id}: ${txnErr?.message || txn?.error}`);
+        } else {
+          expiredIds.push(e.id);
         }
+      }
+      expired = expiredIds.map((id) => ({ id }));
+      console.log(`[${requestId}] Auto-expired ${expired.length} engagement(s) atomically; ${failedIds.length} failed.`);
 
+      if (expiredIds.length > 0) {
         await supabase.from("admin_audit_logs").insert({
           admin_user_id: null,
           action: "engagement.auto_expired",
@@ -149,8 +151,10 @@ Deno.serve(async (req) => {
           target_id: null,
           details: {
             request_id: requestId,
-            expired_count: expired.length,
-            engagement_ids: ids,
+            expired_count: expiredIds.length,
+            failed_count: failedIds.length,
+            engagement_ids: expiredIds,
+            failed_ids: failedIds,
           },
         });
       }
