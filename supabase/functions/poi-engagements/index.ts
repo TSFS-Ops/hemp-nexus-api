@@ -242,33 +242,14 @@ Deno.serve(async (req) => {
         updates.contact_date = parsed.data.contact_date;
       }
 
-      const { data: updated, error: updateErr } = await supabase
-        .from("poi_engagements")
-        .update(updates)
-        .eq("id", engagementId)
-        .select()
+      // Snapshot admin identity at the moment of the action
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
         .single();
 
-      if (updateErr) throw updateErr;
-
-      // Audit log
-      await supabase.from("admin_audit_logs").insert({
-        admin_user_id: authCtx.userId,
-        action: "engagement.updated",
-        target_type: "poi_engagement",
-        target_id: engagementId,
-        details: {
-          request_id: requestId,
-          match_id: current.match_id,
-          previous_status: current.engagement_status,
-          new_status: updates.engagement_status || current.engagement_status,
-          counterparty_email: updates.counterparty_email || null,
-        },
-      });
-
-      // ── Immutable outreach log: write for EVERY admin mutation ──
-      // Classify the entry so auditors can distinguish a real contact attempt
-      // from a status flip, notes edit, or email correction.
+      // Classify outreach log entry
       const isContactAttempt =
         updates.engagement_status === "contacted" &&
         !!parsed.data.contact_method &&
@@ -287,34 +268,67 @@ Deno.serve(async (req) => {
         entryType = "status_change";
       }
 
-      // Snapshot admin identity at the moment of the action
-      const { data: adminProfile } = await supabase
-        .from("profiles")
-        .select("email, full_name")
-        .eq("id", authCtx.userId)
-        .single();
+      const targetStatus =
+        (updates.engagement_status as string) || current.engagement_status;
 
-      await supabase.from("engagement_outreach_logs").insert({
-        engagement_id: engagementId,
-        actor_type: "admin",
-        admin_user_id: authCtx.userId,
-        admin_email: adminProfile?.email || "unknown",
-        admin_name: adminProfile?.full_name || null,
-        entry_type: entryType,
-        // contact_method/detail only populated for real contact attempts;
-        // null for status changes, notes edits, and email updates.
-        contact_method: isContactAttempt ? parsed.data.contact_method : null,
-        contact_detail: isContactAttempt ? parsed.data.contact_detail : null,
-        previous_status: current.engagement_status,
-        new_status: (updates.engagement_status as string) || current.engagement_status,
-        notes:
-          parsed.data.admin_notes ||
-          (entryType === "email_update"
-            ? `Counterparty email updated to ${parsed.data.counterparty_email}`
-            : null),
-      });
+      // ── Atomic transition: engagement update + outreach log + audit log in ONE transaction ──
+      // Eliminates the orphan-row race; advisory lock serialises concurrent admin actions on the same row.
+      const { data: txnResult, error: txnErr } = await supabase.rpc(
+        "atomic_engagement_transition",
+        {
+          p_engagement_id: engagementId,
+          p_actor_type: "admin",
+          p_actor_user_id: authCtx.userId,
+          p_actor_email: adminProfile?.email || "unknown",
+          p_actor_name: adminProfile?.full_name || null,
+          p_new_status: targetStatus,
+          p_entry_type: entryType,
+          p_contact_method: isContactAttempt ? parsed.data.contact_method : null,
+          p_contact_detail: isContactAttempt ? parsed.data.contact_detail : null,
+          p_notes:
+            parsed.data.admin_notes ||
+            (entryType === "email_update"
+              ? `Counterparty email updated to ${parsed.data.counterparty_email}`
+              : null),
+          p_audit_action: "engagement.updated",
+          p_audit_org_id: null,
+        }
+      );
 
-      console.log(`[${requestId}] Engagement ${engagementId} updated: ${current.engagement_status} → ${updates.engagement_status || "(no status change)"}`);
+      if (txnErr) throw txnErr;
+      const txn = txnResult as { success: boolean; error?: string } | null;
+      if (!txn?.success) {
+        throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
+      }
+
+      // Apply non-state field updates (counterparty_email, admin_notes, contact_method, contact_date)
+      // These are not part of the state machine and don't affect the audit chain.
+      const sideUpdates: Record<string, unknown> = {};
+      if (parsed.data.counterparty_email !== undefined) sideUpdates.counterparty_email = parsed.data.counterparty_email;
+      if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
+      if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
+      if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
+
+      let updated: any = null;
+      if (Object.keys(sideUpdates).length > 0) {
+        const { data, error } = await supabase
+          .from("poi_engagements")
+          .update(sideUpdates)
+          .eq("id", engagementId)
+          .select()
+          .single();
+        if (error) throw error;
+        updated = data;
+      } else {
+        const { data } = await supabase
+          .from("poi_engagements")
+          .select()
+          .eq("id", engagementId)
+          .single();
+        updated = data;
+      }
+
+      console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
       return new Response(JSON.stringify({ engagement: updated }), {
         status: 200,
@@ -417,20 +431,37 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── Commit the status change (only reached if pre-flight passed) ──
-      const updates: Record<string, unknown> = {
-        engagement_status: parsed.data.action,
-        responded_at: new Date().toISOString(),
-      };
-
-      const { data: updated, error: updateErr } = await supabase
-        .from("poi_engagements")
-        .update(updates)
-        .eq("id", engagement.id)
-        .select()
+      // Snapshot responder identity
+      const { data: responderProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
         .single();
 
-      if (updateErr) throw updateErr;
+      // ── Atomic transition: engagement + outreach log + audit log in one transaction ──
+      const { data: txnResult, error: txnErr } = await supabase.rpc(
+        "atomic_engagement_transition",
+        {
+          p_engagement_id: engagement.id,
+          p_actor_type: "counterparty",
+          p_actor_user_id: authCtx.userId,
+          p_actor_email: responderProfile?.email || null,
+          p_actor_name: responderProfile?.full_name || null,
+          p_new_status: parsed.data.action,
+          p_entry_type: "status_change",
+          p_contact_method: null,
+          p_contact_detail: null,
+          p_notes: `Counterparty self-serve response: ${parsed.data.action}`,
+          p_audit_action: "engagement.counterparty_responded",
+          p_audit_org_id: authCtx.orgId,
+        }
+      );
+
+      if (txnErr) throw txnErr;
+      const txn = txnResult as { success: boolean; error?: string } | null;
+      if (!txn?.success) {
+        throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
+      }
 
       // ── Post-commit: sync validated name to match record ──
       if (parsed.data.action === "accepted" && bestName) {
@@ -445,43 +476,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Audit log
-      await supabase.from("audit_logs").insert({
-        org_id: authCtx.orgId,
-        action: "engagement.counterparty_responded",
-        entity_type: "poi_engagement",
-        entity_id: engagement.id,
-        actor_user_id: authCtx.userId,
-        metadata: {
-          request_id: requestId,
-          match_id: matchId,
-          previous_status: currentStatus,
-          new_status: parsed.data.action,
-        },
-      });
-
-      // ── Immutable outreach log: capture the counterparty's own response ──
-      // Without this, the immutable history shows the admin marking it 'contacted'
-      // and then jumps silently to the next admin touch — the response itself is invisible.
-      const { data: responderProfile } = await supabase
-        .from("profiles")
-        .select("email, full_name")
-        .eq("id", authCtx.userId)
+      const { data: updated } = await supabase
+        .from("poi_engagements")
+        .select()
+        .eq("id", engagement.id)
         .single();
-
-      await supabase.from("engagement_outreach_logs").insert({
-        engagement_id: engagement.id,
-        actor_type: "counterparty",
-        admin_user_id: authCtx.userId,
-        admin_email: responderProfile?.email || null,
-        admin_name: responderProfile?.full_name || null,
-        entry_type: "status_change",
-        contact_method: null,
-        contact_detail: null,
-        previous_status: currentStatus,
-        new_status: parsed.data.action,
-        notes: `Counterparty self-serve response: ${parsed.data.action}`,
-      });
 
       console.log(`[${requestId}] Counterparty ${authCtx.orgId} responded '${parsed.data.action}' on engagement ${engagement.id}`);
 
