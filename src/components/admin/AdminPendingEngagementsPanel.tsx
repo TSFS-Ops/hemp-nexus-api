@@ -63,7 +63,8 @@ interface Engagement {
 
 interface OutreachLog {
   id: string;
-  admin_email: string;
+  actor_type: "admin" | "counterparty" | "system";
+  admin_email: string | null;
   admin_name: string | null;
   entry_type: "contact_attempt" | "status_change" | "notes_edit" | "email_update" | "system_action";
   contact_method: string | null;
@@ -80,6 +81,12 @@ const ENTRY_TYPE_LABEL: Record<OutreachLog["entry_type"], string> = {
   notes_edit: "Notes edit",
   email_update: "Email updated",
   system_action: "System action",
+};
+
+const ACTOR_TYPE_LABEL: Record<OutreachLog["actor_type"], string> = {
+  admin: "Admin",
+  counterparty: "Counterparty (self-serve)",
+  system: "System (auto)",
 };
 
 const STATUS_STYLES: Record<string, string> = {
