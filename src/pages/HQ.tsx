@@ -22,7 +22,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 import { useUrlTab } from "@/hooks/use-url-tab";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 // ── Wired admin panels (no mocks) ───────────────────────────────────
 import UsersManagement from "@/components/admin/UsersManagement";
@@ -136,11 +135,6 @@ function CommandBar() {
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
             View Public Site
           </a>
-
-          {/* Notifications — admins must never miss outreach signals */}
-          <div className="text-slate-300 hover:text-slate-100 transition-colors">
-            <NotificationBell />
-          </div>
 
           <button onClick={signOut} className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors" aria-label="Sign out of admin dashboard">
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />

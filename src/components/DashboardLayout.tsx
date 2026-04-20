@@ -1,8 +1,6 @@
 import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-
-import { NotificationBell } from "./notifications/NotificationBell";
 import { PageContainer } from "@/components/ui/page-container";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { DashboardBreadcrumbs } from "@/components/dashboard/DashboardBreadcrumbs";
@@ -28,10 +26,7 @@ export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
               <div className="md:hidden text-sm font-semibold text-foreground truncate">
                 Izenzo
               </div>
-              <div className="flex items-center gap-1 sm:gap-2">
-                <NotificationBell />
-                
-              </div>
+              <div className="flex items-center gap-1 sm:gap-2" />
             </div>
           </header>
           <div className="flex-1 py-4 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8 pb-20 md:pb-6">
