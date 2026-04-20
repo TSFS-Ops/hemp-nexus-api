@@ -296,6 +296,7 @@ Deno.serve(async (req) => {
 
       await supabase.from("engagement_outreach_logs").insert({
         engagement_id: engagementId,
+        actor_type: "admin",
         admin_user_id: authCtx.userId,
         admin_email: adminProfile?.email || "unknown",
         admin_name: adminProfile?.full_name || null,
