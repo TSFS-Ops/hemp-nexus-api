@@ -21,7 +21,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
-import { TopRightBell } from "@/components/notifications/TopRightBell";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useUrlTab } from "@/hooks/use-url-tab";
 
 // ── Wired admin panels (no mocks) ───────────────────────────────────
@@ -383,7 +383,6 @@ function HQLayout() {
     fontFamily: "Inter, sans-serif"
   }}>
       <CommandBar />
-      <TopRightBell tone="dark" />
 
       {/* Tab rail, replaces the old SecondaryNav. Mirrors the Command Bar's
           horizontal language; sticky so admins always have the four levers in view. */}
