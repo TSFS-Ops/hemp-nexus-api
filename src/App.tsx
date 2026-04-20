@@ -10,6 +10,7 @@ import { getHostType } from "@/lib/hostname";
 import { ROUTES } from "@/lib/constants";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { LegacyRedirect } from "@/components/LegacyRedirect";
+import { LegacyRedirectBanner } from "@/components/LegacyRedirectBanner";
 import { RequireAuth } from "@/components/RequireAuth";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
@@ -94,6 +95,7 @@ function App() {
         <TooltipProvider>
           <Router>
             <HostnameRouter>
+              <LegacyRedirectBanner />
               <Suspense fallback={<FullPageLoader />}>
                 <Routes>
                   <Route path={ROUTES.ROOT} element={<RootElement />} />
