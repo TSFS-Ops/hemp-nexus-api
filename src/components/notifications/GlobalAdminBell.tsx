@@ -54,7 +54,7 @@ export function GlobalAdminBell() {
 
   return (
     <div
-      className="fixed top-4 right-6 z-50"
+      className="fixed top-2 right-2 z-50"
       data-testid="global-admin-bell"
     >
       <NotificationBell />
