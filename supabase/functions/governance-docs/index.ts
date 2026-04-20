@@ -51,6 +51,27 @@ Deno.serve(async (req: Request) => {
     const orgId = authCtx.orgId;
     if (!orgId) throw new ApiException("FORBIDDEN", "No organisation found", 403);
 
+    // ── Server-side governance role enforcement ──
+    // The route guard in the SPA can be bypassed by direct API calls.
+    // Only governance-domain principals (or API keys with the explicit
+    // governance scope) may interact with governance documents.
+    const GOVERNANCE_ROLES = [
+      "platform_admin", "auditor", "org_admin", "admin",
+      "compliance_analyst", "legal_reviewer", "director",
+    ];
+    const GOVERNANCE_SCOPES = ["governance", "governance:read", "governance:write"];
+    const callerRoles = authCtx.roles || [];
+    const isGovernancePrincipal = authCtx.isApiKey
+      ? callerRoles.some((r) => GOVERNANCE_SCOPES.includes(r) || r.startsWith("governance:"))
+      : callerRoles.some((r) => GOVERNANCE_ROLES.includes(r));
+    if (!isGovernancePrincipal) {
+      throw new ApiException(
+        "FORBIDDEN",
+        "Governance role required (platform_admin, auditor, org_admin, or compliance role)",
+        403,
+      );
+    }
+
     const url = new URL(req.url);
 
     // ── POST: Submit governance document ──

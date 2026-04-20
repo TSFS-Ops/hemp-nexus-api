@@ -63,7 +63,30 @@ function WelcomeContent() {
 
   const handleSelect = async (persona: PersonaCard) => {
     if (!user || submitting) return;
+
+    // Defence in depth: client-side check before persisting. Even though the
+    // governance card is filtered for non-privileged users, a manipulated
+    // client could still call this handler. Block at the source.
+    if (persona.id === "governance" && !canSelectGovernance) {
+      toast.error("You do not have permission to use the Governance Console.");
+      return;
+    }
+
     setSubmitting(persona.id);
+
+    // Resolve the user's org_id so the audit row is org-scoped (RLS-safe).
+    let orgId: string | null = null;
+    try {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      orgId = profileRow?.org_id ?? null;
+    } catch (err) {
+      console.warn("[welcome] could not resolve org_id for audit log:", err);
+    }
+
     try {
       const { error } = await supabase
         .from("profiles")
@@ -71,6 +94,34 @@ function WelcomeContent() {
         .eq("id", user.id);
 
       if (error) throw error;
+
+      // INV-5: Persona selection must leave a forensic trail. Without this we
+      // cannot prove who chose Governance, when, or from which session.
+      // Audit insert is best-effort — failure here must NOT prevent navigation
+      // (the persona is already persisted), but we log loudly so monitoring
+      // catches a missing trail.
+      if (orgId) {
+        const { error: auditError } = await supabase.from("audit_logs").insert({
+          org_id: orgId,
+          actor_user_id: user.id,
+          action: "profile.persona_selected",
+          entity_type: "profile",
+          entity_id: user.id,
+          metadata: {
+            persona: persona.id,
+            route: persona.route,
+            roles_at_selection: roles,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+            selected_at: new Date().toISOString(),
+          },
+        });
+        if (auditError) {
+          console.error("[welcome] audit_logs insert failed:", auditError.message);
+        }
+      } else {
+        console.error("[welcome] no org_id resolved — persona audit row not written");
+      }
+
       navigate(persona.route, { replace: true });
     } catch (err) {
       console.error("[welcome] persona save failed:", err);
