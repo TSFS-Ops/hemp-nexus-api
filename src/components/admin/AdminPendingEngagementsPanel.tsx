@@ -99,10 +99,23 @@ const STATUS_STYLES: Record<string, string> = {
   expired: "bg-slate-100 text-slate-500 border-slate-200",
 };
 
+// Human-readable labels for engagement status. The DB enum value
+// 'notification_sent' historically meant "internal admin alert dispatched"
+// — NOT that the counterparty has been emailed. We surface it as
+// "Awaiting outreach" so admins don't mistake it for an outbound send.
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  notification_sent: "Awaiting outreach",
+  contacted: "Contacted",
+  accepted: "Accepted",
+  declined: "Declined",
+  expired: "Expired",
+};
+
 const FILTER_TABS = [
   { value: "active", label: "Active queue" },
   { value: "pending", label: "Pending" },
-  { value: "notification_sent", label: "Notified" },
+  { value: "notification_sent", label: "Awaiting outreach" },
   { value: "contacted", label: "Contacted" },
   { value: "accepted", label: "Accepted" },
   { value: "declined", label: "Declined" },
@@ -443,7 +456,7 @@ export function AdminPendingEngagementsPanel() {
         {[
           { label: "Total", value: stats.total, icon: Inbox },
           { label: "Pending", value: stats.pending, icon: Clock },
-          { label: "Notified", value: stats.notified, icon: Mail },
+          { label: "Awaiting outreach", value: stats.notified, icon: Mail },
           { label: "Contacted", value: stats.contacted, icon: Send },
           { label: "Accepted", value: stats.accepted, icon: CheckCircle2 },
         ].map((s) => (
@@ -518,7 +531,7 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={STATUS_STYLES[e.engagement_status] ?? ""}>
-                            {e.engagement_status.replace("_", " ")}
+                            {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
