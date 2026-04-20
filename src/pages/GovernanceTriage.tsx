@@ -7,7 +7,6 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { GovernorSidebar } from "@/components/governance/GovernorSidebar";
 import TriageInbox from "@/components/governance/TriageInbox";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { TopRightBell } from "@/components/notifications/TopRightBell";
 
 export default function GovernanceTriage() {
   return (
@@ -18,7 +17,6 @@ export default function GovernanceTriage() {
           <TriageInbox />
         </main>
         <MobileBottomNav />
-        <TopRightBell />
       </div>
     </RequireAuth>
   );

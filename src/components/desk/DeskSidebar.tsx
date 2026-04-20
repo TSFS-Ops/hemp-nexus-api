@@ -2,6 +2,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
+import { SidebarNotificationItem } from "@/components/notifications/SidebarNotificationItem";
 
 const NAV = [
   { to: "/desk", label: "Desk", icon: Briefcase, end: true },
@@ -58,6 +59,9 @@ export function DeskSidebar() {
               </li>
             );
           })}
+          <li>
+            <SidebarNotificationItem tone="light" />
+          </li>
         </ul>
       </nav>
 

@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { DeskSidebar } from "./DeskSidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { TopRightBell } from "@/components/notifications/TopRightBell";
 
 export function DeskLayout({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +12,6 @@ export function DeskLayout({ children }: { children: ReactNode }) {
         </div>
       </main>
       <MobileBottomNav />
-      <TopRightBell />
     </div>
   );
 }

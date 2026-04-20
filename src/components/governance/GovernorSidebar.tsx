@@ -9,6 +9,7 @@ import { Link, NavLink } from "react-router-dom";
 import { Inbox, FileSearch, ShieldCheck, Activity, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
+import { SidebarNotificationItem } from "@/components/notifications/SidebarNotificationItem";
 
 const NAV = [
   { to: "/governance/triage", label: "Triage Queue", icon: Inbox, end: true },
@@ -67,6 +68,9 @@ export function GovernorSidebar() {
               </li>
             );
           })}
+          <li>
+            <SidebarNotificationItem tone="light" />
+          </li>
         </ul>
       </nav>
 

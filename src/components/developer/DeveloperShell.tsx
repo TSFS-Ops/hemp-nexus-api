@@ -4,6 +4,7 @@ import { KeyRound, Radio, Database, BookOpen, Terminal, Settings, LogOut } from 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
+import { SidebarNotificationItem } from "@/components/notifications/SidebarNotificationItem";
 
 /**
  * DeveloperShell, pure dark-mode terminal environment.
@@ -71,6 +72,7 @@ export function DeveloperShell({
                   <span className="tracking-tight">{item.label}</span>
                 </NavLink>;
           })}
+            <SidebarNotificationItem tone="dark" />
           </nav>
 
           {/* System status, pulsing green LED */}
