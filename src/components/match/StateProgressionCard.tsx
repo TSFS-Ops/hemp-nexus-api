@@ -164,6 +164,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       return data;
     },
     enabled: !!session,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Hard gate: block all progression if user's name is missing or is an email.
