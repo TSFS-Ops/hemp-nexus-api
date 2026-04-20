@@ -177,6 +177,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchRoles, ensureProfileIfNeeded]);
 
+  // ── Realtime role-change subscription ──
+  // Without this, a user demoted (or promoted) in another session keeps the
+  // stale role in their open tab until the next navigation. RequireAuth then
+  // re-evaluates and might bounce them — but only after a click. Subscribing
+  // means revocation is reflected within ~1s, even on idle tabs.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`user_roles:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_roles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.info("[AuthContext] user_roles change detected:", payload.eventType);
+          fetchRoles(user.id);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, fetchRoles]);
+
   // ── Periodic session health check ──
   // Catches the case where the refresh token itself expires after inactivity.
   // The Supabase SDK does NOT fire onAuthStateChange in this scenario - API

@@ -45,6 +45,27 @@ Deno.serve(async (req: Request) => {
     const orgId = authCtx.orgId;
     if (!orgId) throw new ApiException("FORBIDDEN", "No organisation found", 403);
 
+    // ── Server-side governance role enforcement ──
+    // Compliance cases contain sensitive screening outcomes. Restrict to
+    // governance principals; reject vanilla org_member callers even if they
+    // belong to the same org. This mirrors the SPA route guard.
+    const GOVERNANCE_ROLES = [
+      "platform_admin", "auditor", "org_admin", "admin",
+      "compliance_analyst", "legal_reviewer", "director",
+    ];
+    const GOVERNANCE_SCOPES = ["compliance", "compliance:read", "compliance:write", "governance"];
+    const callerRoles = authCtx.roles || [];
+    const isGovernancePrincipal = authCtx.isApiKey
+      ? callerRoles.some((r) => GOVERNANCE_SCOPES.includes(r) || r.startsWith("compliance:") || r.startsWith("governance:"))
+      : callerRoles.some((r) => GOVERNANCE_ROLES.includes(r));
+    if (!isGovernancePrincipal) {
+      throw new ApiException(
+        "FORBIDDEN",
+        "Governance role required (platform_admin, auditor, org_admin, or compliance role)",
+        403,
+      );
+    }
+
     const url = new URL(req.url);
 
     // ── POST: Open case ──

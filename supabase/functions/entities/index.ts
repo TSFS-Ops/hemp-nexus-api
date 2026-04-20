@@ -68,6 +68,27 @@ Deno.serve(async (req: Request) => {
     const orgId = authCtx.orgId;
     if (!orgId) throw new ApiException("FORBIDDEN", "No organisation found", 403);
 
+    // ── Server-side governance role enforcement ──
+    // Entity records (KYB/KYC subjects) are governance-scoped data. Only
+    // governance principals may read or mutate them. This mirrors the SPA
+    // route guard so direct API calls cannot bypass it.
+    const GOVERNANCE_ROLES_E = [
+      "platform_admin", "auditor", "org_admin", "admin",
+      "compliance_analyst", "legal_reviewer", "director",
+    ];
+    const GOVERNANCE_SCOPES_E = ["entities", "entities:read", "entities:write", "governance"];
+    const callerRolesE = authCtx.roles || [];
+    const isGovernancePrincipalE = authCtx.isApiKey
+      ? callerRolesE.some((r) => GOVERNANCE_SCOPES_E.includes(r) || r.startsWith("entities:") || r.startsWith("governance:"))
+      : callerRolesE.some((r) => GOVERNANCE_ROLES_E.includes(r));
+    if (!isGovernancePrincipalE) {
+      throw new ApiException(
+        "FORBIDDEN",
+        "Governance role required (platform_admin, auditor, org_admin, or compliance role)",
+        403,
+      );
+    }
+
     const correlationId = req.headers.get("X-Correlation-ID") || crypto.randomUUID();
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
