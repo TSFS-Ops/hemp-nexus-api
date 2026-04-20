@@ -169,14 +169,12 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     refetchOnWindowFocus: true,
   });
 
-  // Hard gate: block all progression if user's name is missing or is an email.
-  // Scoped to the actor responsible for the next step — i.e. only when the
-  // signed-in user belongs to the org that owns this match. A counterparty
-  // viewing the match is not the actor for POI generation, so we don't show
-  // them a misleading prompt about *their* name.
+  // Advisory only: the server is the source of truth for POI eligibility.
+  // We still surface the guidance to the acting user, but we do not hard-block
+  // progression in the client because stale profile data can create false positives.
   const isActorForNextStep =
     !!userProfile?.org_id && userProfile.org_id === match.org_id;
-  const nameIsInvalid = isActorForNextStep && (
+  const showNameAdvisory = isActorForNextStep && (
     !userProfile?.full_name
     || userProfile.full_name.trim().length === 0
     || EMAIL_RE.test(userProfile.full_name.trim())
@@ -361,25 +359,24 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           </div>
         )}
 
-        {!isTerminal && nextLabel && nameIsInvalid && !profileLoading && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
-            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+        {!isTerminal && nextLabel && showNameAdvisory && !profileLoading && (
+          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="space-y-1">
-              <p className="text-sm font-medium">Your personal legal name is required</p>
+              <p className="text-sm font-medium">Check your personal legal name on file</p>
               <p className="text-xs text-muted-foreground">
-                This block is about <strong>your personal name on file</strong>, not your company's legal name.
-                Your personal name is currently missing or still set to your email address. It must be your
-                full legal name (e.g. "Jane Smith") because it appears as the signatory on Proofs of Intent,
-                certificates, and compliance records.
+                This is about <strong>your personal name on file</strong>, not your company's legal name.
+                If POI generation is rejected, open Desk → Settings → My Profile and make sure your full name is saved as your
+                personal legal name rather than an email address.
               </p>
               <Link to="/desk/settings" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                Update your personal name in Desk → Settings → My Profile
+                Review your personal name in Desk → Settings → My Profile
               </Link>
             </div>
           </div>
         )}
 
-        {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && !nameIsInvalid && (
+        {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && (
           <>
             {!isFreeAction && isBalancePending ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
