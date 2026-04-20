@@ -177,33 +177,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchRoles, ensureProfileIfNeeded]);
 
-  // ── Realtime role-change subscription ──
-  // Without this, a user demoted (or promoted) in another session keeps the
-  // stale role in their open tab until the next navigation. RequireAuth then
-  // re-evaluates and might bounce them — but only after a click. Subscribing
-  // means revocation is reflected within ~1s, even on idle tabs.
+  // ── Role refresh on tab focus / visibility change ──
+  // We previously used a Realtime subscription on user_roles, but publishing
+  // that table broadcasts every role change to every subscriber — a privilege
+  // information leak. Instead, we re-fetch the caller's own roles when:
+  //   • the tab regains visibility (returning from background)
+  //   • the window regains focus (clicking back in)
+  //   • the periodic 60s session health check runs (handled below)
+  // This catches mid-session demotion/promotion without broadcasting changes.
   useEffect(() => {
     if (!user?.id) return;
+    const userId = user.id;
 
-    const channel = supabase
-      .channel(`user_roles:${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "user_roles",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.info("[AuthContext] user_roles change detected:", payload.eventType);
-          fetchRoles(user.id);
-        },
-      )
-      .subscribe();
+    const refresh = () => {
+      if (document.visibilityState === "visible") {
+        fetchRoles(userId);
+      }
+    };
+
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
 
     return () => {
-      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
     };
   }, [user?.id, fetchRoles]);
 
