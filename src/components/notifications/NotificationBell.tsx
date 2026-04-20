@@ -102,11 +102,21 @@ export function NotificationBell({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="px-4 py-3 border-b border-slate-200">
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        collisionPadding={16}
+        className="w-[min(20rem,calc(100vw-2rem))] p-0"
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-slate-500">
             Notifications
           </p>
+          {unreadCount > 0 && (
+            <span className="font-mono text-[10px] tracking-wider uppercase text-slate-400">
+              {unreadCount} unread
+            </span>
+          )}
         </div>
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (

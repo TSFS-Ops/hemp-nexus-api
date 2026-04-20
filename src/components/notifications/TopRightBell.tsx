@@ -15,7 +15,7 @@ export function TopRightBell({ tone = "light" }: TopRightBellProps = {}) {
       ? "text-slate-300 hover:text-white"
       : "text-slate-700 hover:text-slate-900";
   return (
-    <div className="fixed top-6 right-10 z-[100]">
+    <div className="fixed top-6 right-6 sm:right-10 z-[100] pr-1">
       <NotificationBell iconClassName={iconClassName} />
     </div>
   );
