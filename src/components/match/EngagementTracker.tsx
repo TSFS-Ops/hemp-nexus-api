@@ -24,7 +24,7 @@ interface EngagementTrackerProps {
 type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
 const STEPS = [{
   key: "notification_sent" as const,
-  label: "Notification Sent",
+  label: "Awaiting outreach",
   icon: Mail
 }, {
   key: "contacted" as const,
