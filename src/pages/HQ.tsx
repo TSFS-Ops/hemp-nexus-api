@@ -30,6 +30,7 @@ import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
+import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminApprovalThresholdsPanel } from "@/components/admin/AdminApprovalThresholdsPanel";
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
@@ -238,15 +239,21 @@ function OrganisationsTab() {
     </>;
 }
 function DisputesTab() {
-  // Sub-tabs: Disputes (raised, status, override) · Trade Approvals (pending intervention)
-  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "approvals"]);
+  // Sub-tabs: Engagements (POI hold-point queue) · Disputes · Trade Approvals
+  const [sub, setSub] = useUrlTab("sub", "engagements", ["engagements", "disputes", "approvals"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-white border border-slate-200 rounded-sm">
+          <TabsTrigger value="engagements">Pending Engagements</TabsTrigger>
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
-          <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
+          <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
         </TabsList>
+        <TabsContent value="engagements">
+          <Surface label="POI hold-point queue · public.poi_engagements · counterparty outreach">
+            <AdminPendingEngagementsPanel />
+          </Surface>
+        </TabsContent>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
             <AdminDisputesPanel />
