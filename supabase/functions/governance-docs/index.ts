@@ -81,6 +81,19 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Submit governance document ──
     if (req.method === "POST") {
+      // Idempotency guard — duplicate submissions must not double-insert
+      // governance documents or fire the validated→token-burn pipeline twice.
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      const idemOpts = {
+        supabase: admin,
+        orgId,
+        endpoint: "POST /governance-docs",
+        idempotencyKey,
+        requestId: correlationId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
       const body = await req.json();
       const parsed = GovDocCreateSchema.parse(body);
 
@@ -143,8 +156,10 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ doc_id: govDoc.id })),
       });
 
+      const responseBody = successEnvelope(govDoc, correlationId);
+      await storeIdempotentResponse(idemOpts, { status: 201, body: responseBody });
       return new Response(
-        JSON.stringify(successEnvelope(govDoc, correlationId)),
+        JSON.stringify(responseBody),
         { status: 201, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
