@@ -99,29 +99,63 @@ Deno.serve(async (req) => {
 
     // 4. Auto-expire engagements past their expires_at date
     const now = new Date().toISOString();
-    const { data: expired, error: expireErr } = await supabase
-      .from("poi_engagements")
-      .update({ engagement_status: "expired" })
-      .lt("expires_at", now)
-      .in("engagement_status", ["notification_sent", "contacted"])
-      .select("id");
 
-    if (expireErr) {
-      console.warn(`[${requestId}] Auto-expire error: ${expireErr.message}`);
-    } else if (expired && expired.length > 0) {
-      console.log(`[${requestId}] Auto-expired ${expired.length} engagement(s).`);
-      
-      await supabase.from("admin_audit_logs").insert({
-        admin_user_id: null,
-        action: "engagement.auto_expired",
-        target_type: "poi_engagement",
-        target_id: null,
-        details: {
-          request_id: requestId,
-          expired_count: expired.length,
-          engagement_ids: expired.map((e: any) => e.id),
-        },
-      });
+    // Fetch first so we can record previous_status in the immutable outreach log.
+    const { data: toExpire, error: fetchExpireErr } = await supabase
+      .from("poi_engagements")
+      .select("id, engagement_status")
+      .lt("expires_at", now)
+      .in("engagement_status", ["notification_sent", "contacted"]);
+
+    let expired: { id: string }[] = [];
+    if (fetchExpireErr) {
+      console.warn(`[${requestId}] Auto-expire fetch error: ${fetchExpireErr.message}`);
+    } else if (toExpire && toExpire.length > 0) {
+      const ids = toExpire.map((e: any) => e.id);
+      const { error: expireErr } = await supabase
+        .from("poi_engagements")
+        .update({ engagement_status: "expired" })
+        .in("id", ids);
+
+      if (expireErr) {
+        console.warn(`[${requestId}] Auto-expire update error: ${expireErr.message}`);
+      } else {
+        expired = toExpire.map((e: any) => ({ id: e.id }));
+        console.log(`[${requestId}] Auto-expired ${expired.length} engagement(s).`);
+
+        // Immutable outreach log: one system_action row per expired engagement.
+        const logRows = toExpire.map((e: any) => ({
+          engagement_id: e.id,
+          actor_type: "system",
+          admin_user_id: null,
+          admin_email: null,
+          admin_name: "Lifecycle Scheduler",
+          entry_type: "system_action",
+          contact_method: null,
+          contact_detail: null,
+          previous_status: e.engagement_status,
+          new_status: "expired",
+          notes: `Auto-expired by lifecycle scheduler at ${now}`,
+        }));
+        const { error: logErr } = await supabase
+          .from("engagement_outreach_logs")
+          .insert(logRows);
+        if (logErr) {
+          console.warn(`[${requestId}] Outreach log write failed: ${logErr.message}`);
+        }
+
+        await supabase.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "engagement.auto_expired",
+          target_type: "poi_engagement",
+          target_id: null,
+          details: {
+            request_id: requestId,
+            expired_count: expired.length,
+            engagement_ids: ids,
+          },
+        });
+      }
     }
 
     return new Response(JSON.stringify({
