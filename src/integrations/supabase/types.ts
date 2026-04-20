@@ -5990,6 +5990,23 @@ export type Database = {
         }
         Returns: number
       }
+      atomic_engagement_transition: {
+        Args: {
+          p_actor_email: string
+          p_actor_name: string
+          p_actor_type: string
+          p_actor_user_id: string
+          p_audit_action?: string
+          p_audit_org_id?: string
+          p_contact_detail?: string
+          p_contact_method?: string
+          p_engagement_id: string
+          p_entry_type: string
+          p_new_status: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
       atomic_generate_poi: {
         Args: { p_match_id: string; p_org_id: string; p_settled_at: string }
         Returns: Json
@@ -6096,8 +6113,8 @@ export type Database = {
         Args: never
         Returns: {
           details: string
-          eng_id: string
           issue_type: string
+          out_engagement_id: string
         }[]
       }
       check_match_state_invariants: {
