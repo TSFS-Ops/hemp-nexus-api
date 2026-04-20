@@ -3859,6 +3859,7 @@ export type Database = {
           created_at: string
           email: string
           full_name: string | null
+          full_name_previous: string | null
           id: string
           org_id: string
           selected_persona: string | null
@@ -3869,6 +3870,7 @@ export type Database = {
           created_at?: string
           email: string
           full_name?: string | null
+          full_name_previous?: string | null
           id: string
           org_id: string
           selected_persona?: string | null
@@ -3879,6 +3881,7 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string | null
+          full_name_previous?: string | null
           id?: string
           org_id?: string
           selected_persona?: string | null
