@@ -596,7 +596,9 @@ export function AdminPendingEngagementsPanel() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                This is a record of how you reached the counterparty. No message is sent — it's only logged in the immutable outreach trail.
+                {contactMethod === "email"
+                  ? "Email is the only method where the platform can send the outreach for you. You'll preview and edit the message before it's sent."
+                  : "This is a record of how you reached the counterparty. No message is sent — it's only logged in the immutable outreach trail."}
               </p>
             </div>
             <div className="space-y-2">
@@ -621,9 +623,109 @@ export function AdminPendingEngagementsPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setContactDialog(null)}>Cancel</Button>
-            <Button onClick={submitContact} disabled={actionLoadingId === contactDialog?.id}>
-              {actionLoadingId === contactDialog?.id && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
-              Record contact
+            {contactMethod === "email" ? (
+              <Button onClick={openOutreachDialog} disabled={outreachLoading}>
+                {outreachLoading && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+                <Eye className="h-3 w-3 mr-2" />
+                Preview &amp; send email
+              </Button>
+            ) : (
+              <Button onClick={submitContact} disabled={actionLoadingId === contactDialog?.id}>
+                {actionLoadingId === contactDialog?.id && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+                Record contact
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Outreach email preview & send dialog ───────────────────────── */}
+      <Dialog open={!!outreachDialog} onOpenChange={(o) => !o && !outreachSending && setOutreachDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send outreach email</DialogTitle>
+            <DialogDescription>
+              Review the message before it's sent. Replies will route to <strong>support@izenzo.co.za</strong>.
+              On send, the engagement will be marked <strong>contacted</strong> and a full snapshot logged to the immutable trail.
+            </DialogDescription>
+          </DialogHeader>
+
+          {outreachLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              {outreachSuppressed && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    This address is on the suppression list (previously bounced or unsubscribed). Sending will be blocked. Use a different method to reach this counterparty.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label>Recipient</Label>
+                <Input value={outreachRecipient} readOnly className="font-mono text-sm bg-muted" />
+              </div>
+
+              {outreachContext && (
+                <div className="rounded-sm border border-slate-200 bg-slate-50 p-3 text-xs space-y-1">
+                  <p className="font-semibold text-slate-700 uppercase tracking-wide text-[10px]">Trade context (auto-included)</p>
+                  {outreachContext.commodity && <p><span className="text-muted-foreground">Commodity:</span> {outreachContext.commodity}</p>}
+                  {outreachContext.role && <p><span className="text-muted-foreground">Their role:</span> {outreachContext.role}</p>}
+                  {outreachContext.quantity && <p><span className="text-muted-foreground">Volume:</span> {outreachContext.quantity}</p>}
+                  {outreachContext.price && <p><span className="text-muted-foreground">Price:</span> {outreachContext.price}</p>}
+                  {outreachContext.initiator && <p><span className="text-muted-foreground">On behalf of:</span> {outreachContext.initiator}</p>}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="cp-name">Recipient name (optional, for greeting)</Label>
+                <Input
+                  id="cp-name"
+                  value={outreachCounterpartyName}
+                  onChange={(e) => setOutreachCounterpartyName(e.target.value)}
+                  placeholder="e.g. Jane Smith"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subj">Subject</Label>
+                <Input
+                  id="subj"
+                  value={outreachSubject}
+                  onChange={(e) => setOutreachSubject(e.target.value)}
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="msg">Personal message (optional, appears above the trade details)</Label>
+                <Textarea
+                  id="msg"
+                  value={outreachMessage}
+                  onChange={(e) => setOutreachMessage(e.target.value)}
+                  rows={5}
+                  maxLength={5000}
+                  placeholder="Add any context that will help the counterparty understand why we're reaching out."
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  The trade details, your signature, and the Izenzo footer are added automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOutreachDialog(null)} disabled={outreachSending}>
+              Cancel
+            </Button>
+            <Button onClick={sendOutreach} disabled={outreachSending || outreachLoading || outreachSuppressed || !outreachSubject.trim()}>
+              {outreachSending && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+              <Send className="h-3 w-3 mr-2" />
+              Send email &amp; mark contacted
             </Button>
           </DialogFooter>
         </DialogContent>
