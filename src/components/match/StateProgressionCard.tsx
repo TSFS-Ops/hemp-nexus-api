@@ -369,9 +369,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 full legal name (e.g. "Jane Smith") because it appears as the signatory on Proofs of Intent,
                 certificates, and compliance records.
               </p>
-              <a href="/desk/settings" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+              <Link to="/desk/settings" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
                 Update your personal name in Desk → Settings → My Profile
-              </a>
+              </Link>
             </div>
           </div>
         )}
