@@ -249,7 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, HEALTH_CHECK_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchRoles]);
 
   const isPlatformAdmin = roles.some(r => (PLATFORM_ADMIN_ROLES as readonly string[]).includes(r));
   const isOrgAdmin = roles.includes(APP_ROLES.ORG_ADMIN) || isPlatformAdmin;
