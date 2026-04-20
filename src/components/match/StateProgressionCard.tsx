@@ -353,13 +353,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
             <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <div className="space-y-1">
-              <p className="text-sm font-medium">Legal name required</p>
+              <p className="text-sm font-medium">Your personal legal name is required</p>
               <p className="text-xs text-muted-foreground">
-                Your profile name must be set to your full legal name before you can proceed.
-                It will appear on Proofs of Intent, certificates, and compliance records.
+                This block is about <strong>your personal name on file</strong>, not your company's legal name.
+                Your personal name is currently missing or still set to your email address. It must be your
+                full legal name (e.g. "Jane Smith") because it appears as the signatory on Proofs of Intent,
+                certificates, and compliance records.
               </p>
-              <a href="/dashboard/account" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                Update your name in Account Settings
+              <a href="/desk/settings" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                Update your personal name in Desk → Settings → My Profile
               </a>
             </div>
           </div>
