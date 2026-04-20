@@ -2,7 +2,6 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const NAV = [
   { to: "/desk", label: "Desk", icon: Briefcase, end: true },
@@ -95,8 +94,6 @@ export function DeskSidebar() {
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
             Sign out
           </button>
-          <span className="text-slate-300">·</span>
-          <NotificationBell />
         </div>
       </div>
     </aside>
