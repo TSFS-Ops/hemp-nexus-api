@@ -11,6 +11,7 @@ import { ROUTES } from "@/lib/constants";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { LegacyRedirect } from "@/components/LegacyRedirect";
 import { RequireAuth } from "@/components/RequireAuth";
+import { GlobalAdminBell } from "@/components/notifications/GlobalAdminBell";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
@@ -191,6 +192,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              <GlobalAdminBell />
               <Sonner />
             </HostnameRouter>
           </Router>
