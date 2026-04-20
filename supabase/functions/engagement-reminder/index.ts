@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      processed: staleEngagements.length,
+      processed: staleEngagements?.length || 0,
       expired: expired?.length || 0,
       request_id: requestId,
     }), {
