@@ -140,6 +140,37 @@ Deno.serve(async (req: Request) => {
 
     const fromState = matchRow.poi_state;
 
+    // ── Gap (b): Server-side legal-name enforcement on POI generation ──
+    // The actor's profiles.full_name must be a real legal name (not null,
+    // not empty, not their email address) before they can move a match
+    // out of DRAFT into PENDING_APPROVAL (i.e. generate a POI).
+    if (fromState === "DRAFT" && toState === "PENDING_APPROVAL") {
+      const { data: actorProfile } = await adminClient
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const fullName = (actorProfile?.full_name ?? "").trim();
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const looksLikeEmail = emailRe.test(fullName);
+      const equalsEmail =
+        actorProfile?.email && fullName.toLowerCase() === actorProfile.email.trim().toLowerCase();
+
+      if (!fullName || looksLikeEmail || equalsEmail) {
+        if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+        return new Response(
+          JSON.stringify({
+            error:
+              "Your personal legal name is required before you can generate a Proof of Intent. Open Desk → Settings → My Profile and replace the email in the 'Full name' field with your full legal name (e.g. 'Jane Smith'). It will appear as the signatory on the POI.",
+            code: "ACTOR_LEGAL_NAME_MISSING",
+            remediation_url: "/desk/settings",
+          }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // ── DISC-007: Discovery Gate Enforcement ──
     // POI creation (DRAFT → PENDING_APPROVAL) requires eligibility_status == PASS
     if (fromState === "DRAFT" && toState === "PENDING_APPROVAL") {
