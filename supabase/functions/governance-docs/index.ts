@@ -174,6 +174,18 @@ Deno.serve(async (req: Request) => {
         throw new ApiException("FORBIDDEN", "Only compliance or admin roles can validate governance documents", 403);
       }
 
+      // Idempotency guard — token burns must never double-charge on retry.
+      const patchKey = req.headers.get("Idempotency-Key");
+      const patchIdemOpts = {
+        supabase: admin,
+        orgId,
+        endpoint: "PATCH /governance-docs",
+        idempotencyKey: patchKey,
+        requestId: correlationId,
+      };
+      const cachedPatch = await lookupIdempotentResponse(patchIdemOpts);
+      if (cachedPatch) return cachedResponseToHttp(cachedPatch, headers);
+
       const body = await req.json();
       const parsed = GovDocValidateSchema.parse(body);
 
