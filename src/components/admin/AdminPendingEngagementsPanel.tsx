@@ -456,7 +456,7 @@ export function AdminPendingEngagementsPanel() {
         {[
           { label: "Total", value: stats.total, icon: Inbox },
           { label: "Pending", value: stats.pending, icon: Clock },
-          { label: "Notified", value: stats.notified, icon: Mail },
+          { label: "Awaiting outreach", value: stats.notified, icon: Mail },
           { label: "Contacted", value: stats.contacted, icon: Send },
           { label: "Accepted", value: stats.accepted, icon: CheckCircle2 },
         ].map((s) => (

@@ -178,7 +178,7 @@ export function DealWizard({
                 </p>
                 {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
                     <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
-                    Current status: {engagementStatus === "notification_sent" ? "Notification sent" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
+                    Current status: {engagementStatus === "notification_sent" ? "Awaiting outreach" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
                   </div>}
               </CardContent>
             </Card>}
@@ -194,7 +194,7 @@ export function DealWizard({
               {/* Inline engagement status, no need to scroll up */}
               {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
                   <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
-                  Current status: {engagementStatus === "notification_sent" ? "Notification sent" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
+                  Current status: {engagementStatus === "notification_sent" ? "Awaiting outreach" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
                 </div>}
             </CardContent>
           </Card> : <StepWad match={match} onRefresh={onRefresh} />)}
