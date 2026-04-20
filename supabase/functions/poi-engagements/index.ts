@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
           matches:match_id (
             id, commodity, quantity_amount, quantity_unit,
             price_amount, price_currency, match_type,
-            buyer_name, seller_name, buyer_org_id, seller_org_id, location, jurisdiction
+            buyer_name, seller_name, buyer_org_id, seller_org_id
           ),
           initiator_org:org_id ( id, name )
         `)
@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
           matches:match_id (
             id, commodity, quantity_amount, quantity_unit,
             price_amount, price_currency, match_type,
-            buyer_org_id, seller_org_id, location, jurisdiction
+            buyer_org_id, seller_org_id
           ),
           initiator_org:org_id ( id, name )
         `)
