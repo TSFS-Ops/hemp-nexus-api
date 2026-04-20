@@ -377,8 +377,6 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         )}
 
         {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && (
-
-        {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && !nameIsInvalid && (
           <>
             {!isFreeAction && isBalancePending ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
