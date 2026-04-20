@@ -531,7 +531,7 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={STATUS_STYLES[e.engagement_status] ?? ""}>
-                            {e.engagement_status.replace("_", " ")}
+                            {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
