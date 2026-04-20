@@ -3,27 +3,23 @@ import { useLocation } from "react-router-dom";
 import { NotificationBell } from "./NotificationBell";
 
 /**
- * GlobalAdminBell — A floating, persistent notification bell pinned to the
- * top-right of every authenticated surface for platform admins.
+ * GlobalAdminBell — A small, unobtrusive notification affordance for platform
+ * admins on surfaces that don't already render a bell inline.
  *
- * Why this exists:
- *   Admins must NEVER miss an outreach opportunity (new POI engagements,
- *   stale reminders, dispute escalations). The bell previously only rendered
- *   inside DashboardLayout, which meant admins working in /hq, /desk,
- *   /governance, or /developer surfaces had no live notification channel.
- *
- * Behaviour:
- *   - Only renders for users with platform admin role (isAdmin === true).
- *   - Hidden on the public landing, /auth, /unsubscribe, marketing/docs pages
- *     — anywhere a logged-in admin shouldn't be "working".
- *   - Hidden on /dashboard/* and /billing because those pages already render
- *     the bell inline via DashboardLayout — avoids a double bell.
- *   - Fixed position so it stays in view as the admin scrolls long admin
- *     tables (Pending Engagements, Audit Logs, etc.).
+ * Design intent:
+ *   - Sits flush in the top-right, sized to match a normal icon button.
+ *   - No heavy chrome — uses the app's neutral muted palette so it disappears
+ *     into any header (light or dark) until it has unread items.
+ *   - Suppressed on every layout that already mounts NotificationBell inline
+ *     (Dashboard, Billing, HQ admin header, Desk, Governance, Developer).
+ *     This avoids the "double bell" we previously had.
  */
 
-// Routes where the bell is suppressed (either public or already-rendered).
+// Routes where the bell is suppressed:
+//   - public marketing / auth surfaces (admin shouldn't be "working" there)
+//   - layouts that already render an inline NotificationBell in their header
 const SUPPRESSED_PREFIXES = [
+  // Public / auth
   "/auth",
   "/reset-password",
   "/welcome",
@@ -36,14 +32,17 @@ const SUPPRESSED_PREFIXES = [
   "/developers",
   "/status",
   "/walkthrough-report",
-  // DashboardLayout already renders an inline bell on these:
+  // Layouts that already render an inline bell:
   "/dashboard",
   "/billing",
+  "/hq",
 ];
 
 function isSuppressedRoute(pathname: string): boolean {
-  if (pathname === "/") return true; // public landing
-  return SUPPRESSED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (pathname === "/") return true;
+  return SUPPRESSED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
 }
 
 export function GlobalAdminBell() {
@@ -55,10 +54,12 @@ export function GlobalAdminBell() {
 
   return (
     <div
-      className="fixed top-3 right-3 z-[60] rounded-full bg-background/95 backdrop-blur-sm border border-border shadow-lg"
+      className="fixed top-2 right-2 z-50"
       data-testid="global-admin-bell"
     >
-      <NotificationBell />
+      <div className="rounded-md bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border/60 shadow-sm">
+        <NotificationBell />
+      </div>
     </div>
   );
 }
