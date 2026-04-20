@@ -211,6 +211,26 @@ export function AdminPendingEngagementsPanel() {
     setContactNotes("");
   };
 
+  // When the admin switches contact method, reset the detail field unless
+  // we have a sensible pre-fill (only email has one — the counterparty_email).
+  const handleMethodChange = (next: string) => {
+    setContactMethod(next);
+    if (next === "email") {
+      setContactDetail(contactDialog?.counterparty_email ?? "");
+    } else {
+      setContactDetail("");
+    }
+  };
+
+  const CONTACT_METHOD_META: Record<string, { label: string; placeholder: string }> = {
+    email:     { label: "Email address",       placeholder: "name@example.com" },
+    phone:     { label: "Phone number",        placeholder: "+27 82 555 0100" },
+    linkedin:  { label: "LinkedIn profile URL", placeholder: "https://www.linkedin.com/in/…" },
+    whatsapp:  { label: "WhatsApp number",     placeholder: "+27 82 555 0100" },
+    in_person: { label: "Meeting reference",   placeholder: "e.g. Cape Town office, 18 Apr" },
+    other:     { label: "Contact reference",   placeholder: "Describe how the counterparty was reached" },
+  };
+
   const submitContact = async () => {
     if (!contactDialog) return;
     if (!contactDetail.trim()) {
@@ -448,33 +468,36 @@ export function AdminPendingEngagementsPanel() {
       <Dialog open={!!contactDialog} onOpenChange={(o) => !o && setContactDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Mark engagement as contacted</DialogTitle>
+            <DialogTitle>Log outreach to counterparty</DialogTitle>
             <DialogDescription>
-              Required for the immutable outreach log. Both contact method and contact detail are mandatory.
+              Record how you contacted the counterparty. This is logged for the audit trail only — the platform does not send anything on your behalf.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="method">Contact method</Label>
-              <Select value={contactMethod} onValueChange={setContactMethod}>
+              <Select value={contactMethod} onValueChange={handleMethodChange}>
                 <SelectTrigger id="method"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="email">Email</SelectItem>
                   <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="linkedin">LinkedIn</SelectItem>
                   <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="linkedin">LinkedIn</SelectItem>
                   <SelectItem value="in_person">In person</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                This is a record of how you reached the counterparty. No message is sent — it's only logged in the immutable outreach trail.
+              </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="detail">Contact detail (email, phone, URL)</Label>
+              <Label htmlFor="detail">{CONTACT_METHOD_META[contactMethod]?.label ?? "Contact detail"}</Label>
               <Input
                 id="detail"
                 value={contactDetail}
                 onChange={(e) => setContactDetail(e.target.value)}
-                placeholder="e.g. john@example.com or +27 82 555 0100"
+                placeholder={CONTACT_METHOD_META[contactMethod]?.placeholder ?? ""}
               />
             </div>
             <div className="space-y-2">
