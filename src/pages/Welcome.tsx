@@ -51,6 +51,7 @@ function WelcomeContent() {
   const navigate = useNavigate();
   const { user, isPlatformAdmin, isOrgAdmin, roles } = useAuth();
   const [submitting, setSubmitting] = useState<Persona | null>(null);
+  const [persistError, setPersistError] = useState<string | null>(null);
 
   // Governance is a privileged surface, only auditors / org admins / platform
   // admins may select it. Standard signups never see the option, matching the
@@ -100,7 +101,9 @@ function WelcomeContent() {
 
         if (error) {
           console.error("[welcome] persona persist failed:", error.message);
-          toast.error("We couldn't save your workspace preference. You're still signed in — try again from settings.");
+          const msg = "We couldn't remember your workspace preference. Your access still works for this session — sign out and back in to retry, or contact support if the problem persists.";
+          setPersistError(msg);
+          toast.error(msg, { duration: 12000 });
           return;
         }
 
