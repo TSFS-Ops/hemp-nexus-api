@@ -65,6 +65,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Server-side role enforcement ──
+    // The client-side ALLOWED_INVITE_ROLES guard is bypassable. Verify the caller
+    // actually holds org_admin or platform_admin via user_roles.
+    const { data: callerRoles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const roleNames = (callerRoles || []).map((r: { role: string }) => r.role);
+    const canInvite = roleNames.includes("org_admin") || roleNames.includes("platform_admin");
+    if (!canInvite) {
+      console.warn(`[send-team-invite] Forbidden: user ${user.id} attempted invite without admin role`);
+      return new Response(JSON.stringify({ error: "Only organisation admins can send invitations." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Validate input
     const body = await req.json();
     const parsed = inviteEmailSchema.safeParse(body);
@@ -76,6 +93,64 @@ Deno.serve(async (req) => {
     }
 
     const { email, role, org_name, inviter_name, signup_url } = parsed.data;
+
+    // ── Validate signup_url is on a trusted host ──
+    // Prevents the platform's branded transactional template from carrying a
+    // phishing link to attacker-controlled infrastructure.
+    const ALLOWED_HOSTS = [
+      "izenzo.co.za",
+      "www.izenzo.co.za",
+      "compliance-matching.lovable.app",
+    ];
+    let signupHost: string;
+    try {
+      signupHost = new URL(signup_url).hostname.toLowerCase();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid signup_url." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const hostAllowed =
+      ALLOWED_HOSTS.includes(signupHost) ||
+      signupHost.endsWith(".izenzo.co.za") ||
+      signupHost.endsWith(".lovable.app");
+    if (!hostAllowed) {
+      console.warn(`[send-team-invite] Rejected signup_url host: ${signupHost}`);
+      return new Response(JSON.stringify({ error: "signup_url must point to an Izenzo domain." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Validate org_name matches caller's actual organisation ──
+    // Prevents impersonation of any org name in the email subject/body.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.org_id) {
+      return new Response(JSON.stringify({ error: "Caller has no organisation." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: orgRow } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", profile.org_id)
+      .maybeSingle();
+    const actualOrgName = orgRow?.name?.trim() ?? "";
+    if (!actualOrgName || actualOrgName.toLowerCase() !== org_name.trim().toLowerCase()) {
+      console.warn(
+        `[send-team-invite] org_name mismatch: caller-org="${actualOrgName}" supplied="${org_name}"`,
+      );
+      return new Response(
+        JSON.stringify({ error: "org_name does not match your organisation on record." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Rate limit
     if (!checkRateLimit(email)) {
