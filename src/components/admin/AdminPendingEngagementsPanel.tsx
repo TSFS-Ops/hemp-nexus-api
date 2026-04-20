@@ -1,0 +1,533 @@
+/**
+ * AdminPendingEngagementsPanel
+ * ────────────────────────────
+ * The dedicated admin queue for POI hold-point engagements.
+ *
+ * Surfaces every POI engagement awaiting outreach or response, with controls to:
+ *   • Send the counterparty notification email (via notification-dispatch)
+ *   • Mark as "contacted" (mandatory contact_method + contact_detail)
+ *   • Mark as "declined" or "expired"
+ *   • View the immutable outreach log per engagement
+ *
+ * Wired exclusively to the existing `poi-engagements` edge function — no new
+ * backend logic. All state transitions are server-validated.
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History,
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface Engagement {
+  id: string;
+  match_id: string;
+  org_id: string;
+  counterparty_org_id: string | null;
+  counterparty_email: string | null;
+  counterparty_type: string | null;
+  engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  contact_method: string | null;
+  contacted_at: string | null;
+  responded_at: string | null;
+  admin_notes: string | null;
+  created_at: string;
+  matches?: {
+    id: string;
+    commodity: string | null;
+    quantity_amount: number | null;
+    quantity_unit: string | null;
+    price_amount: number | null;
+    price_currency: string | null;
+    buyer_name: string | null;
+    seller_name: string | null;
+  } | null;
+  initiator_org?: { id: string; name: string } | null;
+  counterparty_org?: { id: string; name: string } | null;
+}
+
+interface OutreachLog {
+  id: string;
+  admin_email: string;
+  admin_name: string | null;
+  contact_method: string;
+  contact_detail: string;
+  previous_status: string;
+  new_status: string;
+  notes: string | null;
+  created_at: string;
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-slate-100 text-slate-700 border-slate-200",
+  notification_sent: "bg-sky-50 text-sky-700 border-sky-200",
+  contacted: "bg-amber-50 text-amber-700 border-amber-200",
+  accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  declined: "bg-rose-50 text-rose-700 border-rose-200",
+  expired: "bg-slate-100 text-slate-500 border-slate-200",
+};
+
+const FILTER_TABS = [
+  { value: "active", label: "Active queue" },
+  { value: "pending", label: "Pending" },
+  { value: "notification_sent", label: "Notified" },
+  { value: "contacted", label: "Contacted" },
+  { value: "accepted", label: "Accepted" },
+  { value: "declined", label: "Declined" },
+  { value: "all", label: "All" },
+] as const;
+
+export function AdminPendingEngagementsPanel() {
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<string>("active");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Dialog state
+  const [contactDialog, setContactDialog] = useState<Engagement | null>(null);
+  const [logDialog, setLogDialog] = useState<Engagement | null>(null);
+  const [logs, setLogs] = useState<OutreachLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  // Contact form state
+  const [contactMethod, setContactMethod] = useState<string>("email");
+  const [contactDetail, setContactDetail] = useState<string>("");
+  const [contactNotes, setContactNotes] = useState<string>("");
+
+  const fetchEngagements = async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("poi-engagements", {
+        method: "GET",
+      });
+      if (error) throw error;
+      setEngagements((data?.engagements ?? []) as Engagement[]);
+    } catch (err) {
+      console.error("Failed to load engagements:", err);
+      toast.error("Failed to load engagements");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEngagements();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return engagements;
+    if (filter === "active") {
+      return engagements.filter((e) =>
+        ["pending", "notification_sent", "contacted"].includes(e.engagement_status)
+      );
+    }
+    return engagements.filter((e) => e.engagement_status === filter);
+  }, [engagements, filter]);
+
+  const stats = useMemo(() => ({
+    total: engagements.length,
+    pending: engagements.filter((e) => e.engagement_status === "pending").length,
+    notified: engagements.filter((e) => e.engagement_status === "notification_sent").length,
+    contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
+    accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
+  }), [engagements]);
+
+  // ── Send notification via the existing notification-dispatch path ──
+  const sendNotification = async (eng: Engagement) => {
+    if (!eng.counterparty_email) {
+      toast.error("No counterparty email on file. Add one before sending.");
+      return;
+    }
+    setActionLoadingId(eng.id);
+    try {
+      const { error: dispatchErr } = await supabase.functions.invoke("notification-dispatch", {
+        body: {
+          template: "poi-counterparty-notify",
+          recipient: eng.counterparty_email,
+          match_id: eng.match_id,
+          engagement_id: eng.id,
+        },
+      });
+      if (dispatchErr) throw dispatchErr;
+
+      // Update status to notification_sent
+      const { error: updateErr } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}`,
+        {
+          method: "PATCH",
+          body: { engagement_status: "notification_sent" },
+        }
+      );
+      if (updateErr) throw updateErr;
+
+      toast.success(`Notification sent to ${eng.counterparty_email}`);
+      fetchEngagements();
+    } catch (err) {
+      console.error("Send notification error:", err);
+      toast.error("Failed to send notification");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // ── Open the "Mark as contacted" dialog ──
+  const openContactDialog = (eng: Engagement) => {
+    setContactDialog(eng);
+    setContactMethod("email");
+    setContactDetail(eng.counterparty_email ?? "");
+    setContactNotes("");
+  };
+
+  const submitContact = async () => {
+    if (!contactDialog) return;
+    if (!contactDetail.trim()) {
+      toast.error("Contact detail is required");
+      return;
+    }
+    setActionLoadingId(contactDialog.id);
+    try {
+      const { error } = await supabase.functions.invoke(
+        `poi-engagements/${contactDialog.id}`,
+        {
+          method: "PATCH",
+          body: {
+            engagement_status: "contacted",
+            contact_method: contactMethod,
+            contact_detail: contactDetail.trim(),
+            admin_notes: contactNotes.trim() || undefined,
+          },
+        }
+      );
+      if (error) throw error;
+      toast.success("Engagement marked as contacted");
+      setContactDialog(null);
+      fetchEngagements();
+    } catch (err) {
+      console.error("Mark contacted error:", err);
+      toast.error("Failed to mark as contacted");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // ── Decline / expire ──
+  const setStatus = async (eng: Engagement, status: "declined" | "expired") => {
+    setActionLoadingId(eng.id);
+    try {
+      const { error } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}`,
+        {
+          method: "PATCH",
+          body: { engagement_status: status },
+        }
+      );
+      if (error) throw error;
+      toast.success(`Engagement ${status}`);
+      fetchEngagements();
+    } catch (err) {
+      console.error(`Set ${status} error:`, err);
+      toast.error(`Failed to mark ${status}`);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // ── View immutable outreach log ──
+  const openLog = async (eng: Engagement) => {
+    setLogDialog(eng);
+    setLogs([]);
+    setLogsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}/outreach-log`,
+        { method: "GET" }
+      );
+      if (error) throw error;
+      setLogs((data?.logs ?? []) as OutreachLog[]);
+    } catch (err) {
+      console.error("Load outreach log error:", err);
+      toast.error("Failed to load outreach log");
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header + refresh */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Pending Engagements</h2>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+            POI hold-point queue. Review counterparties awaiting outreach, send notifications,
+            and record manual contact attempts. Every action is written to an immutable outreach log.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: "Total", value: stats.total, icon: Inbox },
+          { label: "Pending", value: stats.pending, icon: Clock },
+          { label: "Notified", value: stats.notified, icon: Mail },
+          { label: "Contacted", value: stats.contacted, icon: Send },
+          { label: "Accepted", value: stats.accepted, icon: CheckCircle2 },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                </div>
+                <s.icon className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Filter tabs */}
+      <Tabs value={filter} onValueChange={setFilter}>
+        <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
+          {FILTER_TABS.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12 text-sm">
+              No engagements match the current filter.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Match</TableHead>
+                    <TableHead>Initiator</TableHead>
+                    <TableHead>Counterparty</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((e) => {
+                    const m = e.matches;
+                    const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
+                    return (
+                      <TableRow key={e.id}>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p className="font-medium">{m?.commodity ?? "—"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {m?.quantity_amount} {m?.quantity_unit} · {m?.price_currency} {m?.price_amount?.toLocaleString?.() ?? "—"}
+                            </p>
+                            <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                              {e.match_id.substring(0, 8)}…
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {e.initiator_org?.name ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <p>{e.counterparty_org?.name ?? "(unregistered)"}</p>
+                          {e.counterparty_email && (
+                            <p className="text-xs text-muted-foreground">{e.counterparty_email}</p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={STATUS_STYLES[e.engagement_status] ?? ""}>
+                            {e.engagement_status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(e.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end flex-wrap">
+                            {e.engagement_status === "pending" && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => sendNotification(e)}
+                                disabled={actionLoadingId === e.id || !e.counterparty_email}
+                                title={!e.counterparty_email ? "No email on file" : "Send notification email"}
+                              >
+                                <Mail className="h-3 w-3 mr-1" /> Notify
+                              </Button>
+                            )}
+                            {!isTerminal && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => openContactDialog(e)}
+                                disabled={actionLoadingId === e.id}
+                              >
+                                <Send className="h-3 w-3 mr-1" /> Mark contacted
+                              </Button>
+                            )}
+                            {!isTerminal && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => setStatus(e, "declined")}
+                                disabled={actionLoadingId === e.id}
+                              >
+                                <XCircle className="h-3 w-3 mr-1" /> Decline
+                              </Button>
+                            )}
+                            <Button
+                              size="sm" variant="ghost"
+                              onClick={() => openLog(e)}
+                            >
+                              <History className="h-3 w-3 mr-1" /> Log
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Mark as contacted dialog ───────────────────────────────────── */}
+      <Dialog open={!!contactDialog} onOpenChange={(o) => !o && setContactDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark engagement as contacted</DialogTitle>
+            <DialogDescription>
+              Required for the immutable outreach log. Both contact method and contact detail are mandatory.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="method">Contact method</Label>
+              <Select value={contactMethod} onValueChange={setContactMethod}>
+                <SelectTrigger id="method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="linkedin">LinkedIn</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="in_person">In person</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="detail">Contact detail (email, phone, URL)</Label>
+              <Input
+                id="detail"
+                value={contactDetail}
+                onChange={(e) => setContactDetail(e.target.value)}
+                placeholder="e.g. john@example.com or +27 82 555 0100"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                value={contactNotes}
+                onChange={(e) => setContactNotes(e.target.value)}
+                placeholder="Outcome, next steps, anything material to the audit trail."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setContactDialog(null)}>Cancel</Button>
+            <Button onClick={submitContact} disabled={actionLoadingId === contactDialog?.id}>
+              {actionLoadingId === contactDialog?.id && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+              Record contact
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Outreach log dialog ────────────────────────────────────────── */}
+      <Dialog open={!!logDialog} onOpenChange={(o) => !o && setLogDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Outreach log</DialogTitle>
+            <DialogDescription>
+              Immutable history of every status change and contact attempt for this engagement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-3">
+            {logsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : logs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No outreach entries recorded yet.
+              </p>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="border border-slate-200 rounded-sm p-3 text-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="outline" className={STATUS_STYLES[log.new_status] ?? ""}>
+                      {log.previous_status} → {log.new_status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(log.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    By <span className="font-medium text-slate-700">{log.admin_name ?? log.admin_email}</span>
+                    {" · "}
+                    {log.contact_method}: <span className="font-mono">{log.contact_detail}</span>
+                  </p>
+                  {log.notes && (
+                    <p className="text-xs text-slate-700 mt-2 whitespace-pre-wrap">{log.notes}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogDialog(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
