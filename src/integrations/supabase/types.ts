@@ -6092,6 +6092,14 @@ export type Database = {
           match_id: string
         }[]
       }
+      check_engagement_log_integrity: {
+        Args: never
+        Returns: {
+          details: string
+          engagement_id: string
+          issue_type: string
+        }[]
+      }
       check_match_state_invariants: {
         Args: never
         Returns: {
