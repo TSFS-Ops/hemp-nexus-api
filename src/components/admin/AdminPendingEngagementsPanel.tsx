@@ -65,13 +65,22 @@ interface OutreachLog {
   id: string;
   admin_email: string;
   admin_name: string | null;
-  contact_method: string;
-  contact_detail: string;
+  entry_type: "contact_attempt" | "status_change" | "notes_edit" | "email_update" | "system_action";
+  contact_method: string | null;
+  contact_detail: string | null;
   previous_status: string;
   new_status: string;
   notes: string | null;
   created_at: string;
 }
+
+const ENTRY_TYPE_LABEL: Record<OutreachLog["entry_type"], string> = {
+  contact_attempt: "Contact attempt",
+  status_change: "Status change",
+  notes_edit: "Notes edit",
+  email_update: "Email updated",
+  system_action: "System action",
+};
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-slate-100 text-slate-700 border-slate-200",
@@ -504,17 +513,28 @@ export function AdminPendingEngagementsPanel() {
               logs.map((log) => (
                 <div key={log.id} className="border border-slate-200 rounded-sm p-3 text-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className={STATUS_STYLES[log.new_status] ?? ""}>
-                      {log.previous_status} → {log.new_status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-[10px] uppercase tracking-wide">
+                        {ENTRY_TYPE_LABEL[log.entry_type] ?? log.entry_type}
+                      </Badge>
+                      {log.previous_status !== log.new_status && (
+                        <Badge variant="outline" className={STATUS_STYLES[log.new_status] ?? ""}>
+                          {log.previous_status} → {log.new_status}
+                        </Badge>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">
                       {new Date(log.created_at).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     By <span className="font-medium text-slate-700">{log.admin_name ?? log.admin_email}</span>
-                    {" · "}
-                    {log.contact_method}: <span className="font-mono">{log.contact_detail}</span>
+                    {log.contact_method && log.contact_detail && (
+                      <>
+                        {" · "}
+                        {log.contact_method}: <span className="font-mono">{log.contact_detail}</span>
+                      </>
+                    )}
                   </p>
                   {log.notes && (
                     <p className="text-xs text-slate-700 mt-2 whitespace-pre-wrap">{log.notes}</p>

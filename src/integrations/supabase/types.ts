@@ -1860,10 +1860,11 @@ export type Database = {
           admin_email: string
           admin_name: string | null
           admin_user_id: string
-          contact_detail: string
-          contact_method: string
+          contact_detail: string | null
+          contact_method: string | null
           created_at: string
           engagement_id: string
+          entry_type: string
           id: string
           new_status: string
           notes: string | null
@@ -1873,10 +1874,11 @@ export type Database = {
           admin_email: string
           admin_name?: string | null
           admin_user_id: string
-          contact_detail: string
-          contact_method: string
+          contact_detail?: string | null
+          contact_method?: string | null
           created_at?: string
           engagement_id: string
+          entry_type?: string
           id?: string
           new_status: string
           notes?: string | null
@@ -1886,10 +1888,11 @@ export type Database = {
           admin_email?: string
           admin_name?: string | null
           admin_user_id?: string
-          contact_detail?: string
-          contact_method?: string
+          contact_detail?: string | null
+          contact_method?: string | null
           created_at?: string
           engagement_id?: string
+          entry_type?: string
           id?: string
           new_status?: string
           notes?: string | null
