@@ -216,8 +216,9 @@ export function OrgProfileForm() {
               <Input id="org-name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} aria-label="Display name" maxLength={200} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="legal-name">Legal Name</Label>
-              <Input id="legal-name" value={profile.legal_name ?? ""} onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })} placeholder="Registered legal entity name" aria-label="Legal name" maxLength={300} />
+              <Label htmlFor="legal-name">Registered Company Name</Label>
+              <Input id="legal-name" value={profile.legal_name ?? ""} onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })} placeholder="Registered legal entity name (e.g. Acme Trading (Pty) Ltd)" aria-label="Registered company name" maxLength={300} />
+              <p className="text-xs text-muted-foreground">This is your <strong>company's</strong> registered name. Your <strong>personal</strong> signatory name is set on the My Profile tab.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="trading-name">Trading Name</Label>
