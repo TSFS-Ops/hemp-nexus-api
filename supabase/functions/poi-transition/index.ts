@@ -5,6 +5,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -151,13 +152,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", user.id)
         .maybeSingle();
 
-      const fullName = (actorProfile?.full_name ?? "").trim();
-      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const looksLikeEmail = emailRe.test(fullName);
-      const equalsEmail =
-        actorProfile?.email && fullName.toLowerCase() === actorProfile.email.trim().toLowerCase();
-
-      if (!fullName || looksLikeEmail || equalsEmail) {
+      if (isActorLegalNameMissing(actorProfile)) {
         if (hasLock) await adminClient.rpc("release_lifecycle_lock");
         return new Response(
           JSON.stringify({
