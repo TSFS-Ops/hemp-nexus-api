@@ -281,7 +281,97 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
-  // ── Decline / expire ──
+  // ── Open the outreach email preview dialog (for method=email) ──
+  // Closes the contact dialog, fetches the rendered preview from the backend.
+  const openOutreachDialog = async () => {
+    if (!contactDialog) return;
+    if (!contactDetail.trim()) {
+      toast.error("Email address is required");
+      return;
+    }
+
+    const eng = contactDialog;
+    setOutreachLoading(true);
+    setOutreachDialog(eng);
+    setContactDialog(null);
+    setOutreachRecipient(contactDetail.trim().toLowerCase());
+    setOutreachSuppressed(false);
+    setOutreachSubject("");
+    setOutreachMessage("");
+    setOutreachCounterpartyName("");
+    setOutreachContext(null);
+
+    try {
+      // If the admin typed a different email than the one on file, persist it
+      // first so the preview/send pulls the correct recipient.
+      if (
+        contactDetail.trim().toLowerCase() !== (eng.counterparty_email ?? "").toLowerCase() &&
+        contactDetail.trim().length > 0
+      ) {
+        await supabase.functions.invoke(`poi-engagements/${eng.id}`, {
+          method: "PATCH",
+          body: { counterparty_email: contactDetail.trim() },
+        });
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}/preview-outreach`,
+        { method: "POST", body: {} }
+      );
+      if (error) throw error;
+
+      const td = data?.template_data ?? {};
+      setOutreachRecipient(data?.recipient ?? "");
+      setOutreachSuppressed(!!data?.suppressed);
+      setOutreachSubject(data?.subject ?? "");
+      setOutreachMessage(td.customMessage ?? "");
+      setOutreachContext({
+        commodity: td.commodity ?? null,
+        role: td.counterpartyRole ?? null,
+        quantity: [td.quantityAmount, td.quantityUnit].filter(Boolean).join(" ") || null,
+        price: [td.priceCurrency, td.priceAmount?.toLocaleString?.() ?? td.priceAmount].filter(Boolean).join(" ") || null,
+        initiator: td.initiatorOrgName ?? null,
+      });
+    } catch (err: any) {
+      console.error("Preview outreach error:", err);
+      toast.error(err?.message || "Could not load email preview");
+      setOutreachDialog(null);
+    } finally {
+      setOutreachLoading(false);
+    }
+  };
+
+  // ── Send the outreach email and atomically mark contacted ──
+  const sendOutreach = async () => {
+    if (!outreachDialog) return;
+    if (!outreachSubject.trim()) {
+      toast.error("Subject is required");
+      return;
+    }
+    setOutreachSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        `poi-engagements/${outreachDialog.id}/send-outreach`,
+        {
+          method: "POST",
+          body: {
+            subject: outreachSubject.trim(),
+            custom_message: outreachMessage.trim() || undefined,
+            counterparty_name: outreachCounterpartyName.trim() || undefined,
+          },
+        }
+      );
+      if (error) throw error;
+      toast.success(`Email sent to ${data?.sent_to ?? outreachRecipient}`);
+      setOutreachDialog(null);
+      fetchEngagements();
+    } catch (err: any) {
+      console.error("Send outreach error:", err);
+      toast.error(err?.message || "Failed to send outreach email");
+    } finally {
+      setOutreachSending(false);
+    }
+  };
   const setStatus = async (eng: Engagement, status: "declined" | "expired") => {
     setActionLoadingId(eng.id);
     try {
