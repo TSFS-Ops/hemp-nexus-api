@@ -251,27 +251,52 @@ Deno.serve(async (req) => {
         },
       });
 
-      // ── Immutable outreach log (if status changed and contact details provided) ──
-      if (updates.engagement_status && parsed.data.contact_method && parsed.data.contact_detail) {
-        // Fetch admin profile for snapshot
-        const { data: adminProfile } = await supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("id", authCtx.userId)
-          .single();
+      // ── Immutable outreach log: write for EVERY admin mutation ──
+      // Classify the entry so auditors can distinguish a real contact attempt
+      // from a status flip, notes edit, or email correction.
+      const isContactAttempt =
+        updates.engagement_status === "contacted" &&
+        !!parsed.data.contact_method &&
+        !!parsed.data.contact_detail;
 
-        await supabase.from("engagement_outreach_logs").insert({
-          engagement_id: engagementId,
-          admin_user_id: authCtx.userId,
-          admin_email: adminProfile?.email || "unknown",
-          admin_name: adminProfile?.full_name || null,
-          contact_method: parsed.data.contact_method,
-          contact_detail: parsed.data.contact_detail,
-          previous_status: current.engagement_status,
-          new_status: updates.engagement_status as string,
-          notes: parsed.data.admin_notes || null,
-        });
+      let entryType: "contact_attempt" | "status_change" | "notes_edit" | "email_update";
+      if (isContactAttempt) {
+        entryType = "contact_attempt";
+      } else if (updates.engagement_status) {
+        entryType = "status_change";
+      } else if (parsed.data.counterparty_email !== undefined) {
+        entryType = "email_update";
+      } else if (parsed.data.admin_notes !== undefined) {
+        entryType = "notes_edit";
+      } else {
+        entryType = "status_change";
       }
+
+      // Snapshot admin identity at the moment of the action
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .single();
+
+      await supabase.from("engagement_outreach_logs").insert({
+        engagement_id: engagementId,
+        admin_user_id: authCtx.userId,
+        admin_email: adminProfile?.email || "unknown",
+        admin_name: adminProfile?.full_name || null,
+        entry_type: entryType,
+        // contact_method/detail only populated for real contact attempts;
+        // null for status changes, notes edits, and email updates.
+        contact_method: isContactAttempt ? parsed.data.contact_method : null,
+        contact_detail: isContactAttempt ? parsed.data.contact_detail : null,
+        previous_status: current.engagement_status,
+        new_status: (updates.engagement_status as string) || current.engagement_status,
+        notes:
+          parsed.data.admin_notes ||
+          (entryType === "email_update"
+            ? `Counterparty email updated to ${parsed.data.counterparty_email}`
+            : null),
+      });
 
       console.log(`[${requestId}] Engagement ${engagementId} updated: ${current.engagement_status} → ${updates.engagement_status || "(no status change)"}`);
 
