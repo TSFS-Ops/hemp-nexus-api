@@ -474,11 +474,50 @@ export function ApiKeysPanel() {
                 />
               </label>
             </div>
+            <div className="px-6 pb-5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 block mb-2">
+                Scopes (permissions)
+              </span>
+              <div className="space-y-1.5 max-h-56 overflow-y-auto border border-slate-800 rounded-sm p-2 bg-black/40">
+                {AVAILABLE_SCOPES.map((s) => {
+                  const checked = newScopes.includes(s.value);
+                  return (
+                    <label
+                      key={s.value}
+                      className="flex items-start gap-2 px-2 py-1.5 hover:bg-slate-800/40 rounded-sm cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setNewScopes((prev) =>
+                            prev.includes(s.value)
+                              ? prev.filter((v) => v !== s.value)
+                              : [...prev, s.value]
+                          );
+                        }}
+                        className="mt-0.5 accent-green-500"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-mono text-[12px] text-slate-100">{s.label}</div>
+                        <div className="text-[11px] text-slate-500">{s.hint}</div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+              {newScopes.length === 0 && (
+                <p className="mt-2 font-mono text-[10px] text-amber-400">
+                  ⚠ Key with no scopes will be rejected by every endpoint.
+                </p>
+              )}
+            </div>
             <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
               <button
                 onClick={() => {
                   setCreating(false);
                   setNewName("");
+                  setNewScopes(["match"]);
                 }}
                 className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 px-3 py-1.5 rounded-sm transition-colors"
               >
@@ -488,7 +527,8 @@ export function ApiKeysPanel() {
                 onClick={() => {
                   const n = newName.trim();
                   if (!n) return toast.error("Label is required");
-                  createMut.mutate(n);
+                  if (newScopes.length === 0) return toast.error("Select at least one scope");
+                  createMut.mutate({ name: n, scopes: newScopes });
                 }}
                 disabled={createMut.isPending}
                 className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 bg-green-600/20 border border-green-500/40 hover:bg-green-600/30 px-4 py-1.5 rounded-sm transition-colors disabled:opacity-50"
