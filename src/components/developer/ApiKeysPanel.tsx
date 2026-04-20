@@ -295,6 +295,18 @@ function KeyCard({
   );
 }
 
+const AVAILABLE_SCOPES: { value: string; label: string; hint: string }[] = [
+  { value: "match", label: "match", hint: "Create & manage trade matches" },
+  { value: "match:read", label: "match:read", hint: "Read-only match access" },
+  { value: "signals", label: "signals", hint: "Submit & read trade signals" },
+  { value: "collapse", label: "collapse", hint: "Collapse-ledger writes" },
+  { value: "preflight", label: "preflight", hint: "Pre-trade eligibility checks" },
+  { value: "trade-status", label: "trade-status", hint: "Read trade status" },
+  { value: "evidence", label: "evidence", hint: "Read evidence packs" },
+  { value: "webhooks:write", label: "webhooks:write", hint: "Manage webhook endpoints" },
+  { value: "webhooks:read", label: "webhooks:read", hint: "Read webhook config & logs" },
+];
+
 export function ApiKeysPanel() {
   const qc = useQueryClient();
   const [revealed, setRevealed] = useState<RevealedKey | null>(null);
@@ -304,6 +316,7 @@ export function ApiKeysPanel() {
   >(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newScopes, setNewScopes] = useState<string[]>(["match"]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["developer-api-keys"],
