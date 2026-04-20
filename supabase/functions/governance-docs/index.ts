@@ -3,6 +3,11 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import {
+  cachedResponseToHttp,
+  lookupIdempotentResponse,
+  storeIdempotentResponse,
+} from "../_shared/idempotency.ts";
 
 /**
  * Governance Documents Edge Function - V3 Sprint 3

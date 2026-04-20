@@ -348,7 +348,9 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
-      return new Response(JSON.stringify({ engagement: updated }), {
+      const responseBody = { engagement: updated };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
       });
