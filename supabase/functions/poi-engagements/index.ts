@@ -159,6 +159,21 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", JSON.stringify(parsed.error.flatten().fieldErrors), 400);
       }
 
+      // ── Reject empty PATCH bodies — no-op writes pollute the immutable log ──
+      const hasMeaningfulChange =
+        parsed.data.engagement_status !== undefined ||
+        parsed.data.counterparty_email !== undefined ||
+        parsed.data.admin_notes !== undefined ||
+        parsed.data.contact_method !== undefined ||
+        parsed.data.contact_date !== undefined;
+      if (!hasMeaningfulChange) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Request must include at least one field to update (engagement_status, counterparty_email, admin_notes, contact_method, or contact_date).",
+          400
+        );
+      }
+
       // Fetch current engagement
       const { data: current, error: fetchErr } = await supabase
         .from("poi_engagements")
@@ -281,6 +296,7 @@ Deno.serve(async (req) => {
 
       await supabase.from("engagement_outreach_logs").insert({
         engagement_id: engagementId,
+        actor_type: "admin",
         admin_user_id: authCtx.userId,
         admin_email: adminProfile?.email || "unknown",
         admin_name: adminProfile?.full_name || null,
@@ -442,6 +458,29 @@ Deno.serve(async (req) => {
           previous_status: currentStatus,
           new_status: parsed.data.action,
         },
+      });
+
+      // ── Immutable outreach log: capture the counterparty's own response ──
+      // Without this, the immutable history shows the admin marking it 'contacted'
+      // and then jumps silently to the next admin touch — the response itself is invisible.
+      const { data: responderProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .single();
+
+      await supabase.from("engagement_outreach_logs").insert({
+        engagement_id: engagement.id,
+        actor_type: "counterparty",
+        admin_user_id: authCtx.userId,
+        admin_email: responderProfile?.email || null,
+        admin_name: responderProfile?.full_name || null,
+        entry_type: "status_change",
+        contact_method: null,
+        contact_detail: null,
+        previous_status: currentStatus,
+        new_status: parsed.data.action,
+        notes: `Counterparty self-serve response: ${parsed.data.action}`,
       });
 
       console.log(`[${requestId}] Counterparty ${authCtx.orgId} responded '${parsed.data.action}' on engagement ${engagement.id}`);

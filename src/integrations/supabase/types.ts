@@ -1857,9 +1857,10 @@ export type Database = {
       }
       engagement_outreach_logs: {
         Row: {
-          admin_email: string
+          actor_type: string
+          admin_email: string | null
           admin_name: string | null
-          admin_user_id: string
+          admin_user_id: string | null
           contact_detail: string | null
           contact_method: string | null
           created_at: string
@@ -1871,9 +1872,10 @@ export type Database = {
           previous_status: string
         }
         Insert: {
-          admin_email: string
+          actor_type?: string
+          admin_email?: string | null
           admin_name?: string | null
-          admin_user_id: string
+          admin_user_id?: string | null
           contact_detail?: string | null
           contact_method?: string | null
           created_at?: string
@@ -1885,9 +1887,10 @@ export type Database = {
           previous_status: string
         }
         Update: {
-          admin_email?: string
+          actor_type?: string
+          admin_email?: string | null
           admin_name?: string | null
-          admin_user_id?: string
+          admin_user_id?: string | null
           contact_detail?: string | null
           contact_method?: string | null
           created_at?: string

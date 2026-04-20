@@ -63,7 +63,8 @@ interface Engagement {
 
 interface OutreachLog {
   id: string;
-  admin_email: string;
+  actor_type: "admin" | "counterparty" | "system";
+  admin_email: string | null;
   admin_name: string | null;
   entry_type: "contact_attempt" | "status_change" | "notes_edit" | "email_update" | "system_action";
   contact_method: string | null;
@@ -80,6 +81,12 @@ const ENTRY_TYPE_LABEL: Record<OutreachLog["entry_type"], string> = {
   notes_edit: "Notes edit",
   email_update: "Email updated",
   system_action: "System action",
+};
+
+const ACTOR_TYPE_LABEL: Record<OutreachLog["actor_type"], string> = {
+  admin: "Admin",
+  counterparty: "Counterparty (self-serve)",
+  system: "System (auto)",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -513,7 +520,19 @@ export function AdminPendingEngagementsPanel() {
               logs.map((log) => (
                 <div key={log.id} className="border border-slate-200 rounded-sm p-3 text-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge
+                        variant="outline"
+                        className={
+                          log.actor_type === "counterparty"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] uppercase tracking-wide"
+                            : log.actor_type === "system"
+                            ? "bg-violet-50 text-violet-700 border-violet-200 text-[10px] uppercase tracking-wide"
+                            : "bg-sky-50 text-sky-700 border-sky-200 text-[10px] uppercase tracking-wide"
+                        }
+                      >
+                        {ACTOR_TYPE_LABEL[log.actor_type] ?? log.actor_type}
+                      </Badge>
                       <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-[10px] uppercase tracking-wide">
                         {ENTRY_TYPE_LABEL[log.entry_type] ?? log.entry_type}
                       </Badge>
@@ -528,7 +547,7 @@ export function AdminPendingEngagementsPanel() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    By <span className="font-medium text-slate-700">{log.admin_name ?? log.admin_email}</span>
+                    By <span className="font-medium text-slate-700">{log.admin_name ?? log.admin_email ?? "Unknown actor"}</span>
                     {log.contact_method && log.contact_detail && (
                       <>
                         {" · "}
