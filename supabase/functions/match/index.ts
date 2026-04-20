@@ -405,7 +405,7 @@ Deno.serve(async (req) => {
                 type: "poi_admin_facilitation",
                 title: `Facilitation needed: ${match.commodity || 'Trade'} POI`,
                 body: `A Proof of Intent has been generated for ${match.commodity || 'a trade'} by ${creatorOrgName}. The counterparty is not yet on the platform — please facilitate contact.`,
-                link: `/dashboard/matches/${matchId}`,
+                link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
               }));
               await supabase.from("notifications").insert(notifRows);
@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
                 type: "poi_support_desk",
                 title: `Outreach needed: ${counterpartyName} — ${match.commodity || 'Trade'}`,
                 body: `${creatorOrgName} generated a POI for ${match.commodity || 'a trade'} with ${counterpartyName}, who is not registered. Manual outreach required.`,
-                link: `/dashboard/matches/${matchId}`,
+                link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
               }));
               await supabase.from("notifications").insert(notifRows);
@@ -507,7 +507,7 @@ Deno.serve(async (req) => {
                 type: "poi_counterparty_notification",
                 title: `POI issued: ${match.commodity || 'Trade'}`,
                 body: `A Proof of Intent has been issued for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and respond.`,
-                link: `/dashboard/matches/${matchId}`,
+                link: `/desk/match/${matchId}`,
                 org_id: counterpartyOrgId,
               }));
               await supabase.from("notifications").insert(notifRows);
