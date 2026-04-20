@@ -6,7 +6,6 @@
 
 import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
-import { TopRightBell } from "@/components/notifications/TopRightBell";
 
 interface Props {
   eyebrow: string;
@@ -20,7 +19,6 @@ interface Props {
 export function GovernancePage({ eyebrow, title, description, icon: Icon, meta, children }: Props) {
   return (
     <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col bg-white pb-16 md:pb-0">
-      <TopRightBell />
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-6xl px-6 md:px-12 pt-10 md:pt-14 pb-16">
           {/* Eyebrow */}
