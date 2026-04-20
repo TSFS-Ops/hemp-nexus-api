@@ -49,8 +49,17 @@ const PERSONAS: PersonaCard[] = [
 
 function WelcomeContent() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isPlatformAdmin, isOrgAdmin, roles } = useAuth();
   const [submitting, setSubmitting] = useState<Persona | null>(null);
+
+  // Governance is a privileged surface, only auditors / org admins / platform
+  // admins may select it. Standard signups never see the option, matching the
+  // authorisation matrix used by ContextSwitcher.
+  const isAuditor = roles.includes("auditor");
+  const canSelectGovernance = isPlatformAdmin || isOrgAdmin || isAuditor;
+  const visiblePersonas = PERSONAS.filter(
+    (p) => p.id !== "governance" || canSelectGovernance,
+  );
 
   const handleSelect = async (persona: PersonaCard) => {
     if (!user || submitting) return;
@@ -104,7 +113,7 @@ function WelcomeContent() {
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {PERSONAS.map((p) => {
+            {visiblePersonas.map((p) => {
               const Icon = p.icon;
               const isSubmitting = submitting === p.id;
               const isDisabled = submitting !== null && !isSubmitting;
