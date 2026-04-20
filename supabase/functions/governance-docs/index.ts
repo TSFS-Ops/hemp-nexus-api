@@ -3,6 +3,11 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import {
+  cachedResponseToHttp,
+  lookupIdempotentResponse,
+  storeIdempotentResponse,
+} from "../_shared/idempotency.ts";
 
 /**
  * Governance Documents Edge Function - V3 Sprint 3
@@ -76,6 +81,19 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Submit governance document ──
     if (req.method === "POST") {
+      // Idempotency guard — duplicate submissions must not double-insert
+      // governance documents or fire the validated→token-burn pipeline twice.
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      const idemOpts = {
+        supabase: admin,
+        orgId,
+        endpoint: "POST /governance-docs",
+        idempotencyKey,
+        requestId: correlationId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
       const body = await req.json();
       const parsed = GovDocCreateSchema.parse(body);
 
@@ -138,8 +156,10 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ doc_id: govDoc.id })),
       });
 
+      const responseBody = successEnvelope(govDoc, correlationId);
+      await storeIdempotentResponse(idemOpts, { status: 201, body: responseBody });
       return new Response(
-        JSON.stringify(successEnvelope(govDoc, correlationId)),
+        JSON.stringify(responseBody),
         { status: 201, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
@@ -153,6 +173,18 @@ Deno.serve(async (req: Request) => {
       if (!isComplianceOrAdmin) {
         throw new ApiException("FORBIDDEN", "Only compliance or admin roles can validate governance documents", 403);
       }
+
+      // Idempotency guard — token burns must never double-charge on retry.
+      const patchKey = req.headers.get("Idempotency-Key");
+      const patchIdemOpts = {
+        supabase: admin,
+        orgId,
+        endpoint: "PATCH /governance-docs",
+        idempotencyKey: patchKey,
+        requestId: correlationId,
+      };
+      const cachedPatch = await lookupIdempotentResponse(patchIdemOpts);
+      if (cachedPatch) return cachedResponseToHttp(cachedPatch, headers);
 
       const body = await req.json();
       const parsed = GovDocValidateSchema.parse(body);
@@ -208,8 +240,10 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ doc_id: govDoc.id, validated: true })),
       });
 
+      const patchResponseBody = successEnvelope({ ...updated, token_burned_amount: burnAmount }, correlationId);
+      await storeIdempotentResponse(patchIdemOpts, { status: 200, body: patchResponseBody });
       return new Response(
-        JSON.stringify(successEnvelope({ ...updated, token_burned_amount: burnAmount }, correlationId)),
+        JSON.stringify(patchResponseBody),
         { headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
