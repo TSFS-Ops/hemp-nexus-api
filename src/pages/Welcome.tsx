@@ -163,9 +163,18 @@ function WelcomeContent() {
               How will you use Izenzo?
             </h1>
             <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-slate-500 leading-relaxed max-w-xl mx-auto px-2">
-              Choose your primary workspace. You can switch contexts at any time from settings.
+              Choose your primary workspace. Sign out and back in to change it later.
             </p>
           </div>
+
+          {persistError && (
+            <div
+              role="alert"
+              className="mb-6 max-w-3xl mx-auto rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              {persistError}
+            </div>
+          )}
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
