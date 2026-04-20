@@ -57,9 +57,7 @@ export function GlobalAdminBell() {
       className="fixed top-2 right-2 z-50"
       data-testid="global-admin-bell"
     >
-      <div className="rounded-md bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border/60 shadow-sm">
-        <NotificationBell />
-      </div>
+      <NotificationBell />
     </div>
   );
 }
