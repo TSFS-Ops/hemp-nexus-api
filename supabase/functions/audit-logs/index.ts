@@ -26,7 +26,8 @@ Deno.serve(async (req) => {
     // Authenticate
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
 
-    // JWT/console users can always view their org's audit logs (no token burn).
+    // JWT/console users can view their org's audit logs ONLY if they hold an
+    // admin or auditor role. Plain org_members cannot read the audit trail.
     // API-key callers need explicit scope AND burn a token.
     if (authCtx.isApiKey) {
       requireScope(authCtx, 'audit_logs');
@@ -37,6 +38,16 @@ Deno.serve(async (req) => {
         "/audit-logs",
         requestId
       );
+    } else {
+      const AUDIT_VIEW_ROLES = ["platform_admin", "auditor", "org_admin"];
+      const { data: callerRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", authCtx.userId);
+      const roleNames = (callerRoles || []).map((r: { role: string }) => r.role);
+      if (!roleNames.some((r) => AUDIT_VIEW_ROLES.includes(r))) {
+        throw new ApiException("FORBIDDEN", "Audit logs are restricted to admins and auditors.", 403);
+      }
     }
 
     const url = new URL(req.url);

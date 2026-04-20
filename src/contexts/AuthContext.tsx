@@ -62,6 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const previousRolesRef = useRef<AppRole[] | null>(null);
+
   const fetchRoles = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -76,6 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userRoles = (data || []).map(r => r.role as AppRole);
+
+      // Detect mid-session role changes and surface them to the user.
+      // Only fires after the first successful fetch so initial sign-in is silent.
+      const prev = previousRolesRef.current;
+      if (prev !== null) {
+        const added = userRoles.filter(r => !prev.includes(r));
+        const removed = prev.filter(r => !userRoles.includes(r));
+        if (added.length > 0 || removed.length > 0) {
+          toast.info("Your access level was updated by an administrator. Please refresh the page to see the latest options.", {
+            duration: 10000,
+          });
+        }
+      }
+      previousRolesRef.current = userRoles;
+
       setRoles(userRoles);
 
       // Set Sentry user context for error attribution
