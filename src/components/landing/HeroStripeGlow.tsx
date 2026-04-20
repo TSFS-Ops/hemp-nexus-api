@@ -65,7 +65,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-slate-900 max-w-4xl mx-auto mb-6">
-          The Governance Infrastructure for{" "}
+          Governance Infrastructure for{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
