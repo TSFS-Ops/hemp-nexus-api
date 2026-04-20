@@ -31,13 +31,20 @@ export function LegacyRedirect({ to, resolveTo, label }: LegacyRedirectProps) {
     if (firedRef.current) return;
     firedRef.current = true;
     const fromPath = location.pathname;
+    // Only toast once per browser session per origin path, so users who already
+    // saw the notice don't get re-nagged on every click of an old bookmark.
+    const sessionKey = `legacy-redirect-toast:${fromPath}`;
+    if (typeof window !== "undefined" && sessionStorage.getItem(sessionKey)) {
+      return;
+    }
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(sessionKey, "1");
+    }
     toast.info(
-      label
-        ? `${label} has moved`
-        : "This page has moved",
+      label ? `${label} has moved` : "This page has moved",
       {
-        description: `${fromPath} → ${finalPath.split("?")[0].split("#")[0]}. Update your bookmarks to avoid this redirect next time.`,
-        duration: 6000,
+        description: `Update your bookmarks: ${fromPath} now lives at ${finalPath.split("?")[0].split("#")[0]}.`,
+        duration: 3500,
       }
     );
   }, [location.pathname, finalPath, label]);
