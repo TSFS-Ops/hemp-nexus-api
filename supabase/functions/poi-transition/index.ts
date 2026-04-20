@@ -5,6 +5,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
