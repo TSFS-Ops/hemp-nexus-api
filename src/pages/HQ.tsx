@@ -20,7 +20,7 @@ import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIc
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 import { useUrlTab } from "@/hooks/use-url-tab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -113,6 +113,11 @@ function CommandBar() {
             </div>
           </Link>
 
+          {/* Workspace switcher, escape hatch back to Desk / Governance / Developer */}
+          <div className="hidden md:block w-[240px]">
+            <ContextSwitcher tone="dark" />
+          </div>
+
           {/* System status badge */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-sm border border-emerald-900/60 bg-emerald-950/40 shrink-0">
             <span className="relative flex h-1.5 w-1.5">
@@ -126,6 +131,12 @@ function CommandBar() {
         </div>
 
         <div className="flex items-center gap-3 sm:gap-5 shrink-0">
+          {/* View public marketing site */}
+          <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-emerald-400 transition-colors" aria-label="Open public marketing site in new tab">
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
+            View Public Site
+          </a>
+
           {/* Notifications — admins must never miss outreach signals */}
           <div className="text-slate-300 hover:text-slate-100 transition-colors">
             <NotificationBell />
@@ -138,6 +149,10 @@ function CommandBar() {
         </div>
       </div>
 
+      {/* Mobile-only workspace switcher row, surfaced because the desktop slot is hidden < md */}
+      <div className="md:hidden px-4 pb-3 -mt-1">
+        <ContextSwitcher tone="dark" />
+      </div>
     </header>;
 }
 
