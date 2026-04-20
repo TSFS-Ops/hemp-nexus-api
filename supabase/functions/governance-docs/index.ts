@@ -240,8 +240,10 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ doc_id: govDoc.id, validated: true })),
       });
 
+      const patchResponseBody = successEnvelope({ ...updated, token_burned_amount: burnAmount }, correlationId);
+      await storeIdempotentResponse(patchIdemOpts, { status: 200, body: patchResponseBody });
       return new Response(
-        JSON.stringify(successEnvelope({ ...updated, token_burned_amount: burnAmount }, correlationId)),
+        JSON.stringify(patchResponseBody),
         { headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
