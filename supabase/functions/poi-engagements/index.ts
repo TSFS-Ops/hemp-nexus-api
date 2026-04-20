@@ -4,6 +4,11 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import {
+  cachedResponseToHttp,
+  lookupIdempotentResponse,
+  storeIdempotentResponse,
+} from "../_shared/idempotency.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
@@ -152,6 +157,19 @@ Deno.serve(async (req) => {
       if (!uuidRegex.test(engagementId)) {
         throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
       }
+
+      // ── Idempotency: short-circuit duplicate PATCHes (status transitions
+      // and outreach-log inserts must never double-fire on retries) ──
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `PATCH /poi-engagements/${engagementId}`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
 
       const body = await req.json();
       const parsed = UpdateEngagementSchema.safeParse(body);
