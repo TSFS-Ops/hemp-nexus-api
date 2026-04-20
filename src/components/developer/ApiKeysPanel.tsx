@@ -355,11 +355,13 @@ export function ApiKeysPanel() {
   });
 
   const createMut = useMutation({
-    mutationFn: (name: string) => callKeysFn<RevealedKey>("POST", "", { name }),
+    mutationFn: ({ name, scopes }: { name: string; scopes: string[] }) =>
+      callKeysFn<RevealedKey>("POST", "", { name, scopes }),
     onSuccess: (res) => {
       setRevealed({ id: res.id, name: res.name, key: res.key });
       setCreating(false);
       setNewName("");
+      setNewScopes(["match"]);
       qc.invalidateQueries({ queryKey: ["developer-api-keys"] });
     },
     onError: (e: Error) => toast.error(e.message),
