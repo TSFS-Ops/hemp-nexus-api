@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const previousRolesRef = useRef<string[] | null>(null);
+  const previousRolesRef = useRef<AppRole[] | null>(null);
 
   const fetchRoles = useCallback(async (userId: string) => {
     try {
