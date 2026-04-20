@@ -40,8 +40,8 @@ export const corsHeaders = (allowedOrigins: string, origin: string | null = null
     };
   }
 
-  // Strict mode: only echo origin if whitelisted; otherwise return first allowed (request will be rejected)
-  if (origin && allowedList.includes(origin)) {
+  // Echo origin if whitelisted OR if it's a Lovable preview host
+  if (origin && (allowedList.includes(origin) || isLovablePreviewOrigin(origin))) {
     return {
       'Access-Control-Allow-Origin': origin,
       ...BASE_HEADERS,
