@@ -127,6 +127,23 @@ export function AdminPendingEngagementsPanel() {
   const [contactDetail, setContactDetail] = useState<string>("");
   const [contactNotes, setContactNotes] = useState<string>("");
 
+  // ── Outreach email (preview + send) state ──
+  const [outreachDialog, setOutreachDialog] = useState<Engagement | null>(null);
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [outreachSending, setOutreachSending] = useState(false);
+  const [outreachRecipient, setOutreachRecipient] = useState<string>("");
+  const [outreachSuppressed, setOutreachSuppressed] = useState(false);
+  const [outreachSubject, setOutreachSubject] = useState<string>("");
+  const [outreachMessage, setOutreachMessage] = useState<string>("");
+  const [outreachCounterpartyName, setOutreachCounterpartyName] = useState<string>("");
+  const [outreachContext, setOutreachContext] = useState<{
+    commodity: string | null;
+    role: string | null;
+    quantity: string | null;
+    price: string | null;
+    initiator: string | null;
+  } | null>(null);
+
   const fetchEngagements = async () => {
     setRefreshing(true);
     try {
