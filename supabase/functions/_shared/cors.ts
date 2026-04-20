@@ -9,11 +9,24 @@ const BASE_HEADERS = {
   'Vary': 'Origin',
 };
 
+// Always-allowed Lovable preview/sandbox hosts (used by the in-app browser preview)
+const LOVABLE_PREVIEW_PATTERNS = [
+  /^https:\/\/[a-z0-9-]+\.lovableproject\.com$/i,
+  /^https:\/\/[a-z0-9-]+\.lovable\.app$/i,
+  /^https:\/\/[a-z0-9-]+\.sandbox\.lovable\.dev$/i,
+];
+
+const isLovablePreviewOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return LOVABLE_PREVIEW_PATTERNS.some((re) => re.test(origin));
+};
+
 export const isOriginAllowed = (allowedOrigins: string, origin: string | null): boolean => {
   const allowedList = allowedOrigins.split(',').map(o => o.trim()).filter(Boolean);
   if (allowedList.includes('*')) return true;
   if (!origin) return false;
-  return allowedList.includes(origin);
+  if (allowedList.includes(origin)) return true;
+  return isLovablePreviewOrigin(origin);
 };
 
 export const corsHeaders = (allowedOrigins: string, origin: string | null = null) => {
