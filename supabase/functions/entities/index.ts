@@ -72,10 +72,8 @@ Deno.serve(async (req: Request) => {
     // Entity records (KYB/KYC subjects) are governance-scoped data. Only
     // governance principals may read or mutate them. This mirrors the SPA
     // route guard so direct API calls cannot bypass it.
-    const GOVERNANCE_ROLES_E = [
-      "platform_admin", "auditor", "org_admin", "admin",
-      "compliance_analyst", "legal_reviewer", "director",
-    ];
+    // Tightened to match SPA route guard exactly. See governance-docs for rationale.
+    const GOVERNANCE_ROLES_E = ["platform_admin", "auditor", "org_admin"];
     const GOVERNANCE_SCOPES_E = ["entities", "entities:read", "entities:write", "governance"];
     const callerRolesE = authCtx.roles || [];
     const isGovernancePrincipalE = authCtx.isApiKey

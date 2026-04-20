@@ -77,6 +77,21 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // ── Server-side governance role enforcement ──
+    // Due diligence reveals KYB/KYC, sanctions, PEP, and risk-band data — the
+    // most sensitive governance-domain payload in the system. Only governance
+    // principals may invoke this endpoint. Mirrors the SPA guard exactly so
+    // direct API calls cannot bypass the UI gate.
+    const GOVERNANCE_ROLES_DD = ["platform_admin", "auditor", "org_admin"];
+    const { data: ddRoles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const ddRoleNames = (ddRoles ?? []).map((r: { role: string }) => r.role);
+    if (!ddRoleNames.some((r) => GOVERNANCE_ROLES_DD.includes(r))) {
+      return json({ error: "Governance role required (platform_admin, auditor, or org_admin)" }, 403);
+    }
+
     // Get user profile for org_id
     const { data: profile } = await admin
       .from("profiles")
