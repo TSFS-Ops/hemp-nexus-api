@@ -237,6 +237,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
           }, 4000);
+        } else {
+          // Session healthy — opportunistically refresh roles so a demoted
+          // user in an idle background tab is reflected within ~60s without
+          // needing realtime broadcasts.
+          fetchRoles(currentSession.user.id);
         }
       } catch {
         // Network error - don't treat as session expiry, just skip
