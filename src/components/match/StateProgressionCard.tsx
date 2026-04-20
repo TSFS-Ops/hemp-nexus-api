@@ -169,14 +169,12 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     refetchOnWindowFocus: true,
   });
 
-  // Hard gate: block all progression if user's name is missing or is an email.
-  // Scoped to the actor responsible for the next step — i.e. only when the
-  // signed-in user belongs to the org that owns this match. A counterparty
-  // viewing the match is not the actor for POI generation, so we don't show
-  // them a misleading prompt about *their* name.
+  // Advisory only: the server is the source of truth for POI eligibility.
+  // We still surface the guidance to the acting user, but we do not hard-block
+  // progression in the client because stale profile data can create false positives.
   const isActorForNextStep =
     !!userProfile?.org_id && userProfile.org_id === match.org_id;
-  const nameIsInvalid = isActorForNextStep && (
+  const showNameAdvisory = isActorForNextStep && (
     !userProfile?.full_name
     || userProfile.full_name.trim().length === 0
     || EMAIL_RE.test(userProfile.full_name.trim())
