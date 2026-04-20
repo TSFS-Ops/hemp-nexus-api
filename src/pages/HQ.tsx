@@ -137,7 +137,9 @@ function CommandBar() {
             View Public Site
           </a>
 
-          <NotificationBell iconClassName="text-slate-300 hover:text-white" />
+          <div className="pr-1">
+            <NotificationBell iconClassName="text-slate-300 hover:text-white" />
+          </div>
 
           <button onClick={signOut} className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors" aria-label="Sign out of admin dashboard">
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />

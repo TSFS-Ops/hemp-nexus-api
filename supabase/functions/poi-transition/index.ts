@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import {
+  lookupIdempotentResponse,
+  storeIdempotentResponse,
+  cachedResponseToHttp,
+} from "../_shared/idempotency.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,6 +95,20 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // ── Idempotency: short-circuit duplicate transitions ──
+    const idempotencyKey = req.headers.get("idempotency-key") || req.headers.get("Idempotency-Key");
+    const idemOpts = {
+      supabase: adminClient,
+      orgId: callerOrgId,
+      endpoint: "POST /poi-transition",
+      idempotencyKey,
+      requestHash: `${matchId}:${toState}`,
+    };
+    const cached = await lookupIdempotentResponse(idemOpts);
+    if (cached) {
+      return cachedResponseToHttp(cached, { ...corsHeaders });
+    }
 
     // Acquire advisory lock to prevent concurrent POI transitions on the same match
     const { error: lockError } = await adminClient.rpc("try_lifecycle_lock");
@@ -271,16 +290,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const successPayload = {
+      success: true,
+      event: {
+        id: event.id,
+        from_state: fromState,
+        to_state: toState,
+        created_at: event.created_at,
+      },
+    };
+    await storeIdempotentResponse(idemOpts, { status: 200, body: successPayload });
     return new Response(
-      JSON.stringify({
-        success: true,
-        event: {
-          id: event.id,
-          from_state: fromState,
-          to_state: toState,
-          created_at: event.created_at,
-        },
-      }),
+      JSON.stringify(successPayload),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
     } finally {

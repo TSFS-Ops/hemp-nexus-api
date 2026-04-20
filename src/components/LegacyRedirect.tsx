@@ -1,52 +1,79 @@
 import { useEffect, useRef } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
-import { toast } from "sonner";
 
 /**
  * LegacyRedirect — explains *why* a URL changed before bouncing the user
- * to the new canonical route. Fires a single info toast on mount, preserves
- * search + hash, and supports `:matchId`-style param substitution via the
- * `resolveTo` callback.
+ * to the new canonical route.
  *
- * Use everywhere a permanent route move would otherwise be silent.
+ * UX contract (post-2026-04 hardening):
+ *   1. The from-path → to-path mapping is recorded in sessionStorage under
+ *      `legacy-redirect:notice` BEFORE we navigate.
+ *   2. A global <LegacyRedirectBanner /> mounted at the app root reads that
+ *      key on every route change and shows a persistent, dismissable info bar
+ *      at the top of the page. The banner stays visible until the user
+ *      dismisses it (or navigates away from the destination).
+ *   3. We do NOT show a toast — toasts auto-dismiss in 3.5s and the user can
+ *      easily miss them, especially on slow Match Details loads.
+ *   4. We never show the same notice twice in a single session for the same
+ *      from-path (`legacy-redirect:seen:<fromPath>` flag).
+ *
+ * This means the user sees the explanation:
+ *   • Persistently at the top of the destination page (until dismissed)
+ *   • In the route they actually land on, after any data has loaded
+ *   • Without any race against the page's own loading spinner
  */
 interface LegacyRedirectProps {
   to: string;
   /** Optional override that receives router params and returns the final path. */
   resolveTo?: (params: Record<string, string | undefined>) => string;
-  /** Short label shown in the toast, e.g. "Billing" or "Admin Console". */
+  /** Short label shown in the banner, e.g. "Billing" or "Match Details". */
   label?: string;
+}
+
+export const LEGACY_REDIRECT_NOTICE_KEY = "legacy-redirect:notice";
+export const LEGACY_REDIRECT_SEEN_PREFIX = "legacy-redirect:seen:";
+
+export interface LegacyRedirectNotice {
+  fromPath: string;
+  toPath: string;
+  label: string;
+  recordedAt: number;
 }
 
 export function LegacyRedirect({ to, resolveTo, label }: LegacyRedirectProps) {
   const location = useLocation();
   const params = useParams();
-  const firedRef = useRef(false);
+  const recordedRef = useRef(false);
 
   const finalPath = resolveTo
     ? `${resolveTo(params)}${location.search}${location.hash}`
     : `${to}${location.search}${location.hash}`;
 
   useEffect(() => {
-    if (firedRef.current) return;
-    firedRef.current = true;
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    if (typeof window === "undefined") return;
+
     const fromPath = location.pathname;
-    // Only toast once per browser session per origin path, so users who already
-    // saw the notice don't get re-nagged on every click of an old bookmark.
-    const sessionKey = `legacy-redirect-toast:${fromPath}`;
-    if (typeof window !== "undefined" && sessionStorage.getItem(sessionKey)) {
-      return;
+    const seenKey = `${LEGACY_REDIRECT_SEEN_PREFIX}${fromPath}`;
+
+    // Already shown this session for this exact legacy path — stay silent.
+    if (sessionStorage.getItem(seenKey)) return;
+
+    const notice: LegacyRedirectNotice = {
+      fromPath,
+      toPath: finalPath.split("?")[0].split("#")[0],
+      label: label ?? "This page",
+      recordedAt: Date.now(),
+    };
+
+    try {
+      sessionStorage.setItem(LEGACY_REDIRECT_NOTICE_KEY, JSON.stringify(notice));
+      sessionStorage.setItem(seenKey, "1");
+    } catch {
+      // Storage unavailable (private mode quota) — silently degrade. The
+      // navigation itself still works; only the explanatory banner is lost.
     }
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(sessionKey, "1");
-    }
-    toast.info(
-      label ? `${label} has moved` : "This page has moved",
-      {
-        description: `Update your bookmarks: ${fromPath} now lives at ${finalPath.split("?")[0].split("#")[0]}.`,
-        duration: 3500,
-      }
-    );
   }, [location.pathname, finalPath, label]);
 
   return <Navigate to={finalPath} replace />;
