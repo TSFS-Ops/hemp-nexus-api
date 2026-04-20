@@ -6113,8 +6113,8 @@ export type Database = {
         Args: never
         Returns: {
           details: string
-          engagement_id: string
           issue_type: string
+          out_engagement_id: string
         }[]
       }
       check_match_state_invariants: {
