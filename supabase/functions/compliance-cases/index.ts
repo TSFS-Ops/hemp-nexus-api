@@ -49,10 +49,8 @@ Deno.serve(async (req: Request) => {
     // Compliance cases contain sensitive screening outcomes. Restrict to
     // governance principals; reject vanilla org_member callers even if they
     // belong to the same org. This mirrors the SPA route guard.
-    const GOVERNANCE_ROLES = [
-      "platform_admin", "auditor", "org_admin", "admin",
-      "compliance_analyst", "legal_reviewer", "director",
-    ];
+    // Tightened to match SPA route guard exactly. See governance-docs for rationale.
+    const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"];
     const GOVERNANCE_SCOPES = ["compliance", "compliance:read", "compliance:write", "governance"];
     const callerRoles = authCtx.roles || [];
     const isGovernancePrincipal = authCtx.isApiKey

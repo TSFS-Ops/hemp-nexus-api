@@ -74,60 +74,62 @@ function WelcomeContent() {
 
     setSubmitting(persona.id);
 
-    // Resolve the user's org_id so the audit row is org-scoped (RLS-safe).
-    let orgId: string | null = null;
-    try {
-      const { data: profileRow } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      orgId = profileRow?.org_id ?? null;
-    } catch (err) {
-      console.warn("[welcome] could not resolve org_id for audit log:", err);
-    }
+    // ── Atomicity fix (#5) ──
+    // Persona is a UI preference, not commercial state. Navigate FIRST so the
+    // user always reaches their chosen destination. Persistence + audit run as
+    // fire-and-forget; failures are logged + toasted but never strand the user.
+    // The DB trigger `trg_audit_persona_change` is the durable backstop — even
+    // if this client-side audit insert fails, the persona UPDATE itself emits
+    // an audit_logs row from inside Postgres.
+    navigate(persona.route, { replace: true });
 
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ selected_persona: persona.id })
-        .eq("id", user.id);
+    // Fire-and-forget persistence. Wrapped in IIFE so we don't await it.
+    void (async () => {
+      try {
+        const { data: profileRow } = await supabase
+          .from("profiles")
+          .select("org_id")
+          .eq("id", user.id)
+          .maybeSingle();
+        const orgId = profileRow?.org_id ?? null;
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from("profiles")
+          .update({ selected_persona: persona.id })
+          .eq("id", user.id);
 
-      // INV-5: Persona selection must leave a forensic trail. Without this we
-      // cannot prove who chose Governance, when, or from which session.
-      // Audit insert is best-effort — failure here must NOT prevent navigation
-      // (the persona is already persisted), but we log loudly so monitoring
-      // catches a missing trail.
-      if (orgId) {
-        const { error: auditError } = await supabase.from("audit_logs").insert({
-          org_id: orgId,
-          actor_user_id: user.id,
-          action: "profile.persona_selected",
-          entity_type: "profile",
-          entity_id: user.id,
-          metadata: {
-            persona: persona.id,
-            route: persona.route,
-            roles_at_selection: roles,
-            user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-            selected_at: new Date().toISOString(),
-          },
-        });
-        if (auditError) {
-          console.error("[welcome] audit_logs insert failed:", auditError.message);
+        if (error) {
+          console.error("[welcome] persona persist failed:", error.message);
+          toast.error("We couldn't save your workspace preference. You're still signed in — try again from settings.");
+          return;
         }
-      } else {
-        console.error("[welcome] no org_id resolved — persona audit row not written");
-      }
 
-      navigate(persona.route, { replace: true });
-    } catch (err) {
-      console.error("[welcome] persona save failed:", err);
-      toast.error("Couldn't save your choice. Please try again.");
-      setSubmitting(null);
-    }
+        // Client-side audit row carries richer context (route, roles, UA) than
+        // the DB trigger. Best-effort; trigger guarantees the minimum row.
+        if (orgId) {
+          const { error: auditError } = await supabase.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: user.id,
+            action: "profile.persona_selected",
+            entity_type: "profile",
+            entity_id: user.id,
+            metadata: {
+              persona: persona.id,
+              route: persona.route,
+              roles_at_selection: roles,
+              source: "welcome_ui",
+              user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+              selected_at: new Date().toISOString(),
+            },
+          });
+          if (auditError) {
+            console.warn("[welcome] client audit insert failed (DB trigger still writes minimum row):", auditError.message);
+          }
+        }
+      } catch (err) {
+        console.error("[welcome] background persona persist threw:", err);
+      }
+    })();
   };
 
   return (

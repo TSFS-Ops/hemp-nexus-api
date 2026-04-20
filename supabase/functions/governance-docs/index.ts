@@ -55,10 +55,10 @@ Deno.serve(async (req: Request) => {
     // The route guard in the SPA can be bypassed by direct API calls.
     // Only governance-domain principals (or API keys with the explicit
     // governance scope) may interact with governance documents.
-    const GOVERNANCE_ROLES = [
-      "platform_admin", "auditor", "org_admin", "admin",
-      "compliance_analyst", "legal_reviewer", "director",
-    ];
+    // Tightened to match the SPA route guard exactly (src/App.tsx GOVERNANCE_ROLES).
+    // Drift between UI and server lists allowed an attacker to deduce which
+    // roles the UI was hiding. These three roles are the single source of truth.
+    const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"];
     const GOVERNANCE_SCOPES = ["governance", "governance:read", "governance:write"];
     const callerRoles = authCtx.roles || [];
     const isGovernancePrincipal = authCtx.isApiKey
