@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { queryClient } from "@/lib/query-client";
 
 export function MyProfileTab() {
   const { user } = useAuth();
@@ -24,14 +25,27 @@ export function MyProfileTab() {
 
   const handleSave = async () => {
     if (!user) return;
+
+    const trimmedFullName = fullName.trim();
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName })
+      .update({ full_name: trimmedFullName || null })
       .eq("id", user.id);
     setSaving(false);
-    if (error) toast.error("Could not save profile");
-    else toast.success("Profile updated");
+
+    if (error) {
+      toast.error("Could not save profile");
+      return;
+    }
+
+    setFullName(trimmedFullName);
+    queryClient.setQueryData(["user-profile-org", user.id], (current: { org_id?: string | null; full_name?: string | null } | undefined) => ({
+      ...current,
+      full_name: trimmedFullName || null,
+    }));
+    queryClient.invalidateQueries({ queryKey: ["user-profile-org", user.id] });
+    toast.success("Profile updated");
   };
 
   if (loading) {
