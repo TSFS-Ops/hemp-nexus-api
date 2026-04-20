@@ -149,6 +149,293 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── POST /poi-engagements/:id/preview-outreach — Render the outreach email
+    // for admin review BEFORE sending. Returns subject, suggested body parts, and
+    // recipient + suppression status. Does NOT send and does NOT mutate state. ──
+    if (req.method === "POST" && engagementId && parts[1] === "preview-outreach") {
+      requireRole(authCtx, "admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const { data: eng, error: engErr } = await supabase
+        .from("poi_engagements")
+        .select(`
+          *,
+          matches:match_id (
+            id, commodity, quantity_amount, quantity_unit,
+            price_amount, price_currency, match_type,
+            buyer_name, seller_name, buyer_org_id, seller_org_id
+          ),
+          initiator_org:org_id ( id, name )
+        `)
+        .eq("id", engagementId)
+        .single();
+
+      if (engErr || !eng) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
+      if (!recipient) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "This engagement has no counterparty email on file. Add one before previewing.",
+          400
+        );
+      }
+
+      const m = eng.matches as any;
+      const initiatorOrgId = eng.org_id;
+      let counterpartyRole: "buyer" | "seller" | null = null;
+      if (m) {
+        if (m.buyer_org_id === initiatorOrgId) counterpartyRole = "seller";
+        else if (m.seller_org_id === initiatorOrgId) counterpartyRole = "buyer";
+        else if (m.match_type === "bid") counterpartyRole = "seller";
+        else if (m.match_type === "offer") counterpartyRole = "buyer";
+      }
+
+      const { data: suppressed } = await supabase
+        .from("suppressed_emails")
+        .select("id")
+        .eq("email", recipient)
+        .maybeSingle();
+
+      const initiatorOrgName = (eng.initiator_org as any)?.name ?? null;
+      const commodity = m?.commodity ?? null;
+      const ref = String(engagementId).slice(0, 8);
+      const subject =
+        `Trade interest from a verified Izenzo counterparty${commodity ? ` — ${commodity}` : ""} [${ref}]`;
+      const defaultMessage =
+        `We understand from public records that your organisation may be active in this commodity ` +
+        `and region. We would welcome a brief introductory conversation to share further context.`;
+
+      return new Response(
+        JSON.stringify({
+          recipient,
+          suppressed: !!suppressed,
+          subject,
+          template_data: {
+            counterpartyName: null,
+            commodity,
+            counterpartyRole,
+            quantityAmount: m?.quantity_amount ?? null,
+            quantityUnit: m?.quantity_unit ?? null,
+            priceAmount: m?.price_amount ?? null,
+            priceCurrency: m?.price_currency ?? null,
+            location: m?.location ?? null,
+            jurisdiction: m?.jurisdiction ?? null,
+            initiatorOrgName,
+            customMessage: defaultMessage,
+            matchId: eng.match_id,
+          },
+        }),
+        { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── POST /poi-engagements/:id/send-outreach — Send the outreach email and
+    // atomically transition state to 'contacted' with a full snapshot in the
+    // immutable outreach log. ──
+    if (req.method === "POST" && engagementId && parts[1] === "send-outreach") {
+      requireRole(authCtx, "admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const idempotencyKey = req.headers.get("Idempotency-Key") || `outreach-${engagementId}-${Date.now()}`;
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/send-outreach`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const SendSchema = z.object({
+        subject: z.string().min(1).max(200),
+        custom_message: z.string().max(5000).optional(),
+        counterparty_name: z.string().max(200).optional(),
+        recipient_override: z.string().email().optional(),
+      });
+      const parsed = SendSchema.safeParse(await req.json());
+      if (!parsed.success) {
+        throw new ApiException("VALIDATION_ERROR", JSON.stringify(parsed.error.flatten().fieldErrors), 400);
+      }
+
+      const { data: eng, error: engErr } = await supabase
+        .from("poi_engagements")
+        .select(`
+          *,
+          matches:match_id (
+            id, commodity, quantity_amount, quantity_unit,
+            price_amount, price_currency, match_type,
+            buyer_org_id, seller_org_id
+          ),
+          initiator_org:org_id ( id, name )
+        `)
+        .eq("id", engagementId)
+        .single();
+
+      if (engErr || !eng) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
+      if (!recipient) {
+        throw new ApiException("VALIDATION_ERROR", "No recipient email available", 400);
+      }
+
+      const currentStatus = eng.engagement_status;
+      const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+      if (!allowed.includes("contacted")) {
+        throw new ApiException(
+          "INVALID_TRANSITION",
+          `Cannot send outreach from state '${currentStatus}'. Allowed transitions: [${allowed.join(", ")}]`,
+          400
+        );
+      }
+
+      const { data: suppressed } = await supabase
+        .from("suppressed_emails")
+        .select("id")
+        .eq("email", recipient)
+        .maybeSingle();
+      if (suppressed) {
+        throw new ApiException(
+          "RECIPIENT_SUPPRESSED",
+          `Cannot send: ${recipient} is on the suppression list (previously bounced or unsubscribed). Use 'Mark contacted' to log a non-email outreach instead.`,
+          409
+        );
+      }
+
+      const m = eng.matches as any;
+      const initiatorOrgId = eng.org_id;
+      let counterpartyRole: "buyer" | "seller" | null = null;
+      if (m) {
+        if (m.buyer_org_id === initiatorOrgId) counterpartyRole = "seller";
+        else if (m.seller_org_id === initiatorOrgId) counterpartyRole = "buyer";
+        else if (m.match_type === "bid") counterpartyRole = "seller";
+        else if (m.match_type === "offer") counterpartyRole = "buyer";
+      }
+
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .single();
+
+      const templateData = {
+        counterpartyName: parsed.data.counterparty_name || null,
+        commodity: m?.commodity ?? null,
+        counterpartyRole,
+        quantityAmount: m?.quantity_amount ?? null,
+        quantityUnit: m?.quantity_unit ?? null,
+        priceAmount: m?.price_amount ?? null,
+        priceCurrency: m?.price_currency ?? null,
+        location: m?.location ?? null,
+        jurisdiction: m?.jurisdiction ?? null,
+        initiatorOrgName: (eng.initiator_org as any)?.name ?? null,
+        adminName: adminProfile?.full_name || adminProfile?.email || "Izenzo Compliance Desk",
+        customMessage: parsed.data.custom_message || "",
+        matchId: eng.match_id,
+      };
+
+      const { data: sendResult, error: sendErr } = await supabase.functions.invoke(
+        "send-transactional-email",
+        {
+          body: {
+            templateName: "outreach-intent-to-trade",
+            recipientEmail: recipient,
+            idempotencyKey: `outreach-send-${engagementId}-${idempotencyKey}`,
+            templateData,
+          },
+        }
+      );
+
+      if (sendErr || (sendResult && sendResult.success === false)) {
+        const reason = (sendResult as any)?.reason || (sendErr as any)?.message || "send_failed";
+        console.error(`[${requestId}] Outreach send failed for ${engagementId}:`, reason);
+        throw new ApiException(
+          "SEND_FAILED",
+          `Email send failed: ${reason}. Engagement state was NOT changed.`,
+          502
+        );
+      }
+
+      const snapshotNotes = [
+        `EMAIL SENT to ${recipient}`,
+        `Subject: ${parsed.data.subject}`,
+        parsed.data.custom_message ? `\nMessage:\n${parsed.data.custom_message}` : "",
+        `\nReply-to: support@izenzo.co.za`,
+      ].filter(Boolean).join("\n");
+
+      const { data: txnResult, error: txnErr } = await supabase.rpc(
+        "atomic_engagement_transition",
+        {
+          p_engagement_id: engagementId,
+          p_actor_type: "admin",
+          p_actor_user_id: authCtx.userId,
+          p_actor_email: adminProfile?.email || "unknown",
+          p_actor_name: adminProfile?.full_name || null,
+          p_new_status: "contacted",
+          p_entry_type: "contact_attempt",
+          p_contact_method: "email",
+          p_contact_detail: recipient,
+          p_notes: snapshotNotes,
+          p_audit_action: "engagement.outreach_email_sent",
+          p_audit_org_id: null,
+        }
+      );
+
+      if (txnErr) {
+        console.error(`[${requestId}] Outreach SENT but state transition failed:`, txnErr);
+        throw new ApiException(
+          "PARTIAL_SUCCESS",
+          "Email was sent but the engagement state could not be updated. Please refresh and verify.",
+          500
+        );
+      }
+      const txn = txnResult as { success: boolean; error?: string } | null;
+      if (!txn?.success) {
+        throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
+      }
+
+      await supabase
+        .from("poi_engagements")
+        .update({
+          contact_method: "email",
+          contact_date: new Date().toISOString(),
+        })
+        .eq("id", engagementId);
+
+      const { data: updated } = await supabase
+        .from("poi_engagements")
+        .select()
+        .eq("id", engagementId)
+        .single();
+
+      console.log(`[${requestId}] Outreach email sent + state advanced for ${engagementId} → contacted`);
+
+      const responseBody = {
+        ok: true,
+        engagement: updated,
+        sent_to: recipient,
+        subject: parsed.data.subject,
+      };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     // ── PATCH /poi-engagements/:id — Update engagement (admin only) ──
     if (req.method === "PATCH" && engagementId) {
       requireRole(authCtx, "admin");

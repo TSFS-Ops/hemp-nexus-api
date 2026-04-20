@@ -15,6 +15,7 @@ import { template as poiIssuance } from './poi-issuance.tsx'
 import { template as poiInvite } from './poi-invite.tsx'
 import { template as poiCounterpartyNotify } from './poi-counterparty-notify.tsx'
 import { template as poiSupportDeskNotify } from './poi-support-desk-notify.tsx'
+import { template as outreachIntentToTrade } from './outreach-intent-to-trade.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'match-notification': matchNotification,
@@ -23,4 +24,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'poi-invite': poiInvite,
   'poi-counterparty-notify': poiCounterpartyNotify,
   'poi-support-desk-notify': poiSupportDeskNotify,
+  'outreach-intent-to-trade': outreachIntentToTrade,
 }
