@@ -295,6 +295,18 @@ function KeyCard({
   );
 }
 
+const AVAILABLE_SCOPES: { value: string; label: string; hint: string }[] = [
+  { value: "match", label: "match", hint: "Create & manage trade matches" },
+  { value: "match:read", label: "match:read", hint: "Read-only match access" },
+  { value: "signals", label: "signals", hint: "Submit & read trade signals" },
+  { value: "collapse", label: "collapse", hint: "Collapse-ledger writes" },
+  { value: "preflight", label: "preflight", hint: "Pre-trade eligibility checks" },
+  { value: "trade-status", label: "trade-status", hint: "Read trade status" },
+  { value: "evidence", label: "evidence", hint: "Read evidence packs" },
+  { value: "webhooks:write", label: "webhooks:write", hint: "Manage webhook endpoints" },
+  { value: "webhooks:read", label: "webhooks:read", hint: "Read webhook config & logs" },
+];
+
 export function ApiKeysPanel() {
   const qc = useQueryClient();
   const [revealed, setRevealed] = useState<RevealedKey | null>(null);
@@ -304,6 +316,7 @@ export function ApiKeysPanel() {
   >(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newScopes, setNewScopes] = useState<string[]>(["match"]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["developer-api-keys"],
@@ -342,11 +355,13 @@ export function ApiKeysPanel() {
   });
 
   const createMut = useMutation({
-    mutationFn: (name: string) => callKeysFn<RevealedKey>("POST", "", { name }),
+    mutationFn: ({ name, scopes }: { name: string; scopes: string[] }) =>
+      callKeysFn<RevealedKey>("POST", "", { name, scopes }),
     onSuccess: (res) => {
       setRevealed({ id: res.id, name: res.name, key: res.key });
       setCreating(false);
       setNewName("");
+      setNewScopes(["match"]);
       qc.invalidateQueries({ queryKey: ["developer-api-keys"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -459,11 +474,50 @@ export function ApiKeysPanel() {
                 />
               </label>
             </div>
+            <div className="px-6 pb-5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 block mb-2">
+                Scopes (permissions)
+              </span>
+              <div className="space-y-1.5 max-h-56 overflow-y-auto border border-slate-800 rounded-sm p-2 bg-black/40">
+                {AVAILABLE_SCOPES.map((s) => {
+                  const checked = newScopes.includes(s.value);
+                  return (
+                    <label
+                      key={s.value}
+                      className="flex items-start gap-2 px-2 py-1.5 hover:bg-slate-800/40 rounded-sm cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setNewScopes((prev) =>
+                            prev.includes(s.value)
+                              ? prev.filter((v) => v !== s.value)
+                              : [...prev, s.value]
+                          );
+                        }}
+                        className="mt-0.5 accent-green-500"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-mono text-[12px] text-slate-100">{s.label}</div>
+                        <div className="text-[11px] text-slate-500">{s.hint}</div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+              {newScopes.length === 0 && (
+                <p className="mt-2 font-mono text-[10px] text-amber-400">
+                  ⚠ Key with no scopes will be rejected by every endpoint.
+                </p>
+              )}
+            </div>
             <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
               <button
                 onClick={() => {
                   setCreating(false);
                   setNewName("");
+                  setNewScopes(["match"]);
                 }}
                 className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 px-3 py-1.5 rounded-sm transition-colors"
               >
@@ -473,7 +527,8 @@ export function ApiKeysPanel() {
                 onClick={() => {
                   const n = newName.trim();
                   if (!n) return toast.error("Label is required");
-                  createMut.mutate(n);
+                  if (newScopes.length === 0) return toast.error("Select at least one scope");
+                  createMut.mutate({ name: n, scopes: newScopes });
                 }}
                 disabled={createMut.isPending}
                 className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 bg-green-600/20 border border-green-500/40 hover:bg-green-600/30 px-4 py-1.5 rounded-sm transition-colors disabled:opacity-50"
