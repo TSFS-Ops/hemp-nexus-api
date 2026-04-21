@@ -20,9 +20,9 @@ export default function Landing() {
     const preAuth = consumePreAuthState();
     if (preAuth?.query) {
       const searchParams = new URLSearchParams({ q: preAuth.query, resume: "1" });
-      window.location.assign(`/dashboard/search?${searchParams.toString()}`);
+      window.location.assign(`/desk/discover?${searchParams.toString()}`);
     } else {
-      window.location.assign("/dashboard");
+      window.location.assign("/desk");
     }
   }, [authLoading, isAuthenticated]);
 
@@ -42,7 +42,7 @@ export default function Landing() {
       <PublicHeader />
       <main className="flex-1">
         <HeroStripeGlow
-          onGetStarted={isAuthenticated ? () => window.location.assign("/dashboard") : navigateToAuth}
+          onGetStarted={isAuthenticated ? () => window.location.assign("/desk") : navigateToAuth}
           onContactSales={() => window.location.assign("/docs")}
         />
       </main>
