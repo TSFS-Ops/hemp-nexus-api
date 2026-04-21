@@ -30,10 +30,25 @@ interface DealCard {
   commodity: string;
   counterparty: string;
   volume: string;
+  /** Raw numeric quantity for sorting (null when unspecified). */
+  quantityValue: number | null;
   state: string;
   created_at: string;
+  /** Inferred deadline — uses explicit deal expiry if present, otherwise a
+   *  lane-based heuristic so "nearest deadline" remains meaningful even when
+   *  the underlying record has no SLA timestamp. */
+  deadline_at: string | null;
   laneId: "draft" | "awaiting" | "poi";
 }
+
+type SortKey = "newest" | "oldest" | "volume_desc" | "deadline";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "volume_desc", label: "Highest volume" },
+  { value: "deadline", label: "Nearest deadline" },
+];
 
 const ACTIVE_PAGE_SIZE = 60;
 const SEALED_PAGE_SIZE = 20;
