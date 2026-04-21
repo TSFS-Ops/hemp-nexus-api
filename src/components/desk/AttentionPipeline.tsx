@@ -234,3 +234,28 @@ function EmptyState() {
     </div>
   );
 }
+
+function AttentionRowsSkeleton() {
+  return (
+    <ul className="divide-y divide-slate-100" aria-label="Loading attention items" aria-busy="true">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <li
+          key={i}
+          className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3"
+        >
+          {/* Priority dot */}
+          <Skeleton className="shrink-0 w-2 h-2 rounded-full" />
+          {/* Initials avatar */}
+          <Skeleton className="shrink-0 hidden sm:block w-8 h-8 rounded-full" />
+          {/* Content */}
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-3.5 w-1/2 max-w-[220px]" />
+            <Skeleton className="h-2.5 w-2/3 max-w-[280px]" />
+          </div>
+          {/* CTA */}
+          <Skeleton className="shrink-0 h-8 w-20 sm:w-32 rounded-md" />
+        </li>
+      ))}
+    </ul>
+  );
+}
