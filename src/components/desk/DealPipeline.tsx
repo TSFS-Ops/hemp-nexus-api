@@ -547,7 +547,7 @@ export function DealPipeline() {
                   </span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-slate-500 transition-transform",
+                      "h-4 w-4 text-slate-500 transition-transform duration-300 ease-out",
                       collapsed ? "-rotate-90" : "rotate-0",
                     )}
                     strokeWidth={2}
@@ -556,9 +556,25 @@ export function DealPipeline() {
                 </div>
               </button>
 
-              {/* Collapsible region */}
-              {!collapsed && (
-                <div id={bodyId} role="region" aria-labelledby={headerId}>
+              {/* Collapsible region — animated via grid-template-rows so we can
+                  transition between collapsed (0fr) and expanded (1fr) without
+                  measuring content height in JS. The inner wrapper owns
+                  `overflow-hidden` so cards clip cleanly during the transition,
+                  and `motion-reduce` disables the animation for users who have
+                  requested reduced motion. */}
+              <div
+                id={bodyId}
+                role="region"
+                aria-labelledby={headerId}
+                aria-hidden={collapsed}
+                className={cn(
+                  "grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none",
+                  collapsed
+                    ? "grid-rows-[0fr] opacity-0"
+                    : "grid-rows-[1fr] opacity-100",
+                )}
+              >
+                <div className="overflow-hidden min-h-0">
                   {/* Cards */}
                   <div className="flex flex-col gap-2 px-3 pb-3 min-h-[120px] md:min-h-[220px]">
                     {isLoading ? (
@@ -620,7 +636,7 @@ export function DealPipeline() {
                       </div>
                     )}
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
