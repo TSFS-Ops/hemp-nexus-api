@@ -190,11 +190,19 @@ export function AttentionPipeline() {
                         <span className="text-slate-300">·</span>
                         <span
                           className={cn(
-                            "font-mono",
+                            "font-mono cursor-help",
                             item.deadlineLabel === "overdue"
                               ? "text-red-600 font-semibold"
                               : "text-amber-600",
                           )}
+                          title={
+                            item.expiresAt
+                              ? `Expires ${new Date(item.expiresAt).toLocaleString(undefined, {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })}`
+                              : undefined
+                          }
                         >
                           {item.deadlineLabel}
                         </span>
