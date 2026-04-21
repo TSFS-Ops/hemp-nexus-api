@@ -842,61 +842,133 @@ function DealDocumentCard({
   laneId: string;
   onClick: () => void;
 }) {
-  const date = new Date(deal.created_at).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
   const accent = LANE_ACCENT[laneId];
+  const ageLabel = relativeAge(deal.created_at);
+  const deadlineLabel = deadlineFromIso(deal.deadline_at);
+  const initials = initialsOf(deal.counterparty);
+
   return (
     <button
       onClick={onClick}
-      className="group relative text-left bg-white border border-slate-200 rounded-lg px-4 py-3.5 shadow-[0_1px_0_rgba(15,23,42,0.04)] hover:border-slate-300 hover:shadow-[0_4px_12px_-4px_rgba(15,23,42,0.12)] transition-all"
+      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
     >
-      {/* Row 1 — commodity headline + stage pill */}
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <p className="text-[14px] font-semibold text-slate-900 leading-snug truncate">
+      {/* Lane priority dot */}
+      <span
+        aria-hidden
+        className={cn("shrink-0 w-2 h-2 rounded-full", accent.dot)}
+        title={LANE_PILL_LABEL[laneId]}
+      />
+
+      {/* Counterparty initials */}
+      <div
+        className="shrink-0 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold tracking-wide"
+        title={deal.counterparty}
+      >
+        {initials}
+      </div>
+
+      {/* Content */}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-slate-900 font-medium leading-snug truncate">
+          {deal.volume !== "-" ? `${deal.volume} ` : ""}
           {deal.commodity}
         </p>
-        <span
-          className={cn(
-            "shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.08em]",
-            accent.pill,
-          )}
-        >
-          {LANE_PILL_LABEL[laneId]}
-        </span>
-      </div>
-
-      {/* Row 2 — counterparty (the most important "with whom") */}
-      <p className="text-[12px] text-slate-600 truncate mb-3">
-        with <span className="text-slate-900 font-medium">{deal.counterparty}</span>
-      </p>
-
-      {/* Row 3 — meta strip: volume · date · ref · open */}
-      <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono tabular-nums">
-        <span className="text-slate-700">{deal.volume}</span>
-        <div className="flex items-center gap-2">
-          <span>{date}</span>
+        <p className="text-[11px] text-slate-500 leading-snug truncate flex items-center gap-1.5 flex-wrap">
+          <span className="truncate">with <span className="text-slate-700">{deal.counterparty}</span></span>
           <span className="text-slate-300">·</span>
-          <span className="tracking-[0.1em]">{deal.id.slice(0, 6).toUpperCase()}</span>
-          <ArrowUpRight
-            className="h-3 w-3 text-slate-400 group-hover:text-emerald-700 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
-            strokeWidth={2}
-          />
-        </div>
+          <span className="font-mono text-slate-400">{ageLabel}</span>
+          {deadlineLabel && (
+            <>
+              <span className="text-slate-300">·</span>
+              <span
+                className={cn(
+                  "font-mono cursor-help",
+                  deadlineLabel === "overdue"
+                    ? "text-red-600 font-semibold"
+                    : "text-amber-600",
+                )}
+                title={
+                  deal.deadline_at
+                    ? `Expires ${new Date(deal.deadline_at).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}`
+                    : undefined
+                }
+              >
+                {deadlineLabel}
+              </span>
+            </>
+          )}
+          <span className="text-slate-300">·</span>
+          <span className="font-mono tracking-[0.1em] text-slate-400">
+            {deal.id.slice(0, 6).toUpperCase()}
+          </span>
+        </p>
       </div>
+
+      {/* Stage pill + chevron CTA */}
+      <span
+        className={cn(
+          "shrink-0 hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.08em]",
+          accent.pill,
+        )}
+      >
+        {LANE_PILL_LABEL[laneId]}
+      </span>
+      <ArrowRight
+        className="shrink-0 h-4 w-4 text-slate-300 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all"
+        strokeWidth={2}
+        aria-hidden
+      />
     </button>
   );
 }
 
+/** Mirrors AttentionPipeline.relativeAge — kept local to avoid coupling. */
+function relativeAge(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.max(1, Math.floor(diffMs / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
+
+function deadlineFromIso(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const diffMs = new Date(iso).getTime() - Date.now();
+  if (diffMs <= 0) return "overdue";
+  const hrs = Math.floor(diffMs / 3600000);
+  if (hrs < 48) return `expires in ${Math.max(1, hrs)}h`;
+  const days = Math.floor(hrs / 24);
+  return `expires in ${days}d`;
+}
+
+function initialsOf(name: string | null | undefined): string {
+  if (!name) return "—";
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "—";
+}
+
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 animate-pulse">
-      <div className="h-3 w-24 bg-slate-100 rounded mb-4" />
-      <div className="h-4 w-3/4 bg-slate-100 rounded mb-3" />
-      <div className="h-3 w-1/2 bg-slate-100 rounded" />
-    </div>
+    <ul className="divide-y divide-slate-100" aria-busy="true" aria-label="Loading deals">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <li key={i} className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3">
+          <Skeleton className="shrink-0 w-2 h-2 rounded-full" />
+          <Skeleton className="shrink-0 hidden sm:block w-8 h-8 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-3.5 w-1/2 max-w-[220px]" />
+            <Skeleton className="h-2.5 w-2/3 max-w-[280px]" />
+          </div>
+          <Skeleton className="shrink-0 h-5 w-16 rounded-full hidden md:block" />
+        </li>
+      ))}
+    </ul>
   );
 }
 
