@@ -280,7 +280,7 @@ export function DealPipeline() {
   if (showPipelineEmpty) {
     return (
       <section>
-        <PipelineHeader />
+        <PipelineHeader totalDeals={0} />
         <EmptyStateCard
           kicker="Pipeline Idle"
           title="No active pipeline"
