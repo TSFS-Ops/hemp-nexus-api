@@ -16,6 +16,7 @@ interface AttentionItem {
   meta: string;
   ageLabel: string;
   deadlineLabel: string | null;
+  expiresAt: string | null;
   priority: Priority;
   href: string;
 }
