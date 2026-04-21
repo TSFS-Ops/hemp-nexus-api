@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Compass, Loader2, ArrowDownUp, Search, X } from "lucide-react";
+import { ArrowUpRight, Compass, Loader2, ArrowDownUp, Search, X, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -283,6 +283,31 @@ export function DealPipeline() {
   const [sealedPage, setSealedPage] = useState(0);
   const [activePage, setActivePage] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>("newest");
+
+  // Per-lane collapse state — persisted to localStorage so a user who prefers
+  // to stay focused on (say) "Awaiting Engagement" doesn't have to re-collapse
+  // the other lanes after every reload.
+  const [collapsedLanes, setCollapsedLanes] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem("desk:pipeline:collapsedLanes");
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "desk:pipeline:collapsedLanes",
+        JSON.stringify(collapsedLanes),
+      );
+    } catch {
+      // localStorage write failures are non-fatal — collapse simply won't persist.
+    }
+  }, [collapsedLanes]);
+  const toggleLane = (id: string) =>
+    setCollapsedLanes((s) => ({ ...s, [id]: !s[id] }));
 
   // Filter state — purely client-side. Filtering server-side would require
   // narrowing the paginated queries, which would in turn require server-side
