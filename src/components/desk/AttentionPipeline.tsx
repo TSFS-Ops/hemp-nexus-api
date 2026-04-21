@@ -105,6 +105,7 @@ export function AttentionPipeline() {
           meta: counterparty ? counterparty : "Counterparty pending",
           ageLabel: relativeAge(m.created_at),
           deadlineLabel: deadlineFrom(m.expires_at),
+          expiresAt: m.expires_at ?? null,
           priority,
           href: `/desk/deals/${m.id}`,
         };
