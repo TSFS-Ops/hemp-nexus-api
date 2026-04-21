@@ -157,7 +157,7 @@ export function AdminDisputesPanel() {
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : disputes.length === 0 ? (
-            // Admin disputes empty: a desirable steady state. No CTA — disputes
+            // Admin disputes empty: a desirable steady state. No CTA - disputes
             // are raised by counterparties, not initiated from this panel.
             <EmptyStateCard
               kicker="Resolution Queue"

@@ -67,9 +67,9 @@ export default function IntegrationDocs() {
         <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">§02 / Browser & Node · fetch</div>
         <h2 className="mt-1 text-lg text-slate-100 tracking-tight mb-5">Call the API directly</h2>
         <p className="text-[13px] text-slate-400 leading-relaxed mb-4 max-w-2xl">
-          The API surface is intentionally small. Any HTTP client — <span className="font-mono text-slate-300">fetch</span>,{" "}
+          The API surface is intentionally small. Any HTTP client - <span className="font-mono text-slate-300">fetch</span>,{" "}
           <span className="font-mono text-slate-300">requests</span>, <span className="font-mono text-slate-300">curl</span>,{" "}
-          <span className="font-mono text-slate-300">HttpClient</span> — works without ceremony.
+          <span className="font-mono text-slate-300">HttpClient</span> - works without ceremony.
         </p>
         <pre className="bg-black border border-slate-800 rounded-sm p-5 font-mono text-[12px] leading-relaxed text-slate-100 overflow-x-auto">{FETCH_SAMPLE}</pre>
         <p className="mt-4 font-mono text-[11px] text-slate-500">

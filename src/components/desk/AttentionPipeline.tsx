@@ -61,9 +61,9 @@ function deadlineFrom(iso: string | null | undefined): string | null {
 }
 
 function initialsOf(name: string | null | undefined): string {
-  if (!name) return "—";
+  if (!name) return "-";
   const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "—";
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "-";
 }
 
 export function AttentionPipeline() {
@@ -100,7 +100,7 @@ export function AttentionPipeline() {
         const priority: Priority = STATE_PRIORITY[m.state] ?? "low";
         return {
           id: m.id,
-          title: `${qty} ${m.commodity ?? "—"}`,
+          title: `${qty} ${m.commodity ?? "-"}`,
           counterparty: counterparty ?? null,
           meta: counterparty ? counterparty : "Counterparty pending",
           ageLabel: relativeAge(m.created_at),

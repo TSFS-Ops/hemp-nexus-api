@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Role refresh on tab focus / visibility change ──
   // We previously used a Realtime subscription on user_roles, but publishing
-  // that table broadcasts every role change to every subscriber — a privilege
+  // that table broadcasts every role change to every subscriber - a privilege
   // information leak. Instead, we re-fetch the caller's own roles when:
   //   • the tab regains visibility (returning from background)
   //   • the window regains focus (clicking back in)
@@ -255,7 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
           }, 4000);
         } else {
-          // Session healthy — opportunistically refresh roles so a demoted
+          // Session healthy - opportunistically refresh roles so a demoted
           // user in an idle background tab is reflected within ~60s without
           // needing realtime broadcasts.
           fetchRoles(currentSession.user.id);

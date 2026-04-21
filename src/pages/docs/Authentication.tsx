@@ -25,7 +25,7 @@ export default function DocsAuthentication() {
         />
         <Callout>
           The full secret is shown <strong>once</strong> at creation. Store it in a managed
-          secrets vault — never commit keys to version control or paste them into client-side
+          secrets vault - never commit keys to version control or paste them into client-side
           code. Compromised keys can be revoked instantly from the Developer Centre.
         </Callout>
 

@@ -65,7 +65,7 @@ describe("Billing auth guard", () => {
     // The billing content must NOT be rendered
     expect(screen.queryByTestId("billing-content")).not.toBeInTheDocument();
 
-    // RequireAuth fires a navigate() via useEffect — wait for it
+    // RequireAuth fires a navigate() via useEffect - wait for it
     await waitFor(() => {
       const loc = screen.getByTestId("location");
       expect(loc.textContent).toContain("/auth");

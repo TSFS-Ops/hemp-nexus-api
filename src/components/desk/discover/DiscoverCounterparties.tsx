@@ -38,7 +38,7 @@ export function DiscoverCounterparties() {
           Discover Counterparties
         </h1>
         <p className="mt-5 text-base text-muted-foreground leading-relaxed max-w-2xl">
-          Search the verified institutional network. Use natural language — the system parses commodity, jurisdiction, role, and liquidity signals, then ranks counterparties by source tier.
+          Search the verified institutional network. Use natural language - the system parses commodity, jurisdiction, role, and liquidity signals, then ranks counterparties by source tier.
         </p>
       </header>
 

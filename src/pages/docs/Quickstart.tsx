@@ -41,7 +41,7 @@ export default function DocsQuickstart() {
         <DocH2 id="step-1">1. Create an API key</DocH2>
         <DocP>
           Open the Developer Centre and generate a key. Choose a scope that matches what your
-          integration needs to read or write — keys default to least privilege. The full secret
+          integration needs to read or write - keys default to least privilege. The full secret
           is shown <strong className="text-foreground font-medium">once</strong> at creation; store
           it in your secrets manager immediately.
         </DocP>
@@ -54,7 +54,7 @@ export default function DocsQuickstart() {
         <Callout>
           Keys are prefixed <InlineCode>sk_live_</InlineCode> for production and{" "}
           <InlineCode>sk_test_</InlineCode> for the test environment. The prefix is never sensitive
-          — log it freely for support and debugging.
+          - log it freely for support and debugging.
         </Callout>
 
         <DocH2 id="step-2">2. Verify the key with a health check</DocH2>

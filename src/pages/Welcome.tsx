@@ -79,7 +79,7 @@ function WelcomeContent() {
     // Persona is a UI preference, not commercial state. Navigate FIRST so the
     // user always reaches their chosen destination. Persistence + audit run as
     // fire-and-forget; failures are logged + toasted but never strand the user.
-    // The DB trigger `trg_audit_persona_change` is the durable backstop — even
+    // The DB trigger `trg_audit_persona_change` is the durable backstop - even
     // if this client-side audit insert fails, the persona UPDATE itself emits
     // an audit_logs row from inside Postgres.
     navigate(persona.route, { replace: true });
@@ -101,7 +101,7 @@ function WelcomeContent() {
 
         if (error) {
           console.error("[welcome] persona persist failed:", error.message);
-          const msg = "We couldn't remember your workspace preference. Your access still works for this session — sign out and back in to retry, or contact support if the problem persists.";
+          const msg = "We couldn't remember your workspace preference. Your access still works for this session - sign out and back in to retry, or contact support if the problem persists.";
           setPersistError(msg);
           toast.error(msg, { duration: 12000 });
           return;

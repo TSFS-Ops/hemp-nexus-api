@@ -125,7 +125,7 @@ export default function DocsWebhooks() {
 
         <DocH2 id="best-practices">Best practices</DocH2>
         <DocP>
-          Make your handler idempotent — the platform may retry a delivery you've already
+          Make your handler idempotent - the platform may retry a delivery you've already
           processed. Key your processing on <InlineCode>data.matchId</InlineCode> (or the most
           specific identifier in the payload) and skip duplicates. Respond 2xx as soon as the
           payload is persisted; do downstream work asynchronously.

@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 /**
  * Shared primitives for the /docs surface.
- * Tone target: Plaid / Modern Treasury — declarative, code-forward, no marketing.
+ * Tone target: Plaid / Modern Treasury - declarative, code-forward, no marketing.
  */
 
 export function DocEyebrow({ children }: { children: ReactNode }) {

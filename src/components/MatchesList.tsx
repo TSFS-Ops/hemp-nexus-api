@@ -73,7 +73,7 @@ function MatchTypeBadge({ match }: { match: Match }) {
   return null;
 }
 
-/** MatchRoleBadge removed — Buyer/Seller columns already convey role. */
+/** MatchRoleBadge removed - Buyer/Seller columns already convey role. */
 
 const LIST_DEFAULTS = { status: "all", q: "", sort: "created_at", page: "0" };
 
