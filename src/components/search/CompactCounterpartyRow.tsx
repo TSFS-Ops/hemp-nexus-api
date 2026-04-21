@@ -11,6 +11,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle, ExternalLink, Users, Mail, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,6 +128,22 @@ export function CompactCounterpartyRow({
       )}
       onClick={() => onToggleSelect(result.id)}
     >
+      {/* Explicit selection checkbox — independent click target */}
+      <div
+        className="shrink-0 flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggleSelect(result.id)}
+          aria-label={`${isSelected ? "Deselect" : "Select"} ${result.title}`}
+          className={cn(
+            "h-4 w-4",
+            isSelected && "data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600",
+          )}
+        />
+      </div>
+
       {/* Priority dot — source tier */}
       <Tooltip>
         <TooltipTrigger asChild>
