@@ -145,7 +145,7 @@ export function AttentionPipeline() {
 
       <div className="p-2">
         {isLoading ? (
-          <div className="p-6 text-center text-sm text-slate-500">Loading…</div>
+          <AttentionRowsSkeleton />
         ) : sorted.length === 0 ? (
           <EmptyState />
         ) : (
