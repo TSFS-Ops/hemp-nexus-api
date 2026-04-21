@@ -38,10 +38,7 @@ const SECTIONS: DocSection[] = [
 
 export function DocsLayout({ children }: { children: ReactNode }) {
   return (
-    <div
-      className="min-h-screen bg-card"
-      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
-    >
+    <div className="min-h-screen bg-card">
       <PublicHeader />
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex">
         <aside className="hidden md:block w-64 shrink-0 border-r border-border py-12 pr-8">

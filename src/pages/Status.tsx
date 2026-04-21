@@ -22,10 +22,7 @@ function generateBars(): number[] {
 
 export default function Status() {
   return (
-    <div
-      className="min-h-screen bg-card"
-      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
-    >
+    <div className="min-h-screen bg-card">
       <PublicHeader />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">

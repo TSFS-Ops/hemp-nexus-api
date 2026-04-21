@@ -382,9 +382,7 @@ function HQLayout() {
       replace: false
     });
   };
-  return <div className="min-h-screen bg-muted" style={{
-    fontFamily: "Inter, sans-serif"
-  }}>
+  return <div className="min-h-screen bg-muted">
       <CommandBar />
 
       {/* Tab rail, replaces the old SecondaryNav. Mirrors the Command Bar's
@@ -437,9 +435,7 @@ function HQLayout() {
 // understand the boundary; a manual exit returns them to the persona selector.
 // ─────────────────────────────────────────────────────────────────────────────
 function ForbiddenHQ() {
-  return <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6" style={{
-    fontFamily: "Inter, sans-serif"
-  }}>
+  return <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-md border border-slate-800 bg-slate-900 mb-8">
           <Shield className="h-5 w-5 text-rose-400" strokeWidth={1.5} />

@@ -345,9 +345,7 @@ export default function Auth() {
   };
 
   // ── Render ──
-  return <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-card p-3 sm:p-4" style={{
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-  }}>
+  return <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-card p-3 sm:p-4">
       {/* ═══════════════ BACKGROUND LAYERS ═══════════════ */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[820px] w-[1300px] rounded-full blur-3xl" style={{

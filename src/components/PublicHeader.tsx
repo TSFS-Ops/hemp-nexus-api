@@ -77,10 +77,7 @@ export function PublicHeader() {
 
   return (
     <>
-    <nav
-      className="fixed top-0 inset-x-0 z-40 bg-white/80 backdrop-blur-md border-b border-border transition-all duration-300"
-      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
-    >
+    <nav className="fixed top-0 inset-x-0 z-40 bg-card/80 backdrop-blur-md border-b border-border transition-all duration-300">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group shrink-0">

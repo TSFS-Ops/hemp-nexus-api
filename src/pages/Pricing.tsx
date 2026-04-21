@@ -95,13 +95,7 @@ const ALWAYS_INCLUDED = [
 
 export default function Pricing() {
   return (
-    <div
-      className="min-h-screen bg-card text-foreground"
-      style={{
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-      }}
-    >
+    <div className="min-h-screen bg-card text-foreground">
       <PublicHeader />
 
       {/* ════════════════ HERO ════════════════ */}

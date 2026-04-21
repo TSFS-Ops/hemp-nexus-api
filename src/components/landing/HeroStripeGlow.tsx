@@ -7,10 +7,7 @@ interface HeroStripeGlowProps {
 
 export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowProps) {
   return (
-    <section
-      className="relative overflow-hidden bg-card"
-      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif" }}
-    >
+    <section className="relative overflow-hidden bg-card">
       {/* Airy emerald/mint mesh gradient with indigo aurora accent for tonal depth */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         {/* Emerald wash, top-left */}
