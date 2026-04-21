@@ -443,38 +443,44 @@ function DealDocumentCard({
     month: "short",
     year: "numeric",
   });
+  const accent = LANE_ACCENT[laneId];
   return (
     <button
       onClick={onClick}
-      className="text-left bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group"
+      className="group relative text-left bg-white border border-slate-200 rounded-lg px-4 py-3.5 shadow-[0_1px_0_rgba(15,23,42,0.04)] hover:border-slate-300 hover:shadow-[0_4px_12px_-4px_rgba(15,23,42,0.12)] transition-all"
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-500">
-          {deal.id.slice(0, 8)}
-        </span>
+      {/* Row 1 — commodity headline + stage pill */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <p className="text-[14px] font-semibold text-slate-900 leading-snug truncate">
+          {deal.commodity}
+        </p>
         <span
           className={cn(
-            "px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide",
-            LANE_BADGE[laneId],
+            "shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.08em]",
+            accent.pill,
           )}
         >
           {LANE_PILL_LABEL[laneId]}
         </span>
       </div>
-      <p className="text-[15px] font-semibold text-slate-900 leading-snug mb-2">{deal.commodity}</p>
-      <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-4">
-        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
-        <span className="truncate">
-          with <span className="text-slate-900 font-medium">{deal.counterparty}</span>
-        </span>
-      </div>
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-        <span className="font-mono text-xs text-slate-700 tracking-tight">{deal.volume}</span>
-        <span className="text-[10px] font-mono text-slate-500 tracking-wide">{date}</span>
-      </div>
-      <div className="mt-2 flex items-center justify-end text-[10px] font-medium text-slate-500 group-hover:text-emerald-700 transition-colors">
-        Open
-        <ArrowUpRight className="h-3 w-3 ml-0.5" strokeWidth={2} />
+
+      {/* Row 2 — counterparty (the most important "with whom") */}
+      <p className="text-[12px] text-slate-600 truncate mb-3">
+        with <span className="text-slate-900 font-medium">{deal.counterparty}</span>
+      </p>
+
+      {/* Row 3 — meta strip: volume · date · ref · open */}
+      <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono tabular-nums">
+        <span className="text-slate-700">{deal.volume}</span>
+        <div className="flex items-center gap-2">
+          <span>{date}</span>
+          <span className="text-slate-300">·</span>
+          <span className="tracking-[0.1em]">{deal.id.slice(0, 6).toUpperCase()}</span>
+          <ArrowUpRight
+            className="h-3 w-3 text-slate-400 group-hover:text-emerald-700 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
+            strokeWidth={2}
+          />
+        </div>
       </div>
     </button>
   );
