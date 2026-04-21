@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Compass, Loader2 } from "lucide-react";
+import { ArrowUpRight, Compass, Loader2, ArrowDownUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -374,7 +374,7 @@ export function DealPipeline() {
 
   return (
     <section>
-      <PipelineHeader totalDeals={totalDeals} />
+      <PipelineHeader totalDeals={totalDeals} sortKey={sortKey} onSortChange={setSortKey} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
         {lanes.map((lane) => {
           const accent = LANE_ACCENT[lane.id];
@@ -472,10 +472,18 @@ export function DealPipeline() {
   );
 }
 
-function PipelineHeader({ totalDeals }: { totalDeals: number }) {
+function PipelineHeader({
+  totalDeals,
+  sortKey,
+  onSortChange,
+}: {
+  totalDeals: number;
+  sortKey: SortKey;
+  onSortChange: (k: SortKey) => void;
+}) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-4">
-      <div>
+    <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
+      <div className="min-w-0">
         <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-1.5">
           9-Step WaD Workflow
         </p>
@@ -483,9 +491,37 @@ function PipelineHeader({ totalDeals }: { totalDeals: number }) {
           Active Deal Pipeline
         </h2>
       </div>
-      <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
-        {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
-      </p>
+
+      <div className="flex items-center gap-3 sm:gap-4">
+        <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+          {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
+        </p>
+
+        {/* Sort selector — applied client-side across all three lanes so the
+            most important deals surface first regardless of stage. */}
+        <label className="group relative inline-flex items-center gap-2">
+          <span className="sr-only">Sort deals by</span>
+          <ArrowDownUp
+            className="h-3.5 w-3.5 text-slate-400 pointer-events-none"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <select
+            value={sortKey}
+            onChange={(e) => onSortChange(e.target.value as SortKey)}
+            className="appearance-none bg-white border border-slate-200 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 rounded-md pl-2 pr-7 py-1.5 text-[12px] font-medium text-slate-700 cursor-pointer transition-colors"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                Sort: {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[9px]">
+            ▼
+          </span>
+        </label>
+      </div>
     </div>
   );
 }
