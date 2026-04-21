@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { SafeSelect } from "@/components/admin/SafeSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -600,7 +601,7 @@ export function AdminPendingEngagementsPanel() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="method">Contact method</Label>
-              <Select value={contactMethod} onValueChange={handleMethodChange}>
+              <SafeSelect label="Contact method" value={contactMethod} onValueChange={handleMethodChange}>
                 <SelectTrigger id="method"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="email">Email</SelectItem>
@@ -610,7 +611,7 @@ export function AdminPendingEngagementsPanel() {
                   <SelectItem value="in_person">In person</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
-              </Select>
+              </SafeSelect>
               <p className="text-xs text-muted-foreground">
                 {contactMethod === "email"
                   ? "Email is the only method where the platform can send the outreach for you. You'll preview and edit the message before it's sent."
