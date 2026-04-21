@@ -515,7 +515,7 @@ export function DealPipeline() {
           return (
             <div
               key={lane.id}
-              className="flex flex-col rounded-xl border border-slate-200/80 bg-slate-50/40 overflow-hidden"
+              className="flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
               {/* Top accent bar — sets lane identity without shouting. */}
               <div className={cn("h-0.5 w-full", accent.bar)} />
@@ -529,21 +529,19 @@ export function DealPipeline() {
                 onClick={() => toggleLane(lane.id)}
                 aria-expanded={!collapsed}
                 aria-controls={bodyId}
-                className="flex items-start justify-between gap-3 px-4 pt-4 pb-3 text-left hover:bg-slate-100/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+                className="flex items-center justify-between gap-3 bg-slate-50/80 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-100/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("h-1.5 w-1.5 rounded-full", accent.dot)} />
-                    <h3 className="text-[13px] font-semibold text-slate-900 leading-none">
-                      {lane.title}
-                    </h3>
-                  </div>
-                  <p className="mt-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-slate-400">
-                    {lane.subtitle}
-                  </p>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", accent.dot)} />
+                  <h3 className="text-xs font-bold tracking-widest uppercase text-slate-500 truncate">
+                    {lane.title}
+                  </h3>
+                  <span className="hidden lg:inline text-[10px] font-mono tracking-[0.18em] uppercase text-slate-400 truncate">
+                    · {lane.subtitle}
+                  </span>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 bg-white border border-slate-200 text-slate-700 text-[11px] font-semibold rounded-md tabular-nums">
+                  <span className="inline-flex items-center justify-center min-w-[24px] h-5 px-2 bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold rounded-full tabular-nums">
                     {lane.deals.length}
                   </span>
                   <ChevronDown
@@ -559,10 +557,7 @@ export function DealPipeline() {
 
               {/* Collapsible region — animated via grid-template-rows so we can
                   transition between collapsed (0fr) and expanded (1fr) without
-                  measuring content height in JS. The inner wrapper owns
-                  `overflow-hidden` so cards clip cleanly during the transition,
-                  and `motion-reduce` disables the animation for users who have
-                  requested reduced motion. */}
+                  measuring content height in JS. */}
               <div
                 id={bodyId}
                 role="region"
@@ -576,25 +571,28 @@ export function DealPipeline() {
                 )}
               >
                 <div className="overflow-hidden min-h-0">
-                  {/* Cards */}
-                  <div className="flex flex-col gap-2 px-3 pb-3 min-h-[120px] md:min-h-[220px]">
+                  {/* Rows */}
+                  <div className="p-2 min-h-[120px] md:min-h-[220px]">
                     {isLoading ? (
                       <SkeletonCard />
                     ) : lane.deals.length === 0 ? (
-                      <LaneEmptyState />
+                      <div className="px-2 py-4">
+                        <LaneEmptyState />
+                      </div>
                     ) : (
-                      lane.deals.map((deal) => (
-                        <DealDocumentCard
-                          key={deal.id}
-                          deal={deal}
-                          laneId={lane.id}
-                          onClick={() => navigate(`/desk/match/${deal.id}`)}
-                        />
-                      ))
+                      <ul className="divide-y divide-slate-100">
+                        {lane.deals.map((deal) => (
+                          <li key={deal.id}>
+                            <DealDocumentCard
+                              deal={deal}
+                              laneId={lane.id}
+                              onClick={() => navigate(`/desk/match/${deal.id}`)}
+                            />
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </div>
-
-                  {/* Sealed pagination affordance. */}
                   {lane.id === "poi" && !isLoading && lane.deals.length > 0 && (
                     <div className="px-4 py-2.5 border-t border-slate-200/70 bg-white/60 flex items-center justify-between gap-3">
                       <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500">
