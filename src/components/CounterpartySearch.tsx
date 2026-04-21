@@ -45,6 +45,13 @@ interface SearchResult {
     passed: boolean;
     factors: string[];
   };
+  metadata?: {
+    web_discovered?: boolean;
+    has_contact?: boolean;
+    contact_masked?: boolean;
+    verified?: boolean;
+    [key: string]: any;
+  };
 }
 
 interface SearchMetrics {
