@@ -345,9 +345,32 @@ export function DealPipeline() {
   // support for full-text counterparty search. For pipeline-scale data
   // (≤ a few hundred in-flight deals per org) client filtering is the right
   // trade-off: zero added latency, instant feedback as the user types.
-  const [counterpartyQuery, setCounterpartyQuery] = useState("");
-  const [commodityFilter, setCommodityFilter] = useState<string>("all");
-  const [laneFilter, setLaneFilter] = useState<"all" | DealCard["laneId"]>("all");
+  const [counterpartyQuery, setCounterpartyQuery] = useState<string>(() =>
+    readStorage<string>(COUNTERPARTY_STORAGE, "", isString),
+  );
+  const [commodityFilter, setCommodityFilter] = useState<string>(() =>
+    readStorage<string>(COMMODITY_STORAGE, "all", isString),
+  );
+  const [laneFilter, setLaneFilter] = useState<"all" | DealCard["laneId"]>(() =>
+    readStorage<"all" | DealCard["laneId"]>(LANE_FILTER_STORAGE, "all", isLaneFilter),
+  );
+
+  // Persist sort + filter selections. Each write is wrapped because storage
+  // can fail (quota, private mode) — failure is non-fatal: the in-memory state
+  // continues to drive the UI, and the user simply loses persistence for that
+  // selection.
+  useEffect(() => {
+    try { window.localStorage.setItem(SORT_KEY_STORAGE, JSON.stringify(sortKey)); } catch {}
+  }, [sortKey]);
+  useEffect(() => {
+    try { window.localStorage.setItem(COUNTERPARTY_STORAGE, JSON.stringify(counterpartyQuery)); } catch {}
+  }, [counterpartyQuery]);
+  useEffect(() => {
+    try { window.localStorage.setItem(COMMODITY_STORAGE, JSON.stringify(commodityFilter)); } catch {}
+  }, [commodityFilter]);
+  useEffect(() => {
+    try { window.localStorage.setItem(LANE_FILTER_STORAGE, JSON.stringify(laneFilter)); } catch {}
+  }, [laneFilter]);
 
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
