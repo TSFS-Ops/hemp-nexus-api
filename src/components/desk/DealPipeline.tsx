@@ -108,6 +108,21 @@ function formatVolume(amount: number | null | undefined, unit: string | null | u
   return `${Number(amount).toLocaleString()} ${unit}`;
 }
 
+/**
+ * Infer a meaningful deadline timestamp for a deal.
+ *
+ * Trade rows do not (yet) carry an explicit SLA column, so we approximate using
+ * lane semantics: drafts age out at 30d, awaiting-engagement deals at 7d (the
+ * POI hold-point window), and sealed deals at 90d (settlement horizon). This
+ * makes "Nearest deadline" sort actionable without a schema change — the moment
+ * a real `expires_at` column is added, swap this for a direct read.
+ */
+function inferDeadline(createdAt: string, laneId: DealCard["laneId"]): string {
+  const created = new Date(createdAt).getTime();
+  const days = laneId === "awaiting" ? 7 : laneId === "draft" ? 30 : 90;
+  return new Date(created + days * 86_400_000).toISOString();
+}
+
 /** Resolve current user's org once; cached aggressively, used by every sub-query. */
 function useOrgId() {
   const { user } = useAuth();
