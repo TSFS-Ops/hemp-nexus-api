@@ -75,7 +75,7 @@ function formatAddress(addr: Org["address"]): string | null {
 function statusPill(status: string) {
   const s = (status || "pending").toLowerCase();
   if (s === "active" || s === "verified" || s === "approved") {
-    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    return "bg-[hsl(var(--emerald-muted))] text-[hsl(var(--emerald))] border border-[hsl(var(--emerald)/0.2)]";
   }
   if (s === "blocked" || s === "rejected" || s === "suspended") {
     return "bg-rose-50 text-rose-700 border border-rose-200";
@@ -132,7 +132,7 @@ export function ComplianceProfile() {
   // ── Loading ────────────────────────────────────────────────
   if (loading || !orgId) {
     return (
-      <div className="flex items-center gap-3 py-24 text-slate-500">
+      <div className="flex items-center gap-3 py-24 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span className="text-xs font-semibold tracking-wider uppercase">
           Loading compliance profile…
@@ -155,10 +155,10 @@ export function ComplianceProfile() {
     return (
       <>
         <header className="mb-8">
-          <p className="text-xs font-semibold tracking-wider uppercase text-slate-500 mb-2">
+          <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
             Identity & Governance
           </p>
-          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight leading-tight">
             Compliance Profile
           </h1>
         </header>
@@ -209,13 +209,13 @@ export function ComplianceProfile() {
       {/* ── HEADER ────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
         <div>
-          <p className="text-xs font-semibold tracking-wider uppercase text-slate-500 mb-2">
+          <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
             Identity & Governance
           </p>
-          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight leading-tight">
             Compliance Profile
           </h1>
-          <p className="mt-3 text-sm text-slate-500 leading-relaxed max-w-xl">
+          <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xl">
             Your institutional identity record. All counterparties verify against this file
             before bilateral signature.
           </p>
@@ -230,13 +230,13 @@ export function ComplianceProfile() {
       </header>
 
       {/* ── STATUS BANNER ─────────────────────────────────────── */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-white border border-slate-200 shadow-sm rounded-lg">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card border border-border shadow-sm rounded-lg">
         <div className="flex items-center gap-3">
-          <p className="text-xs font-semibold tracking-wider uppercase text-slate-500">
+          <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
             Entity Status
           </p>
-          <span className="text-xs text-slate-500">
-            Last review · <span className="font-mono text-slate-700">{lastReview} UTC</span>
+          <span className="text-xs text-muted-foreground">
+            Last review · <span className="font-mono text-muted-foreground">{lastReview} UTC</span>
           </span>
         </div>
         <span
@@ -251,20 +251,20 @@ export function ComplianceProfile() {
       {/* ── CARDS ─────────────────────────────────────────────── */}
       <div className="space-y-6">
         {/* Card 1 · Registered Identity */}
-        <article className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <CardHeader index="01" title="Registered Identity" kicker="Statutory Record" />
           <div className="p-6">
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               {legalRows.map((item) => (
                 <div key={item.label} className={item.full ? "md:col-span-2" : ""}>
-                  <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                  <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                     {item.label}
                   </dt>
                   <dd
                     className={
                       item.placeholder
-                        ? "text-sm italic text-slate-400"
-                        : `text-sm font-medium text-slate-900 ${item.mono ? "font-mono" : ""}`
+                        ? "text-sm italic text-muted-foreground/70"
+                        : `text-sm font-medium text-foreground ${item.mono ? "font-mono" : ""}`
                     }
                   >
                     {item.value}
@@ -276,7 +276,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 2 · Ownership (UBO) */}
-        <article className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <CardHeader
             index="02"
             title="Ownership (UBO)"
@@ -292,7 +292,7 @@ export function ComplianceProfile() {
               />
             ) : (
               <>
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-border">
                   {owners.map((owner) => {
                     const verified = owner.status === "verified";
                     return (
@@ -304,7 +304,7 @@ export function ComplianceProfile() {
                           <span
                             className={`inline-flex items-center justify-center h-5 w-5 rounded-full shrink-0 ${
                               verified
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                ? "bg-[hsl(var(--emerald-muted))] text-[hsl(var(--emerald))] border border-[hsl(var(--emerald)/0.2)]"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
                             }`}
                             aria-label={verified ? "Verified" : "Pending"}
@@ -312,20 +312,20 @@ export function ComplianceProfile() {
                             <Check className="h-3 w-3" strokeWidth={2.5} />
                           </span>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">
+                            <p className="text-sm font-medium text-foreground truncate">
                               {owner.person?.legal_name ?? "Unnamed Owner"}
                             </p>
-                            <p className="mt-0.5 text-xs text-slate-500">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                               {(owner.person?.entity_type ?? "owner")} ·{" "}
                               {owner.person?.jurisdiction_code ?? "-"}
                             </p>
                           </div>
                         </div>
                         <div className="col-span-12 sm:col-span-5 sm:text-right">
-                          <p className="font-mono text-sm font-medium text-slate-900 tabular-nums">
+                          <p className="font-mono text-sm font-medium text-foreground tabular-nums">
                             {Number(owner.ownership_percentage).toFixed(2)}%
                           </p>
-                          <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
                             Ownership
                           </p>
                         </div>
@@ -333,11 +333,11 @@ export function ComplianceProfile() {
                     );
                   })}
                 </ul>
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="mt-6 pt-4 border-t border-border flex items-center justify-between gap-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Aggregate Verified Ownership
                   </p>
-                  <p className="font-mono text-sm font-medium text-slate-900 tabular-nums">
+                  <p className="font-mono text-sm font-medium text-foreground tabular-nums">
                     {totalOwnership.toFixed(2)}%
                   </p>
                 </div>
@@ -347,7 +347,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 3 · Regulatory Evidence */}
-        <article className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <CardHeader index="03" title="Regulatory Evidence" kicker="Active Licences" />
           <div className="p-6">
             {docs.length === 0 ? (
@@ -359,7 +359,7 @@ export function ComplianceProfile() {
               />
             ) : (
               <>
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-border">
                   {docs.map((doc) => {
                     const sealed = doc.status === "verified" || doc.status === "approved";
                     const shortHash = `0x${doc.sha256_hash.slice(0, 40)}`;
@@ -369,10 +369,10 @@ export function ComplianceProfile() {
                         className="grid grid-cols-12 gap-4 items-start py-4 first:pt-0 last:pb-0"
                       >
                         <div className="col-span-12 sm:col-span-5 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">
+                          <p className="text-sm font-medium text-foreground truncate">
                             {prettyDocType(doc.doc_type)}
                           </p>
-                          <p className="mt-0.5 text-xs text-slate-500">
+                          <p className="mt-0.5 text-xs text-muted-foreground">
                             {doc.expiry_date
                               ? `Expires ${doc.expiry_date}`
                               : `Status · ${doc.status}`}
@@ -380,10 +380,10 @@ export function ComplianceProfile() {
                         </div>
 
                         <div className="col-span-12 sm:col-span-6">
-                          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                             SHA-256
                           </p>
-                          <p className="font-mono text-[10px] text-slate-700 break-all leading-snug">
+                          <p className="font-mono text-[10px] text-muted-foreground break-all leading-snug">
                             {shortHash}
                           </p>
                         </div>
@@ -392,7 +392,7 @@ export function ComplianceProfile() {
                           <span
                             className={`inline-flex items-center justify-center h-5 w-5 rounded-full ${
                               sealed
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                ? "bg-[hsl(var(--emerald-muted))] text-[hsl(var(--emerald))] border border-[hsl(var(--emerald)/0.2)]"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
                             }`}
                             aria-label={sealed ? "Sealed" : "Pending review"}
@@ -404,11 +404,11 @@ export function ComplianceProfile() {
                     );
                   })}
                 </ul>
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="mt-6 pt-4 border-t border-border flex items-center justify-between gap-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Vault Integrity · Chain Verified
                   </p>
-                  <p className="font-mono text-xs text-slate-900">
+                  <p className="font-mono text-xs text-foreground">
                     {docs.length} document{docs.length === 1 ? "" : "s"} on file
                   </p>
                 </div>
@@ -419,11 +419,11 @@ export function ComplianceProfile() {
       </div>
 
       {/* Footer attestation */}
-      <footer className="mt-10 pt-6 border-t border-slate-200">
-        <p className="text-xs font-semibold tracking-wider uppercase text-slate-500">
+      <footer className="mt-10 pt-6 border-t border-border">
+        <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
           Custodian
         </p>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-2xl">
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">
           This profile is held by the Izenzo Governance Registry under jurisdiction{" "}
           {jurisdiction}. Counterparties may request tamper-proof proof of any field
           via the Without-a-Doubt attestation endpoint.
@@ -443,16 +443,16 @@ function CardHeader({
   kicker: string;
 }) {
   return (
-    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-4">
+    <div className="px-6 py-4 bg-muted border-b border-border flex items-center justify-between gap-4">
       <div className="flex items-baseline gap-3 min-w-0">
-        <span className="font-mono text-[11px] text-slate-400 select-none shrink-0">
+        <span className="font-mono text-[11px] text-muted-foreground/70 select-none shrink-0">
           {index}
         </span>
-        <h2 className="text-sm font-semibold text-slate-900 tracking-tight truncate">
+        <h2 className="text-sm font-semibold text-foreground tracking-tight truncate">
           {title}
         </h2>
       </div>
-      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider shrink-0">
         {kicker}
       </p>
     </div>
@@ -473,13 +473,13 @@ function EmptyRow({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2">
       <div>
-        <p className="text-sm font-medium text-slate-900">{title}</p>
-        <p className="mt-1 text-xs text-slate-500">{hint}</p>
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
       </div>
       <button
         type="button"
         onClick={onClick}
-        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-sm font-medium shadow-sm transition-colors"
+        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-card border border-slate-300 text-muted-foreground hover:bg-muted hover:text-foreground text-sm font-medium shadow-sm transition-colors"
       >
         {cta}
       </button>

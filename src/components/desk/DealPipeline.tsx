@@ -91,7 +91,7 @@ const LANE_META = [
 const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string }> = {
   draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500" },
   awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500" },
-  poi:      { bar: "bg-emerald-400/70",  pill: "text-emerald-700 bg-emerald-50", dot: "bg-emerald-500" },
+  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-emerald-500" },
 };
 const LANE_PILL_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -515,7 +515,7 @@ export function DealPipeline() {
           return (
             <div
               key={lane.id}
-              className="flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+              className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden"
             >
               {/* Top accent bar — sets lane identity without shouting. */}
               <div className={cn("h-0.5 w-full", accent.bar)} />
@@ -529,24 +529,24 @@ export function DealPipeline() {
                 onClick={() => toggleLane(lane.id)}
                 aria-expanded={!collapsed}
                 aria-controls={bodyId}
-                className="flex items-center justify-between gap-3 bg-slate-50/80 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-100/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+                className="flex items-center justify-between gap-3 bg-muted/80 border-b border-border px-4 py-3 text-left hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", accent.dot)} />
-                  <h3 className="text-xs font-bold tracking-widest uppercase text-slate-500 truncate">
+                  <h3 className="text-xs font-bold tracking-widest uppercase text-muted-foreground truncate">
                     {lane.title}
                   </h3>
-                  <span className="hidden lg:inline text-[10px] font-mono tracking-[0.18em] uppercase text-slate-400 truncate">
+                  <span className="hidden lg:inline text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground/70 truncate">
                     · {lane.subtitle}
                   </span>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center min-w-[24px] h-5 px-2 bg-white border border-slate-200 text-slate-700 text-[10px] font-semibold rounded-full tabular-nums">
+                  <span className="inline-flex items-center justify-center min-w-[24px] h-5 px-2 bg-card border border-border text-muted-foreground text-[10px] font-semibold rounded-full tabular-nums">
                     {lane.deals.length}
                   </span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-slate-500 transition-transform duration-300 ease-out",
+                      "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
                       collapsed ? "-rotate-90" : "rotate-0",
                     )}
                     strokeWidth={2}
@@ -580,7 +580,7 @@ export function DealPipeline() {
                         <LaneEmptyState />
                       </div>
                     ) : (
-                      <ul className="divide-y divide-slate-100">
+                      <ul className="divide-y divide-border">
                         {lane.deals.map((deal) => (
                           <li key={deal.id}>
                             <DealDocumentCard
@@ -594,8 +594,8 @@ export function DealPipeline() {
                     )}
                   </div>
                   {lane.id === "poi" && !isLoading && lane.deals.length > 0 && (
-                    <div className="px-4 py-2.5 border-t border-slate-200/70 bg-white/60 flex items-center justify-between gap-3">
-                      <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500">
+                    <div className="px-4 py-2.5 border-t border-border bg-white/60 flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground">
                         Showing {sealedLoaded}
                         {sealedQ.data?.totalSealedish ? ` of ~${sealedQ.data.totalSealedish}` : ""}
                       </p>
@@ -604,7 +604,7 @@ export function DealPipeline() {
                           type="button"
                           onClick={() => setSealedPage((p) => p + 1)}
                           disabled={isSealedFetching}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] disabled:opacity-60"
                         >
                           {isSealedFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
                           Load more
@@ -619,15 +619,15 @@ export function DealPipeline() {
                     !isLoading &&
                     activeQ.data &&
                     activeHasMore && (
-                      <div className="px-4 py-2.5 border-t border-slate-200/70 bg-white/60 flex items-center justify-between gap-3">
-                        <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500">
+                      <div className="px-4 py-2.5 border-t border-border bg-white/60 flex items-center justify-between gap-3">
+                        <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground">
                           Showing {activeLoaded} of {activeQ.data.totalActive}
                         </p>
                         <button
                           type="button"
                           onClick={() => setActivePage((p) => p + 1)}
                           disabled={isActiveFetching}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] disabled:opacity-60"
                         >
                           {isActiveFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
                           Load more
@@ -674,13 +674,13 @@ function FilterBar({
   visibleCount: number;
 }) {
   const inputBase =
-    "appearance-none bg-white border border-slate-200 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 rounded-md text-[12px] font-medium text-slate-700 transition-colors";
+    "appearance-none bg-card border border-border hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md text-[12px] font-medium text-muted-foreground transition-colors";
   return (
-    <div className="mb-5 rounded-lg border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
+    <div className="mb-5 rounded-lg border border-border bg-muted/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
       {/* Counterparty contains-search */}
       <div className="relative flex-1 min-w-[180px]">
         <Search
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/70 pointer-events-none"
           strokeWidth={1.75}
           aria-hidden
         />
@@ -696,7 +696,7 @@ function FilterBar({
           <button
             type="button"
             onClick={() => onCounterpartyQueryChange("")}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground/70 hover:text-muted-foreground rounded"
             aria-label="Clear counterparty search"
           >
             <X className="h-3 w-3" strokeWidth={2} />
@@ -725,7 +725,7 @@ function FilterBar({
       {/* Lane / status pill toggle group — keeps stage filtering immediately
           visible without burying it in a dropdown. */}
       <div
-        className="inline-flex items-center bg-white border border-slate-200 rounded-md p-0.5"
+        className="inline-flex items-center bg-card border border-border rounded-md p-0.5"
         role="tablist"
         aria-label="Filter by stage"
       >
@@ -749,7 +749,7 @@ function FilterBar({
                 "px-2.5 py-1 text-[11px] font-medium rounded transition-colors",
                 active
                   ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
             >
               {opt.label}
@@ -760,14 +760,14 @@ function FilterBar({
 
       {/* Visible count + reset affordance */}
       <div className="flex items-center gap-3 lg:ml-auto">
-        <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+        <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground tabular-nums">
           {visibleCount} visible
         </span>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={onReset}
-            className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800"
+            className="text-[11px] font-medium text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))]"
           >
             Clear filters
           </button>
@@ -789,16 +789,16 @@ function PipelineHeader({
   return (
     <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
       <div className="min-w-0">
-        <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-1.5">
+        <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-muted-foreground/70 mb-1.5">
           9-Step WaD Workflow
         </p>
-        <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+        <h2 className="text-lg font-semibold text-foreground tracking-tight">
           Active Deal Pipeline
         </h2>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+        <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-muted-foreground tabular-nums">
           {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
         </p>
 
@@ -807,14 +807,14 @@ function PipelineHeader({
         <label className="group relative inline-flex items-center gap-2">
           <span className="sr-only">Sort deals by</span>
           <ArrowDownUp
-            className="h-3.5 w-3.5 text-slate-400 pointer-events-none"
+            className="h-3.5 w-3.5 text-muted-foreground/70 pointer-events-none"
             strokeWidth={1.75}
             aria-hidden
           />
           <select
             value={sortKey}
             onChange={(e) => onSortChange(e.target.value as SortKey)}
-            className="appearance-none bg-white border border-slate-200 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 rounded-md pl-2 pr-7 py-1.5 text-[12px] font-medium text-slate-700 cursor-pointer transition-colors"
+            className="appearance-none bg-card border border-border hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md pl-2 pr-7 py-1.5 text-[12px] font-medium text-muted-foreground cursor-pointer transition-colors"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -822,7 +822,7 @@ function PipelineHeader({
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[9px]">
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/70 text-[9px]">
             ▼
           </span>
         </label>
@@ -848,7 +848,7 @@ function DealDocumentCard({
   return (
     <button
       onClick={onClick}
-      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
     >
       {/* Lane priority dot */}
       <span
@@ -859,7 +859,7 @@ function DealDocumentCard({
 
       {/* Counterparty initials */}
       <div
-        className="shrink-0 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold tracking-wide"
+        className="shrink-0 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold tracking-wide"
         title={deal.counterparty}
       >
         {initials}
@@ -867,17 +867,17 @@ function DealDocumentCard({
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-slate-900 font-medium leading-snug truncate">
+        <p className="text-sm text-foreground font-medium leading-snug truncate">
           {deal.volume !== "-" ? `${deal.volume} ` : ""}
           {deal.commodity}
         </p>
-        <p className="text-[11px] text-slate-500 leading-snug truncate flex items-center gap-1.5 flex-wrap">
-          <span className="truncate">with <span className="text-slate-700">{deal.counterparty}</span></span>
-          <span className="text-slate-300">·</span>
-          <span className="font-mono text-slate-400">{ageLabel}</span>
+        <p className="text-[11px] text-muted-foreground leading-snug truncate flex items-center gap-1.5 flex-wrap">
+          <span className="truncate">with <span className="text-muted-foreground">{deal.counterparty}</span></span>
+          <span className="text-muted-foreground/50">·</span>
+          <span className="font-mono text-muted-foreground/70">{ageLabel}</span>
           {deadlineLabel && (
             <>
-              <span className="text-slate-300">·</span>
+              <span className="text-muted-foreground/50">·</span>
               <span
                 className={cn(
                   "font-mono cursor-help",
@@ -898,8 +898,8 @@ function DealDocumentCard({
               </span>
             </>
           )}
-          <span className="text-slate-300">·</span>
-          <span className="font-mono tracking-[0.1em] text-slate-400">
+          <span className="text-muted-foreground/50">·</span>
+          <span className="font-mono tracking-[0.1em] text-muted-foreground/70">
             {deal.id.slice(0, 6).toUpperCase()}
           </span>
         </p>
@@ -915,7 +915,7 @@ function DealDocumentCard({
         {LANE_PILL_LABEL[laneId]}
       </span>
       <ArrowRight
-        className="shrink-0 h-4 w-4 text-slate-300 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all"
+        className="shrink-0 h-4 w-4 text-muted-foreground/50 group-hover:text-[hsl(var(--emerald))] group-hover:translate-x-0.5 transition-all"
         strokeWidth={2}
         aria-hidden
       />
@@ -954,7 +954,7 @@ function initialsOf(name: string | null | undefined): string {
 
 function SkeletonCard() {
   return (
-    <ul className="divide-y divide-slate-100" aria-busy="true" aria-label="Loading deals">
+    <ul className="divide-y divide-border" aria-busy="true" aria-label="Loading deals">
       {Array.from({ length: 3 }).map((_, i) => (
         <li key={i} className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3">
           <Skeleton className="shrink-0 w-2 h-2 rounded-full" />

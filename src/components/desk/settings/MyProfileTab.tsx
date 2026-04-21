@@ -49,7 +49,7 @@ export function MyProfileTab() {
   };
 
   if (loading) {
-    return <div className="text-sm text-slate-400">Loading…</div>;
+    return <div className="text-sm text-muted-foreground/70">Loading…</div>;
   }
 
   return (
@@ -58,7 +58,7 @@ export function MyProfileTab() {
         <input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full bg-white border border-slate-200 rounded-md px-4 py-3 text-base md:text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+          className="w-full bg-card border border-border rounded-md px-4 py-3 text-base md:text-sm text-foreground focus:outline-none focus:border-slate-400 transition-colors"
           placeholder="Your full legal name"
         />
       </Field>
@@ -66,7 +66,7 @@ export function MyProfileTab() {
         <input
           value={user?.email ?? ""}
           disabled
-          className="w-full bg-slate-50 border border-slate-200 rounded-md px-4 py-3 text-base md:text-sm text-slate-500 font-mono"
+          className="w-full bg-muted border border-border rounded-md px-4 py-3 text-base md:text-sm text-muted-foreground font-mono"
         />
       </Field>
       <div className="pt-2">
@@ -85,11 +85,11 @@ export function MyProfileTab() {
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <label className="block text-xs font-medium tracking-wider uppercase text-slate-500">
+      <label className="block text-xs font-medium tracking-wider uppercase text-muted-foreground">
         {label}
       </label>
       {children}
-      {hint && <p className="text-xs text-slate-400 leading-relaxed">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground/70 leading-relaxed">{hint}</p>}
     </div>
   );
 }

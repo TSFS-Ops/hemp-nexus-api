@@ -9,7 +9,7 @@ const TABS = [
 
 export function SettingsTabs() {
   return (
-    <nav className="border-b border-slate-200 mb-8 md:mb-12 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-hide">
+    <nav className="border-b border-border mb-8 md:mb-12 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-hide">
       <ul className="flex items-center gap-5 md:gap-10 min-w-max">
         {TABS.map((tab) => (
           <li key={tab.to}>
@@ -20,8 +20,8 @@ export function SettingsTabs() {
                 [
                   "inline-block py-4 text-sm whitespace-nowrap transition-colors relative",
                   isActive
-                    ? "text-slate-900 font-medium after:absolute after:left-0 after:right-0 after:-bottom-px after:h-0.5 after:bg-primary"
-                    : "text-slate-500 hover:text-slate-900",
+                    ? "text-foreground font-medium after:absolute after:left-0 after:right-0 after:-bottom-px after:h-0.5 after:bg-primary"
+                    : "text-muted-foreground hover:text-foreground",
                 ].join(" ")
               }
             >

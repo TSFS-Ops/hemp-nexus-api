@@ -178,7 +178,7 @@ export function CompanyIdentityTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-slate-400">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground/70">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading KYB profile…
       </div>
     );
@@ -189,8 +189,8 @@ export function CompanyIdentityTab() {
       {/* Header + verification badge */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 md:mb-10">
         <div>
-          <h2 className="text-lg md:text-xl font-medium text-slate-900 tracking-tight">Company Identity</h2>
-          <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-md">
+          <h2 className="text-lg md:text-xl font-medium text-foreground tracking-tight">Company Identity</h2>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
             Your verified Know-Your-Business profile. This identity is bound to every Proof of Intent you generate.
           </p>
         </div>
@@ -198,7 +198,7 @@ export function CompanyIdentityTab() {
       </div>
 
       {/* Stepper */}
-      <nav className="mb-8 md:mb-10 flex items-center gap-1 border-b border-slate-200 -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-hide">
+      <nav className="mb-8 md:mb-10 flex items-center gap-1 border-b border-border -mx-4 md:mx-0 px-4 md:px-0 overflow-x-auto scrollbar-hide">
         {STEPS.map((s) => {
           const active = s.key === activeStep;
           return (
@@ -209,8 +209,8 @@ export function CompanyIdentityTab() {
               className={[
                 "px-4 py-3 text-left transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap",
                 active
-                  ? "border-slate-900 text-slate-900"
-                  : "border-transparent text-slate-500 hover:text-slate-800",
+                  ? "border-slate-900 text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-slate-800",
               ].join(" ")}
             >
               <p className="font-mono text-[10px] tracking-[0.25em] uppercase opacity-70">{s.index}</p>
@@ -360,9 +360,9 @@ function EntityDetailsStep({
         <Input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value.toUpperCase())} maxLength={3} placeholder="ZA · GB · US" />
       </FormField>
 
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
-        <p className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-          Saving moves status to <span className="text-slate-700">pending</span>
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-border">
+        <p className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
+          Saving moves status to <span className="text-muted-foreground">pending</span>
         </p>
         <Button type="submit" disabled={!valid || saving} className="gap-2 w-full sm:w-auto">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -463,38 +463,38 @@ function OwnersStep({
   return (
     <div className="space-y-8">
       {/* List */}
-      <div className="rounded-md border border-slate-200 bg-white">
-        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+      <div className="rounded-md border border-border bg-card">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
             Declared Owners ({owners.length})
           </p>
-          <p className="font-mono text-xs text-slate-700 tabular-nums">
+          <p className="font-mono text-xs text-muted-foreground tabular-nums">
             Σ {totalOwnership.toFixed(2)}%
           </p>
         </div>
         {owners.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-slate-500 text-center">
+          <p className="px-5 py-8 text-sm text-muted-foreground text-center">
             No beneficial owners declared yet.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-border">
             {owners.map((o) => (
               <li key={o.id} className="px-5 py-4 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-900 font-medium truncate">
+                  <p className="text-sm text-foreground font-medium truncate">
                     {o.person?.legal_name ?? "Unnamed"}
                   </p>
-                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mt-0.5">
+                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-0.5">
                     {o.person?.jurisdiction_code ?? "-"} · {o.status}
                   </p>
                 </div>
-                <p className="font-mono text-sm text-slate-900 tabular-nums">
+                <p className="font-mono text-sm text-foreground tabular-nums">
                   {Number(o.ownership_percentage).toFixed(2)}%
                 </p>
                 <button
                   type="button"
                   onClick={() => handleRemove(o.id)}
-                  className="p-1.5 rounded-sm text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  className="p-1.5 rounded-sm text-muted-foreground/70 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                   aria-label="Remove owner"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -506,19 +506,19 @@ function OwnersStep({
       </div>
 
       {/* Add form */}
-      <form onSubmit={handleAdd} className="rounded-md border border-slate-200 bg-slate-50/40 p-5 space-y-4">
-        <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">Add Beneficial Owner</p>
+      <form onSubmit={handleAdd} className="rounded-md border border-border bg-muted/40 p-5 space-y-4">
+        <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">Add Beneficial Owner</p>
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           <div className="sm:col-span-6">
-            <Label htmlFor="ubo-name" className="text-xs text-slate-600">Full Legal Name</Label>
+            <Label htmlFor="ubo-name" className="text-xs text-muted-foreground">Full Legal Name</Label>
             <Input id="ubo-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={160} placeholder="e.g. Jane Smith" />
           </div>
           <div className="sm:col-span-3">
-            <Label htmlFor="ubo-jur" className="text-xs text-slate-600">Jurisdiction</Label>
+            <Label htmlFor="ubo-jur" className="text-xs text-muted-foreground">Jurisdiction</Label>
             <Input id="ubo-jur" value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value.toUpperCase())} maxLength={3} placeholder="ZA" />
           </div>
           <div className="sm:col-span-3">
-            <Label htmlFor="ubo-pct" className="text-xs text-slate-600">Ownership %</Label>
+            <Label htmlFor="ubo-pct" className="text-xs text-muted-foreground">Ownership %</Label>
             <Input id="ubo-pct" type="number" step="0.01" min="0.01" max="100" value={pct} onChange={(e) => setPct(e.target.value)} placeholder="25.00" />
           </div>
         </div>
@@ -592,14 +592,14 @@ function DocumentsStep({
   return (
     <div className="space-y-8">
       {/* Doc type + drop zone */}
-      <div className="rounded-md border border-slate-200 bg-white p-5 space-y-4">
+      <div className="rounded-md border border-border bg-card p-5 space-y-4">
         <div>
-          <Label htmlFor="doc-type" className="text-xs text-slate-600">Document Type</Label>
+          <Label htmlFor="doc-type" className="text-xs text-muted-foreground">Document Type</Label>
           <select
             id="doc-type"
             value={docType}
             onChange={(e) => setDocType(e.target.value as (typeof DOC_TYPES)[number])}
-            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-base md:text-sm min-h-[44px]"
+            className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-base md:text-sm min-h-[44px]"
           >
             {DOC_TYPES.map((t) => (
               <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
@@ -611,8 +611,8 @@ function DocumentsStep({
           className={[
             "block rounded-md border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors",
             uploading
-              ? "border-slate-300 bg-slate-50 cursor-wait"
-              : "border-slate-300 bg-slate-50/40 hover:border-slate-500 hover:bg-slate-50",
+              ? "border-slate-300 bg-muted cursor-wait"
+              : "border-slate-300 bg-muted/40 hover:border-slate-500 hover:bg-muted",
           ].join(" ")}
         >
           <input
@@ -627,39 +627,39 @@ function DocumentsStep({
             }}
           />
           {uploading ? (
-            <div className="flex flex-col items-center gap-2 text-slate-600">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
               <p className="text-sm">Hashing & uploading…</p>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2 text-slate-600">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Upload className="h-5 w-5" />
-              <p className="text-sm font-medium text-slate-900">Click to upload</p>
-              <p className="text-xs text-slate-500">PDF, PNG or JPG · max 20MB · SHA-256 sealed on upload</p>
+              <p className="text-sm font-medium text-foreground">Click to upload</p>
+              <p className="text-xs text-muted-foreground">PDF, PNG or JPG · max 20MB · SHA-256 sealed on upload</p>
             </div>
           )}
         </label>
       </div>
 
       {/* Existing docs */}
-      <div className="rounded-md border border-slate-200 bg-white">
-        <div className="px-5 py-3 border-b border-slate-100">
-          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+      <div className="rounded-md border border-border bg-card">
+        <div className="px-5 py-3 border-b border-border">
+          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
             Submitted Documents ({docs.length})
           </p>
         </div>
         {docs.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-slate-500 text-center">
+          <p className="px-5 py-8 text-sm text-muted-foreground text-center">
             No documents submitted yet.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-border">
             {docs.map((d) => (
               <li key={d.id} className="px-5 py-4 flex items-center gap-4">
-                <FileCheck2 className="h-4 w-4 text-slate-500 shrink-0" />
+                <FileCheck2 className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-900 truncate">{d.filename}</p>
-                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mt-0.5">
+                  <p className="text-sm text-foreground truncate">{d.filename}</p>
+                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-0.5">
                     {d.doc_type.replace(/_/g, " ")} · {new Date(d.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -667,7 +667,7 @@ function DocumentsStep({
                   className={[
                     "font-mono text-[10px] tracking-[0.2em] uppercase px-2 py-1 rounded-sm",
                     d.status === "verified" || d.status === "approved"
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      ? "bg-[hsl(var(--emerald-muted))] text-[hsl(var(--emerald))] border border-[hsl(var(--emerald)/0.2)]"
                       : d.status === "rejected"
                         ? "bg-rose-50 text-rose-800 border border-rose-200"
                         : "bg-amber-50 text-amber-800 border border-amber-200",
@@ -690,7 +690,7 @@ function DocumentsStep({
 function VerificationBadge({ state }: { state: VerificationState }) {
   if (state === "verified") {
     return (
-      <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+      <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[hsl(var(--emerald-muted))] border border-[hsl(var(--emerald)/0.2)] text-[hsl(var(--emerald))] text-xs font-medium">
         <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
         Verified Counterparty
       </div>
@@ -723,7 +723,7 @@ function FormField({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium tracking-wider uppercase text-slate-500">
+      <Label className="text-xs font-medium tracking-wider uppercase text-muted-foreground">
         {label}
         {required && <span className="text-rose-500 ml-1">*</span>}
       </Label>

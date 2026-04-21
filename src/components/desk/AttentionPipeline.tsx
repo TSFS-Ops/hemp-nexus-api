@@ -123,11 +123,11 @@ export function AttentionPipeline() {
   const highCount = sorted.filter((i) => i.priority === "high").length;
 
   return (
-    <section className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden mb-8">
-      <div className="bg-slate-50/80 border-b border-slate-100 px-5 py-3 flex items-center justify-between">
+    <section className="bg-card border border-border shadow-sm rounded-xl overflow-hidden mb-8">
+      <div className="bg-muted/80 border-b border-border px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5 text-amber-600" strokeWidth={2} />
-          <h2 className="text-xs font-bold tracking-widest uppercase text-slate-500">
+          <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
             Requires Your Attention
           </h2>
         </div>
@@ -151,11 +151,11 @@ export function AttentionPipeline() {
         ) : sorted.length === 0 ? (
           <EmptyState />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-border">
             {sorted.map((item) => (
               <li
                 key={item.id}
-                className="group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-slate-50 rounded-md transition-colors"
+                className="group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-muted rounded-md transition-colors"
               >
                 {/* Priority dot */}
                 <span
@@ -170,7 +170,7 @@ export function AttentionPipeline() {
 
                 {/* Counterparty initials */}
                 <div
-                  className="shrink-0 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold tracking-wide"
+                  className="shrink-0 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold tracking-wide"
                   title={item.counterparty ?? "Counterparty pending"}
                 >
                   {initialsOf(item.counterparty)}
@@ -178,16 +178,16 @@ export function AttentionPipeline() {
 
                 {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-900 font-medium leading-snug truncate">
+                  <p className="text-sm text-foreground font-medium leading-snug truncate">
                     {item.title}
                   </p>
-                  <p className="text-[11px] text-slate-500 leading-snug truncate flex items-center gap-1.5 flex-wrap">
+                  <p className="text-[11px] text-muted-foreground leading-snug truncate flex items-center gap-1.5 flex-wrap">
                     <span className="truncate">{item.meta}</span>
-                    <span className="text-slate-300">·</span>
-                    <span className="font-mono text-slate-400">{item.ageLabel}</span>
+                    <span className="text-muted-foreground/50">·</span>
+                    <span className="font-mono text-muted-foreground/70">{item.ageLabel}</span>
                     {item.deadlineLabel && (
                       <>
-                        <span className="text-slate-300">·</span>
+                        <span className="text-muted-foreground/50">·</span>
                         <span
                           className={cn(
                             "font-mono cursor-help",
@@ -214,7 +214,7 @@ export function AttentionPipeline() {
                 {/* CTA */}
                 <button
                   onClick={() => navigate(item.href)}
-                  className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-sm transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))] shadow-sm transition-colors"
                 >
                   <span className="hidden sm:inline">Review &amp; Seal</span>
                   <span className="sm:hidden">Review</span>
@@ -232,12 +232,12 @@ export function AttentionPipeline() {
 function EmptyState() {
   return (
     <div className="px-6 py-6 flex items-center gap-3">
-      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 shrink-0">
-        <CheckCircle2 className="h-4 w-4 text-emerald-600" strokeWidth={2} />
+      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--emerald-muted))] shrink-0">
+        <CheckCircle2 className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
       </div>
       <div className="min-w-0">
-        <p className="text-sm text-slate-900 font-semibold leading-tight">You are all caught up.</p>
-        <p className="text-xs text-slate-500 leading-snug">
+        <p className="text-sm text-foreground font-semibold leading-tight">You are all caught up.</p>
+        <p className="text-xs text-muted-foreground leading-snug">
           New activity will surface here automatically.
         </p>
       </div>
@@ -247,7 +247,7 @@ function EmptyState() {
 
 function AttentionRowsSkeleton() {
   return (
-    <ul className="divide-y divide-slate-100" aria-label="Loading attention items" aria-busy="true">
+    <ul className="divide-y divide-border" aria-label="Loading attention items" aria-busy="true">
       {Array.from({ length: 3 }).map((_, i) => (
         <li
           key={i}

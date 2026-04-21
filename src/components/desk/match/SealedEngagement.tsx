@@ -63,21 +63,21 @@ export function SealedEngagement() {
   });
   if (!matchId) return <Navigate to="/desk" replace />;
   if (isLoading) {
-    return <div className="fixed inset-y-0 left-[250px] right-0 flex items-center justify-center bg-white">
-        <Loader2 className="h-6 w-6 text-slate-400 animate-spin" />
+    return <div className="fixed inset-y-0 left-[250px] right-0 flex items-center justify-center bg-card">
+        <Loader2 className="h-6 w-6 text-muted-foreground/70 animate-spin" />
       </div>;
   }
   if (error || !data) {
-    return <div className="fixed inset-y-0 left-[250px] right-0 flex flex-col items-center justify-center bg-white text-center px-8">
-        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+    return <div className="fixed inset-y-0 left-[250px] right-0 flex flex-col items-center justify-center bg-card text-center px-8">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
           Sealed Engagement
         </p>
-        <h2 className="text-2xl font-semibold text-slate-900">Trade not found</h2>
-        <p className="mt-2 text-sm text-slate-600 max-w-md">
+        <h2 className="text-2xl font-semibold text-foreground">Trade not found</h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
           This sealed engagement could not be loaded. It may have been archived or the
           reference is invalid.
         </p>
-        <Link to="/desk" className="mt-8 inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors">
+        <Link to="/desk" className="mt-8 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} /> Back to Pipeline
         </Link>
       </div>;
@@ -110,8 +110,8 @@ export function SealedEngagement() {
   const trackerActiveTitle = status === "accepted" ? "Counterparty Accepted" : status === "declined" ? "Counterparty Declined" : status === "expired" ? "Engagement Window Expired" : "Awaiting Counterparty Acceptance";
   const trackerActiveState: "completed" | "active" = status === "accepted" || status === "declined" || status === "expired" ? "completed" : "active";
   const issuanceLabel = status === "accepted" ? "SEALED · COUNTER-SIGNED" : status === "declined" ? "RELEASED · DECLINED" : status === "expired" ? "RELEASED · EXPIRED" : "PENDING COUNTERPARTY SIGNATURE";
-  const issuanceTone = status === "accepted" ? "text-emerald-700" : status === "declined" || status === "expired" ? "text-red-700" : "text-amber-700";
-  return <div className="fixed inset-y-0 left-[250px] right-0 flex bg-white">
+  const issuanceTone = status === "accepted" ? "text-[hsl(var(--emerald))]" : status === "declined" || status === "expired" ? "text-red-700" : "text-amber-700";
+  return <div className="fixed inset-y-0 left-[250px] right-0 flex bg-card">
       {/* ── LEFT PANE: Engagement Tracker ───────────────────────── */}
       <motion.section initial={{
       opacity: 0,
@@ -122,63 +122,63 @@ export function SealedEngagement() {
     }} transition={{
       duration: 0.4,
       ease: "easeOut"
-    }} className="w-1/2 overflow-y-auto border-r border-slate-200 bg-white">
+    }} className="w-1/2 overflow-y-auto border-r border-border bg-card">
         <div className="px-16 pt-12 pb-24 max-w-2xl">
-          <Link to="/desk" className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-12">
+          <Link to="/desk" className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-12">
             <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Back to Pipeline
           </Link>
 
           <div className="flex items-center gap-3 mb-3">
-            <span className={`inline-flex h-1.5 w-1.5 rounded-full ${status === "accepted" ? "bg-emerald-600" : status === "declined" || status === "expired" ? "bg-red-500" : "bg-amber-500"}`} />
-            <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500">
+            <span className={`inline-flex h-1.5 w-1.5 rounded-full ${status === "accepted" ? "bg-[hsl(var(--emerald))]" : status === "declined" || status === "expired" ? "bg-red-500" : "bg-amber-500"}`} />
+            <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
               Match · {matchRef}
             </p>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
+          <h1 className="text-4xl lg:text-5xl font-semibold text-foreground tracking-tight leading-[1.1]">
             Engagement Hold-Point
           </h1>
-          <p className="mt-6 text-base text-slate-600 leading-relaxed max-w-lg">
+          <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-lg">
             The Proof of Intent has been tamper-proofally sealed. The counterparty has been
             notified and the deal is locked pending their response.
           </p>
 
-          <div className="mt-8 inline-flex items-baseline gap-3 rounded-md border border-slate-200 bg-slate-50 px-5 py-3">
-            <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+          <div className="mt-8 inline-flex items-baseline gap-3 rounded-md border border-border bg-muted px-5 py-3">
+            <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
               {isResolved ? "Status" : "Auto-expires in"}
             </span>
-            <span className="font-mono text-sm tracking-wider text-slate-900 tabular-nums">
+            <span className="font-mono text-sm tracking-wider text-foreground tabular-nums">
               {countdown}
             </span>
           </div>
 
           {/* ── Timeline ────────────────────────────────────────── */}
           <section className="relative mt-20">
-            <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+            <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 select-none">
               01
             </span>
-            <h2 className="text-base font-medium text-slate-900 tracking-tight pb-4 border-b border-slate-200">
+            <h2 className="text-base font-medium text-foreground tracking-tight pb-4 border-b border-border">
               Counterparty Tracker
             </h2>
 
             <ol className="mt-10 relative">
               <div className="absolute left-[11px] top-3 bottom-3 w-px bg-slate-200" aria-hidden />
 
-              <TimelineNode state="completed" title="Proof of Intent Sealed" timestamp={sealedAt} detail={<div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+              <TimelineNode state="completed" title="Proof of Intent Sealed" timestamp={sealedAt} detail={<div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span className="font-mono">−1 CREDIT</span>
-                    <span className="text-slate-300">·</span>
+                    <span className="text-muted-foreground/50">·</span>
                     <span>R10.00 burn receipt</span>
-                    <span className="text-slate-300">·</span>
+                    <span className="text-muted-foreground/50">·</span>
                     <span className="font-mono">{matchRef}</span>
                   </div>} />
-              <TimelineNode state="completed" title="Counterparty Notified" timestamp={notifiedAt} detail={<div className="flex items-center gap-2 text-xs text-slate-500">
+              <TimelineNode state="completed" title="Counterparty Notified" timestamp={notifiedAt} detail={<div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Mail className="h-3 w-3" strokeWidth={1.75} />
                     Dual-path email & in-app alerts dispatched
                   </div>} />
-              <TimelineNode state={trackerActiveState} title={trackerActiveTitle} timestamp={engagement?.responded_at ? fmtTimestamp(engagement.responded_at) : "In progress"} detail={<div className="text-xs text-slate-500 leading-relaxed">
+              <TimelineNode state={trackerActiveState} title={trackerActiveTitle} timestamp={engagement?.responded_at ? fmtTimestamp(engagement.responded_at) : "In progress"} detail={<div className="text-xs text-muted-foreground leading-relaxed">
                     {status === "accepted" ? <>The counterparty counter-signed. WaD certificate has been sealed.</> : status === "declined" ? <>The counterparty declined this engagement. Match has been released.</> : status === "expired" ? <>The 30-day hold-point window elapsed without response.</> : <>
                         The initiating party may not self-confirm. The deal is held until{" "}
-                        <span className="text-slate-700 font-medium">{counterparty}</span>{" "}
+                        <span className="text-muted-foreground font-medium">{counterparty}</span>{" "}
                         responds or the 30-day window elapses.
                       </>}
                   </div>} />
@@ -187,10 +187,10 @@ export function SealedEngagement() {
 
           {/* ── Locked Terms ────────────────────────────────────── */}
           <section className="relative mt-20">
-            <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+            <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 select-none">
               02
             </span>
-            <h2 className="text-base font-medium text-slate-900 tracking-tight pb-4 border-b border-slate-200">
+            <h2 className="text-base font-medium text-foreground tracking-tight pb-4 border-b border-border">
               Locked Commercial Terms
             </h2>
 
@@ -220,20 +220,20 @@ export function SealedEngagement() {
       duration: 0.4,
       ease: "easeOut",
       delay: 0.05
-    }} className="w-1/2 bg-slate-50 overflow-hidden">
+    }} className="w-1/2 bg-muted overflow-hidden">
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 text-center">
               Sealed · Tamper-Proof Record
             </p>
 
-            <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
-              <header className="text-center pb-8 border-b border-slate-200">
+            <article className="bg-card rounded-sm shadow-md border border-border p-12">
+              <header className="text-center pb-8 border-b border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800"> Izenzo Governance Infrastructure, Deal Record </p>
-                <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
+                <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {matchRef}</p>
+                <p className="mt-3 font-mono text-[11px] text-muted-foreground">Ref · {matchRef}</p>
               </header>
 
               <dl className="py-8 space-y-1">
@@ -245,26 +245,26 @@ export function SealedEngagement() {
                 <CertRow label="Notional" value={`${match.price_currency ?? ""} ${fmtNumber(notional)}`.trim()} mono />
               </dl>
 
-              {notes && <div className="border-t border-slate-200 py-6">
+              {notes && <div className="border-t border-border py-6">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                     Notes
                   </p>
-                  <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {notes}
                   </p>
                 </div>}
 
-              <div className="py-6 border-t border-slate-200">
+              <div className="py-6 border-t border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                   Attached Evidence
                 </p>
-                <p className="text-sm text-slate-900">
+                <p className="text-sm text-foreground">
                   {evidenceCount} document{evidenceCount === 1 ? "" : "s"} bound to this
                   certificate
                 </p>
               </div>
 
-              <div className="mt-2 pt-6 border-t border-slate-200">
+              <div className="mt-2 pt-6 border-t border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
                   Security & Integrity
                 </p>
@@ -275,16 +275,16 @@ export function SealedEngagement() {
                   <SealRow label="Authority Bind" status="VERIFIED" tone="ok" />
                 </ul>
 
-                <div className="mt-6 pt-5 border-t border-dashed border-slate-200">
+                <div className="mt-6 pt-5 border-t border-dashed border-border">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                     POI Payload Hash
                   </p>
-                  <p className="font-mono text-[11px] leading-relaxed break-all text-slate-900">
+                  <p className="font-mono text-[11px] leading-relaxed break-all text-foreground">
                     {payloadHash}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-dashed border-slate-200">
+                <div className="mt-6 pt-5 border-t border-dashed border-border">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
                     WaD Issuance Status
                   </p>
@@ -294,14 +294,14 @@ export function SealedEngagement() {
                 </div>
               </div>
 
-              <footer className="mt-8 pt-6 border-t border-slate-200 text-center">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-700">
+              <footer className="mt-8 pt-6 border-t border-border text-center">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Sealed Draft · Binding Upon Counter-signature
                 </p>
               </footer>
             </article>
 
-            <p className="mt-6 text-center text-[11px] text-slate-600 leading-relaxed">
+            <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed">
               This certificate is immutable. Any amendment requires a new Proof of Intent.
             </p>
           </div>
@@ -336,17 +336,17 @@ function TimelineNode({
           ease: "easeOut"
         }} />
             <span className="relative h-3 w-3 rounded-full bg-amber-500 ring-4 ring-white" />
-          </div> : <div className="flex items-center justify-center w-[23px] h-[23px] rounded-full bg-emerald-700 ring-4 ring-white">
+          </div> : <div className="flex items-center justify-center w-[23px] h-[23px] rounded-full bg-[hsl(var(--emerald))] ring-4 ring-white">
             <Check className="h-3 w-3 text-white" strokeWidth={3} />
           </div>}
       </div>
 
       <div>
         <div className="flex items-baseline justify-between gap-4">
-          <h3 className={`text-sm font-medium tracking-tight ${isActive ? "text-amber-800" : "text-slate-900"}`}>
+          <h3 className={`text-sm font-medium tracking-tight ${isActive ? "text-amber-800" : "text-foreground"}`}>
             {title}
           </h3>
-          <span className="font-mono text-[10px] text-slate-500 tracking-wide shrink-0">
+          <span className="font-mono text-[10px] text-muted-foreground tracking-wide shrink-0">
             {timestamp}
           </span>
         </div>
@@ -364,10 +364,10 @@ function LockedField({
   mono?: boolean;
 }) {
   return <div>
-      <dt className="block text-[11px] font-mono tracking-[0.2em] uppercase text-slate-400 mb-2">
+      <dt className="block text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground/70 mb-2">
         {label}
       </dt>
-      <dd className={`text-base text-slate-900 leading-relaxed ${mono ? "font-mono tracking-wide" : ""}`}>
+      <dd className={`text-base text-foreground leading-relaxed ${mono ? "font-mono tracking-wide" : ""}`}>
         {value}
       </dd>
     </div>;
@@ -385,7 +385,7 @@ function CertRow({
       <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
         {label}
       </dt>
-      <dd className={`flex-1 text-sm text-slate-900 font-medium ${mono ? "font-mono" : ""}`}>
+      <dd className={`flex-1 text-sm text-foreground font-medium ${mono ? "font-mono" : ""}`}>
         {value}
       </dd>
     </div>;
@@ -399,7 +399,7 @@ function SealRow({
   status: string;
   tone?: "ok" | "pending";
 }) {
-  const toneClass = tone === "ok" ? "text-emerald-700" : "text-amber-700";
+  const toneClass = tone === "ok" ? "text-[hsl(var(--emerald))]" : "text-amber-700";
   return <li className="flex items-center justify-between">
       <span className="text-slate-800 tracking-wide">{label}</span>
       <span className={`font-medium tracking-[0.2em] text-[10px] ${toneClass}`}>{status}</span>

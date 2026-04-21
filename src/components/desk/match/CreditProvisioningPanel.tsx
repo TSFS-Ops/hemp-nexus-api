@@ -54,18 +54,18 @@ export function CreditProvisioningPanel({
             animate={{ x: 0 }}
             exit={{ x: 400 }}
             transition={{ type: "spring", stiffness: 100, damping: 18 }}
-            className="fixed inset-y-0 right-0 z-50 w-[400px] bg-white border-l border-slate-200 shadow-2xl flex flex-col"
+            className="fixed inset-y-0 right-0 z-50 w-[400px] bg-card border-l border-border shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <header className="px-8 pt-8 pb-6 border-b border-slate-100">
+            <header className="px-8 pt-8 pb-6 border-b border-border">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
                     Token Vault
                   </p>
                   <h2
                     id="credit-provisioning-title"
-                    className="text-xl font-semibold text-slate-900 tracking-tight leading-snug"
+                    className="text-xl font-semibold text-foreground tracking-tight leading-snug"
                   >
                     Credit Provisioning Required
                   </h2>
@@ -73,23 +73,23 @@ export function CreditProvisioningPanel({
                 <button
                   onClick={onClose}
                   aria-label="Close"
-                  className="shrink-0 -mr-2 -mt-1 p-1.5 text-slate-500 hover:text-slate-900 transition-colors"
+                  className="shrink-0 -mr-2 -mt-1 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>
               </div>
 
-              <p className="mt-5 text-sm text-slate-600 leading-relaxed">
+              <p className="mt-5 text-sm text-muted-foreground leading-relaxed">
                 Your current balance is{" "}
-                <span className="font-mono text-slate-900">{currentBalance} Credits</span>.
+                <span className="font-mono text-foreground">{currentBalance} Credits</span>.
                 Generating a Proof of Intent requires{" "}
-                <span className="font-mono text-slate-900">1 Credit (R10 ZAR)</span>.
+                <span className="font-mono text-foreground">1 Credit (R10 ZAR)</span>.
               </p>
             </header>
 
             {/* Tiers */}
             <div className="flex-1 overflow-y-auto px-8 py-6">
-              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500 mb-4">
+              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4">
                 Select Provisioning
               </p>
 
@@ -103,35 +103,35 @@ export function CreditProvisioningPanel({
                       onClick={() => setSelected(tier.id)}
                       className={`w-full text-left rounded-sm border p-4 transition-colors ${
                         active
-                          ? "border-slate-900 bg-slate-50"
-                          : "border-slate-200 bg-white hover:border-slate-400"
+                          ? "border-slate-900 bg-muted"
+                          : "border-border bg-card hover:border-slate-400"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-medium text-slate-900">
+                            <p className="text-sm font-medium text-foreground">
                               {tier.label}
                             </p>
                             {tier.recommended && (
-                              <span className="font-mono text-[9px] tracking-[0.2em] uppercase px-1.5 py-0.5 border border-slate-300 text-slate-700 rounded-sm">
+                              <span className="font-mono text-[9px] tracking-[0.2em] uppercase px-1.5 py-0.5 border border-slate-300 text-muted-foreground rounded-sm">
                                 Recommended
                               </span>
                             )}
                           </div>
-                          <p className="mt-1 font-mono text-[11px] text-slate-500">
+                          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                             {tier.credits} {tier.credits === 1 ? "Credit" : "Credits"} ·
                             {" "}R{perCredit.toFixed(perCredit % 1 === 0 ? 0 : 2)} per Credit
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-mono text-base text-slate-900 tabular-nums">
+                          <p className="font-mono text-base text-foreground tabular-nums">
                             R{tier.priceZAR.toLocaleString("en-ZA")}
                           </p>
                         </div>
                       </div>
                       {active && (
-                        <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-700">
+                        <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <Check className="h-3 w-3" strokeWidth={2.5} />
                           <span className="font-mono tracking-wide uppercase text-[10px]">
                             Selected
@@ -145,7 +145,7 @@ export function CreditProvisioningPanel({
             </div>
 
             {/* Footer · Payment */}
-            <footer className="px-8 pt-5 pb-8 border-t border-slate-100 bg-white">
+            <footer className="px-8 pt-5 pb-8 border-t border-border bg-card">
               <motion.button
                 whileHover={{ scale: 0.99 }}
                 whileTap={{ scale: 0.985 }}
@@ -158,23 +158,23 @@ export function CreditProvisioningPanel({
                 </span>
               </motion.button>
 
-              <p className="mt-4 text-center font-mono text-[9px] tracking-[0.3em] uppercase text-slate-400">
+              <p className="mt-4 text-center font-mono text-[9px] tracking-[0.3em] uppercase text-muted-foreground/70">
                 Secured Settlement
               </p>
               <div className="mt-3 flex items-center justify-center gap-5 grayscale opacity-70">
-                <span className="font-mono text-[11px] font-semibold text-slate-700 tracking-tight">
+                <span className="font-mono text-[11px] font-semibold text-muted-foreground tracking-tight">
                   paystack
                 </span>
                 <span className="h-3 w-px bg-slate-300" />
-                <span className="font-sans italic text-[11px] font-bold text-slate-700 tracking-tight">
+                <span className="font-sans italic text-[11px] font-bold text-muted-foreground tracking-tight">
                   VISA
                 </span>
                 <span className="h-3 w-px bg-slate-300" />
-                <span className="font-sans text-[11px] font-bold text-slate-700 tracking-tight">
+                <span className="font-sans text-[11px] font-bold text-muted-foreground tracking-tight">
                   mastercard
                 </span>
               </div>
-              <p className="mt-4 text-center text-[11px] text-slate-500 leading-relaxed">
+              <p className="mt-4 text-center text-[11px] text-muted-foreground leading-relaxed">
                 ZAR funds are held in escrow and applied to your Token balance on confirmation.
               </p>
             </footer>
