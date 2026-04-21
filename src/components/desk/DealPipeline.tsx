@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Compass, Loader2 } from "lucide-react";
+import { ArrowUpRight, Compass, Loader2, ArrowDownUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -30,10 +30,25 @@ interface DealCard {
   commodity: string;
   counterparty: string;
   volume: string;
+  /** Raw numeric quantity for sorting (null when unspecified). */
+  quantityValue: number | null;
   state: string;
   created_at: string;
+  /** Inferred deadline — uses explicit deal expiry if present, otherwise a
+   *  lane-based heuristic so "nearest deadline" remains meaningful even when
+   *  the underlying record has no SLA timestamp. */
+  deadline_at: string | null;
   laneId: "draft" | "awaiting" | "poi";
 }
+
+type SortKey = "newest" | "oldest" | "volume_desc" | "deadline";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "volume_desc", label: "Highest volume" },
+  { value: "deadline", label: "Nearest deadline" },
+];
 
 const ACTIVE_PAGE_SIZE = 60;
 const SEALED_PAGE_SIZE = 20;
@@ -91,6 +106,21 @@ const MATCH_COLUMNS =
 function formatVolume(amount: number | null | undefined, unit: string | null | undefined): string {
   if (!amount || !unit) return "-";
   return `${Number(amount).toLocaleString()} ${unit}`;
+}
+
+/**
+ * Infer a meaningful deadline timestamp for a deal.
+ *
+ * Trade rows do not (yet) carry an explicit SLA column, so we approximate using
+ * lane semantics: drafts age out at 30d, awaiting-engagement deals at 7d (the
+ * POI hold-point window), and sealed deals at 90d (settlement horizon). This
+ * makes "Nearest deadline" sort actionable without a schema change — the moment
+ * a real `expires_at` column is added, swap this for a direct read.
+ */
+function inferDeadline(createdAt: string, laneId: DealCard["laneId"]): string {
+  const created = new Date(createdAt).getTime();
+  const days = laneId === "awaiting" ? 7 : laneId === "draft" ? 30 : 90;
+  return new Date(created + days * 86_400_000).toISOString();
 }
 
 /** Resolve current user's org once; cached aggressively, used by every sub-query. */
@@ -167,8 +197,10 @@ function useActiveLanes(orgId: string | null, page: number) {
           commodity: m.commodity ?? "Unspecified commodity",
           counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
           volume: formatVolume(m.quantity_amount, m.quantity_unit),
+          quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
           state,
           created_at: m.created_at,
+          deadline_at: inferDeadline(m.created_at, laneId),
           laneId,
         };
       });
@@ -232,8 +264,10 @@ function useSealedPage(orgId: string | null, page: number) {
             commodity: m.commodity ?? "Unspecified commodity",
             counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
             volume: formatVolume(m.quantity_amount, m.quantity_unit),
+            quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
             state: m.state ?? "",
             created_at: m.created_at,
+            deadline_at: inferDeadline(m.created_at, "poi"),
             laneId: "poi" as const,
           };
         });
@@ -248,6 +282,7 @@ export function DealPipeline() {
   const { data: orgId } = useOrgId();
   const [sealedPage, setSealedPage] = useState(0);
   const [activePage, setActivePage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("newest");
 
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
@@ -263,16 +298,42 @@ export function DealPipeline() {
     // that the paginated sealed query also returns. Sealed page wins because
     // it owns that lane's growth.
     const sealedIds = new Set(sealedCards.map((c) => c.id));
-    return LANE_META.map((meta) => {
-      if (meta.id === "poi") {
-        return { ...meta, deals: sealedCards };
+
+    // Sort comparator. Each branch is total-ordered with stable secondary keys
+    // so deals without the sort field don't oscillate between renders. Records
+    // missing the primary key sink to the bottom.
+    const compare = (a: DealCard, b: DealCard): number => {
+      const tCreatedA = new Date(a.created_at).getTime();
+      const tCreatedB = new Date(b.created_at).getTime();
+      switch (sortKey) {
+        case "oldest":
+          return tCreatedA - tCreatedB;
+        case "volume_desc": {
+          const va = a.quantityValue ?? -Infinity;
+          const vb = b.quantityValue ?? -Infinity;
+          if (vb !== va) return vb - va;
+          return tCreatedB - tCreatedA;
+        }
+        case "deadline": {
+          const da = a.deadline_at ? new Date(a.deadline_at).getTime() : Infinity;
+          const db = b.deadline_at ? new Date(b.deadline_at).getTime() : Infinity;
+          if (da !== db) return da - db;
+          return tCreatedB - tCreatedA;
+        }
+        case "newest":
+        default:
+          return tCreatedB - tCreatedA;
       }
-      return {
-        ...meta,
-        deals: activeCards.filter((c) => c.laneId === meta.id && !sealedIds.has(c.id)),
-      };
+    };
+
+    return LANE_META.map((meta) => {
+      const deals =
+        meta.id === "poi"
+          ? sealedCards
+          : activeCards.filter((c) => c.laneId === meta.id && !sealedIds.has(c.id));
+      return { ...meta, deals: [...deals].sort(compare) };
     });
-  }, [activeQ.data, sealedQ.data]);
+  }, [activeQ.data, sealedQ.data, sortKey]);
 
   const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
   const showPipelineEmpty = !isLoading && totalDeals === 0;
@@ -280,7 +341,7 @@ export function DealPipeline() {
   if (showPipelineEmpty) {
     return (
       <section>
-        <PipelineHeader totalDeals={0} />
+        <PipelineHeader totalDeals={0} sortKey={sortKey} onSortChange={setSortKey} />
         <EmptyStateCard
           kicker="Pipeline Idle"
           title="No active pipeline"
@@ -313,7 +374,7 @@ export function DealPipeline() {
 
   return (
     <section>
-      <PipelineHeader totalDeals={totalDeals} />
+      <PipelineHeader totalDeals={totalDeals} sortKey={sortKey} onSortChange={setSortKey} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
         {lanes.map((lane) => {
           const accent = LANE_ACCENT[lane.id];
@@ -411,10 +472,18 @@ export function DealPipeline() {
   );
 }
 
-function PipelineHeader({ totalDeals }: { totalDeals: number }) {
+function PipelineHeader({
+  totalDeals,
+  sortKey,
+  onSortChange,
+}: {
+  totalDeals: number;
+  sortKey: SortKey;
+  onSortChange: (k: SortKey) => void;
+}) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-4">
-      <div>
+    <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
+      <div className="min-w-0">
         <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-1.5">
           9-Step WaD Workflow
         </p>
@@ -422,9 +491,37 @@ function PipelineHeader({ totalDeals }: { totalDeals: number }) {
           Active Deal Pipeline
         </h2>
       </div>
-      <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
-        {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
-      </p>
+
+      <div className="flex items-center gap-3 sm:gap-4">
+        <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+          {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
+        </p>
+
+        {/* Sort selector — applied client-side across all three lanes so the
+            most important deals surface first regardless of stage. */}
+        <label className="group relative inline-flex items-center gap-2">
+          <span className="sr-only">Sort deals by</span>
+          <ArrowDownUp
+            className="h-3.5 w-3.5 text-slate-400 pointer-events-none"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <select
+            value={sortKey}
+            onChange={(e) => onSortChange(e.target.value as SortKey)}
+            className="appearance-none bg-white border border-slate-200 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 rounded-md pl-2 pr-7 py-1.5 text-[12px] font-medium text-slate-700 cursor-pointer transition-colors"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                Sort: {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[9px]">
+            ▼
+          </span>
+        </label>
+      </div>
     </div>
   );
 }
