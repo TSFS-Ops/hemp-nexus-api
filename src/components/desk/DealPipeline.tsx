@@ -282,6 +282,7 @@ export function DealPipeline() {
   const { data: orgId } = useOrgId();
   const [sealedPage, setSealedPage] = useState(0);
   const [activePage, setActivePage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("newest");
 
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
@@ -297,16 +298,42 @@ export function DealPipeline() {
     // that the paginated sealed query also returns. Sealed page wins because
     // it owns that lane's growth.
     const sealedIds = new Set(sealedCards.map((c) => c.id));
-    return LANE_META.map((meta) => {
-      if (meta.id === "poi") {
-        return { ...meta, deals: sealedCards };
+
+    // Sort comparator. Each branch is total-ordered with stable secondary keys
+    // so deals without the sort field don't oscillate between renders. Records
+    // missing the primary key sink to the bottom.
+    const compare = (a: DealCard, b: DealCard): number => {
+      const tCreatedA = new Date(a.created_at).getTime();
+      const tCreatedB = new Date(b.created_at).getTime();
+      switch (sortKey) {
+        case "oldest":
+          return tCreatedA - tCreatedB;
+        case "volume_desc": {
+          const va = a.quantityValue ?? -Infinity;
+          const vb = b.quantityValue ?? -Infinity;
+          if (vb !== va) return vb - va;
+          return tCreatedB - tCreatedA;
+        }
+        case "deadline": {
+          const da = a.deadline_at ? new Date(a.deadline_at).getTime() : Infinity;
+          const db = b.deadline_at ? new Date(b.deadline_at).getTime() : Infinity;
+          if (da !== db) return da - db;
+          return tCreatedB - tCreatedA;
+        }
+        case "newest":
+        default:
+          return tCreatedB - tCreatedA;
       }
-      return {
-        ...meta,
-        deals: activeCards.filter((c) => c.laneId === meta.id && !sealedIds.has(c.id)),
-      };
+    };
+
+    return LANE_META.map((meta) => {
+      const deals =
+        meta.id === "poi"
+          ? sealedCards
+          : activeCards.filter((c) => c.laneId === meta.id && !sealedIds.has(c.id));
+      return { ...meta, deals: [...deals].sort(compare) };
     });
-  }, [activeQ.data, sealedQ.data]);
+  }, [activeQ.data, sealedQ.data, sortKey]);
 
   const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
   const showPipelineEmpty = !isLoading && totalDeals === 0;
@@ -314,7 +341,7 @@ export function DealPipeline() {
   if (showPipelineEmpty) {
     return (
       <section>
-        <PipelineHeader totalDeals={0} />
+        <PipelineHeader totalDeals={0} sortKey={sortKey} onSortChange={setSortKey} />
         <EmptyStateCard
           kicker="Pipeline Idle"
           title="No active pipeline"
