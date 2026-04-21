@@ -66,15 +66,16 @@ const DRAFT_STATES = [
 ];
 
 const LANE_META = [
-  { id: "draft", title: "Draft Interests", subtitle: "Steps 1 to 7 · Intent captured" },
-  { id: "awaiting", title: "Awaiting Engagement", subtitle: "Step 8 · POI sent, hold-point active" },
-  { id: "poi", title: "Proofs of Intent Sealed", subtitle: "Step 9 · Engagement accepted" },
+  { id: "draft", title: "Draft Interests", subtitle: "Steps 1–7 · Intent captured" },
+  { id: "awaiting", title: "Awaiting Engagement", subtitle: "Step 8 · POI sent" },
+  { id: "poi", title: "Sealed Proofs of Intent", subtitle: "Step 9 · Engagement accepted" },
 ] as const;
 
-const LANE_BADGE: Record<string, string> = {
-  draft: "bg-indigo-50 text-indigo-700 border border-indigo-200/60",
-  awaiting: "bg-amber-50 text-amber-700 border border-amber-200/60",
-  poi: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
+// Tone-of-voice colour per lane — used for the subtle top accent and the stage pill.
+const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string }> = {
+  draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500" },
+  awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500" },
+  poi:      { bar: "bg-emerald-400/70",  pill: "text-emerald-700 bg-emerald-50", dot: "bg-emerald-500" },
 };
 const LANE_PILL_LABEL: Record<string, string> = {
   draft: "Draft",
