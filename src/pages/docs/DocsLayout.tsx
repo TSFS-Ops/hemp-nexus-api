@@ -7,7 +7,7 @@ type DocSection = { title: string; links: DocLink[] };
 
 /**
  * Sidebar reflects ONLY routes that actually exist in App.tsx.
- * Every link below resolves to a real page — no dead ends.
+ * Every link below resolves to a real page - no dead ends.
  */
 const SECTIONS: DocSection[] = [
   {

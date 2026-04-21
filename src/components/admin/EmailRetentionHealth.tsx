@@ -1,5 +1,5 @@
 /**
- * EmailRetentionHealth — admin-only surface confirming the 90-day
+ * EmailRetentionHealth - admin-only surface confirming the 90-day
  * email_send_log purge is live and recently executed.
  *
  * Backed by RPC `get_email_retention_health` (SECURITY DEFINER, admin-gated).
@@ -79,7 +79,7 @@ export function EmailRetentionHealth() {
     : "Never executed";
   const hoursLabel =
     data.hours_since_last_run == null
-      ? "—"
+      ? "-"
       : `${data.hours_since_last_run.toFixed(1)} h ago`;
 
   return (
@@ -117,7 +117,7 @@ export function EmailRetentionHealth() {
               Rows deleted (last run)
             </div>
             <div className="font-medium">
-              {data.last_run_rows_deleted ?? "—"}
+              {data.last_run_rows_deleted ?? "-"}
             </div>
           </div>
           <div>
@@ -152,7 +152,7 @@ export function EmailRetentionHealth() {
 
         <p className="text-xs text-muted-foreground border-t pt-3">
           Note: the <code>suppressed_emails</code> table is intentionally exempt
-          from this purge — bounce and complaint records must persist permanently
+          from this purge - bounce and complaint records must persist permanently
           to protect sender reputation.
         </p>
       </CardContent>

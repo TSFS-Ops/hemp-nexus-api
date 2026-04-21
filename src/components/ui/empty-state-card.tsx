@@ -1,5 +1,5 @@
 /**
- * EmptyStateCard — institutional empty-state primitive.
+ * EmptyStateCard - institutional empty-state primitive.
  *
  * Used when an authenticated org has zero data on a structural surface
  * (no matches, no disputes, no KYB record). Distinct from the inline
@@ -9,7 +9,7 @@
  * Design contract:
  * - Surface: subtle muted card on neutral border, generous padding.
  * - Hierarchy: kicker → title → description → primary CTA (heavy) → optional secondary.
- * - Tokens only — no raw slate-* colours so the component theme-shifts cleanly.
+ * - Tokens only - no raw slate-* colours so the component theme-shifts cleanly.
  * - Copy is the caller's responsibility; component enforces structure, not voice.
  */
 
@@ -31,9 +31,9 @@ export interface EmptyStateCardProps {
   description: string;
   /** Optional icon (lucide-react) rendered in a muted circular badge. */
   icon?: ReactNode;
-  /** Primary action — rendered with heavy primary styling. */
+  /** Primary action - rendered with heavy primary styling. */
   primaryAction?: EmptyStateCardAction;
-  /** Optional secondary action — rendered as ghost link. */
+  /** Optional secondary action - rendered as ghost link. */
   secondaryAction?: EmptyStateCardAction;
   /** Layout density. `compact` is for in-column lane empties; `default` for full-page. */
   density?: "default" | "compact";

@@ -44,13 +44,13 @@ export function LegacyRedirectBanner() {
 
     try {
       const parsed = JSON.parse(raw) as LegacyRedirectNotice;
-      // Stale notice (>10 min) — drop it.
+      // Stale notice (>10 min) - drop it.
       if (Date.now() - parsed.recordedAt > 10 * 60 * 1000) {
         sessionStorage.removeItem(LEGACY_REDIRECT_NOTICE_KEY);
         setNotice(null);
         return;
       }
-      // Only surface on the destination route — once user navigates away,
+      // Only surface on the destination route - once user navigates away,
       // we clear the notice automatically.
       if (location.pathname === parsed.toPath) {
         setNotice(parsed);

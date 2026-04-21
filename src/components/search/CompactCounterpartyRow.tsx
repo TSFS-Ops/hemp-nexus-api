@@ -1,12 +1,12 @@
 /**
- * CompactCounterpartyRow — Desk-aesthetic compact row for discovery results.
+ * CompactCounterpartyRow - Desk-aesthetic compact row for discovery results.
  *
  * Mirrors the AttentionPipeline row anatomy:
  *  [priority dot] [initials avatar] [title + metadata stack] [right-aligned CTA]
  *
  * Source tiers drive the priority dot colour (verified > registered >
  * order_book > web_discovery). All copy and behaviour from the legacy
- * CounterpartyResultCard is preserved — only the visual layout changes.
+ * CounterpartyResultCard is preserved - only the visual layout changes.
  */
 
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +128,7 @@ export function CompactCounterpartyRow({
       )}
       onClick={() => onToggleSelect(result.id)}
     >
-      {/* Explicit selection checkbox — independent click target */}
+      {/* Explicit selection checkbox - independent click target */}
       <div
         className="shrink-0 flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
@@ -144,7 +144,7 @@ export function CompactCounterpartyRow({
         />
       </div>
 
-      {/* Priority dot — source tier */}
+      {/* Priority dot - source tier */}
       <Tooltip>
         <TooltipTrigger asChild>
           <span
@@ -197,10 +197,10 @@ export function CompactCounterpartyRow({
           )}
         </div>
 
-        {/* Metadata line 1 — description */}
+        {/* Metadata line 1 - description */}
         <p className="truncate text-xs text-muted-foreground">{result.description}</p>
 
-        {/* Metadata line 2 — signals */}
+        {/* Metadata line 2 - signals */}
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <span className="font-mono tabular-nums" title="Match score">
             {scorePct}% match

@@ -66,7 +66,7 @@ export default function DocsErrors() {
 
         <Callout>
           Every error response carries a <InlineCode>requestId</InlineCode>. Always include it
-          in support requests — it lets the team retrieve the exact log line and audit context
+          in support requests - it lets the team retrieve the exact log line and audit context
           for your call without searching.
         </Callout>
 
@@ -82,7 +82,7 @@ export default function DocsErrors() {
         <DocP>
           Exponential backoff with jitter: <InlineCode>1s, 2s, 4s, 8s, 16s</InlineCode> with
           ±20% randomisation, capped at five attempts. Stop retrying immediately on 4xx
-          responses other than 429 — they will not become successful by being repeated.
+          responses other than 429 - they will not become successful by being repeated.
         </DocP>
       </div>
     </DocsLayout>

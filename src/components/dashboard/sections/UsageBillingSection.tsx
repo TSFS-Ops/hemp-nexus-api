@@ -378,7 +378,7 @@ export function UsageBillingSection() {
             <div className="rounded-md border">
               {ledgerTotalCount > LEDGER_LIMIT && (
                 <div className="border-b bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Showing {LEDGER_LIMIT} of {ledgerTotalCount.toLocaleString()} entries — narrow the date range or filter to see all.
+                  Showing {LEDGER_LIMIT} of {ledgerTotalCount.toLocaleString()} entries - narrow the date range or filter to see all.
                 </div>
               )}
               <Table>

@@ -413,7 +413,7 @@
     background-size: 14px 14px;
   }
 
-/* Safe area insets for iOS — explicit utilities and the `pb-safe` / `pt-safe`
+/* Safe area insets for iOS - explicit utilities and the `pb-safe` / `pt-safe`
    shorthands that the rest of the codebase already references. Previously
    `pb-safe` resolved to nothing, so the mobile bottom nav sat directly on
    the iPhone home indicator. */
@@ -438,7 +438,7 @@
 
 /* iOS Safari zooms the viewport on focus when an input renders below 16px.
    Force the minimum font-size on every interactive form element on mobile.
-   This is defense-in-depth — most primitives already use `text-base md:text-sm`
+   This is defense-in-depth - most primitives already use `text-base md:text-sm`
    but custom inputs (e.g. landing terminal, file inputs) sometimes don't. */
 @media (max-width: 767px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
@@ -520,7 +520,7 @@ button:focus-visible,
 }
 
 /* ============================================================
-   GLOBAL INTERACTION SYSTEM — "Kinetic Brand" hover taxonomy
+   GLOBAL INTERACTION SYSTEM - "Kinetic Brand" hover taxonomy
    Four personalities: commitment | navigation | discovery | critical
    - Spring easing for premium "felt" weight
    - Hardware-accelerated transforms (will-change, backface-visibility)
@@ -551,7 +551,7 @@ button:focus-visible,
 /* Hover-only on devices that actually support hover (desktop / trackpad) */
 @media (hover: hover) and (pointer: fine) {
 
-  /* 1. COMMITMENT — primary CTAs (Confirm, Issue POI, Settle Trade) */
+  /* 1. COMMITMENT - primary CTAs (Confirm, Issue POI, Settle Trade) */
   [data-hover="commitment"]:hover:not(:disabled):not([aria-disabled="true"]) {
     transform: translateY(-1px) scale(1.015);
     box-shadow:
@@ -565,7 +565,7 @@ button:focus-visible,
     filter: brightness(0.97);
   }
 
-  /* 2. NAVIGATION — sidebar, tabs, breadcrumbs, top-nav, footer links
+  /* 2. NAVIGATION - sidebar, tabs, breadcrumbs, top-nav, footer links
      Glass slide via ::after; needs position:relative + isolation
      (declared once on the base selector below). */
   [data-hover="navigation"] {
@@ -592,14 +592,14 @@ button:focus-visible,
     color: hsl(var(--primary));
   }
 
-  /* 3. DISCOVERY — clickable cards, "View" actions, info chips, tooltips */
+  /* 3. DISCOVERY - clickable cards, "View" actions, info chips, tooltips */
   [data-hover="discovery"]:hover:not(:disabled):not([aria-disabled="true"]) {
     transform: translateY(-3px) rotate(-0.4deg);
     box-shadow: 0 10px 25px -10px hsl(var(--foreground) / 0.18);
     background-color: hsl(var(--secondary) / 0.85);
   }
 
-  /* 4. CRITICAL — destructive actions (Delete, Revoke, Freeze, Deny) */
+  /* 4. CRITICAL - destructive actions (Delete, Revoke, Freeze, Deny) */
   [data-hover="critical"]:hover:not(:disabled):not([aria-disabled="true"]) {
     background-color: hsl(var(--destructive) / 0.06);
     color: hsl(var(--destructive));

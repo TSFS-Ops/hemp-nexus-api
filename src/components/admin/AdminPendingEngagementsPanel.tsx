@@ -9,7 +9,7 @@
  *   • Mark as "declined" or "expired"
  *   • View the immutable outreach log per engagement
  *
- * Wired exclusively to the existing `poi-engagements` edge function — no new
+ * Wired exclusively to the existing `poi-engagements` edge function - no new
  * backend logic. All state transitions are server-validated.
  */
 
@@ -102,7 +102,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 // Human-readable labels for engagement status. The DB enum value
 // 'notification_sent' historically meant "internal admin alert dispatched"
-// — NOT that the counterparty has been emailed. We surface it as
+// - NOT that the counterparty has been emailed. We surface it as
 // "Awaiting outreach" so admins don't mistake it for an outbound send.
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
@@ -244,7 +244,7 @@ export function AdminPendingEngagementsPanel() {
   };
 
   // When the admin switches contact method, reset the detail field unless
-  // we have a sensible pre-fill (only email has one — the counterparty_email).
+  // we have a sensible pre-fill (only email has one - the counterparty_email).
   const handleMethodChange = (next: string) => {
     setContactMethod(next);
     if (next === "email") {
@@ -512,9 +512,9 @@ export function AdminPendingEngagementsPanel() {
                       <TableRow key={e.id}>
                         <TableCell>
                           <div className="text-sm">
-                            <p className="font-medium">{m?.commodity ?? "—"}</p>
+                            <p className="font-medium">{m?.commodity ?? "-"}</p>
                             <p className="text-xs text-muted-foreground">
-                              {m?.quantity_amount} {m?.quantity_unit} · {m?.price_currency} {m?.price_amount?.toLocaleString?.() ?? "—"}
+                              {m?.quantity_amount} {m?.quantity_unit} · {m?.price_currency} {m?.price_amount?.toLocaleString?.() ?? "-"}
                             </p>
                             <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
                               {e.match_id.substring(0, 8)}…
@@ -522,7 +522,7 @@ export function AdminPendingEngagementsPanel() {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {e.initiator_org?.name ?? "—"}
+                          {e.initiator_org?.name ?? "-"}
                         </TableCell>
                         <TableCell className="text-sm">
                           <p>{e.counterparty_org?.name ?? "(unregistered)"}</p>
@@ -595,7 +595,7 @@ export function AdminPendingEngagementsPanel() {
           <DialogHeader>
             <DialogTitle>Log outreach to counterparty</DialogTitle>
             <DialogDescription>
-              Record how you contacted the counterparty. This is logged for the audit trail only — the platform does not send anything on your behalf.
+              Record how you contacted the counterparty. This is logged for the audit trail only - the platform does not send anything on your behalf.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -615,7 +615,7 @@ export function AdminPendingEngagementsPanel() {
               <p className="text-xs text-muted-foreground">
                 {contactMethod === "email"
                   ? "Email is the only method where the platform can send the outreach for you. You'll preview and edit the message before it's sent."
-                  : "This is a record of how you reached the counterparty. No message is sent — it's only logged in the immutable outreach trail."}
+                  : "This is a record of how you reached the counterparty. No message is sent - it's only logged in the immutable outreach trail."}
               </p>
             </div>
             <div className="space-y-2">

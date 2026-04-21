@@ -16,7 +16,7 @@
  *     3. Logs a structured warning to the console so the original stack is
  *        preserved for debugging.
  *
- * Drop-in compatible with the existing `<Select>` API — pass a `label` prop
+ * Drop-in compatible with the existing `<Select>` API - pass a `label` prop
  * to give the toast a human-readable origin (e.g. "Contact method").
  */
 
@@ -65,7 +65,7 @@ class SafeSelectBoundary extends React.Component<
           role="alert"
           className="flex h-10 w-full items-center rounded-md border border-destructive/50 bg-destructive/5 px-3 text-sm text-destructive"
         >
-          Dropdown unavailable — {this.state.message}
+          Dropdown unavailable - {this.state.message}
         </div>
       );
     }

@@ -20,7 +20,7 @@ interface Notification {
 type Tone = "light" | "dark";
 
 interface SidebarNotificationItemProps {
-  /** Visual tone — "light" for white sidebars (Desk, Governance), "dark" for the Developer terminal sidebar. */
+  /** Visual tone - "light" for white sidebars (Desk, Governance), "dark" for the Developer terminal sidebar. */
   tone?: Tone;
 }
 

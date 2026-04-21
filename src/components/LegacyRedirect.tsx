@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 
 /**
- * LegacyRedirect — explains *why* a URL changed before bouncing the user
+ * LegacyRedirect - explains *why* a URL changed before bouncing the user
  * to the new canonical route.
  *
  * UX contract (post-2026-04 hardening):
@@ -12,7 +12,7 @@ import { Navigate, useLocation, useParams } from "react-router-dom";
  *      key on every route change and shows a persistent, dismissable info bar
  *      at the top of the page. The banner stays visible until the user
  *      dismisses it (or navigates away from the destination).
- *   3. We do NOT show a toast — toasts auto-dismiss in 3.5s and the user can
+ *   3. We do NOT show a toast - toasts auto-dismiss in 3.5s and the user can
  *      easily miss them, especially on slow Match Details loads.
  *   4. We never show the same notice twice in a single session for the same
  *      from-path (`legacy-redirect:seen:<fromPath>` flag).
@@ -57,7 +57,7 @@ export function LegacyRedirect({ to, resolveTo, label }: LegacyRedirectProps) {
     const fromPath = location.pathname;
     const seenKey = `${LEGACY_REDIRECT_SEEN_PREFIX}${fromPath}`;
 
-    // Already shown this session for this exact legacy path — stay silent.
+    // Already shown this session for this exact legacy path - stay silent.
     if (sessionStorage.getItem(seenKey)) return;
 
     const notice: LegacyRedirectNotice = {
@@ -71,7 +71,7 @@ export function LegacyRedirect({ to, resolveTo, label }: LegacyRedirectProps) {
       sessionStorage.setItem(LEGACY_REDIRECT_NOTICE_KEY, JSON.stringify(notice));
       sessionStorage.setItem(seenKey, "1");
     } catch {
-      // Storage unavailable (private mode quota) — silently degrade. The
+      // Storage unavailable (private mode quota) - silently degrade. The
       // navigation itself still works; only the explanatory banner is lost.
     }
   }, [location.pathname, finalPath, label]);

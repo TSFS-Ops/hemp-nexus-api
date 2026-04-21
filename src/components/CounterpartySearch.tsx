@@ -596,7 +596,7 @@ export default function CounterpartySearch() {
 
         {/* Results */}
         {!isSearching && !searchError && results.length > 0 && (() => {
-          // Live source-tier chip counts — mirrors the Desk's "Requires Your Attention" header language
+          // Live source-tier chip counts - mirrors the Desk's "Requires Your Attention" header language
           const counts = results.reduce(
             (acc, r) => {
               if (r.source === "verified_registry") acc.verified += 1;
@@ -609,7 +609,7 @@ export default function CounterpartySearch() {
           );
           return (
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              {/* Elegant header — eyebrow + title + live chips */}
+              {/* Elegant header - eyebrow + title + live chips */}
               <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap px-4 sm:px-5 py-4 border-b border-slate-100">
                 <div className="min-w-0">
                   <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-1">
@@ -662,7 +662,7 @@ export default function CounterpartySearch() {
                 )}
               </div>
 
-              {/* Compact row list — Desk aesthetic */}
+              {/* Compact row list - Desk aesthetic */}
               <ul className="divide-y divide-slate-100">
                 {results.map((result, idx) => (
                   <ResultCardErrorBoundary key={result.id} companyName={result.title}>

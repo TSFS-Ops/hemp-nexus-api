@@ -48,7 +48,7 @@ export default function Auth() {
     //    Rationale: an admin socially-engineered into clicking a Resend deep
     //    link should not be silently dropped onto a tenant surface. We force
     //    them to HQ instead.
-    //    UX caveat: bypassing returnTo is invisible to the user — they may
+    //    UX caveat: bypassing returnTo is invisible to the user - they may
     //    have legitimately wanted to open the link. We surface a toast so
     //    they know the redirect happened and can re-open the original target
     //    manually.
@@ -65,12 +65,12 @@ export default function Auth() {
       if (isPlatformAdmin) {
         const requestedReturn = searchParams.get("returnTo");
         if (requestedReturn) {
-          // Sanitise before echoing back into the toast — never render raw user input.
+          // Sanitise before echoing back into the toast - never render raw user input.
           const safeRequested = getSafeReturnTo(requestedReturn, "");
           toast.info(
             safeRequested
-              ? `Admin session — redirected to HQ. Original link: ${safeRequested}`
-              : "Admin session — redirected to HQ instead of the requested page.",
+              ? `Admin session - redirected to HQ. Original link: ${safeRequested}`
+              : "Admin session - redirected to HQ instead of the requested page.",
             { duration: 10000 }
           );
         }
@@ -78,7 +78,7 @@ export default function Auth() {
         return "/hq/users";
       }
     } catch (e) {
-      console.warn("[Auth] role lookup threw — falling through", e);
+      console.warn("[Auth] role lookup threw - falling through", e);
     }
 
     // 2) Honour returnTo for non-admins (deep-link recovery)
@@ -110,7 +110,7 @@ export default function Auth() {
       if (hasPreAuthState()) return "/desk?resume=1";
       return "/desk";
     } catch (e) {
-      console.warn("[Auth] persona lookup threw — defaulting to /welcome", e);
+      console.warn("[Auth] persona lookup threw - defaulting to /welcome", e);
       return "/welcome";
     }
   };

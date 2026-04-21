@@ -1,5 +1,5 @@
 /**
- * Buyer/Seller Toggle — Unit & Integration Tests
+ * Buyer/Seller Toggle - Unit & Integration Tests
  * Tests the side selection flow from landing form through to trade_orders persistence.
  *
  * @vitest-environment jsdom
@@ -72,7 +72,7 @@ describe("PreAuthState side persistence", () => {
     const { consumePreAuthState } = await import("@/lib/pre-auth-state");
     sessionStorage.setItem("cm_pre_auth_state", "not valid json{{{");
     const result = consumePreAuthState();
-    // Should not throw — returns null on parse failure
+    // Should not throw - returns null on parse failure
     expect(result).toBeNull();
   });
 });

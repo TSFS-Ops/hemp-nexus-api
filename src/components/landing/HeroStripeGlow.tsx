@@ -26,7 +26,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
               "radial-gradient(circle at center, hsl(166 76% 84% / 0.6) 0%, hsl(166 76% 84% / 0) 70%)",
           }}
         />
-        {/* Indigo aurora, bottom-left, sparse — adds 'developer/cryptography' tonal weight */}
+        {/* Indigo aurora, bottom-left, sparse - adds 'developer/cryptography' tonal weight */}
         <div
           className="absolute -bottom-24 -left-40 w-[680px] h-[680px] rounded-full opacity-35 blur-3xl"
           style={{
@@ -42,7 +42,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
               "radial-gradient(circle at center, hsl(160 84% 88% / 0.6) 0%, hsl(160 84% 88% / 0) 70%)",
           }}
         />
-        {/* Indigo whisper, top-right offset — pairs with bottom-left for diagonal aurora rhythm */}
+        {/* Indigo whisper, top-right offset - pairs with bottom-left for diagonal aurora rhythm */}
         <div
           className="absolute top-40 -right-24 w-[520px] h-[520px] rounded-full opacity-25 blur-3xl"
           style={{
@@ -74,7 +74,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
           </span>
         </h1>
 
-        {/* Sub-headline — wider so it wraps to 2 lines on desktop */}
+        {/* Sub-headline - wider so it wraps to 2 lines on desktop */}
         <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-10">
           One cryptographic network. Access it via our turnkey Trade Desk, manage risk through the Compliance Profile, or build directly on the API. All backed by mathematically provable execution.
         </p>

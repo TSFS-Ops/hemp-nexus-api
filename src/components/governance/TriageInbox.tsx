@@ -392,7 +392,7 @@ export default function TriageInbox() {
           </p>
           {queueTotal > queueLimit && (
             <p className="mt-2 font-mono text-[10px] tracking-[0.15em] uppercase text-amber-700">
-              Showing {queueLimit} of {queueTotal} open disputes — apply filters to see all
+              Showing {queueLimit} of {queueTotal} open disputes - apply filters to see all
             </p>
           )}
         </div>

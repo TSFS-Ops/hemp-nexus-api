@@ -2,7 +2,7 @@
  * Real cryptographic primitives used across the client.
  *
  * Backed by the Web Crypto API (window.crypto.subtle). This is the canonical
- * SHA-256 utility for the UI — never re-introduce mock hash helpers.
+ * SHA-256 utility for the UI - never re-introduce mock hash helpers.
  */
 
 /** Compute the SHA-256 digest of a UTF-8 string and return lowercase hex. */

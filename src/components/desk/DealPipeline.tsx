@@ -9,11 +9,11 @@ import { cn } from "@/lib/utils";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 
 /**
- * Deal Pipeline — paginated, column-projected.
+ * Deal Pipeline - paginated, column-projected.
  *
  * Performance contract (audit, 2026-04):
  * - .select() lists are *minimal*: only fields rendered on the card or required
- *   for lane bucketing. `org_id` was previously fetched and discarded — removed.
+ *   for lane bucketing. `org_id` was previously fetched and discarded - removed.
  * - Active lanes (Draft, Awaiting) are bounded by state filters and capped at
  *   ACTIVE_PAGE_SIZE; an org cannot accumulate hundreds of in-flight drafts
  *   without triggering operational alarms first.
@@ -23,7 +23,7 @@ import { EmptyStateCard } from "@/components/ui/empty-state-card";
  *   are never silently truncated. count is fetched head-only so it costs an
  *   index probe, not a row scan.
  * - poi_engagements is queried only for the Sealed page in view, keyed on
- *   match_id IN (...) — bounded by SEALED_PAGE_SIZE.
+ *   match_id IN (...) - bounded by SEALED_PAGE_SIZE.
  */
 
 interface DealCard {
@@ -35,7 +35,7 @@ interface DealCard {
   quantityValue: number | null;
   state: string;
   created_at: string;
-  /** Inferred deadline — uses explicit deal expiry if present, otherwise a
+  /** Inferred deadline - uses explicit deal expiry if present, otherwise a
    *  lane-based heuristic so "nearest deadline" remains meaningful even when
    *  the underlying record has no SLA timestamp. */
   deadline_at: string | null;
@@ -53,13 +53,13 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 const ACTIVE_PAGE_SIZE = 60;
 const SEALED_PAGE_SIZE = 20;
-// Active lanes are bounded by business reality but not by physics — an org can
+// Active lanes are bounded by business reality but not by physics - an org can
 // theoretically accumulate hundreds of stale drafts. We cap the first window at
 // ACTIVE_PAGE_SIZE and surface a "Load more" affordance when the server count
 // exceeds it, so neither lane is ever silently truncated.
 const ACTIVE_PAGE_INCREMENT = 60;
 
-// State buckets — these mirror the 9-step WaD workflow.
+// State buckets - these mirror the 9-step WaD workflow.
 // ACCEPTED engagements live in "poi"; pending engagements in "awaiting".
 const POI_STATES = [
   "committed",
@@ -87,7 +87,7 @@ const LANE_META = [
   { id: "poi", title: "Sealed Proofs of Intent", subtitle: "Step 9 · Engagement accepted" },
 ] as const;
 
-// Tone-of-voice colour per lane — used for the subtle top accent and the stage pill.
+// Tone-of-voice colour per lane - used for the subtle top accent and the stage pill.
 const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string }> = {
   draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500" },
   awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500" },
@@ -100,7 +100,7 @@ const LANE_PILL_LABEL: Record<string, string> = {
 };
 
 // Minimal column projection. Anything not on the card or used for routing is excluded.
-// `org_id` was dropped — it is encoded in the `.or()` filter and never read post-fetch.
+// `org_id` was dropped - it is encoded in the `.or()` filter and never read post-fetch.
 const MATCH_COLUMNS =
   "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at";
 
@@ -115,7 +115,7 @@ function formatVolume(amount: number | null | undefined, unit: string | null | u
  * Trade rows do not (yet) carry an explicit SLA column, so we approximate using
  * lane semantics: drafts age out at 30d, awaiting-engagement deals at 7d (the
  * POI hold-point window), and sealed deals at 90d (settlement horizon). This
- * makes "Nearest deadline" sort actionable without a schema change — the moment
+ * makes "Nearest deadline" sort actionable without a schema change - the moment
  * a real `expires_at` column is added, swap this for a direct read.
  */
 function inferDeadline(createdAt: string, laneId: DealCard["laneId"]): string {
@@ -143,7 +143,7 @@ function useOrgId() {
 }
 
 /**
- * Active lanes (Draft + Awaiting) — bounded query.
+ * Active lanes (Draft + Awaiting) - bounded query.
  *
  * These states are bounded by business reality (an org rarely holds more than
  * a few dozen in-flight intents). We pull both lanes in one round-trip filtered
@@ -211,7 +211,7 @@ function useActiveLanes(orgId: string | null, page: number) {
 }
 
 /**
- * Sealed lane — paginated query.
+ * Sealed lane - paginated query.
  *
  * The only lane that grows without bound. `count: "exact", head: true` returns
  * the total without scanning rows, so we can show "Showing 40 of 312" honestly.
@@ -226,7 +226,7 @@ function useSealedPage(orgId: string | null, page: number) {
     staleTime: 30_000,
     queryFn: async () => {
       const from = 0;
-      const to = (page + 1) * SEALED_PAGE_SIZE - 1; // cumulative window — we render everything fetched so far
+      const to = (page + 1) * SEALED_PAGE_SIZE - 1; // cumulative window - we render everything fetched so far
 
       const { data: matches, count } = await supabase
         .from("matches")
@@ -287,7 +287,7 @@ export function DealPipeline() {
   // Sort + filter selections are persisted to localStorage so the desk restores
   // the same view across reloads. Each key is namespaced under `desk:pipeline:`
   // to avoid collision with other modules and to make storage inspection easy.
-  // Reads are guarded against SSR (no window) and against malformed JSON — a
+  // Reads are guarded against SSR (no window) and against malformed JSON - a
   // bad value silently falls back to the default rather than crashing the desk.
   const SORT_KEY_STORAGE = "desk:pipeline:sortKey";
   const COUNTERPARTY_STORAGE = "desk:pipeline:counterpartyQuery";
@@ -316,7 +316,7 @@ export function DealPipeline() {
     readStorage<SortKey>(SORT_KEY_STORAGE, "newest", isSortKey),
   );
 
-  // Per-lane collapse state — persisted to localStorage so a user who prefers
+  // Per-lane collapse state - persisted to localStorage so a user who prefers
   // to stay focused on (say) "Awaiting Engagement" doesn't have to re-collapse
   // the other lanes after every reload.
   const [collapsedLanes, setCollapsedLanes] = useState<Record<string, boolean>>(() => {
@@ -335,13 +335,13 @@ export function DealPipeline() {
         JSON.stringify(collapsedLanes),
       );
     } catch {
-      // localStorage write failures are non-fatal — collapse simply won't persist.
+      // localStorage write failures are non-fatal - collapse simply won't persist.
     }
   }, [collapsedLanes]);
   const toggleLane = (id: string) =>
     setCollapsedLanes((s) => ({ ...s, [id]: !s[id] }));
 
-  // Filter state — purely client-side. Filtering server-side would require
+  // Filter state - purely client-side. Filtering server-side would require
   // narrowing the paginated queries, which would in turn require server-side
   // support for full-text counterparty search. For pipeline-scale data
   // (≤ a few hundred in-flight deals per org) client filtering is the right
@@ -357,7 +357,7 @@ export function DealPipeline() {
   );
 
   // Persist sort + filter selections. Each write is wrapped because storage
-  // can fail (quota, private mode) — failure is non-fatal: the in-memory state
+  // can fail (quota, private mode) - failure is non-fatal: the in-memory state
   // continues to drive the UI, and the user simply loses persistence for that
   // selection.
   useEffect(() => {
@@ -380,7 +380,7 @@ export function DealPipeline() {
   const isSealedFetching = sealedQ.isFetching;
   const isActiveFetching = activeQ.isFetching;
 
-  // Distinct commodity list across all loaded deals — drives the commodity
+  // Distinct commodity list across all loaded deals - drives the commodity
   // dropdown options. Recomputed from the loaded data so newly loaded pages
   // surface their commodities automatically.
   const commodityOptions = useMemo(() => {
@@ -484,7 +484,7 @@ export function DealPipeline() {
   const sealedWindow = (sealedPage + 1) * SEALED_PAGE_SIZE;
   const sealedHasMore = (sealedQ.data?.totalSealedish ?? 0) > sealedWindow;
 
-  // Active-lane pagination — `totalActive` is the server-side count of *all*
+  // Active-lane pagination - `totalActive` is the server-side count of *all*
   // matches in DRAFT_STATES ∪ POI_STATES. We display "Load more" on Draft
   // and Awaiting lanes whenever the cumulative window has not yet covered it.
   const activeLoaded = activeQ.data?.cards.length ?? 0;
@@ -517,10 +517,10 @@ export function DealPipeline() {
               key={lane.id}
               className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden"
             >
-              {/* Top accent bar — sets lane identity without shouting. */}
+              {/* Top accent bar - sets lane identity without shouting. */}
               <div className={cn("h-0.5 w-full", accent.bar)} />
 
-              {/* Lane header — full-width button so the entire row is a click
+              {/* Lane header - full-width button so the entire row is a click
                   target. Chevron rotates to indicate state; aria-expanded keeps
                   assistive tech in sync. */}
               <button
@@ -555,7 +555,7 @@ export function DealPipeline() {
                 </div>
               </button>
 
-              {/* Collapsible region — animated via grid-template-rows so we can
+              {/* Collapsible region - animated via grid-template-rows so we can
                   transition between collapsed (0fr) and expanded (1fr) without
                   measuring content height in JS. */}
               <div
@@ -613,7 +613,7 @@ export function DealPipeline() {
                     </div>
                   )}
 
-                  {/* Active-lane pagination — appears on Draft and Awaiting lanes
+                  {/* Active-lane pagination - appears on Draft and Awaiting lanes
                       whenever the org has more active records than the current window. */}
                   {(lane.id === "draft" || lane.id === "awaiting") &&
                     !isLoading &&
@@ -645,7 +645,7 @@ export function DealPipeline() {
 }
 
 /**
- * FilterBar — narrows the visible pipeline by counterparty (free-text contains
+ * FilterBar - narrows the visible pipeline by counterparty (free-text contains
  * search), commodity (exact match against a derived dropdown), and stage
  * (lane). All filters are AND-combined and applied client-side before the
  * sort comparator runs in the parent.
@@ -722,7 +722,7 @@ function FilterBar({
         </select>
       </label>
 
-      {/* Lane / status pill toggle group — keeps stage filtering immediately
+      {/* Lane / status pill toggle group - keeps stage filtering immediately
           visible without burying it in a dropdown. */}
       <div
         className="inline-flex items-center bg-card border border-border rounded-md p-0.5"
@@ -802,7 +802,7 @@ function PipelineHeader({
           {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
         </p>
 
-        {/* Sort selector — applied client-side across all three lanes so the
+        {/* Sort selector - applied client-side across all three lanes so the
             most important deals surface first regardless of stage. */}
         <label className="group relative inline-flex items-center gap-2">
           <span className="sr-only">Sort deals by</span>
@@ -923,7 +923,7 @@ function DealDocumentCard({
   );
 }
 
-/** Mirrors AttentionPipeline.relativeAge — kept local to avoid coupling. */
+/** Mirrors AttentionPipeline.relativeAge - kept local to avoid coupling. */
 function relativeAge(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.max(1, Math.floor(diffMs / 60000));
@@ -947,9 +947,9 @@ function deadlineFromIso(iso: string | null | undefined): string | null {
 }
 
 function initialsOf(name: string | null | undefined): string {
-  if (!name) return "—";
+  if (!name) return "-";
   const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "—";
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "-";
 }
 
 function SkeletonCard() {

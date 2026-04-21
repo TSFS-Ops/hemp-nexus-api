@@ -129,7 +129,7 @@ export function DocumentAccessLogs({
           <div className="border rounded-lg overflow-hidden">
             {logsTotal > ACCESS_LOG_LIMIT && (
               <div className="border-b bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                Showing {ACCESS_LOG_LIMIT} of {logsTotal.toLocaleString()} access events — older entries are preserved in the audit trail.
+                Showing {ACCESS_LOG_LIMIT} of {logsTotal.toLocaleString()} access events - older entries are preserved in the audit trail.
               </div>
             )}
             <Table>
