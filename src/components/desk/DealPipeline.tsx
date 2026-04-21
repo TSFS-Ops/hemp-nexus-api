@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Compass, Loader2, ArrowDownUp } from "lucide-react";
+import { ArrowUpRight, Compass, Loader2, ArrowDownUp, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -414,6 +414,18 @@ export function DealPipeline() {
   return (
     <section>
       <PipelineHeader totalDeals={totalDeals} sortKey={sortKey} onSortChange={setSortKey} />
+      <FilterBar
+        counterpartyQuery={counterpartyQuery}
+        onCounterpartyQueryChange={setCounterpartyQuery}
+        commodityFilter={commodityFilter}
+        onCommodityFilterChange={setCommodityFilter}
+        commodityOptions={commodityOptions}
+        laneFilter={laneFilter}
+        onLaneFilterChange={setLaneFilter}
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        visibleCount={totalDeals}
+      />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
         {lanes.map((lane) => {
           const accent = LANE_ACCENT[lane.id];
