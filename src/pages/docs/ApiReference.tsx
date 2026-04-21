@@ -105,9 +105,9 @@ export default function ApiReference() {
               canonical match record with its content hash. Pass an{" "}
               <InlineCode>Idempotency-Key</InlineCode> on every write so retries are safe.
             </DocP>
-            <p className="text-[13px] text-slate-500 mt-4">
+            <p className="text-[13px] text-muted-foreground mt-4">
               Full parameter reference and lifecycle:{" "}
-              <Link to="/docs/matches" className="text-emerald-600 hover:text-emerald-700 font-medium">
+              <Link to="/docs/matches" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">
                 Matches
               </Link>
               .
@@ -119,9 +119,9 @@ export default function ApiReference() {
           </div>
         </section>
 
-        <section className="border-t border-slate-100 pt-12">
+        <section className="border-t border-border pt-12">
           <DocH2 id="all-endpoints">All endpoints</DocH2>
-          <p className="text-[13.5px] text-slate-500 mb-6">
+          <p className="text-[13.5px] text-muted-foreground mb-6">
             Base URL: <InlineCode>https://api.izenzo.co.za/functions/v1</InlineCode>. Endpoints
             in the discovery, settlement, and webhook groups have dedicated guides linked above.
           </p>
@@ -129,19 +129,19 @@ export default function ApiReference() {
             {ENDPOINTS.map((group) => (
               <div key={group.section}>
                 <div className="flex items-baseline justify-between mb-3">
-                  <h3 className="text-[13px] uppercase tracking-wider font-semibold text-slate-400">
+                  <h3 className="text-[13px] uppercase tracking-wider font-semibold text-muted-foreground/70">
                     {group.section}
                   </h3>
-                  <Link to={group.href} className="text-[12px] font-medium text-emerald-600 hover:text-emerald-700">
+                  <Link to={group.href} className="text-[12px] font-medium text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))]">
                     Guide →
                   </Link>
                 </div>
-                <div className="border border-slate-100 rounded-xl divide-y divide-slate-100">
+                <div className="border border-border rounded-xl divide-y divide-border">
                   {group.items.map((ep) => (
                     <div key={`${ep.method}-${ep.path}`} className="flex items-center gap-4 px-4 py-3">
                       <EndpointBadge method={ep.method} />
-                      <code className="text-[13px] font-mono text-slate-900">{ep.path}</code>
-                      <span className="text-[13px] text-slate-500 ml-auto text-right">{ep.desc}</span>
+                      <code className="text-[13px] font-mono text-foreground">{ep.path}</code>
+                      <span className="text-[13px] text-muted-foreground ml-auto text-right">{ep.desc}</span>
                     </div>
                   ))}
                 </div>

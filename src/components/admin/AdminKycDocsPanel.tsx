@@ -54,7 +54,7 @@ export function AdminKycDocsPanel() {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case "verified": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Verified</Badge>;
+      case "verified": return <Badge className="bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200">Verified</Badge>;
       case "pending": return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Pending</Badge>;
       case "rejected": return <Badge variant="destructive">Rejected</Badge>;
       case "expired": return <Badge variant="secondary">Expired</Badge>;

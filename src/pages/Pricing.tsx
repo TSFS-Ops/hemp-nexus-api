@@ -95,13 +95,7 @@ const ALWAYS_INCLUDED = [
 
 export default function Pricing() {
   return (
-    <div
-      className="min-h-screen bg-white text-slate-900"
-      style={{
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-      }}
-    >
+    <div className="min-h-screen bg-card text-foreground">
       <PublicHeader />
 
       {/* ════════════════ HERO ════════════════ */}
@@ -113,9 +107,9 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50/70 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-700"
+            className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--emerald)/0.2)] bg-[hsl(var(--emerald-muted))]/70 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.18em] text-[hsl(var(--emerald))]"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />
             Pricing
           </motion.div>
 
@@ -123,18 +117,18 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.05 }}
-            className="mt-8 text-3xl sm:text-4xl md:text-5xl lg:text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.05] text-slate-900"
+            className="mt-8 text-3xl sm:text-4xl md:text-5xl lg:text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.05] text-foreground"
           >
             Infrastructure pricing.
             <br />
-            <span className="text-emerald-700">Scalable and predictable.</span>
+            <span className="text-[hsl(var(--emerald))]">Scalable and predictable.</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.12 }}
-            className="mt-8 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed"
+            className="mt-8 max-w-2xl mx-auto text-lg text-muted-foreground leading-relaxed"
           >
             Pay only for the tamper-proof deals you execute. No opaque
             licenses, no hidden fees. Volume pricing available for institutions.
@@ -152,33 +146,33 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5 }}
-              className="relative rounded-2xl border border-slate-200 bg-white p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-shadow"
+              className="relative rounded-2xl border border-border bg-card p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-shadow"
             >
-              <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
+              <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                 Pay-as-you-go
               </div>
-              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
                 Operators &amp; Traders
               </h3>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                 For trading desks and corporates executing verified
                 cross-border matches.
               </p>
 
               <div className="mt-10 flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter text-slate-900">
+                <span className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter text-foreground">
                   R10.00
                 </span>
-                <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-emerald-700">
+                <span className="rounded-md border border-[hsl(var(--emerald)/0.2)] bg-[hsl(var(--emerald-muted))] px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-[hsl(var(--emerald))]">
                   ZAR
                 </span>
               </div>
-              <p className="mt-2 text-sm text-slate-500">per Trade Request</p>
+              <p className="mt-2 text-sm text-muted-foreground">per Trade Request</p>
 
               <Link
                 to="/auth"
-                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all"
+                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] hover:shadow-emerald-700/30 transition-all"
               >
                 Provision Workspace
                 <ArrowRight
@@ -187,16 +181,16 @@ export default function Pricing() {
                 />
               </Link>
 
-              <div className="mt-10 h-px bg-slate-100" />
+              <div className="mt-10 h-px bg-muted" />
 
               <ul className="mt-8 space-y-3.5">
                 {PAYG_FEATURES.map((feature) => (
                   <li
                     key={feature}
-                    className="flex items-start gap-3 text-sm text-slate-700"
+                    className="flex items-start gap-3 text-sm text-muted-foreground"
                   >
                     <Check
-                      className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600"
+                      className="mt-0.5 h-4 w-4 flex-shrink-0 text-[hsl(var(--emerald))]"
                       strokeWidth={2.5}
                     />
                     <span>{feature}</span>
@@ -220,7 +214,7 @@ export default function Pricing() {
               <h3 className="mt-4 text-2xl font-semibold tracking-tight">
                 Banks, DFIs &amp; Sovereigns
               </h3>
-              <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+              <p className="mt-2 text-sm text-muted-foreground/50 leading-relaxed">
                 For public development banks and trade finance underwriters
                 requiring oversight.
               </p>
@@ -230,11 +224,11 @@ export default function Pricing() {
                   Custom
                 </span>
               </div>
-              <p className="mt-2 text-sm text-slate-400">tailored to your volume</p>
+              <p className="mt-2 text-sm text-muted-foreground/70">tailored to your volume</p>
 
               <a
                 href="mailto:support@izenzo.co.za"
-                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-medium text-white hover:bg-white/10 hover:border-white/25 transition-all backdrop-blur"
+                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-card/5 px-6 py-3.5 text-sm font-medium text-white hover:bg-card/10 hover:border-white/25 transition-all backdrop-blur"
               >
                 Contact Sales
                 <ArrowRight
@@ -243,7 +237,7 @@ export default function Pricing() {
                 />
               </a>
 
-              <div className="mt-10 h-px bg-white/10" />
+              <div className="mt-10 h-px bg-card/10" />
 
               <ul className="mt-8 space-y-3.5">
                 {INSTITUTIONAL_FEATURES.map((feature) => (
@@ -263,7 +257,7 @@ export default function Pricing() {
           </div>
 
           {/* Footnote */}
-          <p className="mt-10 text-center text-xs text-slate-500">
+          <p className="mt-10 text-center text-xs text-muted-foreground">
             All prices in ZAR. Pay-as-you-go billed per successful Proof of
             Intent. Institutional contracts include volume commitments and
             dedicated SLAs.
@@ -272,14 +266,14 @@ export default function Pricing() {
       </section>
 
       {/* ════════════════ ALWAYS INCLUDED ════════════════ */}
-      <section className="relative bg-slate-50/50 border-y border-slate-100">
+      <section className="relative bg-muted/50 border-y border-border">
         <div className="relative max-w-6xl mx-auto px-6 lg:px-12 py-12 sm:py-16 md:py-24 lg:py-32">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
+            <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
               Always included
             </div>
-            <h2 className="mt-6 text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
+            <h2 className="mt-6 text-3xl lg:text-4xl font-semibold tracking-tighter text-foreground">
               Every plan ships with the platform foundation.
             </h2>
           </div>
@@ -292,15 +286,15 @@ export default function Pricing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="rounded-xl border border-slate-100 bg-white p-7 hover:border-slate-200 transition-colors"
+                className="rounded-xl border border-border bg-card p-7 hover:border-border transition-colors"
               >
-                <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-[hsl(var(--emerald-muted))] text-[hsl(var(--emerald))]">
                   <item.icon className="h-4.5 w-4.5" strokeWidth={2} />
                 </div>
-                <h3 className="mt-5 text-base font-semibold tracking-tight text-slate-900">
+                <h3 className="mt-5 text-base font-semibold tracking-tight text-foreground">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                   {item.desc}
                 </p>
               </motion.div>
@@ -313,10 +307,10 @@ export default function Pricing() {
       <section className="relative overflow-hidden">
         <EmeraldWhisper />
         <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 text-center">
-          <h2 className="text-3xl lg:text-4xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+          <h2 className="text-3xl lg:text-4xl font-semibold tracking-tighter leading-[1.05] text-foreground">
             Not sure which tier fits?
           </h2>
-          <p className="mt-6 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Speak to our institutional team. We'll size the right contract for
             your trade volume and governance requirements.
           </p>
@@ -333,7 +327,7 @@ export default function Pricing() {
             </a>
             <Link
               to="/auth"
-              className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               Start with pay-as-you-go
               <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />

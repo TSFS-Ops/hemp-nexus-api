@@ -211,25 +211,25 @@ export function MatchCompiler({
   }
   return <>
     {GuardDialog}
-    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-card pb-16 md:pb-0">
       {/* ── LEFT PANE: Deal Editor ─────────────────────────────── */}
-      <section className="w-full md:w-1/2 overflow-y-auto md:border-r border-slate-200 bg-white">
+      <section className="w-full md:w-1/2 overflow-y-auto md:border-r border-border bg-card">
         <div className="px-6 md:px-16 pt-8 md:pt-12 pb-24 max-w-2xl">
-          <Link to="/desk" tabIndex={demoMode ? -1 : 0} aria-disabled={demoMode} className={`inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-12 ${demoMode ? "pointer-events-none opacity-60" : ""}`}>
+          <Link to="/desk" tabIndex={demoMode ? -1 : 0} aria-disabled={demoMode} className={`inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-12 ${demoMode ? "pointer-events-none opacity-60" : ""}`}>
             <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Back to Pipeline
           </Link>
 
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
             Match · {matchRef}
-            {matchLoading && <span className="ml-3 inline-flex items-center gap-1 text-slate-400">
+            {matchLoading && <span className="ml-3 inline-flex items-center gap-1 text-muted-foreground/70">
                 <Loader2 className="h-3 w-3 animate-spin" /> loading
               </span>}
           </p>
-          <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
+          <h1 className="text-4xl lg:text-5xl font-semibold text-foreground tracking-tight leading-[1.1]">
             Draft Commercial Terms
           </h1>
-          <p className="mt-6 text-base text-slate-600 leading-relaxed max-w-lg">
+          <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-lg">
             Structure the trade in three movements. Each entry is mirrored in the Certificate of
             Intent to your right and sealed when you generate the Proof.
           </p>
@@ -247,7 +247,7 @@ export function MatchCompiler({
 
           {/* ── STEP 2: Supporting Documents ──────────────────── */}
           <StepSection number={2} title="Supporting Documents">
-            <p className="text-sm text-slate-600 leading-relaxed -mt-2"> Attach evidence: each file is hashed (SHA-256) on attach and bound to the certificate. </p>
+            <p className="text-sm text-muted-foreground leading-relaxed -mt-2"> Attach evidence: each file is hashed (SHA-256) on attach and bound to the certificate. </p>
             <div onDragOver={e => {
             if (demoMode) return;
             e.preventDefault();
@@ -255,12 +255,12 @@ export function MatchCompiler({
           }} onDragLeave={() => setDragOver(false)} onDrop={onDrop} onClick={() => {
             if (demoMode) return;
             fileInputRef.current?.click();
-          }} onMouseEnter={() => setFocusedField("evidence")} onMouseLeave={() => setFocusedField(null)} aria-disabled={demoMode} className={`rounded-md border border-dashed p-10 text-center transition-colors ${demoMode ? "cursor-default border-slate-200 bg-slate-50/50 opacity-80" : dragOver ? "cursor-pointer border-primary bg-primary/5" : "cursor-pointer border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"}`}>
-              <UploadCloud className="h-6 w-6 mx-auto text-slate-500" strokeWidth={1.5} />
-              <p className="mt-4 text-sm text-slate-700 font-medium">
+          }} onMouseEnter={() => setFocusedField("evidence")} onMouseLeave={() => setFocusedField(null)} aria-disabled={demoMode} className={`rounded-md border border-dashed p-10 text-center transition-colors ${demoMode ? "cursor-default border-border bg-muted/50 opacity-80" : dragOver ? "cursor-pointer border-primary bg-primary/5" : "cursor-pointer border-border bg-card hover:border-slate-400 hover:bg-muted"}`}>
+              <UploadCloud className="h-6 w-6 mx-auto text-muted-foreground" strokeWidth={1.5} />
+              <p className="mt-4 text-sm text-muted-foreground font-medium">
                 {demoMode ? "Evidence sealed · 3 documents bound" : "Drag and drop supporting documents"}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 PDF, DOCX · Each file is hashed on attach
               </p>
               <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.doc" disabled={demoMode} className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)} />
@@ -279,11 +279,11 @@ export function MatchCompiler({
                 y: -4
               }} transition={{
                 duration: 0.2
-              }} className="flex items-center gap-4 rounded-md border border-slate-200 bg-white px-4 py-3">
-                      <FileText className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={1.5} />
+              }} className="flex items-center gap-4 rounded-md border border-border bg-card px-4 py-3">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-900 truncate font-medium">{d.name}</p>
-                        <p className="font-mono text-[11px] text-slate-500 truncate">
+                        <p className="text-sm text-foreground truncate font-medium">{d.name}</p>
+                        <p className="font-mono text-[11px] text-muted-foreground truncate">
                           sha256:{shortHash(d.hash)}
                         </p>
                       </div>
@@ -291,7 +291,7 @@ export function MatchCompiler({
                   e.stopPropagation();
                   if (demoMode) return;
                   setDocs(prev => prev.filter((_, idx) => idx !== i));
-                }} disabled={demoMode} tabIndex={demoMode ? -1 : 0} className={`text-slate-500 hover:text-slate-900 transition-colors ${demoMode ? "pointer-events-none opacity-40" : ""}`} aria-label={`Remove ${d.name}`}>
+                }} disabled={demoMode} tabIndex={demoMode ? -1 : 0} className={`text-muted-foreground hover:text-foreground transition-colors ${demoMode ? "pointer-events-none opacity-40" : ""}`} aria-label={`Remove ${d.name}`}>
                         <X className="h-4 w-4" strokeWidth={2} />
                       </button>
                     </motion.li>)}
@@ -302,19 +302,19 @@ export function MatchCompiler({
           {/* ── STEP 3: Additional Notes ──────────────────────── */}
           <StepSection number={3} title="Additional Notes">
             <div>
-              <label className="block text-[11px] font-mono tracking-[0.2em] uppercase text-slate-600 mb-3">
+              <label className="block text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground mb-3">
                 Notes
               </label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setFocusedField("notes")} onBlur={() => setFocusedField(null)} placeholder="Inspection by SGS at load port. Payment via L/C at sight." rows={4} readOnly={demoMode} aria-readonly={demoMode} tabIndex={demoMode ? -1 : 0} className={`w-full bg-white border-0 border-b border-slate-300 px-0 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors resize-none ${demoMode ? "pointer-events-none cursor-default select-text" : ""}`} />
-              <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setFocusedField("notes")} onBlur={() => setFocusedField(null)} placeholder="Inspection by SGS at load port. Payment via L/C at sight." rows={4} readOnly={demoMode} aria-readonly={demoMode} tabIndex={demoMode ? -1 : 0} className={`w-full bg-card border-0 border-b border-border px-0 py-2 text-base text-foreground placeholder:text-muted-foreground/70 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors resize-none ${demoMode ? "pointer-events-none cursor-default select-text" : ""}`} />
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
                 Optional. Notes are included in the sealed payload and visible to your counterparty.
               </p>
             </div>
           </StepSection>
 
           {/* ── Inline signature footer ───────────────────────── */}
-          <div className="mt-32 pt-12 border-t border-slate-200">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500 mb-6">
+          <div className="mt-32 pt-12 border-t border-border">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-6">
               Execute
             </p>
             <motion.button whileHover={demoMode ? undefined : {
@@ -334,7 +334,7 @@ export function MatchCompiler({
                   <span className="font-mono text-[11px] tracking-wider opacity-80">1 CREDIT</span>
                 </>}
             </motion.button>
-            <p className="mt-4 text-center text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+            <p className="mt-4 text-center text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
               This action atomically consumes 1 credit and permanently seals the trade intent.
               Balance: <span className="font-mono">{creditBalance}</span> credits available.
             </p>
@@ -343,20 +343,20 @@ export function MatchCompiler({
       </section>
 
       {/* ── RIGHT PANE: Certificate Preview ─────────────────────── */}
-      <section className="hidden md:block w-1/2 bg-slate-50 overflow-hidden">
+      <section className="hidden md:block w-1/2 bg-muted overflow-hidden">
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 text-center">
               Live Preview · Mirrors Left Pane
             </p>
 
-            <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
-              <header className="text-center pb-8 border-b border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800"> Izenzo Governance Infrastructure, Deal Record </p>
-                <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
+            <article className="bg-card rounded-sm shadow-md border border-border p-12">
+              <header className="text-center pb-8 border-b border-border">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
+                <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {matchRef}</p>
+                <p className="mt-3 font-mono text-[11px] text-muted-foreground">Ref · {matchRef}</p>
               </header>
 
               <dl className="py-8 space-y-1">
@@ -380,19 +380,19 @@ export function MatchCompiler({
                 height: 0
               }} transition={{
                 duration: 0.25
-              }} className={`overflow-hidden border-t border-slate-200 transition-colors ${focusedField === "notes" ? "bg-slate-100" : ""}`}>
+              }} className={`overflow-hidden border-t border-border transition-colors ${focusedField === "notes" ? "bg-muted" : ""}`}>
                     <div className="py-6">
-                      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">Notes</p>
-                      <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">{notes}</p>
+                      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">Notes</p>
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{notes}</p>
                     </div>
                   </motion.div>}
               </AnimatePresence>
 
-              <div className={`py-6 border-t border-slate-200 transition-colors -mx-2 px-2 rounded-sm ${focusedField === "evidence" ? "bg-slate-100" : ""}`}>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-4">
+              <div className={`py-6 border-t border-border transition-colors -mx-2 px-2 rounded-sm ${focusedField === "evidence" ? "bg-muted" : ""}`}>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-4">
                   Attached Evidence
                 </p>
-                {docs.length === 0 ? <p className="font-mono text-xs italic text-slate-500">{PLACEHOLDER}</p> : <ul className="space-y-2">
+                {docs.length === 0 ? <p className="font-mono text-xs italic text-muted-foreground">{PLACEHOLDER}</p> : <ul className="space-y-2">
                     <AnimatePresence initial={false}>
                       {docs.map((d, i) => <motion.li key={`${d.hash}-${i}`} initial={{
                     opacity: 0,
@@ -406,20 +406,20 @@ export function MatchCompiler({
                   }} transition={{
                     duration: 0.2
                   }} className="flex items-baseline gap-3">
-                          <span className="font-mono text-[10px] text-slate-600 shrink-0">
+                          <span className="font-mono text-[10px] text-muted-foreground shrink-0">
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <div className="min-w-0">
-                            <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
-                            <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash}</p>
+                            <p className="text-xs text-foreground truncate font-medium">{d.name}</p>
+                            <p className="font-mono text-[10px] text-muted-foreground truncate">{d.hash}</p>
                           </div>
                         </motion.li>)}
                     </AnimatePresence>
                   </ul>}
               </div>
 
-              <div className="mt-2 pt-6 border-t border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
+              <div className="mt-2 pt-6 border-t border-border">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
                   Security & Integrity
                 </p>
                 <ul className="space-y-3 font-mono text-[11px]">
@@ -429,27 +429,27 @@ export function MatchCompiler({
                   <SealRow label="Authority Bind" status="PENDING" />
                 </ul>
 
-                <div className="mt-6 pt-5 border-t border-dashed border-slate-200">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                <div className="mt-6 pt-5 border-t border-dashed border-border">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     SHA-256 Seal
-                    {hashing && <span className="ml-2 inline-flex items-center gap-1 text-slate-500 normal-case tracking-normal">
+                    {hashing && <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground normal-case tracking-normal">
                         <Loader2 className="h-3 w-3 animate-spin" />
                       </span>}
                   </p>
-                  <p className={`font-mono text-[11px] leading-relaxed break-all transition-colors ${certSeal ? "text-slate-900" : "text-slate-400"}`}>
+                  <p className={`font-mono text-[11px] leading-relaxed break-all transition-colors ${certSeal ? "text-foreground" : "text-muted-foreground/70"}`}>
                     {certSeal ?? "0".repeat(64)}
                   </p>
                 </div>
               </div>
 
-              <footer className="mt-8 pt-6 border-t border-slate-200 text-center">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-600">
+              <footer className="mt-8 pt-6 border-t border-border text-center">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Unsealed Draft · Not Yet Binding
                 </p>
               </footer>
             </article>
 
-            <p className="mt-6 text-center text-[11px] text-slate-600 leading-relaxed">
+            <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed">
               The Certificate becomes immutable upon Proof of Intent generation.
             </p>
           </div>
@@ -461,13 +461,13 @@ export function MatchCompiler({
       {/* ── Mobile: Slide-up Certificate Drawer ───────────────────── */}
       <ProofDrawer open={certDrawerOpen} onOpenChange={setCertDrawerOpen} triggerLabel="View Certificate" triggerKicker={matchRef} title="Certificate of Intent" subtitle="Live preview · mirrors editor" tone="ink">
         <div className="px-5 py-6">
-          <article className="bg-white border border-slate-200 rounded-sm p-6">
-            <header className="text-center pb-6 border-b border-slate-200">
-              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-800"> Izenzo, Deal Record </p>
-              <h2 className="mt-4 text-base font-semibold tracking-[0.3em] uppercase text-slate-900">
+          <article className="bg-card border border-border rounded-sm p-6">
+            <header className="text-center pb-6 border-b border-border">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-foreground"> Izenzo, Deal Record </p>
+              <h2 className="mt-4 text-base font-semibold tracking-[0.3em] uppercase text-foreground">
                 Certificate of Intent
               </h2>
-              <p className="mt-2 font-mono text-[10px] text-slate-600">Ref · {matchRef}</p>
+              <p className="mt-2 font-mono text-[10px] text-muted-foreground">Ref · {matchRef}</p>
             </header>
             <dl className="py-6 space-y-2">
               <CertRow label="Counterparty" value={counterparty} fieldKey="counterparty" />
@@ -476,11 +476,11 @@ export function MatchCompiler({
               <CertRow label="Price" value={price ? `USD ${price} / MT` : ""} mono fieldKey="price" />
               <CertRow label="Incoterms" value={incoterms} mono fieldKey="incoterms" />
             </dl>
-            <div className="pt-4 border-t border-dashed border-slate-200">
-              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-700 mb-2">
+            <div className="pt-4 border-t border-dashed border-border">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-2">
                 SHA-256 Seal
               </p>
-              <p className={`font-mono text-[10px] leading-relaxed break-all ${certSeal ? "text-slate-900" : "text-slate-400"}`}>
+              <p className={`font-mono text-[10px] leading-relaxed break-all ${certSeal ? "text-foreground" : "text-muted-foreground/70"}`}>
                 {certSeal ?? "0".repeat(64)}
               </p>
             </div>
@@ -503,10 +503,10 @@ function StepSection({
   children: ReactNode;
 }) {
   return <section className="relative mt-20">
-      <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+      <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 select-none">
         {String(number).padStart(2, "0")}
       </span>
-      <h2 className="text-base font-medium text-slate-900 tracking-tight pb-4 border-b border-slate-200">
+      <h2 className="text-base font-medium text-foreground tracking-tight pb-4 border-b border-border">
         {title}
       </h2>
       <div className="mt-8 space-y-8">{children}</div>
@@ -534,11 +534,11 @@ function EditorField({
   readOnly?: boolean;
 }) {
   return <div>
-      <label className="block text-[11px] font-mono tracking-[0.2em] uppercase text-slate-600 mb-3">
+      <label className="block text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground mb-3">
         {label}
       </label>
-      <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder={placeholder} readOnly={readOnly} aria-readonly={readOnly} tabIndex={readOnly ? -1 : 0} className={`w-full bg-white border-0 border-b border-slate-300 px-0 py-2 text-lg text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors ${mono ? "font-mono" : ""} ${readOnly ? "cursor-default pointer-events-none select-text" : ""}`} />
-      {hint && <p className="mt-2 text-xs text-slate-500 leading-relaxed">{hint}</p>}
+      <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder={placeholder} readOnly={readOnly} aria-readonly={readOnly} tabIndex={readOnly ? -1 : 0} className={`w-full bg-card border-0 border-b border-border px-0 py-2 text-lg text-foreground placeholder:text-muted-foreground/70 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors ${mono ? "font-mono" : ""} ${readOnly ? "cursor-default pointer-events-none select-text" : ""}`} />
+      {hint && <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{hint}</p>}
     </div>;
 }
 function CertRow({
@@ -555,8 +555,8 @@ function CertRow({
   fieldKey: string;
 }) {
   const filled = value.trim().length > 0;
-  return <div className={`flex items-baseline gap-4 -mx-2 px-2 py-2 rounded-sm transition-colors duration-300 ${highlight ? "bg-slate-100" : ""}`}>
-      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
+  return <div className={`flex items-baseline gap-4 -mx-2 px-2 py-2 rounded-sm transition-colors duration-300 ${highlight ? "bg-muted" : ""}`}>
+      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground w-32 shrink-0">
         {label}
       </dt>
       <dd className={`flex-1 text-sm relative min-h-[1.25rem] ${mono ? "font-mono" : ""}`}>
@@ -569,7 +569,7 @@ function CertRow({
           opacity: 0
         }} transition={{
           duration: 0.18
-        }} className="text-slate-900 font-medium">
+        }} className="text-foreground font-medium">
               {value}
             </motion.span> : <motion.span key={`empty-${fieldKey}`} initial={{
           opacity: 0
@@ -579,7 +579,7 @@ function CertRow({
           opacity: 0
         }} transition={{
           duration: 0.18
-        }} className="text-slate-500 italic font-mono text-xs">
+        }} className="text-muted-foreground italic font-mono text-xs">
               {PLACEHOLDER}
             </motion.span>}
         </AnimatePresence>
@@ -594,7 +594,7 @@ function SealRow({
   status: string;
 }) {
   return <li className="flex items-center justify-between">
-      <span className="text-slate-800 tracking-wide">{label}</span>
+      <span className="text-foreground tracking-wide">{label}</span>
       <span className="text-amber-700 font-medium tracking-[0.2em] text-[10px]">{status}</span>
     </li>;
 }

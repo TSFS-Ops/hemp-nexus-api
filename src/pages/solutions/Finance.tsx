@@ -37,7 +37,7 @@ function EmeraldWhisper() {
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function FinanceSolutionsPage() {
-  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-card text-foreground antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -56,8 +56,8 @@ export default function FinanceSolutionsPage() {
               y: 0
             }} transition={{
               duration: 0.6
-            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />
                 For Trade Finance & Insurance
               </motion.p>
 
@@ -70,7 +70,7 @@ export default function FinanceSolutionsPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.05
-            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
+            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-foreground">
                 De-risk capital deployment.
               </motion.h1>
 
@@ -83,7 +83,7 @@ export default function FinanceSolutionsPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.1
-            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
+            }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 Rely on mathematically provable deal records to underwrite trade
                 finance, issue letters of credit, and insure shipments with
                 zero ambiguity.
@@ -99,11 +99,11 @@ export default function FinanceSolutionsPage() {
               duration: 0.7,
               delay: 0.18
             }} className="mt-12 flex flex-wrap items-center gap-4">
-                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] hover:shadow-emerald-700/30 transition-all">
                   Request access
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link to="/products/audit-ledger" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
+                <Link to="/products/audit-ledger" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">
                   See the ledger
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
@@ -116,7 +116,7 @@ export default function FinanceSolutionsPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.3
-            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
                 SHA-256 immutable · Underwriter-grade · Audit-ready
               </motion.p>
             </div>
@@ -150,33 +150,33 @@ export default function FinanceSolutionsPage() {
       </section>
 
       {/* ═══════════════════ FEATURE BENTO ═══════════════════ */}
-      <section className="relative bg-slate-50/40 border-y border-slate-100">
+      <section className="relative bg-muted/40 border-y border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44">
           <div className="max-w-2xl mb-20 lg:mb-28">
-            <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
+            <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
               For underwriters, lenders, and insurers
             </p>
-            <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
               The end of forensic auditing.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (tamper-proof proof, automated underwriting, and instant audit resolution) engineered for institutional capital deployment. </p>
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Three primitives (tamper-proof proof, automated underwriting, and instant audit resolution) engineered for institutional capital deployment. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Box 1, Immutable Proof */}
-            <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
+            <div className="lg:col-span-2 rounded-2xl bg-card border border-border p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                  <Hash className="h-4 w-4 text-emerald-600" strokeWidth={2} />
+                <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
+                  <Hash className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
                 </div>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Box 01 · Proof
                 </p>
               </div>
-              <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
+              <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-foreground">
                 Immutable proof (SHA-256).
               </h3>
-              <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-xl">
                 Every sealed deal carries a 256-bit tamper-proof fingerprint
                 that any third party can independently re-compute and verify.
                 No more notarised PDFs. No more chasing wet-ink signatures
@@ -184,62 +184,62 @@ export default function FinanceSolutionsPage() {
               </p>
 
               <div className="mt-10 rounded-xl bg-slate-900 ring-1 ring-slate-800 p-6 font-mono text-[11px] leading-relaxed">
-                <p className="text-[9px] tracking-[0.25em] uppercase text-slate-500 mb-3">
+                <p className="text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-3">
                   Verifiable Seal · 256-bit
                 </p>
                 <p className="text-emerald-300 break-all">
                   0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b
                 </p>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-500">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500" strokeWidth={2} />
+                <div className="mt-4 flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <CheckCircle2 className="h-3 w-3 text-[hsl(var(--emerald))]" strokeWidth={2} />
                   <span>Verified · Match A1B2C3D4 · 9/9 gates passed</span>
                 </div>
               </div>
             </div>
 
             {/* Box 2, Automated Underwriting */}
-            <div className="rounded-2xl bg-white border border-slate-100 p-10 flex flex-col">
+            <div className="rounded-2xl bg-card border border-border p-10 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                  <Banknote className="h-4 w-4 text-emerald-600" strokeWidth={2} />
+                <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
+                  <Banknote className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
                 </div>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Box 02 · Underwriting
                 </p>
               </div>
-              <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
+              <h3 className="text-2xl font-semibold tracking-tighter text-foreground">
                 Automated underwriting.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
+              <p className="mt-3 text-[15px] text-muted-foreground leading-relaxed">
                 Ingest sealed deal records via API and route them straight into
                 your credit decision engine. Reduce LC issuance from days to
                 minutes.
               </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {["REST + webhook ingest", "Counterparty risk pre-cleared", "Cargo & shipment evidence bound", "Programmatic policy issuance"].map(c => <li key={c} className="flex items-center gap-3 text-slate-700">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
+                {["REST + webhook ingest", "Counterparty risk pre-cleared", "Cargo & shipment evidence bound", "Programmatic policy issuance"].map(c => <li key={c} className="flex items-center gap-3 text-muted-foreground">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--emerald))] shrink-0" strokeWidth={2} />
                     {c}
                   </li>)}
               </ul>
             </div>
 
             {/* Box 3, Instant Audit Resolution */}
-            <div className="lg:col-span-3 rounded-2xl bg-white border border-slate-100 p-10 lg:p-14">
+            <div className="lg:col-span-3 rounded-2xl bg-card border border-border p-10 lg:p-14">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                      <FileSearch className="h-4 w-4 text-emerald-600" strokeWidth={2} />
+                    <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
+                      <FileSearch className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
                     </div>
-                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                       Box 03 · Resolution
                     </p>
                   </div>
-                  <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
+                  <h3 className="text-3xl font-semibold tracking-tighter text-foreground">
                     Instant audit resolution.
                   </h3>
-                  <p className="mt-4 text-base text-slate-500 leading-relaxed">
+                  <p className="mt-4 text-base text-muted-foreground leading-relaxed">
                     When a regulator, internal auditor, or counterparty queries
                     a deal, the answer is a single hash check away. No
                     discovery requests. No document chase. No reconciliation
@@ -249,11 +249,11 @@ export default function FinanceSolutionsPage() {
 
                 <ul className="space-y-2.5">
                   {["One-click hash verification", "Bound evidence chain (KYB, sanctions, terms)", "Bilateral signature provenance", "Tamper-evident timestamping", "Bank-ready PDF + JSON exports"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
-                      <span className="font-mono text-[10px] text-emerald-700/70 tabular-nums w-6">
+                      <span className="font-mono text-[10px] text-[hsl(var(--emerald))]/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
-                      <span className="text-slate-700">{g}</span>
+                      <ShieldCheck className="h-3.5 w-3.5 text-[hsl(var(--emerald))] shrink-0" strokeWidth={2} />
+                      <span className="text-muted-foreground">{g}</span>
                     </li>)}
                 </ul>
               </div>
@@ -263,19 +263,19 @@ export default function FinanceSolutionsPage() {
       </section>
 
       {/* ════════════════ FINAL CTA ════════════════ */}
-      <section className="relative bg-white">
+      <section className="relative bg-card">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground max-w-3xl mx-auto">
             Stop underwriting paperwork.
             <br />
-            <span className="text-emerald-700">Start underwriting truth.</span>
+            <span className="text-[hsl(var(--emerald))]">Start underwriting truth.</span>
           </h2>
-          <p className="mt-8 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-8 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Connect your credit engine to the Audit Ledger and accelerate
             capital deployment with mathematical certainty.
           </p>
           <div className="mt-12">
-            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] transition-all">
               Request access
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>

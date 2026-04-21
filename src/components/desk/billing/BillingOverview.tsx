@@ -82,28 +82,28 @@ export function BillingOverview() {
     <>
       {/* ── HEADER ────────────────────────────────────────────── */}
       <header className="mb-16">
-        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-3">
           Treasury & Settlement
         </p>
-        <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight">
+        <h1 className="text-4xl lg:text-5xl font-semibold text-foreground tracking-tight leading-tight">
           Billing
         </h1>
       </header>
 
       {/* ── BALANCE HERO ──────────────────────────────────────── */}
       <section className="mb-20">
-        <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-6">
+        <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-6">
           Available Balance
         </p>
         <div className="flex items-baseline gap-5 flex-wrap">
-          <span className="font-semibold text-slate-900 tracking-tight tabular-nums leading-none text-7xl lg:text-8xl">
+          <span className="font-semibold text-foreground tracking-tight tabular-nums leading-none text-7xl lg:text-8xl">
             {loading ? "-" : displayBalance.toLocaleString()}
           </span>
-          <span className="text-2xl text-slate-400 font-light">Credits</span>
+          <span className="text-2xl text-muted-foreground/70 font-light">Credits</span>
         </div>
-        <p className="mt-6 font-mono text-sm text-slate-700 max-w-2xl">
+        <p className="mt-6 font-mono text-sm text-muted-foreground max-w-2xl">
           R{zarValue} ZAR equivalent.
-          <span className="text-slate-500">
+          <span className="text-muted-foreground">
             {" "}Credits are consumed atomically upon POI generation.
           </span>
         </p>
@@ -111,11 +111,11 @@ export function BillingOverview() {
 
       {/* ── TOP-UP / PROVISIONING ─────────────────────────────── */}
       <section className="mb-20">
-        <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-slate-200">
-          <h2 className="text-sm font-medium tracking-wider uppercase text-slate-500">
+        <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-border">
+          <h2 className="text-sm font-medium tracking-wider uppercase text-muted-foreground">
             Provisioning
           </h2>
-          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
             ZAR · VAT Inclusive
           </p>
         </div>
@@ -124,24 +124,24 @@ export function BillingOverview() {
           {PACKS.map((pack) => (
             <div
               key={pack.credits}
-              className="grid grid-cols-12 gap-6 items-center bg-white border border-slate-200 rounded-sm px-6 py-5 hover:border-slate-400 transition-colors"
+              className="grid grid-cols-12 gap-6 items-center bg-card border border-border rounded-sm px-6 py-5 hover:border-slate-400 transition-colors"
             >
               {/* Credits column */}
               <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
-                <span className="font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+                <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
                   {pack.credits}
                 </span>
-                <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Credits
                 </span>
               </div>
 
               {/* Price column */}
               <div className="col-span-6 sm:col-span-3">
-                <p className="font-mono text-base text-slate-900 tabular-nums">
+                <p className="font-mono text-base text-foreground tabular-nums">
                   {pack.price}
                 </p>
-                <p className="font-mono text-[10px] text-slate-500 mt-0.5">
+                <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
                   {pack.unit}
                 </p>
               </div>
@@ -149,11 +149,11 @@ export function BillingOverview() {
               {/* Saving badge column */}
               <div className="col-span-6 sm:col-span-3">
                 {pack.saving ? (
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600 border border-slate-200 px-2 py-1 rounded-sm">
+                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground border border-border px-2 py-1 rounded-sm">
                     {pack.saving}
                   </span>
                 ) : (
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
                     Standard rate
                   </span>
                 )}
@@ -183,32 +183,32 @@ export function BillingOverview() {
 
       {/* ── USAGE HISTORY ─────────────────────────────────────── */}
       <section>
-        <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-slate-200">
-          <h2 className="text-sm font-medium tracking-wider uppercase text-slate-500">
+        <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-border">
+          <h2 className="text-sm font-medium tracking-wider uppercase text-muted-foreground">
             Usage History
           </h2>
-          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+          <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
             Append-only · Tamper-Proofally chained
           </p>
         </div>
 
-        <div className="overflow-x-auto bg-white border border-slate-200 rounded-sm">
+        <div className="overflow-x-auto bg-card border border-border rounded-sm">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/60">
-                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+              <tr className="border-b border-border bg-muted/60">
+                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-muted-foreground">
                   Date
                 </th>
-                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-muted-foreground">
                   Action
                 </th>
-                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-left px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-muted-foreground">
                   Reference ID
                 </th>
-                <th className="text-right px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-right px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-muted-foreground">
                   Amount
                 </th>
-                <th className="text-right px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-slate-500">
+                <th className="text-right px-5 py-3 font-mono text-[10px] font-medium tracking-[0.2em] uppercase text-muted-foreground">
                   Balance
                 </th>
               </tr>
@@ -216,7 +216,7 @@ export function BillingOverview() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-sm text-slate-400 font-mono">
+                  <td colSpan={5} className="py-12 text-center text-sm text-muted-foreground/70 font-mono">
                     Loading ledger…
                   </td>
                 </tr>
@@ -225,8 +225,8 @@ export function BillingOverview() {
               {!loading && ledger.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
-                    <p className="text-sm text-slate-500">No ledger entries yet.</p>
-                    <p className="mt-2 font-mono text-[11px] text-slate-400">
+                    <p className="text-sm text-muted-foreground">No ledger entries yet.</p>
+                    <p className="mt-2 font-mono text-[11px] text-muted-foreground/70">
                       Your first Proof of Intent burn will be recorded here.
                     </p>
                   </td>
@@ -246,22 +246,22 @@ export function BillingOverview() {
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors"
+                    className="border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="px-5 py-3.5 font-mono text-[12px] text-slate-500 whitespace-nowrap tabular-nums">
+                    <td className="px-5 py-3.5 font-mono text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
                       {new Date(row.created_at).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
                       })}
-                      <span className="text-slate-300 mx-1.5">·</span>
+                      <span className="text-muted-foreground/50 mx-1.5">·</span>
                       {new Date(row.created_at).toLocaleTimeString("en-GB", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-900">{action}</td>
-                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-600">
+                    <td className="px-5 py-3.5 text-sm text-foreground">{action}</td>
+                    <td className="px-5 py-3.5 font-mono text-[11px] text-muted-foreground">
                       {row.id}
                     </td>
                     <td
@@ -278,7 +278,7 @@ export function BillingOverview() {
                         {Math.abs(burned) === 1 ? "Credit" : "Credits"}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right font-mono text-sm text-slate-500 tabular-nums">
+                    <td className="px-5 py-3.5 text-right font-mono text-sm text-muted-foreground tabular-nums">
                       {Number(row.remaining_balance ?? 0).toLocaleString()}
                     </td>
                   </tr>
@@ -290,12 +290,12 @@ export function BillingOverview() {
 
         {!loading && ledger.length > 0 && (
           <div className="mt-6 flex items-center justify-between">
-            <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+            <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
               Showing last {ledger.length} entries
             </p>
             <button
               type="button"
-              className="font-mono text-[11px] tracking-[0.2em] uppercase text-slate-500 hover:text-slate-900 transition-colors"
+              className="font-mono text-[11px] tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground transition-colors"
             >
               Export Full Ledger ↓
             </button>

@@ -18,13 +18,13 @@ export function DeskSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden md:flex w-[250px] shrink-0 flex-col bg-white border-r border-slate-200">
+    <aside className="hidden md:flex w-[250px] shrink-0 flex-col bg-card border-r border-border">
       {/* Wordmark */}
       <div className="px-6 pt-8 pb-4">
-        <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-slate-900 uppercase">
+        <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-foreground uppercase">
           Izenzo
         </h2>
-        <p className="mt-1 text-[10px] tracking-wider text-slate-400 font-mono uppercase">
+        <p className="mt-1 text-[10px] tracking-wider text-muted-foreground/70 font-mono uppercase">
           Deal Desk
         </p>
       </div>
@@ -48,8 +48,8 @@ export function DeskSidebar() {
                     [
                       "flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors",
                       isActive
-                        ? "bg-slate-50 text-slate-900 font-medium"
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
+                        ? "bg-muted text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     ].join(" ")
                   }
                 >
@@ -66,8 +66,8 @@ export function DeskSidebar() {
       </nav>
 
       {/* User footer */}
-      <div className="px-6 py-6 border-t border-slate-200 space-y-3">
-        <p className="text-xs text-slate-400 font-mono tracking-wide truncate">
+      <div className="px-6 py-6 border-t border-border space-y-3">
+        <p className="text-xs text-muted-foreground/70 font-mono tracking-wide truncate">
           {user?.email}
         </p>
 
@@ -76,7 +76,7 @@ export function DeskSidebar() {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-600 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-[hsl(var(--emerald))] transition-colors"
         >
           <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
           View Public Site
@@ -85,15 +85,15 @@ export function DeskSidebar() {
         <div className="flex items-center gap-3">
           <Link
             to="/desk/settings"
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
             Settings
           </Link>
-          <span className="text-slate-300">·</span>
+          <span className="text-muted-foreground/50">·</span>
           <button
             onClick={signOut}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
             Sign out

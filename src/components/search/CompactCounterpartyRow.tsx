@@ -85,7 +85,7 @@ function tierDotClass(tier: Tier): string {
   // Solid dot + ring for visual weight, matches AttentionPipeline language.
   switch (tier) {
     case "verified":
-      return "bg-emerald-500 ring-emerald-200";
+      return "bg-[hsl(var(--emerald))] ring-emerald-200";
     case "registered":
       return "bg-sky-500 ring-sky-200";
     case "order_book":
@@ -123,8 +123,8 @@ export function CompactCounterpartyRow({
     <li
       className={cn(
         "group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 transition-colors cursor-pointer",
-        "hover:bg-slate-50/70",
-        isSelected && "bg-emerald-50/60 hover:bg-emerald-50/80",
+        "hover:bg-muted/70",
+        isSelected && "bg-[hsl(var(--emerald-muted))]/60 hover:bg-[hsl(var(--emerald-muted))]/80",
       )}
       onClick={() => onToggleSelect(result.id)}
     >
@@ -139,7 +139,7 @@ export function CompactCounterpartyRow({
           aria-label={`${isSelected ? "Deselect" : "Select"} ${result.title}`}
           className={cn(
             "h-4 w-4",
-            isSelected && "data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600",
+            isSelected && "data-[state=checked]:bg-[hsl(var(--emerald))] data-[state=checked]:border-[hsl(var(--emerald)/0.4)]",
           )}
         />
       </div>
@@ -165,8 +165,8 @@ export function CompactCounterpartyRow({
         className={cn(
           "shrink-0 hidden sm:flex w-9 h-9 rounded-full items-center justify-center font-mono text-[11px] tracking-wider transition-colors",
           isSelected
-            ? "bg-emerald-600 text-white"
-            : "bg-slate-100 text-slate-600 group-hover:bg-slate-200",
+            ? "bg-[hsl(var(--emerald))] text-white"
+            : "bg-muted text-muted-foreground group-hover:bg-muted",
         )}
         aria-hidden
       >
@@ -176,10 +176,10 @@ export function CompactCounterpartyRow({
       {/* Body */}
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono text-[10px] tabular-nums text-slate-400 hidden sm:inline">
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70 hidden sm:inline">
             #{rank}
           </span>
-          <h4 className="truncate text-sm sm:text-[15px] font-medium text-slate-900 leading-tight">
+          <h4 className="truncate text-sm sm:text-[15px] font-medium text-foreground leading-tight">
             {result.title}
           </h4>
           {partnerRole && (
@@ -198,18 +198,18 @@ export function CompactCounterpartyRow({
         </div>
 
         {/* Metadata line 1 — description */}
-        <p className="truncate text-xs text-slate-600">{result.description}</p>
+        <p className="truncate text-xs text-muted-foreground">{result.description}</p>
 
         {/* Metadata line 2 — signals */}
-        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <span className="font-mono tabular-nums" title="Match score">
             {scorePct}% match
           </span>
-          <span className="text-slate-300">·</span>
+          <span className="text-muted-foreground/50">·</span>
           <span
             className={cn(
               "font-mono tabular-nums",
-              result.coherence.passed ? "text-emerald-600" : "text-amber-600",
+              result.coherence.passed ? "text-[hsl(var(--emerald))]" : "text-amber-600",
             )}
             title={`Coherence ${coherencePct}%`}
           >
@@ -217,7 +217,7 @@ export function CompactCounterpartyRow({
           </span>
           {result.coherence.factors[0] && (
             <>
-              <span className="text-slate-300 hidden sm:inline">·</span>
+              <span className="text-muted-foreground/50 hidden sm:inline">·</span>
               <span className="hidden sm:inline truncate max-w-[180px]" title={result.coherence.factors.join(", ")}>
                 {result.coherence.factors[0]}
                 {result.coherence.factors.length > 1 && ` +${result.coherence.factors.length - 1}`}
@@ -226,7 +226,7 @@ export function CompactCounterpartyRow({
           )}
           {isWebDiscovered && hasContact && (
             <>
-              <span className="text-slate-300 hidden md:inline">·</span>
+              <span className="text-muted-foreground/50 hidden md:inline">·</span>
               <span className="hidden md:inline-flex items-center gap-1" title="Contact available after match creation">
                 <Mail className="w-3 h-3" />
                 contact
@@ -236,7 +236,7 @@ export function CompactCounterpartyRow({
           {result.whySurfaced && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="hidden lg:inline-flex items-center gap-1 cursor-help text-slate-400">
+                <span className="hidden lg:inline-flex items-center gap-1 cursor-help text-muted-foreground/70">
                   <Lightbulb className="w-3 h-3" />
                 </span>
               </TooltipTrigger>
@@ -256,7 +256,7 @@ export function CompactCounterpartyRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hidden sm:inline-flex text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 hidden sm:inline-flex text-muted-foreground hover:text-foreground"
                 asChild
                 onClick={(e) => e.stopPropagation()}
               >
@@ -275,7 +275,7 @@ export function CompactCounterpartyRow({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 hidden sm:inline-flex text-slate-500 hover:text-slate-900"
+              className="h-8 w-8 p-0 hidden sm:inline-flex text-muted-foreground hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 onFindSimilar?.(result);
@@ -295,7 +295,7 @@ export function CompactCounterpartyRow({
           variant={isSelected ? "default" : "outline"}
           className={cn(
             "h-8 px-3 text-xs font-medium ml-1",
-            isSelected && "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600",
+            isSelected && "bg-[hsl(var(--emerald))] hover:bg-[hsl(var(--emerald))] text-white border-[hsl(var(--emerald)/0.4)]",
           )}
           onClick={(e) => {
             e.stopPropagation();

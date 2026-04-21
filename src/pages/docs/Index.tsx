@@ -74,25 +74,25 @@ export default function DocsIndex() {
             <Link
               key={to}
               to={to}
-              className="group block p-6 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all"
+              className="group block p-6 rounded-xl border border-border bg-card hover:border-border hover:shadow-sm transition-all"
             >
-              <Icon className="h-5 w-5 text-emerald-600 mb-4" strokeWidth={1.75} />
-              <h3 className="text-[15px] font-semibold text-slate-900 mb-1.5 tracking-tight">
+              <Icon className="h-5 w-5 text-[hsl(var(--emerald))] mb-4" strokeWidth={1.75} />
+              <h3 className="text-[15px] font-semibold text-foreground mb-1.5 tracking-tight">
                 {title}
               </h3>
-              <p className="text-[13.5px] text-slate-500 leading-relaxed mb-4">{desc}</p>
-              <span className="inline-flex items-center gap-1 text-[13px] font-medium text-emerald-600 group-hover:gap-1.5 transition-all">
+              <p className="text-[13.5px] text-muted-foreground leading-relaxed mb-4">{desc}</p>
+              <span className="inline-flex items-center gap-1 text-[13px] font-medium text-[hsl(var(--emerald))] group-hover:gap-1.5 transition-all">
                 Open <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </Link>
           ))}
         </div>
 
-        <section className="border-t border-slate-100 pt-12 mb-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
+        <section className="border-t border-border pt-12 mb-16">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-3">
             Core resources
           </h2>
-          <p className="text-slate-500 leading-relaxed mb-6 max-w-2xl">
+          <p className="text-muted-foreground leading-relaxed mb-6 max-w-2xl">
             Every API call manipulates one of four primitives. Read these once and the rest of
             the surface area follows naturally.
           </p>
@@ -101,15 +101,15 @@ export default function DocsIndex() {
               <Link
                 key={to}
                 to={to}
-                className="group block p-5 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all"
+                className="group block p-5 rounded-xl border border-border bg-card hover:border-border transition-all"
               >
                 <div className="flex items-start gap-3">
-                  <Icon className="h-4 w-4 text-slate-400 mt-1 shrink-0" strokeWidth={1.75} />
+                  <Icon className="h-4 w-4 text-muted-foreground/70 mt-1 shrink-0" strokeWidth={1.75} />
                   <div>
-                    <h3 className="text-[14px] font-semibold text-slate-900 mb-1 tracking-tight">
+                    <h3 className="text-[14px] font-semibold text-foreground mb-1 tracking-tight">
                       {title}
                     </h3>
-                    <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
+                    <p className="text-[13px] text-muted-foreground leading-relaxed">{desc}</p>
                   </div>
                 </div>
               </Link>
@@ -117,11 +117,11 @@ export default function DocsIndex() {
           </div>
         </section>
 
-        <section className="border-t border-slate-100 pt-12">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
+        <section className="border-t border-border pt-12">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-3">
             Base URL & versioning
           </h2>
-          <p className="text-slate-500 leading-relaxed mb-3 max-w-2xl">
+          <p className="text-muted-foreground leading-relaxed mb-3 max-w-2xl">
             All endpoints are served from a single base URL. The API is unversioned at the path
             level; backwards-incompatible changes are announced 90 days in advance via the
             developer changelog and your account contact.

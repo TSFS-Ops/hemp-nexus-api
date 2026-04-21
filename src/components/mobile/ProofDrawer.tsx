@@ -83,7 +83,7 @@ export function ProofDrawer({
             "min-h-[48px] font-medium text-sm tracking-tight",
             isDark
               ? "bg-slate-900/85 border border-slate-700 text-slate-100"
-              : "bg-white/85 border border-slate-300 text-slate-900",
+              : "bg-card/85 border border-border text-slate-900",
           ].join(" ")}
           aria-label={triggerLabel}
         >

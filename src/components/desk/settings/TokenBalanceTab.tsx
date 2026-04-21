@@ -86,41 +86,41 @@ export function TokenBalanceTab() {
     <div>
       {/* Balance */}
       <div className="mb-12 md:mb-16">
-        <p className="text-xs font-medium tracking-wider uppercase text-slate-500 mb-3 md:mb-4">
+        <p className="text-xs font-medium tracking-wider uppercase text-muted-foreground mb-3 md:mb-4">
           Current Balance
         </p>
         <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="font-mono text-4xl md:text-6xl font-semibold text-slate-900 tracking-tight">
+          <span className="font-mono text-4xl md:text-6xl font-semibold text-foreground tracking-tight">
             {loading ? "-" : balance?.toLocaleString() ?? "0"}
           </span>
-          <span className="text-base text-slate-500">credits</span>
+          <span className="text-base text-muted-foreground">credits</span>
         </div>
-        <p className="mt-3 md:mt-4 text-sm text-slate-500 leading-relaxed max-w-md">
-          Each Proof of Intent costs <span className="font-mono text-slate-900">1 credit (R10)</span>. Credits never expire.
+        <p className="mt-3 md:mt-4 text-sm text-muted-foreground leading-relaxed max-w-md">
+          Each Proof of Intent costs <span className="font-mono text-foreground">1 credit (R10)</span>. Credits never expire.
         </p>
       </div>
 
       {/* Pricing tiers */}
       <div className="mb-16">
-        <h3 className="text-sm font-medium tracking-wider uppercase text-slate-500 mb-6">
+        <h3 className="text-sm font-medium tracking-wider uppercase text-muted-foreground mb-6">
           Top Up
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {PACKS.map((pack) => (
             <div
               key={pack.name}
-              className="border border-slate-200 rounded-md p-8 hover:border-slate-400 transition-colors flex flex-col"
+              className="border border-border rounded-md p-8 hover:border-slate-400 transition-colors flex flex-col"
             >
-              <p className="text-xs font-medium tracking-wider uppercase text-slate-500 mb-4">
+              <p className="text-xs font-medium tracking-wider uppercase text-muted-foreground mb-4">
                 {pack.name}
               </p>
               <div className="mb-2">
-                <span className="font-mono text-3xl font-semibold text-slate-900 tracking-tight">
+                <span className="font-mono text-3xl font-semibold text-foreground tracking-tight">
                   {pack.price}
                 </span>
               </div>
-              <p className="text-xs font-mono text-slate-400 mb-6">{pack.unit}</p>
-              <p className="text-sm text-slate-500 leading-relaxed mb-8 flex-1">
+              <p className="text-xs font-mono text-muted-foreground/70 mb-6">{pack.unit}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
                 {pack.description}
               </p>
               <button
@@ -129,7 +129,7 @@ export function TokenBalanceTab() {
                   "w-full py-3 rounded-md text-sm font-medium transition-colors",
                   pack.highlight
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border border-slate-300 text-slate-900 hover:border-slate-900",
+                    : "border border-border text-foreground hover:border-slate-900",
                 ].join(" ")}
               >
                 {pack.cta}
@@ -141,69 +141,69 @@ export function TokenBalanceTab() {
 
       {/* Ledger */}
       <div>
-        <h3 className="text-sm font-medium tracking-wider uppercase text-slate-500 mb-6">
+        <h3 className="text-sm font-medium tracking-wider uppercase text-muted-foreground mb-6">
           Recent Activity
         </h3>
 
         {/* Mobile: cardified rows */}
         <div className="md:hidden space-y-3">
           {loading && (
-            <div className="border border-slate-200 rounded-md px-4 py-8 text-sm text-slate-400 text-center">Loading…</div>
+            <div className="border border-border rounded-md px-4 py-8 text-sm text-muted-foreground/70 text-center">Loading…</div>
           )}
           {!loading && ledger.length === 0 && (
-            <div className="border border-slate-200 rounded-md px-4 py-10 text-center">
-              <p className="text-sm text-slate-500">No activity yet.</p>
-              <p className="mt-1 text-xs text-slate-400">Your first Proof of Intent will appear here.</p>
+            <div className="border border-border rounded-md px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground">No activity yet.</p>
+              <p className="mt-1 text-xs text-muted-foreground/70">Your first Proof of Intent will appear here.</p>
             </div>
           )}
           {ledger.map((row) => {
             const burned = Number(row.tokens_burned ?? 0);
             const isBurn = burned > 0;
             return (
-              <div key={row.id} className="border border-slate-200 rounded-md p-4 space-y-2">
+              <div key={row.id} className="border border-border rounded-md p-4 space-y-2">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900 leading-snug">
+                  <p className="text-sm font-medium text-foreground leading-snug">
                     {row.action_type === "purchase"
                       ? "Credits purchased"
                       : isBurn
                         ? "Proof of Intent generated"
                         : (row.action_type ?? "Activity")}
                   </p>
-                  <span className={["text-sm font-mono shrink-0", isBurn ? "text-rose-700" : "text-emerald-700"].join(" ")}>
+                  <span className={["text-sm font-mono shrink-0", isBurn ? "text-rose-700" : "text-[hsl(var(--emerald))]"].join(" ")}>
                     {isBurn ? `-${burned}` : `+${burned || 0}`}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
                   <span>{new Date(row.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                  <span className="text-slate-700">Bal {Number(row.remaining_balance ?? 0).toLocaleString()}</span>
+                  <span className="text-muted-foreground">Bal {Number(row.remaining_balance ?? 0).toLocaleString()}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-mono">Ref {row.id.slice(0, 8)}</p>
+                <p className="text-[10px] text-muted-foreground/70 font-mono">Ref {row.id.slice(0, 8)}</p>
               </div>
             );
           })}
         </div>
 
         {/* Desktop: full table */}
-        <div className="hidden md:block border border-slate-200 rounded-md overflow-hidden">
+        <div className="hidden md:block border border-border rounded-md overflow-hidden">
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="text-left px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-slate-500">Date</th>
-                <th className="text-left px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-slate-500">Description</th>
-                <th className="text-left px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-slate-500">Reference</th>
-                <th className="text-right px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-slate-500">Change</th>
-                <th className="text-right px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-slate-500">Balance</th>
+                <th className="text-left px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">Date</th>
+                <th className="text-left px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">Description</th>
+                <th className="text-left px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">Reference</th>
+                <th className="text-right px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">Change</th>
+                <th className="text-right px-6 py-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">Balance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {loading && (
-                <tr><td colSpan={5} className="px-6 py-8 text-sm text-slate-400 text-center">Loading…</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-sm text-muted-foreground/70 text-center">Loading…</td></tr>
               )}
               {!loading && ledger.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
-                    <p className="text-sm text-slate-500">No activity yet.</p>
-                    <p className="mt-1 text-xs text-slate-400">Your first Proof of Intent will appear here.</p>
+                    <p className="text-sm text-muted-foreground">No activity yet.</p>
+                    <p className="mt-1 text-xs text-muted-foreground/70">Your first Proof of Intent will appear here.</p>
                   </td>
                 </tr>
               )}
@@ -211,24 +211,24 @@ export function TokenBalanceTab() {
                 const burned = Number(row.tokens_burned ?? 0);
                 const isBurn = burned > 0;
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-500 font-mono">
+                  <tr key={row.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-muted-foreground font-mono">
                       {new Date(row.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-900">
+                    <td className="px-6 py-4 text-sm text-foreground">
                       {row.action_type === "purchase"
                         ? "Credits purchased"
                         : isBurn
                           ? "Proof of Intent generated"
                           : (row.action_type ?? "Activity")}
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-400 font-mono">
+                    <td className="px-6 py-4 text-xs text-muted-foreground/70 font-mono">
                       {row.id.slice(0, 8)}
                     </td>
-                    <td className={["px-6 py-4 text-sm text-right font-mono", isBurn ? "text-rose-700" : "text-emerald-700"].join(" ")}>
+                    <td className={["px-6 py-4 text-sm text-right font-mono", isBurn ? "text-rose-700" : "text-[hsl(var(--emerald))]"].join(" ")}>
                       {isBurn ? `-${burned}` : `+${burned || 0}`}
                     </td>
-                    <td className="px-6 py-4 text-sm text-right font-mono text-slate-700">
+                    <td className="px-6 py-4 text-sm text-right font-mono text-muted-foreground">
                       {Number(row.remaining_balance ?? 0).toLocaleString()}
                     </td>
                   </tr>

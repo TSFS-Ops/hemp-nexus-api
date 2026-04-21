@@ -313,7 +313,7 @@ export function AdminHealthMonitor() {
             <div className="flex items-end gap-0.5 h-16 overflow-hidden">
               {history.map((entry, i) => {
                 const barColor =
-                  entry.status === "healthy" ? "bg-emerald-500" :
+                  entry.status === "healthy" ? "bg-[hsl(var(--emerald))]" :
                   entry.status === "degraded" ? "bg-yellow-500" : "bg-destructive";
                 const heightPercent = entry.totalResponseTime > 0
                   ? Math.max(10, Math.min(100, (entry.totalResponseTime / 3000) * 100))

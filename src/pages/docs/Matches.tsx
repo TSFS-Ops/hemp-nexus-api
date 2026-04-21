@@ -60,7 +60,7 @@ export default function DocsMatches() {
         <DocH2 id="create">Create a match</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="POST" />
-          <code className="text-[13.5px] font-mono text-slate-900">/match</code>
+          <code className="text-[13.5px] font-mono text-foreground">/match</code>
         </div>
         <DocP>
           Records bilateral intent. Both parties must already exist as counterparties in your
@@ -97,7 +97,7 @@ export default function DocsMatches() {
         <DocH2 id="retrieve">Retrieve a match</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="GET" />
-          <code className="text-[13.5px] font-mono text-slate-900">/match/:id</code>
+          <code className="text-[13.5px] font-mono text-foreground">/match/:id</code>
         </div>
         <DocP>
           Returns the canonical match record including current state, hash, and embedded
@@ -107,7 +107,7 @@ export default function DocsMatches() {
         <DocH2 id="confirm-intent">Confirm intent</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="POST" />
-          <code className="text-[13.5px] font-mono text-slate-900">/match/:id/settle</code>
+          <code className="text-[13.5px] font-mono text-foreground">/match/:id/settle</code>
         </div>
         <DocP>
           Advances a match to <InlineCode>completed</InlineCode>. This call burns 1 token from
@@ -117,14 +117,14 @@ export default function DocsMatches() {
         <Callout>
           Confirm Intent is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
           until the counterparty has acknowledged the match. See{" "}
-          <a href="/docs/counterparties" className="text-emerald-600 hover:text-emerald-700 font-medium">Counterparties</a>{" "}
+          <a href="/docs/counterparties" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Counterparties</a>{" "}
           for the engagement flow.
         </Callout>
 
         <DocH2 id="list">List matches</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="GET" />
-          <code className="text-[13.5px] font-mono text-slate-900">/matches</code>
+          <code className="text-[13.5px] font-mono text-foreground">/matches</code>
         </div>
         <DocP>
           Paginated. Filter by <InlineCode>status</InlineCode>, <InlineCode>commodity</InlineCode>,

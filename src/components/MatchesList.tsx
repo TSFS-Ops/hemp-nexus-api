@@ -453,7 +453,7 @@ export function MatchesList() {
                 placeholder="Search by commodity..."
                 value={commoditySearch}
                 onChange={(e) => setParam("q", e.target.value)}
-                className="h-9 pl-10 bg-white border-slate-200 text-sm shadow-sm focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                className="h-9 pl-10 bg-white border-slate-200 text-sm shadow-sm focus-visible:ring-emerald-600 focus-visible:border-[hsl(var(--emerald)/0.4)]"
                 aria-label="Search matches by commodity"
               />
             </div>

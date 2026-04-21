@@ -100,26 +100,26 @@ export function NotificationRulesTab() {
   return (
     <div className="max-w-3xl">
       <div className="mb-8 md:mb-10">
-        <h2 className="text-lg md:text-xl font-medium text-slate-900 tracking-tight">
+        <h2 className="text-lg md:text-xl font-medium text-foreground tracking-tight">
           Notification Rules
         </h2>
-        <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-md">
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
           Choose precisely when the desk should reach you by email. All notifications respect quiet hours by default.
         </p>
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 py-8 text-sm text-slate-400">
+        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground/70">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading preferences…
         </div>
       ) : (
-        <ul className="divide-y divide-slate-200 border-y border-slate-200">
+        <ul className="divide-y divide-border border-y border-border">
           {RULES.map((rule) => (
             <li key={rule.key} className="py-5 md:py-6 flex items-start justify-between gap-4 md:gap-8">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900">{rule.title}</p>
-                <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+                <p className="text-sm font-medium text-foreground">{rule.title}</p>
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                   {rule.description}
                 </p>
               </div>
@@ -154,13 +154,13 @@ function Toggle({
       aria-busy={pending}
       className={[
         "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-        on ? "bg-primary" : "bg-slate-200",
+        on ? "bg-primary" : "bg-muted",
         pending ? "opacity-60" : "",
       ].join(" ")}
     >
       <span
         className={[
-          "inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm",
+          "inline-block h-5 w-5 transform rounded-full bg-card transition-transform shadow-sm",
           on ? "translate-x-5" : "translate-x-0.5",
         ].join(" ")}
       />

@@ -100,14 +100,14 @@ function CommandBar() {
         <div className="flex items-center gap-6 min-w-0">
           {/* Wordmark */}
           <Link to="/hq" className="flex items-center gap-2.5 shrink-0">
-            <div className="h-6 w-6 rounded-sm bg-emerald-500 flex items-center justify-center">
-              <span className="text-slate-950 font-bold text-[10px] font-mono">IZ</span>
+            <div className="h-6 w-6 rounded-sm bg-[hsl(var(--emerald))] flex items-center justify-center">
+              <span className="text-foreground font-bold text-[10px] font-mono">IZ</span>
             </div>
             <div className="leading-tight">
               <div className="font-mono text-[11px] tracking-[0.25em] uppercase text-slate-100">
                 Izenzo · Admin
               </div>
-              <div className="font-mono text-[9px] tracking-[0.2em] uppercase text-slate-500">
+              <div className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted-foreground">
                 Platform Administration
               </div>
             </div>
@@ -132,16 +132,16 @@ function CommandBar() {
 
         <div className="flex items-center gap-3 sm:gap-5 shrink-0">
           {/* View public marketing site */}
-          <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-emerald-400 transition-colors" aria-label="Open public marketing site in new tab">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground/70 hover:text-emerald-400 transition-colors" aria-label="Open public marketing site in new tab">
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
             View Public Site
           </a>
 
           <div className="pr-1">
-            <NotificationBell iconClassName="text-slate-300 hover:text-white" />
+            <NotificationBell iconClassName="text-muted-foreground/50 hover:text-white" />
           </div>
 
-          <button onClick={signOut} className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-slate-400 hover:text-slate-100 transition-colors" aria-label="Sign out of admin dashboard">
+          <button onClick={signOut} className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground/70 hover:text-slate-100 transition-colors" aria-label="Sign out of admin dashboard">
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
             Sign out
           </button>
@@ -167,17 +167,17 @@ function TabHeader({
   const meta = TABS.find(t => t.id === id)!;
   const Icon = meta.icon;
   return <div className="flex items-start gap-4 mb-8">
-      <div className="inline-flex items-center justify-center w-10 h-10 rounded-sm border border-slate-200 bg-white shrink-0">
-        <Icon className="h-4 w-4 text-slate-700" strokeWidth={1.5} />
+      <div className="inline-flex items-center justify-center w-10 h-10 rounded-sm border border-border bg-card shrink-0">
+        <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
       </div>
       <div className="min-w-0">
-        <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-1">
+        <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground mb-1">
           Admin · {meta.label}
         </p>
-        <h1 className="text-2xl font-medium text-slate-900 tracking-tight">
+        <h1 className="text-2xl font-medium text-foreground tracking-tight">
           {meta.label}
         </h1>
-        <p className="text-sm text-slate-500 mt-1 max-w-2xl">{meta.blurb}</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">{meta.blurb}</p>
       </div>
     </div>;
 }
@@ -194,9 +194,9 @@ function Surface({
   children: React.ReactNode;
   label?: string;
 }) {
-  return <section className="bg-white border border-slate-200 rounded-sm overflow-hidden">
-      {label && <header className="px-4 sm:px-5 py-3 border-b border-slate-200 bg-slate-50/50">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600 break-words">
+  return <section className="bg-card border border-border rounded-sm overflow-hidden">
+      {label && <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground break-words">
             {label}
           </p>
         </header>}
@@ -225,7 +225,7 @@ function OrganisationsTab() {
   return <>
       <TabHeader id="organisations" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
-        <TabsList className="bg-white border border-slate-200 rounded-sm">
+        <TabsList className="bg-card border border-border rounded-sm">
           <TabsTrigger value="orgs">Organisations</TabsTrigger>
           <TabsTrigger value="entities">Legal Entities</TabsTrigger>
           <TabsTrigger value="kyb">KYB Documents</TabsTrigger>
@@ -262,7 +262,7 @@ function DisputesTab() {
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
-        <TabsList className="bg-white border border-slate-200 rounded-sm">
+        <TabsList className="bg-card border border-border rounded-sm">
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
           <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
         </TabsList>
@@ -285,7 +285,7 @@ function AuditTab() {
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
-        <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
+        <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="event-store">Event Store</TabsTrigger>
@@ -323,7 +323,7 @@ function SettingsTab() {
   return <>
       <TabHeader id="settings" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
-        <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
+        <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="platform">Platform</TabsTrigger>
           <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
           <TabsTrigger value="tokens">Credit Management</TabsTrigger>
@@ -382,23 +382,21 @@ function HQLayout() {
       replace: false
     });
   };
-  return <div className="min-h-screen bg-slate-50" style={{
-    fontFamily: "Inter, sans-serif"
-  }}>
+  return <div className="min-h-screen bg-muted">
       <CommandBar />
 
       {/* Tab rail, replaces the old SecondaryNav. Mirrors the Command Bar's
           horizontal language; sticky so admins always have the four levers in view. */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="bg-card border-b border-border sticky top-0 z-10">
           <div className="px-4 sm:px-6 lg:px-10 overflow-x-auto no-scrollbar">
             <TabsList className="h-12 bg-transparent p-0 gap-6 sm:gap-8 rounded-none">
               {TABS.map(t => {
               const Icon = t.icon;
               return <TabsTrigger key={t.id} value={t.id} className="
                       relative h-12 px-0 rounded-none bg-transparent shrink-0
-                      text-sm text-slate-500 hover:text-slate-900
-                      data-[state=active]:text-slate-900
+                      text-sm text-muted-foreground hover:text-foreground
+                      data-[state=active]:text-foreground
                       data-[state=active]:font-medium
                       data-[state=active]:shadow-none
                       data-[state=active]:bg-transparent
@@ -437,9 +435,7 @@ function HQLayout() {
 // understand the boundary; a manual exit returns them to the persona selector.
 // ─────────────────────────────────────────────────────────────────────────────
 function ForbiddenHQ() {
-  return <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6" style={{
-    fontFamily: "Inter, sans-serif"
-  }}>
+  return <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-md border border-slate-800 bg-slate-900 mb-8">
           <Shield className="h-5 w-5 text-rose-400" strokeWidth={1.5} />
@@ -450,20 +446,20 @@ function ForbiddenHQ() {
         <h1 className="text-3xl font-semibold tracking-tight text-white mb-4">
           Access restricted
         </h1>
-        <p className="text-sm text-slate-400 leading-relaxed mb-10">
+        <p className="text-sm text-muted-foreground/70 leading-relaxed mb-10">
           The Izenzo Admin Dashboard is reserved for the platform operations team. Your account does not carry the
-          <span className="font-mono text-slate-300"> platform_admin </span>
+          <span className="font-mono text-muted-foreground/50"> platform_admin </span>
           role required to enter this area. This attempt has been recorded.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <Link to="/desk" className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-white text-slate-950 hover:bg-slate-200 transition-colors rounded-sm">
+          <Link to="/desk" className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-card text-foreground hover:bg-muted transition-colors rounded-sm">
             Return to Desk
           </Link>
-          <Link to="/welcome" className="px-4 py-2 text-xs font-medium tracking-wide uppercase border border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white transition-colors rounded-sm">
+          <Link to="/welcome" className="px-4 py-2 text-xs font-medium tracking-wide uppercase border border-slate-800 text-muted-foreground/50 hover:border-slate-600 hover:text-white transition-colors rounded-sm">
             Choose workspace
           </Link>
         </div>
-        <p className="mt-12 text-[10px] font-mono tracking-[0.2em] uppercase text-slate-600">
+        <p className="mt-12 text-[10px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
           Access attempt · SHA-256 logged
         </p>
       </div>

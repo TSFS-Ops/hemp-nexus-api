@@ -214,7 +214,7 @@ export function InboundReview() {
   }
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/70" />
       </div>;
   }
   if (isError || !data) {
@@ -224,7 +224,7 @@ export function InboundReview() {
   }
   const alreadyResponded = data.engagementStatus === "accepted" || data.engagementStatus === "declined";
   const canAct = data.callerIsCounterparty && !alreadyResponded;
-  return <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
+  return <div className="fixed inset-y-0 inset-x-0 md:left-[250px] md:right-0 flex flex-col md:flex-row bg-card pb-16 md:pb-0">
       {/* ── LEFT PANE: Review & Action ─────────────────────────── */}
       <motion.section initial={{
       opacity: 0,
@@ -235,10 +235,10 @@ export function InboundReview() {
     }} transition={{
       duration: 0.4,
       ease: "easeOut"
-    }} className="w-full md:w-1/2 flex flex-col md:border-r border-slate-200 bg-white">
+    }} className="w-full md:w-1/2 flex flex-col md:border-r border-border bg-card">
         <div className="flex-1 overflow-y-auto">
           <div className="px-16 pt-12 pb-12 max-w-2xl">
-            <Link to="/desk" className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mb-10">
+            <Link to="/desk" className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-10">
               <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
               Back to Pipeline
             </Link>
@@ -259,35 +259,35 @@ export function InboundReview() {
               </span>
             </div>
 
-            <h1 className="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
+            <h1 className="text-4xl lg:text-5xl font-semibold text-foreground tracking-tight leading-[1.1]">
               Review Trade Intent
             </h1>
-            <p className="mt-6 text-base text-slate-600 leading-relaxed max-w-lg">
-              <span className="text-slate-900 font-medium">{data.initiator}</span> has generated
+            <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-lg">
+              <span className="text-foreground font-medium">{data.initiator}</span> has generated
               a tamper-proofally sealed Proof of Intent and proposed the following terms.
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-slate-500">
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
               <span>
-                <span className="text-slate-400">Ref ·</span> {data.matchRef}
+                <span className="text-muted-foreground/70">Ref ·</span> {data.matchRef}
               </span>
-              <span className="text-slate-300">|</span>
+              <span className="text-muted-foreground/50">|</span>
               <span>
-                <span className="text-slate-400">Received ·</span> {data.receivedAt}
+                <span className="text-muted-foreground/70">Received ·</span> {data.receivedAt}
               </span>
-              <span className="text-slate-300">|</span>
+              <span className="text-muted-foreground/50">|</span>
               <span>
-                <span className="text-slate-400">Expires in ·</span>{" "}
+                <span className="text-muted-foreground/70">Expires in ·</span>{" "}
                 <span className="text-amber-700 font-medium">{data.expiresIn}</span>
               </span>
             </div>
 
             {/* ── Locked Terms ─────────────────────────────── */}
             <section className="relative mt-16">
-              <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+              <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 select-none">
                 01
               </span>
-              <h2 className="text-base font-medium text-slate-900 tracking-tight pb-4 border-b border-slate-200">
+              <h2 className="text-base font-medium text-foreground tracking-tight pb-4 border-b border-border">
                 Proposed Terms
               </h2>
 
@@ -304,28 +304,28 @@ export function InboundReview() {
 
             {/* ── Document Review ──────────────────────────── */}
             <section className="relative mt-16">
-              <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+              <span className="absolute -left-12 top-1.5 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 select-none">
                 02
               </span>
-              <h2 className="text-base font-medium text-slate-900 tracking-tight pb-4 border-b border-slate-200">
+              <h2 className="text-base font-medium text-foreground tracking-tight pb-4 border-b border-border">
                 Attached Evidence
               </h2>
 
-              {data.documents.length === 0 ? <p className="mt-8 text-sm text-slate-500 italic">
+              {data.documents.length === 0 ? <p className="mt-8 text-sm text-muted-foreground italic">
                   No documents attached to this proof of intent.
                 </p> : <ul className="mt-8 space-y-3">
-                  {data.documents.map((d, i) => <li key={i} className="flex items-center gap-4 rounded-md border border-slate-200 bg-white px-4 py-3">
-                      <FileText className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={1.5} />
+                  {data.documents.map((d, i) => <li key={i} className="flex items-center gap-4 rounded-md border border-border bg-card px-4 py-3">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-900 truncate font-medium">{d.name}</p>
-                        <p className="font-mono text-[11px] text-slate-500 truncate">
+                        <p className="text-sm text-foreground truncate font-medium">{d.name}</p>
+                        <p className="font-mono text-[11px] text-muted-foreground truncate">
                           sha256:{d.hash || "-"}
                         </p>
                       </div>
                     </li>)}
                 </ul>}
 
-              {data.documents.length > 0 && <button onClick={() => navigate(`/desk/match/${data.matchId}`)} className="mt-5 inline-flex items-center gap-2 text-xs font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-400 rounded-md px-4 py-2.5 transition-colors">
+              {data.documents.length > 0 && <button onClick={() => navigate(`/desk/match/${data.matchId}`)} className="mt-5 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground border border-border hover:border-slate-400 rounded-md px-4 py-2.5 transition-colors">
                   <Download className="h-3.5 w-3.5" strokeWidth={2} />
                   Open Match Workspace
                 </button>}
@@ -334,7 +334,7 @@ export function InboundReview() {
         </div>
 
         {/* ── Sticky Bilateral Action Footer ────────────────── */}
-        <div className="shrink-0 border-t border-slate-200 bg-white p-6">
+        <div className="shrink-0 border-t border-border bg-card p-6">
           <div className="max-w-2xl mx-auto flex items-stretch gap-4">
             <button onClick={() => respond.mutate("declined")} disabled={!canAct || respond.isPending} className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed">
               {respond.isPending && respond.variables === "declined" ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" strokeWidth={2} />}
@@ -356,7 +356,7 @@ export function InboundReview() {
                 </>}
             </motion.button>
           </div>
-          <p className="mt-3 text-center text-xs text-slate-500 leading-relaxed max-w-xl mx-auto">
+          <p className="mt-3 text-center text-xs text-muted-foreground leading-relaxed max-w-xl mx-auto">
             {canAct ? "Signing this locks the commercial intent bilaterally and submits the payload to the 9-Gate validation engine." : alreadyResponded ? `This engagement has already been ${data.engagementStatus}. No further action required.` : "Only the named counterparty may respond to this engagement."}
           </p>
         </div>
@@ -373,20 +373,20 @@ export function InboundReview() {
       duration: 0.4,
       ease: "easeOut",
       delay: 0.05
-    }} className="hidden md:block w-1/2 bg-slate-50 overflow-hidden">
+    }} className="hidden md:block w-1/2 bg-muted overflow-hidden">
         <div className="h-full p-12 overflow-y-auto flex items-start justify-center">
           <div className="w-full max-w-xl">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-600 mb-4 text-center">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 text-center">
               Inbound · Pending Your Signature
             </p>
 
-            <article className="bg-white rounded-sm shadow-md border border-slate-200 p-12">
-              <header className="text-center pb-8 border-b border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800"> Izenzo Governance Infrastructure, Deal Record </p>
-                <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-slate-900">
+            <article className="bg-card rounded-sm shadow-md border border-border p-12">
+              <header className="text-center pb-8 border-b border-border">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
+                <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">
                   Certificate of Intent
                 </h2>
-                <p className="mt-3 font-mono text-[11px] text-slate-600">Ref · {data.matchRef}</p>
+                <p className="mt-3 font-mono text-[11px] text-muted-foreground">Ref · {data.matchRef}</p>
               </header>
 
               <dl className="py-8 space-y-1">
@@ -398,59 +398,59 @@ export function InboundReview() {
                 <CertRow label="Notional" value={notional} mono />
               </dl>
 
-              {data.notes && <div className="border-t border-slate-200 py-6">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+              {data.notes && <div className="border-t border-border py-6">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     Notes
                   </p>
-                  <p className="text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {data.notes}
                   </p>
                 </div>}
 
-              {data.documents.length > 0 && <div className="py-6 border-t border-slate-200">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+              {data.documents.length > 0 && <div className="py-6 border-t border-border">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     Attached Evidence
                   </p>
                   <ul className="space-y-2">
                     {data.documents.map((d, i) => <li key={i} className="flex items-baseline gap-3">
-                        <span className="font-mono text-[10px] text-slate-600 shrink-0">
+                        <span className="font-mono text-[10px] text-muted-foreground shrink-0">
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-900 truncate font-medium">{d.name}</p>
-                          <p className="font-mono text-[10px] text-slate-600 truncate">{d.hash || "-"}</p>
+                          <p className="text-xs text-foreground truncate font-medium">{d.name}</p>
+                          <p className="font-mono text-[10px] text-muted-foreground truncate">{d.hash || "-"}</p>
                         </div>
                       </li>)}
                   </ul>
                 </div>}
 
               {/* ── Asymmetric Seal Section ─────────────────── */}
-              <div className="mt-2 pt-6 border-t border-slate-200">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
+              <div className="mt-2 pt-6 border-t border-border">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
                   Bilateral Tamper-Proof Seal
                 </p>
 
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between gap-4">
-                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-700">
+                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
                       Initiator · {data.initiator}
                     </p>
-                    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.2em] text-emerald-700 font-medium">
+                    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.2em] text-[hsl(var(--emerald))] font-medium">
                       <Check className="h-3 w-3" strokeWidth={3} />
                       SEALED
                     </span>
                   </div>
-                  <p className="font-mono text-[11px] leading-relaxed break-all text-slate-900">
+                  <p className="font-mono text-[11px] leading-relaxed break-all text-foreground">
                     {data.initiatorHash}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-dashed border-slate-200 space-y-3">
+                <div className="mt-6 pt-5 border-t border-dashed border-border space-y-3">
                   <div className="flex items-baseline justify-between gap-4">
-                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-700">
+                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
                       Counterparty · You
                     </p>
-                    <span className={`font-mono text-[10px] tracking-[0.2em] font-medium ${alreadyResponded ? "text-slate-500" : "text-amber-700"}`}>
+                    <span className={`font-mono text-[10px] tracking-[0.2em] font-medium ${alreadyResponded ? "text-muted-foreground" : "text-amber-700"}`}>
                       {alreadyResponded ? data.engagementStatus?.toUpperCase() : "AWAITING"}
                     </span>
                   </div>
@@ -468,14 +468,14 @@ export function InboundReview() {
                 </div>
               </div>
 
-              <footer className="mt-8 pt-6 border-t border-slate-200 text-center">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-700">
+              <footer className="mt-8 pt-6 border-t border-border text-center">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   {alreadyResponded ? "Engagement Closed" : "Half-Sealed · Binding Upon Counter-signature"}
                 </p>
               </footer>
             </article>
 
-            <p className="mt-6 text-center text-[11px] text-slate-600 leading-relaxed">
+            <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed">
               Counter-signing triggers the 9-Gate validation engine and releases the trade to
               governance.
             </p>
@@ -499,10 +499,10 @@ function LockedField({
   wide?: boolean;
 }) {
   return <div className={wide ? "col-span-2" : ""}>
-      <dt className="block text-[11px] font-mono tracking-[0.2em] uppercase text-slate-500 mb-2">
+      <dt className="block text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground mb-2">
         {label}
       </dt>
-      <dd className={`text-base text-slate-900 font-medium leading-relaxed ${mono ? "font-mono tracking-wide" : ""}`}>
+      <dd className={`text-base text-foreground font-medium leading-relaxed ${mono ? "font-mono tracking-wide" : ""}`}>
         {value}
       </dd>
     </div>;
@@ -517,10 +517,10 @@ function CertRow({
   mono?: boolean;
 }) {
   return <div className="flex items-baseline gap-4 -mx-2 px-2 py-2 rounded-sm">
-      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
+      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground w-32 shrink-0">
         {label}
       </dt>
-      <dd className={`flex-1 text-sm text-slate-900 font-medium ${mono ? "font-mono" : ""}`}>
+      <dd className={`flex-1 text-sm text-foreground font-medium ${mono ? "font-mono" : ""}`}>
         {value}
       </dd>
     </div>;

@@ -45,11 +45,11 @@ const HASH_VALUE = "0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d
 function PayloadToHash() {
   return <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-center">
       {/* Canonical JSON payload */}
-      <div className="rounded-xl bg-slate-50/60 ring-1 ring-slate-100 p-5 font-mono text-[11px] leading-relaxed text-slate-700 overflow-hidden">
-        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-400 mb-3">
+      <div className="rounded-xl bg-muted/60 ring-1 ring-slate-100 p-5 font-mono text-[11px] leading-relaxed text-muted-foreground overflow-hidden">
+        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70 mb-3">
           Canonical Payload
         </p>
-        <pre className="whitespace-pre overflow-hidden text-slate-800">
+        <pre className="whitespace-pre overflow-hidden text-foreground">
 {`{
   "match_id": "a1b2c3d4-...",
   "counterparty": "Glencore Intl",
@@ -67,23 +67,23 @@ function PayloadToHash() {
       <div className="flex lg:flex-col items-center justify-center gap-2">
         <div className="flex items-center gap-2">
           <div className="h-px w-10 lg:w-px lg:h-10 bg-emerald-200" />
-          <div className="h-7 w-7 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center shrink-0">
-            <Hash className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2} />
+          <div className="h-7 w-7 rounded-full bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-200 flex items-center justify-center shrink-0">
+            <Hash className="h-3.5 w-3.5 text-[hsl(var(--emerald))]" strokeWidth={2} />
           </div>
           <div className="h-px w-10 lg:w-px lg:h-10 bg-emerald-200" />
         </div>
-        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-emerald-700">
+        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
           SHA-256
         </p>
       </div>
 
       {/* Deterministic hash output */}
       <div className="rounded-xl bg-slate-900 ring-1 ring-slate-800 p-5 font-mono text-[11px] leading-relaxed text-emerald-300 break-all">
-        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-500 mb-3">
+        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-3">
           Deterministic Seal
         </p>
         <p className="text-emerald-300">{HASH_VALUE}</p>
-        <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-500">
+        <div className="mt-4 flex items-center gap-2 text-[10px] text-muted-foreground">
           <Lock className="h-3 w-3" strokeWidth={2} />
           <span className="font-mono tracking-wider">Immutable · 256-bit</span>
         </div>
@@ -113,7 +113,7 @@ const EXPORT_FORMATS = [{
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function AuditLedgerProductPage() {
-  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-card text-foreground antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -133,8 +133,8 @@ export default function AuditLedgerProductPage() {
               y: 0
             }} transition={{
               duration: 0.6
-            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />
                 Audit Ledger
               </motion.p>
 
@@ -147,7 +147,7 @@ export default function AuditLedgerProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.05
-            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
+            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-foreground">
                 Immutable ledger
                 <br />
                 for trade finance.
@@ -162,7 +162,7 @@ export default function AuditLedgerProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.1
-            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
+            }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 Provide banks, DFIs, and insurers with mathematically provable
                 deal records. Eliminate manual auditing, eradicate fraud, and
                 accelerate capital deployment.
@@ -178,11 +178,11 @@ export default function AuditLedgerProductPage() {
               duration: 0.7,
               delay: 0.18
             }} className="mt-12 flex flex-wrap items-center gap-4">
-                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] hover:shadow-emerald-700/30 transition-all">
                   Issue your first ledger
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link to="/docs" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
+                <Link to="/docs" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">
                   Read the spec
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
@@ -195,7 +195,7 @@ export default function AuditLedgerProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.3
-            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
                 SHA-256 sealed · 9-gate verified · Bank-ready exports
               </motion.p>
             </div>
@@ -221,7 +221,7 @@ export default function AuditLedgerProductPage() {
                 background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
               }} />
                 {/* Masked container — locks height + fades the long doc, scrolled to surface the WaD seal */}
-                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-white">
+                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-card">
                   <div className="absolute inset-x-0 -top-[260px]">
                     <EvidencePackView demoMode />
                   </div>
@@ -237,22 +237,22 @@ export default function AuditLedgerProductPage() {
       </section>
 
       {/* ════════════════ FINAL CTA ════════════════ */}
-      <section className="relative bg-white">
+      <section className="relative bg-card">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground max-w-3xl mx-auto">
             Stop auditing paperwork.
             <br />
-            <span className="text-emerald-700">Start verifying mathematics.</span>
+            <span className="text-[hsl(var(--emerald))]">Start verifying mathematics.</span>
           </h2>
-          <p className="mt-8 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-8 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             The Audit Ledger is included with every Izenzo Trade Desk seat.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] transition-all">
               Open your desk
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>
-            <Link to="/pricing" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
+            <Link to="/pricing" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">
               See pricing
               <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
             </Link>

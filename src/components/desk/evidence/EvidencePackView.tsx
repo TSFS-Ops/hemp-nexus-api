@@ -292,7 +292,7 @@ export function EvidencePackView({
   // ── Loading ──
   if (loading) {
     return <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-300">
+        <div className="flex items-center gap-3 text-muted-foreground/50">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="font-mono text-xs tracking-[0.3em] uppercase">Sealing evidence…</span>
         </div>
@@ -302,9 +302,9 @@ export function EvidencePackView({
   // ── Error / empty ──
   if (error || !pack) {
     return <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center p-8">
-        <div className="max-w-md text-center text-slate-300">
+        <div className="max-w-md text-center text-muted-foreground/50">
           <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-amber-400" />
-          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-2">
             Evidence Unavailable
           </p>
           <p className="text-sm">{error || "No pack could be assembled for this match."}</p>
@@ -317,18 +317,18 @@ export function EvidencePackView({
   return <div className={demoMode ? "relative w-full bg-slate-900 py-10 px-6 rounded-2xl overflow-hidden" : "min-h-screen w-full bg-slate-900 py-16 px-6 lg:px-12"}>
       {/* Vault header strip */}
       <div className="max-w-[920px] mx-auto mb-10 flex items-center justify-between">
-        {demoMode ? <span className="flex items-center gap-3 text-slate-400">
+        {demoMode ? <span className="flex items-center gap-3 text-muted-foreground/70">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
               Audit Ledger · Immutable Record
             </span>
-          </span> : <Link to="/desk/deals" className="flex items-center gap-3 text-slate-400 hover:text-slate-200 transition-colors">
+          </span> : <Link to="/desk/deals" className="flex items-center gap-3 text-muted-foreground/70 hover:text-slate-200 transition-colors">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
               Audit Ledger · Immutable Record
             </span>
           </Link>}
-        <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+        <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
           REF · {matchId.slice(0, 8).toUpperCase()}
         </span>
       </div>
@@ -342,25 +342,25 @@ export function EvidencePackView({
     }} transition={{
       duration: 0.9,
       ease: [0.16, 1, 0.3, 1]
-    }} className="relative max-w-[920px] mx-auto bg-white rounded-none shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)]" style={{
+    }} className="relative max-w-[920px] mx-auto bg-card rounded-none shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)]" style={{
       boxShadow: "0 0 0 1px hsl(215 16% 85%), 0 0 0 4px white, 0 0 0 5px hsl(215 16% 85%), 0 40px 120px -30px rgba(0,0,0,0.6)"
     }}>
         <div className="p-10 sm:p-14 lg:p-16">
           {/* Header row */}
-          <header className="flex items-start justify-between gap-8 pb-10 border-b border-slate-200">
+          <header className="flex items-start justify-between gap-8 pb-10 border-b border-border">
             <div>
-              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-900 font-medium">
+              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-foreground font-medium">
                 Izenzo Governance Infrastructure
               </p>
-              <p className="mt-1 font-mono text-[9px] tracking-[0.25em] uppercase text-slate-400">
+              <p className="mt-1 font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70">
                 Without-a-Doubt · Issuance Authority
               </p>
             </div>
             <div className="text-right">
-              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-400">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70">
                 Match UUID
               </p>
-              <p className="mt-1 font-mono text-[10px] text-slate-900 break-all max-w-[260px]">
+              <p className="mt-1 font-mono text-[10px] text-foreground break-all max-w-[260px]">
                 {matchId}
               </p>
             </div>
@@ -368,8 +368,8 @@ export function EvidencePackView({
 
           {/* Title + seal */}
           <div className="py-14 text-center">
-            <p className="font-mono text-[10px] tracking-[0.4em] uppercase text-slate-400 mb-4"> Certificate Class, WaD/A </p>
-            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-[0.2em] uppercase leading-tight">
+            <p className="font-mono text-[10px] tracking-[0.4em] uppercase text-muted-foreground/70 mb-4"> Certificate Class, WaD/A </p>
+            <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-[0.2em] uppercase leading-tight">
               Attestation of
               <br />
               Commercial Intent
@@ -417,32 +417,32 @@ export function EvidencePackView({
           </div>
 
           {/* Verified terms grid */}
-          <section className="pt-4 pb-10 border-t border-slate-200">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-6">
+          <section className="pt-4 pb-10 border-t border-border">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-6">
               I · Verified Commercial Terms
             </p>
-            {terms.length === 0 ? <p className="text-sm italic text-slate-500">
+            {terms.length === 0 ? <p className="text-sm italic text-muted-foreground">
                 No commercial terms have been recorded against this match.
               </p> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
-                {terms.map(t => <div key={t.label} className="border-b border-slate-100 pb-3">
-                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-400">
+                {terms.map(t => <div key={t.label} className="border-b border-border pb-3">
+                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
                       {t.label}
                     </p>
-                    <p className="mt-1 text-sm text-slate-900 font-medium break-words">{t.value}</p>
+                    <p className="mt-1 text-sm text-foreground font-medium break-words">{t.value}</p>
                   </div>)}
               </div>}
           </section>
 
           {/* 9-Gate audit trail (real progression) */}
-          <section className="pt-10 pb-4 border-t border-slate-200">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-6">
+          <section className="pt-10 pb-4 border-t border-border">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-6">
               II · 9-Gate Tamper-Proof Proof
             </p>
             <ul className="space-y-3">
               {gates.map((gate, idx) => {
               const isVerified = gate.status === "verified";
               const colour = isVerified ? "hsl(155 35% 28%)" : "hsl(215 16% 70%)";
-              return <li key={gate.id} className="flex items-start gap-4 py-2 border-b border-slate-100 last:border-b-0">
+              return <li key={gate.id} className="flex items-start gap-4 py-2 border-b border-border last:border-b-0">
                     <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full shrink-0" style={{
                   backgroundColor: isVerified ? colour : "transparent",
                   border: `1px solid ${colour}`
@@ -453,20 +453,20 @@ export function EvidencePackView({
                     </span>
                     <div className="flex-1 min-w-0 grid grid-cols-12 gap-3 items-center">
                       <div className="col-span-12 sm:col-span-4">
-                        <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-900 font-medium">
+                        <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-foreground font-medium">
                           {gate.id}
                         </p>
                       </div>
                       <div className="col-span-12 sm:col-span-4">
-                        <p className="text-[11px] text-slate-600">{gate.label}</p>
+                        <p className="text-[11px] text-muted-foreground">{gate.label}</p>
                       </div>
                       <div className="col-span-12 sm:col-span-4 text-right">
-                        <p className="font-mono text-[8px] text-slate-400 break-all">
+                        <p className="font-mono text-[8px] text-muted-foreground/70 break-all">
                           {gate.hash ? gate.hash.slice(0, 40) : isVerified ? "verified" : "pending"}
                         </p>
                       </div>
                     </div>
-                    <span className="font-mono text-[8px] text-slate-300 tabular-nums shrink-0">
+                    <span className="font-mono text-[8px] text-muted-foreground/50 tabular-nums shrink-0">
                       {String(idx + 1).padStart(2, "0")}/09
                     </span>
                   </li>;
@@ -475,24 +475,24 @@ export function EvidencePackView({
           </section>
 
           {/* Integrity footer */}
-          <footer className="mt-12 pt-8 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <footer className="mt-12 pt-8 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div>
-              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
+              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-2">
                 Payload Hash ({pack.hashAlgorithm})
               </p>
-              <p className="font-mono text-[10px] text-slate-900 break-all">{payloadHash}</p>
-              <button type="button" onClick={() => setInspectorOpen(true)} className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-mono text-[10px] tracking-[0.2em] uppercase transition-colors">
+              <p className="font-mono text-[10px] text-foreground break-all">{payloadHash}</p>
+              <button type="button" onClick={() => setInspectorOpen(true)} className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-mono text-[10px] tracking-[0.2em] uppercase transition-colors">
                 <FileSearch className="h-3 w-3" strokeWidth={1.75} />
                 Verify Record Integrity
               </button>
             </div>
             <div className="sm:text-right">
-              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-2">
+              <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-2">
                 Issuance Authority
               </p>
-              <p className="text-sm text-slate-900 font-medium"> Izenzo Governor, {pack.signatureValidation.signatureKeyId || "Unsigned"}
+              <p className="text-sm text-foreground font-medium"> Izenzo Governor, {pack.signatureValidation.signatureKeyId || "Unsigned"}
               </p>
-              <p className="font-mono text-[10px] text-slate-500 mt-1">
+              <p className="font-mono text-[10px] text-muted-foreground mt-1">
                 Source · {pack.timestampMetadata.timestampSource}
               </p>
             </div>
@@ -504,25 +504,25 @@ export function EvidencePackView({
       <Dialog open={inspectorOpen} onOpenChange={setInspectorOpen}>
         <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 text-slate-100 p-0 gap-0 max-h-[90vh] flex flex-col">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-800">
-            <DialogTitle className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-300">
+            <DialogTitle className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground/50">
               Integrity Inspector · Canonical Payload
             </DialogTitle>
-            <DialogDescription className="text-slate-400 text-[12px] leading-relaxed pt-2">
+            <DialogDescription className="text-muted-foreground/70 text-[12px] leading-relaxed pt-2">
               This JSON object is the immutable input for the SHA-256 algorithm. You can copy this payload and run it through any independent hashing utility (e.g.{" "}
-              <span className="font-mono text-slate-300">sha256sum</span>,{" "}
-              <span className="font-mono text-slate-300">openssl dgst -sha256</span>) to verify it matches the Seal Hash above.
+              <span className="font-mono text-muted-foreground/50">sha256sum</span>,{" "}
+              <span className="font-mono text-muted-foreground/50">openssl dgst -sha256</span>) to verify it matches the Seal Hash above.
             </DialogDescription>
           </DialogHeader>
 
           <div className="px-6 py-4 border-b border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-500 mb-1">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-1">
                 Algorithm
               </p>
               <p className="font-mono text-[11px] text-slate-200">{pack.hashAlgorithm}</p>
             </div>
             <div>
-              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-500 mb-1">
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-1">
                 Seal Hash
               </p>
               <p className="font-mono text-[10px] text-emerald-400 break-all">{payloadHash}</p>
@@ -536,10 +536,10 @@ export function EvidencePackView({
           </div>
 
           <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
-            <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-slate-500">
+            <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted-foreground">
               {canonicalPayload.length.toLocaleString()} bytes · deterministic input
             </p>
-            <button type="button" onClick={handleCopyPayload} className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-slate-100 hover:bg-white text-slate-900 font-mono text-[10px] tracking-[0.2em] uppercase transition-colors">
+            <button type="button" onClick={handleCopyPayload} className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-muted hover:bg-card text-foreground font-mono text-[10px] tracking-[0.2em] uppercase transition-colors">
               <Copy className="h-3 w-3" strokeWidth={2} />
               Copy Payload
             </button>

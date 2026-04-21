@@ -49,9 +49,9 @@ const bandStyles: Record<StrengthBand, { bar: string; text: string; dot: string 
     dot: "bg-amber-500",
   },
   strong: {
-    bar: "bg-emerald-600",
-    text: "text-emerald-700 dark:text-emerald-400",
-    dot: "bg-emerald-600",
+    bar: "bg-[hsl(var(--emerald))]",
+    text: "text-[hsl(var(--emerald))] dark:text-emerald-400",
+    dot: "bg-[hsl(var(--emerald))]",
   },
 };
 

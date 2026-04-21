@@ -20,7 +20,7 @@ const ENTITIES: Entity[] = [
 ];
 
 function kycTone(s: Entity["kyc"]) {
-  if (s === "verified") return "text-emerald-900 bg-emerald-50 ring-emerald-200";
+  if (s === "verified") return "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))] ring-emerald-200";
   if (s === "pending")  return "text-amber-900 bg-amber-50 ring-amber-200";
   if (s === "expired")  return "text-rose-800 bg-rose-50 ring-rose-200";
   return "text-rose-800 bg-rose-50 ring-rose-200";
@@ -28,46 +28,46 @@ function kycTone(s: Entity["kyc"]) {
 function riskTone(score: number) {
   if (score >= 70) return "text-rose-700";
   if (score >= 40) return "text-amber-700";
-  return "text-emerald-700";
+  return "text-[hsl(var(--emerald))]";
 }
 
 export function EntityList() {
   return (
     <section>
-      <div className="flex items-baseline justify-between pb-3 border-b border-slate-200 mb-0">
-        <h2 className="text-base font-medium text-slate-900 tracking-tight">Verified Entities</h2>
-        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+      <div className="flex items-baseline justify-between pb-3 border-b border-border mb-0">
+        <h2 className="text-base font-medium text-foreground tracking-tight">Verified Entities</h2>
+        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
           {ENTITIES.filter(e => e.kyc === "verified").length} cleared · {ENTITIES.length} total
         </p>
       </div>
 
-      <ul className="divide-y divide-slate-100 border border-slate-200 border-t-0 bg-white">
+      <ul className="divide-y divide-border border border-border border-t-0 bg-card">
         {ENTITIES.map((e) => (
-          <li key={e.id} className="grid grid-cols-[160px_1fr_120px_120px_120px_90px] gap-5 items-center px-5 py-4 hover:bg-slate-50/60 transition-colors">
+          <li key={e.id} className="grid grid-cols-[160px_1fr_120px_120px_120px_90px] gap-5 items-center px-5 py-4 hover:bg-muted/60 transition-colors">
             <div>
-              <p className="font-mono text-[11px] tracking-wider text-slate-900">{e.id}</p>
-              <p className="font-mono text-[10px] text-slate-500 mt-0.5">{e.jurisdiction} · {e.registration}</p>
+              <p className="font-mono text-[11px] tracking-wider text-foreground">{e.id}</p>
+              <p className="font-mono text-[10px] text-muted-foreground mt-0.5">{e.jurisdiction} · {e.registration}</p>
             </div>
             <div className="min-w-0">
-              <p className="text-sm text-slate-900 truncate">{e.legalName}</p>
-              <p className="font-mono text-[10px] text-slate-500 mt-0.5">last reviewed {e.lastReview}</p>
+              <p className="text-sm text-foreground truncate">{e.legalName}</p>
+              <p className="font-mono text-[10px] text-muted-foreground mt-0.5">last reviewed {e.lastReview}</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">KYC</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">KYC</p>
               <span className={`mt-1 inline-block font-mono text-[9px] tracking-[0.2em] uppercase font-medium px-2 py-1 rounded-sm ring-1 ${kycTone(e.kyc)}`}>
                 {e.kyc}
               </span>
             </div>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">UBO</p>
-              <p className="font-mono text-[12px] text-slate-900 mt-1.5">{e.ubo.resolved}/{e.ubo.required} resolved</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">UBO</p>
+              <p className="font-mono text-[12px] text-foreground mt-1.5">{e.ubo.resolved}/{e.ubo.required} resolved</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Authority</p>
-              <p className="font-mono text-[12px] text-slate-900 mt-1.5 capitalize">{e.authority}</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Authority</p>
+              <p className="font-mono text-[12px] text-foreground mt-1.5 capitalize">{e.authority}</p>
             </div>
             <div className="text-right">
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Risk</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Risk</p>
               <p className={`font-mono text-base mt-0.5 ${riskTone(e.riskScore)}`}>{e.riskScore}</p>
             </div>
           </li>

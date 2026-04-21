@@ -66,16 +66,16 @@ function CertificateMockup() {
       <div aria-hidden className="absolute -inset-6 -z-10 rounded-[28px] blur-3xl opacity-60" style={{
       background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
     }} />
-      <article className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 overflow-hidden">
+      <article className="bg-card rounded-2xl shadow-2xl ring-1 ring-slate-900/5 overflow-hidden">
         {/* Header bar */}
-        <header className="px-10 pt-9 pb-6 border-b border-slate-100 text-center">
-          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-700">
+        <header className="px-10 pt-9 pb-6 border-b border-border text-center">
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[hsl(var(--emerald))]">
             Izenzo · Trade Desk
           </p>
-          <h3 className="mt-3 text-xl font-semibold text-slate-900 tracking-tight">
+          <h3 className="mt-3 text-xl font-semibold text-foreground tracking-tight">
             Certificate of Intent
           </h3>
-          <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+          <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
             Match · A1B2C3D4 · WaD/A v1.2
           </p>
         </header>
@@ -91,15 +91,15 @@ function CertificateMockup() {
           <Row label="Incoterms" value={DEMO_COMPILER_TERMS.incoterms} />
 
           {/* Documents */}
-          <div className="pt-4 border-t border-slate-100">
-            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500 mb-3">
+          <div className="pt-4 border-t border-border">
+            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-3">
               Bound Evidence · {docCount} files
             </p>
             <ul className="space-y-2">
-              {DEMO_COMPILER_DOCS.map(d => <li key={d.name} className="flex items-center gap-3 text-[12px] text-slate-700">
-                  <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={1.75} />
+              {DEMO_COMPILER_DOCS.map(d => <li key={d.name} className="flex items-center gap-3 text-[12px] text-muted-foreground">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" strokeWidth={1.75} />
                   <span className="truncate flex-1">{d.name}</span>
-                  <span className="font-mono text-[10px] text-slate-400">
+                  <span className="font-mono text-[10px] text-muted-foreground/70">
                     {d.hash.slice(0, 8)}…
                   </span>
                 </li>)}
@@ -108,16 +108,16 @@ function CertificateMockup() {
         </div>
 
         {/* Seal footer */}
-        <footer className="px-10 py-6 bg-slate-50/60 border-t border-slate-100">
+        <footer className="px-10 py-6 bg-muted/60 border-t border-border">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 h-8 w-8 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center shrink-0">
-              <Lock className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2} />
+            <div className="mt-0.5 h-8 w-8 rounded-full bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-200 flex items-center justify-center shrink-0">
+              <Lock className="h-3.5 w-3.5 text-[hsl(var(--emerald))]" strokeWidth={2} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-600">
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
                 SHA-256 Tamper-Proof Seal
               </p>
-              <p className="mt-1 font-mono text-[11px] text-slate-900 break-all leading-relaxed">
+              <p className="mt-1 font-mono text-[11px] text-foreground break-all leading-relaxed">
                 {DEMO_COMPILER_SEAL}
               </p>
             </div>
@@ -136,10 +136,10 @@ function Row({
   mono?: boolean;
 }) {
   return <div>
-      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
         {label}
       </p>
-      <p className={`mt-1 text-[14px] text-slate-900 ${mono ? "font-mono tabular-nums" : "font-medium"}`}>
+      <p className={`mt-1 text-[14px] text-foreground ${mono ? "font-mono tabular-nums" : "font-medium"}`}>
         {value}
       </p>
     </div>;
@@ -164,15 +164,15 @@ function NineGateProtocol() {
       duration: 0.4
     }} className="flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-emerald-700/70 w-6">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[hsl(var(--emerald))]/70 w-6">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <div className="h-6 w-6 rounded-full bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2} />
+            <div className="h-6 w-6 rounded-full bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-200 flex items-center justify-center">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--emerald))]" strokeWidth={2} />
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] text-slate-800 font-medium">{gate}</p>
+            <p className="text-[13px] text-foreground font-medium">{gate}</p>
           </div>
           <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-transparent" />
         </motion.div>)}
@@ -214,12 +214,12 @@ function TelemetryFeed() {
       delay: i * 0.08
     }} className="flex items-center gap-3 text-[12px] font-mono">
           <span className="relative flex h-1.5 w-1.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-600" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--emerald))] opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[hsl(var(--emerald))]" />
           </span>
-          <span className="text-slate-400 tabular-nums">{p.t}</span>
-          <span className="text-slate-900 truncate flex-1">{p.evt}</span>
-          <span className="text-slate-500">{p.org}</span>
+          <span className="text-muted-foreground/70 tabular-nums">{p.t}</span>
+          <span className="text-foreground truncate flex-1">{p.evt}</span>
+          <span className="text-muted-foreground">{p.org}</span>
         </motion.div>)}
     </div>;
 }
@@ -227,7 +227,7 @@ function TelemetryFeed() {
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
 
 export default function TradeDeskProductPage() {
-  return <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+  return <div className="min-h-screen bg-card text-foreground antialiased font-sans">
       <PublicHeader />
 
       {/* ════════════════════════ HERO ════════════════════════ */}
@@ -247,8 +247,8 @@ export default function TradeDeskProductPage() {
               y: 0
             }} transition={{
               duration: 0.6
-            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />
                 Trade Desk
               </motion.p>
 
@@ -261,7 +261,7 @@ export default function TradeDeskProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.05
-            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-slate-900">
+            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-foreground">
                 Governance infrastructure
                 <br />
                 for the deal maker.
@@ -276,7 +276,7 @@ export default function TradeDeskProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.1
-            }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
+            }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 The all-in-one terminal for institutional commodity trade. Discover
                 counterparties, run compliance, and seal cross-border deals with
                 tamper-proof Proof of Intent.
@@ -292,11 +292,11 @@ export default function TradeDeskProductPage() {
               duration: 0.7,
               delay: 0.18
             }} className="mt-12 flex flex-wrap items-center gap-4">
-                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-700/30 transition-all">
+                <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] hover:shadow-emerald-700/30 transition-all">
                   Open your desk
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
                 </Link>
-                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
+                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">
                   See pricing
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
@@ -309,7 +309,7 @@ export default function TradeDeskProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.3
-            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-slate-500">
+            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
                 SHA-256 sealed · 9-gate verified · Audit-ready
               </motion.p>
             </div>
@@ -323,33 +323,33 @@ export default function TradeDeskProductPage() {
       </section>
 
       {/* ═══════════════════ FEATURE BENTO ═══════════════════ */}
-      <section className="relative bg-slate-50/40 border-y border-slate-100">
+      <section className="relative bg-muted/40 border-y border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44">
           <div className="max-w-2xl mb-20 lg:mb-28">
-            <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-emerald-700">
+            <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
               The system
             </p>
-            <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+            <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
               Precision-engineered for institutional throughput.
             </h2>
-            <p className="mt-6 text-lg text-slate-600 leading-relaxed"> Three primitives (verification, compliance, and telemetry) composed into a single cohesive workspace. </p>
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Three primitives (verification, compliance, and telemetry) composed into a single cohesive workspace. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Box 1, Large, spans 2 cols */}
-            <div className="lg:col-span-2 lg:row-span-1 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
+            <div className="lg:col-span-2 lg:row-span-1 rounded-2xl bg-card ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                  <ShieldCheck className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
+                  <ShieldCheck className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
                 </div>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Box 01 · Protocol
                 </p>
               </div>
-              <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-slate-900">
+              <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-foreground">
                 The 9-Gate Protocol.
               </h3>
-              <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> Every Proof of Intent traverses nine tamper-proof gates before it seals, entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> Every Proof of Intent traverses nine tamper-proof gates before it seals, entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
 
               <div className="mt-12">
                 <NineGateProtocol />
@@ -357,50 +357,50 @@ export default function TradeDeskProductPage() {
             </div>
 
             {/* Box 2, KYB */}
-            <div className="rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 shadow-sm flex flex-col">
+            <div className="rounded-2xl bg-card ring-1 ring-slate-900/5 p-10 shadow-sm flex flex-col">
               <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
                 </div>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   Box 02 · Compliance
                 </p>
               </div>
-              <h3 className="text-2xl font-semibold tracking-tighter text-slate-900">
+              <h3 className="text-2xl font-semibold tracking-tighter text-foreground">
                 KYB integrated.
               </h3>
-              <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
+              <p className="mt-3 text-[15px] text-muted-foreground leading-relaxed">
                 Your Compliance Profile feeds directly into every deal. No second
                 onboarding, no duplicate evidence.
               </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {["Entity verification", "Beneficial-owner disclosure", "Sanctions & PEP screening", "Jurisdiction residency lock"].map(c => <li key={c} className="flex items-center gap-3 text-slate-700">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={2} />
+                {["Entity verification", "Beneficial-owner disclosure", "Sanctions & PEP screening", "Jurisdiction residency lock"].map(c => <li key={c} className="flex items-center gap-3 text-muted-foreground">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--emerald))] shrink-0" strokeWidth={2} />
                     {c}
                   </li>)}
               </ul>
             </div>
 
             {/* Box 3, Telemetry */}
-            <div className="lg:col-span-3 rounded-2xl bg-white ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
+            <div className="lg:col-span-3 rounded-2xl bg-card ring-1 ring-slate-900/5 p-10 lg:p-14 shadow-sm">
               <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <div>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-8 w-8 rounded-md bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-                      <Activity className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+                    <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-[hsl(var(--emerald))]" strokeWidth={2} />
                     </div>
-                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500">
+                    <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                       Box 03 · Observability
                     </p>
                   </div>
-                  <h3 className="text-3xl font-semibold tracking-tighter text-slate-900">
+                  <h3 className="text-3xl font-semibold tracking-tighter text-foreground">
                     Real-time telemetry.
                   </h3>
-                  <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-md"> A live activity stream surfaces every state transition across your desk (from match creation to certificate issuance) with tamper-proof provenance on every pulse. </p>
+                  <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> A live activity stream surfaces every state transition across your desk (from match creation to certificate issuance) with tamper-proof provenance on every pulse. </p>
                 </div>
-                <div className="rounded-xl bg-slate-50/70 ring-1 ring-slate-100 p-8">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-500 mb-5">
+                <div className="rounded-xl bg-muted/70 ring-1 ring-slate-100 p-8">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground mb-5">
                     Live · system pulses
                   </p>
                   <TelemetryFeed />
@@ -415,15 +415,15 @@ export default function TradeDeskProductPage() {
       <section className="relative overflow-hidden">
         <EmeraldWhisper />
         <div className="relative max-w-4xl mx-auto px-6 lg:px-12 py-16 sm:py-24 md:py-32 lg:py-44 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
             Open your desk in minutes.
           </h2>
-          <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-xl mx-auto">
+          <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
             Provision a workspace, complete your compliance profile, and issue your
             first sealed Proof of Intent today.
           </p>
           <div className="mt-12">
-            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
+            <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] transition-all">
               Open your desk
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>

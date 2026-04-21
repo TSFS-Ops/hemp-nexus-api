@@ -171,20 +171,20 @@ export function NewTradeInitiation() {
   }
   return <>
       <header className="mb-12">
-        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-3">
           Commercial Trading · State Machine Entry
         </p>
-        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">Start New Trade</h1>
-        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-2xl">
+        <h1 className="text-4xl font-semibold text-foreground tracking-tight">Start New Trade</h1>
+        <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-2xl">
           Capture the minimum viable intent. The system will open the deal in
-          <span className="font-mono text-slate-700"> discovery</span> state, anchor it to a deterministic hash, and drop you straight into the Match Compiler to negotiate terms.
+          <span className="font-mono text-muted-foreground"> discovery</span> state, anchor it to a deterministic hash, and drop you straight into the Match Compiler to negotiate terms.
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-md border border-slate-200 p-8 max-w-3xl space-y-8">
+      <form onSubmit={handleSubmit} className="bg-card rounded-md border border-border p-8 max-w-3xl space-y-8">
         {/* Commodity */}
         <div className="space-y-2">
-          <Label htmlFor="commodity" className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+          <Label htmlFor="commodity" className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
             §01 · Commodity
           </Label>
           <CommoditySelect value={commodity} onChange={setCommodity} placeholder="Select or type a commodity (e.g. Copper Cathode, Brent Crude)" />
@@ -192,11 +192,11 @@ export function NewTradeInitiation() {
 
         {/* Side */}
         <div className="space-y-2">
-          <Label className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+          <Label className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
             §02 · Your Side
           </Label>
           <div className="grid grid-cols-2 gap-3">
-            {(["buyer", "seller"] as const).map(s => <button key={s} type="button" onClick={() => setSide(s)} className={`px-5 py-4 text-left rounded-md border transition-colors ${side === s ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"}`}>
+            {(["buyer", "seller"] as const).map(s => <button key={s} type="button" onClick={() => setSide(s)} className={`px-5 py-4 text-left rounded-md border transition-colors ${side === s ? "border-slate-900 bg-slate-900 text-white" : "border-border bg-card text-muted-foreground hover:border-slate-400"}`}>
                 <p className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-70">
                   I am the
                 </p>
@@ -207,42 +207,42 @@ export function NewTradeInitiation() {
 
         {/* Counterparty */}
         <div className="space-y-2 relative">
-          <Label htmlFor="counterparty" className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-500">
+          <Label htmlFor="counterparty" className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
             §03 · Target Counterparty
           </Label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
             <Input id="counterparty" value={counterpartyLabel} onChange={e => {
             setCounterpartyLabel(e.target.value);
             if (selectedCounterparty && e.target.value !== selectedCounterparty.company_name) {
               setSelectedCounterparty(null);
             }
           }} placeholder="Search registered counterparties or type a name" className="pl-9" maxLength={160} autoComplete="off" />
-            {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />}
+            {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 animate-spin" />}
           </div>
-          {hits.length > 0 && !selectedCounterparty && <ul className="mt-1 border border-slate-200 rounded-md bg-white shadow-sm divide-y divide-slate-100 max-h-56 overflow-y-auto">
+          {hits.length > 0 && !selectedCounterparty && <ul className="mt-1 border border-border rounded-md bg-card shadow-sm divide-y divide-border max-h-56 overflow-y-auto">
               {hits.map(hit => <li key={hit.id}>
                   <button type="button" onClick={() => {
               setSelectedCounterparty(hit);
               setCounterpartyLabel(hit.company_name);
               setHits([]);
-            }} className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <p className="text-sm text-slate-900">{hit.company_name}</p>
-                    {hit.jurisdiction && <p className="font-mono text-[10px] tracking-wider text-slate-500 mt-0.5">
+            }} className="w-full text-left px-4 py-2.5 hover:bg-muted transition-colors">
+                    <p className="text-sm text-foreground">{hit.company_name}</p>
+                    {hit.jurisdiction && <p className="font-mono text-[10px] tracking-wider text-muted-foreground mt-0.5">
                         {hit.jurisdiction}
                       </p>}
                   </button>
                 </li>)}
             </ul>}
-          {selectedCounterparty ? <p className="font-mono text-[10px] text-emerald-700 mt-1">
+          {selectedCounterparty ? <p className="font-mono text-[10px] text-[hsl(var(--emerald))] mt-1">
               ✓ matched to registered counterparty {selectedCounterparty.id.slice(0, 8)}
-            </p> : counterpartyLabel.trim().length >= 2 && !searching && hits.length === 0 ? <p className="font-mono text-[10px] text-slate-500 mt-1"> No registered counterparty found: will store as a free-text label for later resolution. </p> : null}
+            </p> : counterpartyLabel.trim().length >= 2 && !searching && hits.length === 0 ? <p className="font-mono text-[10px] text-muted-foreground mt-1"> No registered counterparty found: will store as a free-text label for later resolution. </p> : null}
         </div>
 
         {/* Submit */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-          <p className="font-mono text-[10px] tracking-wider text-slate-500">
-            Initiates state: <span className="text-slate-700">discovery</span> · poi_state: <span className="text-slate-700">DRAFT</span>
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <p className="font-mono text-[10px] tracking-wider text-muted-foreground">
+            Initiates state: <span className="text-muted-foreground">discovery</span> · poi_state: <span className="text-muted-foreground">DRAFT</span>
           </p>
           <Button type="submit" disabled={!canSubmit} className="gap-2">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

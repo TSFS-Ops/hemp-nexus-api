@@ -77,10 +77,7 @@ export function PublicHeader() {
 
   return (
     <>
-    <nav
-      className="fixed top-0 inset-x-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 transition-all duration-300"
-      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
-    >
+    <nav className="fixed top-0 inset-x-0 z-40 bg-card/80 backdrop-blur-md border-b border-border transition-all duration-300">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group shrink-0">
@@ -91,7 +88,7 @@ export function PublicHeader() {
               <path d="M2 12l10 5 10-5" />
             </svg>
           </div>
-          <span className="text-[17px] font-semibold tracking-tight text-slate-900">Izenzo</span>
+          <span className="text-[17px] font-semibold tracking-tight text-foreground">Izenzo</span>
         </Link>
 
         {/* Desktop mega-menu */}
@@ -104,7 +101,7 @@ export function PublicHeader() {
               onMouseLeave={handleLeave}
             >
               <button
-                className="inline-flex items-center gap-1 px-3 h-10 text-sm font-medium text-slate-700 rounded-md hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-1 px-3 h-10 text-sm font-medium text-muted-foreground rounded-md hover:text-foreground hover:bg-muted transition-colors"
                 aria-expanded={openMenu === category.key}
               >
                 {category.label}
@@ -119,23 +116,23 @@ export function PublicHeader() {
                   onMouseEnter={() => handleEnter(category.key)}
                   onMouseLeave={handleLeave}
                 >
-                  <div className="w-[480px] rounded-xl border border-slate-200 bg-white shadow-xl p-3 grid grid-cols-1 gap-1">
+                  <div className="w-[480px] rounded-xl border border-border bg-card shadow-xl p-3 grid grid-cols-1 gap-1">
                     {category.items.map((item) => (
                       <Link
                         key={item.label}
                         to={item.to}
-                        className="group flex items-start gap-3 rounded-lg p-3 hover:bg-slate-50 transition-colors"
+                        className="group flex items-start gap-3 rounded-lg p-3 hover:bg-muted transition-colors"
                         onClick={() => setOpenMenu(null)}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-slate-900 group-hover:text-slate-950">
+                          <div className="text-sm font-semibold text-foreground group-hover:text-foreground">
                             {item.label}
                           </div>
-                          <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                          <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                             {item.description}
                           </div>
                         </div>
-                        <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all mt-0.5 shrink-0" />
+                        <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all mt-0.5 shrink-0" />
                       </Link>
                     ))}
                   </div>
@@ -157,7 +154,7 @@ export function PublicHeader() {
             </Link>
           ) : (
             <>
-              <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+              <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 Log In
               </AuthLink>
               <AuthLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950 shadow-sm hover:shadow-md hover:bg-emerald-900 transition-all">
@@ -184,7 +181,7 @@ export function PublicHeader() {
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted transition-colors"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -197,11 +194,11 @@ export function PublicHeader() {
         // Header is `h-20` (5rem) — the dropdown's max-height must subtract the
         // *actual* header height, not 4rem, otherwise the last item is clipped
         // below the fold on short viewports (e.g. iPhone SE landscape).
-        <div className="lg:hidden border-t border-slate-200 bg-white max-h-[calc(100dvh-5rem)] overflow-y-auto">
+        <div className="lg:hidden border-t border-border bg-card max-h-[calc(100dvh-5rem)] overflow-y-auto">
           <div className="px-4 py-4 space-y-5">
             {MEGA_NAV.map((category) => (
               <div key={category.key}>
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-2 mb-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1">
                   {category.label}
                 </div>
                 <div className="space-y-0.5">
@@ -210,7 +207,7 @@ export function PublicHeader() {
                       key={item.label}
                       to={item.to}
                       onClick={() => setMobileOpen(false)}
-                      className="block px-2 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                      className="block px-2 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       {item.label}
                     </Link>
@@ -219,7 +216,7 @@ export function PublicHeader() {
               </div>
             ))}
             {!isAuthenticated && (
-              <div className="pt-3 border-t border-slate-200">
+              <div className="pt-3 border-t border-border">
                 <AuthLink className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950">
                   Create Account
                   <ArrowRight className="h-3.5 w-3.5" />

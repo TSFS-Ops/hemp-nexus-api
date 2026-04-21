@@ -47,7 +47,7 @@ export default function DocsCounterparties() {
 
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="POST" />
-          <code className="text-[13.5px] font-mono text-slate-900">/entities</code>
+          <code className="text-[13.5px] font-mono text-foreground">/entities</code>
         </div>
         <ParamTable
           rows={[
@@ -63,7 +63,7 @@ export default function DocsCounterparties() {
         <DocH2 id="ubo">Beneficial ownership (UBO)</DocH2>
         <DocP>
           For company entities, declare every natural person who ultimately owns or controls
-          the company. The platform enforces a <strong className="text-slate-900 font-medium">≥100% verified ownership</strong>{" "}
+          the company. The platform enforces a <strong className="text-foreground font-medium">≥100% verified ownership</strong>{" "}
           gate before any deal is allowed to settle.
         </DocP>
         <CodePanel title="Register a UBO link" language="http" code={UBO_LINK} />
@@ -92,7 +92,7 @@ export default function DocsCounterparties() {
         <DocH2 id="trade-approval">Trade approval</DocH2>
         <DocP>
           Once entities are screened and the UBO + ATB gates pass, an admin issues a{" "}
-          <strong className="text-slate-900 font-medium">trade approval</strong> for the
+          <strong className="text-foreground font-medium">trade approval</strong> for the
           counterparty. Approvals carry a validity window (default 365 days) and a risk band
           inherited from the latest due-diligence score.
         </DocP>
@@ -107,7 +107,7 @@ export default function DocsCounterparties() {
         <DocP>
           The discovery engine surfaces verified counterparties matching a buyer or seller
           signal. Identity is masked until both parties have engaged. See{" "}
-          <a href="/docs/api" className="text-emerald-600 hover:text-emerald-700 font-medium">API Reference</a>{" "}
+          <a href="/docs/api" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">API Reference</a>{" "}
           for the <InlineCode>/search</InlineCode> endpoint and result shape.
         </DocP>
 

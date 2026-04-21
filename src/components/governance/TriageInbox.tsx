@@ -331,20 +331,20 @@ export default function TriageInbox() {
   // ── Render ──
   if (queueQuery.isLoading) {
     return (
-      <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex items-center justify-center bg-white">
-        <Loader2 className="h-6 w-6 text-slate-400 animate-spin" />
+      <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex items-center justify-center bg-card">
+        <Loader2 className="h-6 w-6 text-muted-foreground/70 animate-spin" />
       </div>
     );
   }
 
   if (queue.length === 0) {
     return (
-      <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col items-center justify-center bg-white text-center px-8">
-        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+      <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col items-center justify-center bg-card text-center px-8">
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
           Governance Layer
         </p>
-        <h2 className="text-2xl font-semibold text-slate-900">Triage queue is clear</h2>
-        <p className="mt-2 text-sm text-slate-600 max-w-md">
+        <h2 className="text-2xl font-semibold text-foreground">Triage queue is clear</h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
           No open disputes or flagged trades require Governor review. New items will appear
           here in real time.
         </p>
@@ -353,18 +353,18 @@ export default function TriageInbox() {
   }
 
   return (
-    <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col md:flex-row bg-white pb-16 md:pb-0">
+    <div className="fixed inset-y-0 inset-x-0 md:left-[260px] md:right-0 flex flex-col md:flex-row bg-card pb-16 md:pb-0">
       {/* ── LEFT PANE: Risk Queue (40%) ─────────────────────────── */}
-      <section className="w-full md:w-2/5 max-h-[40vh] md:max-h-none flex flex-col md:border-r border-b md:border-b-0 border-slate-200 bg-white">
+      <section className="w-full md:w-2/5 max-h-[40vh] md:max-h-none flex flex-col md:border-r border-b md:border-b-0 border-border bg-card">
         <div className="px-10 pt-12 pb-6">
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-500 mb-3">
+          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
             Governance Layer
           </p>
-          <h1 className="text-3xl font-semibold text-slate-900 tracking-tight leading-[1.1]">
+          <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-[1.1]">
             Triage Queue
           </h1>
 
-          <div className="mt-6 inline-flex items-center gap-px rounded-sm border border-slate-200 bg-slate-50 p-0.5">
+          <div className="mt-6 inline-flex items-center gap-px rounded-sm border border-border bg-muted p-0.5">
             {([
               { key: "all", label: "All" },
               { key: "high", label: "High Risk" },
@@ -377,8 +377,8 @@ export default function TriageInbox() {
                   onClick={() => setFilter(opt.key)}
                   className={`px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase rounded-sm transition-colors ${
                     isActive
-                      ? "bg-white text-slate-900 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-card text-foreground shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+                      : "text-muted-foreground hover:text-muted-foreground"
                   }`}
                 >
                   {opt.label}
@@ -387,7 +387,7 @@ export default function TriageInbox() {
             })}
           </div>
 
-          <p className="mt-4 font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+          <p className="mt-4 font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
             {filtered.length} pending · {queue.filter((q) => q.risk === "high").length} flagged high
           </p>
           {queueTotal > queueLimit && (
@@ -400,7 +400,7 @@ export default function TriageInbox() {
         <div className="flex-1 overflow-y-auto px-4 pb-8">
           {filtered.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <p className="font-mono text-[11px] tracking-wider uppercase text-slate-400">
+              <p className="font-mono text-[11px] tracking-wider uppercase text-muted-foreground/70">
                 No trades match this filter.
               </p>
             </div>
@@ -420,7 +420,7 @@ export default function TriageInbox() {
       </section>
 
       {/* ── RIGHT PANE: 9-Gate Auditor (60%) ────────────────────── */}
-      <section className="w-full md:w-3/5 flex-1 flex flex-col bg-slate-50">
+      <section className="w-full md:w-3/5 flex-1 flex flex-col bg-muted">
         <div className="flex-1 overflow-y-auto">
           {active && (
             <AnimatePresence mode="wait">
@@ -433,21 +433,21 @@ export default function TriageInbox() {
                 className="p-12 max-w-4xl"
               >
                 {/* Header */}
-                <div className="flex items-start justify-between gap-8 mb-10 pb-8 border-b border-slate-200">
+                <div className="flex items-start justify-between gap-8 mb-10 pb-8 border-b border-border">
                   <div className="min-w-0">
-                    <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-500 mb-2">
+                    <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-2">
                       Reviewing
                     </p>
-                    <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">
-                      {active.partyA} <span className="text-slate-400">↔</span> {active.partyB}
+                    <h2 className="text-2xl font-semibold text-foreground tracking-tight">
+                      {active.partyA} <span className="text-muted-foreground/70">↔</span> {active.partyB}
                     </h2>
-                    <p className="mt-2 font-mono text-[11px] text-slate-500 tracking-wide break-all">
+                    <p className="mt-2 font-mono text-[11px] text-muted-foreground tracking-wide break-all">
                       {active.matchUuid}
                     </p>
-                    <p className="mt-3 text-sm text-slate-600">
+                    <p className="mt-3 text-sm text-muted-foreground">
                       {active.commodity} ·{" "}
-                      <span className="font-mono text-slate-900">{active.notional}</span> ·{" "}
-                      <span className="font-mono text-slate-900">{active.jurisdictionRoute}</span>
+                      <span className="font-mono text-foreground">{active.notional}</span> ·{" "}
+                      <span className="font-mono text-foreground">{active.jurisdictionRoute}</span>
                     </p>
                   </div>
                   <RiskBadge risk={active.risk} score={active.riskScore} large />
@@ -474,34 +474,34 @@ export default function TriageInbox() {
                 {/* Section 02, Evidence Feed */}
                 <Section number="02" title="Evidence Feed">
                   {evidenceQuery.isLoading ? (
-                    <div className="rounded-sm border border-slate-200 bg-white p-8 flex items-center justify-center">
-                      <Loader2 className="h-4 w-4 text-slate-400 animate-spin" />
+                    <div className="rounded-sm border border-border bg-card p-8 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 text-muted-foreground/70 animate-spin" />
                     </div>
                   ) : (evidenceQuery.data?.length ?? 0) === 0 ? (
-                    <div className="rounded-sm border border-dashed border-slate-300 bg-white p-8 text-center">
-                      <p className="text-sm text-slate-600">No evidence documents bound to this match.</p>
-                      <p className="mt-1 font-mono text-[10px] tracking-wider uppercase text-slate-400">
+                    <div className="rounded-sm border border-dashed border-border bg-card p-8 text-center">
+                      <p className="text-sm text-muted-foreground">No evidence documents bound to this match.</p>
+                      <p className="mt-1 font-mono text-[10px] tracking-wider uppercase text-muted-foreground/70">
                         Awaiting counterparty submission
                       </p>
                     </div>
                   ) : (
-                    <div className="rounded-sm border border-slate-200 bg-white divide-y divide-slate-100">
+                    <div className="rounded-sm border border-border bg-card divide-y divide-border">
                       {evidenceQuery.data!.map((doc) => (
                         <div key={doc.id} className="flex items-start gap-4 p-5">
-                          <FileText className="h-4 w-4 mt-0.5 text-slate-400 shrink-0" strokeWidth={1.5} />
+                          <FileText className="h-4 w-4 mt-0.5 text-muted-foreground/70 shrink-0" strokeWidth={1.5} />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-baseline justify-between gap-4">
-                              <p className="text-sm font-medium text-slate-900 truncate">{doc.label}</p>
+                              <p className="text-sm font-medium text-foreground truncate">{doc.label}</p>
                               {doc.sealed && (
-                                <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-emerald-700">
+                                <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[hsl(var(--emerald))]">
                                   Sealed
                                 </span>
                               )}
                             </div>
-                            <p className="mt-1 font-mono text-[10px] text-slate-500">
+                            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                               {doc.filename} · {doc.size}
                             </p>
-                            <p className="mt-2 font-mono text-[10px] text-slate-400 break-all leading-relaxed">
+                            <p className="mt-2 font-mono text-[10px] text-muted-foreground/70 break-all leading-relaxed">
                               sha256: {doc.hash}
                             </p>
                           </div>
@@ -517,7 +517,7 @@ export default function TriageInbox() {
 
         {/* Sticky Review Action Footer */}
         {active && (
-          <div className="shrink-0 border-t border-slate-200 bg-white px-12 py-6">
+          <div className="shrink-0 border-t border-border bg-card px-12 py-6">
             <div className="max-w-4xl flex items-center justify-between gap-6">
               <button
                 onClick={() => rejectMutation.mutate()}
@@ -537,7 +537,7 @@ export default function TriageInbox() {
                 className={`inline-flex items-center gap-2.5 rounded-md px-6 py-3 text-sm font-medium transition-all ${
                   alertAcknowledged && !sealMutation.isPending
                     ? "bg-primary text-primary-foreground shadow-sm hover:shadow-md"
-                    : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                    : "bg-muted text-muted-foreground/70 cursor-not-allowed border border-border"
                 }`}
               >
                 {sealMutation.isPending ? (
@@ -548,7 +548,7 @@ export default function TriageInbox() {
                 {sealMutation.isPending ? "Sealing…" : "Seal & Issue WaD Certificate"}
               </motion.button>
             </div>
-            <p className="mt-3 max-w-4xl font-mono text-[10px] tracking-wider text-slate-500 leading-relaxed">
+            <p className="mt-3 max-w-4xl font-mono text-[10px] tracking-wider text-muted-foreground leading-relaxed">
               {alertAcknowledged
                 ? "Clicking Seal will tamper-proofally sign this record and notify all counterparties."
                 : "Acknowledge the highlighted alert above to enable WaD issuance."}
@@ -576,7 +576,7 @@ function QueueRow({
       <button
         onClick={onClick}
         className={`w-full text-left relative px-5 py-4 rounded-sm transition-colors ${
-          active ? "bg-slate-50" : "hover:bg-slate-50/60"
+          active ? "bg-muted" : "hover:bg-muted/60"
         }`}
       >
         {active && (
@@ -584,21 +584,21 @@ function QueueRow({
         )}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-slate-900 font-medium truncate">
-              {item.partyA} <span className="text-slate-400">↔</span> {item.partyB}
+            <p className="text-sm text-foreground font-medium truncate">
+              {item.partyA} <span className="text-muted-foreground/70">↔</span> {item.partyB}
             </p>
-            <p className="mt-1 text-xs text-slate-600 truncate">
+            <p className="mt-1 text-xs text-muted-foreground truncate">
               {item.commodity} · <span className="font-mono">{item.notional}</span>
             </p>
-            <div className="mt-2 flex items-center gap-2 font-mono text-[10px] text-slate-500">
+            <div className="mt-2 flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
               <span className="truncate">{item.matchUuid.slice(0, 18)}…</span>
-              <span className="text-slate-300">·</span>
+              <span className="text-muted-foreground/50">·</span>
               <span>{item.jurisdictionRoute}</span>
             </div>
           </div>
           <RiskBadge risk={item.risk} score={item.riskScore} />
         </div>
-        <p className="mt-2 text-[11px] text-slate-500 italic">{item.flag}</p>
+        <p className="mt-2 text-[11px] text-muted-foreground italic">{item.flag}</p>
       </button>
     </li>
   );
@@ -618,7 +618,7 @@ function RiskBadge({
       ? { ring: "ring-red-200", text: "text-red-700", bg: "bg-red-50", label: "High Risk" }
       : risk === "medium"
         ? { ring: "ring-amber-200", text: "text-amber-700", bg: "bg-amber-50", label: "Medium Risk" }
-        : { ring: "ring-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", label: "Low Risk" };
+        : { ring: "ring-emerald-200", text: "text-[hsl(var(--emerald))]", bg: "bg-[hsl(var(--emerald-muted))]", label: "Low Risk" };
 
   const sizeCircle = large ? "h-14 w-14 text-base" : "h-9 w-9 text-[11px]";
 
@@ -647,10 +647,10 @@ function Section({
 }) {
   return (
     <section className="relative mt-12 first:mt-0">
-      <span className="absolute -left-10 top-1.5 font-mono text-[10px] tracking-[0.25em] text-slate-400 select-none">
+      <span className="absolute -left-10 top-1.5 font-mono text-[10px] tracking-[0.25em] text-muted-foreground/70 select-none">
         {number}
       </span>
-      <h3 className="text-base font-medium text-slate-900 tracking-tight pb-3 border-b border-slate-200 mb-6">
+      <h3 className="text-base font-medium text-foreground tracking-tight pb-3 border-b border-border mb-6">
         {title}
       </h3>
       {children}
@@ -675,16 +675,16 @@ function GateBlock({
     <div
       className={`rounded-sm border p-4 transition-colors ${
         effectivePassed
-          ? "border-emerald-200 bg-white"
+          ? "border-[hsl(var(--emerald)/0.2)] bg-card"
           : isAlert
             ? "border-amber-300 bg-amber-50/60"
-            : "border-slate-200 bg-slate-50/70 opacity-70"
+            : "border-border bg-muted/70 opacity-70"
       }`}
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 shrink-0">
           {effectivePassed ? (
-            <div className="h-5 w-5 rounded-full bg-emerald-700 flex items-center justify-center">
+            <div className="h-5 w-5 rounded-full bg-[hsl(var(--emerald))] flex items-center justify-center">
               <Check className="h-3 w-3 text-white" strokeWidth={3} />
             </div>
           ) : isAlert ? (
@@ -699,14 +699,14 @@ function GateBlock({
               </div>
             </div>
           ) : (
-            <div className="h-5 w-5 rounded-full border border-slate-300" />
+            <div className="h-5 w-5 rounded-full border border-border" />
           )}
         </div>
 
         <div className="min-w-0 flex-1">
           <p
             className={`font-mono text-[10px] tracking-wider font-medium leading-tight ${
-              effectivePassed ? "text-slate-900" : isAlert ? "text-amber-900" : "text-slate-500"
+              effectivePassed ? "text-foreground" : isAlert ? "text-amber-900" : "text-muted-foreground"
             }`}
           >
             {gate.label}
@@ -725,7 +725,7 @@ function GateBlock({
             </>
           )}
           {gate.state === "pending" && !effectivePassed && (
-            <p className="mt-1 font-mono text-[9px] tracking-wider uppercase text-slate-400">
+            <p className="mt-1 font-mono text-[9px] tracking-wider uppercase text-muted-foreground/70">
               Awaiting prior gate
             </p>
           )}

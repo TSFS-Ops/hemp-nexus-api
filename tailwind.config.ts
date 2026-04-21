@@ -100,6 +100,7 @@ export default {
         "deep-slate": "hsl(var(--deep-slate))",
         graphite: "hsl(var(--graphite))",
         "surface-sidebar": "hsl(var(--surface-sidebar))",
+        "surface-canvas": "hsl(var(--surface-canvas))",
       },
       borderRadius: {
         lg: "6px",

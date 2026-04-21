@@ -47,7 +47,7 @@ export function MobileBottomNav() {
   return (
     <>
       <nav
-        className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/80 backdrop-blur-md border-t border-slate-200 pb-safe"
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-card/80 backdrop-blur-md border-t border-border pb-safe"
         aria-label="Desk primary"
       >
         <div className="flex items-center justify-between px-6 h-16">
@@ -64,13 +64,13 @@ export function MobileBottomNav() {
               >
                 <Icon
                   className={`h-5 w-5 transition-colors ${
-                    active ? "text-emerald-600" : "text-slate-400"
+                    active ? "text-[hsl(var(--emerald))]" : "text-muted-foreground/70"
                   }`}
                   strokeWidth={active ? 2.25 : 1.75}
                 />
                 <span
                   className={`mt-1 h-1 w-1 rounded-full transition-opacity ${
-                    active ? "bg-emerald-600 opacity-100" : "opacity-0"
+                    active ? "bg-[hsl(var(--emerald))] opacity-100" : "opacity-0"
                   }`}
                   aria-hidden
                 />
@@ -86,13 +86,13 @@ export function MobileBottomNav() {
               >
                 <MenuIcon
                   className={`h-5 w-5 transition-colors ${
-                    menuOpen ? "text-emerald-600" : "text-slate-400"
+                    menuOpen ? "text-[hsl(var(--emerald))]" : "text-muted-foreground/70"
                   }`}
                   strokeWidth={menuOpen ? 2.25 : 1.75}
                 />
                 <span
                   className={`mt-1 h-1 w-1 rounded-full transition-opacity ${
-                    menuOpen ? "bg-emerald-600 opacity-100" : "opacity-0"
+                    menuOpen ? "bg-[hsl(var(--emerald))] opacity-100" : "opacity-0"
                   }`}
                   aria-hidden
                 />
@@ -101,7 +101,7 @@ export function MobileBottomNav() {
             <SheetContent side="bottom" className="pb-safe rounded-t-2xl">
               <SheetHeader>
                 <SheetTitle className="text-left">
-                  <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-slate-400 block mb-1">
+                  <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted-foreground/70 block mb-1">
                     Workspace
                   </span>
                   More
@@ -121,8 +121,8 @@ export function MobileBottomNav() {
                       }}
                       className={`flex items-center gap-3 p-4 rounded-md border transition-colors min-h-[56px] text-left ${
                         active
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                          ? "border-[hsl(var(--emerald)/0.2)] bg-[hsl(var(--emerald-muted))] text-[hsl(var(--emerald))]"
+                          : "border-border text-muted-foreground hover:bg-muted"
                       }`}
                     >
                       <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
