@@ -197,8 +197,10 @@ function useActiveLanes(orgId: string | null, page: number) {
           commodity: m.commodity ?? "Unspecified commodity",
           counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
           volume: formatVolume(m.quantity_amount, m.quantity_unit),
+          quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
           state,
           created_at: m.created_at,
+          deadline_at: inferDeadline(m.created_at, laneId),
           laneId,
         };
       });
@@ -262,8 +264,10 @@ function useSealedPage(orgId: string | null, page: number) {
             commodity: m.commodity ?? "Unspecified commodity",
             counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
             volume: formatVolume(m.quantity_amount, m.quantity_unit),
+            quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
             state: m.state ?? "",
             created_at: m.created_at,
+            deadline_at: inferDeadline(m.created_at, "poi"),
             laneId: "poi" as const,
           };
         });
