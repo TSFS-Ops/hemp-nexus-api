@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Compass, Loader2, ArrowDownUp } from "lucide-react";
+import { ArrowUpRight, Compass, Loader2, ArrowDownUp, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -284,12 +284,32 @@ export function DealPipeline() {
   const [activePage, setActivePage] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
+  // Filter state — purely client-side. Filtering server-side would require
+  // narrowing the paginated queries, which would in turn require server-side
+  // support for full-text counterparty search. For pipeline-scale data
+  // (≤ a few hundred in-flight deals per org) client filtering is the right
+  // trade-off: zero added latency, instant feedback as the user types.
+  const [counterpartyQuery, setCounterpartyQuery] = useState("");
+  const [commodityFilter, setCommodityFilter] = useState<string>("all");
+  const [laneFilter, setLaneFilter] = useState<"all" | DealCard["laneId"]>("all");
+
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
 
   const isLoading = (activeQ.isLoading && !activeQ.data) || (sealedQ.isLoading && !sealedQ.data);
   const isSealedFetching = sealedQ.isFetching;
   const isActiveFetching = activeQ.isFetching;
+
+  // Distinct commodity list across all loaded deals — drives the commodity
+  // dropdown options. Recomputed from the loaded data so newly loaded pages
+  // surface their commodities automatically.
+  const commodityOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const c of [...(activeQ.data?.cards ?? []), ...(sealedQ.data?.cards ?? [])]) {
+      if (c.commodity) seen.add(c.commodity);
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }, [activeQ.data, sealedQ.data]);
 
   const lanes = useMemo(() => {
     const activeCards = activeQ.data?.cards ?? [];
@@ -326,17 +346,36 @@ export function DealPipeline() {
       }
     };
 
+    // Predicate composing all active filters. Lane filter is applied as a
+    // whole-lane mask further down so empty lanes still render their headers
+    // (predictable layout > collapsing the grid).
+    const needle = counterpartyQuery.trim().toLowerCase();
+    const matchesFilters = (c: DealCard): boolean => {
+      if (commodityFilter !== "all" && c.commodity !== commodityFilter) return false;
+      if (needle && !c.counterparty.toLowerCase().includes(needle)) return false;
+      return true;
+    };
+
     return LANE_META.map((meta) => {
-      const deals =
+      const laneIncluded = laneFilter === "all" || laneFilter === meta.id;
+      const sourceDeals =
         meta.id === "poi"
           ? sealedCards
           : activeCards.filter((c) => c.laneId === meta.id && !sealedIds.has(c.id));
-      return { ...meta, deals: [...deals].sort(compare) };
+      const filtered = laneIncluded ? sourceDeals.filter(matchesFilters) : [];
+      return { ...meta, deals: [...filtered].sort(compare), suppressedByLane: !laneIncluded };
     });
-  }, [activeQ.data, sealedQ.data, sortKey]);
+  }, [activeQ.data, sealedQ.data, sortKey, counterpartyQuery, commodityFilter, laneFilter]);
 
   const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
-  const showPipelineEmpty = !isLoading && totalDeals === 0;
+  const hasActiveFilters =
+    counterpartyQuery.trim().length > 0 || commodityFilter !== "all" || laneFilter !== "all";
+  const showPipelineEmpty = !isLoading && totalDeals === 0 && !hasActiveFilters;
+  const resetFilters = () => {
+    setCounterpartyQuery("");
+    setCommodityFilter("all");
+    setLaneFilter("all");
+  };
 
   if (showPipelineEmpty) {
     return (
@@ -375,6 +414,18 @@ export function DealPipeline() {
   return (
     <section>
       <PipelineHeader totalDeals={totalDeals} sortKey={sortKey} onSortChange={setSortKey} />
+      <FilterBar
+        counterpartyQuery={counterpartyQuery}
+        onCounterpartyQueryChange={setCounterpartyQuery}
+        commodityFilter={commodityFilter}
+        onCommodityFilterChange={setCommodityFilter}
+        commodityOptions={commodityOptions}
+        laneFilter={laneFilter}
+        onLaneFilterChange={setLaneFilter}
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        visibleCount={totalDeals}
+      />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
         {lanes.map((lane) => {
           const accent = LANE_ACCENT[lane.id];
@@ -469,6 +520,139 @@ export function DealPipeline() {
         })}
       </div>
     </section>
+  );
+}
+
+/**
+ * FilterBar — narrows the visible pipeline by counterparty (free-text contains
+ * search), commodity (exact match against a derived dropdown), and stage
+ * (lane). All filters are AND-combined and applied client-side before the
+ * sort comparator runs in the parent.
+ */
+function FilterBar({
+  counterpartyQuery,
+  onCounterpartyQueryChange,
+  commodityFilter,
+  onCommodityFilterChange,
+  commodityOptions,
+  laneFilter,
+  onLaneFilterChange,
+  hasActiveFilters,
+  onReset,
+  visibleCount,
+}: {
+  counterpartyQuery: string;
+  onCounterpartyQueryChange: (v: string) => void;
+  commodityFilter: string;
+  onCommodityFilterChange: (v: string) => void;
+  commodityOptions: string[];
+  laneFilter: "all" | DealCard["laneId"];
+  onLaneFilterChange: (v: "all" | DealCard["laneId"]) => void;
+  hasActiveFilters: boolean;
+  onReset: () => void;
+  visibleCount: number;
+}) {
+  const inputBase =
+    "appearance-none bg-white border border-slate-200 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 rounded-md text-[12px] font-medium text-slate-700 transition-colors";
+  return (
+    <div className="mb-5 rounded-lg border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
+      {/* Counterparty contains-search */}
+      <div className="relative flex-1 min-w-[180px]">
+        <Search
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <input
+          type="text"
+          value={counterpartyQuery}
+          onChange={(e) => onCounterpartyQueryChange(e.target.value)}
+          placeholder="Search counterparty…"
+          className={cn(inputBase, "w-full pl-8 pr-8 py-1.5")}
+          aria-label="Search by counterparty name"
+        />
+        {counterpartyQuery && (
+          <button
+            type="button"
+            onClick={() => onCounterpartyQueryChange("")}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded"
+            aria-label="Clear counterparty search"
+          >
+            <X className="h-3 w-3" strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      {/* Commodity selector */}
+      <label className="inline-flex items-center gap-2">
+        <span className="sr-only">Filter by commodity</span>
+        <select
+          value={commodityFilter}
+          onChange={(e) => onCommodityFilterChange(e.target.value)}
+          className={cn(inputBase, "pl-2.5 pr-7 py-1.5 cursor-pointer min-w-[140px]")}
+          aria-label="Filter by commodity"
+        >
+          <option value="all">All commodities</option>
+          {commodityOptions.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* Lane / status pill toggle group — keeps stage filtering immediately
+          visible without burying it in a dropdown. */}
+      <div
+        className="inline-flex items-center bg-white border border-slate-200 rounded-md p-0.5"
+        role="tablist"
+        aria-label="Filter by stage"
+      >
+        {(
+          [
+            { id: "all", label: "All stages" },
+            { id: "draft", label: "Draft" },
+            { id: "awaiting", label: "Awaiting" },
+            { id: "poi", label: "Sealed" },
+          ] as const
+        ).map((opt) => {
+          const active = laneFilter === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onLaneFilterChange(opt.id)}
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-medium rounded transition-colors",
+                active
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Visible count + reset affordance */}
+      <div className="flex items-center gap-3 lg:ml-auto">
+        <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+          {visibleCount} visible
+        </span>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
