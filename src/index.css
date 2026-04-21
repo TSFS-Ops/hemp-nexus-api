@@ -79,6 +79,9 @@
     /* Sidebar panel background - #F9FAFB */
     --surface-sidebar: 210 20% 98%;
 
+    /* Desk canvas background - #F8FAFC */
+    --surface-canvas: 210 40% 98%;
+
     /* Material palette - copper is now secondary accent */
     --earth-warm: 28 35% 42%;
     /* #B87333 - muted copper (secondary accent) */
