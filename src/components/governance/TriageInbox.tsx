@@ -478,7 +478,7 @@ export default function TriageInbox() {
                       <Loader2 className="h-4 w-4 text-muted-foreground/70 animate-spin" />
                     </div>
                   ) : (evidenceQuery.data?.length ?? 0) === 0 ? (
-                    <div className="rounded-sm border border-dashed border-slate-300 bg-card p-8 text-center">
+                    <div className="rounded-sm border border-dashed border-border bg-card p-8 text-center">
                       <p className="text-sm text-muted-foreground">No evidence documents bound to this match.</p>
                       <p className="mt-1 font-mono text-[10px] tracking-wider uppercase text-muted-foreground/70">
                         Awaiting counterparty submission
@@ -699,7 +699,7 @@ function GateBlock({
               </div>
             </div>
           ) : (
-            <div className="h-5 w-5 rounded-full border border-slate-300" />
+            <div className="h-5 w-5 rounded-full border border-border" />
           )}
         </div>
 

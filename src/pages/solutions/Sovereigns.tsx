@@ -100,7 +100,7 @@ function MacroDashboardMockup() {
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-200">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--emerald))] opacity-60" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[hsl(var(--emerald))]" />
             </span>
             <span className="font-mono text-[10px] tracking-wider uppercase text-[hsl(var(--emerald))]">
@@ -142,7 +142,7 @@ function MacroDashboardMockup() {
             12 participants · 142 milestones · USD 480M deployed
           </p>
           <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-emerald-500" style={{
+            <div className="h-full bg-[hsl(var(--emerald))]" style={{
             width: "78%"
           }} />
           </div>
@@ -160,7 +160,7 @@ function MacroDashboardMockup() {
           <ul className="space-y-2">
             {PROGRAMME_PULSES.map(p => <li key={p.t + p.evt} className="flex items-center gap-3 text-[11px] font-mono">
                 <span className="text-muted-foreground/70 tabular-nums w-10">{p.t}</span>
-                <span className="h-1 w-1 rounded-full bg-emerald-500 shrink-0" />
+                <span className="h-1 w-1 rounded-full bg-[hsl(var(--emerald))] shrink-0" />
                 <span className="text-foreground truncate flex-1">{p.evt}</span>
                 <span className="text-muted-foreground tabular-nums">{p.amt}</span>
               </li>)}

@@ -92,7 +92,7 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-px bg-slate-200 border border-border mb-10">
+      <div className="grid grid-cols-3 gap-px bg-muted border border-border mb-10">
         <div className="bg-card p-5">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">99.962%</p>

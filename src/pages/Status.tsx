@@ -51,7 +51,7 @@ export default function Status() {
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="w-2 h-2 rounded-full bg-[hsl(var(--emerald))]" />
                     <span className="text-[14px] font-medium text-foreground">{service.name}</span>
                   </div>
                   <span className="text-[12px] text-muted-foreground font-mono">{service.uptime}</span>
@@ -63,7 +63,7 @@ export default function Status() {
                     <div
                       key={i}
                       className={`flex-1 rounded-[1px] ${
-                        b === 1 ? "bg-emerald-500/80" : "bg-amber-400"
+                        b === 1 ? "bg-[hsl(var(--emerald))]/80" : "bg-amber-400"
                       }`}
                       title={`Day ${90 - i}`}
                     />

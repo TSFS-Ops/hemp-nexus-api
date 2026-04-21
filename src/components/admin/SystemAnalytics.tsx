@@ -175,7 +175,7 @@ export default function SystemAnalytics() {
       value: stats.totalMatches,
       subtitle: "Total matches",
       icon: TrendingUp,
-      color: "text-emerald-500",
+      color: "text-[hsl(var(--emerald))]",
     },
     {
       title: "Webhook Endpoints",

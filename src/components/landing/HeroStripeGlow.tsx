@@ -56,7 +56,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
       <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:min-h-[calc(100vh-80px)] md:py-12 flex flex-col justify-center items-center text-center">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--emerald-muted))] border border-[hsl(var(--emerald)/0.2)] text-xs font-medium text-[hsl(var(--emerald))] mb-6 shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--emerald))] animate-pulse" />
           Izenzo Governance Network
         </div>
 
@@ -90,7 +90,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
           </button>
           <button
             onClick={onContactSales}
-            className="inline-flex items-center justify-center gap-1 px-5 h-12 rounded-md text-sm font-semibold text-[hsl(var(--emerald))] bg-white/80 backdrop-blur border border-[hsl(var(--emerald)/0.2)] hover:bg-card hover:border-[hsl(var(--emerald)/0.2)] shadow-sm transition-all w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1 px-5 h-12 rounded-md text-sm font-semibold text-[hsl(var(--emerald))] bg-card/80 backdrop-blur border border-[hsl(var(--emerald)/0.2)] hover:bg-card hover:border-[hsl(var(--emerald)/0.2)] shadow-sm transition-all w-full sm:w-auto"
           >
             Read the Docs
             <ChevronRight className="h-4 w-4" />
@@ -109,7 +109,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
               {[0, 1].map((dup) => (
                 <div key={dup} className="flex gap-x-12 shrink-0 pr-12">
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-[hsl(var(--emerald))] animate-pulse" />
                     <span className="text-sm font-mono tracking-tight">SYSTEM: OPERATIONAL</span>
                   </div>
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">

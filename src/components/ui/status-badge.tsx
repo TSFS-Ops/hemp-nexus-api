@@ -15,12 +15,12 @@ import { cn } from "@/lib/utils";
 /** Semantic colour classes keyed by normalised status string */
 const STATUS_STYLES: Record<string, string> = {
   // Success / active
-  active: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
-  confirmed: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
-  resolved: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
-  approved: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
-  settled: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
-  verified: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
+  active: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
+  confirmed: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
+  resolved: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
+  approved: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
+  settled: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
+  verified: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200 dark:text-emerald-400",
 
   // Warning / pending
   pending: "bg-amber-500/10 text-amber-700 border-amber-200 dark:text-amber-400",

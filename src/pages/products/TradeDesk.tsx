@@ -172,7 +172,7 @@ function NineGateProtocol() {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] text-slate-800 font-medium">{gate}</p>
+            <p className="text-[13px] text-foreground font-medium">{gate}</p>
           </div>
           <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-emerald-200/60 to-transparent" />
         </motion.div>)}
@@ -214,7 +214,7 @@ function TelemetryFeed() {
       delay: i * 0.08
     }} className="flex items-center gap-3 text-[12px] font-mono">
           <span className="relative flex h-1.5 w-1.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--emerald))] opacity-60" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[hsl(var(--emerald))]" />
           </span>
           <span className="text-muted-foreground/70 tabular-nums">{p.t}</span>

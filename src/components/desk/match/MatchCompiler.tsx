@@ -255,7 +255,7 @@ export function MatchCompiler({
           }} onDragLeave={() => setDragOver(false)} onDrop={onDrop} onClick={() => {
             if (demoMode) return;
             fileInputRef.current?.click();
-          }} onMouseEnter={() => setFocusedField("evidence")} onMouseLeave={() => setFocusedField(null)} aria-disabled={demoMode} className={`rounded-md border border-dashed p-10 text-center transition-colors ${demoMode ? "cursor-default border-border bg-muted/50 opacity-80" : dragOver ? "cursor-pointer border-primary bg-primary/5" : "cursor-pointer border-slate-300 bg-card hover:border-slate-400 hover:bg-muted"}`}>
+          }} onMouseEnter={() => setFocusedField("evidence")} onMouseLeave={() => setFocusedField(null)} aria-disabled={demoMode} className={`rounded-md border border-dashed p-10 text-center transition-colors ${demoMode ? "cursor-default border-border bg-muted/50 opacity-80" : dragOver ? "cursor-pointer border-primary bg-primary/5" : "cursor-pointer border-border bg-card hover:border-slate-400 hover:bg-muted"}`}>
               <UploadCloud className="h-6 w-6 mx-auto text-muted-foreground" strokeWidth={1.5} />
               <p className="mt-4 text-sm text-muted-foreground font-medium">
                 {demoMode ? "Evidence sealed · 3 documents bound" : "Drag and drop supporting documents"}
@@ -305,7 +305,7 @@ export function MatchCompiler({
               <label className="block text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground mb-3">
                 Notes
               </label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setFocusedField("notes")} onBlur={() => setFocusedField(null)} placeholder="Inspection by SGS at load port. Payment via L/C at sight." rows={4} readOnly={demoMode} aria-readonly={demoMode} tabIndex={demoMode ? -1 : 0} className={`w-full bg-card border-0 border-b border-slate-300 px-0 py-2 text-base text-foreground placeholder:text-muted-foreground/70 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors resize-none ${demoMode ? "pointer-events-none cursor-default select-text" : ""}`} />
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} onFocus={() => setFocusedField("notes")} onBlur={() => setFocusedField(null)} placeholder="Inspection by SGS at load port. Payment via L/C at sight." rows={4} readOnly={demoMode} aria-readonly={demoMode} tabIndex={demoMode ? -1 : 0} className={`w-full bg-card border-0 border-b border-border px-0 py-2 text-base text-foreground placeholder:text-muted-foreground/70 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors resize-none ${demoMode ? "pointer-events-none cursor-default select-text" : ""}`} />
               <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
                 Optional. Notes are included in the sealed payload and visible to your counterparty.
               </p>
@@ -352,7 +352,7 @@ export function MatchCompiler({
 
             <article className="bg-card rounded-sm shadow-md border border-border p-12">
               <header className="text-center pb-8 border-b border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800"> Izenzo Governance Infrastructure, Deal Record </p>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">
                   Certificate of Intent
                 </h2>
@@ -382,14 +382,14 @@ export function MatchCompiler({
                 duration: 0.25
               }} className={`overflow-hidden border-t border-border transition-colors ${focusedField === "notes" ? "bg-muted" : ""}`}>
                     <div className="py-6">
-                      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">Notes</p>
+                      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">Notes</p>
                       <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{notes}</p>
                     </div>
                   </motion.div>}
               </AnimatePresence>
 
               <div className={`py-6 border-t border-border transition-colors -mx-2 px-2 rounded-sm ${focusedField === "evidence" ? "bg-muted" : ""}`}>
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-4">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-4">
                   Attached Evidence
                 </p>
                 {docs.length === 0 ? <p className="font-mono text-xs italic text-muted-foreground">{PLACEHOLDER}</p> : <ul className="space-y-2">
@@ -419,7 +419,7 @@ export function MatchCompiler({
               </div>
 
               <div className="mt-2 pt-6 border-t border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
                   Security & Integrity
                 </p>
                 <ul className="space-y-3 font-mono text-[11px]">
@@ -430,7 +430,7 @@ export function MatchCompiler({
                 </ul>
 
                 <div className="mt-6 pt-5 border-t border-dashed border-border">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     SHA-256 Seal
                     {hashing && <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground normal-case tracking-normal">
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -463,7 +463,7 @@ export function MatchCompiler({
         <div className="px-5 py-6">
           <article className="bg-card border border-border rounded-sm p-6">
             <header className="text-center pb-6 border-b border-border">
-              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-slate-800"> Izenzo, Deal Record </p>
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-foreground"> Izenzo, Deal Record </p>
               <h2 className="mt-4 text-base font-semibold tracking-[0.3em] uppercase text-foreground">
                 Certificate of Intent
               </h2>
@@ -537,7 +537,7 @@ function EditorField({
       <label className="block text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground mb-3">
         {label}
       </label>
-      <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder={placeholder} readOnly={readOnly} aria-readonly={readOnly} tabIndex={readOnly ? -1 : 0} className={`w-full bg-card border-0 border-b border-slate-300 px-0 py-2 text-lg text-foreground placeholder:text-muted-foreground/70 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors ${mono ? "font-mono" : ""} ${readOnly ? "cursor-default pointer-events-none select-text" : ""}`} />
+      <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder={placeholder} readOnly={readOnly} aria-readonly={readOnly} tabIndex={readOnly ? -1 : 0} className={`w-full bg-card border-0 border-b border-border px-0 py-2 text-lg text-foreground placeholder:text-muted-foreground/70 focus:border-slate-900 focus:outline-none focus:ring-0 transition-colors ${mono ? "font-mono" : ""} ${readOnly ? "cursor-default pointer-events-none select-text" : ""}`} />
       {hint && <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{hint}</p>}
     </div>;
 }
@@ -556,7 +556,7 @@ function CertRow({
 }) {
   const filled = value.trim().length > 0;
   return <div className={`flex items-baseline gap-4 -mx-2 px-2 py-2 rounded-sm transition-colors duration-300 ${highlight ? "bg-muted" : ""}`}>
-      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
+      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground w-32 shrink-0">
         {label}
       </dt>
       <dd className={`flex-1 text-sm relative min-h-[1.25rem] ${mono ? "font-mono" : ""}`}>
@@ -594,7 +594,7 @@ function SealRow({
   status: string;
 }) {
   return <li className="flex items-center justify-between">
-      <span className="text-slate-800 tracking-wide">{label}</span>
+      <span className="text-foreground tracking-wide">{label}</span>
       <span className="text-amber-700 font-medium tracking-[0.2em] text-[10px]">{status}</span>
     </li>;
 }

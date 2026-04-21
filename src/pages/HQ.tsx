@@ -100,7 +100,7 @@ function CommandBar() {
         <div className="flex items-center gap-6 min-w-0">
           {/* Wordmark */}
           <Link to="/hq" className="flex items-center gap-2.5 shrink-0">
-            <div className="h-6 w-6 rounded-sm bg-emerald-500 flex items-center justify-center">
+            <div className="h-6 w-6 rounded-sm bg-[hsl(var(--emerald))] flex items-center justify-center">
               <span className="text-foreground font-bold text-[10px] font-mono">IZ</span>
             </div>
             <div className="leading-tight">
@@ -452,7 +452,7 @@ function ForbiddenHQ() {
           role required to enter this area. This attempt has been recorded.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <Link to="/desk" className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-card text-foreground hover:bg-slate-200 transition-colors rounded-sm">
+          <Link to="/desk" className="px-4 py-2 text-xs font-medium tracking-wide uppercase bg-card text-foreground hover:bg-muted transition-colors rounded-sm">
             Return to Desk
           </Link>
           <Link to="/welcome" className="px-4 py-2 text-xs font-medium tracking-wide uppercase border border-slate-800 text-muted-foreground/50 hover:border-slate-600 hover:text-white transition-colors rounded-sm">

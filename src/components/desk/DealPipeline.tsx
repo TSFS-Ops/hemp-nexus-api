@@ -91,7 +91,7 @@ const LANE_META = [
 const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string }> = {
   draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500" },
   awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500" },
-  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-emerald-500" },
+  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-[hsl(var(--emerald))]" },
 };
 const LANE_PILL_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -594,7 +594,7 @@ export function DealPipeline() {
                     )}
                   </div>
                   {lane.id === "poi" && !isLoading && lane.deals.length > 0 && (
-                    <div className="px-4 py-2.5 border-t border-border bg-white/60 flex items-center justify-between gap-3">
+                    <div className="px-4 py-2.5 border-t border-border bg-card/60 flex items-center justify-between gap-3">
                       <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground">
                         Showing {sealedLoaded}
                         {sealedQ.data?.totalSealedish ? ` of ~${sealedQ.data.totalSealedish}` : ""}
@@ -619,7 +619,7 @@ export function DealPipeline() {
                     !isLoading &&
                     activeQ.data &&
                     activeHasMore && (
-                      <div className="px-4 py-2.5 border-t border-border bg-white/60 flex items-center justify-between gap-3">
+                      <div className="px-4 py-2.5 border-t border-border bg-card/60 flex items-center justify-between gap-3">
                         <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground">
                           Showing {activeLoaded} of {activeQ.data.totalActive}
                         </p>
@@ -674,7 +674,7 @@ function FilterBar({
   visibleCount: number;
 }) {
   const inputBase =
-    "appearance-none bg-card border border-border hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md text-[12px] font-medium text-muted-foreground transition-colors";
+    "appearance-none bg-card border border-border hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md text-[12px] font-medium text-muted-foreground transition-colors";
   return (
     <div className="mb-5 rounded-lg border border-border bg-muted/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
       {/* Counterparty contains-search */}
@@ -814,7 +814,7 @@ function PipelineHeader({
           <select
             value={sortKey}
             onChange={(e) => onSortChange(e.target.value as SortKey)}
-            className="appearance-none bg-card border border-border hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md pl-2 pr-7 py-1.5 text-[12px] font-medium text-muted-foreground cursor-pointer transition-colors"
+            className="appearance-none bg-card border border-border hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md pl-2 pr-7 py-1.5 text-[12px] font-medium text-muted-foreground cursor-pointer transition-colors"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

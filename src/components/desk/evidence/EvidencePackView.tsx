@@ -481,7 +481,7 @@ export function EvidencePackView({
                 Payload Hash ({pack.hashAlgorithm})
               </p>
               <p className="font-mono text-[10px] text-foreground break-all">{payloadHash}</p>
-              <button type="button" onClick={() => setInspectorOpen(true)} className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-slate-300 bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-mono text-[10px] tracking-[0.2em] uppercase transition-colors">
+              <button type="button" onClick={() => setInspectorOpen(true)} className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border bg-muted hover:bg-muted text-muted-foreground hover:text-foreground font-mono text-[10px] tracking-[0.2em] uppercase transition-colors">
                 <FileSearch className="h-3 w-3" strokeWidth={1.75} />
                 Verify Record Integrity
               </button>

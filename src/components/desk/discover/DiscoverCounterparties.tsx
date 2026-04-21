@@ -18,7 +18,7 @@ export function DiscoverCounterparties() {
           </p>
           <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-muted-foreground/70">
             <span className="inline-flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Verified
+              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--emerald))]" /> Verified
             </span>
             <span className="text-muted-foreground/50">·</span>
             <span className="inline-flex items-center gap-1">

@@ -218,7 +218,7 @@ function WelcomeContent() {
                   </p>
 
                   {/* CTA row */}
-                  <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-slate-200 group-hover:border-slate-300 transition-colors">
+                  <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-slate-200 group-hover:border-border transition-colors">
                     <span className="text-sm font-medium text-slate-900">
                       {isSubmitting ? "Setting up…" : "Continue"}
                     </span>

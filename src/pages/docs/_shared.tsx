@@ -55,7 +55,7 @@ export function DocP({ children }: { children: ReactNode }) {
 
 export function InlineCode({ children }: { children: ReactNode }) {
   return (
-    <code className="text-[12.5px] font-mono px-1.5 py-0.5 rounded bg-muted text-slate-800">
+    <code className="text-[12.5px] font-mono px-1.5 py-0.5 rounded bg-muted text-foreground">
       {children}
     </code>
   );

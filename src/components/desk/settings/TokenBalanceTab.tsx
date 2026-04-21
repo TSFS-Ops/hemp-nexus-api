@@ -129,7 +129,7 @@ export function TokenBalanceTab() {
                   "w-full py-3 rounded-md text-sm font-medium transition-colors",
                   pack.highlight
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border border-slate-300 text-foreground hover:border-slate-900",
+                    : "border border-border text-foreground hover:border-slate-900",
                 ].join(" ")}
               >
                 {pack.cta}

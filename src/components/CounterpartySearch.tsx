@@ -621,7 +621,7 @@ export default function CounterpartySearch() {
                     </h3>
                     {counts.verified > 0 && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-mono tracking-wider uppercase">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--emerald))]" />
                         {counts.verified} verified
                       </span>
                     )}

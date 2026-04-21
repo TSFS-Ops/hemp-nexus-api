@@ -191,7 +191,7 @@ export default function FinanceSolutionsPage() {
                   0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500" strokeWidth={2} />
+                  <CheckCircle2 className="h-3 w-3 text-[hsl(var(--emerald))]" strokeWidth={2} />
                   <span>Verified · Match A1B2C3D4 · 9/9 gates passed</span>
                 </div>
               </div>

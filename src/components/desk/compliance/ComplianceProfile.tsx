@@ -479,7 +479,7 @@ function EmptyRow({
       <button
         type="button"
         onClick={onClick}
-        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-card border border-slate-300 text-muted-foreground hover:bg-muted hover:text-foreground text-sm font-medium shadow-sm transition-colors"
+        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground text-sm font-medium shadow-sm transition-colors"
       >
         {cta}
       </button>

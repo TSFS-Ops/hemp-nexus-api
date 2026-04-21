@@ -109,7 +109,7 @@ export default function Pricing() {
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--emerald)/0.2)] bg-[hsl(var(--emerald-muted))]/70 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.18em] text-[hsl(var(--emerald))]"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />
             Pricing
           </motion.div>
 
@@ -228,7 +228,7 @@ export default function Pricing() {
 
               <a
                 href="mailto:support@izenzo.co.za"
-                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-medium text-white hover:bg-white/10 hover:border-white/25 transition-all backdrop-blur"
+                className="group mt-10 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-card/5 px-6 py-3.5 text-sm font-medium text-white hover:bg-card/10 hover:border-white/25 transition-all backdrop-blur"
               >
                 Contact Sales
                 <ArrowRight
@@ -237,7 +237,7 @@ export default function Pricing() {
                 />
               </a>
 
-              <div className="mt-10 h-px bg-white/10" />
+              <div className="mt-10 h-px bg-card/10" />
 
               <ul className="mt-8 space-y-3.5">
                 {INSTITUTIONAL_FEATURES.map((feature) => (

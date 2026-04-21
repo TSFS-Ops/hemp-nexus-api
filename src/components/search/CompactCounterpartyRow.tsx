@@ -85,7 +85,7 @@ function tierDotClass(tier: Tier): string {
   // Solid dot + ring for visual weight, matches AttentionPipeline language.
   switch (tier) {
     case "verified":
-      return "bg-emerald-500 ring-emerald-200";
+      return "bg-[hsl(var(--emerald))] ring-emerald-200";
     case "registered":
       return "bg-sky-500 ring-sky-200";
     case "order_book":
@@ -139,7 +139,7 @@ export function CompactCounterpartyRow({
           aria-label={`${isSelected ? "Deselect" : "Select"} ${result.title}`}
           className={cn(
             "h-4 w-4",
-            isSelected && "data-[state=checked]:bg-[hsl(var(--emerald))] data-[state=checked]:border-emerald-600",
+            isSelected && "data-[state=checked]:bg-[hsl(var(--emerald))] data-[state=checked]:border-[hsl(var(--emerald)/0.4)]",
           )}
         />
       </div>
@@ -166,7 +166,7 @@ export function CompactCounterpartyRow({
           "shrink-0 hidden sm:flex w-9 h-9 rounded-full items-center justify-center font-mono text-[11px] tracking-wider transition-colors",
           isSelected
             ? "bg-[hsl(var(--emerald))] text-white"
-            : "bg-muted text-muted-foreground group-hover:bg-slate-200",
+            : "bg-muted text-muted-foreground group-hover:bg-muted",
         )}
         aria-hidden
       >
@@ -295,7 +295,7 @@ export function CompactCounterpartyRow({
           variant={isSelected ? "default" : "outline"}
           className={cn(
             "h-8 px-3 text-xs font-medium ml-1",
-            isSelected && "bg-[hsl(var(--emerald))] hover:bg-[hsl(var(--emerald))] text-white border-emerald-600",
+            isSelected && "bg-[hsl(var(--emerald))] hover:bg-[hsl(var(--emerald))] text-white border-[hsl(var(--emerald)/0.4)]",
           )}
           onClick={(e) => {
             e.stopPropagation();

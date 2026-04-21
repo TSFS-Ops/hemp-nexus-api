@@ -114,7 +114,7 @@ export function CreditProvisioningPanel({
                               {tier.label}
                             </p>
                             {tier.recommended && (
-                              <span className="font-mono text-[9px] tracking-[0.2em] uppercase px-1.5 py-0.5 border border-slate-300 text-muted-foreground rounded-sm">
+                              <span className="font-mono text-[9px] tracking-[0.2em] uppercase px-1.5 py-0.5 border border-border text-muted-foreground rounded-sm">
                                 Recommended
                               </span>
                             )}

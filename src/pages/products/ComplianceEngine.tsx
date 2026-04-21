@@ -231,7 +231,7 @@ function OcrExtractionVisual() {
           </p>
         </div>
         <div className="space-y-1.5">
-          {[6, 4, 5, 3, 5, 4].map((w, i) => <div key={i} className="h-1.5 bg-slate-200 rounded-full" style={{
+          {[6, 4, 5, 3, 5, 4].map((w, i) => <div key={i} className="h-1.5 bg-muted rounded-full" style={{
           width: `${w * 12}%`
         }} />)}
         </div>
@@ -249,7 +249,7 @@ function OcrExtractionVisual() {
         duration: 2.4,
         repeat: Infinity,
         ease: "easeInOut"
-      }} className="absolute left-3 right-3 h-px bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]" />
+      }} className="absolute left-3 right-3 h-px bg-[hsl(var(--emerald))] shadow-[0_0_12px_rgba(16,185,129,0.6)]" />
       </div>
 
       {/* Arrow */}
@@ -501,7 +501,7 @@ export default function ComplianceEngineProductPage() {
                       p: "16.5%"
                     }].map(n => <div key={n.n} className="flex items-center gap-3 rounded-lg border border-border px-4 py-2.5">
                           {n.t === "entity" ? <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} /> : <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />}
-                          <span className="text-[12px] text-slate-800 flex-1 truncate">
+                          <span className="text-[12px] text-foreground flex-1 truncate">
                             {n.n}
                           </span>
                           <span className="font-mono text-[11px] tabular-nums text-muted-foreground">

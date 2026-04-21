@@ -154,7 +154,7 @@ function Toggle({
       aria-busy={pending}
       className={[
         "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-        on ? "bg-primary" : "bg-slate-200",
+        on ? "bg-primary" : "bg-muted",
         pending ? "opacity-60" : "",
       ].join(" ")}
     >

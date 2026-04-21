@@ -162,7 +162,7 @@ export function SealedEngagement() {
             </h2>
 
             <ol className="mt-10 relative">
-              <div className="absolute left-[11px] top-3 bottom-3 w-px bg-slate-200" aria-hidden />
+              <div className="absolute left-[11px] top-3 bottom-3 w-px bg-muted" aria-hidden />
 
               <TimelineNode state="completed" title="Proof of Intent Sealed" timestamp={sealedAt} detail={<div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span className="font-mono">−1 CREDIT</span>
@@ -229,7 +229,7 @@ export function SealedEngagement() {
 
             <article className="bg-card rounded-sm shadow-md border border-border p-12">
               <header className="text-center pb-8 border-b border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800"> Izenzo Governance Infrastructure, Deal Record </p>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">
                   Certificate of Intent
                 </h2>
@@ -246,7 +246,7 @@ export function SealedEngagement() {
               </dl>
 
               {notes && <div className="border-t border-border py-6">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     Notes
                   </p>
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
@@ -255,7 +255,7 @@ export function SealedEngagement() {
                 </div>}
 
               <div className="py-6 border-t border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                   Attached Evidence
                 </p>
                 <p className="text-sm text-foreground">
@@ -265,7 +265,7 @@ export function SealedEngagement() {
               </div>
 
               <div className="mt-2 pt-6 border-t border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
                   Security & Integrity
                 </p>
                 <ul className="space-y-3 font-mono text-[11px]">
@@ -276,7 +276,7 @@ export function SealedEngagement() {
                 </ul>
 
                 <div className="mt-6 pt-5 border-t border-dashed border-border">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     POI Payload Hash
                   </p>
                   <p className="font-mono text-[11px] leading-relaxed break-all text-foreground">
@@ -285,7 +285,7 @@ export function SealedEngagement() {
                 </div>
 
                 <div className="mt-6 pt-5 border-t border-dashed border-border">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     WaD Issuance Status
                   </p>
                   <p className={`font-mono text-[11px] tracking-[0.2em] font-medium ${issuanceTone}`}>
@@ -382,7 +382,7 @@ function CertRow({
   mono?: boolean;
 }) {
   return <div className="flex items-baseline gap-4 -mx-2 px-2 py-2 rounded-sm">
-      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
+      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground w-32 shrink-0">
         {label}
       </dt>
       <dd className={`flex-1 text-sm text-foreground font-medium ${mono ? "font-mono" : ""}`}>
@@ -401,7 +401,7 @@ function SealRow({
 }) {
   const toneClass = tone === "ok" ? "text-[hsl(var(--emerald))]" : "text-amber-700";
   return <li className="flex items-center justify-between">
-      <span className="text-slate-800 tracking-wide">{label}</span>
+      <span className="text-foreground tracking-wide">{label}</span>
       <span className={`font-medium tracking-[0.2em] text-[10px] ${toneClass}`}>{status}</span>
     </li>;
 }

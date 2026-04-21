@@ -49,7 +49,7 @@ function PayloadToHash() {
         <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70 mb-3">
           Canonical Payload
         </p>
-        <pre className="whitespace-pre overflow-hidden text-slate-800">
+        <pre className="whitespace-pre overflow-hidden text-foreground">
 {`{
   "match_id": "a1b2c3d4-...",
   "counterparty": "Glencore Intl",

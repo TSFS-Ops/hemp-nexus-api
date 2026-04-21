@@ -368,7 +368,7 @@ export default function Auth() {
 
       {/* ═══════════════ CENTERED AUTH CARD ═══════════════ */}
       <div className="relative z-10 w-full max-w-[440px]">
-        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-5 sm:p-6">
+        <div className="bg-card/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-emerald-900/10 border border-white/40 ring-1 ring-slate-900/5 p-5 sm:p-6">
           {/* Logo (centered, top of card), links back to landing */}
           <div className="flex flex-col items-center mb-3">
             <Link to="/" aria-label="Back to Izenzo home" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/40 focus-visible:ring-offset-2">
@@ -471,7 +471,7 @@ function AuthForm({
       <div className="space-y-3">
         {/* ─── Enterprise SSO ─── */}
         <div className="space-y-2">
-          <button type="button" onClick={() => handleSso("microsoft")} disabled={loading || ssoLoading !== null} className="relative w-full h-10 rounded-md border border-border bg-card text-muted-foreground text-[14px] font-medium hover:bg-muted hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
+          <button type="button" onClick={() => handleSso("microsoft")} disabled={loading || ssoLoading !== null} className="relative w-full h-10 rounded-md border border-border bg-card text-muted-foreground text-[14px] font-medium hover:bg-muted hover:border-border transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
             <span className="absolute left-4 flex items-center">
               {ssoLoading === "microsoft" ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/70" /> : <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                   <rect x="0" y="0" width="7" height="7" fill="#F25022" />
@@ -483,7 +483,7 @@ function AuthForm({
             Continue with Microsoft
           </button>
 
-          <button type="button" onClick={() => handleSso("google")} disabled={loading || ssoLoading !== null} className="relative w-full h-10 rounded-md border border-border bg-card text-muted-foreground text-[14px] font-medium hover:bg-muted hover:border-slate-300 transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
+          <button type="button" onClick={() => handleSso("google")} disabled={loading || ssoLoading !== null} className="relative w-full h-10 rounded-md border border-border bg-card text-muted-foreground text-[14px] font-medium hover:bg-muted hover:border-border transition-all flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">
             <span className="absolute left-4 flex items-center">
               {ssoLoading === "google" ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/70" /> : <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
                   <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
@@ -510,7 +510,7 @@ function AuthForm({
             <Label htmlFor="email" className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">
               Email
             </Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/70 shadow-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/20 focus-visible:border-emerald-600 transition-shadow" placeholder="you@institution.com" />
+            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/70 shadow-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/20 focus-visible:border-[hsl(var(--emerald)/0.4)] transition-shadow" placeholder="you@institution.com" />
           </div>
 
           <div className="space-y-1">
@@ -522,14 +522,14 @@ function AuthForm({
                   Forgot?
                 </button>}
             </div>
-            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={isSignIn ? "current-password" : "new-password"} minLength={8} className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/70 shadow-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/20 focus-visible:border-emerald-600 transition-shadow" placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"} />
+            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={isSignIn ? "current-password" : "new-password"} minLength={8} className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/70 shadow-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/20 focus-visible:border-[hsl(var(--emerald)/0.4)] transition-shadow" placeholder={isSignIn ? "••••••••" : "Minimum 8 characters"} />
           </div>
 
           {!isSignIn && <div className="space-y-1">
               <Label htmlFor="confirm-password" className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">
                 Confirm password
               </Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" minLength={8} className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/70 shadow-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/20 focus-visible:border-emerald-600 transition-shadow" placeholder="Re-enter password" />
+              <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" minLength={8} className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/70 shadow-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/20 focus-visible:border-[hsl(var(--emerald)/0.4)] transition-shadow" placeholder="Re-enter password" />
               {confirmPassword.length > 0 && password !== confirmPassword && <p className="text-[11px] text-destructive">Passwords do not match.</p>}
             </div>}
 

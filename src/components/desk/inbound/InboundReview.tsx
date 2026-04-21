@@ -382,7 +382,7 @@ export function InboundReview() {
 
             <article className="bg-card rounded-sm shadow-md border border-border p-12">
               <header className="text-center pb-8 border-b border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800"> Izenzo Governance Infrastructure, Deal Record </p>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">
                   Certificate of Intent
                 </h2>
@@ -399,7 +399,7 @@ export function InboundReview() {
               </dl>
 
               {data.notes && <div className="border-t border-border py-6">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     Notes
                   </p>
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
@@ -408,7 +408,7 @@ export function InboundReview() {
                 </div>}
 
               {data.documents.length > 0 && <div className="py-6 border-t border-border">
-                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-3">
+                  <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-3">
                     Attached Evidence
                   </p>
                   <ul className="space-y-2">
@@ -426,7 +426,7 @@ export function InboundReview() {
 
               {/* ── Asymmetric Seal Section ─────────────────── */}
               <div className="mt-2 pt-6 border-t border-border">
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 mb-5">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
                   Bilateral Tamper-Proof Seal
                 </p>
 
@@ -517,7 +517,7 @@ function CertRow({
   mono?: boolean;
 }) {
   return <div className="flex items-baseline gap-4 -mx-2 px-2 py-2 rounded-sm">
-      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-slate-800 w-32 shrink-0">
+      <dt className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground w-32 shrink-0">
         {label}
       </dt>
       <dd className={`flex-1 text-sm text-foreground font-medium ${mono ? "font-mono" : ""}`}>

@@ -210,7 +210,7 @@ export function CompanyIdentityTab() {
                 "px-4 py-3 text-left transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap",
                 active
                   ? "border-slate-900 text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-slate-800",
+                  : "border-transparent text-muted-foreground hover:text-foreground",
               ].join(" ")}
             >
               <p className="font-mono text-[10px] tracking-[0.25em] uppercase opacity-70">{s.index}</p>
@@ -611,8 +611,8 @@ function DocumentsStep({
           className={[
             "block rounded-md border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors",
             uploading
-              ? "border-slate-300 bg-muted cursor-wait"
-              : "border-slate-300 bg-muted/40 hover:border-slate-500 hover:bg-muted",
+              ? "border-border bg-muted cursor-wait"
+              : "border-border bg-muted/40 hover:border-slate-500 hover:bg-muted",
           ].join(" ")}
         >
           <input

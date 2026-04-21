@@ -22,14 +22,14 @@ interface TradeApproval {
 }
 
 const statusColour: Record<string, string> = {
-  [TRADE_APPROVAL_STATUS.APPROVED]: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  [TRADE_APPROVAL_STATUS.APPROVED]: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200",
   [TRADE_APPROVAL_STATUS.REVOKED]: "bg-destructive/10 text-destructive border-destructive/20",
   [TRADE_APPROVAL_STATUS.EXPIRED]: "bg-amber-500/10 text-amber-700 border-amber-200",
   [TRADE_APPROVAL_STATUS.PENDING]: "bg-muted text-muted-foreground border-muted",
 };
 
 const riskColour: Record<string, string> = {
-  [RISK_BAND.LOW]: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  [RISK_BAND.LOW]: "bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200",
   [RISK_BAND.MEDIUM]: "bg-amber-500/10 text-amber-700 border-amber-200",
   [RISK_BAND.HIGH]: "bg-destructive/10 text-destructive border-destructive/20",
 };

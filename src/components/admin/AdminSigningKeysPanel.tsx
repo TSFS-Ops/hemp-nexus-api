@@ -51,7 +51,7 @@ export function AdminSigningKeysPanel() {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case "active": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Active</Badge>;
+      case "active": return <Badge className="bg-[hsl(var(--emerald))]/10 text-emerald-700 border-emerald-200">Active</Badge>;
       case "revoked": return <Badge variant="destructive">Revoked</Badge>;
       case "rotated": return <Badge variant="secondary">Rotated</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
