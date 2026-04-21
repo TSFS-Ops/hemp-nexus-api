@@ -57,7 +57,7 @@ export default function DocsWebhooks() {
         <DocH2 id="register">Register an endpoint</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="POST" />
-          <code className="text-[13.5px] font-mono text-slate-900">/webhooks</code>
+          <code className="text-[13.5px] font-mono text-foreground">/webhooks</code>
         </div>
         <CodePanel title="Request" language="http" code={REGISTER} />
         <DocP>

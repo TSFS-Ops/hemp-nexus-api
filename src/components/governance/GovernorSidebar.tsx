@@ -27,13 +27,13 @@ export function GovernorSidebar() {
     : "GOV-PENDING";
 
   return (
-    <aside className="hidden md:flex w-[260px] shrink-0 flex-col bg-white border-r border-slate-200">
+    <aside className="hidden md:flex w-[260px] shrink-0 flex-col bg-card border-r border-border">
       {/* Wordmark */}
       <div className="px-6 pt-8 pb-4">
-        <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-slate-900 uppercase">
+        <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-foreground uppercase">
           Izenzo
         </h2>
-        <p className="mt-1 text-[10px] tracking-[0.2em] text-slate-400 font-mono uppercase">
+        <p className="mt-1 text-[10px] tracking-[0.2em] text-muted-foreground/70 font-mono uppercase">
           Governance Console
         </p>
       </div>
@@ -57,8 +57,8 @@ export function GovernorSidebar() {
                     [
                       "flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors",
                       isActive
-                        ? "bg-slate-50 text-slate-900 font-medium"
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
+                        ? "bg-muted text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     ].join(" ")
                   }
                 >
@@ -75,30 +75,30 @@ export function GovernorSidebar() {
       </nav>
 
       {/* Governor identity & certification footer */}
-      <div className="px-6 py-6 border-t border-slate-200 space-y-4">
+      <div className="px-6 py-6 border-t border-border space-y-4">
         <div>
-          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400 font-mono mb-1.5">
+          <p className="text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70 font-mono mb-1.5">
             Officer ID
           </p>
-          <p className="text-xs text-slate-900 font-mono tracking-wider">
+          <p className="text-xs text-foreground font-mono tracking-wider">
             {officialId}
           </p>
-          <p className="mt-0.5 text-[10px] text-slate-500 font-mono truncate">
+          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono truncate">
             {user?.email}
           </p>
         </div>
 
         <div>
-          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400 font-mono mb-1.5">
+          <p className="text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70 font-mono mb-1.5">
             Certification
           </p>
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-hidden />
-            <p className="text-[11px] text-slate-700 font-mono tracking-wide">
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" aria-hidden />
+            <p className="text-[11px] text-muted-foreground font-mono tracking-wide">
               FATF · Tier II · Active
             </p>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400 font-mono">
+          <p className="mt-1 text-[10px] text-muted-foreground/70 font-mono">
             Expires 2027-03-31
           </p>
         </div>
@@ -106,15 +106,15 @@ export function GovernorSidebar() {
         <div className="flex items-center gap-3 pt-2">
           <Link
             to="/dashboard/settings"
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
             Settings
           </Link>
-          <span className="text-slate-300">·</span>
+          <span className="text-muted-foreground/50">·</span>
           <button
             onClick={signOut}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
             Sign out

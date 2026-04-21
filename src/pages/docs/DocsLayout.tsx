@@ -39,16 +39,16 @@ const SECTIONS: DocSection[] = [
 export function DocsLayout({ children }: { children: ReactNode }) {
   return (
     <div
-      className="min-h-screen bg-white"
+      className="min-h-screen bg-card"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
     >
       <PublicHeader />
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex">
-        <aside className="hidden md:block w-64 shrink-0 border-r border-slate-100 py-12 pr-8">
+        <aside className="hidden md:block w-64 shrink-0 border-r border-border py-12 pr-8">
           <div className="sticky top-28 space-y-8">
             {SECTIONS.map((section) => (
               <div key={section.title}>
-                <h4 className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3">
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/70 mb-3">
                   {section.title}
                 </h4>
                 <ul className="space-y-1">
@@ -60,8 +60,8 @@ export function DocsLayout({ children }: { children: ReactNode }) {
                         className={({ isActive }) =>
                           `block px-3 py-1.5 text-[13.5px] rounded-md transition-colors ${
                             isActive
-                              ? "text-emerald-600 bg-emerald-50/60 font-medium"
-                              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                              ? "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]/60 font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted"
                           }`
                         }
                       >

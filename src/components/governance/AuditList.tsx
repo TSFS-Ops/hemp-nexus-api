@@ -22,12 +22,12 @@ const AUDITS: Audit[] = [
 function severityTone(s: Audit["severity"]) {
   if (s === "critical") return "text-rose-800 bg-rose-50 ring-rose-200";
   if (s === "high")     return "text-amber-900 bg-amber-50 ring-amber-200";
-  if (s === "medium")   return "text-slate-900 bg-slate-50 ring-slate-300";
-  return "text-emerald-900 bg-emerald-50 ring-emerald-200";
+  if (s === "medium")   return "text-foreground bg-muted ring-slate-300";
+  return "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))] ring-emerald-200";
 }
 function statusTone(s: Audit["status"]) {
-  if (s === "sealed")   return "text-emerald-800 bg-emerald-50 ring-emerald-200";
-  if (s === "review")   return "text-slate-900 bg-slate-50 ring-slate-300";
+  if (s === "sealed")   return "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))] ring-emerald-200";
+  if (s === "review")   return "text-foreground bg-muted ring-slate-300";
   if (s === "evidence") return "text-amber-900 bg-amber-50 ring-amber-200";
   return "text-rose-800 bg-rose-50 ring-rose-200";
 }
@@ -35,35 +35,35 @@ function statusTone(s: Audit["status"]) {
 export function AuditList() {
   return (
     <section>
-      <div className="flex items-baseline justify-between pb-3 border-b border-slate-200 mb-0">
-        <h2 className="text-base font-medium text-slate-900 tracking-tight">Open Investigations</h2>
-        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+      <div className="flex items-baseline justify-between pb-3 border-b border-border mb-0">
+        <h2 className="text-base font-medium text-foreground tracking-tight">Open Investigations</h2>
+        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
           {AUDITS.filter(a => a.status !== "sealed").length} active · {AUDITS.length} total
         </p>
       </div>
 
-      <ul className="divide-y divide-slate-100 border border-slate-200 border-t-0 bg-white">
+      <ul className="divide-y divide-border border border-border border-t-0 bg-card">
         {AUDITS.map((a) => (
-          <li key={a.id} className="grid grid-cols-[180px_1fr_140px_140px_120px_90px] gap-5 items-center px-5 py-4 hover:bg-slate-50/60 transition-colors">
+          <li key={a.id} className="grid grid-cols-[180px_1fr_140px_140px_120px_90px] gap-5 items-center px-5 py-4 hover:bg-muted/60 transition-colors">
             <div>
-              <p className="font-mono text-[11px] tracking-wider text-slate-900">{a.id}</p>
-              <p className="font-mono text-[10px] text-slate-500 mt-0.5">opened {a.opened}</p>
+              <p className="font-mono text-[11px] tracking-wider text-foreground">{a.id}</p>
+              <p className="font-mono text-[10px] text-muted-foreground mt-0.5">opened {a.opened}</p>
             </div>
             <div className="min-w-0">
-              <p className="text-sm text-slate-900 truncate">{a.subject}</p>
-              <p className="text-[12px] text-slate-600 truncate mt-0.5">{a.trigger}</p>
+              <p className="text-sm text-foreground truncate">{a.subject}</p>
+              <p className="text-[12px] text-muted-foreground truncate mt-0.5">{a.trigger}</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Jurisdiction</p>
-              <p className="font-mono text-[12px] text-slate-900 mt-0.5">{a.jurisdiction}</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Jurisdiction</p>
+              <p className="font-mono text-[12px] text-foreground mt-0.5">{a.jurisdiction}</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Officer</p>
-              <p className="font-mono text-[11px] text-slate-900 mt-0.5 tracking-wider">{a.officer}</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Officer</p>
+              <p className="font-mono text-[11px] text-foreground mt-0.5 tracking-wider">{a.officer}</p>
             </div>
             <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Gates</p>
-              <p className="font-mono text-[12px] text-slate-900 mt-0.5">{a.gates.passed}/{a.gates.total}</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Gates</p>
+              <p className="font-mono text-[12px] text-foreground mt-0.5">{a.gates.passed}/{a.gates.total}</p>
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className={`font-mono text-[9px] tracking-[0.2em] uppercase font-medium px-2 py-1 rounded-sm ring-1 ${severityTone(a.severity)}`}>

@@ -33,16 +33,16 @@ const GATES: Gate[] = [
 ];
 
 function statusTone(s: Gate["status"]) {
-  if (s === "operational") return { dot: "bg-emerald-600", text: "text-emerald-800" };
+  if (s === "operational") return { dot: "bg-[hsl(var(--emerald))]", text: "text-[hsl(var(--emerald))]" };
   if (s === "degraded")    return { dot: "bg-amber-500",   text: "text-amber-800"   };
   return { dot: "bg-rose-600", text: "text-rose-800" };
 }
 
 function severityTone(sev: string, status: string) {
-  if (status === "resolved") return "text-emerald-700";
+  if (status === "resolved") return "text-[hsl(var(--emerald))]";
   if (sev === "critical" || sev === "high") return "text-rose-700";
   if (sev === "medium") return "text-amber-700";
-  return "text-slate-600";
+  return "text-muted-foreground";
 }
 
 function formatTs(iso: string) {
@@ -58,7 +58,7 @@ function Sparkline({ series }: { series: number[] }) {
   const step = w / (series.length - 1);
   const pts = series.map((v, i) => `${i * step},${h - ((v - min) / (max - min)) * h}`).join(" ");
   return (
-    <svg width={w} height={h} className="text-slate-400">
+    <svg width={w} height={h} className="text-muted-foreground/70">
       <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1" />
     </svg>
   );
@@ -92,21 +92,21 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-px bg-slate-200 border border-slate-200 mb-10">
-        <div className="bg-white p-5">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Composite</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900 tracking-tight">99.962%</p>
-          <p className="font-mono text-[10px] text-slate-500 mt-0.5">trailing 30 days</p>
+      <div className="grid grid-cols-3 gap-px bg-slate-200 border border-border mb-10">
+        <div className="bg-card p-5">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">99.962%</p>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">trailing 30 days</p>
         </div>
-        <div className="bg-white p-5">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Gates Operational</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900 tracking-tight">{operational}/9</p>
-          <p className="font-mono text-[10px] text-slate-500 mt-0.5">{9 - operational} degraded · 0 incident</p>
+        <div className="bg-card p-5">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Gates Operational</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{operational}/9</p>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">{9 - operational} degraded · 0 incident</p>
         </div>
-        <div className="bg-white p-5">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">Open Incidents</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900 tracking-tight">{openIncidents}</p>
-          <p className={`font-mono text-[10px] mt-0.5 ${openIncidents > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+        <div className="bg-card p-5">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Open Incidents</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{openIncidents}</p>
+          <p className={`font-mono text-[10px] mt-0.5 ${openIncidents > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
             {openIncidents > 0
               ? `monitoring · ${shortId(incidents.find(i => i.status !== "resolved")!.id)}`
               : "all clear"}
@@ -116,23 +116,23 @@ export function HealthBoard() {
 
       {/* 9-gate board */}
       <section>
-        <div className="flex items-baseline justify-between pb-3 border-b border-slate-200 mb-0">
-          <h2 className="text-base font-medium text-slate-900 tracking-tight">9-Gate Service Board</h2>
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">polled every 30s</p>
+        <div className="flex items-baseline justify-between pb-3 border-b border-border mb-0">
+          <h2 className="text-base font-medium text-foreground tracking-tight">9-Gate Service Board</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">polled every 30s</p>
         </div>
-        <ul className="divide-y divide-slate-100 border border-slate-200 border-t-0 bg-white">
+        <ul className="divide-y divide-border border border-border border-t-0 bg-card">
           {GATES.map((g) => {
             const tone = statusTone(g.status);
             return (
               <li key={g.id} className="grid grid-cols-[60px_1fr_120px_100px_90px_120px] gap-5 items-center px-5 py-4">
-                <p className="font-mono text-[11px] tracking-wider text-slate-500">{g.id}</p>
-                <p className="text-sm text-slate-900">{g.name}</p>
+                <p className="font-mono text-[11px] tracking-wider text-muted-foreground">{g.id}</p>
+                <p className="text-sm text-foreground">{g.name}</p>
                 <div className="flex items-center gap-2">
                   <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} aria-hidden />
                   <span className={`font-mono text-[10px] tracking-[0.2em] uppercase ${tone.text}`}>{g.status}</span>
                 </div>
-                <p className="font-mono text-[12px] text-slate-900">{g.uptime}</p>
-                <p className="font-mono text-[12px] text-slate-900">{g.p99}</p>
+                <p className="font-mono text-[12px] text-foreground">{g.uptime}</p>
+                <p className="font-mono text-[12px] text-foreground">{g.p99}</p>
                 <Sparkline series={g.series} />
               </li>
             );
@@ -142,34 +142,34 @@ export function HealthBoard() {
 
       {/* Incident ledger */}
       <section className="mt-10">
-        <div className="flex items-baseline justify-between pb-3 border-b border-slate-200 mb-0">
-          <h2 className="text-base font-medium text-slate-900 tracking-tight">Incident Ledger</h2>
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-slate-400">
+        <div className="flex items-baseline justify-between pb-3 border-b border-border mb-0">
+          <h2 className="text-base font-medium text-foreground tracking-tight">Incident Ledger</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
             {incidentTotal > INCIDENT_LIMIT
               ? `showing ${INCIDENT_LIMIT} of ${incidentTotal} records`
               : "last 20 records"}
           </p>
         </div>
-        <ul className="divide-y divide-slate-100 border border-slate-200 border-t-0 bg-white">
+        <ul className="divide-y divide-border border border-border border-t-0 bg-card">
           {isLoading ? (
-            <li className="px-5 py-6 text-sm text-slate-500">loading risk telemetry…</li>
+            <li className="px-5 py-6 text-sm text-muted-foreground">loading risk telemetry…</li>
           ) : incidents.length === 0 ? (
             <li className="px-5 py-6">
-              <p className="text-sm text-slate-700">Zero recorded incidents.</p>
-              <p className="font-mono text-[10px] text-slate-500 mt-1">
+              <p className="text-sm text-muted-foreground">Zero recorded incidents.</p>
+              <p className="font-mono text-[10px] text-muted-foreground mt-1">
                 last heartbeat: {formatTs(lastBeat)} · all 9 gates reporting nominal
               </p>
             </li>
           ) : (
             incidents.map((i) => (
               <li key={i.id} className="grid grid-cols-[170px_120px_80px_1fr_100px] gap-5 items-center px-5 py-3">
-                <p className="font-mono text-[11px] tracking-wider text-slate-900">{shortId(i.id)}</p>
-                <p className="font-mono text-[11px] text-slate-500">{formatTs(i.created_at)}</p>
+                <p className="font-mono text-[11px] tracking-wider text-foreground">{shortId(i.id)}</p>
+                <p className="font-mono text-[11px] text-muted-foreground">{formatTs(i.created_at)}</p>
                 <p className={`font-mono text-[10px] tracking-[0.2em] uppercase ${severityTone(i.severity, i.status)}`}>
                   {i.severity}
                 </p>
-                <p className="text-[13px] text-slate-900 truncate" title={i.description ?? ""}>{i.title}</p>
-                <p className={`font-mono text-[10px] tracking-[0.2em] uppercase text-right ${i.status === "resolved" ? "text-emerald-700" : "text-amber-700"}`}>
+                <p className="text-[13px] text-foreground truncate" title={i.description ?? ""}>{i.title}</p>
+                <p className={`font-mono text-[10px] tracking-[0.2em] uppercase text-right ${i.status === "resolved" ? "text-[hsl(var(--emerald))]" : "text-amber-700"}`}>
                   {i.status}
                 </p>
               </li>

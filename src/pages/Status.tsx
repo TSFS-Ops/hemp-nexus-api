@@ -23,24 +23,24 @@ function generateBars(): number[] {
 export default function Status() {
   return (
     <div
-      className="min-h-screen bg-white"
+      className="min-h-screen bg-card"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
     >
       <PublicHeader />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-        <p className="text-[13px] font-medium text-emerald-600 tracking-wider uppercase mb-3">
+        <p className="text-[13px] font-medium text-[hsl(var(--emerald))] tracking-wider uppercase mb-3">
           System Status
         </p>
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-slate-900 mb-12">
+        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-foreground mb-12">
           Platform health
         </h1>
 
         {/* Banner */}
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 px-5 py-4 mb-12">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-          <span className="text-[15px] font-medium text-emerald-900">All Systems Operational</span>
-          <span className="ml-auto text-[12px] text-emerald-700/80">Updated just now</span>
+        <div className="flex items-center gap-3 rounded-xl border border-[hsl(var(--emerald)/0.2)] bg-[hsl(var(--emerald-muted))]/60 px-5 py-4 mb-12">
+          <CheckCircle2 className="h-5 w-5 text-[hsl(var(--emerald))]" />
+          <span className="text-[15px] font-medium text-[hsl(var(--emerald))]">All Systems Operational</span>
+          <span className="ml-auto text-[12px] text-[hsl(var(--emerald))]/80">Updated just now</span>
         </div>
 
         {/* Services */}
@@ -50,14 +50,14 @@ export default function Status() {
             return (
               <div
                 key={service.name}
-                className="rounded-xl border border-slate-100 bg-white p-5"
+                className="rounded-xl border border-border bg-card p-5"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-[14px] font-medium text-slate-900">{service.name}</span>
+                    <span className="text-[14px] font-medium text-foreground">{service.name}</span>
                   </div>
-                  <span className="text-[12px] text-slate-500 font-mono">{service.uptime}</span>
+                  <span className="text-[12px] text-muted-foreground font-mono">{service.uptime}</span>
                 </div>
 
                 {/* 90-day uptime bars */}
@@ -72,7 +72,7 @@ export default function Status() {
                     />
                   ))}
                 </div>
-                <div className="flex items-center justify-between mt-2 text-[11px] text-slate-400">
+                <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground/70">
                   <span>90 days ago</span>
                   <span>Today</span>
                 </div>
@@ -81,9 +81,9 @@ export default function Status() {
           })}
         </div>
 
-        <p className="mt-12 text-[13px] text-slate-500 text-center">
+        <p className="mt-12 text-[13px] text-muted-foreground text-center">
           Subscribe to incident updates by following{" "}
-          <a href="#" className="text-emerald-600 hover:text-emerald-700 font-medium">
+          <a href="#" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">
             @izenzo_status
           </a>
           .

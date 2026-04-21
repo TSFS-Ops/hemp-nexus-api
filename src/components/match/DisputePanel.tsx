@@ -200,7 +200,7 @@ export function DisputePanel({ matchId, orgId }: DisputePanelProps) {
       help: "A reviewer is investigating this dispute. You will be notified when a decision is reached."
     },
     resolved: { 
-      badge: <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400">Resolved</Badge>,
+      badge: <Badge className="bg-emerald-500/10 text-[hsl(var(--emerald))] border-[hsl(var(--emerald)/0.2)] dark:text-emerald-400">Resolved</Badge>,
       help: "This dispute has been resolved. See the resolution details below."
     },
     escalated: { 

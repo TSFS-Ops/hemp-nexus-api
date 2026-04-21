@@ -42,12 +42,12 @@ export default function DocsQuickstart() {
         <DocP>
           Open the Developer Centre and generate a key. Choose a scope that matches what your
           integration needs to read or write — keys default to least privilege. The full secret
-          is shown <strong className="text-slate-900 font-medium">once</strong> at creation; store
+          is shown <strong className="text-foreground font-medium">once</strong> at creation; store
           it in your secrets manager immediately.
         </DocP>
         <Link
           to="/developer/keys"
-          className="inline-flex items-center gap-1.5 text-[14px] font-medium text-emerald-600 hover:text-emerald-700"
+          className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))]"
         >
           Open Developer Centre <ArrowRight className="h-4 w-4" />
         </Link>
@@ -72,20 +72,20 @@ export default function DocsQuickstart() {
         </DocP>
         <CodePanel title="POST /match" language="bash" code={CREATE_MATCH} />
 
-        <section className="border-t border-slate-100 mt-14 pt-10">
+        <section className="border-t border-border mt-14 pt-10">
           <div className="flex items-start gap-3">
-            <Terminal className="h-5 w-5 text-emerald-600 mt-0.5" strokeWidth={1.75} />
+            <Terminal className="h-5 w-5 text-[hsl(var(--emerald))] mt-0.5" strokeWidth={1.75} />
             <div>
-              <h3 className="text-[15px] font-semibold text-slate-900 mb-1.5 tracking-tight">
+              <h3 className="text-[15px] font-semibold text-foreground mb-1.5 tracking-tight">
                 Next steps
               </h3>
-              <p className="text-[13.5px] text-slate-500 leading-relaxed mb-3">
+              <p className="text-[13.5px] text-muted-foreground leading-relaxed mb-3">
                 Read{" "}
-                <Link to="/docs/authentication" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                <Link to="/docs/authentication" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">
                   Authentication
                 </Link>{" "}
                 for scope reference and rate limits, or jump straight into{" "}
-                <Link to="/docs/matches" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                <Link to="/docs/matches" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">
                   Matches
                 </Link>{" "}
                 for the full state machine.

@@ -64,7 +64,7 @@ export default function DocsEvidence() {
         <DocH2 id="fetch">Download a pack</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="GET" />
-          <code className="text-[13.5px] font-mono text-slate-900">/evidence-pack/:matchId</code>
+          <code className="text-[13.5px] font-mono text-foreground">/evidence-pack/:matchId</code>
         </div>
         <DocP>
           Returns the full pack as JSON. The match must be in <InlineCode>completed</InlineCode>{" "}

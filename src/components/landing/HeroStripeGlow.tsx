@@ -8,7 +8,7 @@ interface HeroStripeGlowProps {
 export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowProps) {
   return (
     <section
-      className="relative overflow-hidden bg-white"
+      className="relative overflow-hidden bg-card"
       style={{ fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif" }}
     >
       {/* Airy emerald/mint mesh gradient with indigo aurora accent for tonal depth */}
@@ -58,13 +58,13 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
       <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:min-h-[calc(100vh-80px)] md:py-12 flex flex-col justify-center items-center text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 mb-6 shadow-sm">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--emerald-muted))] border border-[hsl(var(--emerald)/0.2)] text-xs font-medium text-[hsl(var(--emerald))] mb-6 shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           Izenzo Governance Network
         </div>
 
         {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-slate-900 max-w-4xl mx-auto mb-6">
+        <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-semibold tracking-tight leading-[1.05] text-foreground max-w-4xl mx-auto mb-6">
           Governance Infrastructure for{" "}
           <span
             className="bg-clip-text text-transparent"
@@ -78,7 +78,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
         </h1>
 
         {/* Sub-headline — wider so it wraps to 2 lines on desktop */}
-        <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed mb-10">
+        <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-10">
           One cryptographic network. Access it via our turnkey Trade Desk, manage risk through the Compliance Profile, or build directly on the API. All backed by mathematically provable execution.
         </p>
 
@@ -93,7 +93,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
           </button>
           <button
             onClick={onContactSales}
-            className="inline-flex items-center justify-center gap-1 px-5 h-12 rounded-md text-sm font-semibold text-emerald-900 bg-white/80 backdrop-blur border border-emerald-100 hover:bg-white hover:border-emerald-200 shadow-sm transition-all w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1 px-5 h-12 rounded-md text-sm font-semibold text-[hsl(var(--emerald))] bg-white/80 backdrop-blur border border-[hsl(var(--emerald)/0.2)] hover:bg-card hover:border-[hsl(var(--emerald)/0.2)] shadow-sm transition-all w-full sm:w-auto"
           >
             Read the Docs
             <ChevronRight className="h-4 w-4" />
@@ -102,7 +102,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
         {/* Network Telemetry & Standards */}
         <div className="mt-16 w-full">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest text-center mb-6">
+          <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-widest text-center mb-6">
             Platform Architecture & Standards
           </p>
           <div className="relative overflow-hidden max-w-4xl mx-auto">
@@ -111,20 +111,20 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
             <div className="flex animate-[telemetry_28s_linear_infinite] whitespace-nowrap w-max">
               {[0, 1].map((dup) => (
                 <div key={dup} className="flex gap-x-12 shrink-0 pr-12">
-                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
+                  <div className="flex items-center gap-3 text-muted-foreground shrink-0">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-sm font-mono tracking-tight">SYSTEM: OPERATIONAL</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
-                    <ShieldCheck className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+                  <div className="flex items-center gap-3 text-muted-foreground shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-muted-foreground/70" strokeWidth={1.75} />
                     <span className="text-sm font-mono tracking-tight">LEDGER: SHA-256</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
-                    <Globe2 className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+                  <div className="flex items-center gap-3 text-muted-foreground shrink-0">
+                    <Globe2 className="w-4 h-4 text-muted-foreground/70" strokeWidth={1.75} />
                     <span className="text-sm font-mono tracking-tight">RESIDENCY: POPIA / GDPR</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-500 shrink-0">
-                    <Database className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
+                  <div className="flex items-center gap-3 text-muted-foreground shrink-0">
+                    <Database className="w-4 h-4 text-muted-foreground/70" strokeWidth={1.75} />
                     <span className="text-sm font-mono tracking-tight">STATE: ATOMIC</span>
                   </div>
                 </div>
