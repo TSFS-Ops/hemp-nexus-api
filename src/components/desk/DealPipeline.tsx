@@ -523,6 +523,139 @@ export function DealPipeline() {
   );
 }
 
+/**
+ * FilterBar — narrows the visible pipeline by counterparty (free-text contains
+ * search), commodity (exact match against a derived dropdown), and stage
+ * (lane). All filters are AND-combined and applied client-side before the
+ * sort comparator runs in the parent.
+ */
+function FilterBar({
+  counterpartyQuery,
+  onCounterpartyQueryChange,
+  commodityFilter,
+  onCommodityFilterChange,
+  commodityOptions,
+  laneFilter,
+  onLaneFilterChange,
+  hasActiveFilters,
+  onReset,
+  visibleCount,
+}: {
+  counterpartyQuery: string;
+  onCounterpartyQueryChange: (v: string) => void;
+  commodityFilter: string;
+  onCommodityFilterChange: (v: string) => void;
+  commodityOptions: string[];
+  laneFilter: "all" | DealCard["laneId"];
+  onLaneFilterChange: (v: "all" | DealCard["laneId"]) => void;
+  hasActiveFilters: boolean;
+  onReset: () => void;
+  visibleCount: number;
+}) {
+  const inputBase =
+    "appearance-none bg-white border border-slate-200 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 rounded-md text-[12px] font-medium text-slate-700 transition-colors";
+  return (
+    <div className="mb-5 rounded-lg border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
+      {/* Counterparty contains-search */}
+      <div className="relative flex-1 min-w-[180px]">
+        <Search
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <input
+          type="text"
+          value={counterpartyQuery}
+          onChange={(e) => onCounterpartyQueryChange(e.target.value)}
+          placeholder="Search counterparty…"
+          className={cn(inputBase, "w-full pl-8 pr-8 py-1.5")}
+          aria-label="Search by counterparty name"
+        />
+        {counterpartyQuery && (
+          <button
+            type="button"
+            onClick={() => onCounterpartyQueryChange("")}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded"
+            aria-label="Clear counterparty search"
+          >
+            <X className="h-3 w-3" strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      {/* Commodity selector */}
+      <label className="inline-flex items-center gap-2">
+        <span className="sr-only">Filter by commodity</span>
+        <select
+          value={commodityFilter}
+          onChange={(e) => onCommodityFilterChange(e.target.value)}
+          className={cn(inputBase, "pl-2.5 pr-7 py-1.5 cursor-pointer min-w-[140px]")}
+          aria-label="Filter by commodity"
+        >
+          <option value="all">All commodities</option>
+          {commodityOptions.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* Lane / status pill toggle group — keeps stage filtering immediately
+          visible without burying it in a dropdown. */}
+      <div
+        className="inline-flex items-center bg-white border border-slate-200 rounded-md p-0.5"
+        role="tablist"
+        aria-label="Filter by stage"
+      >
+        {(
+          [
+            { id: "all", label: "All stages" },
+            { id: "draft", label: "Draft" },
+            { id: "awaiting", label: "Awaiting" },
+            { id: "poi", label: "Sealed" },
+          ] as const
+        ).map((opt) => {
+          const active = laneFilter === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onLaneFilterChange(opt.id)}
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-medium rounded transition-colors",
+                active
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Visible count + reset affordance */}
+      <div className="flex items-center gap-3 lg:ml-auto">
+        <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+          {visibleCount} visible
+        </span>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PipelineHeader({
   totalDeals,
   sortKey,
