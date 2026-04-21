@@ -284,12 +284,32 @@ export function DealPipeline() {
   const [activePage, setActivePage] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
+  // Filter state — purely client-side. Filtering server-side would require
+  // narrowing the paginated queries, which would in turn require server-side
+  // support for full-text counterparty search. For pipeline-scale data
+  // (≤ a few hundred in-flight deals per org) client filtering is the right
+  // trade-off: zero added latency, instant feedback as the user types.
+  const [counterpartyQuery, setCounterpartyQuery] = useState("");
+  const [commodityFilter, setCommodityFilter] = useState<string>("all");
+  const [laneFilter, setLaneFilter] = useState<"all" | DealCard["laneId"]>("all");
+
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
 
   const isLoading = (activeQ.isLoading && !activeQ.data) || (sealedQ.isLoading && !sealedQ.data);
   const isSealedFetching = sealedQ.isFetching;
   const isActiveFetching = activeQ.isFetching;
+
+  // Distinct commodity list across all loaded deals — drives the commodity
+  // dropdown options. Recomputed from the loaded data so newly loaded pages
+  // surface their commodities automatically.
+  const commodityOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const c of [...(activeQ.data?.cards ?? []), ...(sealedQ.data?.cards ?? [])]) {
+      if (c.commodity) seen.add(c.commodity);
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }, [activeQ.data, sealedQ.data]);
 
   const lanes = useMemo(() => {
     const activeCards = activeQ.data?.cards ?? [];
@@ -326,17 +346,36 @@ export function DealPipeline() {
       }
     };
 
+    // Predicate composing all active filters. Lane filter is applied as a
+    // whole-lane mask further down so empty lanes still render their headers
+    // (predictable layout > collapsing the grid).
+    const needle = counterpartyQuery.trim().toLowerCase();
+    const matchesFilters = (c: DealCard): boolean => {
+      if (commodityFilter !== "all" && c.commodity !== commodityFilter) return false;
+      if (needle && !c.counterparty.toLowerCase().includes(needle)) return false;
+      return true;
+    };
+
     return LANE_META.map((meta) => {
-      const deals =
+      const laneIncluded = laneFilter === "all" || laneFilter === meta.id;
+      const sourceDeals =
         meta.id === "poi"
           ? sealedCards
           : activeCards.filter((c) => c.laneId === meta.id && !sealedIds.has(c.id));
-      return { ...meta, deals: [...deals].sort(compare) };
+      const filtered = laneIncluded ? sourceDeals.filter(matchesFilters) : [];
+      return { ...meta, deals: [...filtered].sort(compare), suppressedByLane: !laneIncluded };
     });
-  }, [activeQ.data, sealedQ.data, sortKey]);
+  }, [activeQ.data, sealedQ.data, sortKey, counterpartyQuery, commodityFilter, laneFilter]);
 
   const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
-  const showPipelineEmpty = !isLoading && totalDeals === 0;
+  const hasActiveFilters =
+    counterpartyQuery.trim().length > 0 || commodityFilter !== "all" || laneFilter !== "all";
+  const showPipelineEmpty = !isLoading && totalDeals === 0 && !hasActiveFilters;
+  const resetFilters = () => {
+    setCounterpartyQuery("");
+    setCommodityFilter("all");
+    setLaneFilter("all");
+  };
 
   if (showPipelineEmpty) {
     return (
