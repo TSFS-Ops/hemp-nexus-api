@@ -14,7 +14,7 @@ import { handleApiError } from "@/lib/api-error-handler";
 import { useAuth } from "@/contexts/AuthContext";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
-import { CounterpartyResultCard } from "@/components/search/CounterpartyResultCard";
+import { CompactCounterpartyRow } from "@/components/search/CompactCounterpartyRow";
 import { ResultCardErrorBoundary } from "@/components/search/ResultCardErrorBoundary";
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
@@ -44,6 +44,13 @@ interface SearchResult {
     score: number;
     passed: boolean;
     factors: string[];
+  };
+  metadata?: {
+    web_discovered?: boolean;
+    has_contact?: boolean;
+    contact_masked?: boolean;
+    verified?: boolean;
+    [key: string]: any;
   };
 }
 
@@ -588,19 +595,62 @@ export default function CounterpartySearch() {
         {/* Pre-Search Empty State intentionally removed per design. */}
 
         {/* Results */}
-        {!isSearching && !searchError && results.length > 0 && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-semibold text-sm sm:text-base">
-                {results.length} Counterpart{results.length !== 1 ? "ies" : "y"}
-              </h3>
-              {selectedResults.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <Button 
+        {!isSearching && !searchError && results.length > 0 && (() => {
+          // Live source-tier chip counts — mirrors the Desk's "Requires Your Attention" header language
+          const counts = results.reduce(
+            (acc, r) => {
+              if (r.source === "verified_registry") acc.verified += 1;
+              else if (r.source === "counterparty_registry") acc.registered += 1;
+              else if (r.source === "order_book") acc.orderBook += 1;
+              else if (r.source === "web_discovery" || r.metadata?.web_discovered) acc.web += 1;
+              return acc;
+            },
+            { verified: 0, registered: 0, orderBook: 0, web: 0 },
+          );
+          return (
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              {/* Elegant header — eyebrow + title + live chips */}
+              <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap px-4 sm:px-5 py-4 border-b border-slate-100">
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400 mb-1">
+                    Network Results
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight">
+                      {results.length} Counterpart{results.length !== 1 ? "ies" : "y"}
+                    </h3>
+                    {counts.verified > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-mono tracking-wider uppercase">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {counts.verified} verified
+                      </span>
+                    )}
+                    {counts.registered > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 text-[10px] font-mono tracking-wider uppercase">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                        {counts.registered} registered
+                      </span>
+                    )}
+                    {counts.orderBook > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 text-[10px] font-mono tracking-wider uppercase">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                        {counts.orderBook} order book
+                      </span>
+                    )}
+                    {counts.web > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-mono tracking-wider uppercase">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        {counts.web} web
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {selectedResults.size > 0 && (
+                  <Button
                     onClick={handleCreateMatchClick}
                     disabled={isConfirming}
-                    size="sm" 
-                    className="h-8 sm:h-9 text-xs sm:text-sm touch-target"
+                    size="sm"
+                    className="h-9 text-xs sm:text-sm touch-target bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     {isConfirming ? (
                       <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 animate-spin" />
@@ -609,33 +659,36 @@ export default function CounterpartySearch() {
                     )}
                     {isConfirming ? "Creating…" : `Create Draft Match (${selectedResults.size})`}
                   </Button>
+                )}
+              </div>
+
+              {/* Compact row list — Desk aesthetic */}
+              <ul className="divide-y divide-slate-100">
+                {results.map((result, idx) => (
+                  <ResultCardErrorBoundary key={result.id} companyName={result.title}>
+                    <CompactCounterpartyRow
+                      result={result}
+                      rank={idx + 1}
+                      isSelected={selectedResults.has(result.id)}
+                      onToggleSelect={toggleSelect}
+                      onFindSimilar={setSimilarAnchor}
+                      userSide={tradeContext.side}
+                    />
+                  </ResultCardErrorBoundary>
+                ))}
+              </ul>
+
+              {results.length >= 5 && (
+                <div className="px-4 sm:px-5 py-2.5 border-t border-slate-100 bg-slate-50/50">
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <Info className="h-3 w-3" />
+                    Showing top {results.length} results. Refine your query for more specific matches.
+                  </p>
                 </div>
               )}
             </div>
-
-            {results.map((result, idx) => (
-              <ResultCardErrorBoundary key={result.id} companyName={result.title}>
-                <CounterpartyResultCard
-                  result={result}
-                  rank={idx + 1}
-                  isSelected={selectedResults.has(result.id)}
-                  onToggleSelect={toggleSelect}
-                  onFindSimilar={setSimilarAnchor}
-                  userSide={tradeContext.side}
-                />
-              </ResultCardErrorBoundary>
-            ))}
-
-            {results.length >= 5 && (
-              <Alert className="mt-4">
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs sm:text-sm">
-                  Showing top {results.length} results. Refine your query for more specific matches.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        )}
+          );
+        })()}
 
         {/* Sticky floating CTA, always visible when trading partners are selected */}
         {!isSearching && results.length > 0 && selectedResults.size > 0 && (
