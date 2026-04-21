@@ -282,7 +282,38 @@ export function DealPipeline() {
   const { data: orgId } = useOrgId();
   const [sealedPage, setSealedPage] = useState(0);
   const [activePage, setActivePage] = useState(0);
-  const [sortKey, setSortKey] = useState<SortKey>("newest");
+
+  // Sort + filter selections are persisted to localStorage so the desk restores
+  // the same view across reloads. Each key is namespaced under `desk:pipeline:`
+  // to avoid collision with other modules and to make storage inspection easy.
+  // Reads are guarded against SSR (no window) and against malformed JSON — a
+  // bad value silently falls back to the default rather than crashing the desk.
+  const SORT_KEY_STORAGE = "desk:pipeline:sortKey";
+  const COUNTERPARTY_STORAGE = "desk:pipeline:counterpartyQuery";
+  const COMMODITY_STORAGE = "desk:pipeline:commodityFilter";
+  const LANE_FILTER_STORAGE = "desk:pipeline:laneFilter";
+
+  const readStorage = <T,>(key: string, fallback: T, validate: (v: unknown) => v is T): T => {
+    if (typeof window === "undefined") return fallback;
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw == null) return fallback;
+      const parsed = JSON.parse(raw);
+      return validate(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const isSortKey = (v: unknown): v is SortKey =>
+    v === "newest" || v === "oldest" || v === "volume_desc" || v === "deadline";
+  const isLaneFilter = (v: unknown): v is "all" | DealCard["laneId"] =>
+    v === "all" || v === "draft" || v === "awaiting" || v === "poi";
+  const isString = (v: unknown): v is string => typeof v === "string";
+
+  const [sortKey, setSortKey] = useState<SortKey>(() =>
+    readStorage<SortKey>(SORT_KEY_STORAGE, "newest", isSortKey),
+  );
 
   // Per-lane collapse state — persisted to localStorage so a user who prefers
   // to stay focused on (say) "Awaiting Engagement" doesn't have to re-collapse
@@ -314,9 +345,32 @@ export function DealPipeline() {
   // support for full-text counterparty search. For pipeline-scale data
   // (≤ a few hundred in-flight deals per org) client filtering is the right
   // trade-off: zero added latency, instant feedback as the user types.
-  const [counterpartyQuery, setCounterpartyQuery] = useState("");
-  const [commodityFilter, setCommodityFilter] = useState<string>("all");
-  const [laneFilter, setLaneFilter] = useState<"all" | DealCard["laneId"]>("all");
+  const [counterpartyQuery, setCounterpartyQuery] = useState<string>(() =>
+    readStorage<string>(COUNTERPARTY_STORAGE, "", isString),
+  );
+  const [commodityFilter, setCommodityFilter] = useState<string>(() =>
+    readStorage<string>(COMMODITY_STORAGE, "all", isString),
+  );
+  const [laneFilter, setLaneFilter] = useState<"all" | DealCard["laneId"]>(() =>
+    readStorage<"all" | DealCard["laneId"]>(LANE_FILTER_STORAGE, "all", isLaneFilter),
+  );
+
+  // Persist sort + filter selections. Each write is wrapped because storage
+  // can fail (quota, private mode) — failure is non-fatal: the in-memory state
+  // continues to drive the UI, and the user simply loses persistence for that
+  // selection.
+  useEffect(() => {
+    try { window.localStorage.setItem(SORT_KEY_STORAGE, JSON.stringify(sortKey)); } catch {}
+  }, [sortKey]);
+  useEffect(() => {
+    try { window.localStorage.setItem(COUNTERPARTY_STORAGE, JSON.stringify(counterpartyQuery)); } catch {}
+  }, [counterpartyQuery]);
+  useEffect(() => {
+    try { window.localStorage.setItem(COMMODITY_STORAGE, JSON.stringify(commodityFilter)); } catch {}
+  }, [commodityFilter]);
+  useEffect(() => {
+    try { window.localStorage.setItem(LANE_FILTER_STORAGE, JSON.stringify(laneFilter)); } catch {}
+  }, [laneFilter]);
 
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
