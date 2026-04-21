@@ -313,96 +313,118 @@ export function DealPipeline() {
 
   return (
     <section>
-      <PipelineHeader />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-        {lanes.map((lane) => (
-          <div key={lane.id} className="flex flex-col gap-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-slate-900 leading-tight">{lane.title}</h3>
-                <p className="mt-0.5 text-[10px] font-mono tracking-widest uppercase text-slate-500">
-                  {lane.subtitle}
-                </p>
+      <PipelineHeader totalDeals={totalDeals} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+        {lanes.map((lane) => {
+          const accent = LANE_ACCENT[lane.id];
+          return (
+            <div
+              key={lane.id}
+              className="flex flex-col rounded-xl border border-slate-200/80 bg-slate-50/40 overflow-hidden"
+            >
+              {/* Top accent bar — sets lane identity without shouting. */}
+              <div className={cn("h-0.5 w-full", accent.bar)} />
+
+              {/* Lane header */}
+              <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("h-1.5 w-1.5 rounded-full", accent.dot)} />
+                    <h3 className="text-[13px] font-semibold text-slate-900 leading-none">
+                      {lane.title}
+                    </h3>
+                  </div>
+                  <p className="mt-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-slate-400">
+                    {lane.subtitle}
+                  </p>
+                </div>
+                <span className="shrink-0 inline-flex items-center justify-center min-w-[24px] h-6 px-2 bg-white border border-slate-200 text-slate-700 text-[11px] font-semibold rounded-md tabular-nums">
+                  {lane.deals.length}
+                </span>
               </div>
-              <span className="shrink-0 ml-2 bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 rounded-full">
-                {lane.deals.length}
-              </span>
-            </div>
 
-            <div className="flex flex-col gap-3 min-h-[80px] md:min-h-[200px]">
-              {isLoading ? (
-                <SkeletonCard />
-              ) : lane.deals.length === 0 ? (
-                <LaneEmptyState />
-              ) : (
-                lane.deals.map((deal) => (
-                  <DealDocumentCard
-                    key={deal.id}
-                    deal={deal}
-                    laneId={lane.id}
-                    onClick={() => navigate(`/desk/match/${deal.id}`)}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Sealed pagination affordance. */}
-            {lane.id === "poi" && !isLoading && lane.deals.length > 0 && (
-              <div className="px-1 pt-1 flex items-center justify-between gap-3">
-                <p className="text-[10px] font-mono tracking-widest uppercase text-slate-500">
-                  Showing {sealedLoaded}
-                  {sealedQ.data?.totalSealedish ? ` of ~${sealedQ.data.totalSealedish}` : ""}
-                </p>
-                {sealedHasMore && (
-                  <button
-                    type="button"
-                    onClick={() => setSealedPage((p) => p + 1)}
-                    disabled={isSealedFetching}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
-                  >
-                    {isSealedFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
-                    Load more
-                  </button>
+              {/* Cards */}
+              <div className="flex flex-col gap-2 px-3 pb-3 min-h-[120px] md:min-h-[220px]">
+                {isLoading ? (
+                  <SkeletonCard />
+                ) : lane.deals.length === 0 ? (
+                  <LaneEmptyState />
+                ) : (
+                  lane.deals.map((deal) => (
+                    <DealDocumentCard
+                      key={deal.id}
+                      deal={deal}
+                      laneId={lane.id}
+                      onClick={() => navigate(`/desk/match/${deal.id}`)}
+                    />
+                  ))
                 )}
               </div>
-            )}
 
-            {/* Active-lane pagination — appears on Draft and Awaiting lanes
-                whenever the org has more active records than the current window.
-                The footer is rendered once per active lane (not once for the
-                pair) so the user sees the affordance wherever the overflow
-                visually lives. */}
-            {(lane.id === "draft" || lane.id === "awaiting") &&
-              !isLoading &&
-              activeQ.data &&
-              activeHasMore && (
-                <div className="px-1 pt-1 flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-mono tracking-widest uppercase text-slate-500">
-                    Showing {activeLoaded} of {activeQ.data.totalActive} active
+              {/* Sealed pagination affordance. */}
+              {lane.id === "poi" && !isLoading && lane.deals.length > 0 && (
+                <div className="px-4 py-2.5 border-t border-slate-200/70 bg-white/60 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500">
+                    Showing {sealedLoaded}
+                    {sealedQ.data?.totalSealedish ? ` of ~${sealedQ.data.totalSealedish}` : ""}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setActivePage((p) => p + 1)}
-                    disabled={isActiveFetching}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
-                  >
-                    {isActiveFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
-                    Load more
-                  </button>
+                  {sealedHasMore && (
+                    <button
+                      type="button"
+                      onClick={() => setSealedPage((p) => p + 1)}
+                      disabled={isSealedFetching}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                    >
+                      {isSealedFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
+                      Load more
+                    </button>
+                  )}
                 </div>
               )}
-          </div>
-        ))}
+
+              {/* Active-lane pagination — appears on Draft and Awaiting lanes
+                  whenever the org has more active records than the current window. */}
+              {(lane.id === "draft" || lane.id === "awaiting") &&
+                !isLoading &&
+                activeQ.data &&
+                activeHasMore && (
+                  <div className="px-4 py-2.5 border-t border-slate-200/70 bg-white/60 flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-slate-500">
+                      Showing {activeLoaded} of {activeQ.data.totalActive}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActivePage((p) => p + 1)}
+                      disabled={isActiveFetching}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                    >
+                      {isActiveFetching && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />}
+                      Load more
+                    </button>
+                  </div>
+                )}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-function PipelineHeader() {
+function PipelineHeader({ totalDeals }: { totalDeals: number }) {
   return (
-    <div className="mb-6 flex items-baseline justify-between">
-      <h2 className="text-base font-semibold text-slate-900 tracking-tight">Active Deal Pipeline</h2>
-      <p className="text-[11px] text-slate-500 font-mono tracking-widest uppercase">9-Step WaD Workflow</p>
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div>
+        <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-slate-400 mb-1.5">
+          9-Step WaD Workflow
+        </p>
+        <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+          Active Deal Pipeline
+        </h2>
+      </div>
+      <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-slate-500 tabular-nums">
+        {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
+      </p>
     </div>
   );
 }
