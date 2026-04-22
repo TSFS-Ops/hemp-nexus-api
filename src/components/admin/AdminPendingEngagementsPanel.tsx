@@ -188,6 +188,143 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  // ── Admin export helpers (CSV + print-to-PDF) ──
+  // Operates on the currently filtered list so admins can scope exports via the existing filters.
+  const csvEscape = (val: unknown): string => {
+    if (val === null || val === undefined) return "";
+    const str = String(val);
+    if (/[",\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+    return str;
+  };
+
+  const exportRowsForFiltered = () => {
+    return filtered.map((e) => {
+      const m = e.matches;
+      const qty = m?.quantity_amount != null ? `${m.quantity_amount} ${m.quantity_unit ?? ""}`.trim() : "";
+      const price = m?.price_amount != null ? `${m.price_currency ?? ""} ${m.price_amount}`.trim() : "";
+      return {
+        match_id: e.match_id,
+        engagement_id: e.id,
+        status: e.engagement_status,
+        counterparty_type: e.counterparty_type ?? "",
+        counterparty_email: e.counterparty_email ?? "",
+        counterparty_org: e.counterparty_org?.name ?? "",
+        initiator_org: e.initiator_org?.name ?? "",
+        commodity: m?.commodity ?? "",
+        quantity: qty,
+        price,
+        buyer: m?.buyer_name ?? "",
+        seller: m?.seller_name ?? "",
+        created_at: e.created_at,
+        contacted_at: e.contacted_at ?? "",
+        responded_at: e.responded_at ?? "",
+        sla_reminder_sent_at: e.sla_reminder_sent_at ?? "",
+        sla_reminder_count: e.sla_reminder_count ?? 0,
+        support_notes: e.support_notes ?? "",
+        support_notes_updated_at: e.support_notes_updated_at ?? "",
+        support_notes_updated_by: e.support_notes_updated_by ?? "",
+        admin_notes: e.admin_notes ?? "",
+      };
+    });
+  };
+
+  const handleExportCsv = () => {
+    if (filtered.length === 0) {
+      toast.error("No engagements to export with the current filters.");
+      return;
+    }
+    const rows = exportRowsForFiltered();
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) => headers.map((h) => csvEscape((r as Record<string, unknown>)[h])).join(",")),
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    link.href = url;
+    link.download = `pending-engagements-${stamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} engagement${rows.length === 1 ? "" : "s"} to CSV.`);
+  };
+
+  const handleExportPdf = () => {
+    if (filtered.length === 0) {
+      toast.error("No engagements to export with the current filters.");
+      return;
+    }
+    const rows = exportRowsForFiltered();
+    const stamp = new Date().toLocaleString();
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const tableRows = rows
+      .map(
+        (r) => `
+        <tr>
+          <td>${escapeHtml(r.match_id.slice(0, 8))}…</td>
+          <td>${escapeHtml(r.status)}</td>
+          <td>${escapeHtml(r.counterparty_org || r.counterparty_email || "—")}</td>
+          <td>${escapeHtml(r.initiator_org)}</td>
+          <td>${escapeHtml(r.commodity)}<br/><small>${escapeHtml(r.quantity)} · ${escapeHtml(r.price)}</small></td>
+          <td>${escapeHtml(r.created_at ? new Date(r.created_at).toLocaleString() : "")}</td>
+          <td>${r.support_notes
+            ? `<div class="notes">${escapeHtml(r.support_notes)}</div>
+               <small>updated ${escapeHtml(r.support_notes_updated_at ? new Date(r.support_notes_updated_at).toLocaleString() : "—")}</small>`
+            : '<span class="muted">—</span>'}</td>
+        </tr>`
+      )
+      .join("");
+
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"/>
+<title>Pending Engagements Export</title>
+<style>
+  @page { size: A4 landscape; margin: 16mm; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; font-size: 10px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .meta { color: #64748b; font-size: 10px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f1f5f9; font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td.notes, .notes { white-space: pre-wrap; max-width: 280px; }
+  small { color: #64748b; }
+  .muted { color: #94a3b8; }
+  tr { page-break-inside: avoid; }
+</style></head>
+<body>
+  <h1>Pending Engagements — Reviewer Export</h1>
+  <div class="meta">
+    Generated ${escapeHtml(stamp)} · ${rows.length} engagement${rows.length === 1 ? "" : "s"} ·
+    Scope: ${escapeHtml(scope)} · Status filter: ${escapeHtml(filter)} ·
+    Notes filter: ${escapeHtml(notesFilter)}${notesFrom ? ` · From ${escapeHtml(notesFrom)}` : ""}${notesTo ? ` · To ${escapeHtml(notesTo)}` : ""}
+  </div>
+  <table>
+    <thead><tr>
+      <th>Match</th><th>Status</th><th>Counterparty</th><th>Initiator</th>
+      <th>Commodity / terms</th><th>Created</th><th>Reviewer support notes</th>
+    </tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+  <script>window.onload = () => { setTimeout(() => window.print(), 250); };</script>
+</body></html>`;
+
+    const w = window.open("", "_blank", "noopener,noreferrer");
+    if (!w) {
+      toast.error("Pop-up blocked. Allow pop-ups for this site to export to PDF.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    toast.success(`Opened ${rows.length} engagement${rows.length === 1 ? "" : "s"} — use the print dialog to save as PDF.`);
+  };
+
   // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
   const [slaThresholdHours, setSlaThresholdHours] = useState<number>(48);
   const [slaReminderEmail, setSlaReminderEmail] = useState<string>("support@izenzo.co.za");
