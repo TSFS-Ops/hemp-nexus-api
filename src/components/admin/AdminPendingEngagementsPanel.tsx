@@ -533,15 +533,41 @@ export function AdminPendingEngagementsPanel() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Pending Engagements</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            POI hold-point queue. Review counterparties awaiting outreach, send notifications,
-            and record manual contact attempts. Every action is written to an immutable outreach log.
+            POI hold-point queue for {scope === "unknown" ? "unknown counterparties awaiting outreach" : "all counterparty engagements"}.
+            Send notifications and record manual contact attempts — every action is written to an immutable outreach log.
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            <Clock className="inline h-3 w-3 mr-1" />
-            SLA: {slaThresholdHours}h · digest → <span className="font-mono">{slaReminderEmail}</span>
+          <p className="text-xs text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>
+              <Clock className="inline h-3 w-3 mr-1" />
+              SLA: {slaThresholdHours}h · digest → <span className="font-mono">{slaReminderEmail}</span>
+            </span>
+            {scope === "unknown" && stats.autoLinked > 0 && (
+              <span className="text-emerald-700">
+                · {stats.autoLinked} auto-linked (hidden from active queue)
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          {/* Scope toggle: unknown-only is the default; "all" is a diagnostic mode */}
+          <div className="inline-flex rounded-sm border border-slate-200 overflow-hidden text-xs">
+            <button
+              type="button"
+              onClick={() => setScope("unknown")}
+              className={`px-3 py-1.5 ${scope === "unknown" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              title="Show only engagements where the counterparty is not yet on the platform"
+            >
+              Unknown only
+            </button>
+            <button
+              type="button"
+              onClick={() => setScope("all")}
+              className={`px-3 py-1.5 border-l border-slate-200 ${scope === "all" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              title="Diagnostic: include known-counterparty (already-on-platform) engagements too"
+            >
+              All
+            </button>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -559,6 +585,7 @@ export function AdminPendingEngagementsPanel() {
             Refresh
           </Button>
         </div>
+      </div>
       </div>
 
       {/* Stats */}
