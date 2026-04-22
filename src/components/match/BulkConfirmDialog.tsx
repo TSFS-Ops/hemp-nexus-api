@@ -102,29 +102,35 @@ export function BulkConfirmDialog({
                   {balanceLoading ? <div className="space-y-2 py-2">
                       <Skeleton className="h-5 w-48" />
                       <Skeleton className="h-5 w-36" />
-                    </div> : <div className="rounded-md border border-border p-3 space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cost per match</span>
-                        <span className="font-medium text-foreground">{CREDITS_PER_MATCH.toLocaleString()} credits</span>
+                    </div> : <div className="rounded-md border border-border overflow-hidden text-sm">
+                      <div className="bg-muted/40 px-3 py-2 border-b border-border">
+                        <p className="font-semibold text-foreground text-xs uppercase tracking-wide">Pricing breakdown</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Matches selected</span>
-                        <span className="font-medium text-foreground">× {matchCount}</span>
-                      </div>
-                      <div className="border-t border-border my-1" />
-                      <div className="flex justify-between font-semibold">
-                        <span className="text-foreground">Total cost</span>
-                        <span className="text-foreground">{totalCost.toLocaleString()} credits</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Your balance</span>
-                        <span className="font-medium text-foreground">{currentBalance.toLocaleString()} credits</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Remaining Balance</span>
-                        <span className={`font-medium ${hasEnough ? "text-foreground" : "text-destructive"}`}>
-                          {remainingBalance.toLocaleString()} credits
-                        </span>
+                      <div className="p-3 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Cost per POI match</span>
+                          <span className="font-medium text-foreground">{CREDITS_PER_MATCH.toLocaleString()} credit{CREDITS_PER_MATCH !== 1 ? "s" : ""}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Matches selected</span>
+                          <span className="font-medium text-foreground">× {matchCount}</span>
+                        </div>
+                        <div className="border-t border-border my-1" />
+                        <div className="flex justify-between font-semibold text-base">
+                          <span className="text-foreground">Total credits</span>
+                          <span className="text-foreground">{totalCost.toLocaleString()}</span>
+                        </div>
+                        <div className="border-t border-border my-1" />
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Your balance</span>
+                          <span className="font-medium text-foreground">{currentBalance.toLocaleString()} credits</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Remaining balance</span>
+                          <span className={`font-medium ${hasEnough ? "text-foreground" : "text-destructive"}`}>
+                            {remainingBalance.toLocaleString()} credits
+                          </span>
+                        </div>
                       </div>
                     </div>}
 
