@@ -628,7 +628,7 @@ export function DealPipeline() {
                       </div>
                     )}
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
