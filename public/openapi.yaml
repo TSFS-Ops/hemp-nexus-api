@@ -35,6 +35,8 @@ tags:
     description: Declared interest operations
   - name: POIs
     description: Trade Request lifecycle
+  - name: POI Engagements
+    description: Reviewer/admin operations on the POI hold-point queue (counterparty engagement records)
   - name: WaD
     description: Willing-and-Able Deal hard-gates
   - name: PoD
