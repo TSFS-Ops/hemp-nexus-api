@@ -1,11 +1,24 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Preview, Text, Hr, Section,
+  Body, Button, Container, Head, Heading, Html, Preview, Text, Hr, Section,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Izenzo'
 const REPLY_TO_DESK = 'support@izenzo.co.za'
+const PLATFORM_BASE_URL = 'https://compliance-matching.lovable.app'
+
+/**
+ * Build a deep-link into the trade. Unregistered recipients are routed via
+ * /auth with a `returnTo` so they land on the match the moment they finish
+ * onboarding. Registered recipients (already signed in) are bounced straight
+ * through to the match page.
+ */
+const buildAcceptUrl = (matchId?: string): string | null => {
+  if (!matchId) return null
+  const target = `/desk/match/${matchId}`
+  return `${PLATFORM_BASE_URL}/auth?returnTo=${encodeURIComponent(target)}`
+}
 
 interface OutreachIntentToTradeProps {
   // Counterparty
