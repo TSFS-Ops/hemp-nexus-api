@@ -131,10 +131,25 @@ const OutreachIntentToTradeEmail = (props: OutreachIntentToTradeProps) => {
             </Section>
           )}
 
+          {(() => {
+            const acceptUrl = buildAcceptUrl(matchId)
+            if (!acceptUrl) return null
+            return (
+              <Section style={{ margin: '8px 0 24px' }}>
+                <Button href={acceptUrl} style={ctaButton}>
+                  Review on {SITE_NAME}
+                </Button>
+                <Text style={ctaHint}>
+                  Opens the {SITE_NAME} platform. If you do not yet have an account, you will be guided through a short onboarding before reviewing the trade.
+                </Text>
+              </Section>
+            )
+          })()}
+
           <Text style={text}>
-            If you would like to engage on this opportunity, please reply directly to this email.
-            Replies are routed to our compliance desk at <strong>{REPLY_TO_DESK}</strong>, and we will
-            facilitate the introduction and onboarding.
+            Alternatively, reply directly to this email — replies route to our
+            compliance desk at <strong>{REPLY_TO_DESK}</strong> and we will
+            facilitate the introduction manually.
           </Text>
 
           <Text style={text}>
