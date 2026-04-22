@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _proof_results: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: number
+          run_id: string
+          step: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: number
+          run_id?: string
+          step?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: number
+          run_id?: string
+          step?: string | null
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action: string
