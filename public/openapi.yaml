@@ -1405,6 +1405,121 @@ components:
               message:
                 type: string
 
+    UpdatePoiEngagementRequest:
+      type: object
+      description: |
+        Partial update payload for a POI engagement. At least one field must
+        be provided. All fields are optional individually.
+      minProperties: 1
+      properties:
+        engagement_status:
+          type: string
+          enum:
+            - pending
+            - notification_sent
+            - contacted
+            - accepted
+            - declined
+            - expired
+        counterparty_email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+          description: |
+            Recipient email for outreach. Server-side rules:
+              - trimmed and lowercased before validation/persistence
+              - must be a syntactically valid email address
+              - 3 ≤ length ≤ 254 (RFC 5321)
+
+            When this field is supplied and the engagement is currently
+            unbound (`counterparty_org_id` is null), the server will attempt
+            to auto-bind the engagement to a matching registered
+            organisation. The outcome is reported in the response's
+            `binding` field. A failed lookup or no-match result is
+            **non-fatal** — the email is still saved.
+          example: counterparty@example.com
+        admin_notes:
+          type: string
+          maxLength: 2000
+          description: Free-text admin notes (visible to all admins).
+        support_notes:
+          type: string
+          maxLength: 4000
+          description: |
+            Reviewer/support-desk notes (admin-only). An empty string clears
+            the field; any non-empty value stamps the editor and timestamp.
+        contact_method:
+          type: string
+          enum: [email, phone, linkedin, whatsapp, in_person, other]
+        contact_detail:
+          type: string
+          maxLength: 500
+        contact_date:
+          type: string
+          format: date-time
+
+    BindingHint:
+      type: object
+      description: |
+        Outcome of the email → organisation auto-resolution attempt that
+        runs whenever a PATCH request includes `counterparty_email`. Always
+        non-fatal — the engagement update succeeds regardless of resolution
+        result.
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: Discriminator for the binding outcome.
+          enum: [bound, no_match, already_bound, lookup_error]
+        org_id:
+          type: string
+          format: uuid
+          description: |
+            Present when `status` is `bound` or `already_bound`. The
+            organisation the engagement is (now) bound to.
+        email:
+          type: string
+          format: email
+          description: |
+            Present when `status` is `bound`, `no_match`, or `lookup_error`.
+            The normalised (trimmed, lowercased) email that was processed.
+        message:
+          type: string
+          description: |
+            Present when `status` is `no_match` or `lookup_error`. A
+            human-readable explanation suitable for surfacing in the
+            reviewer dashboard.
+      discriminator:
+        propertyName: status
+        mapping:
+          bound: '#/components/schemas/BindingHint'
+          no_match: '#/components/schemas/BindingHint'
+          already_bound: '#/components/schemas/BindingHint'
+          lookup_error: '#/components/schemas/BindingHint'
+      example:
+        status: no_match
+        email: stranger@example.com
+        message: >-
+          Email saved, but no registered organisation matches this address
+          yet. The engagement will remain unbound until the recipient signs
+          up or the email is corrected.
+
+    UpdatePoiEngagementResponse:
+      type: object
+      required: [engagement]
+      properties:
+        engagement:
+          type: object
+          description: The updated `poi_engagements` row.
+        binding:
+          allOf:
+            - $ref: '#/components/schemas/BindingHint'
+          description: |
+            Present **only** when the PATCH request included
+            `counterparty_email`. Omitted for status-only or notes-only
+            updates.
+
     ApiError:
       type: object
       properties:
