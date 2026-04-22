@@ -20,6 +20,7 @@ import { DealWizard } from "@/components/match/wizard/DealWizard";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { EngagementTracker } from "@/components/match/EngagementTracker";
 import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
+import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,6 +138,11 @@ function MatchDetailsContent() {
       </div>
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
+
+      <UnknownCounterpartyStatus
+        engagement={engagementData}
+        isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
+      />
 
       {matchId && <AcceptEngagementCard match={match} engagementStatus={engagementStatus} onResponded={fetchMatch} />}
 
