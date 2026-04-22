@@ -624,13 +624,18 @@ Deno.serve(async (req) => {
         throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
       }
 
-      // Apply non-state field updates (counterparty_email, admin_notes, contact_method, contact_date)
+      // Apply non-state field updates (counterparty_email, admin_notes, support_notes, contact_method, contact_date)
       // These are not part of the state machine and don't affect the audit chain.
       const sideUpdates: Record<string, unknown> = {};
       if (parsed.data.counterparty_email !== undefined) sideUpdates.counterparty_email = parsed.data.counterparty_email;
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
+      if (parsed.data.support_notes !== undefined) {
+        sideUpdates.support_notes = updates.support_notes;
+        sideUpdates.support_notes_updated_at = updates.support_notes_updated_at;
+        sideUpdates.support_notes_updated_by = updates.support_notes_updated_by;
+      }
 
       let updated: any = null;
       if (Object.keys(sideUpdates).length > 0) {
