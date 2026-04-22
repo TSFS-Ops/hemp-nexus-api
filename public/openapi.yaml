@@ -260,6 +260,85 @@ paths:
         '200':
           description: State transitioned
 
+  /poi-engagements/{id}:
+    patch:
+      tags: [POI Engagements]
+      summary: Update a POI engagement (admin/reviewer only)
+      operationId: updatePoiEngagement
+      description: |
+        Update a single field (or combination) on a POI engagement record.
+        Admin/reviewer endpoint — requires admin role.
+
+        ### `counterparty_email` validation rules
+
+        When the request body includes `counterparty_email`, the value is:
+
+        1. **Trimmed** of leading/trailing whitespace.
+        2. **Lowercased** before validation and persistence.
+        3. **Length-bounded**: minimum 3 characters, maximum 254
+           characters (RFC 5321 local + domain limit).
+        4. **Format-checked** as a valid email address.
+
+        Failures return the canonical `400 VALIDATION_ERROR` envelope with
+        per-field issues in `details.errors[]`.
+
+        ### Auto-resolution and the `binding` hint
+
+        On a successful PATCH that included `counterparty_email`, the server
+        attempts to resolve the email to a registered organisation
+        (`profiles.org_id`). The outcome is reported back as an optional
+        `binding` object on the response so the reviewer dashboard can show
+        whether the recipient will see the engagement in their inbound queue.
+
+        Resolution is **always non-fatal** — the email is saved regardless of
+        whether a matching organisation is found. See the `BindingHint`
+        schema for the four possible `status` values.
+
+        ### Idempotency
+
+        This endpoint honours the `Idempotency-Key` header. Replays return
+        the byte-identical cached body — including the `binding` hint — so
+        the reviewer dashboard stays consistent across retries. Validation
+        failures (4xx) are never cached.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Engagement UUID
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            Optional unique key to deduplicate retries. Same key returns the
+            cached 2xx body verbatim.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePoiEngagementRequest'
+      responses:
+        '200':
+          description: |
+            Engagement updated. When the request included `counterparty_email`,
+            the response includes a `binding` object describing the
+            email→organisation resolution outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePoiEngagementResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /p3-wad:
     post:
       tags: [WaD]
