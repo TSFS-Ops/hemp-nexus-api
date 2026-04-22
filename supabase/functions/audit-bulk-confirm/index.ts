@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     const { error: insertErr } = await supabase.from("audit_logs").insert({
       org_id: authCtx.orgId,
       actor_user_id: authCtx.userId,
-      actor_api_key_id: authCtx.isApiKey ? authCtx.apiKeyId : null,
+      actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
       action: "bulk_poi_confirm",
       entity_type: "match_batch",
       entity_id: null,
