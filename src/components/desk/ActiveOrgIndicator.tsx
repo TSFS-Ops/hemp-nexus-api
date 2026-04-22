@@ -61,16 +61,16 @@ export function ActiveOrgIndicator({ className }: { className?: string }) {
       <div
         role="alert"
         className={
-          "flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 " +
+          "flex items-start gap-3 rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-foreground " +
           (className ?? "")
         }
       >
-        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
         <div className="space-y-1 text-sm">
           <p className="font-medium">
             You are acting as <span className="font-semibold">{org.name}</span>
           </p>
-          <p className="text-xs leading-relaxed text-amber-800">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             This is a legacy placeholder organisation. Trades filed here will not
             appear under your verified organisation and are difficult to move
             later. Switch accounts or contact support before continuing if this
