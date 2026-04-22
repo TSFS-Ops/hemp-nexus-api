@@ -547,6 +547,14 @@ Deno.serve(async (req) => {
       if (parsed.data.admin_notes !== undefined) {
         updates.admin_notes = parsed.data.admin_notes;
       }
+      // ── Admin-only support notes (auth gate: PATCH already requires admin role above) ──
+      if (parsed.data.support_notes !== undefined) {
+        // Empty string clears the field; non-empty stamps editor + timestamp.
+        const trimmed = parsed.data.support_notes.trim();
+        updates.support_notes = trimmed.length === 0 ? null : trimmed;
+        updates.support_notes_updated_at = new Date().toISOString();
+        updates.support_notes_updated_by = authCtx.userId;
+      }
       if (parsed.data.contact_method !== undefined) {
         updates.contact_method = parsed.data.contact_method;
       }
