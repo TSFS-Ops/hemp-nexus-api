@@ -182,8 +182,64 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  // ── Load SLA settings (threshold + reminder recipient) from admin_settings ──
+  const fetchSlaSettings = async () => {
+    const { data, error } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "outreach_sla")
+      .maybeSingle();
+    if (error) {
+      console.warn("Failed to load SLA settings:", error.message);
+      return;
+    }
+    const v = (data?.value ?? {}) as { threshold_hours?: number; reminder_email?: string };
+    if (typeof v.threshold_hours === "number" && v.threshold_hours > 0) {
+      setSlaThresholdHours(v.threshold_hours);
+    }
+    if (typeof v.reminder_email === "string" && v.reminder_email.includes("@")) {
+      setSlaReminderEmail(v.reminder_email);
+    }
+  };
+
+  // ── Manually trigger the SLA scan (sends digest if any overdue) ──
+  const runSlaScan = async () => {
+    setSlaScanRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("outreach-sla-monitor", {
+        body: {},
+      });
+      if (error) throw error;
+      const result = data as {
+        ok: boolean;
+        overdue_total?: number;
+        eligible_for_reminder?: number;
+        email_sent?: boolean;
+        recipient?: string;
+      };
+      if (result?.email_sent) {
+        toast.success(
+          `SLA digest sent to ${result.recipient}: ${result.eligible_for_reminder} engagement(s) flagged.`
+        );
+      } else if ((result?.overdue_total ?? 0) === 0) {
+        toast.success("SLA scan complete — no overdue engagements.");
+      } else {
+        toast.info(
+          `SLA scan complete: ${result?.overdue_total ?? 0} overdue, all recently reminded (no new digest).`
+        );
+      }
+      fetchEngagements();
+    } catch (err: any) {
+      console.error("SLA scan error:", err);
+      toast.error(err?.message || "Failed to run SLA scan");
+    } finally {
+      setSlaScanRunning(false);
+    }
+  };
+
   useEffect(() => {
     fetchEngagements();
+    fetchSlaSettings();
   }, []);
 
   const filtered = useMemo(() => {
