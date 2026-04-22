@@ -1859,6 +1859,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          expires_at: string
           id: string
           token: string
           used_at: string | null
@@ -1866,6 +1867,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          expires_at?: string
           id?: string
           token: string
           used_at?: string | null
@@ -1873,6 +1875,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          expires_at?: string
           id?: string
           token?: string
           used_at?: string | null
@@ -6194,6 +6197,7 @@ export type Database = {
       }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: number }
+      cleanup_expired_unsubscribe_tokens: { Args: never; Returns: number }
       cleanup_old_auth_rate_limits: { Args: never; Returns: number }
       compute_all_behavioral_kyc_scores: {
         Args: { p_days?: number }

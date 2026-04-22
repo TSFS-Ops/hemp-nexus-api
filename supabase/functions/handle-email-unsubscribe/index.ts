@@ -84,6 +84,12 @@ Deno.serve(async (req) => {
     return jsonResponse({ valid: false, reason: 'already_unsubscribed' })
   }
 
+  // Enforce 30-day TTL. Stale tokens are rejected even if never used —
+  // protects against long-lived inbox compromise replaying old links.
+  if (tokenRecord.expires_at && new Date(tokenRecord.expires_at).getTime() < Date.now()) {
+    return jsonResponse({ valid: false, reason: 'token_expired' }, 410)
+  }
+
   // GET: Validate token (the app's unsubscribe page calls this on load)
   if (req.method === 'GET') {
     return jsonResponse({ valid: true })
