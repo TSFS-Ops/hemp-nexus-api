@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { sha256Hex, canonicalTermsPayload } from "@/lib/crypto";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
 const initiationSchema = z.object({
   commodity: z.string().trim().min(2, "Select or enter a commodity").max(120),
   side: z.enum(["buyer", "seller"]),
@@ -171,6 +172,9 @@ export function NewTradeInitiation() {
   }
   return <>
       <header className="mb-12">
+        <div className="mb-4">
+          <ActiveOrgIndicator />
+        </div>
         <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-3">
           Commercial Trading · State Machine Entry
         </p>

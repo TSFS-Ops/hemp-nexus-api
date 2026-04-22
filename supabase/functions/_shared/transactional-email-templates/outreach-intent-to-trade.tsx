@@ -1,11 +1,24 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Preview, Text, Hr, Section,
+  Body, Button, Container, Head, Heading, Html, Preview, Text, Hr, Section,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Izenzo'
 const REPLY_TO_DESK = 'support@izenzo.co.za'
+const PLATFORM_BASE_URL = 'https://compliance-matching.lovable.app'
+
+/**
+ * Build a deep-link into the trade. Unregistered recipients are routed via
+ * /auth with a `returnTo` so they land on the match the moment they finish
+ * onboarding. Registered recipients (already signed in) are bounced straight
+ * through to the match page.
+ */
+const buildAcceptUrl = (matchId?: string): string | null => {
+  if (!matchId) return null
+  const target = `/desk/match/${matchId}`
+  return `${PLATFORM_BASE_URL}/auth?returnTo=${encodeURIComponent(target)}`
+}
 
 interface OutreachIntentToTradeProps {
   // Counterparty
@@ -118,10 +131,25 @@ const OutreachIntentToTradeEmail = (props: OutreachIntentToTradeProps) => {
             </Section>
           )}
 
+          {(() => {
+            const acceptUrl = buildAcceptUrl(matchId)
+            if (!acceptUrl) return null
+            return (
+              <Section style={{ margin: '8px 0 24px' }}>
+                <Button href={acceptUrl} style={ctaButton}>
+                  Review on {SITE_NAME}
+                </Button>
+                <Text style={ctaHint}>
+                  Opens the {SITE_NAME} platform. If you do not yet have an account, you will be guided through a short onboarding before reviewing the trade.
+                </Text>
+              </Section>
+            )
+          })()}
+
           <Text style={text}>
-            If you would like to engage on this opportunity, please reply directly to this email.
-            Replies are routed to our compliance desk at <strong>{REPLY_TO_DESK}</strong>, and we will
-            facilitate the introduction and onboarding.
+            Alternatively, reply directly to this email — replies route to our
+            compliance desk at <strong>{REPLY_TO_DESK}</strong> and we will
+            facilitate the introduction manually.
           </Text>
 
           <Text style={text}>
@@ -187,3 +215,14 @@ const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fon
 const hr = { borderColor: '#E5E7EB', margin: '28px 0 20px' }
 const signature = { fontSize: '13px', color: '#374151', lineHeight: '1.6', margin: '0 0 20px' }
 const footer = { fontSize: '11px', color: '#9CA3AF', lineHeight: '1.5', margin: '20px 0 0', fontStyle: 'italic' as const }
+const ctaButton = {
+  backgroundColor: '#1B4533',
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: '600' as const,
+  padding: '12px 24px',
+  borderRadius: '4px',
+  textDecoration: 'none',
+  display: 'inline-block',
+}
+const ctaHint = { fontSize: '12px', color: '#6B7280', lineHeight: '1.5', margin: '8px 0 0' }
