@@ -669,7 +669,15 @@ Deno.serve(async (req) => {
       }
 
       if (parsed.data.counterparty_email !== undefined) {
-        updates.counterparty_email = parsed.data.counterparty_email;
+        // Re-validate when an admin sets/changes the counterparty email so
+        // the engagement record never holds an invalid or already-on-platform
+        // address that would later be rejected by send-outreach.
+        const { normalized } = await validateOutreachRecipient(
+          supabase,
+          parsed.data.counterparty_email,
+          current.org_id ?? null
+        );
+        updates.counterparty_email = normalized;
       }
       if (parsed.data.admin_notes !== undefined) {
         updates.admin_notes = parsed.data.admin_notes;
