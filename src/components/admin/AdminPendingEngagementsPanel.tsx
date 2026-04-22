@@ -636,7 +636,8 @@ export function AdminPendingEngagementsPanel() {
                     const m = e.matches;
                     const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
                     return (
-                      <TableRow key={e.id}>
+                      <React.Fragment key={e.id}>
+                        <TableRow>
                         <TableCell>
                           <div className="text-sm">
                             <p className="font-medium">{m?.commodity ?? "-"}</p>
