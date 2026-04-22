@@ -23,6 +23,8 @@ const UpdateEngagementSchema = z.object({
   engagement_status: EngagementStatusSchema.optional(),
   counterparty_email: z.string().email().optional(),
   admin_notes: z.string().max(2000).optional(),
+  // Admin-only reviewer/support-desk notes. Empty string = clear the field.
+  support_notes: z.string().max(4000).optional(),
   contact_method: z.enum(["email", "phone", "linkedin", "whatsapp", "in_person", "other"]).optional(),
   contact_detail: z.string().max(500).optional(),
   contact_date: z.string().datetime().optional(),
@@ -476,12 +478,13 @@ Deno.serve(async (req) => {
         parsed.data.engagement_status !== undefined ||
         parsed.data.counterparty_email !== undefined ||
         parsed.data.admin_notes !== undefined ||
+        parsed.data.support_notes !== undefined ||
         parsed.data.contact_method !== undefined ||
         parsed.data.contact_date !== undefined;
       if (!hasMeaningfulChange) {
         throw new ApiException(
           "VALIDATION_ERROR",
-          "Request must include at least one field to update (engagement_status, counterparty_email, admin_notes, contact_method, or contact_date).",
+          "Request must include at least one field to update (engagement_status, counterparty_email, admin_notes, support_notes, contact_method, or contact_date).",
           400
         );
       }
@@ -546,6 +549,14 @@ Deno.serve(async (req) => {
       }
       if (parsed.data.admin_notes !== undefined) {
         updates.admin_notes = parsed.data.admin_notes;
+      }
+      // ── Admin-only support notes (auth gate: PATCH already requires admin role above) ──
+      if (parsed.data.support_notes !== undefined) {
+        // Empty string clears the field; non-empty stamps editor + timestamp.
+        const trimmed = parsed.data.support_notes.trim();
+        updates.support_notes = trimmed.length === 0 ? null : trimmed;
+        updates.support_notes_updated_at = new Date().toISOString();
+        updates.support_notes_updated_by = authCtx.userId;
       }
       if (parsed.data.contact_method !== undefined) {
         updates.contact_method = parsed.data.contact_method;

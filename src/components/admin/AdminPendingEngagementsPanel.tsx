@@ -13,7 +13,7 @@
  * backend logic. All state transitions are server-validated.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,7 @@ import { SafeSelect } from "@/components/admin/SafeSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye,
+  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,6 +48,9 @@ interface Engagement {
   contacted_at: string | null;
   responded_at: string | null;
   admin_notes: string | null;
+  support_notes: string | null;
+  support_notes_updated_at: string | null;
+  support_notes_updated_by: string | null;
   created_at: string;
   sla_reminder_sent_at?: string | null;
   sla_reminder_count?: number | null;
@@ -134,6 +137,49 @@ export function AdminPendingEngagementsPanel() {
   // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // ── Support-notes editor (admin/reviewer-only, per row) ──
+  const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState<string>("");
+  const [notesSaving, setNotesSaving] = useState(false);
+
+  const openSupportNotes = (e: Engagement) => {
+    if (notesOpenId === e.id) {
+      setNotesOpenId(null);
+      return;
+    }
+    setNotesOpenId(e.id);
+    setNotesDraft(e.support_notes ?? "");
+  };
+
+  const saveSupportNotes = async (e: Engagement) => {
+    if (notesSaving) return;
+    const trimmed = notesDraft.trim();
+    if (trimmed.length > 4000) {
+      toast.error("Support notes must be 4000 characters or fewer.");
+      return;
+    }
+    if ((e.support_notes ?? "") === trimmed) {
+      setNotesOpenId(null);
+      return;
+    }
+    setNotesSaving(true);
+    try {
+      const { error } = await supabase.functions.invoke(`poi-engagements/${e.id}`, {
+        method: "PATCH",
+        body: { support_notes: trimmed },
+      });
+      if (error) throw error;
+      toast.success(trimmed.length === 0 ? "Support notes cleared." : "Support notes saved.");
+      setNotesOpenId(null);
+      fetchEngagements();
+    } catch (err: any) {
+      console.error("Failed to save support notes:", err);
+      toast.error(err?.message || "Failed to save support notes");
+    } finally {
+      setNotesSaving(false);
+    }
+  };
 
   // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
   const [slaThresholdHours, setSlaThresholdHours] = useState<number>(48);
@@ -644,7 +690,8 @@ export function AdminPendingEngagementsPanel() {
                     const m = e.matches;
                     const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
                     return (
-                      <TableRow key={e.id}>
+                      <React.Fragment key={e.id}>
+                        <TableRow>
                         <TableCell>
                           <div className="text-sm">
                             <p className="font-medium">{m?.commodity ?? "-"}</p>
@@ -745,6 +792,16 @@ export function AdminPendingEngagementsPanel() {
                               </Button>
                             )}
                             <Button
+                              size="sm"
+                              variant={e.support_notes ? "default" : "ghost"}
+                              onClick={() => openSupportNotes(e)}
+                              title={e.support_notes ? "View / edit reviewer support notes" : "Add reviewer support notes (admin-only)"}
+                              className={e.support_notes ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300" : ""}
+                            >
+                              <StickyNote className="h-3 w-3 mr-1" />
+                              Notes{e.support_notes ? " •" : ""}
+                            </Button>
+                            <Button
                               size="sm" variant="ghost"
                               onClick={() => openLog(e)}
                             >
@@ -753,6 +810,63 @@ export function AdminPendingEngagementsPanel() {
                           </div>
                         </TableCell>
                       </TableRow>
+                      {notesOpenId === e.id && (
+                        <TableRow key={`${e.id}-notes`} className="bg-slate-50/60 hover:bg-slate-50/60">
+                          <TableCell colSpan={6} className="py-4">
+                            <div className="space-y-2 max-w-3xl">
+                              <div className="flex items-center justify-between gap-2">
+                                <Label htmlFor={`support-notes-${e.id}`} className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+                                  <StickyNote className="h-3.5 w-3.5" />
+                                  Reviewer support notes
+                                  <Badge variant="outline" className="ml-1 text-[10px] font-medium px-1.5 py-0 bg-slate-100 text-slate-600 border-slate-300">
+                                    Admin-only
+                                  </Badge>
+                                </Label>
+                                {e.support_notes_updated_at && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Last edited {new Date(e.support_notes_updated_at).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <Textarea
+                                id={`support-notes-${e.id}`}
+                                value={notesDraft}
+                                onChange={(ev) => setNotesDraft(ev.target.value)}
+                                placeholder="Reviewer-only context: outreach quality, contact difficulties, sanction concerns, escalation notes. Never visible to counterparties or initiators."
+                                rows={4}
+                                maxLength={4000}
+                                className="text-sm bg-white"
+                              />
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-muted-foreground">
+                                  {notesDraft.length} / 4000
+                                </span>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setNotesOpenId(null)}
+                                    disabled={notesSaving}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => saveSupportNotes(e)}
+                                    disabled={notesSaving}
+                                  >
+                                    {notesSaving
+                                      ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      : <Save className="h-3 w-3 mr-1" />}
+                                    Save notes
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </TableBody>

@@ -3661,6 +3661,9 @@ export type Database = {
           responded_at: string | null
           sla_reminder_count: number
           sla_reminder_sent_at: string | null
+          support_notes: string | null
+          support_notes_updated_at: string | null
+          support_notes_updated_by: string | null
           updated_at: string
         }
         Insert: {
@@ -3680,6 +3683,9 @@ export type Database = {
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
+          support_notes?: string | null
+          support_notes_updated_at?: string | null
+          support_notes_updated_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -3699,6 +3705,9 @@ export type Database = {
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
+          support_notes?: string | null
+          support_notes_updated_at?: string | null
+          support_notes_updated_by?: string | null
           updated_at?: string
         }
         Relationships: [
