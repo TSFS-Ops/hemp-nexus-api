@@ -3659,6 +3659,8 @@ export type Database = {
           match_id: string
           org_id: string
           responded_at: string | null
+          sla_reminder_count: number
+          sla_reminder_sent_at: string | null
           updated_at: string
         }
         Insert: {
@@ -3676,6 +3678,8 @@ export type Database = {
           match_id: string
           org_id: string
           responded_at?: string | null
+          sla_reminder_count?: number
+          sla_reminder_sent_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -3693,6 +3697,8 @@ export type Database = {
           match_id?: string
           org_id?: string
           responded_at?: string | null
+          sla_reminder_count?: number
+          sla_reminder_sent_at?: string | null
           updated_at?: string
         }
         Relationships: [
