@@ -35,6 +35,10 @@ import {
   Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save, Download, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  BINDING_HINT_MESSAGES,
+  type UpdatePoiEngagementResponse,
+} from "@/types/poi-engagement";
 
 interface Engagement {
   id: string;
@@ -653,10 +657,24 @@ export function AdminPendingEngagementsPanel() {
         contactDetail.trim().toLowerCase() !== (eng.counterparty_email ?? "").toLowerCase() &&
         contactDetail.trim().length > 0
       ) {
-        await supabase.functions.invoke(`poi-engagements/${eng.id}`, {
-          method: "PATCH",
-          body: { counterparty_email: contactDetail.trim() },
-        });
+        const { data: patchData } = await supabase.functions.invoke<UpdatePoiEngagementResponse>(
+          `poi-engagements/${eng.id}`,
+          {
+            method: "PATCH",
+            body: { counterparty_email: contactDetail.trim() },
+          },
+        );
+        // Surface the auto-resolution outcome to the reviewer so they know
+        // immediately whether the recipient will see this in their inbound
+        // queue. Non-fatal — the email is saved either way.
+        const hint = patchData?.binding;
+        if (hint) {
+          const copy = BINDING_HINT_MESSAGES[hint.status];
+          if (copy.tone === "success") toast.success(copy.title);
+          else if (copy.tone === "warning") toast.warning(copy.title);
+          else if (copy.tone === "error") toast.error(copy.title);
+          else toast.info(copy.title);
+        }
       }
 
       const { data, error } = await supabase.functions.invoke(
