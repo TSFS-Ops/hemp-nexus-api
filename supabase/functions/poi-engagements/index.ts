@@ -624,13 +624,18 @@ Deno.serve(async (req) => {
         throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
       }
 
-      // Apply non-state field updates (counterparty_email, admin_notes, contact_method, contact_date)
+      // Apply non-state field updates (counterparty_email, admin_notes, support_notes, contact_method, contact_date)
       // These are not part of the state machine and don't affect the audit chain.
       const sideUpdates: Record<string, unknown> = {};
       if (parsed.data.counterparty_email !== undefined) sideUpdates.counterparty_email = parsed.data.counterparty_email;
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
+      if (parsed.data.support_notes !== undefined) {
+        sideUpdates.support_notes = updates.support_notes;
+        sideUpdates.support_notes_updated_at = updates.support_notes_updated_at;
+        sideUpdates.support_notes_updated_by = updates.support_notes_updated_by;
+      }
 
       let updated: any = null;
       if (Object.keys(sideUpdates).length > 0) {
@@ -652,6 +657,42 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
+
+      // ── Admin audit log: explicit entry whenever support notes are created/updated/cleared ──
+      if (parsed.data.support_notes !== undefined) {
+        const previous = (current as { support_notes?: string | null }).support_notes ?? null;
+        const next = (updates.support_notes as string | null) ?? null;
+        if (previous !== next) {
+          const action =
+            previous === null && next !== null
+              ? "engagement.support_notes.created"
+              : next === null
+                ? "engagement.support_notes.cleared"
+                : "engagement.support_notes.updated";
+          const ipAddress =
+            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+            req.headers.get("x-real-ip") ||
+            null;
+          const { error: auditErr } = await supabase.from("admin_audit_logs").insert({
+            admin_user_id: authCtx.userId,
+            action,
+            target_type: "poi_engagement",
+            target_id: engagementId,
+            ip_address: ipAddress,
+            details: {
+              match_id: (current as { match_id?: string | null }).match_id ?? null,
+              previous_length: previous?.length ?? 0,
+              new_length: next?.length ?? 0,
+              admin_email: adminProfile?.email || "unknown",
+              admin_name: adminProfile?.full_name || null,
+              request_id: requestId,
+            },
+          });
+          if (auditErr) {
+            console.error(`[${requestId}] Failed to insert admin_audit_logs entry for support_notes:`, auditErr);
+          }
+        }
+      }
 
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
