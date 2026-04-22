@@ -840,6 +840,34 @@ export function AdminPendingEngagementsPanel() {
             <FileText className="h-4 w-4 mr-2" />
             PDF
           </Button>
+          <Badge
+            variant="outline"
+            className={
+              liveStatus === "live"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] gap-1.5"
+                : liveStatus === "connecting"
+                  ? "bg-slate-100 text-slate-600 border-slate-300 text-[11px] gap-1.5"
+                  : "bg-amber-50 text-amber-800 border-amber-300 text-[11px] gap-1.5"
+            }
+            title={
+              liveStatus === "live"
+                ? "Live: support-note edits and status changes from other admins appear automatically"
+                : liveStatus === "connecting"
+                  ? "Connecting to live updates…"
+                  : "Live updates offline — use Refresh to reload"
+            }
+          >
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                liveStatus === "live"
+                  ? "bg-emerald-500 animate-pulse"
+                  : liveStatus === "connecting"
+                    ? "bg-slate-400"
+                    : "bg-amber-500"
+              }`}
+            />
+            {liveStatus === "live" ? "Live" : liveStatus === "connecting" ? "Connecting…" : "Offline"}
+          </Badge>
           <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
