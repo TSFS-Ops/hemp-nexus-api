@@ -91,8 +91,11 @@ Deno.serve(async (req) => {
       if (statusFilter) {
         query = query.eq("engagement_status", statusFilter);
       }
-      if (typeFilter) {
-        query = query.eq("counterparty_type", typeFilter);
+      // Default scope = "unknown" because this listing powers the unknown-counterparty
+      // outreach console. Pass ?type=all (or any non-"unknown" value) to opt out.
+      const scopedType = typeFilter ?? "unknown";
+      if (scopedType !== "all") {
+        query = query.eq("counterparty_type", scopedType);
       }
 
       const { data, error } = await query;

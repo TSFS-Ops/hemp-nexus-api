@@ -130,6 +130,9 @@ export function AdminPendingEngagementsPanel() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>("active");
+  // Scope toggle: by design this panel exists for *unknown* counterparty outreach.
+  // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
+  const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
@@ -168,9 +171,11 @@ export function AdminPendingEngagementsPanel() {
   const fetchEngagements = async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("poi-engagements", {
-        method: "GET",
-      });
+      // Server scopes by counterparty_type. Default = "unknown" (this panel's purpose).
+      const { data, error } = await supabase.functions.invoke(
+        `poi-engagements?type=${scope}`,
+        { method: "GET" }
+      );
       if (error) throw error;
       setEngagements((data?.engagements ?? []) as Engagement[]);
     } catch (err) {
@@ -239,26 +244,49 @@ export function AdminPendingEngagementsPanel() {
 
   useEffect(() => {
     fetchEngagements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope]);
+
+  useEffect(() => {
     fetchSlaSettings();
   }, []);
+
+  // An engagement is considered "auto-linked" when the counterparty has signed up
+  // and our trigger has populated counterparty_org_id. These rows no longer need
+  // outreach, so they're hidden from the active queue (still visible in "all").
+  const isAutoLinked = (e: Engagement) => Boolean(e.counterparty_org_id);
 
   const filtered = useMemo(() => {
     if (filter === "all") return engagements;
     if (filter === "active") {
-      return engagements.filter((e) =>
-        ["pending", "notification_sent", "contacted"].includes(e.engagement_status)
+      return engagements.filter(
+        (e) =>
+          ["pending", "notification_sent", "contacted"].includes(e.engagement_status) &&
+          !isAutoLinked(e)
       );
+    }
+    // Status-specific tabs: hide auto-linked from awaiting-outreach states only
+    // (accepted/declined/expired stay visible because terminal status is the truth).
+    if (["pending", "notification_sent"].includes(filter)) {
+      return engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
     }
     return engagements.filter((e) => e.engagement_status === filter);
   }, [engagements, filter]);
 
-  const stats = useMemo(() => ({
-    total: engagements.length,
-    pending: engagements.filter((e) => e.engagement_status === "pending").length,
-    notified: engagements.filter((e) => e.engagement_status === "notification_sent").length,
-    contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
-    accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
-  }), [engagements]);
+  const stats = useMemo(() => {
+    const awaitingOutreach = engagements.filter(
+      (e) => ["pending", "notification_sent"].includes(e.engagement_status) && !isAutoLinked(e)
+    );
+    return {
+      total: engagements.length,
+      pending: engagements.filter((e) => e.engagement_status === "pending" && !isAutoLinked(e)).length,
+      notified: engagements.filter((e) => e.engagement_status === "notification_sent" && !isAutoLinked(e)).length,
+      contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
+      accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
+      autoLinked: engagements.filter(isAutoLinked).length,
+      awaitingOutreach: awaitingOutreach.length,
+    };
+  }, [engagements]);
 
   // ── Send notification via the existing notification-dispatch path ──
   const sendNotification = async (eng: Engagement) => {
@@ -505,15 +533,41 @@ export function AdminPendingEngagementsPanel() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Pending Engagements</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            POI hold-point queue. Review counterparties awaiting outreach, send notifications,
-            and record manual contact attempts. Every action is written to an immutable outreach log.
+            POI hold-point queue for {scope === "unknown" ? "unknown counterparties awaiting outreach" : "all counterparty engagements"}.
+            Send notifications and record manual contact attempts — every action is written to an immutable outreach log.
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            <Clock className="inline h-3 w-3 mr-1" />
-            SLA: {slaThresholdHours}h · digest → <span className="font-mono">{slaReminderEmail}</span>
+          <p className="text-xs text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>
+              <Clock className="inline h-3 w-3 mr-1" />
+              SLA: {slaThresholdHours}h · digest → <span className="font-mono">{slaReminderEmail}</span>
+            </span>
+            {scope === "unknown" && stats.autoLinked > 0 && (
+              <span className="text-emerald-700">
+                · {stats.autoLinked} auto-linked (hidden from active queue)
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          {/* Scope toggle: unknown-only is the default; "all" is a diagnostic mode */}
+          <div className="inline-flex rounded-sm border border-slate-200 overflow-hidden text-xs">
+            <button
+              type="button"
+              onClick={() => setScope("unknown")}
+              className={`px-3 py-1.5 ${scope === "unknown" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              title="Show only engagements where the counterparty is not yet on the platform"
+            >
+              Unknown only
+            </button>
+            <button
+              type="button"
+              onClick={() => setScope("all")}
+              className={`px-3 py-1.5 border-l border-slate-200 ${scope === "all" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              title="Diagnostic: include known-counterparty (already-on-platform) engagements too"
+            >
+              All
+            </button>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -619,8 +673,20 @@ export function AdminPendingEngagementsPanel() {
                             >
                               {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
                             </Badge>
+                            {isAutoLinked(e) && (
+                              <Badge
+                                variant="outline"
+                                className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-emerald-50 text-emerald-800 border-emerald-300"
+                                title="Counterparty has signed up and been auto-linked. No outreach needed."
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Auto-linked
+                              </Badge>
+                            )}
                             {(() => {
-                              // SLA badge: only render for non-terminal "awaiting outreach" states.
+                              // SLA badge: only render for non-terminal "awaiting outreach" states
+                              // AND only when the counterparty has not been auto-linked.
+                              if (isAutoLinked(e)) return null;
                               if (!["pending", "notification_sent"].includes(e.engagement_status)) return null;
                               const ageHours = (Date.now() - new Date(e.created_at).getTime()) / 3600_000;
                               if (ageHours < slaThresholdHours) return null;
