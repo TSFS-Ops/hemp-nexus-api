@@ -82,9 +82,9 @@ const DRAFT_STATES = [
 ];
 
 const LANE_META = [
-  { id: "draft", title: "Draft Interests", subtitle: "Steps 1–7 · Intent captured" },
-  { id: "awaiting", title: "Awaiting Engagement", subtitle: "Step 8 · POI sent" },
-  { id: "poi", title: "Sealed Proofs of Intent", subtitle: "Step 9 · Engagement accepted" },
+  { id: "draft", title: "Draft", subtitle: "Steps 1–7 · Intent captured" },
+  { id: "awaiting", title: "Awaiting", subtitle: "Step 8 · POI sent" },
+  { id: "poi", title: "Sealed", subtitle: "Step 9 · Engagement accepted" },
 ] as const;
 
 // Tone-of-voice colour per lane - used for the subtle top accent and the stage pill.
