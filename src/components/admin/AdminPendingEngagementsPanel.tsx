@@ -310,21 +310,37 @@ export function AdminPendingEngagementsPanel() {
   const isAutoLinked = (e: Engagement) => Boolean(e.counterparty_org_id);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return engagements;
-    if (filter === "active") {
-      return engagements.filter(
+    let base: Engagement[];
+    if (filter === "all") base = engagements;
+    else if (filter === "active") {
+      base = engagements.filter(
         (e) =>
           ["pending", "notification_sent", "contacted"].includes(e.engagement_status) &&
           !isAutoLinked(e)
       );
+    } else if (["pending", "notification_sent"].includes(filter)) {
+      base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
+    } else {
+      base = engagements.filter((e) => e.engagement_status === filter);
     }
-    // Status-specific tabs: hide auto-linked from awaiting-outreach states only
-    // (accepted/declined/expired stay visible because terminal status is the truth).
-    if (["pending", "notification_sent"].includes(filter)) {
-      return engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
+
+    // ── Reviewer support-notes overlay filter ──
+    const hasNotes = (e: Engagement) => Boolean(e.support_notes && e.support_notes.trim().length > 0);
+    if (notesFilter === "with") base = base.filter(hasNotes);
+    else if (notesFilter === "without") base = base.filter((e) => !hasNotes(e));
+
+    // Date-range filter on support_notes_updated_at (inclusive). Implies "with notes".
+    if (notesFrom || notesTo) {
+      const fromMs = notesFrom ? new Date(`${notesFrom}T00:00:00`).getTime() : -Infinity;
+      const toMs = notesTo ? new Date(`${notesTo}T23:59:59.999`).getTime() : Infinity;
+      base = base.filter((e) => {
+        if (!e.support_notes_updated_at) return false;
+        const t = new Date(e.support_notes_updated_at).getTime();
+        return t >= fromMs && t <= toMs;
+      });
     }
-    return engagements.filter((e) => e.engagement_status === filter);
-  }, [engagements, filter]);
+    return base;
+  }, [engagements, filter, notesFilter, notesFrom, notesTo]);
 
   const stats = useMemo(() => {
     const awaitingOutreach = engagements.filter(
