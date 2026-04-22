@@ -658,6 +658,42 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
+      // ── Admin audit log: explicit entry whenever support notes are created/updated/cleared ──
+      if (parsed.data.support_notes !== undefined) {
+        const previous = (current as { support_notes?: string | null }).support_notes ?? null;
+        const next = (updates.support_notes as string | null) ?? null;
+        if (previous !== next) {
+          const action =
+            previous === null && next !== null
+              ? "engagement.support_notes.created"
+              : next === null
+                ? "engagement.support_notes.cleared"
+                : "engagement.support_notes.updated";
+          const ipAddress =
+            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+            req.headers.get("x-real-ip") ||
+            null;
+          const { error: auditErr } = await supabase.from("admin_audit_logs").insert({
+            admin_user_id: authCtx.userId,
+            action,
+            target_type: "poi_engagement",
+            target_id: engagementId,
+            ip_address: ipAddress,
+            details: {
+              match_id: (current as { match_id?: string | null }).match_id ?? null,
+              previous_length: previous?.length ?? 0,
+              new_length: next?.length ?? 0,
+              admin_email: adminProfile?.email || "unknown",
+              admin_name: adminProfile?.full_name || null,
+              request_id: requestId,
+            },
+          });
+          if (auditErr) {
+            console.error(`[${requestId}] Failed to insert admin_audit_logs entry for support_notes:`, auditErr);
+          }
+        }
+      }
+
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
