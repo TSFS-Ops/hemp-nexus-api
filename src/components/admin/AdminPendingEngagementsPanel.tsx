@@ -138,6 +138,13 @@ export function AdminPendingEngagementsPanel() {
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // ── Reviewer support-notes filter ──
+  // notesFilter: "any" (no filter) | "with" (has notes) | "without" (no notes)
+  // notesFrom/notesTo bound support_notes_updated_at into an inclusive date range (YYYY-MM-DD).
+  const [notesFilter, setNotesFilter] = useState<"any" | "with" | "without">("any");
+  const [notesFrom, setNotesFrom] = useState<string>("");
+  const [notesTo, setNotesTo] = useState<string>("");
+
   // ── Support-notes editor (admin/reviewer-only, per row) ──
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string>("");
@@ -303,21 +310,37 @@ export function AdminPendingEngagementsPanel() {
   const isAutoLinked = (e: Engagement) => Boolean(e.counterparty_org_id);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return engagements;
-    if (filter === "active") {
-      return engagements.filter(
+    let base: Engagement[];
+    if (filter === "all") base = engagements;
+    else if (filter === "active") {
+      base = engagements.filter(
         (e) =>
           ["pending", "notification_sent", "contacted"].includes(e.engagement_status) &&
           !isAutoLinked(e)
       );
+    } else if (["pending", "notification_sent"].includes(filter)) {
+      base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
+    } else {
+      base = engagements.filter((e) => e.engagement_status === filter);
     }
-    // Status-specific tabs: hide auto-linked from awaiting-outreach states only
-    // (accepted/declined/expired stay visible because terminal status is the truth).
-    if (["pending", "notification_sent"].includes(filter)) {
-      return engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
+
+    // ── Reviewer support-notes overlay filter ──
+    const hasNotes = (e: Engagement) => Boolean(e.support_notes && e.support_notes.trim().length > 0);
+    if (notesFilter === "with") base = base.filter(hasNotes);
+    else if (notesFilter === "without") base = base.filter((e) => !hasNotes(e));
+
+    // Date-range filter on support_notes_updated_at (inclusive). Implies "with notes".
+    if (notesFrom || notesTo) {
+      const fromMs = notesFrom ? new Date(`${notesFrom}T00:00:00`).getTime() : -Infinity;
+      const toMs = notesTo ? new Date(`${notesTo}T23:59:59.999`).getTime() : Infinity;
+      base = base.filter((e) => {
+        if (!e.support_notes_updated_at) return false;
+        const t = new Date(e.support_notes_updated_at).getTime();
+        return t >= fromMs && t <= toMs;
+      });
     }
-    return engagements.filter((e) => e.engagement_status === filter);
-  }, [engagements, filter]);
+    return base;
+  }, [engagements, filter, notesFilter, notesFrom, notesTo]);
 
   const stats = useMemo(() => {
     const awaitingOutreach = engagements.filter(
@@ -664,6 +687,84 @@ export function AdminPendingEngagementsPanel() {
           ))}
         </TabsList>
       </Tabs>
+
+      {/* Reviewer support-notes filter */}
+      <div className="flex flex-wrap items-end gap-3 p-3 rounded-md border border-slate-200 bg-slate-50/60">
+        <div className="flex flex-col gap-1">
+          <Label className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold flex items-center gap-1.5">
+            <StickyNote className="h-3 w-3" />
+            Reviewer notes
+          </Label>
+          <div className="inline-flex rounded-sm border border-slate-300 overflow-hidden text-xs">
+            {([
+              { v: "any", label: "Any" },
+              { v: "with", label: "With notes" },
+              { v: "without", label: "Without notes" },
+            ] as const).map((opt, i) => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setNotesFilter(opt.v)}
+                className={`px-3 py-1.5 ${i > 0 ? "border-l border-slate-300" : ""} ${
+                  notesFilter === opt.v
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="notes-from" className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+            Updated from
+          </Label>
+          <Input
+            id="notes-from"
+            type="date"
+            value={notesFrom}
+            max={notesTo || undefined}
+            onChange={(e) => setNotesFrom(e.target.value)}
+            className="h-8 w-[160px] text-xs bg-white"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="notes-to" className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+            Updated to
+          </Label>
+          <Input
+            id="notes-to"
+            type="date"
+            value={notesTo}
+            min={notesFrom || undefined}
+            onChange={(e) => setNotesTo(e.target.value)}
+            className="h-8 w-[160px] text-xs bg-white"
+          />
+        </div>
+
+        {(notesFilter !== "any" || notesFrom || notesTo) && (
+          <div className="flex items-center gap-2 ml-auto">
+            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-300 text-[11px]">
+              {filtered.length} match{filtered.length === 1 ? "" : "es"}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                setNotesFilter("any");
+                setNotesFrom("");
+                setNotesTo("");
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Table */}
       <Card>
