@@ -786,6 +786,26 @@ export function AdminPendingEngagementsPanel() {
               : <AlertTriangle className="h-4 w-4 mr-2" />}
             Run SLA scan
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={filtered.length === 0}
+            title="Download the currently filtered engagements as CSV (includes reviewer support notes & timestamps)"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={filtered.length === 0}
+            title="Open a print-ready report of filtered engagements — use your browser's Save as PDF"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
