@@ -558,19 +558,12 @@ export function DealPipeline() {
               {/* Collapsible region - animated via grid-template-rows so we can
                   transition between collapsed (0fr) and expanded (1fr) without
                   measuring content height in JS. */}
-              <div
-                id={bodyId}
-                role="region"
-                aria-labelledby={headerId}
-                aria-hidden={collapsed}
-                className={cn(
-                  "grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none",
-                  collapsed
-                    ? "grid-rows-[0fr] opacity-0"
-                    : "grid-rows-[1fr] opacity-100",
-                )}
-              >
-                <div className="overflow-hidden min-h-0">
+              {!collapsed && (
+                <div
+                  id={bodyId}
+                  role="region"
+                  aria-labelledby={headerId}
+                >
                   {/* Rows */}
                   <div className="p-2 min-h-[120px] md:min-h-[220px]">
                     {isLoading ? (
