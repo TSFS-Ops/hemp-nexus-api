@@ -35,6 +35,8 @@ tags:
     description: Declared interest operations
   - name: POIs
     description: Trade Request lifecycle
+  - name: POI Engagements
+    description: Reviewer/admin operations on the POI hold-point queue (counterparty engagement records)
   - name: WaD
     description: Willing-and-Able Deal hard-gates
   - name: PoD
@@ -257,6 +259,85 @@ paths:
       responses:
         '200':
           description: State transitioned
+
+  /poi-engagements/{id}:
+    patch:
+      tags: [POI Engagements]
+      summary: Update a POI engagement (admin/reviewer only)
+      operationId: updatePoiEngagement
+      description: |
+        Update a single field (or combination) on a POI engagement record.
+        Admin/reviewer endpoint — requires admin role.
+
+        ### `counterparty_email` validation rules
+
+        When the request body includes `counterparty_email`, the value is:
+
+        1. **Trimmed** of leading/trailing whitespace.
+        2. **Lowercased** before validation and persistence.
+        3. **Length-bounded**: minimum 3 characters, maximum 254
+           characters (RFC 5321 local + domain limit).
+        4. **Format-checked** as a valid email address.
+
+        Failures return the canonical `400 VALIDATION_ERROR` envelope with
+        per-field issues in `details.errors[]`.
+
+        ### Auto-resolution and the `binding` hint
+
+        On a successful PATCH that included `counterparty_email`, the server
+        attempts to resolve the email to a registered organisation
+        (`profiles.org_id`). The outcome is reported back as an optional
+        `binding` object on the response so the reviewer dashboard can show
+        whether the recipient will see the engagement in their inbound queue.
+
+        Resolution is **always non-fatal** — the email is saved regardless of
+        whether a matching organisation is found. See the `BindingHint`
+        schema for the four possible `status` values.
+
+        ### Idempotency
+
+        This endpoint honours the `Idempotency-Key` header. Replays return
+        the byte-identical cached body — including the `binding` hint — so
+        the reviewer dashboard stays consistent across retries. Validation
+        failures (4xx) are never cached.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Engagement UUID
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            Optional unique key to deduplicate retries. Same key returns the
+            cached 2xx body verbatim.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePoiEngagementRequest'
+      responses:
+        '200':
+          description: |
+            Engagement updated. When the request included `counterparty_email`,
+            the response includes a `binding` object describing the
+            email→organisation resolution outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePoiEngagementResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /p3-wad:
     post:
@@ -1323,6 +1404,121 @@ components:
                 type: string
               message:
                 type: string
+
+    UpdatePoiEngagementRequest:
+      type: object
+      description: |
+        Partial update payload for a POI engagement. At least one field must
+        be provided. All fields are optional individually.
+      minProperties: 1
+      properties:
+        engagement_status:
+          type: string
+          enum:
+            - pending
+            - notification_sent
+            - contacted
+            - accepted
+            - declined
+            - expired
+        counterparty_email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+          description: |
+            Recipient email for outreach. Server-side rules:
+              - trimmed and lowercased before validation/persistence
+              - must be a syntactically valid email address
+              - 3 ≤ length ≤ 254 (RFC 5321)
+
+            When this field is supplied and the engagement is currently
+            unbound (`counterparty_org_id` is null), the server will attempt
+            to auto-bind the engagement to a matching registered
+            organisation. The outcome is reported in the response's
+            `binding` field. A failed lookup or no-match result is
+            **non-fatal** — the email is still saved.
+          example: counterparty@example.com
+        admin_notes:
+          type: string
+          maxLength: 2000
+          description: Free-text admin notes (visible to all admins).
+        support_notes:
+          type: string
+          maxLength: 4000
+          description: |
+            Reviewer/support-desk notes (admin-only). An empty string clears
+            the field; any non-empty value stamps the editor and timestamp.
+        contact_method:
+          type: string
+          enum: [email, phone, linkedin, whatsapp, in_person, other]
+        contact_detail:
+          type: string
+          maxLength: 500
+        contact_date:
+          type: string
+          format: date-time
+
+    BindingHint:
+      type: object
+      description: |
+        Outcome of the email → organisation auto-resolution attempt that
+        runs whenever a PATCH request includes `counterparty_email`. Always
+        non-fatal — the engagement update succeeds regardless of resolution
+        result.
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: Discriminator for the binding outcome.
+          enum: [bound, no_match, already_bound, lookup_error]
+        org_id:
+          type: string
+          format: uuid
+          description: |
+            Present when `status` is `bound` or `already_bound`. The
+            organisation the engagement is (now) bound to.
+        email:
+          type: string
+          format: email
+          description: |
+            Present when `status` is `bound`, `no_match`, or `lookup_error`.
+            The normalised (trimmed, lowercased) email that was processed.
+        message:
+          type: string
+          description: |
+            Present when `status` is `no_match` or `lookup_error`. A
+            human-readable explanation suitable for surfacing in the
+            reviewer dashboard.
+      discriminator:
+        propertyName: status
+        mapping:
+          bound: '#/components/schemas/BindingHint'
+          no_match: '#/components/schemas/BindingHint'
+          already_bound: '#/components/schemas/BindingHint'
+          lookup_error: '#/components/schemas/BindingHint'
+      example:
+        status: no_match
+        email: stranger@example.com
+        message: >-
+          Email saved, but no registered organisation matches this address
+          yet. The engagement will remain unbound until the recipient signs
+          up or the email is corrected.
+
+    UpdatePoiEngagementResponse:
+      type: object
+      required: [engagement]
+      properties:
+        engagement:
+          type: object
+          description: The updated `poi_engagements` row.
+        binding:
+          allOf:
+            - $ref: '#/components/schemas/BindingHint'
+          description: |
+            Present **only** when the PATCH request included
+            `counterparty_email`. Omitted for status-only or notes-only
+            updates.
 
     ApiError:
       type: object
