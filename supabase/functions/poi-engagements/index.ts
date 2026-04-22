@@ -546,6 +546,38 @@ Deno.serve(async (req) => {
 
       if (parsed.data.counterparty_email !== undefined) {
         updates.counterparty_email = parsed.data.counterparty_email;
+
+        // ── Auto-resolve email → registered org ──
+        // If the supplied counterparty email already maps to a profile on the
+        // platform, bind the engagement to that org so it surfaces in the
+        // recipient's inbound queue (which filters by counterparty_org_id).
+        // Only resolve when the row is currently unbound, to avoid silently
+        // overwriting a deliberate prior binding.
+        if (
+          parsed.data.counterparty_email &&
+          !current.counterparty_org_id
+        ) {
+          const normalisedEmail = parsed.data.counterparty_email.trim().toLowerCase();
+          const { data: matchedProfile, error: lookupErr } = await supabase
+            .from("profiles")
+            .select("org_id")
+            .ilike("email", normalisedEmail)
+            .not("org_id", "is", null)
+            .limit(1)
+            .maybeSingle();
+          if (lookupErr) {
+            console.warn(
+              `[${requestId}] counterparty_email→org resolve failed (non-fatal):`,
+              lookupErr.message,
+            );
+          } else if (matchedProfile?.org_id) {
+            updates.counterparty_org_id = matchedProfile.org_id;
+            updates.counterparty_type = "known";
+            console.log(
+              `[${requestId}] Auto-bound engagement ${engagementId} to org ${matchedProfile.org_id} via email ${normalisedEmail}`,
+            );
+          }
+        }
       }
       if (parsed.data.admin_notes !== undefined) {
         updates.admin_notes = parsed.data.admin_notes;
