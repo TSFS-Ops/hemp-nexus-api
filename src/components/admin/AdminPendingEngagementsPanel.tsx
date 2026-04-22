@@ -132,6 +132,11 @@ export function AdminPendingEngagementsPanel() {
   const [filter, setFilter] = useState<string>("active");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
+  const [slaThresholdHours, setSlaThresholdHours] = useState<number>(48);
+  const [slaReminderEmail, setSlaReminderEmail] = useState<string>("support@izenzo.co.za");
+  const [slaScanRunning, setSlaScanRunning] = useState(false);
+
   // Dialog state
   const [contactDialog, setContactDialog] = useState<Engagement | null>(null);
   const [logDialog, setLogDialog] = useState<Engagement | null>(null);
