@@ -82,9 +82,9 @@ const DRAFT_STATES = [
 ];
 
 const LANE_META = [
-  { id: "draft", title: "Draft Interests", subtitle: "Steps 1–7 · Intent captured" },
-  { id: "awaiting", title: "Awaiting Engagement", subtitle: "Step 8 · POI sent" },
-  { id: "poi", title: "Sealed Proofs of Intent", subtitle: "Step 9 · Engagement accepted" },
+  { id: "draft", title: "Draft", subtitle: "Steps 1–7 · Intent captured" },
+  { id: "awaiting", title: "Awaiting", subtitle: "Step 8 · POI sent" },
+  { id: "poi", title: "Sealed", subtitle: "Step 9 · Engagement accepted" },
 ] as const;
 
 // Tone-of-voice colour per lane - used for the subtle top accent and the stage pill.
@@ -531,12 +531,12 @@ export function DealPipeline() {
                 aria-controls={bodyId}
                 className="flex items-center justify-between gap-3 bg-muted/80 border-b border-border px-4 py-3 text-left hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", accent.dot)} />
-                  <h3 className="text-xs font-bold tracking-widest uppercase text-muted-foreground truncate">
+                  <h3 className="text-xs font-bold tracking-wider uppercase text-muted-foreground whitespace-nowrap">
                     {lane.title}
                   </h3>
-                  <span className="hidden lg:inline text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground/70 truncate">
+                  <span className="hidden xl:inline text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground/70 truncate">
                     · {lane.subtitle}
                   </span>
                 </div>
