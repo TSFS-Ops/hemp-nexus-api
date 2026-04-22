@@ -700,7 +700,12 @@ Deno.serve(async (req) => {
       // Apply non-state field updates (counterparty_email, admin_notes, support_notes, contact_method, contact_date)
       // These are not part of the state machine and don't affect the audit chain.
       const sideUpdates: Record<string, unknown> = {};
-      if (parsed.data.counterparty_email !== undefined) sideUpdates.counterparty_email = parsed.data.counterparty_email;
+      if (parsed.data.counterparty_email !== undefined) {
+        // Persist the normalised (trim/lowercase) form, not the raw input.
+        sideUpdates.counterparty_email =
+          (updates.counterparty_email as string | undefined) ??
+          parsed.data.counterparty_email.trim().toLowerCase();
+      }
       // Carry the auto-resolved binding fields (set above when an email matched a registered profile)
       if (updates.counterparty_org_id !== undefined) sideUpdates.counterparty_org_id = updates.counterparty_org_id;
       if (updates.counterparty_type !== undefined) sideUpdates.counterparty_type = updates.counterparty_type;
