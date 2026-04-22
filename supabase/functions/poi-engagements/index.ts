@@ -660,6 +660,9 @@ Deno.serve(async (req) => {
       // These are not part of the state machine and don't affect the audit chain.
       const sideUpdates: Record<string, unknown> = {};
       if (parsed.data.counterparty_email !== undefined) sideUpdates.counterparty_email = parsed.data.counterparty_email;
+      // Carry the auto-resolved binding fields (set above when an email matched a registered profile)
+      if (updates.counterparty_org_id !== undefined) sideUpdates.counterparty_org_id = updates.counterparty_org_id;
+      if (updates.counterparty_type !== undefined) sideUpdates.counterparty_type = updates.counterparty_type;
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
