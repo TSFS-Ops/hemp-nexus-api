@@ -837,6 +837,66 @@ export function AdminPendingEngagementsPanel() {
                                 maxLength={4000}
                                 className="text-sm bg-white"
                               />
+                              {(() => {
+                                const previous = (e.support_notes ?? "").trim();
+                                const next = notesDraft.trim();
+                                if (previous === next) return null;
+                                const changeLabel =
+                                  previous.length === 0
+                                    ? "New note (not yet saved)"
+                                    : next.length === 0
+                                      ? "Note will be cleared"
+                                      : "Pending changes vs. saved version";
+                                const prevLines = previous ? previous.split("\n") : [];
+                                const nextLines = next ? next.split("\n") : [];
+                                const prevSet = new Set(prevLines);
+                                const nextSet = new Set(nextLines);
+                                return (
+                                  <div className="rounded-md border border-amber-200 bg-amber-50/60 p-2.5 text-xs space-y-1.5">
+                                    <div className="flex items-center gap-1.5 font-semibold text-amber-900">
+                                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                      {changeLabel}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <div className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">Before (saved)</div>
+                                        <div className="rounded border border-slate-200 bg-white p-2 font-mono text-[11px] leading-relaxed max-h-32 overflow-auto whitespace-pre-wrap break-words">
+                                          {prevLines.length === 0
+                                            ? <span className="italic text-slate-400">— empty —</span>
+                                            : prevLines.map((line, i) => (
+                                                <div
+                                                  key={`p-${i}`}
+                                                  className={!nextSet.has(line) ? "bg-rose-100 text-rose-900 -mx-2 px-2" : ""}
+                                                >
+                                                  {line || "\u00A0"}
+                                                </div>
+                                              ))}
+                                        </div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <div className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">After (draft)</div>
+                                        <div className="rounded border border-slate-200 bg-white p-2 font-mono text-[11px] leading-relaxed max-h-32 overflow-auto whitespace-pre-wrap break-words">
+                                          {nextLines.length === 0
+                                            ? <span className="italic text-slate-400">— empty —</span>
+                                            : nextLines.map((line, i) => (
+                                                <div
+                                                  key={`n-${i}`}
+                                                  className={!prevSet.has(line) ? "bg-emerald-100 text-emerald-900 -mx-2 px-2" : ""}
+                                                >
+                                                  {line || "\u00A0"}
+                                                </div>
+                                              ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[10px] text-slate-600 pt-0.5">
+                                      <span>{previous.length} → {next.length} chars</span>
+                                      <span className="text-rose-700">− {prevLines.filter(l => !nextSet.has(l)).length} removed</span>
+                                      <span className="text-emerald-700">+ {nextLines.filter(l => !prevSet.has(l)).length} added</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-[10px] text-muted-foreground">
                                   {notesDraft.length} / 4000
