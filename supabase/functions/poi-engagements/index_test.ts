@@ -238,3 +238,270 @@ Deno.test("non-fatal lookup miss: no exception is thrown — caller returns 200 
   assertEquals(hint.status, "no_match");
   // The hint is the entire failure surface for a miss — there is no thrown error.
 });
+
+// ─────────────────────────── Idempotency ───────────────────────────
+//
+// We use the real shared idempotency helpers against an in-memory mock
+// of the `idempotency_keys` table so the tests exercise the actual
+// production code paths (lookup → store → replay) without hitting the DB.
+
+import {
+  lookupIdempotentResponse,
+  storeIdempotentResponse,
+} from "../_shared/idempotency.ts";
+
+interface IdemRow {
+  org_id: string;
+  idempotency_key: string;
+  endpoint: string;
+  request_hash: string;
+  response_data: unknown;
+  response_status_code: number;
+  expires_at: string;
+}
+
+/**
+ * Minimal Supabase-client stand-in. Implements just enough of the
+ * .from("idempotency_keys").select(...).eq(...).maybeSingle() and
+ * .from("idempotency_keys").insert(...) chains the helper actually uses.
+ */
+function makeMockSupabase() {
+  const rows: IdemRow[] = [];
+
+  const builder = (op: "select" | "insert", insertRow?: IdemRow) => {
+    const filters: Array<(r: IdemRow) => boolean> = [];
+    const chain: any = {
+      eq(col: keyof IdemRow, val: unknown) {
+        filters.push((r) => (r as any)[col] === val);
+        return chain;
+      },
+      gt(col: keyof IdemRow, val: string) {
+        filters.push((r) => (r as any)[col] > val);
+        return chain;
+      },
+      maybeSingle() {
+        if (op !== "select") throw new Error("maybeSingle only valid on select");
+        const match = rows.find((r) => filters.every((f) => f(r)));
+        return Promise.resolve({
+          data: match
+            ? {
+                response_data: match.response_data,
+                response_status_code: match.response_status_code,
+              }
+            : null,
+          error: null,
+        });
+      },
+    };
+    if (op === "insert" && insertRow) {
+      // Enforce the unique index (org_id, idempotency_key, endpoint).
+      const dup = rows.find(
+        (r) =>
+          r.org_id === insertRow.org_id &&
+          r.idempotency_key === insertRow.idempotency_key &&
+          r.endpoint === insertRow.endpoint,
+      );
+      if (dup) {
+        return Promise.resolve({
+          data: null,
+          error: { code: "23505", message: "duplicate key" },
+        });
+      }
+      rows.push(insertRow);
+      return Promise.resolve({ data: insertRow, error: null });
+    }
+    return chain;
+  };
+
+  return {
+    rows,
+    from(_table: string) {
+      return {
+        select() {
+          return builder("select");
+        },
+        insert(row: IdemRow) {
+          return builder("insert", row);
+        },
+      };
+    },
+  };
+}
+
+const ENDPOINT = "PATCH /poi-engagements";
+const ORG = "org-admin-1";
+
+/**
+ * Simulates a single PATCH /poi-engagements call. Re-uses the real shared
+ * idempotency helpers, the real schema validator, and the real binding-hint
+ * resolver — so the test exercises the full production contract.
+ *
+ * Returns { status, body, replayed } and tracks how many times a real
+ * "binding lookup" would have fired (proxied via the bindingLookups counter).
+ */
+async function simulatePatch(
+  supabase: any,
+  bindingLookups: { count: number },
+  idempotencyKey: string | null,
+  body: { counterparty_email?: unknown },
+  matchedOrgId: string | null,
+): Promise<{ status: number; body: any; replayed: boolean }> {
+  const idemOpts = {
+    supabase,
+    orgId: ORG,
+    endpoint: ENDPOINT,
+    idempotencyKey,
+  };
+
+  // 1. Idempotency replay short-circuit.
+  const cached = await lookupIdempotentResponse(idemOpts);
+  if (cached) {
+    return { status: cached.status, body: cached.body, replayed: true };
+  }
+
+  // 2. Validation (canonical error contract).
+  let validated: { counterparty_email?: string };
+  try {
+    validated = validateInput(UpdateEngagementSchema, body);
+  } catch (e) {
+    const err = e as ApiException;
+    return {
+      status: err.statusCode,
+      body: { code: err.code, message: err.message, details: err.details, requestId: "req-x" },
+      replayed: false,
+    };
+    // Note: per the helper contract, non-2xx responses are NOT cached.
+  }
+
+  // 3. Binding lookup (the side effect we want to dedupe).
+  let hint: BindingHint | null = null;
+  if (validated.counterparty_email) {
+    bindingLookups.count += 1;
+    hint = resolveBindingHint({
+      email: validated.counterparty_email,
+      currentOrgId: null,
+      matchedOrgId,
+    });
+  }
+
+  const responseBody = { engagement: { id: "eng-1" }, ...(hint ? { binding: hint } : {}) };
+  await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+  return { status: 200, body: responseBody, replayed: false };
+}
+
+Deno.test("idempotency: repeated PATCH with same key replays cached response and skips binding lookup", async () => {
+  const supabase = makeMockSupabase();
+  const lookups = { count: 0 };
+  const key = "idem-key-aaa";
+  const payload = { counterparty_email: "Daniel@Izenzo.co.za" };
+
+  const first = await simulatePatch(supabase, lookups, key, payload, "org-real-1");
+  const second = await simulatePatch(supabase, lookups, key, payload, "org-real-1");
+  const third = await simulatePatch(supabase, lookups, key, payload, "org-real-1");
+
+  // The expensive lookup must run exactly once.
+  assertEquals(lookups.count, 1);
+
+  assertEquals(first.replayed, false);
+  assertEquals(second.replayed, true);
+  assertEquals(third.replayed, true);
+
+  // Replays return byte-identical bodies (no inconsistent binding hints).
+  assertEquals(second.body, first.body);
+  assertEquals(third.body, first.body);
+  assertEquals(first.body.binding.status, "bound");
+  assertEquals(first.body.binding.email, "daniel@izenzo.co.za");
+});
+
+Deno.test("idempotency: different keys re-evaluate but produce a stable binding hint for the same input", async () => {
+  const supabase = makeMockSupabase();
+  const lookups = { count: 0 };
+  const payload = { counterparty_email: "stranger@example.com" };
+
+  const a = await simulatePatch(supabase, lookups, "key-A", payload, null);
+  const b = await simulatePatch(supabase, lookups, "key-B", payload, null);
+
+  // Both keys cause a real lookup — no replay because the keys differ.
+  assertEquals(lookups.count, 2);
+  assertEquals(a.replayed, false);
+  assertEquals(b.replayed, false);
+
+  // Identical input → identical hint (no flapping between no_match and anything else).
+  assertEquals(a.body.binding.status, "no_match");
+  assertEquals(b.body.binding.status, "no_match");
+  assertEquals(a.body.binding, b.body.binding);
+});
+
+Deno.test("idempotency: validation failures are NOT cached (a corrected retry with same key still runs)", async () => {
+  const supabase = makeMockSupabase();
+  const lookups = { count: 0 };
+  const key = "idem-key-mixed";
+
+  // 1st call — invalid email, returns 400, must NOT be cached.
+  const bad = await simulatePatch(
+    supabase,
+    lookups,
+    key,
+    { counterparty_email: "not-an-email" },
+    "org-real-1",
+  );
+  assertEquals(bad.status, 400);
+  assertEquals(bad.body.code, "VALIDATION_ERROR");
+  assertEquals(lookups.count, 0);
+
+  // 2nd call — same key but corrected payload. Must execute (not replay 400).
+  const good = await simulatePatch(
+    supabase,
+    lookups,
+    key,
+    { counterparty_email: "fixed@example.com" },
+    "org-real-1",
+  );
+  assertEquals(good.status, 200);
+  assertEquals(good.replayed, false);
+  assertEquals(lookups.count, 1);
+  assertEquals(good.body.binding.status, "bound");
+});
+
+Deno.test("idempotency: missing key disables replay — every call performs a fresh binding lookup", async () => {
+  const supabase = makeMockSupabase();
+  const lookups = { count: 0 };
+  const payload = { counterparty_email: "user@example.com" };
+
+  await simulatePatch(supabase, lookups, null, payload, "org-real-1");
+  await simulatePatch(supabase, lookups, null, payload, "org-real-1");
+  await simulatePatch(supabase, lookups, null, payload, "org-real-1");
+
+  assertEquals(lookups.count, 3);
+  // Cache stays empty — nothing to short-circuit on.
+  assertEquals(supabase.rows.length, 0);
+});
+
+Deno.test("idempotency: concurrent inserts under the same key swallow the unique-violation race", async () => {
+  const supabase = makeMockSupabase();
+  const lookups = { count: 0 };
+  const key = "idem-race";
+  const payload = { counterparty_email: "race@example.com" };
+
+  // Two callers race past the lookup before either has stored.
+  const [a, b] = await Promise.all([
+    simulatePatch(supabase, lookups, key, payload, "org-real-1"),
+    simulatePatch(supabase, lookups, key, payload, "org-real-1"),
+  ]);
+
+  // Both completed without throwing; the loser's INSERT raised 23505 internally
+  // and was swallowed by storeIdempotentResponse — exactly one row persists.
+  assertEquals(supabase.rows.length, 1);
+
+  // Both responses are well-formed and carry the same binding hint shape.
+  assertEquals(a.status, 200);
+  assertEquals(b.status, 200);
+  assertEquals(a.body.binding.status, "bound");
+  assertEquals(b.body.binding.status, "bound");
+
+  // A third call with the same key now replays the winner's cached body —
+  // proving subsequent traffic converges on a single canonical response.
+  const c = await simulatePatch(supabase, lookups, key, payload, "org-real-1");
+  assertEquals(c.replayed, true);
+  assertEquals(c.body.binding, a.body.binding);
+});
