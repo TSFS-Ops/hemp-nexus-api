@@ -21,7 +21,14 @@ const EngagementStatusSchema = z.enum([
 
 const UpdateEngagementSchema = z.object({
   engagement_status: EngagementStatusSchema.optional(),
-  counterparty_email: z.string().email().optional(),
+  counterparty_email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, { message: "counterparty_email is too short" })
+    .max(254, { message: "counterparty_email exceeds 254 characters" })
+    .email({ message: "counterparty_email must be a valid email address" })
+    .optional(),
   admin_notes: z.string().max(2000).optional(),
   // Admin-only reviewer/support-desk notes. Empty string = clear the field.
   support_notes: z.string().max(4000).optional(),
@@ -544,8 +551,20 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Tracks the outcome of the email→org auto-resolution so we can surface
+      // a non-fatal hint to admins (e.g. when the recipient is not yet registered).
+      let bindingHint:
+        | { status: "bound"; org_id: string; email: string }
+        | { status: "no_match"; email: string; message: string }
+        | { status: "already_bound"; org_id: string }
+        | { status: "lookup_error"; email: string; message: string }
+        | null = null;
+
       if (parsed.data.counterparty_email !== undefined) {
-        updates.counterparty_email = parsed.data.counterparty_email;
+        // Schema already trims + lowercases, but normalise defensively in case
+        // the schema is relaxed in future.
+        const normalisedEmail = parsed.data.counterparty_email.trim().toLowerCase();
+        updates.counterparty_email = normalisedEmail;
 
         // ── Auto-resolve email → registered org ──
         // If the supplied counterparty email already maps to a profile on the
@@ -553,11 +572,7 @@ Deno.serve(async (req) => {
         // recipient's inbound queue (which filters by counterparty_org_id).
         // Only resolve when the row is currently unbound, to avoid silently
         // overwriting a deliberate prior binding.
-        if (
-          parsed.data.counterparty_email &&
-          !current.counterparty_org_id
-        ) {
-          const normalisedEmail = parsed.data.counterparty_email.trim().toLowerCase();
+        if (!current.counterparty_org_id) {
           const { data: matchedProfile, error: lookupErr } = await supabase
             .from("profiles")
             .select("org_id")
@@ -570,13 +585,39 @@ Deno.serve(async (req) => {
               `[${requestId}] counterparty_email→org resolve failed (non-fatal):`,
               lookupErr.message,
             );
+            bindingHint = {
+              status: "lookup_error",
+              email: normalisedEmail,
+              message:
+                "Email saved, but the platform could not check whether it matches a registered organisation. Please retry shortly.",
+            };
           } else if (matchedProfile?.org_id) {
             updates.counterparty_org_id = matchedProfile.org_id;
             updates.counterparty_type = "known";
+            bindingHint = {
+              status: "bound",
+              org_id: matchedProfile.org_id,
+              email: normalisedEmail,
+            };
             console.log(
               `[${requestId}] Auto-bound engagement ${engagementId} to org ${matchedProfile.org_id} via email ${normalisedEmail}`,
             );
+          } else {
+            bindingHint = {
+              status: "no_match",
+              email: normalisedEmail,
+              message:
+                "Email saved, but no registered organisation matches this address yet. The engagement will remain unbound until the recipient signs up or the email is corrected.",
+            };
+            console.log(
+              `[${requestId}] No registered profile found for ${normalisedEmail}; engagement ${engagementId} remains unbound.`,
+            );
           }
+        } else {
+          bindingHint = {
+            status: "already_bound",
+            org_id: current.counterparty_org_id,
+          };
         }
       }
       if (parsed.data.admin_notes !== undefined) {
@@ -659,7 +700,12 @@ Deno.serve(async (req) => {
       // Apply non-state field updates (counterparty_email, admin_notes, support_notes, contact_method, contact_date)
       // These are not part of the state machine and don't affect the audit chain.
       const sideUpdates: Record<string, unknown> = {};
-      if (parsed.data.counterparty_email !== undefined) sideUpdates.counterparty_email = parsed.data.counterparty_email;
+      if (parsed.data.counterparty_email !== undefined) {
+        // Persist the normalised (trim/lowercase) form, not the raw input.
+        sideUpdates.counterparty_email =
+          (updates.counterparty_email as string | undefined) ??
+          parsed.data.counterparty_email.trim().toLowerCase();
+      }
       // Carry the auto-resolved binding fields (set above when an email matched a registered profile)
       if (updates.counterparty_org_id !== undefined) sideUpdates.counterparty_org_id = updates.counterparty_org_id;
       if (updates.counterparty_type !== undefined) sideUpdates.counterparty_type = updates.counterparty_type;
@@ -729,7 +775,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      const responseBody = { engagement: updated };
+      const responseBody: Record<string, unknown> = { engagement: updated };
+      if (bindingHint) responseBody.binding = bindingHint;
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
         status: 200,
