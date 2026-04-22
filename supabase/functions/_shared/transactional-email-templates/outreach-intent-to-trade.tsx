@@ -215,3 +215,14 @@ const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fon
 const hr = { borderColor: '#E5E7EB', margin: '28px 0 20px' }
 const signature = { fontSize: '13px', color: '#374151', lineHeight: '1.6', margin: '0 0 20px' }
 const footer = { fontSize: '11px', color: '#9CA3AF', lineHeight: '1.5', margin: '20px 0 0', fontStyle: 'italic' as const }
+const ctaButton = {
+  backgroundColor: '#1B4533',
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: '600' as const,
+  padding: '12px 24px',
+  borderRadius: '4px',
+  textDecoration: 'none',
+  display: 'inline-block',
+}
+const ctaHint = { fontSize: '12px', color: '#6B7280', lineHeight: '1.5', margin: '8px 0 0' }
