@@ -612,15 +612,41 @@ export function AdminPendingEngagementsPanel() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`whitespace-nowrap text-[11px] font-medium px-2 py-0.5 ${STATUS_STYLES[e.engagement_status] ?? ""}`}
-                          >
-                            {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
-                          </Badge>
+                          <div className="flex flex-col gap-1 items-start">
+                            <Badge
+                              variant="outline"
+                              className={`whitespace-nowrap text-[11px] font-medium px-2 py-0.5 ${STATUS_STYLES[e.engagement_status] ?? ""}`}
+                            >
+                              {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
+                            </Badge>
+                            {(() => {
+                              // SLA badge: only render for non-terminal "awaiting outreach" states.
+                              if (!["pending", "notification_sent"].includes(e.engagement_status)) return null;
+                              const ageHours = (Date.now() - new Date(e.created_at).getTime()) / 3600_000;
+                              if (ageHours < slaThresholdHours) return null;
+                              const overdueBy = Math.round(ageHours - slaThresholdHours);
+                              const reminders = e.sla_reminder_count ?? 0;
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-amber-50 text-amber-800 border-amber-300"
+                                  title={`Awaiting outreach for ${Math.round(ageHours)}h (SLA: ${slaThresholdHours}h)${reminders ? ` · ${reminders} reminder${reminders === 1 ? '' : 's'} sent` : ''}`}
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  SLA +{overdueBy}h
+                                  {reminders > 0 && <span className="ml-1 opacity-70">({reminders})</span>}
+                                </Badge>
+                              );
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {new Date(e.created_at).toLocaleDateString()}
+                          <div>{new Date(e.created_at).toLocaleDateString()}</div>
+                          {e.sla_reminder_sent_at && (
+                            <div className="text-[10px] mt-0.5">
+                              Reminded {new Date(e.sla_reminder_sent_at).toLocaleDateString()}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
