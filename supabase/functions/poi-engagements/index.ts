@@ -403,10 +403,17 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
-      if (!recipient) {
+      const rawRecipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
+      if (!rawRecipient) {
         throw new ApiException("VALIDATION_ERROR", "No recipient email available", 400);
       }
+
+      // Strict guardrails: format, role-based, disposable, and "already on platform".
+      const { normalized: recipient } = await validateOutreachRecipient(
+        supabase,
+        rawRecipient,
+        eng.org_id ?? null
+      );
 
       const currentStatus = eng.engagement_status;
       // Allow re-sending outreach when already 'contacted' (follow-up email).
