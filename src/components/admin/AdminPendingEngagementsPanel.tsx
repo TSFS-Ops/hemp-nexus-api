@@ -508,11 +508,29 @@ export function AdminPendingEngagementsPanel() {
             POI hold-point queue. Review counterparties awaiting outreach, send notifications,
             and record manual contact attempts. Every action is written to an immutable outreach log.
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            <Clock className="inline h-3 w-3 mr-1" />
+            SLA: {slaThresholdHours}h · digest → <span className="font-mono">{slaReminderEmail}</span>
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runSlaScan}
+            disabled={slaScanRunning}
+            title={`Scan for engagements awaiting outreach beyond ${slaThresholdHours}h`}
+          >
+            {slaScanRunning
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <AlertTriangle className="h-4 w-4 mr-2" />}
+            Run SLA scan
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
