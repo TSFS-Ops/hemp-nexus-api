@@ -441,6 +441,40 @@ export function AdminPendingEngagementsPanel() {
     fetchSlaSettings();
   }, []);
 
+  // ── Realtime: live refresh when any admin edits a POI engagement (support notes,
+  // status changes, SLA reminders). Coalesce bursts via a short debounce so a wave
+  // of updates triggers a single refetch.
+  const [liveStatus, setLiveStatus] = useState<"connecting" | "live" | "offline">("connecting");
+  useEffect(() => {
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        fetchEngagements();
+      }, 400);
+    };
+
+    const channel = supabase
+      .channel("admin-poi-engagements-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "poi_engagements" },
+        () => scheduleRefresh()
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setLiveStatus("live");
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setLiveStatus("offline");
+        }
+      });
+
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // An engagement is considered "auto-linked" when the counterparty has signed up
   // and our trigger has populated counterparty_org_id. These rows no longer need
   // outreach, so they're hidden from the active queue (still visible in "all").
@@ -806,6 +840,34 @@ export function AdminPendingEngagementsPanel() {
             <FileText className="h-4 w-4 mr-2" />
             PDF
           </Button>
+          <Badge
+            variant="outline"
+            className={
+              liveStatus === "live"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] gap-1.5"
+                : liveStatus === "connecting"
+                  ? "bg-slate-100 text-slate-600 border-slate-300 text-[11px] gap-1.5"
+                  : "bg-amber-50 text-amber-800 border-amber-300 text-[11px] gap-1.5"
+            }
+            title={
+              liveStatus === "live"
+                ? "Live: support-note edits and status changes from other admins appear automatically"
+                : liveStatus === "connecting"
+                  ? "Connecting to live updates…"
+                  : "Live updates offline — use Refresh to reload"
+            }
+          >
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                liveStatus === "live"
+                  ? "bg-emerald-500 animate-pulse"
+                  : liveStatus === "connecting"
+                    ? "bg-slate-400"
+                    : "bg-amber-500"
+              }`}
+            />
+            {liveStatus === "live" ? "Live" : liveStatus === "connecting" ? "Connecting…" : "Offline"}
+          </Badge>
           <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
