@@ -3,6 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
   cachedResponseToHttp,
@@ -475,10 +476,16 @@ Deno.serve(async (req) => {
       if (cached) return cachedResponseToHttp(cached, headers);
 
       const body = await req.json();
-      const parsed = UpdateEngagementSchema.safeParse(body);
-      if (!parsed.success) {
-        throw new ApiException("VALIDATION_ERROR", JSON.stringify(parsed.error.flatten().fieldErrors), 400);
-      }
+      // Use the shared validator so failures return the canonical
+      // { code: "VALIDATION_ERROR", message, details: { errors: [...] }, requestId }
+      // shape via errorResponse() — same contract as every other endpoint.
+      // `parsed` keeps the same shape the rest of the handler expects:
+      //   { success: true, data: <validated> }
+      // so downstream code stays untouched.
+      const parsed = {
+        success: true as const,
+        data: validateInput(UpdateEngagementSchema, body),
+      };
 
       // ── Reject empty PATCH bodies — no-op writes pollute the immutable log ──
       const hasMeaningfulChange =
