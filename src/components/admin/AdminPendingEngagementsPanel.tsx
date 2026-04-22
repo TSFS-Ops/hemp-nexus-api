@@ -49,6 +49,8 @@ interface Engagement {
   responded_at: string | null;
   admin_notes: string | null;
   created_at: string;
+  sla_reminder_sent_at?: string | null;
+  sla_reminder_count?: number | null;
   matches?: {
     id: string;
     commodity: string | null;
@@ -130,6 +132,11 @@ export function AdminPendingEngagementsPanel() {
   const [filter, setFilter] = useState<string>("active");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
+  const [slaThresholdHours, setSlaThresholdHours] = useState<number>(48);
+  const [slaReminderEmail, setSlaReminderEmail] = useState<string>("support@izenzo.co.za");
+  const [slaScanRunning, setSlaScanRunning] = useState(false);
+
   // Dialog state
   const [contactDialog, setContactDialog] = useState<Engagement | null>(null);
   const [logDialog, setLogDialog] = useState<Engagement | null>(null);
@@ -175,8 +182,64 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  // ── Load SLA settings (threshold + reminder recipient) from admin_settings ──
+  const fetchSlaSettings = async () => {
+    const { data, error } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "outreach_sla")
+      .maybeSingle();
+    if (error) {
+      console.warn("Failed to load SLA settings:", error.message);
+      return;
+    }
+    const v = (data?.value ?? {}) as { threshold_hours?: number; reminder_email?: string };
+    if (typeof v.threshold_hours === "number" && v.threshold_hours > 0) {
+      setSlaThresholdHours(v.threshold_hours);
+    }
+    if (typeof v.reminder_email === "string" && v.reminder_email.includes("@")) {
+      setSlaReminderEmail(v.reminder_email);
+    }
+  };
+
+  // ── Manually trigger the SLA scan (sends digest if any overdue) ──
+  const runSlaScan = async () => {
+    setSlaScanRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("outreach-sla-monitor", {
+        body: {},
+      });
+      if (error) throw error;
+      const result = data as {
+        ok: boolean;
+        overdue_total?: number;
+        eligible_for_reminder?: number;
+        email_sent?: boolean;
+        recipient?: string;
+      };
+      if (result?.email_sent) {
+        toast.success(
+          `SLA digest sent to ${result.recipient}: ${result.eligible_for_reminder} engagement(s) flagged.`
+        );
+      } else if ((result?.overdue_total ?? 0) === 0) {
+        toast.success("SLA scan complete — no overdue engagements.");
+      } else {
+        toast.info(
+          `SLA scan complete: ${result?.overdue_total ?? 0} overdue, all recently reminded (no new digest).`
+        );
+      }
+      fetchEngagements();
+    } catch (err: any) {
+      console.error("SLA scan error:", err);
+      toast.error(err?.message || "Failed to run SLA scan");
+    } finally {
+      setSlaScanRunning(false);
+    }
+  };
+
   useEffect(() => {
     fetchEngagements();
+    fetchSlaSettings();
   }, []);
 
   const filtered = useMemo(() => {
@@ -445,11 +508,29 @@ export function AdminPendingEngagementsPanel() {
             POI hold-point queue. Review counterparties awaiting outreach, send notifications,
             and record manual contact attempts. Every action is written to an immutable outreach log.
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            <Clock className="inline h-3 w-3 mr-1" />
+            SLA: {slaThresholdHours}h · digest → <span className="font-mono">{slaReminderEmail}</span>
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runSlaScan}
+            disabled={slaScanRunning}
+            title={`Scan for engagements awaiting outreach beyond ${slaThresholdHours}h`}
+          >
+            {slaScanRunning
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <AlertTriangle className="h-4 w-4 mr-2" />}
+            Run SLA scan
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchEngagements} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -531,15 +612,41 @@ export function AdminPendingEngagementsPanel() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`whitespace-nowrap text-[11px] font-medium px-2 py-0.5 ${STATUS_STYLES[e.engagement_status] ?? ""}`}
-                          >
-                            {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
-                          </Badge>
+                          <div className="flex flex-col gap-1 items-start">
+                            <Badge
+                              variant="outline"
+                              className={`whitespace-nowrap text-[11px] font-medium px-2 py-0.5 ${STATUS_STYLES[e.engagement_status] ?? ""}`}
+                            >
+                              {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
+                            </Badge>
+                            {(() => {
+                              // SLA badge: only render for non-terminal "awaiting outreach" states.
+                              if (!["pending", "notification_sent"].includes(e.engagement_status)) return null;
+                              const ageHours = (Date.now() - new Date(e.created_at).getTime()) / 3600_000;
+                              if (ageHours < slaThresholdHours) return null;
+                              const overdueBy = Math.round(ageHours - slaThresholdHours);
+                              const reminders = e.sla_reminder_count ?? 0;
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-amber-50 text-amber-800 border-amber-300"
+                                  title={`Awaiting outreach for ${Math.round(ageHours)}h (SLA: ${slaThresholdHours}h)${reminders ? ` · ${reminders} reminder${reminders === 1 ? '' : 's'} sent` : ''}`}
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  SLA +{overdueBy}h
+                                  {reminders > 0 && <span className="ml-1 opacity-70">({reminders})</span>}
+                                </Badge>
+                              );
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {new Date(e.created_at).toLocaleDateString()}
+                          <div>{new Date(e.created_at).toLocaleDateString()}</div>
+                          {e.sla_reminder_sent_at && (
+                            <div className="text-[10px] mt-0.5">
+                              Reminded {new Date(e.sla_reminder_sent_at).toLocaleDateString()}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
