@@ -138,6 +138,13 @@ export function AdminPendingEngagementsPanel() {
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // ── Reviewer support-notes filter ──
+  // notesFilter: "any" (no filter) | "with" (has notes) | "without" (no notes)
+  // notesFrom/notesTo bound support_notes_updated_at into an inclusive date range (YYYY-MM-DD).
+  const [notesFilter, setNotesFilter] = useState<"any" | "with" | "without">("any");
+  const [notesFrom, setNotesFrom] = useState<string>("");
+  const [notesTo, setNotesTo] = useState<string>("");
+
   // ── Support-notes editor (admin/reviewer-only, per row) ──
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string>("");
