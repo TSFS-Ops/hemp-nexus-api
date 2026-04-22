@@ -725,6 +725,16 @@ export function AdminPendingEngagementsPanel() {
                               </Button>
                             )}
                             <Button
+                              size="sm"
+                              variant={e.support_notes ? "default" : "ghost"}
+                              onClick={() => openSupportNotes(e)}
+                              title={e.support_notes ? "View / edit reviewer support notes" : "Add reviewer support notes (admin-only)"}
+                              className={e.support_notes ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300" : ""}
+                            >
+                              <StickyNote className="h-3 w-3 mr-1" />
+                              Notes{e.support_notes ? " •" : ""}
+                            </Button>
+                            <Button
                               size="sm" variant="ghost"
                               onClick={() => openLog(e)}
                             >
@@ -733,8 +743,65 @@ export function AdminPendingEngagementsPanel() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
+                      {notesOpenId === e.id && (
+                        <TableRow key={`${e.id}-notes`} className="bg-slate-50/60 hover:bg-slate-50/60">
+                          <TableCell colSpan={6} className="py-4">
+                            <div className="space-y-2 max-w-3xl">
+                              <div className="flex items-center justify-between gap-2">
+                                <Label htmlFor={`support-notes-${e.id}`} className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
+                                  <StickyNote className="h-3.5 w-3.5" />
+                                  Reviewer support notes
+                                  <Badge variant="outline" className="ml-1 text-[10px] font-medium px-1.5 py-0 bg-slate-100 text-slate-600 border-slate-300">
+                                    Admin-only
+                                  </Badge>
+                                </Label>
+                                {e.support_notes_updated_at && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Last edited {new Date(e.support_notes_updated_at).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <Textarea
+                                id={`support-notes-${e.id}`}
+                                value={notesDraft}
+                                onChange={(ev) => setNotesDraft(ev.target.value)}
+                                placeholder="Reviewer-only context: outreach quality, contact difficulties, sanction concerns, escalation notes. Never visible to counterparties or initiators."
+                                rows={4}
+                                maxLength={4000}
+                                className="text-sm bg-white"
+                              />
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-muted-foreground">
+                                  {notesDraft.length} / 4000
+                                </span>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setNotesOpenId(null)}
+                                    disabled={notesSaving}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => saveSupportNotes(e)}
+                                    disabled={notesSaving}
+                                  >
+                                    {notesSaving
+                                      ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      : <Save className="h-3 w-3 mr-1" />}
+                                    Save notes
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  );
+                })}
                 </TableBody>
               </Table>
             </div>
