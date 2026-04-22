@@ -287,7 +287,6 @@ export function AdminPendingEngagementsPanel() {
       awaitingOutreach: awaitingOutreach.length,
     };
   }, [engagements]);
-  }), [engagements]);
 
   // ── Send notification via the existing notification-dispatch path ──
   const sendNotification = async (eng: Engagement) => {
