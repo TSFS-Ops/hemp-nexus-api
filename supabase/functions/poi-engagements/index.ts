@@ -775,7 +775,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      const responseBody = { engagement: updated };
+      const responseBody: Record<string, unknown> = { engagement: updated };
+      if (bindingHint) responseBody.binding = bindingHint;
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
         status: 200,
