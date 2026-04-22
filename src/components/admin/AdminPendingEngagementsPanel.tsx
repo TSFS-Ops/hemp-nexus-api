@@ -244,25 +244,49 @@ export function AdminPendingEngagementsPanel() {
 
   useEffect(() => {
     fetchEngagements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope]);
+
+  useEffect(() => {
     fetchSlaSettings();
   }, []);
+
+  // An engagement is considered "auto-linked" when the counterparty has signed up
+  // and our trigger has populated counterparty_org_id. These rows no longer need
+  // outreach, so they're hidden from the active queue (still visible in "all").
+  const isAutoLinked = (e: Engagement) => Boolean(e.counterparty_org_id);
 
   const filtered = useMemo(() => {
     if (filter === "all") return engagements;
     if (filter === "active") {
-      return engagements.filter((e) =>
-        ["pending", "notification_sent", "contacted"].includes(e.engagement_status)
+      return engagements.filter(
+        (e) =>
+          ["pending", "notification_sent", "contacted"].includes(e.engagement_status) &&
+          !isAutoLinked(e)
       );
+    }
+    // Status-specific tabs: hide auto-linked from awaiting-outreach states only
+    // (accepted/declined/expired stay visible because terminal status is the truth).
+    if (["pending", "notification_sent"].includes(filter)) {
+      return engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
     }
     return engagements.filter((e) => e.engagement_status === filter);
   }, [engagements, filter]);
 
-  const stats = useMemo(() => ({
-    total: engagements.length,
-    pending: engagements.filter((e) => e.engagement_status === "pending").length,
-    notified: engagements.filter((e) => e.engagement_status === "notification_sent").length,
-    contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
-    accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
+  const stats = useMemo(() => {
+    const awaitingOutreach = engagements.filter(
+      (e) => ["pending", "notification_sent"].includes(e.engagement_status) && !isAutoLinked(e)
+    );
+    return {
+      total: engagements.length,
+      pending: engagements.filter((e) => e.engagement_status === "pending" && !isAutoLinked(e)).length,
+      notified: engagements.filter((e) => e.engagement_status === "notification_sent" && !isAutoLinked(e)).length,
+      contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
+      accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
+      autoLinked: engagements.filter(isAutoLinked).length,
+      awaitingOutreach: awaitingOutreach.length,
+    };
+  }, [engagements]);
   }), [engagements]);
 
   // ── Send notification via the existing notification-dispatch path ──
