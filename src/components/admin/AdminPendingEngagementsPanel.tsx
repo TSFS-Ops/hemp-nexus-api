@@ -49,6 +49,8 @@ interface Engagement {
   responded_at: string | null;
   admin_notes: string | null;
   created_at: string;
+  sla_reminder_sent_at?: string | null;
+  sla_reminder_count?: number | null;
   matches?: {
     id: string;
     commodity: string | null;
