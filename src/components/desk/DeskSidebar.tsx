@@ -3,6 +3,7 @@ import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, Exter
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 import { SidebarNotificationItem } from "@/components/notifications/SidebarNotificationItem";
+import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
 
 const NAV = [
   { to: "/desk", label: "Desk", icon: Briefcase, end: true },
@@ -30,8 +31,13 @@ export function DeskSidebar() {
       </div>
 
       {/* Workspace switcher (Command Bridge) */}
-      <div className="px-4 pb-6">
+      <div className="px-4 pb-3">
         <ContextSwitcher tone="light" />
+      </div>
+
+      {/* Active org indicator — surfaces legacy/placeholder orgs everywhere */}
+      <div className="px-4 pb-4">
+        <ActiveOrgIndicator />
       </div>
 
       {/* Nav */}
