@@ -293,8 +293,12 @@ Deno.serve(async (req) => {
       }
 
       const currentStatus = eng.engagement_status;
+      // Allow re-sending outreach when already 'contacted' (follow-up email).
+      // Block only terminal states (accepted/declined/expired) where further
+      // outreach is meaningless.
+      const isFollowUp = currentStatus === "contacted";
       const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
-      if (!allowed.includes("contacted")) {
+      if (!isFollowUp && !allowed.includes("contacted")) {
         throw new ApiException(
           "INVALID_TRANSITION",
           `Cannot send outreach from state '${currentStatus}'. Allowed transitions: [${allowed.join(", ")}]`,
