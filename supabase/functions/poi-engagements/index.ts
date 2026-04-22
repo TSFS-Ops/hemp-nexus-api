@@ -294,14 +294,21 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
-      if (!recipient) {
+      const rawRecipient = (eng.counterparty_email || "").trim().toLowerCase();
+      if (!rawRecipient) {
         throw new ApiException(
           "VALIDATION_ERROR",
           "This engagement has no counterparty email on file. Add one before previewing.",
           400
         );
       }
+      // Apply the same guardrails the send endpoint applies, so admins see
+      // validation failures BEFORE attempting to send.
+      const { normalized: recipient } = await validateOutreachRecipient(
+        supabase,
+        rawRecipient,
+        eng.org_id ?? null
+      );
 
       const m = eng.matches as any;
       const initiatorOrgId = eng.org_id;
