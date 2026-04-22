@@ -21,7 +21,14 @@ const EngagementStatusSchema = z.enum([
 
 const UpdateEngagementSchema = z.object({
   engagement_status: EngagementStatusSchema.optional(),
-  counterparty_email: z.string().email().optional(),
+  counterparty_email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, { message: "counterparty_email is too short" })
+    .max(254, { message: "counterparty_email exceeds 254 characters" })
+    .email({ message: "counterparty_email must be a valid email address" })
+    .optional(),
   admin_notes: z.string().max(2000).optional(),
   // Admin-only reviewer/support-desk notes. Empty string = clear the field.
   support_notes: z.string().max(4000).optional(),
