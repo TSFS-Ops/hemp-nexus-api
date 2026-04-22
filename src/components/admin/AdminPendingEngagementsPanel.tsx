@@ -130,6 +130,9 @@ export function AdminPendingEngagementsPanel() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>("active");
+  // Scope toggle: by design this panel exists for *unknown* counterparty outreach.
+  // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
+  const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
