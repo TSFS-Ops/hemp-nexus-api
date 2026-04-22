@@ -28,6 +28,122 @@ const UpdateEngagementSchema = z.object({
   contact_date: z.string().datetime().optional(),
 });
 
+// Strict RFC-5322-ish email format. Rejects spaces, multiple @, missing TLD.
+const STRICT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+// Role-based / shared inbox addresses are not acceptable counterparty contacts —
+// the platform requires a named individual able to authorise trade engagement.
+const FORBIDDEN_LOCAL_PARTS = new Set([
+  "noreply", "no-reply", "donotreply", "do-not-reply", "mailer-daemon",
+  "postmaster", "abuse", "webmaster", "hostmaster", "admin", "administrator",
+  "root", "support", "help", "info", "contact", "sales", "marketing",
+  "newsletter", "notifications", "notification",
+]);
+
+// Disposable / throwaway email domains — refuse outreach to these.
+const DISPOSABLE_DOMAINS = new Set([
+  "mailinator.com", "tempmail.com", "10minutemail.com", "guerrillamail.com",
+  "throwawaymail.com", "trashmail.com", "yopmail.com", "getnada.com",
+  "maildrop.cc", "sharklasers.com", "dispostable.com",
+]);
+
+/**
+ * Validates a counterparty email for outreach eligibility.
+ * Returns { ok: true } on success, or throws ApiException on failure.
+ *
+ * Rules enforced:
+ *  1. Strict format (RFC-style regex, max 254 chars).
+ *  2. No role-based / shared-inbox local parts (info@, sales@, noreply@, etc.).
+ *  3. No known disposable / throwaway domains.
+ *  4. The address MUST NOT already belong to a user attached to an active
+ *     platform organisation — if it does, the counterparty is "known" and
+ *     should be engaged via the platform invite flow, not cold outreach.
+ */
+async function validateOutreachRecipient(
+  supabase: ReturnType<typeof createClient>,
+  rawEmail: string,
+  initiatorOrgId: string | null
+): Promise<{ normalized: string }> {
+  const normalized = (rawEmail || "").trim().toLowerCase();
+
+  if (!normalized) {
+    throw new ApiException("VALIDATION_ERROR", "Counterparty email is required.", 400);
+  }
+  if (normalized.length > 254) {
+    throw new ApiException("VALIDATION_ERROR", "Email address exceeds 254 characters.", 400);
+  }
+  if (!STRICT_EMAIL_REGEX.test(normalized)) {
+    throw new ApiException(
+      "INVALID_EMAIL_FORMAT",
+      `'${normalized}' is not a valid email address. Provide a personal business email (e.g. jane.doe@company.com).`,
+      400
+    );
+  }
+
+  const [local, domain] = normalized.split("@");
+  if (FORBIDDEN_LOCAL_PARTS.has(local)) {
+    throw new ApiException(
+      "FORBIDDEN_RECIPIENT",
+      `Cannot send outreach to a shared/role address ('${local}@'). Provide a named individual at the counterparty.`,
+      400
+    );
+  }
+  if (DISPOSABLE_DOMAINS.has(domain)) {
+    throw new ApiException(
+      "FORBIDDEN_RECIPIENT",
+      `'${domain}' is a disposable email provider. Provide a corporate email address.`,
+      400
+    );
+  }
+
+  // Check whether this email already belongs to a user attached to a
+  // platform organisation. If so, this is a KNOWN counterparty — they
+  // should be invited via the in-platform engagement flow, not cold
+  // outreach. (Skip this check if the matching user is in the initiator's
+  // own org — that would be a self-send and is caught elsewhere.)
+  const { data: existingProfile, error: profileErr } = await supabase
+    .from("profiles")
+    .select("id, org_id, status")
+    .eq("email", normalized)
+    .maybeSingle();
+
+  if (profileErr) {
+    console.error("Profile lookup failed during outreach validation", profileErr);
+    throw new ApiException(
+      "VALIDATION_ERROR",
+      "Failed to verify counterparty against the platform directory. Try again.",
+      500
+    );
+  }
+
+  if (existingProfile?.org_id) {
+    if (initiatorOrgId && existingProfile.org_id === initiatorOrgId) {
+      throw new ApiException(
+        "SELF_OUTREACH_BLOCKED",
+        "This email belongs to a member of your own organisation.",
+        400
+      );
+    }
+
+    // Confirm the org is active before blocking.
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id, name, status, frozen")
+      .eq("id", existingProfile.org_id)
+      .maybeSingle();
+
+    if (org && org.status !== "deleted" && !org.frozen) {
+      throw new ApiException(
+        "COUNTERPARTY_ALREADY_ON_PLATFORM",
+        `'${normalized}' is already registered with '${org.name ?? "an existing organisation"}'. Use the in-platform engagement flow instead of cold outreach.`,
+        409
+      );
+    }
+  }
+
+  return { normalized };
+}
+
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   pending: ["notification_sent", "contacted", "expired"],
   notification_sent: ["contacted", "expired"],
@@ -178,14 +294,21 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
-      if (!recipient) {
+      const rawRecipient = (eng.counterparty_email || "").trim().toLowerCase();
+      if (!rawRecipient) {
         throw new ApiException(
           "VALIDATION_ERROR",
           "This engagement has no counterparty email on file. Add one before previewing.",
           400
         );
       }
+      // Apply the same guardrails the send endpoint applies, so admins see
+      // validation failures BEFORE attempting to send.
+      const { normalized: recipient } = await validateOutreachRecipient(
+        supabase,
+        rawRecipient,
+        eng.org_id ?? null
+      );
 
       const m = eng.matches as any;
       const initiatorOrgId = eng.org_id;
@@ -287,10 +410,17 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
-      if (!recipient) {
+      const rawRecipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
+      if (!rawRecipient) {
         throw new ApiException("VALIDATION_ERROR", "No recipient email available", 400);
       }
+
+      // Strict guardrails: format, role-based, disposable, and "already on platform".
+      const { normalized: recipient } = await validateOutreachRecipient(
+        supabase,
+        rawRecipient,
+        eng.org_id ?? null
+      );
 
       const currentStatus = eng.engagement_status;
       // Allow re-sending outreach when already 'contacted' (follow-up email).
@@ -539,7 +669,15 @@ Deno.serve(async (req) => {
       }
 
       if (parsed.data.counterparty_email !== undefined) {
-        updates.counterparty_email = parsed.data.counterparty_email;
+        // Re-validate when an admin sets/changes the counterparty email so
+        // the engagement record never holds an invalid or already-on-platform
+        // address that would later be rejected by send-outreach.
+        const { normalized } = await validateOutreachRecipient(
+          supabase,
+          parsed.data.counterparty_email,
+          current.org_id ?? null
+        );
+        updates.counterparty_email = normalized;
       }
       if (parsed.data.admin_notes !== undefined) {
         updates.admin_notes = parsed.data.admin_notes;
