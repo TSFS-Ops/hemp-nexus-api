@@ -688,6 +688,84 @@ export function AdminPendingEngagementsPanel() {
         </TabsList>
       </Tabs>
 
+      {/* Reviewer support-notes filter */}
+      <div className="flex flex-wrap items-end gap-3 p-3 rounded-md border border-slate-200 bg-slate-50/60">
+        <div className="flex flex-col gap-1">
+          <Label className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold flex items-center gap-1.5">
+            <StickyNote className="h-3 w-3" />
+            Reviewer notes
+          </Label>
+          <div className="inline-flex rounded-sm border border-slate-300 overflow-hidden text-xs">
+            {([
+              { v: "any", label: "Any" },
+              { v: "with", label: "With notes" },
+              { v: "without", label: "Without notes" },
+            ] as const).map((opt, i) => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setNotesFilter(opt.v)}
+                className={`px-3 py-1.5 ${i > 0 ? "border-l border-slate-300" : ""} ${
+                  notesFilter === opt.v
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="notes-from" className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+            Updated from
+          </Label>
+          <Input
+            id="notes-from"
+            type="date"
+            value={notesFrom}
+            max={notesTo || undefined}
+            onChange={(e) => setNotesFrom(e.target.value)}
+            className="h-8 w-[160px] text-xs bg-white"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="notes-to" className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+            Updated to
+          </Label>
+          <Input
+            id="notes-to"
+            type="date"
+            value={notesTo}
+            min={notesFrom || undefined}
+            onChange={(e) => setNotesTo(e.target.value)}
+            className="h-8 w-[160px] text-xs bg-white"
+          />
+        </div>
+
+        {(notesFilter !== "any" || notesFrom || notesTo) && (
+          <div className="flex items-center gap-2 ml-auto">
+            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-300 text-[11px]">
+              {filtered.length} match{filtered.length === 1 ? "" : "es"}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                setNotesFilter("any");
+                setNotesFrom("");
+                setNotesTo("");
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Table */}
       <Card>
         <CardContent className="p-0">
