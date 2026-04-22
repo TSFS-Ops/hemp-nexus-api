@@ -171,9 +171,11 @@ export function AdminPendingEngagementsPanel() {
   const fetchEngagements = async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("poi-engagements", {
-        method: "GET",
-      });
+      // Server scopes by counterparty_type. Default = "unknown" (this panel's purpose).
+      const { data, error } = await supabase.functions.invoke(
+        `poi-engagements?type=${scope}`,
+        { method: "GET" }
+      );
       if (error) throw error;
       setEngagements((data?.engagements ?? []) as Engagement[]);
     } catch (err) {
