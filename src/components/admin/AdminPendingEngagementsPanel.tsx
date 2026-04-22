@@ -800,9 +800,9 @@ export function AdminPendingEngagementsPanel() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
-                  );
-                })}
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
