@@ -292,6 +292,7 @@ export function MatchesList() {
       let succeeded = 0;
       let failed = 0;
       const failedIds: string[] = [];
+      const succeededIds: string[] = [];
       const errors: string[] = [];
 
       // Sequential to avoid race conditions on balance
@@ -315,8 +316,10 @@ export function MatchesList() {
             if (state === "intent_declared" || state === "settled") {
               // Could be genuinely new or idempotent - either way, success
               succeeded++;
+              succeededIds.push(matchId);
             } else {
               succeeded++;
+              succeededIds.push(matchId);
             }
           } else {
             failed++;
@@ -336,9 +339,28 @@ export function MatchesList() {
         }
       }
 
-      // Precise messaging
+      // Record a single bulk audit event capturing the batch outcome.
+      // Per-match audit rows are written by the match/settle endpoint;
+      // this gives reviewers a single batch-level entry to inspect.
+      // Fire-and-forget — audit failure must not block the user flow.
+      try {
+        await supabase.functions.invoke("audit-bulk-confirm", {
+          body: {
+            batch_key: batchKey,
+            attempted_match_ids: eligibleIds,
+            succeeded_match_ids: succeededIds,
+            failed_match_ids: failedIds,
+            error_summary: errors[0] ?? null,
+          },
+        });
+      } catch (auditErr) {
+        console.warn("[bulk-confirm] audit event failed", auditErr);
+      }
+
+      // Precise messaging — server charges 1 credit per successful POI
+      const creditsCharged = succeeded;
       if (succeeded > 0 && failed === 0) {
-        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. ${(succeeded * 500).toLocaleString()} credits deducted.`);
+        toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. ${creditsCharged.toLocaleString()} credit${creditsCharged !== 1 ? "s" : ""} deducted.`);
       } else if (succeeded > 0 && failed > 0) {
         toast.warning(
           `${succeeded} of ${eligibleIds.length} confirmed. ${failed} failed: ${errors[0] || "Unknown error"}. Failed matches remain selected for retry.`
