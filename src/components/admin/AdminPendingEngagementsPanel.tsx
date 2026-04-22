@@ -135,6 +135,49 @@ export function AdminPendingEngagementsPanel() {
   const [filter, setFilter] = useState<string>("active");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // ── Support-notes editor (admin/reviewer-only, per row) ──
+  const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState<string>("");
+  const [notesSaving, setNotesSaving] = useState(false);
+
+  const openSupportNotes = (e: Engagement) => {
+    if (notesOpenId === e.id) {
+      setNotesOpenId(null);
+      return;
+    }
+    setNotesOpenId(e.id);
+    setNotesDraft(e.support_notes ?? "");
+  };
+
+  const saveSupportNotes = async (e: Engagement) => {
+    if (notesSaving) return;
+    const trimmed = notesDraft.trim();
+    if (trimmed.length > 4000) {
+      toast.error("Support notes must be 4000 characters or fewer.");
+      return;
+    }
+    if ((e.support_notes ?? "") === trimmed) {
+      setNotesOpenId(null);
+      return;
+    }
+    setNotesSaving(true);
+    try {
+      const { error } = await supabase.functions.invoke(`poi-engagements/${e.id}`, {
+        method: "PATCH",
+        body: { support_notes: trimmed },
+      });
+      if (error) throw error;
+      toast.success(trimmed.length === 0 ? "Support notes cleared." : "Support notes saved.");
+      setNotesOpenId(null);
+      fetchEngagements();
+    } catch (err: any) {
+      console.error("Failed to save support notes:", err);
+      toast.error(err?.message || "Failed to save support notes");
+    } finally {
+      setNotesSaving(false);
+    }
+  };
+
   // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
   const [slaThresholdHours, setSlaThresholdHours] = useState<number>(48);
   const [slaReminderEmail, setSlaReminderEmail] = useState<string>("support@izenzo.co.za");
