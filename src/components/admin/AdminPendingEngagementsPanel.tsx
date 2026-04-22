@@ -32,7 +32,7 @@ import { SafeSelect } from "@/components/admin/SafeSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye,
+  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
