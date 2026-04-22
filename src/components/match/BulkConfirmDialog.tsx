@@ -13,7 +13,7 @@ import { Loader2, AlertTriangle, Coins } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-const CREDITS_PER_MATCH = 500;
+const CREDITS_PER_MATCH = 1;
 interface BulkConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
