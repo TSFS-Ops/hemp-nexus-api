@@ -9,8 +9,11 @@ import {
   assert,
   assertEquals,
   assertExists,
+  assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { validateInput } from "../_shared/validation.ts";
 
 // ── Mirror of the schema field under test (kept in sync with index.ts) ──
 const counterpartyEmailField = z
@@ -177,4 +180,61 @@ Deno.test("binding hint: 'lookup_error' is non-fatal and surfaces a retry messag
   if (hint.status === "lookup_error") {
     assert(hint.message.toLowerCase().includes("retry"));
   }
+});
+
+// ────────────── Canonical error contract (code/message/details/requestId) ──────────────
+
+Deno.test("validation error: validateInput throws ApiException with VALIDATION_ERROR code", () => {
+  const err = assertThrows(
+    () => validateInput(UpdateEngagementSchema, { counterparty_email: "not-an-email" }),
+    ApiException,
+  );
+  assertEquals(err.code, "VALIDATION_ERROR");
+  assertEquals(err.statusCode, 400);
+  // Structured per-field details survive the throw → caller can map to UI.
+  assertExists(err.details);
+  const errs = (err.details as { errors: Array<{ path: string; message: string }> }).errors;
+  assert(Array.isArray(errs) && errs.length > 0, "details.errors must be a non-empty array");
+  assertEquals(errs[0].path, "counterparty_email");
+  assert(errs[0].message.includes("valid email address"));
+});
+
+Deno.test("validation error: errorResponse serialises code/message/details/requestId consistently", async () => {
+  const requestId = "req-test-123";
+  let caught: ApiException | null = null;
+  try {
+    validateInput(UpdateEngagementSchema, { counterparty_email: "still-bad" });
+  } catch (e) {
+    caught = e as ApiException;
+  }
+  assertExists(caught);
+  const res = errorResponse(caught!, requestId);
+  assertEquals(res.status, 400);
+  assertEquals(res.headers.get("Content-Type"), "application/json");
+  const body = await res.json();
+  // Canonical error contract — must match every other endpoint.
+  assertEquals(Object.keys(body).sort(), ["code", "details", "message", "requestId"]);
+  assertEquals(body.code, "VALIDATION_ERROR");
+  assertEquals(body.requestId, requestId);
+  assert(typeof body.message === "string" && body.message.length > 0);
+  assert(Array.isArray(body.details.errors));
+  assertEquals(body.details.errors[0].path, "counterparty_email");
+});
+
+Deno.test("non-fatal lookup miss: no exception is thrown — caller returns 200 with binding hint", () => {
+  // The validation pass succeeds (valid email shape); the *lookup* miss must
+  // never escalate to a thrown error. Modeled here by calling the resolver
+  // directly with a valid email and a null matchedOrgId.
+  const validated = validateInput(UpdateEngagementSchema, {
+    counterparty_email: "Unknown@example.com",
+  });
+  assertEquals(validated.counterparty_email, "unknown@example.com");
+
+  const hint = resolveBindingHint({
+    email: validated.counterparty_email!,
+    currentOrgId: null,
+    matchedOrgId: null, // ← lookup miss
+  });
+  assertEquals(hint.status, "no_match");
+  // The hint is the entire failure surface for a miss — there is no thrown error.
 });
