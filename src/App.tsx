@@ -96,6 +96,7 @@ function App() {
         <TooltipProvider>
           <Router>
             <HostnameRouter>
+              <TestModeBanner />
               <LegacyRedirectBanner />
               <Suspense fallback={<FullPageLoader />}>
                 <Routes>
