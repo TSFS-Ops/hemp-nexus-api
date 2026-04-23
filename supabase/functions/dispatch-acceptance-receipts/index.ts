@@ -33,9 +33,15 @@ interface DispatchRow {
 interface ReceiptRow {
   id: string
   match_id: string
+  engagement_id: string
+  initiator_org_id: string
+  counterparty_org_id: string | null
   accepted_at: string
   counterparty_email: string | null
   signature_hash: string
+  signed_payload: string
+  receipt_version: number
+  attestation_id: string | null
   metadata: Record<string, unknown> | null
 }
 
