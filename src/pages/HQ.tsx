@@ -46,6 +46,7 @@ import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
+import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -287,12 +288,13 @@ function DisputesTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "audit-logs", "evidence-waivers", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "evidence-waivers", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
+          <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
           <TabsTrigger value="evidence-waivers">Evidence Waivers</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
@@ -302,6 +304,11 @@ function AuditTab() {
         <TabsContent value="risk-alarms">
           <Surface label="Reconciliation alarms · accepted-without-notification, dispatch parity, attestation gaps">
             <AdminRiskAlarmsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="rating-appeals">
+          <Surface label="Counterparty rating appeals · public.rating_appeals · derived four-pillar scoring">
+            <AdminRatingAppealsPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="audit-logs">
