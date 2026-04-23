@@ -298,7 +298,38 @@ Deno.serve(async (req) => {
       if (!transitionResult?.success) {
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
         const errMsg = transitionResult?.message || 'State transition failed';
-        const statusCode = errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 : errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
+        const statusCode =
+          errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 :
+          errCode === 'STATE_CONFLICT' ? 409 :
+          errCode === 'EVIDENCE_WAIVER_REQUIRED' ? 409 :
+          errCode === 'WAIVER_NOT_APPLICABLE' ? 409 :
+          errCode === 'WAIVER_INVALID' ? 400 :
+          errCode === 'NOT_FOUND' ? 404 :
+          errCode === 'FORBIDDEN' ? 403 : 400;
+
+        // Server-side breadcrumb for waiver gate decisions (so admins can trace
+        // why a mint was blocked from edge logs alone, without DB queries).
+        if (errCode === 'EVIDENCE_WAIVER_REQUIRED' || errCode === 'WAIVER_NOT_APPLICABLE' || errCode === 'WAIVER_INVALID') {
+          console.warn(`[${requestId}] WAIVER_GATE_BLOCKED code=${errCode} match_id=${matchId} org_id=${authCtx.orgId}`);
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: match.org_id,
+              actor_user_id: actorUserId,
+              actor_api_key_id: actorApiKeyId,
+              action: "intent.denied",
+              entity_type: "match",
+              entity_id: matchId,
+              metadata: {
+                request_id: requestId,
+                reason: errCode.toLowerCase(),
+                waiver_supplied: waiverPayload !== null,
+              },
+            });
+          } catch (e) {
+            console.warn(`[${requestId}] Failed to write intent.denied audit:`, e);
+          }
+        }
+
         // No refund needed — burn and transition are in one transaction; both rolled back on failure
         throw new ApiException(errCode, errMsg, statusCode);
       }
