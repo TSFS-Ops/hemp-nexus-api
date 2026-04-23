@@ -1219,6 +1219,78 @@ export type Database = {
           },
         ]
       }
+      counterparty_ratings: {
+        Row: {
+          band: string
+          compliance_score: number | null
+          computed_at: string
+          created_at: string
+          id: string
+          methodology_version: number
+          next_recompute_at: string | null
+          org_id: string
+          overall_score: number | null
+          recent_sample_size: number
+          reliability_score: number | null
+          responsiveness_score: number | null
+          sample_size: number
+          settlement_score: number | null
+          signals_summary: Json
+          updated_at: string
+        }
+        Insert: {
+          band?: string
+          compliance_score?: number | null
+          computed_at?: string
+          created_at?: string
+          id?: string
+          methodology_version: number
+          next_recompute_at?: string | null
+          org_id: string
+          overall_score?: number | null
+          recent_sample_size?: number
+          reliability_score?: number | null
+          responsiveness_score?: number | null
+          sample_size?: number
+          settlement_score?: number | null
+          signals_summary?: Json
+          updated_at?: string
+        }
+        Update: {
+          band?: string
+          compliance_score?: number | null
+          computed_at?: string
+          created_at?: string
+          id?: string
+          methodology_version?: number
+          next_recompute_at?: string | null
+          org_id?: string
+          overall_score?: number | null
+          recent_sample_size?: number
+          reliability_score?: number | null
+          responsiveness_score?: number | null
+          sample_size?: number
+          settlement_score?: number | null
+          signals_summary?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counterparty_ratings_methodology_version_fkey"
+            columns: ["methodology_version"]
+            isOneToOne: false
+            referencedRelation: "rating_methodology_versions"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "counterparty_ratings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_source_performance: {
         Row: {
           created_at: string
@@ -4417,6 +4489,161 @@ export type Database = {
           },
           {
             foreignKeyName: "rate_limits_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rating_appeals: {
+        Row: {
+          created_at: string
+          filed_by_user_id: string
+          id: string
+          org_id: string
+          rating_snapshot: Json
+          reason: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          reviewing_admin_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          filed_by_user_id: string
+          id?: string
+          org_id: string
+          rating_snapshot: Json
+          reason: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          reviewing_admin_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          filed_by_user_id?: string
+          id?: string
+          org_id?: string
+          rating_snapshot?: Json
+          reason?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          reviewing_admin_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_appeals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rating_methodology_versions: {
+        Row: {
+          active: boolean
+          created_at: string
+          decay_half_life_days: number
+          id: string
+          min_sample_size: number
+          notes: string | null
+          recent_weight: number
+          recent_window_days: number
+          version: number
+          weights: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          decay_half_life_days?: number
+          id?: string
+          min_sample_size?: number
+          notes?: string | null
+          recent_weight?: number
+          recent_window_days?: number
+          version: number
+          weights: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          decay_half_life_days?: number
+          id?: string
+          min_sample_size?: number
+          notes?: string | null
+          recent_weight?: number
+          recent_window_days?: number
+          version?: number
+          weights?: Json
+        }
+        Relationships: []
+      }
+      rating_signals: {
+        Row: {
+          decay_factor: number
+          id: string
+          metadata: Json
+          methodology_version: number
+          normalized_value: number | null
+          observed_at: string
+          org_id: string
+          pillar: string
+          raw_value: number | null
+          recorded_at: string
+          signal_type: string
+          source_entity_id: string | null
+          source_entity_type: string | null
+          weight: number
+        }
+        Insert: {
+          decay_factor?: number
+          id?: string
+          metadata?: Json
+          methodology_version: number
+          normalized_value?: number | null
+          observed_at: string
+          org_id: string
+          pillar: string
+          raw_value?: number | null
+          recorded_at?: string
+          signal_type: string
+          source_entity_id?: string | null
+          source_entity_type?: string | null
+          weight?: number
+        }
+        Update: {
+          decay_factor?: number
+          id?: string
+          metadata?: Json
+          methodology_version?: number
+          normalized_value?: number | null
+          observed_at?: string
+          org_id?: string
+          pillar?: string
+          raw_value?: number | null
+          recorded_at?: string
+          signal_type?: string
+          source_entity_id?: string | null
+          source_entity_type?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_signals_methodology_version_fkey"
+            columns: ["methodology_version"]
+            isOneToOne: false
+            referencedRelation: "rating_methodology_versions"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "rating_signals_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
