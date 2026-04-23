@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { isBypassEnabled, recordBypassUsage, bypassEnvelope } from "../_shared/test-mode-bypass.ts";
 
 /**
  * IDV-001 & IDV-002: Identity/Company Verification
@@ -159,6 +160,37 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!entity) throw new ApiException("NOT_FOUND", "Entity not found", 404);
+
+      // ── Test-mode bypass: short-circuit any provider call when admin has flipped the flag ──
+      if (await isBypassEnabled(admin, "idv")) {
+        const isCompanyBypass = entity.entity_type === "company" || entity.entity_type === "corporate" || verification_type === "company";
+        await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
+
+        await recordBypassUsage(admin, {
+          gate: "idv",
+          source: "idv-verify",
+          orgId,
+          actorUserId,
+          details: {
+            entity_id,
+            entity_type: entity.entity_type,
+            verification_type: isCompanyBypass ? "company" : "individual",
+          },
+        });
+
+        const bypassResult = bypassEnvelope({
+          provider: "test_mode_bypass",
+          status: "verified" as const,
+          provider_reference: `bypass-${entity_id}`,
+          details: { name: entity.legal_name, entity_type: entity.entity_type },
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          entity_id,
+          verification: bypassResult,
+        }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+      }
 
       // Resolve provider
       const { data: providerSetting } = await admin

@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
 
 /**
  * Configurable AML/Sanctions/PEP Screening Edge Function
@@ -279,6 +280,65 @@ Deno.serve(async (req: Request) => {
     }
 
     const type = screen_type === "entity" ? "entity" : "individual";
+
+    // ── Test-mode bypass: synthesize a "clear" screening result without touching any provider ──
+    if (await isBypassEnabled(adminClient, "sanctions")) {
+      const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: new Date().toISOString() }));
+      const bypassRecord = {
+        org_id,
+        screening_type: "sanctions_pep",
+        status: "clear",
+        matched_entities: [],
+        raw_response: { bypass: true, reason: "test_mode_bypass" },
+        screened_at: new Date().toISOString(),
+        screened_by: actorUserId || null,
+        next_screening_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        provider: "test_mode_bypass",
+        provider_config: { screen_type: type, bypass: true },
+        response_hash: bypassHash,
+        entity_id: entity_id || null,
+      };
+
+      const { data: savedBypass } = await adminClient
+        .from("screening_results")
+        .insert(bypassRecord)
+        .select()
+        .single();
+
+      await recordBypassUsage(adminClient, {
+        gate: "sanctions",
+        source: "dilisense-screen",
+        orgId: org_id,
+        actorUserId: actorUserId || null,
+        details: {
+          screen_type: type,
+          name_screened: name,
+          entity_id: entity_id || null,
+          screening_id: savedBypass?.id || null,
+        },
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          bypass: true,
+          bypass_reason: "Test-mode bypass active — sanctions/PEP screening skipped.",
+          provider: "test_mode_bypass",
+          screening_id: savedBypass?.id || null,
+          timestamp: bypassRecord.screened_at,
+          total_hits: 0,
+          overall_status: "clear",
+          has_sanction_hit: false,
+          has_pep_hit: false,
+          confirmed_matches: 0,
+          potential_matches: 0,
+          classified_records: [],
+          response_hash: bypassHash,
+          next_screening_due: bypassRecord.next_screening_at,
+        }),
+        { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
 
     // ── Resolve provider from admin_settings ──
     const { data: providerSetting } = await adminClient
