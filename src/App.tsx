@@ -12,6 +12,7 @@ import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { LegacyRedirect } from "@/components/LegacyRedirect";
 import { LegacyRedirectBanner } from "@/components/LegacyRedirectBanner";
 import { RequireAuth } from "@/components/RequireAuth";
+import { TestModeBanner } from "@/components/TestModeBanner";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
