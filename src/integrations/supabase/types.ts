@@ -6776,6 +6776,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_test_mode_bypass_state: { Args: never; Returns: Json }
       get_user_email: { Args: { target_user_id: string }; Returns: string }
       has_dd_role: {
         Args: { _org_id: string; _role: string; _user_id: string }
@@ -6805,6 +6806,7 @@ export type Database = {
         Args: { _target_id: string; _viewer_id: string }
         Returns: boolean
       }
+      is_test_mode_bypass_enabled: { Args: { _gate: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
