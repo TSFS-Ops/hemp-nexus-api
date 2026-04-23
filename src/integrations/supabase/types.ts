@@ -38,6 +38,88 @@ export type Database = {
         }
         Relationships: []
       }
+      acceptance_receipt_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          acknowledging_user_email: string | null
+          acknowledging_user_id: string
+          acknowledging_user_name: string | null
+          attestation_id: string | null
+          created_at: string
+          engagement_id: string
+          id: string
+          initiator_org_id: string
+          ip_address: string | null
+          match_id: string
+          metadata: Json
+          receipt_id: string
+          receipt_signature_hash: string
+          signature_hash: string
+          signed_payload: string
+          user_agent: string | null
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledging_user_email?: string | null
+          acknowledging_user_id: string
+          acknowledging_user_name?: string | null
+          attestation_id?: string | null
+          created_at?: string
+          engagement_id: string
+          id?: string
+          initiator_org_id: string
+          ip_address?: string | null
+          match_id: string
+          metadata?: Json
+          receipt_id: string
+          receipt_signature_hash: string
+          signature_hash: string
+          signed_payload: string
+          user_agent?: string | null
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledging_user_email?: string | null
+          acknowledging_user_id?: string
+          acknowledging_user_name?: string | null
+          attestation_id?: string | null
+          created_at?: string
+          engagement_id?: string
+          id?: string
+          initiator_org_id?: string
+          ip_address?: string | null
+          match_id?: string
+          metadata?: Json
+          receipt_id?: string
+          receipt_signature_hash?: string
+          signature_hash?: string
+          signed_payload?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acceptance_receipt_acknowledgements_attestation_id_fkey"
+            columns: ["attestation_id"]
+            isOneToOne: false
+            referencedRelation: "attestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_receipt_acknowledgements_initiator_org_id_fkey"
+            columns: ["initiator_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_receipt_acknowledgements_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "acceptance_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       acceptance_receipts: {
         Row: {
           accepted_at: string
@@ -6194,6 +6276,14 @@ export type Database = {
     Functions: {
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
+        Returns: Json
+      }
+      acknowledge_acceptance_receipt: {
+        Args: {
+          p_ip_address?: string
+          p_receipt_id: string
+          p_user_agent?: string
+        }
         Returns: Json
       }
       atomic_accept_bind: {
