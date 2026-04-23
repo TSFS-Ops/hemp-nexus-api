@@ -6486,6 +6486,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reconcile_acceptance_notifications: { Args: never; Returns: Json }
       reconcile_token_balances: {
         Args: never
         Returns: {
