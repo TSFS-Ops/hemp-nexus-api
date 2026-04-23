@@ -465,14 +465,39 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
             <CardDescription>Capture the key commercial terms for this deal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {failedFields.length > 0 && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-1.5"
+              >
+                <p className="text-sm font-medium flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  POI generation blocked — please correct the highlighted fields
+                </p>
+                {denialReasons.length > 0 && (
+                  <ul className="text-xs text-destructive/90 list-disc pl-5 space-y-0.5">
+                    {denialReasons.slice(0, 5).map((reason, i) => (
+                      <li key={i}>{reason}</li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-xs text-muted-foreground pt-1">
+                  No credits were deducted. Fix the fields below and try again.
+                </p>
+              </div>
+            )}
+
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-primary" />
                 Commercial Terms (required to proceed to POI)
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Quantity</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["quantity_amount"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("quantity_amount") && "text-destructive")}>Quantity</Label>
                   <Input
                     type="number"
                     min="0"
@@ -481,19 +506,29 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                     onChange={(e) => setForm({ ...form, quantity_amount: e.target.value })}
                     placeholder="e.g. 1000"
                     aria-label="Quantity"
+                    aria-invalid={isFieldFailed("quantity_amount") || undefined}
+                    className={cn(isFieldFailed("quantity_amount") && failedRing)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Unit</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["quantity_unit"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("quantity_unit") && "text-destructive")}>Unit</Label>
                   <Input
                     value={form.quantity_unit}
                     onChange={(e) => setForm({ ...form, quantity_unit: e.target.value })}
                     placeholder="e.g. MT, kg, bags"
                     aria-label="Quantity unit"
+                    aria-invalid={isFieldFailed("quantity_unit") || undefined}
+                    className={cn(isFieldFailed("quantity_unit") && failedRing)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Price per unit</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["price_amount"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("price_amount") && "text-destructive")}>Price per unit</Label>
                   <Input
                     type="number"
                     min="0"
@@ -502,15 +537,24 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                     onChange={(e) => setForm({ ...form, price_amount: e.target.value })}
                     placeholder="e.g. 500"
                     aria-label="Price"
+                    aria-invalid={isFieldFailed("price_amount") || undefined}
+                    className={cn(isFieldFailed("price_amount") && failedRing)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Currency</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["price_currency"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("price_currency") && "text-destructive")}>Currency</Label>
                   <Select
                     value={form.price_currency}
                     onValueChange={(value) => setForm({ ...form, price_currency: value })}
                   >
-                    <SelectTrigger aria-label="Currency">
+                    <SelectTrigger
+                      aria-label="Currency"
+                      aria-invalid={isFieldFailed("price_currency") || undefined}
+                      className={cn(isFieldFailed("price_currency") && failedRing)}
+                    >
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent>
