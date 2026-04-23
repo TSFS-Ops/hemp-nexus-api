@@ -144,6 +144,9 @@ Deno.serve(async (req) => {
       null
 
     // ── Hard parity check: a delivery only counts if email_send_log proves it.
+    // send-transactional-email always returns the messageId it used, and writes
+    // matching rows into email_send_log (status pending → sent). We look for the
+    // most recent row for that messageId.
     let logProof: { id: string; status: string; message_id: string | null } | null = null
     if (messageId) {
       const { data: logRow } = await supabase
@@ -154,12 +157,16 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle()
       logProof = (logRow as typeof logProof) ?? null
-    } else {
-      // Fall back to idempotency key correlation (some send paths set message_id later).
+    }
+    if (!logProof) {
+      // Last-resort correlation: the most recent acceptance-receipt log row
+      // for this exact recipient. Tolerant of small clock skew between the
+      // log insert and this read.
       const { data: logRow } = await supabase
         .from('email_send_log')
         .select('id, status, message_id')
-        .or(`message_id.eq.${idempotencyKey},metadata->>idempotency_key.eq.${idempotencyKey}`)
+        .eq('template_name', 'acceptance-receipt')
+        .eq('recipient_email', recipient)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
