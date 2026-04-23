@@ -38,6 +38,78 @@ export type Database = {
         }
         Relationships: []
       }
+      acceptance_receipts: {
+        Row: {
+          accepted_at: string
+          accepting_user_email: string | null
+          accepting_user_id: string | null
+          accepting_user_name: string | null
+          attestation_id: string | null
+          counterparty_email: string | null
+          counterparty_org_id: string | null
+          created_at: string
+          engagement_id: string
+          id: string
+          initiator_org_id: string
+          match_id: string
+          metadata: Json
+          receipt_version: number
+          signature_hash: string
+          signed_payload: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepting_user_email?: string | null
+          accepting_user_id?: string | null
+          accepting_user_name?: string | null
+          attestation_id?: string | null
+          counterparty_email?: string | null
+          counterparty_org_id?: string | null
+          created_at?: string
+          engagement_id: string
+          id?: string
+          initiator_org_id: string
+          match_id: string
+          metadata?: Json
+          receipt_version?: number
+          signature_hash: string
+          signed_payload: string
+        }
+        Update: {
+          accepted_at?: string
+          accepting_user_email?: string | null
+          accepting_user_id?: string | null
+          accepting_user_name?: string | null
+          attestation_id?: string | null
+          counterparty_email?: string | null
+          counterparty_org_id?: string | null
+          created_at?: string
+          engagement_id?: string
+          id?: string
+          initiator_org_id?: string
+          match_id?: string
+          metadata?: Json
+          receipt_version?: number
+          signature_hash?: string
+          signed_payload?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acceptance_receipts_attestation_id_fkey"
+            columns: ["attestation_id"]
+            isOneToOne: false
+            referencedRelation: "attestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceptance_receipts_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -3179,6 +3251,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_dispatches: {
+        Row: {
+          channel: string
+          created_at: string
+          delivered_at: string | null
+          dispatched_at: string | null
+          error_message: string | null
+          event_type: string
+          failed_at: string | null
+          id: string
+          message_id: string | null
+          metadata: Json
+          opened_at: string | null
+          recipient_address: string | null
+          recipient_org_id: string | null
+          recipient_user_id: string | null
+          reference_id: string
+          reference_type: string
+          status: string
+          template_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          delivered_at?: string | null
+          dispatched_at?: string | null
+          error_message?: string | null
+          event_type: string
+          failed_at?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json
+          opened_at?: string | null
+          recipient_address?: string | null
+          recipient_org_id?: string | null
+          recipient_user_id?: string | null
+          reference_id: string
+          reference_type: string
+          status?: string
+          template_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          dispatched_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          failed_at?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json
+          opened_at?: string | null
+          recipient_address?: string | null
+          recipient_org_id?: string | null
+          recipient_user_id?: string | null
+          reference_id?: string
+          reference_type?: string
+          status?: string
+          template_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_preferences: {
         Row: {
@@ -6348,6 +6486,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reconcile_acceptance_notifications: { Args: never; Returns: Json }
       reconcile_token_balances: {
         Args: never
         Returns: {
