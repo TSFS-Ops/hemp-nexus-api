@@ -241,7 +241,7 @@ async function fetchAutoLinkAuditFor(
 
 // ───────────────────────────── tests ─────────────────────────────
 
-const noDb = !getDbUrl();
+const noDb = !getConnectConfig();
 
 Deno.test({
   name: "trigger fills buyer_org_id when seller slot is already taken",
