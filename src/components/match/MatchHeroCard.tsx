@@ -13,6 +13,7 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
+import { CounterpartyRatingBadge } from "@/components/ratings/CounterpartyRatingBadge";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -150,6 +151,12 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
                   <dd className="font-mono text-xs">{match.buyer_org_id.slice(0, 8)}…</dd>
                 </div>
               )}
+              {match.buyer_org_id && (
+                <div>
+                  <dt className="text-sm text-muted-foreground mb-1">Counterparty rating</dt>
+                  <dd><CounterpartyRatingBadge orgId={match.buyer_org_id} /></dd>
+                </div>
+              )}
             </dl>
           </div>
 
@@ -172,6 +179,12 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
                 <div>
                   <dt className="text-sm text-muted-foreground">Organisation</dt>
                   <dd className="font-mono text-xs">{match.seller_org_id.slice(0, 8)}…</dd>
+                </div>
+              )}
+              {match.seller_org_id && (
+                <div>
+                  <dt className="text-sm text-muted-foreground mb-1">Counterparty rating</dt>
+                  <dd><CounterpartyRatingBadge orgId={match.seller_org_id} /></dd>
                 </div>
               )}
             </dl>
