@@ -194,7 +194,7 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
         </div>
 
         {isBackfilled && (
-          <div className="rounded-sm border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground">
+          <div className="rounded-sm border border-muted-foreground/30 bg-muted p-3 text-xs text-muted-foreground">
             This receipt was generated retroactively from the original engagement record.
             The acceptance event itself is immutable; the receipt artefact was created when
             the platform's signed-receipt infrastructure was deployed.
