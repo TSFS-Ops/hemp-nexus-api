@@ -339,7 +339,29 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     }
 
     setShowDialog(false);
-    await onAction(actionPath);
+    try {
+      await onAction(actionPath);
+    } catch (err) {
+      // Race recovery: if the server enforces the evidence-waiver gate (409
+      // EVIDENCE_WAIVER_REQUIRED) because our client counts were stale, force
+      // the waiver dialog open so the user can complete the acknowledgement
+      // and retry without losing their place. Re-throw any other error so the
+      // upstream toast handler can surface it.
+      const message = err instanceof Error ? err.message : String(err ?? "");
+      if (/EVIDENCE_WAIVER_REQUIRED/i.test(message)) {
+        toast.error(
+          "Supporting documents and notes were removed before this Proof of Intent could be sealed. Please record an evidence waiver to continue.",
+        );
+        // Force-refresh counts and reopen the dialog. The waiverRequired flag
+        // will recompute from the fresh query and render the waiver block.
+        await refetchEvidence();
+        setWaiverAcknowledged(false);
+        setWaiverReason("");
+        setShowDialog(true);
+        return;
+      }
+      throw err;
+    }
   };
 
   return (
