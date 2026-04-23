@@ -6537,6 +6537,10 @@ export type Database = {
       }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
       try_lifecycle_lock: { Args: never; Returns: boolean }
+      verify_acceptance_receipt: {
+        Args: { p_receipt_id: string }
+        Returns: Json
+      }
       verify_event_chain_integrity: {
         Args: never
         Returns: {
