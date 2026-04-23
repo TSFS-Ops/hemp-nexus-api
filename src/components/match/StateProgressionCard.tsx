@@ -129,7 +129,9 @@ const WAIVER_CATEGORIES = [
 
 interface StateProgressionCardProps {
   match: Match;
-  onAction: (action: string) => Promise<void>;
+  /** Receives the action path and an optional JSON body (used to forward the
+   *  evidence-waiver payload so it can be written atomically server-side). */
+  onAction: (action: string, body?: Record<string, unknown>) => Promise<void>;
   loading: boolean;
   engagementStatus?: "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
 }
