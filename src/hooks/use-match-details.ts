@@ -280,6 +280,12 @@ export function useMatchDetails(matchId: string | undefined) {
           await fetchMatch();
           return;
         }
+        // Re-throw the evidence-waiver gate so the caller (StateProgressionCard)
+        // can reopen the waiver dialog instead of just toasting a generic error.
+        // The toast is suppressed here because the dialog itself is the recovery UX.
+        if (err instanceof ApiError && err.code === "EVIDENCE_WAIVER_REQUIRED") {
+          throw err;
+        }
         dispatchEligibilityFailed(match.id, err);
         handleApiError(err);
       }
