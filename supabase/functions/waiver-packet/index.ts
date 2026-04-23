@@ -297,12 +297,13 @@ Deno.serve(async (req) => {
         (v): v is string => !!v,
       );
       if (orgIds.length > 0) {
-        const { data: memberships } = await admin
-          .from("org_members")
+        const { data: profile } = await admin
+          .from("profiles")
           .select("org_id")
-          .eq("user_id", userId)
-          .in("org_id", orgIds);
-        isParticipant = (memberships?.length ?? 0) > 0;
+          .eq("id", userId)
+          .maybeSingle();
+        const callerOrgId = (profile as { org_id?: string } | null)?.org_id;
+        isParticipant = !!callerOrgId && orgIds.includes(callerOrgId);
       }
     }
 
