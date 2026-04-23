@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/download-utils";
+import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
 
 interface WaiverRow {
   id: string;
