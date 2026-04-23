@@ -15,6 +15,11 @@ import { Loader2, FileText, Save, Clock, Plus, AlertTriangle, History } from "lu
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
+import { cn } from "@/lib/utils";
+import {
+  MATCH_ELIGIBILITY_FAILED_EVENT,
+  type MatchEligibilityFailedDetail,
+} from "@/hooks/use-match-details";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,6 +80,12 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+
+  // Server-reported failed fields from the most recent eligibility failure on this match.
+  // Populated by the MATCH_ELIGIBILITY_FAILED_EVENT bus from useMatchDetails.
+  const [failedFields, setFailedFields] = useState<string[]>([]);
+  const [denialReasons, setDenialReasons] = useState<string[]>([]);
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const formDirty = useRef(false);
