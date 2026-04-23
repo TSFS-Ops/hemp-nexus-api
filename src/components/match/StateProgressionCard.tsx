@@ -318,67 +318,44 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     if (!actionPath) return;
     if (loading || waiverSubmitting) return;
 
-    // Strict gate: when waiver is required, both acknowledgement and a
-    // meaningful reason (>= 10 chars) must be present.
-    if (waiverRequired && (!waiverAcknowledged || !waiverReasonValid)) return;
-
-    // If a waiver applies, write the audit record FIRST. If the audit write
-    // fails we MUST NOT proceed to mint the POI — zero swallowed errors.
+    // Stale-evidence guard: re-check counts immediately before submit. If a
+    // doc/note was added in another tab between dialog-open and confirm, the
+    // waiver is no longer applicable — skip the waiver payload entirely so
+    // the server doesn't reject with WAIVER_NOT_APPLICABLE.
+    let payload: Record<string, unknown> | undefined = undefined;
     if (waiverRequired) {
-      if (!session?.user?.id || !match.org_id) {
-        toast.error("Cannot record evidence waiver: missing session context. Please refresh and try again.");
-        return;
-      }
-      setWaiverSubmitting(true);
-      try {
-        const { error: auditError } = await supabase.from("audit_logs").insert({
-          org_id: match.org_id,
-          actor_user_id: session.user.id,
-          action: "poi.evidence_waiver_acknowledged",
-          entity_type: "match",
-          entity_id: match.id,
-          metadata: {
-            document_count: documentCount,
-            notes_count: notesCount,
-            waiver_category: waiverCategory,
-            waiver_reason: trimmedReason,
-            waived_at: new Date().toISOString(),
-            match_state: currentState,
-            commodity: match.commodity ?? null,
-            // Actor's roles at time of waiver — recorded so audit reviewers
-            // can verify post-hoc whether the signer actually held the
-            // privilege they claimed in the acknowledgement copy.
+      if (!waiverAcknowledged || !waiverReasonValid || !waiverCategoryValid) return;
+      const fresh = await refetchEvidence();
+      const freshDocs = fresh.data?.documentCount ?? 0;
+      const freshNotes = fresh.data?.notesCount ?? 0;
+      if (freshDocs === 0 && freshNotes === 0) {
+        // Still zero → submit waiver in the body. Server writes it atomically.
+        payload = {
+          evidence_waiver: {
+            category: waiverCategory,
+            reason: trimmedReason,
             actor_roles: roles ?? [],
           },
-        });
-        if (auditError) {
-          toast.error(`Could not record evidence waiver: ${auditError.message}. POI generation aborted.`);
-          return;
-        }
-      } catch (err) {
-        toast.error(`Could not record evidence waiver: ${(err as Error).message}. POI generation aborted.`);
-        return;
-      } finally {
-        setWaiverSubmitting(false);
+        };
+      } else {
+        // Evidence appeared mid-flight: skip waiver, let mint proceed normally.
+        toast.info("Supporting evidence was added — proceeding without waiver.");
       }
     }
 
     setShowDialog(false);
     try {
-      await onAction(actionPath);
+      await onAction(actionPath, payload);
     } catch (err) {
-      // Race recovery: if the server enforces the evidence-waiver gate (409
-      // EVIDENCE_WAIVER_REQUIRED) because our client counts were stale, force
-      // the waiver dialog open so the user can complete the acknowledgement
-      // and retry without losing their place. Re-throw any other error so the
-      // upstream toast handler can surface it.
+      // Race recovery: server returned 409 EVIDENCE_WAIVER_REQUIRED (e.g. our
+      // counts were stale and showed evidence that no longer exists at mint
+      // time). Force-refresh and reopen the dialog so the user can complete
+      // the acknowledgement and retry without losing their place.
       const message = err instanceof Error ? err.message : String(err ?? "");
       if (/EVIDENCE_WAIVER_REQUIRED/i.test(message)) {
         toast.error(
           "Supporting documents and notes were removed before this Proof of Intent could be sealed. Please record an evidence waiver to continue.",
         );
-        // Force-refresh counts and reopen the dialog. The waiverRequired flag
-        // will recompute from the fresh query and render the waiver block.
         await refetchEvidence();
         setWaiverAcknowledged(false);
         setWaiverReason("");
@@ -386,8 +363,42 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         setShowDialog(true);
         return;
       }
+      if (/WAIVER_NOT_APPLICABLE/i.test(message)) {
+        toast.success("Supporting evidence was added in time — POI mint will retry without a waiver.");
+        await refetchEvidence();
+        return;
+      }
       throw err;
     }
+  };
+
+  // Cancel-waiver telemetry: when the user opens the dialog while a waiver is
+  // required and then dismisses without confirming, log a non-blocking signal
+  // so we can measure waiver friction. Best-effort; never blocks the UX.
+  const handleDialogCancel = async () => {
+    if (waiverRequired && session?.user?.id && match.org_id) {
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: match.org_id,
+          actor_user_id: session.user.id,
+          action: "poi.evidence_waiver_dismissed",
+          entity_type: "match",
+          entity_id: match.id,
+          metadata: {
+            document_count: documentCount,
+            notes_count: notesCount,
+            had_acknowledgement: waiverAcknowledged,
+            had_category: !!waiverCategory,
+            reason_length: trimmedReason.length,
+            dismissed_at: new Date().toISOString(),
+          },
+        });
+      } catch (e) {
+        // Telemetry only — never surface to the user.
+        console.warn("[StateProgressionCard] waiver dismissal telemetry failed:", e);
+      }
+    }
+    setShowDialog(false);
   };
 
   return (
