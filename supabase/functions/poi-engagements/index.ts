@@ -306,10 +306,17 @@ Deno.serve(async (req) => {
       }
 
       const currentStatus = eng.engagement_status;
-      // Allow re-sending outreach when already 'contacted' (follow-up email).
-      // Block only terminal states (accepted/declined/expired) where further
-      // outreach is meaningless.
-      const isFollowUp = currentStatus === "contacted";
+      // Outreach emails are allowed in two modes:
+      //   1. Forward-progressing send: state currently allows the transition
+      //      to 'contacted' (e.g. pending → contacted, notification_sent →
+      //      contacted). State will be advanced to 'contacted'.
+      //   2. Follow-up send: state is already 'contacted' or has reached a
+      //      post-engagement state (accepted / declined / expired) but the
+      //      admin still legitimately needs to email the counterparty (e.g.
+      //      thank-you, next steps, dispute clarification). State is NOT
+      //      changed — only the outreach log + audit entry are recorded.
+      const POST_ENGAGEMENT_STATES = ["contacted", "accepted", "declined", "expired"];
+      const isFollowUp = POST_ENGAGEMENT_STATES.includes(currentStatus);
       const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
       if (!isFollowUp && !allowed.includes("contacted")) {
         throw new ApiException(
