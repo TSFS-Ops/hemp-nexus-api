@@ -134,9 +134,8 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
   if (isLoading || !receipt) return null;
 
   const isInitiator = !!userOrgId && userOrgId === receipt.initiator_org_id;
-  const myAck = acks?.find((a) => a.acknowledging_user_id && userOrgId && a.acknowledging_user_id);
-  // We can't know our own user.id without an extra fetch, but the RPC is idempotent;
-  // we instead derive "any ack from my org" for the visible state.
+  // Any ack on this receipt comes from the initiator org (RLS enforces this),
+  // so showing the first one is correct for both audiences.
   const orgAck = acks && acks.length > 0 ? acks[0] : null;
 
   const isBackfilled = !!(receipt.metadata as { backfilled?: boolean })?.backfilled;
