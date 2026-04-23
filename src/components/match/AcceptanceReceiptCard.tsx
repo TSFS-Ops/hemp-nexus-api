@@ -360,7 +360,7 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
         {!isInitiator && orgAck && (
           <>
             <Separator />
-            <div className="rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-muted-foreground">
+            <div className="rounded-sm border border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/5 p-3 text-xs text-muted-foreground">
               The initiator confirmed receipt of your acceptance on{" "}
               <span className="font-mono">
                 {format(new Date(orgAck.acknowledged_at), "yyyy-MM-dd HH:mm 'UTC'")}
