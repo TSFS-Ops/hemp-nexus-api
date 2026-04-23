@@ -39,6 +39,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
