@@ -326,20 +326,33 @@ Deno.serve(async (req) => {
     });
 
     if (!existing || existing.length === 0) {
+      console.log(`[${requestId}] generating new packet for waiver=${waiver.id} match=${matchId}`);
       // Build the packet
-      const { data: timeline } = await admin
+      const { data: timeline, error: timelineErr } = await admin
         .from("audit_logs")
         .select("id, created_at, action, actor_user_id, actor_api_key_id, entity_type, metadata")
         .eq("entity_id", matchId)
         .order("created_at", { ascending: true })
         .limit(500);
+      if (timelineErr) {
+        console.error(`[${requestId}] timeline query error:`, timelineErr);
+        throw timelineErr;
+      }
+      console.log(`[${requestId}] timeline rows: ${(timeline || []).length}`);
 
-      const pdfBytes = buildPdf({
-        waiver: waiver as WaiverEntry,
-        match: match as Record<string, unknown>,
-        auditTimeline: (timeline as Array<Record<string, unknown>>) || [],
-        generatedAt: new Date().toISOString(),
-      });
+      let pdfBytes: ArrayBuffer;
+      try {
+        pdfBytes = buildPdf({
+          waiver: waiver as WaiverEntry,
+          match: match as Record<string, unknown>,
+          auditTimeline: (timeline as Array<Record<string, unknown>>) || [],
+          generatedAt: new Date().toISOString(),
+        }) as unknown as ArrayBuffer;
+        console.log(`[${requestId}] pdf built, bytes=${(pdfBytes as ArrayBuffer).byteLength}`);
+      } catch (pdfErr) {
+        console.error(`[${requestId}] pdf build error:`, pdfErr, (pdfErr as Error).stack);
+        throw new Error(`PDF build failed: ${(pdfErr as Error).message}`);
+      }
 
       const { error: upErr } = await admin.storage
         .from(BUCKET)
@@ -347,7 +360,11 @@ Deno.serve(async (req) => {
           contentType: "application/pdf",
           upsert: true,
         });
-      if (upErr) throw upErr;
+      if (upErr) {
+        console.error(`[${requestId}] upload error:`, upErr);
+        throw upErr;
+      }
+      console.log(`[${requestId}] uploaded to ${objectPath}`);
     }
 
     const { data: signed, error: signErr } = await admin.storage
