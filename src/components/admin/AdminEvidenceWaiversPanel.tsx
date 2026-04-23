@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/download-utils";
+import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
 
 interface WaiverRow {
   id: string;
@@ -181,6 +182,11 @@ export function AdminEvidenceWaiversPanel() {
                     <div className="text-xs text-muted-foreground font-mono">
                       Actor: {r.actor_user_id?.substring(0, 8) || "—"}...
                     </div>
+                    <WaiverPacketDownloadButton
+                      waiverId={r.id}
+                      label="Download packet"
+                      className="w-full"
+                    />
                   </div>
                 ))}
               </div>
@@ -197,6 +203,7 @@ export function AdminEvidenceWaiversPanel() {
                       <TableHead className="text-center">Notes</TableHead>
                       <TableHead>Reason</TableHead>
                       <TableHead>Waived At</TableHead>
+                      <TableHead className="text-right">Packet</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -234,6 +241,9 @@ export function AdminEvidenceWaiversPanel() {
                         </TableCell>
                         <TableCell className="text-xs whitespace-nowrap">
                           {format(new Date(r.created_at), "MMM dd, yyyy HH:mm:ss")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <WaiverPacketDownloadButton waiverId={r.id} label="Download" />
                         </TableCell>
                       </TableRow>
                     ))}
