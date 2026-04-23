@@ -210,6 +210,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     },
     enabled: canQueryBalance,
     staleTime: 15_000,
+  });
 
   // Surface the most recent evidence-waiver acknowledgement (if any) so users
   // and admins can download the audit packet PDF directly from the POI step.
