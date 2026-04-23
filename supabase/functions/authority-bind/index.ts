@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
 
 /**
  * Authority-to-Bind & UBO Edge Function - Sprint 6

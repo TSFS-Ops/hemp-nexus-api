@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { isBypassEnabled, recordBypassUsage, bypassEnvelope } from "../_shared/test-mode-bypass.ts";
 
 /**
  * OWN-001: UBO Ownership Verification

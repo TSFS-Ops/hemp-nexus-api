@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
 
 /**
  * Configurable AML/Sanctions/PEP Screening Edge Function
