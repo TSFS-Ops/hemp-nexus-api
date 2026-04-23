@@ -15,6 +15,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { triggerWebhooks } from '../_shared/webhooks.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,9 +33,15 @@ interface DispatchRow {
 interface ReceiptRow {
   id: string
   match_id: string
+  engagement_id: string
+  initiator_org_id: string
+  counterparty_org_id: string | null
   accepted_at: string
   counterparty_email: string | null
   signature_hash: string
+  signed_payload: string
+  receipt_version: number
+  attestation_id: string | null
   metadata: Record<string, unknown> | null
 }
 
@@ -76,7 +83,7 @@ Deno.serve(async (req) => {
 
     const { data: receipt } = await supabase
       .from('acceptance_receipts')
-      .select('id, match_id, accepted_at, counterparty_email, signature_hash, metadata')
+      .select('id, match_id, engagement_id, initiator_org_id, counterparty_org_id, accepted_at, counterparty_email, signature_hash, signed_payload, receipt_version, attestation_id, metadata')
       .eq('id', dispatch.reference_id)
       .maybeSingle()
 
@@ -210,6 +217,40 @@ Deno.serve(async (req) => {
         message_id: logProof.message_id ?? messageId,
       })
       .eq('id', dispatch.id)
+
+    // ── Optional outbound webhook: notify the initiator org's integrated
+    // systems that a signed acceptance receipt is now delivered. The
+    // _shared/webhooks helper handles HMAC-SHA256 signing, X-Webhook-Timestamp
+    // (replay protection), retries and circuit breaking. Only orgs that have
+    // subscribed to "acceptance_receipt.created" receive a delivery.
+    try {
+      await triggerWebhooks(supabase, r.initiator_org_id, 'acceptance_receipt.created', {
+        receipt_id: r.id,
+        receipt_version: r.receipt_version,
+        match_id: r.match_id,
+        engagement_id: r.engagement_id,
+        initiator_org_id: r.initiator_org_id,
+        counterparty_org_id: r.counterparty_org_id,
+        counterparty_email: r.counterparty_email,
+        accepted_at: r.accepted_at,
+        attestation_id: r.attestation_id,
+        signature: {
+          algorithm: 'sha256',
+          hash: r.signature_hash,
+          signed_payload: r.signed_payload,
+        },
+        delivery: {
+          dispatch_id: dispatch.id,
+          message_id: logProof.message_id ?? messageId,
+          delivered_at: new Date().toISOString(),
+        },
+      })
+    } catch (whErr) {
+      // Non-fatal: webhook failures are logged inside triggerWebhooks and
+      // tracked via webhook_deliveries / circuit breaker. Receipt email is
+      // already delivered; we never roll that back.
+      console.error(`[acceptance_receipt.created] webhook trigger failed for org ${r.initiator_org_id}:`, whErr)
+    }
 
     results.push({
       id: dispatch.id,
