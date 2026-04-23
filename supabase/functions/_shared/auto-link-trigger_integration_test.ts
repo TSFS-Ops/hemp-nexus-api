@@ -42,10 +42,10 @@ import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
  * SUPABASE_DB_URL, which connects as a low-privilege role and cannot
  * INSERT/DELETE on app tables.
  */
-function getConnectConfig():
-  | { kind: "params"; cfg: Record<string, string | number> }
-  | { kind: "url"; url: string }
-  | null {
+// deno-lint-ignore no-explicit-any
+type ConnectCfg = { kind: "params"; cfg: any } | { kind: "url"; url: string };
+
+function getConnectConfig(): ConnectCfg | null {
   const host = Deno.env.get("PGHOST");
   const user = Deno.env.get("PGUSER");
   const password = Deno.env.get("PGPASSWORD");
@@ -61,7 +61,7 @@ function getConnectConfig():
         database,
         port: port ? Number(port) : 5432,
         tls: { enabled: false },
-      } as Record<string, string | number>,
+      },
     };
   }
   const url = Deno.env.get("SUPABASE_DB_URL") || Deno.env.get("DB_URL");
@@ -72,8 +72,7 @@ function getConnectConfig():
 async function connect(): Promise<Client | null> {
   const cfg = getConnectConfig();
   if (!cfg) return null;
-  // deno-lint-ignore no-explicit-any
-  const client = new Client(cfg.kind === "url" ? cfg.url : (cfg.cfg as any));
+  const client = new Client(cfg.kind === "url" ? cfg.url : cfg.cfg);
   await client.connect();
   return client;
 }
