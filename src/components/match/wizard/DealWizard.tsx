@@ -169,8 +169,8 @@ export function DealWizard({
     return first >= 0 ? first : steps.length - 1;
   });
 
-  // Lifted sub-tab state for Match step so stepper can intercept
-  const [matchSubTab, setMatchSubTab] = useState("terms");
+  // Lifted sub-tab state for Match step (persisted per user+match in backend)
+  const { subTab: matchSubTab, setSubTab: setMatchSubTab } = useMatchSubTab(match.id);
   const subTabOrder = ["terms", "documents", "notes"] as const;
 
   const handleStepClick = useCallback((idx: number) => {
