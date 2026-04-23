@@ -62,8 +62,9 @@ export function DealWizard({
 
   // Determine step completion
   const searchComplete = true; // always, match exists
-  const matchComplete = useMemo(() => {
-    // Match step is complete when all required fields are filled
+
+  // Commercial terms validity (required for POI gate)
+  const commercialTermsComplete = useMemo(() => {
     const hasCommodity = !!match.commodity;
     const hasBuyer = !!match.buyer_name;
     const hasSeller = !!match.seller_name;
@@ -71,6 +72,32 @@ export function DealWizard({
     const hasPrice = match.price_amount != null && match.price_amount > 0;
     return hasCommodity && hasBuyer && hasSeller && hasQuantity && hasPrice;
   }, [match]);
+
+  // Supporting evidence presence (advisory, not gating — drives "fully complete" badge)
+  const { data: evidenceCounts } = useQuery({
+    queryKey: ["match-evidence-counts", match.id],
+    queryFn: async () => {
+      const [docsRes, notesRes] = await Promise.all([
+        supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+        supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+      ]);
+      return {
+        documentCount: docsRes.count ?? 0,
+        notesCount: notesRes.count ?? 0,
+      };
+    },
+    enabled: !!match.id,
+    staleTime: 10_000,
+  });
+  const documentCount = evidenceCounts?.documentCount ?? 0;
+  const notesCount = evidenceCounts?.notesCount ?? 0;
+  const hasSupportingEvidence = documentCount > 0 || notesCount > 0;
+
+  // Match step is "fully" complete only when commercial terms AND supporting evidence
+  // (or post-POI states where the wizard has moved on). The POI gate itself remains
+  // commercial-only; this only governs the green checkmark on the stepper.
+  const postMatchState = ["intent_declared", "counterparty_sighted", "committed", "completed"].includes(currentState);
+  const matchComplete = commercialTermsComplete && (hasSupportingEvidence || postMatchState);
   const poiComplete = useMemo(() => {
     return isSettled || ["intent_declared", "counterparty_sighted", "committed", "completed"].includes(currentState);
   }, [currentState, isSettled]);
