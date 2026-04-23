@@ -192,6 +192,7 @@ export function useMatchDetails(matchId: string | undefined) {
           await fetchMatch();
           return;
         }
+        dispatchEligibilityFailed(match.id, err);
         handleApiError(err);
       }
 
@@ -239,6 +240,7 @@ export function useMatchDetails(matchId: string | undefined) {
           await fetchMatch();
           return;
         }
+        dispatchEligibilityFailed(match.id, err);
         handleApiError(err);
       }
 
