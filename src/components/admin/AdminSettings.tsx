@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Save, Settings, Bell, Key } from "lucide-react";
+import { Loader2, Save, Settings, Bell, Key, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Json } from "@/integrations/supabase/types";
+import { TestModeBypassPanel } from "@/components/admin/TestModeBypassPanel";
 
 interface GeneralSettings {
   siteName: string;
