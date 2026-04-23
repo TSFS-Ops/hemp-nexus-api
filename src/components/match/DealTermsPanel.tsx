@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, FileText, Save, Clock, Plus, AlertTriangle, History } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -431,12 +432,24 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                 </div>
                 <div className="space-y-1.5">
                   <Label>Currency</Label>
-                  <Input
+                  <Select
                     value={form.price_currency}
-                    onChange={(e) => setForm({ ...form, price_currency: e.target.value })}
-                    placeholder="e.g. USD, ZAR, EUR"
-                    aria-label="Currency"
-                  />
+                    onValueChange={(value) => setForm({ ...form, price_currency: value })}
+                  >
+                    <SelectTrigger aria-label="Currency">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ZAR">ZAR — South African Rand</SelectItem>
+                      <SelectItem value="USD">USD — US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR — Euro</SelectItem>
+                      <SelectItem value="GBP">GBP — British Pound</SelectItem>
+                      <SelectItem value="CNY">CNY — Chinese Yuan</SelectItem>
+                      <SelectItem value="JPY">JPY — Japanese Yen</SelectItem>
+                      <SelectItem value="AUD">AUD — Australian Dollar</SelectItem>
+                      <SelectItem value="CHF">CHF — Swiss Franc</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
