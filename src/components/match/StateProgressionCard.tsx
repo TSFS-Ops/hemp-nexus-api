@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
+import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
 
 interface FieldCheck {
   label: string;
