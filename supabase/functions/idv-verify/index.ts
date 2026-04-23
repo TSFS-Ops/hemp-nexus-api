@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { isBypassEnabled, recordBypassUsage, bypassEnvelope } from "../_shared/test-mode-bypass.ts";
 
 /**
  * IDV-001 & IDV-002: Identity/Company Verification
