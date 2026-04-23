@@ -324,6 +324,10 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             waived_at: new Date().toISOString(),
             match_state: currentState,
             commodity: match.commodity ?? null,
+            // Actor's roles at time of waiver — recorded so audit reviewers
+            // can verify post-hoc whether the signer actually held the
+            // privilege they claimed in the acknowledgement copy.
+            actor_roles: roles ?? [],
           },
         });
         if (auditError) {
