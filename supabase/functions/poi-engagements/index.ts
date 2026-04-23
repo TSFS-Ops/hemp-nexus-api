@@ -306,10 +306,17 @@ Deno.serve(async (req) => {
       }
 
       const currentStatus = eng.engagement_status;
-      // Allow re-sending outreach when already 'contacted' (follow-up email).
-      // Block only terminal states (accepted/declined/expired) where further
-      // outreach is meaningless.
-      const isFollowUp = currentStatus === "contacted";
+      // Outreach emails are allowed in two modes:
+      //   1. Forward-progressing send: state currently allows the transition
+      //      to 'contacted' (e.g. pending → contacted, notification_sent →
+      //      contacted). State will be advanced to 'contacted'.
+      //   2. Follow-up send: state is already 'contacted' or has reached a
+      //      post-engagement state (accepted / declined / expired) but the
+      //      admin still legitimately needs to email the counterparty (e.g.
+      //      thank-you, next steps, dispute clarification). State is NOT
+      //      changed — only the outreach log + audit entry are recorded.
+      const POST_ENGAGEMENT_STATES = ["contacted", "accepted", "declined", "expired"];
+      const isFollowUp = POST_ENGAGEMENT_STATES.includes(currentStatus);
       const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
       if (!isFollowUp && !allowed.includes("contacted")) {
         throw new ApiException(
@@ -393,44 +400,87 @@ Deno.serve(async (req) => {
         `\nReply-to: support@izenzo.co.za`,
       ].filter(Boolean).join("\n");
 
-      const { data: txnResult, error: txnErr } = await supabase.rpc(
-        "atomic_engagement_transition",
-        {
-          p_engagement_id: engagementId,
-          p_actor_type: "admin",
-          p_actor_user_id: authCtx.userId,
-          p_actor_email: adminProfile?.email || "unknown",
-          p_actor_name: adminProfile?.full_name || null,
-          p_new_status: "contacted",
-          p_entry_type: "contact_attempt",
-          p_contact_method: "email",
-          p_contact_detail: recipient,
-          p_notes: snapshotNotes,
-          p_audit_action: "engagement.outreach_email_sent",
-          p_audit_org_id: null,
-        }
-      );
+      // For forward-progressing sends, advance the state via the atomic RPC.
+      // For post-engagement follow-ups (accepted/declined/expired), the email
+      // is logged to the immutable outreach log + audit log without changing
+      // the engagement state.
+      const isPostEngagementFollowUp =
+        currentStatus === "accepted" ||
+        currentStatus === "declined" ||
+        currentStatus === "expired";
 
-      if (txnErr) {
-        console.error(`[${requestId}] Outreach SENT but state transition failed:`, txnErr);
-        throw new ApiException(
-          "PARTIAL_SUCCESS",
-          "Email was sent but the engagement state could not be updated. Please refresh and verify.",
-          500
+      if (!isPostEngagementFollowUp) {
+        const { data: txnResult, error: txnErr } = await supabase.rpc(
+          "atomic_engagement_transition",
+          {
+            p_engagement_id: engagementId,
+            p_actor_type: "admin",
+            p_actor_user_id: authCtx.userId,
+            p_actor_email: adminProfile?.email || "unknown",
+            p_actor_name: adminProfile?.full_name || null,
+            p_new_status: "contacted",
+            p_entry_type: "contact_attempt",
+            p_contact_method: "email",
+            p_contact_detail: recipient,
+            p_notes: snapshotNotes,
+            p_audit_action: "engagement.outreach_email_sent",
+            p_audit_org_id: null,
+          }
+        );
+
+        if (txnErr) {
+          console.error(`[${requestId}] Outreach SENT but state transition failed:`, txnErr);
+          throw new ApiException(
+            "PARTIAL_SUCCESS",
+            "Email was sent but the engagement state could not be updated. Please refresh and verify.",
+            500
+          );
+        }
+        const txn = txnResult as { success: boolean; error?: string } | null;
+        if (!txn?.success) {
+          throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
+        }
+
+        await supabase
+          .from("poi_engagements")
+          .update({
+            contact_method: "email",
+            contact_date: new Date().toISOString(),
+          })
+          .eq("id", engagementId);
+      } else {
+        // Post-engagement follow-up: log to outreach_logs + audit_logs without
+        // changing engagement state.
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          actor_type: "admin",
+          admin_user_id: authCtx.userId,
+          admin_email: adminProfile?.email || null,
+          admin_name: adminProfile?.full_name || null,
+          previous_status: currentStatus,
+          new_status: currentStatus,
+          entry_type: "post_engagement_followup",
+          contact_method: "email",
+          contact_detail: recipient,
+          notes: snapshotNotes,
+        });
+        await supabase.from("audit_logs").insert({
+          org_id: eng.org_id,
+          actor_user_id: authCtx.userId,
+          action: "engagement.outreach_followup_email_sent",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            recipient,
+            current_status: currentStatus,
+            subject: parsed.data.subject,
+            request_id: requestId,
+          },
+        });
+        console.log(
+          `[${requestId}] Post-engagement follow-up email sent for ${engagementId} (status remains ${currentStatus})`
         );
       }
-      const txn = txnResult as { success: boolean; error?: string } | null;
-      if (!txn?.success) {
-        throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
-      }
-
-      await supabase
-        .from("poi_engagements")
-        .update({
-          contact_method: "email",
-          contact_date: new Date().toISOString(),
-        })
-        .eq("id", engagementId);
 
       const { data: updated } = await supabase
         .from("poi_engagements")
