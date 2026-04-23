@@ -125,7 +125,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
   const [waiverReason, setWaiverReason] = useState("");
   const [waiverSubmitting, setWaiverSubmitting] = useState(false);
-  const { session } = useAuth();
+  const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
   const isUnilateral = matchType === "unilateral";
