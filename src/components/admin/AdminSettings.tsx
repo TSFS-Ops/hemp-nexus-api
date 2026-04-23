@@ -330,6 +330,10 @@ export function AdminSettings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="test-mode">
+          <TestModeBypassPanel />
+        </TabsContent>
       </Tabs>
     </div>
   );
