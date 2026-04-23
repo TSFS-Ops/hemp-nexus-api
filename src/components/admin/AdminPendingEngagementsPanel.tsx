@@ -727,13 +727,32 @@ export function AdminPendingEngagementsPanel() {
           },
         }
       );
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError carries the server response body in `context`.
+        // Pull the real reason out so the admin sees something actionable.
+        const ctx = (error as { context?: Response }).context;
+        let serverMsg = error.message;
+        if (ctx && typeof ctx.text === "function") {
+          try {
+            const text = await ctx.clone().text();
+            try {
+              const parsed = JSON.parse(text);
+              serverMsg = parsed.error || parsed.message || text;
+            } catch {
+              serverMsg = text;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(serverMsg);
+      }
       toast.success(`Email sent to ${data?.sent_to ?? outreachRecipient}`);
       setOutreachDialog(null);
       fetchEngagements();
     } catch (err: any) {
       console.error("Send outreach error:", err);
-      toast.error(err?.message || "Failed to send outreach email");
+      toast.error(err?.message || "Failed to send outreach email", { duration: 8000 });
     } finally {
       setOutreachSending(false);
     }
