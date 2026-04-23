@@ -180,6 +180,69 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
     return () => window.removeEventListener("beforeunload", handler);
   }, [showForm]);
 
+  /**
+   * Listen for eligibility failures dispatched by useMatchDetails.
+   * Highlights the relevant inputs, opens the form, and scrolls the first
+   * editable failed field into view.
+   */
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const ce = event as CustomEvent<MatchEligibilityFailedDetail>;
+      const detail = ce.detail;
+      if (!detail || detail.matchId !== matchId) return;
+
+      setFailedFields(detail.failedFields ?? []);
+      setDenialReasons(detail.denialReasons ?? []);
+
+      // Auto-open the form prefilled from current match data so the user can fix it
+      setForm((prev) => ({
+        ...EMPTY_FORM,
+        ...prev,
+        quantity_amount: prev.quantity_amount || matchData?.quantity_amount?.toString() || "",
+        quantity_unit: prev.quantity_unit || matchData?.quantity_unit || "MT",
+        price_amount: prev.price_amount || matchData?.price_amount?.toString() || "",
+        price_currency: prev.price_currency || matchData?.price_currency || "USD",
+      }));
+      setShowForm(true);
+
+      // Scroll the first editable failed field into view on the next paint
+      const editable = (detail.failedFields ?? []).find((f) => fieldRefs.current[f]);
+      if (editable) {
+        requestAnimationFrame(() => {
+          const el = fieldRefs.current[editable];
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Focus the input itself when possible (it may be the wrapper for Select)
+            const focusable = el.matches("input, select, button, [tabindex]")
+              ? el
+              : el.querySelector<HTMLElement>("input, button, [tabindex]");
+            focusable?.focus({ preventScroll: true });
+          }
+        });
+      }
+    };
+
+    window.addEventListener(MATCH_ELIGIBILITY_FAILED_EVENT, handler as EventListener);
+    return () => window.removeEventListener(MATCH_ELIGIBILITY_FAILED_EVENT, handler as EventListener);
+  }, [matchId, matchData]);
+
+  // Clear highlights as soon as the user edits any of the offending fields
+  useEffect(() => {
+    if (failedFields.length === 0) return;
+    setFailedFields((prev) => prev.filter((f) => {
+      switch (f) {
+        case "quantity_amount": return !form.quantity_amount;
+        case "quantity_unit": return !form.quantity_unit;
+        case "price_amount": return !form.price_amount;
+        case "price_currency": return !form.price_currency;
+        default: return true; // non-editable here, keep highlighted in banner
+      }
+    }));
+  }, [form.quantity_amount, form.quantity_unit, form.price_amount, form.price_currency]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isFieldFailed = (field: string) => failedFields.includes(field);
+  const failedRing = "ring-2 ring-destructive ring-offset-1 border-destructive focus-visible:ring-destructive";
+
   const handleCancelForm = () => {
     if (formDirty.current) {
       setShowLeaveWarning(true);
