@@ -296,8 +296,8 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
               </div>
 
               {orgAck ? (
-                <div className="rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm space-y-1">
-                  <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                <div className="rounded-sm border border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/5 p-3 text-sm space-y-1">
+                  <p className="font-medium text-[hsl(var(--success))]">
                     Acknowledged by {orgAck.acknowledging_user_name || orgAck.acknowledging_user_email || "your team"}
                   </p>
                   <p className="text-xs text-muted-foreground font-mono">
