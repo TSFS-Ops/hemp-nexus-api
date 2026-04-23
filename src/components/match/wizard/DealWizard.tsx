@@ -62,8 +62,9 @@ export function DealWizard({
 
   // Determine step completion
   const searchComplete = true; // always, match exists
-  const matchComplete = useMemo(() => {
-    // Match step is complete when all required fields are filled
+
+  // Commercial terms validity (required for POI gate)
+  const commercialTermsComplete = useMemo(() => {
     const hasCommodity = !!match.commodity;
     const hasBuyer = !!match.buyer_name;
     const hasSeller = !!match.seller_name;
@@ -71,6 +72,32 @@ export function DealWizard({
     const hasPrice = match.price_amount != null && match.price_amount > 0;
     return hasCommodity && hasBuyer && hasSeller && hasQuantity && hasPrice;
   }, [match]);
+
+  // Supporting evidence presence (advisory, not gating — drives "fully complete" badge)
+  const { data: evidenceCounts } = useQuery({
+    queryKey: ["match-evidence-counts", match.id],
+    queryFn: async () => {
+      const [docsRes, notesRes] = await Promise.all([
+        supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+        supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+      ]);
+      return {
+        documentCount: docsRes.count ?? 0,
+        notesCount: notesRes.count ?? 0,
+      };
+    },
+    enabled: !!match.id,
+    staleTime: 10_000,
+  });
+  const documentCount = evidenceCounts?.documentCount ?? 0;
+  const notesCount = evidenceCounts?.notesCount ?? 0;
+  const hasSupportingEvidence = documentCount > 0 || notesCount > 0;
+
+  // Match step is "fully" complete only when commercial terms AND supporting evidence
+  // (or post-POI states where the wizard has moved on). The POI gate itself remains
+  // commercial-only; this only governs the green checkmark on the stepper.
+  const postMatchState = ["intent_declared", "counterparty_sighted", "committed", "completed"].includes(currentState);
+  const matchComplete = commercialTermsComplete && (hasSupportingEvidence || postMatchState);
   const poiComplete = useMemo(() => {
     return isSettled || ["intent_declared", "counterparty_sighted", "committed", "completed"].includes(currentState);
   }, [currentState, isSettled]);
@@ -116,7 +143,7 @@ export function DealWizard({
     label: "Proof of Intent",
     description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit (R10). Non-binding, irreversible, fully audited.",
     complete: poiComplete && engagementAccepted,
-    locked: !matchComplete // Strict: locked until match step complete
+    locked: !commercialTermsComplete // POI gate is commercial-only; supporting evidence handled via waiver flow
   }, {
     id: "wad",
     label: "Signed Deal",
@@ -129,29 +156,32 @@ export function DealWizard({
     description: "Generate a SHA-256 hashed, tamper-evident evidence bundle for regulatory finality.",
     complete: evidenceComplete,
     locked: !wadComplete // Strict: locked until WaD sealed
-  }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted]);
+  }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted, commercialTermsComplete]);
 
-  // Auto-select the first incomplete, unlocked step
-  const defaultStep = useMemo(() => {
-    const firstIncomplete = steps.findIndex(s => !s.complete && !s.locked);
-    return firstIncomplete >= 0 ? firstIncomplete : steps.length - 1;
-  }, [steps]);
+  // Strict landing policy (Option B):
+  //   - Never auto-skip the Match step. Pre-POI users always land on Match (Terms sub-tab).
+  //   - Only skip Match if the deal is already past POI (intent_declared or beyond),
+  //     in which case landing on the first incomplete unlocked step is correct.
   const [activeStep, setActiveStep] = useState(() => {
-    // Low-friction landing: jump to the first incomplete, unlocked step.
-    // If commercial fields are already filled, skip Match and land on POI.
-    // Users can still navigate back to Match via the stepper.
+    if (!postMatchState) return 1; // Match step
     const first = steps.findIndex(s => !s.complete && !s.locked);
     return first >= 0 ? first : steps.length - 1;
   });
 
   // Lifted sub-tab state for Match step so stepper can intercept
   const [matchSubTab, setMatchSubTab] = useState("terms");
+  const subTabOrder = ["terms", "documents", "notes"] as const;
+
   const handleStepClick = useCallback((idx: number) => {
     if (steps[idx].locked) return;
-    // If user is on Match step and clicks POI, guide them to Notes first
-    if (activeStep === 1 && idx === 2 && matchSubTab !== "notes") {
-      setMatchSubTab("notes");
-      return;
+    // Strict sequential walking: from Match step, clicking POI walks the user
+    // through Documents and Notes one sub-tab at a time before leaving Match.
+    if (activeStep === 1 && idx === 2) {
+      const currentSubIdx = subTabOrder.indexOf(matchSubTab as any);
+      if (currentSubIdx < subTabOrder.length - 1) {
+        setMatchSubTab(subTabOrder[currentSubIdx + 1]);
+        return;
+      }
     }
     setActiveStep(idx);
   }, [steps, activeStep, matchSubTab]);
@@ -165,7 +195,12 @@ export function DealWizard({
 
       {/* Step Content */}
       {activeStep === 0 && <StepSearch match={match} />}
-      {activeStep === 1 && <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
+      {activeStep === 1 && <StepMatch match={match} currentState={currentState} onMatchUpdated={async () => {
+        await onRefresh();
+        // Strict walk-through: after a successful Terms save, advance to Documents.
+        // Never auto-leave the Match step.
+        if (matchSubTab === "terms") setMatchSubTab("documents");
+      }} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
       {activeStep === 2 && <div className="space-y-4">
           <StepPoi match={match} onStateAction={onStateAction} loading={stateActionLoading || confirming} engagementStatus={engagementStatus} />
           {/* Hold-point notice shown on POI step since WaD step is locked */}

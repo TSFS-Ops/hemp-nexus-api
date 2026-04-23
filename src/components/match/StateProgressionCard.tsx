@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowRight,
@@ -20,6 +21,7 @@ import {
   Coins,
   Info,
   Loader2,
+  ShieldAlert,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +36,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 
@@ -116,6 +121,9 @@ interface StateProgressionCardProps {
 export function StateProgressionCard({ match, onAction, loading, engagementStatus }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [recheckingBalance, setRecheckingBalance] = useState(false);
+  const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
+  const [waiverReason, setWaiverReason] = useState("");
+  const [waiverSubmitting, setWaiverSubmitting] = useState(false);
   const { session } = useAuth();
 
   const matchType = (match as any).match_type || "search";
@@ -213,6 +221,36 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     !!balanceError;
   const showInsufficientBalance = hasVerifiedBalance && currentBalance < CREDITS_PER_ACTION;
 
+  // ── STRICT EVIDENCE WAIVER GATE (POI generation only) ──
+  // Block POI mint behind an explicit, audited acknowledgement when the deal
+  // has zero supporting documents AND zero notes. Any present evidence skips
+  // the waiver. Documents and notes remain non-mandatory by platform policy
+  // (memory: evidence-strength-indicator) — but the *absence* must itself be
+  // a recorded, attributed decision before a credit-burning, irreversible
+  // POI is sealed on the ledger.
+  const isPoiAction = actionPath === "generate-poi";
+  const { data: evidenceCounts } = useQuery({
+    queryKey: ["state-progression-evidence", match.id],
+    queryFn: async () => {
+      const [docsRes, notesRes] = await Promise.all([
+        supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+        supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+      ]);
+      return {
+        documentCount: docsRes.count ?? 0,
+        notesCount: notesRes.count ?? 0,
+      };
+    },
+    enabled: !!match.id && isPoiAction,
+    staleTime: 5_000,
+  });
+  const documentCount = evidenceCounts?.documentCount ?? 0;
+  const notesCount = evidenceCounts?.notesCount ?? 0;
+  const waiverRequired = isPoiAction && documentCount === 0 && notesCount === 0;
+  const trimmedReason = waiverReason.trim();
+  const waiverReasonValid = !waiverRequired || trimmedReason.length >= 10;
+  const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid));
+
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
 
@@ -226,6 +264,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         }
       }
 
+      // Reset waiver state every time the dialog opens.
+      setWaiverAcknowledged(false);
+      setWaiverReason("");
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
@@ -233,10 +274,51 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   };
 
   const handleDialogConfirm = async () => {
-    setShowDialog(false);
-    if (actionPath) {
-      await onAction(actionPath);
+    if (!actionPath) return;
+    if (loading || waiverSubmitting) return;
+
+    // Strict gate: when waiver is required, both acknowledgement and a
+    // meaningful reason (>= 10 chars) must be present.
+    if (waiverRequired && (!waiverAcknowledged || !waiverReasonValid)) return;
+
+    // If a waiver applies, write the audit record FIRST. If the audit write
+    // fails we MUST NOT proceed to mint the POI — zero swallowed errors.
+    if (waiverRequired) {
+      if (!session?.user?.id || !match.org_id) {
+        toast.error("Cannot record evidence waiver: missing session context. Please refresh and try again.");
+        return;
+      }
+      setWaiverSubmitting(true);
+      try {
+        const { error: auditError } = await supabase.from("audit_logs").insert({
+          org_id: match.org_id,
+          actor_user_id: session.user.id,
+          action: "poi.evidence_waiver_acknowledged",
+          entity_type: "match",
+          entity_id: match.id,
+          metadata: {
+            document_count: documentCount,
+            notes_count: notesCount,
+            waiver_reason: trimmedReason,
+            waived_at: new Date().toISOString(),
+            match_state: currentState,
+            commodity: match.commodity ?? null,
+          },
+        });
+        if (auditError) {
+          toast.error(`Could not record evidence waiver: ${auditError.message}. POI generation aborted.`);
+          return;
+        }
+      } catch (err) {
+        toast.error(`Could not record evidence waiver: ${(err as Error).message}. POI generation aborted.`);
+        return;
+      } finally {
+        setWaiverSubmitting(false);
+      }
     }
+
+    setShowDialog(false);
+    await onAction(actionPath);
   };
 
   return (
@@ -503,13 +585,79 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 <p className="text-xs text-muted-foreground">
                   <strong>Irreversible.</strong> This action cannot be undone.{!isFreeAction && " Credits will not be refunded."}
                 </p>
+
+                {/* ── STRICT EVIDENCE WAIVER (POI mint with no docs and no notes) ── */}
+                {waiverRequired && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          No supporting evidence attached
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          This Proof of Intent will be sealed on the audit ledger with{" "}
+                          <strong>0 supporting documents</strong> and{" "}
+                          <strong>0 deal notes</strong>. To proceed, you must explicitly
+                          acknowledge this and record a reason. Both your acknowledgement
+                          and reason will be permanently logged against your user account
+                          and this match record.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="waiver-reason" className="text-xs font-medium text-foreground">
+                        Reason for proceeding without supporting evidence{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
+                        id="waiver-reason"
+                        value={waiverReason}
+                        onChange={(e) => setWaiverReason(e.target.value)}
+                        placeholder="e.g. Verbal agreement with long-standing partner; documentation to follow within 48h."
+                        rows={3}
+                        className="text-sm"
+                        maxLength={500}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Minimum 10 characters. {trimmedReason.length}/500.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="waiver-ack"
+                        checked={waiverAcknowledged}
+                        onCheckedChange={(v) => setWaiverAcknowledged(v === true)}
+                        className="mt-0.5"
+                      />
+                      <Label
+                        htmlFor="waiver-ack"
+                        className="text-xs leading-relaxed text-foreground cursor-pointer"
+                      >
+                        I confirm I am authorised to seal this Proof of Intent without
+                        supporting documents or notes, and I understand this decision is
+                        recorded on the immutable audit trail.
+                      </Label>
+                    </div>
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
-              {isFreeAction ? (
+            <AlertDialogCancel disabled={loading || waiverSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDialogConfirm}
+              disabled={!canConfirmDialog}
+            >
+              {waiverSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Recording waiver…
+                </>
+              ) : isFreeAction ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Confirm
