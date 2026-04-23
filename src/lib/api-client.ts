@@ -31,23 +31,32 @@ export class ApiError extends Error {
   status: number;
   code: string | null;
   requestId: string | null;
+  details: Record<string, unknown> | null;
 
-  constructor(status: number, message: string, code?: string, requestId?: string) {
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    requestId?: string,
+    details?: Record<string, unknown> | null,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code ?? null;
     this.requestId = requestId ?? null;
+    this.details = details ?? null;
   }
 
   /**
-   * Parse the standard { error, code, request_id } envelope returned by
+   * Parse the standard { error, code, request_id, details } envelope returned by
    * the shared `errorResponse` helper in Edge Functions.
    */
   static async fromResponse(res: Response): Promise<ApiError> {
     let message = res.statusText || `Request failed (${res.status})`;
     let code: string | undefined;
     let requestId: string | undefined;
+    let details: Record<string, unknown> | null = null;
 
     try {
       const body = await res.json();
@@ -60,12 +69,13 @@ export class ApiError extends Error {
       }
       if (body.message) message = body.message;
       if (body.code) code = body.code;
-      requestId = body.request_id || body.correlation_id;
+      if (body.details && typeof body.details === 'object') details = body.details;
+      requestId = body.request_id || body.requestId || body.correlation_id;
     } catch {
       // body wasn't JSON, use statusText
     }
 
-    return new ApiError(res.status, message, code, requestId);
+    return new ApiError(res.status, message, code, requestId, details);
   }
 }
 
