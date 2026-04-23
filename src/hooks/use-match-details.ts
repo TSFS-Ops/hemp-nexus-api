@@ -312,6 +312,9 @@ export function useMatchDetails(matchId: string | undefined) {
     {
       successMessage: undefined,
       errorMessage: "Action failed. Please try again.",
+      // Allow callers (StateProgressionCard) to react to specific recoverable
+      // errors like EVIDENCE_WAIVER_REQUIRED by reopening the waiver dialog.
+      rethrow: true,
     }
   );
 
