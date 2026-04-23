@@ -8,7 +8,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
+import { apiFetch, generateIdempotencyKey, ApiError } from "@/lib/api-client";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
@@ -26,13 +26,55 @@ class StateConflictError extends Error {
   }
 }
 
+/**
+ * Map a server eligibility-failure payload into a precise, user-readable message.
+ * Falls back to a generic hint only when the server didn't tell us why.
+ */
+function formatEligibilityMessage(details: Record<string, unknown> | null): string {
+  const denialReasons = Array.isArray(details?.denialReasons)
+    ? (details!.denialReasons as unknown[]).filter((x): x is string => typeof x === "string")
+    : [];
+  const failedFields = Array.isArray(details?.failedFields)
+    ? (details!.failedFields as unknown[]).filter((x): x is string => typeof x === "string")
+    : [];
+
+  if (denialReasons.length > 0) {
+    const list = denialReasons.slice(0, 3).join("; ");
+    return `Cannot generate POI: ${list}. Fix in the Terms tab — no credits were deducted.`;
+  }
+  if (failedFields.length > 0) {
+    return `Cannot generate POI. Invalid or missing: ${failedFields.join(", ")}. Fix in the Terms tab — no credits were deducted.`;
+  }
+  return "Cannot generate POI: required deal fields are missing or invalid. Complete them in the Terms tab — no credits were deducted.";
+}
+
 function handleApiError(err: unknown): never {
+  // Prefer structured ApiError details so we can surface the real reason
+  if (err instanceof ApiError) {
+    if (err.code === "ELIGIBILITY_FAILED" || err.status === 422) {
+      throw new Error(formatEligibilityMessage(err.details));
+    }
+    if (err.code === "INSUFFICIENT_TOKENS" || /insufficient/i.test(err.message)) {
+      throw new Error("Insufficient credits. Purchase more credits from the Billing page.");
+    }
+    if (err.code === "DISPUTE_ACTIVE" || /dispute/i.test(err.message)) {
+      throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");
+    }
+    if (err.code === "STATE_CONFLICT" || err.code === "INVALID_STATE" || /already/i.test(err.message)) {
+      throw new StateConflictError("This match has been updated by another action. Refreshing now…");
+    }
+    if (err.status === 403 || err.code === "FORBIDDEN" || /permission/i.test(err.message)) {
+      throw new Error("You do not have permission to modify this match.");
+    }
+    throw new Error(`${err.message} (request id: ${err.requestId ?? "n/a"}). If this persists, contact support@izenzo.co.za.`);
+  }
+
   const msg = err instanceof Error ? err.message : String(err);
   if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
     throw new Error("Insufficient credits. Purchase more credits from the Billing page.");
   }
   if (msg.includes("ELIGIBILITY_FAILED") || msg.includes("eligibility")) {
-    throw new Error("Missing required data fields (buyer, seller, quantity, or price). Complete these in the Terms tab before proceeding. No credits were deducted - your credits are safe.");
+    throw new Error(formatEligibilityMessage(null));
   }
   if (msg.includes("DISPUTE_ACTIVE") || msg.includes("dispute")) {
     throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");
