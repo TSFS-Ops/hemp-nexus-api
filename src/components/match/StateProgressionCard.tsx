@@ -378,6 +378,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         await refetchEvidence();
         setWaiverAcknowledged(false);
         setWaiverReason("");
+        setWaiverCategory("");
         setShowDialog(true);
         return;
       }
