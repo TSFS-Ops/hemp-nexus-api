@@ -304,6 +304,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       // Reset waiver state every time the dialog opens.
       setWaiverAcknowledged(false);
       setWaiverReason("");
+      setWaiverCategory("");
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
