@@ -39,6 +39,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
@@ -112,6 +113,20 @@ function getFieldChecklist(match: Match): FieldCheck[] {
 
 const CREDITS_PER_ACTION = 1;
 
+/**
+ * Structured taxonomy for evidence-waiver reasons. Captured alongside the
+ * free-text reason so audit reviewers can group, filter, and trend waiver
+ * justifications without parsing prose.
+ */
+const WAIVER_CATEGORIES = [
+  { value: "verbal_agreement", label: "Verbal agreement with long-standing partner" },
+  { value: "documentation_pending", label: "Documentation pending (will follow within 48h)" },
+  { value: "internal_compliance_review", label: "Internal compliance review on file" },
+  { value: "off_platform_evidence", label: "Evidence held off-platform (e.g. signed PDF, email)" },
+  { value: "regulatory_exemption", label: "Regulatory or programme-specific exemption" },
+  { value: "other", label: "Other (explain in reason)" },
+] as const;
+
 interface StateProgressionCardProps {
   match: Match;
   onAction: (action: string) => Promise<void>;
@@ -124,8 +139,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const [recheckingBalance, setRecheckingBalance] = useState(false);
   const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
   const [waiverReason, setWaiverReason] = useState("");
+  const [waiverCategory, setWaiverCategory] = useState<string>("");
   const [waiverSubmitting, setWaiverSubmitting] = useState(false);
-  const { session } = useAuth();
+  const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
   const isUnilateral = matchType === "unilateral";
@@ -250,7 +266,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   // a recorded, attributed decision before a credit-burning, irreversible
   // POI is sealed on the ledger.
   const isPoiAction = actionPath === "generate-poi";
-  const { data: evidenceCounts } = useQuery({
+  const { data: evidenceCounts, refetch: refetchEvidence } = useQuery({
     queryKey: ["state-progression-evidence", match.id],
     queryFn: async () => {
       const [docsRes, notesRes] = await Promise.all([
@@ -270,7 +286,8 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const waiverRequired = isPoiAction && documentCount === 0 && notesCount === 0;
   const trimmedReason = waiverReason.trim();
   const waiverReasonValid = !waiverRequired || trimmedReason.length >= 10;
-  const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid));
+  const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
+  const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
 
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
@@ -288,6 +305,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       // Reset waiver state every time the dialog opens.
       setWaiverAcknowledged(false);
       setWaiverReason("");
+      setWaiverCategory("");
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
@@ -320,10 +338,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           metadata: {
             document_count: documentCount,
             notes_count: notesCount,
+            waiver_category: waiverCategory,
             waiver_reason: trimmedReason,
             waived_at: new Date().toISOString(),
             match_state: currentState,
             commodity: match.commodity ?? null,
+            // Actor's roles at time of waiver — recorded so audit reviewers
+            // can verify post-hoc whether the signer actually held the
+            // privilege they claimed in the acknowledgement copy.
+            actor_roles: roles ?? [],
           },
         });
         if (auditError) {
@@ -339,7 +362,30 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     }
 
     setShowDialog(false);
-    await onAction(actionPath);
+    try {
+      await onAction(actionPath);
+    } catch (err) {
+      // Race recovery: if the server enforces the evidence-waiver gate (409
+      // EVIDENCE_WAIVER_REQUIRED) because our client counts were stale, force
+      // the waiver dialog open so the user can complete the acknowledgement
+      // and retry without losing their place. Re-throw any other error so the
+      // upstream toast handler can surface it.
+      const message = err instanceof Error ? err.message : String(err ?? "");
+      if (/EVIDENCE_WAIVER_REQUIRED/i.test(message)) {
+        toast.error(
+          "Supporting documents and notes were removed before this Proof of Intent could be sealed. Please record an evidence waiver to continue.",
+        );
+        // Force-refresh counts and reopen the dialog. The waiverRequired flag
+        // will recompute from the fresh query and render the waiver block.
+        await refetchEvidence();
+        setWaiverAcknowledged(false);
+        setWaiverReason("");
+        setWaiverCategory("");
+        setShowDialog(true);
+        return;
+      }
+      throw err;
+    }
   };
 
   return (
@@ -646,6 +692,22 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     </div>
 
                     <div className="space-y-1.5">
+                      <Label htmlFor="waiver-category" className="text-xs font-medium text-foreground">
+                        Reason category <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={waiverCategory} onValueChange={setWaiverCategory}>
+                        <SelectTrigger id="waiver-category" className="text-sm">
+                          <SelectValue placeholder="Select a category…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WAIVER_CATEGORIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
                       <Label htmlFor="waiver-reason" className="text-xs font-medium text-foreground">
                         Reason for proceeding without supporting evidence{" "}
                         <span className="text-destructive">*</span>
@@ -675,9 +737,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                         htmlFor="waiver-ack"
                         className="text-xs leading-relaxed text-foreground cursor-pointer"
                       >
-                        I confirm I am authorised to seal this Proof of Intent without
-                        supporting documents or notes, and I understand this decision is
-                        recorded on the immutable audit trail.
+                        I confirm I am authorised by my organisation to seal
+                        this Proof of Intent without supporting documents or
+                        notes. My current platform roles
+                        ({roles.length > 0 ? roles.join(", ") : "none"}) and
+                        the time of this acknowledgement will be recorded on
+                        the immutable audit trail and may be reviewed by
+                        compliance.
                       </Label>
                     </div>
                   </div>

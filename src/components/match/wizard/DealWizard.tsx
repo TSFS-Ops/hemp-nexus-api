@@ -173,6 +173,10 @@ export function DealWizard({
   const { subTab: matchSubTab, setSubTab: setMatchSubTab } = useMatchSubTab(match.id);
   const subTabOrder = ["terms", "documents", "notes"] as const;
 
+  // Live-region announcement for assistive tech when the stepper intercepts a
+  // POI click and instead advances the Match sub-tab. Cleared after announce.
+  const [stepperAnnouncement, setStepperAnnouncement] = useState("");
+
   const handleStepClick = useCallback((idx: number) => {
     if (steps[idx].locked) return;
     // Strict sequential walking: from Match step, clicking POI walks the user
@@ -180,13 +184,22 @@ export function DealWizard({
     if (activeStep === 1 && idx === 2) {
       const currentSubIdx = subTabOrder.indexOf(matchSubTab as any);
       if (currentSubIdx < subTabOrder.length - 1) {
-        setMatchSubTab(subTabOrder[currentSubIdx + 1]);
+        const nextSub = subTabOrder[currentSubIdx + 1];
+        setMatchSubTab(nextSub);
+        const nextLabel = nextSub === "documents" ? "Documents" : "Notes";
+        setStepperAnnouncement(
+          `Before opening Proof of Intent, please review ${nextLabel}. Now showing the ${nextLabel} sub-tab of the Match step.`,
+        );
         return;
       }
     }
     setActiveStep(idx);
-  }, [steps, activeStep, matchSubTab]);
+  }, [steps, activeStep, matchSubTab, setMatchSubTab]);
   return <div className="space-y-6">
+      {/* a11y: announce stepper sub-tab interception to screen readers */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {stepperAnnouncement}
+      </div>
       {/* Wizard Stepper */}
       <Card>
         <CardContent className="pt-5 pb-4">

@@ -34,6 +34,12 @@ export interface UseAsyncActionOptions extends ApiErrorOptions {
    * can forward it to `apiFetch`.
    */
   idempotent?: boolean;
+  /**
+   * When true, after handling/toasting the error, re-throw it so the caller
+   * of `run()` can implement its own recovery UX (e.g. reopening a dialog).
+   * Defaults to false to preserve existing fire-and-forget behaviour.
+   */
+  rethrow?: boolean;
 }
 
 export function useAsyncAction<TArgs extends unknown[] = []>(
@@ -58,6 +64,7 @@ export function useAsyncAction<TArgs extends unknown[] = []>(
         options.onSuccess?.();
       } catch (error: unknown) {
         handleApiError(error, options);
+        if (options.rethrow) throw error;
       } finally {
         setLoading(false);
         guardRef.current = false;
