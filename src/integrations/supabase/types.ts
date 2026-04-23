@@ -6098,6 +6098,16 @@ export type Database = {
         Args: { p_match_id: string; p_org_id: string; p_settled_at: string }
         Returns: Json
       }
+      atomic_generate_poi_v2: {
+        Args: {
+          p_actor_user_id?: string
+          p_match_id: string
+          p_org_id: string
+          p_settled_at: string
+          p_waiver?: Json
+        }
+        Returns: Json
+      }
       atomic_seal_deal: {
         Args: {
           p_actor_api_key_id?: string
