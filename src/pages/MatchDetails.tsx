@@ -20,6 +20,7 @@ import { DealWizard } from "@/components/match/wizard/DealWizard";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { EngagementTracker } from "@/components/match/EngagementTracker";
 import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
+import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
@@ -145,6 +146,8 @@ function MatchDetailsContent() {
       />
 
       {matchId && <AcceptEngagementCard match={match} engagementStatus={engagementStatus} onResponded={fetchMatch} />}
+
+      {matchId && <AcceptanceReceiptCard matchId={matchId} />}
 
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 

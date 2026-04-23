@@ -32,6 +32,7 @@ import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
 import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
+import { AdminEngagementForensicsPanel } from "@/components/admin/AdminEngagementForensicsPanel";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminApprovalThresholdsPanel } from "@/components/admin/AdminApprovalThresholdsPanel";
 import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
@@ -254,6 +255,9 @@ function EngagementsTab() {
       <TabHeader id="engagements" />
       <Surface label="POI hold-point queue · public.poi_engagements · counterparty outreach">
         <AdminPendingEngagementsPanel />
+      </Surface>
+      <Surface label="Forensic engagement search · trace any engagement by match, email, org or status">
+        <AdminEngagementForensicsPanel />
       </Surface>
     </>;
 }
