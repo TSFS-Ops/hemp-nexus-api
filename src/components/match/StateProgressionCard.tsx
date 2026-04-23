@@ -112,6 +112,20 @@ function getFieldChecklist(match: Match): FieldCheck[] {
 
 const CREDITS_PER_ACTION = 1;
 
+/**
+ * Structured taxonomy for evidence-waiver reasons. Captured alongside the
+ * free-text reason so audit reviewers can group, filter, and trend waiver
+ * justifications without parsing prose.
+ */
+const WAIVER_CATEGORIES = [
+  { value: "verbal_agreement", label: "Verbal agreement with long-standing partner" },
+  { value: "documentation_pending", label: "Documentation pending (will follow within 48h)" },
+  { value: "internal_compliance_review", label: "Internal compliance review on file" },
+  { value: "off_platform_evidence", label: "Evidence held off-platform (e.g. signed PDF, email)" },
+  { value: "regulatory_exemption", label: "Regulatory or programme-specific exemption" },
+  { value: "other", label: "Other (explain in reason)" },
+] as const;
+
 interface StateProgressionCardProps {
   match: Match;
   onAction: (action: string) => Promise<void>;
