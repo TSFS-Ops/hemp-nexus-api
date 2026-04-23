@@ -337,6 +337,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           metadata: {
             document_count: documentCount,
             notes_count: notesCount,
+            waiver_category: waiverCategory,
             waiver_reason: trimmedReason,
             waived_at: new Date().toISOString(),
             match_state: currentState,
