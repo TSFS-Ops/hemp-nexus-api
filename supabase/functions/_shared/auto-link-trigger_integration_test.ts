@@ -36,14 +36,44 @@ import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 
 // ───────────────────────────── helpers ─────────────────────────────
 
-function getDbUrl(): string | null {
-  return Deno.env.get("SUPABASE_DB_URL") || Deno.env.get("DB_URL") || null;
+/**
+ * Build a connection config. Prefer the elevated PG* env vars (the same
+ * sandbox-managed role that has full DML/DDL on the public schema) over
+ * SUPABASE_DB_URL, which connects as a low-privilege role and cannot
+ * INSERT/DELETE on app tables.
+ */
+function getConnectConfig():
+  | { kind: "params"; cfg: Record<string, string | number> }
+  | { kind: "url"; url: string }
+  | null {
+  const host = Deno.env.get("PGHOST");
+  const user = Deno.env.get("PGUSER");
+  const password = Deno.env.get("PGPASSWORD");
+  const database = Deno.env.get("PGDATABASE");
+  const port = Deno.env.get("PGPORT");
+  if (host && user && password && database) {
+    return {
+      kind: "params",
+      cfg: {
+        hostname: host,
+        user,
+        password,
+        database,
+        port: port ? Number(port) : 5432,
+        tls: { enabled: false },
+      } as Record<string, string | number>,
+    };
+  }
+  const url = Deno.env.get("SUPABASE_DB_URL") || Deno.env.get("DB_URL");
+  if (url) return { kind: "url", url };
+  return null;
 }
 
 async function connect(): Promise<Client | null> {
-  const url = getDbUrl();
-  if (!url) return null;
-  const client = new Client(url);
+  const cfg = getConnectConfig();
+  if (!cfg) return null;
+  // deno-lint-ignore no-explicit-any
+  const client = new Client(cfg.kind === "url" ? cfg.url : (cfg.cfg as any));
   await client.connect();
   return client;
 }
