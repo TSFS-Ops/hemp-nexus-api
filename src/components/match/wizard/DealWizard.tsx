@@ -17,6 +17,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { useMatchSubTab } from "@/hooks/use-match-sub-tab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { WizardStepper, type WizardStepDef } from "./WizardStepper";
@@ -168,8 +169,8 @@ export function DealWizard({
     return first >= 0 ? first : steps.length - 1;
   });
 
-  // Lifted sub-tab state for Match step so stepper can intercept
-  const [matchSubTab, setMatchSubTab] = useState("terms");
+  // Lifted sub-tab state for Match step (persisted per user+match in backend)
+  const { subTab: matchSubTab, setSubTab: setMatchSubTab } = useMatchSubTab(match.id);
   const subTabOrder = ["terms", "documents", "notes"] as const;
 
   const handleStepClick = useCallback((idx: number) => {
