@@ -124,6 +124,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const [recheckingBalance, setRecheckingBalance] = useState(false);
   const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
   const [waiverReason, setWaiverReason] = useState("");
+  const [waiverCategory, setWaiverCategory] = useState<string>("");
   const [waiverSubmitting, setWaiverSubmitting] = useState(false);
   const { session, roles } = useAuth();
 
