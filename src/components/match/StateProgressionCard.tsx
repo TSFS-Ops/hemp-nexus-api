@@ -765,7 +765,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading || waiverSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDialogConfirm}
               disabled={!canConfirmDialog}
