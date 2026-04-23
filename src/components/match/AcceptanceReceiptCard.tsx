@@ -214,7 +214,7 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
                   </Badge>
                 )}
                 {orgAck && (
-                  <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                  <Badge variant="outline" className="text-xs border-[hsl(var(--success))]/40 text-[hsl(var(--success))]">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     Acknowledged by initiator
                   </Badge>
