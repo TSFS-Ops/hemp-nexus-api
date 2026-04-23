@@ -585,13 +585,79 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 <p className="text-xs text-muted-foreground">
                   <strong>Irreversible.</strong> This action cannot be undone.{!isFreeAction && " Credits will not be refunded."}
                 </p>
+
+                {/* ── STRICT EVIDENCE WAIVER (POI mint with no docs and no notes) ── */}
+                {waiverRequired && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          No supporting evidence attached
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          This Proof of Intent will be sealed on the audit ledger with{" "}
+                          <strong>0 supporting documents</strong> and{" "}
+                          <strong>0 deal notes</strong>. To proceed, you must explicitly
+                          acknowledge this and record a reason. Both your acknowledgement
+                          and reason will be permanently logged against your user account
+                          and this match record.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="waiver-reason" className="text-xs font-medium text-foreground">
+                        Reason for proceeding without supporting evidence{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
+                        id="waiver-reason"
+                        value={waiverReason}
+                        onChange={(e) => setWaiverReason(e.target.value)}
+                        placeholder="e.g. Verbal agreement with long-standing partner; documentation to follow within 48h."
+                        rows={3}
+                        className="text-sm"
+                        maxLength={500}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Minimum 10 characters. {trimmedReason.length}/500.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="waiver-ack"
+                        checked={waiverAcknowledged}
+                        onCheckedChange={(v) => setWaiverAcknowledged(v === true)}
+                        className="mt-0.5"
+                      />
+                      <Label
+                        htmlFor="waiver-ack"
+                        className="text-xs leading-relaxed text-foreground cursor-pointer"
+                      >
+                        I confirm I am authorised to seal this Proof of Intent without
+                        supporting documents or notes, and I understand this decision is
+                        recorded on the immutable audit trail.
+                      </Label>
+                    </div>
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDialogConfirm} disabled={loading}>
-              {isFreeAction ? (
+            <AlertDialogCancel disabled={loading || waiverSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDialogConfirm}
+              disabled={!canConfirmDialog}
+            >
+              {waiverSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Recording waiver…
+                </>
+              ) : isFreeAction ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Confirm
