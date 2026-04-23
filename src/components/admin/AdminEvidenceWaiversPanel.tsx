@@ -242,6 +242,9 @@ export function AdminEvidenceWaiversPanel() {
                         <TableCell className="text-xs whitespace-nowrap">
                           {format(new Date(r.created_at), "MMM dd, yyyy HH:mm:ss")}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <WaiverPacketDownloadButton waiverId={r.id} label="Download" />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
