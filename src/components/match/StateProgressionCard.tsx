@@ -121,6 +121,9 @@ interface StateProgressionCardProps {
 export function StateProgressionCard({ match, onAction, loading, engagementStatus }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [recheckingBalance, setRecheckingBalance] = useState(false);
+  const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
+  const [waiverReason, setWaiverReason] = useState("");
+  const [waiverSubmitting, setWaiverSubmitting] = useState(false);
   const { session } = useAuth();
 
   const matchType = (match as any).match_type || "search";
