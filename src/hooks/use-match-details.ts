@@ -48,6 +48,46 @@ function formatEligibilityMessage(details: Record<string, unknown> | null): stri
   return "Cannot generate POI: required deal fields are missing or invalid. Complete them in the Terms tab — no credits were deducted.";
 }
 
+/**
+ * Public event name for eligibility failures. UI components (e.g. DealTermsPanel)
+ * can listen for this to highlight the offending fields without requiring prop drilling.
+ */
+export const MATCH_ELIGIBILITY_FAILED_EVENT = "izenzo:match-eligibility-failed";
+
+export interface MatchEligibilityFailedDetail {
+  matchId: string;
+  failedFields: string[];
+  denialReasons: string[];
+}
+
+function extractFailedFields(err: unknown): { failedFields: string[]; denialReasons: string[] } | null {
+  if (!(err instanceof ApiError)) return null;
+  const isEligibility =
+    err.code === "ELIGIBILITY_FAILED" ||
+    (err.status === 422 && err.details && (Array.isArray(err.details.failedFields) || Array.isArray(err.details.denialReasons)));
+  if (!isEligibility) return null;
+
+  const details = err.details ?? {};
+  const failedFields = Array.isArray(details.failedFields)
+    ? (details.failedFields as unknown[]).filter((x): x is string => typeof x === "string")
+    : [];
+  const denialReasons = Array.isArray(details.denialReasons)
+    ? (details.denialReasons as unknown[]).filter((x): x is string => typeof x === "string")
+    : [];
+  return { failedFields, denialReasons };
+}
+
+function dispatchEligibilityFailed(matchId: string, err: unknown): void {
+  const extracted = extractFailedFields(err);
+  if (!extracted) return;
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<MatchEligibilityFailedDetail>(MATCH_ELIGIBILITY_FAILED_EVENT, {
+      detail: { matchId, ...extracted },
+    }),
+  );
+}
+
 function handleApiError(err: unknown): never {
   // Prefer structured ApiError details so we can surface the real reason
   if (err instanceof ApiError) {
