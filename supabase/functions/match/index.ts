@@ -211,6 +211,59 @@ Deno.serve(async (req) => {
         );
       }
 
+      // EVIDENCE WAIVER GATE: Block POI mint when both supporting docs and notes are
+      // zero, UNLESS an audit waiver record exists for this match. This is the
+      // server-side enforcement of the strict evidence policy — the client UI
+      // already prompts for an acknowledged waiver before calling the API.
+      const [docsCountRes, notesCountRes] = await Promise.all([
+        supabase
+          .from("match_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("match_id", matchId),
+        supabase
+          .from("match_notes")
+          .select("id", { count: "exact", head: true })
+          .eq("match_id", matchId),
+      ]);
+      const docsCount = docsCountRes.count ?? 0;
+      const notesCount = notesCountRes.count ?? 0;
+
+      if (docsCount === 0 && notesCount === 0) {
+        const { data: waiverRecord, error: waiverErr } = await supabase
+          .from("audit_logs")
+          .select("id")
+          .eq("entity_id", matchId)
+          .eq("action", "poi.evidence_waiver_acknowledged")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (waiverErr) handleDatabaseError(waiverErr, requestId);
+
+        if (!waiverRecord) {
+          console.warn(`[${requestId}] EVIDENCE_WAIVER_REQUIRED match_id=${matchId} org_id=${authCtx.orgId}`);
+          await supabase.from("audit_logs").insert({
+            org_id: match.org_id,
+            actor_user_id: actorUserId,
+            actor_api_key_id: actorApiKeyId,
+            action: "intent.denied",
+            entity_type: "match",
+            entity_id: matchId,
+            metadata: {
+              request_id: requestId,
+              reason: "evidence_waiver_required",
+              docs_count: 0,
+              notes_count: 0,
+            },
+          });
+          throw new ApiException(
+            "EVIDENCE_WAIVER_REQUIRED",
+            "Cannot generate POI: this match has no supporting documents or notes. An acknowledged evidence waiver is required before minting.",
+            409
+          );
+        }
+      }
+
       // ELIGIBILITY CHECK
       try {
         enforceEligibility(match);
