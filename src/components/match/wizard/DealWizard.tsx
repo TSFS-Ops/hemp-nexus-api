@@ -195,7 +195,12 @@ export function DealWizard({
 
       {/* Step Content */}
       {activeStep === 0 && <StepSearch match={match} />}
-      {activeStep === 1 && <StepMatch match={match} currentState={currentState} onMatchUpdated={onRefresh} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
+      {activeStep === 1 && <StepMatch match={match} currentState={currentState} onMatchUpdated={async () => {
+        await onRefresh();
+        // Strict walk-through: after a successful Terms save, advance to Documents.
+        // Never auto-leave the Match step.
+        if (matchSubTab === "terms") setMatchSubTab("documents");
+      }} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
       {activeStep === 2 && <div className="space-y-4">
           <StepPoi match={match} onStateAction={onStateAction} loading={stateActionLoading || confirming} engagementStatus={engagementStatus} />
           {/* Hold-point notice shown on POI step since WaD step is locked */}
