@@ -123,20 +123,23 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const FILTER_TABS = [
-  { value: "active", label: "Active queue" },
+  { value: "all", label: "All engagements" },
+  { value: "active", label: "Active queue (excludes accepted/declined)" },
   { value: "pending", label: "Pending" },
   { value: "notification_sent", label: "Awaiting outreach" },
   { value: "contacted", label: "Contacted" },
   { value: "accepted", label: "Accepted" },
   { value: "declined", label: "Declined" },
-  { value: "all", label: "All" },
 ] as const;
 
 export function AdminPendingEngagementsPanel() {
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<string>("active");
+  // Default to "all" so accepted/declined rows are visible by default — the
+  // previous "active" default silently hid resolved rows and caused support
+  // tickets ("did the trade work?"). The Active queue remains one click away.
+  const [filter, setFilter] = useState<string>("all");
   // Scope toggle: by design this panel exists for *unknown* counterparty outreach.
   // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
