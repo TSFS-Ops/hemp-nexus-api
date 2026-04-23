@@ -211,57 +211,33 @@ Deno.serve(async (req) => {
         );
       }
 
-      // EVIDENCE WAIVER GATE: Block POI mint when both supporting docs and notes are
-      // zero, UNLESS an audit waiver record exists for this match. This is the
-      // server-side enforcement of the strict evidence policy — the client UI
-      // already prompts for an acknowledged waiver before calling the API.
-      const [docsCountRes, notesCountRes] = await Promise.all([
-        supabase
-          .from("match_documents")
-          .select("id", { count: "exact", head: true })
-          .eq("match_id", matchId),
-        supabase
-          .from("match_notes")
-          .select("id", { count: "exact", head: true })
-          .eq("match_id", matchId),
-      ]);
-      const docsCount = docsCountRes.count ?? 0;
-      const notesCount = notesCountRes.count ?? 0;
-
-      if (docsCount === 0 && notesCount === 0) {
-        const { data: waiverRecord, error: waiverErr } = await supabase
-          .from("audit_logs")
-          .select("id")
-          .eq("entity_id", matchId)
-          .eq("action", "poi.evidence_waiver_acknowledged")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (waiverErr) handleDatabaseError(waiverErr, requestId);
-
-        if (!waiverRecord) {
-          console.warn(`[${requestId}] EVIDENCE_WAIVER_REQUIRED match_id=${matchId} org_id=${authCtx.orgId}`);
-          await supabase.from("audit_logs").insert({
-            org_id: match.org_id,
-            actor_user_id: actorUserId,
-            actor_api_key_id: actorApiKeyId,
-            action: "intent.denied",
-            entity_type: "match",
-            entity_id: matchId,
-            metadata: {
-              request_id: requestId,
-              reason: "evidence_waiver_required",
-              docs_count: 0,
-              notes_count: 0,
-            },
-          });
-          throw new ApiException(
-            "EVIDENCE_WAIVER_REQUIRED",
-            "Cannot generate POI: this match has no supporting documents or notes. An acknowledged evidence waiver is required before minting.",
-            409
-          );
+      // ── PARSE OPTIONAL WAIVER PAYLOAD FROM REQUEST BODY ──
+      // The waiver record is now written *inside* the same DB transaction as
+      // the credit burn and the state transition (atomic_generate_poi_v2).
+      // This eliminates the orphan-waiver class of bugs entirely: if the mint
+      // fails for any reason, the waiver row is rolled back automatically.
+      let waiverPayload: { category: string; reason: string; actor_roles: string[] } | null = null;
+      try {
+        const contentType = req.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const rawBody = await req.text();
+          if (rawBody && rawBody.trim().length > 0) {
+            const parsed = JSON.parse(rawBody);
+            if (parsed && typeof parsed === "object" && parsed.evidence_waiver && typeof parsed.evidence_waiver === "object") {
+              const w = parsed.evidence_waiver;
+              if (typeof w.category === "string" && typeof w.reason === "string") {
+                waiverPayload = {
+                  category: w.category,
+                  reason: w.reason,
+                  actor_roles: Array.isArray(w.actor_roles) ? w.actor_roles.filter((r: unknown) => typeof r === "string") : [],
+                };
+              }
+            }
+          }
         }
+      } catch (bodyErr) {
+        console.warn(`[${requestId}] Could not parse request body for waiver payload:`, bodyErr);
+        // Non-fatal: server-side gate will block if waiver is required.
       }
 
       // ELIGIBILITY CHECK
@@ -288,17 +264,24 @@ Deno.serve(async (req) => {
         throw eligibilityError;
       }
 
-      // --- FULLY ATOMIC: token burn + state transition in one DB transaction ---
-      // No separate burnTokensForAction call — the DB function handles both.
-      // If the burn fails (insufficient balance), the state is untouched.
-      // If the state transition fails, the burn is rolled back automatically.
+      // --- FULLY ATOMIC: waiver write + token burn + state transition in ONE DB transaction ---
+      // atomic_generate_poi_v2 enforces the evidence-waiver gate under the same
+      // row lock as the burn, so:
+      //   • If no waiver is supplied AND no prior waiver exists AND there is no
+      //     evidence → 409 EVIDENCE_WAIVER_REQUIRED (no burn, no audit row).
+      //   • If a waiver IS supplied but evidence has been added since the dialog
+      //     opened → 409 WAIVER_NOT_APPLICABLE (no burn, no false waiver row).
+      //   • If everything passes → waiver row, burn, state change all commit
+      //     together; if any later step fails, all rollback together.
       const now = new Date().toISOString();
       const { data: transitionResult, error: transitionError } = await supabase.rpc(
-        'atomic_generate_poi',
+        'atomic_generate_poi_v2',
         {
           p_match_id: matchId,
           p_org_id: authCtx.orgId,
           p_settled_at: now,
+          p_actor_user_id: actorUserId,
+          p_waiver: waiverPayload as any,
         }
       );
 
@@ -315,7 +298,38 @@ Deno.serve(async (req) => {
       if (!transitionResult?.success) {
         const errCode = transitionResult?.error || 'TRANSITION_FAILED';
         const errMsg = transitionResult?.message || 'State transition failed';
-        const statusCode = errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 : errCode === 'STATE_CONFLICT' ? 409 : errCode === 'NOT_FOUND' ? 404 : 400;
+        const statusCode =
+          errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 :
+          errCode === 'STATE_CONFLICT' ? 409 :
+          errCode === 'EVIDENCE_WAIVER_REQUIRED' ? 409 :
+          errCode === 'WAIVER_NOT_APPLICABLE' ? 409 :
+          errCode === 'WAIVER_INVALID' ? 400 :
+          errCode === 'NOT_FOUND' ? 404 :
+          errCode === 'FORBIDDEN' ? 403 : 400;
+
+        // Server-side breadcrumb for waiver gate decisions (so admins can trace
+        // why a mint was blocked from edge logs alone, without DB queries).
+        if (errCode === 'EVIDENCE_WAIVER_REQUIRED' || errCode === 'WAIVER_NOT_APPLICABLE' || errCode === 'WAIVER_INVALID') {
+          console.warn(`[${requestId}] WAIVER_GATE_BLOCKED code=${errCode} match_id=${matchId} org_id=${authCtx.orgId}`);
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: match.org_id,
+              actor_user_id: actorUserId,
+              actor_api_key_id: actorApiKeyId,
+              action: "intent.denied",
+              entity_type: "match",
+              entity_id: matchId,
+              metadata: {
+                request_id: requestId,
+                reason: errCode.toLowerCase(),
+                waiver_supplied: waiverPayload !== null,
+              },
+            });
+          } catch (e) {
+            console.warn(`[${requestId}] Failed to write intent.denied audit:`, e);
+          }
+        }
+
         // No refund needed — burn and transition are in one transaction; both rolled back on failure
         throw new ApiException(errCode, errMsg, statusCode);
       }
