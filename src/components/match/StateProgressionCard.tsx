@@ -692,6 +692,22 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     </div>
 
                     <div className="space-y-1.5">
+                      <Label htmlFor="waiver-category" className="text-xs font-medium text-foreground">
+                        Reason category <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={waiverCategory} onValueChange={setWaiverCategory}>
+                        <SelectTrigger id="waiver-category" className="text-sm">
+                          <SelectValue placeholder="Select a category…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WAIVER_CATEGORIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
                       <Label htmlFor="waiver-reason" className="text-xs font-medium text-foreground">
                         Reason for proceeding without supporting evidence{" "}
                         <span className="text-destructive">*</span>
