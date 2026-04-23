@@ -218,6 +218,40 @@ Deno.serve(async (req) => {
       })
       .eq('id', dispatch.id)
 
+    // ── Optional outbound webhook: notify the initiator org's integrated
+    // systems that a signed acceptance receipt is now delivered. The
+    // _shared/webhooks helper handles HMAC-SHA256 signing, X-Webhook-Timestamp
+    // (replay protection), retries and circuit breaking. Only orgs that have
+    // subscribed to "acceptance_receipt.created" receive a delivery.
+    try {
+      await triggerWebhooks(supabase, r.initiator_org_id, 'acceptance_receipt.created', {
+        receipt_id: r.id,
+        receipt_version: r.receipt_version,
+        match_id: r.match_id,
+        engagement_id: r.engagement_id,
+        initiator_org_id: r.initiator_org_id,
+        counterparty_org_id: r.counterparty_org_id,
+        counterparty_email: r.counterparty_email,
+        accepted_at: r.accepted_at,
+        attestation_id: r.attestation_id,
+        signature: {
+          algorithm: 'sha256',
+          hash: r.signature_hash,
+          signed_payload: r.signed_payload,
+        },
+        delivery: {
+          dispatch_id: dispatch.id,
+          message_id: logProof.message_id ?? messageId,
+          delivered_at: new Date().toISOString(),
+        },
+      })
+    } catch (whErr) {
+      // Non-fatal: webhook failures are logged inside triggerWebhooks and
+      // tracked via webhook_deliveries / circuit breaker. Receipt email is
+      // already delivered; we never roll that back.
+      console.error(`[acceptance_receipt.created] webhook trigger failed for org ${r.initiator_org_id}:`, whErr)
+    }
+
     results.push({
       id: dispatch.id,
       status: 'delivered',
