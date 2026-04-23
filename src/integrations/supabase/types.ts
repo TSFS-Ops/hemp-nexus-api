@@ -6286,6 +6286,26 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_get_reconciliation_alarms: {
+        Args: {
+          p_alarm_type?: string
+          p_limit?: number
+          p_severity?: string
+          p_since?: string
+        }
+        Returns: {
+          alarm_id: string
+          alarm_type: string
+          counterparty_email: string
+          detail: Json
+          detected_at: string
+          engagement_id: string
+          match_id: string
+          org_id: string
+          severity: string
+          summary: string
+        }[]
+      }
       atomic_accept_bind: {
         Args: {
           p_caller_org_id: string

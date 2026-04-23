@@ -45,6 +45,7 @@ import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaive
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
+import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -286,17 +287,23 @@ function DisputesTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "audit-logs", ["audit-logs", "evidence-waivers", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "audit-logs", "evidence-waivers", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
+          <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
           <TabsTrigger value="evidence-waivers">Evidence Waivers</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="event-store">Event Store</TabsTrigger>
           <TabsTrigger value="analytics">System Analytics</TabsTrigger>
         </TabsList>
+        <TabsContent value="risk-alarms">
+          <Surface label="Reconciliation alarms · accepted-without-notification, dispatch parity, attestation gaps">
+            <AdminRiskAlarmsPanel />
+          </Surface>
+        </TabsContent>
         <TabsContent value="audit-logs">
           <Surface label="Immutable audit trail · public.audit_logs">
             <AdminAuditLogs />
