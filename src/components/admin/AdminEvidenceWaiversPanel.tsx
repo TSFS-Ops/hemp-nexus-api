@@ -182,6 +182,11 @@ export function AdminEvidenceWaiversPanel() {
                     <div className="text-xs text-muted-foreground font-mono">
                       Actor: {r.actor_user_id?.substring(0, 8) || "—"}...
                     </div>
+                    <WaiverPacketDownloadButton
+                      waiverId={r.id}
+                      label="Download packet"
+                      className="w-full"
+                    />
                   </div>
                 ))}
               </div>
@@ -198,6 +203,7 @@ export function AdminEvidenceWaiversPanel() {
                       <TableHead className="text-center">Notes</TableHead>
                       <TableHead>Reason</TableHead>
                       <TableHead>Waived At</TableHead>
+                      <TableHead className="text-right">Packet</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
