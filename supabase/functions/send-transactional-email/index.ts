@@ -349,8 +349,10 @@ Deno.serve(async (req) => {
 
   console.log('Transactional email enqueued', { templateName, effectiveRecipient })
 
+  // Return the messageId so callers (e.g. dispatch-acceptance-receipts) can
+  // perform a parity check against email_send_log without guessing.
   return new Response(
-    JSON.stringify({ success: true, queued: true }),
+    JSON.stringify({ success: true, queued: true, messageId, idempotencyKey }),
     {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
