@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
 
     const { data: receipt } = await supabase
       .from('acceptance_receipts')
-      .select('id, match_id, accepted_at, counterparty_email, signature_hash, metadata')
+      .select('id, match_id, engagement_id, initiator_org_id, counterparty_org_id, accepted_at, counterparty_email, signature_hash, signed_payload, receipt_version, attestation_id, metadata')
       .eq('id', dispatch.reference_id)
       .maybeSingle()
 
