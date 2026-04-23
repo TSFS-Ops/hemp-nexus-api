@@ -143,7 +143,7 @@ export function DealWizard({
     label: "Proof of Intent",
     description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit (R10). Non-binding, irreversible, fully audited.",
     complete: poiComplete && engagementAccepted,
-    locked: !matchComplete // Strict: locked until match step complete
+    locked: !commercialTermsComplete // POI gate is commercial-only; supporting evidence handled via waiver flow
   }, {
     id: "wad",
     label: "Signed Deal",
@@ -156,29 +156,32 @@ export function DealWizard({
     description: "Generate a SHA-256 hashed, tamper-evident evidence bundle for regulatory finality.",
     complete: evidenceComplete,
     locked: !wadComplete // Strict: locked until WaD sealed
-  }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted]);
+  }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted, commercialTermsComplete]);
 
-  // Auto-select the first incomplete, unlocked step
-  const defaultStep = useMemo(() => {
-    const firstIncomplete = steps.findIndex(s => !s.complete && !s.locked);
-    return firstIncomplete >= 0 ? firstIncomplete : steps.length - 1;
-  }, [steps]);
+  // Strict landing policy (Option B):
+  //   - Never auto-skip the Match step. Pre-POI users always land on Match (Terms sub-tab).
+  //   - Only skip Match if the deal is already past POI (intent_declared or beyond),
+  //     in which case landing on the first incomplete unlocked step is correct.
   const [activeStep, setActiveStep] = useState(() => {
-    // Low-friction landing: jump to the first incomplete, unlocked step.
-    // If commercial fields are already filled, skip Match and land on POI.
-    // Users can still navigate back to Match via the stepper.
+    if (!postMatchState) return 1; // Match step
     const first = steps.findIndex(s => !s.complete && !s.locked);
     return first >= 0 ? first : steps.length - 1;
   });
 
   // Lifted sub-tab state for Match step so stepper can intercept
   const [matchSubTab, setMatchSubTab] = useState("terms");
+  const subTabOrder = ["terms", "documents", "notes"] as const;
+
   const handleStepClick = useCallback((idx: number) => {
     if (steps[idx].locked) return;
-    // If user is on Match step and clicks POI, guide them to Notes first
-    if (activeStep === 1 && idx === 2 && matchSubTab !== "notes") {
-      setMatchSubTab("notes");
-      return;
+    // Strict sequential walking: from Match step, clicking POI walks the user
+    // through Documents and Notes one sub-tab at a time before leaving Match.
+    if (activeStep === 1 && idx === 2) {
+      const currentSubIdx = subTabOrder.indexOf(matchSubTab as any);
+      if (currentSubIdx < subTabOrder.length - 1) {
+        setMatchSubTab(subTabOrder[currentSubIdx + 1]);
+        return;
+      }
     }
     setActiveStep(idx);
   }, [steps, activeStep, matchSubTab]);
