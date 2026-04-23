@@ -255,8 +255,11 @@ export function useMatchDetails(matchId: string | undefined) {
   );
 
   // ── Generic state progression action ──
+  // Optional second arg `body` forwards a JSON payload to the edge function.
+  // Used by the POI gate to send the evidence-waiver record so it can be
+  // written atomically with the mint (no orphan audit rows).
   const { run: handleStateAction, loading: stateActionLoading } = useAsyncAction(
-    async (actionPath: string) => {
+    async (actionPath: string, body?: Record<string, unknown>) => {
       if (!match) return;
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -273,6 +276,7 @@ export function useMatchDetails(matchId: string | undefined) {
         updated = await apiFetch<Match>(`match/${match.id}/${actionPath}`, {
           method: "POST",
           idempotencyKey,
+          body: body ? JSON.stringify(body) : undefined,
         });
       } catch (err: unknown) {
         if (err instanceof StateConflictError || (err instanceof Error && (err.message.includes("STATE_CONFLICT") || err.message.includes("INVALID_STATE")))) {
@@ -283,7 +287,7 @@ export function useMatchDetails(matchId: string | undefined) {
         // Re-throw the evidence-waiver gate so the caller (StateProgressionCard)
         // can reopen the waiver dialog instead of just toasting a generic error.
         // The toast is suppressed here because the dialog itself is the recovery UX.
-        if (err instanceof ApiError && err.code === "EVIDENCE_WAIVER_REQUIRED") {
+        if (err instanceof ApiError && (err.code === "EVIDENCE_WAIVER_REQUIRED" || err.code === "WAIVER_NOT_APPLICABLE" || err.code === "WAIVER_INVALID")) {
           throw err;
         }
         dispatchEligibilityFailed(match.id, err);
@@ -299,6 +303,8 @@ export function useMatchDetails(matchId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: ["token-balance"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+        queryClient.invalidateQueries({ queryKey: ["state-progression-evidence", match.id] });
+        queryClient.invalidateQueries({ queryKey: ["evidence-waiver-latest", match.id] });
 
         const labels: Record<string, string> = {
           "generate-poi": "POI generated. 1 credit deducted.",
