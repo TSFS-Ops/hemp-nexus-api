@@ -15,6 +15,11 @@ import { Loader2, FileText, Save, Clock, Plus, AlertTriangle, History } from "lu
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ErrorState } from "@/components/ui/error-state";
+import { cn } from "@/lib/utils";
+import {
+  MATCH_ELIGIBILITY_FAILED_EVENT,
+  type MatchEligibilityFailedDetail,
+} from "@/hooks/use-match-details";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,6 +80,12 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+
+  // Server-reported failed fields from the most recent eligibility failure on this match.
+  // Populated by the MATCH_ELIGIBILITY_FAILED_EVENT bus from useMatchDetails.
+  const [failedFields, setFailedFields] = useState<string[]>([]);
+  const [denialReasons, setDenialReasons] = useState<string[]>([]);
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const formDirty = useRef(false);
@@ -168,6 +179,69 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [showForm]);
+
+  /**
+   * Listen for eligibility failures dispatched by useMatchDetails.
+   * Highlights the relevant inputs, opens the form, and scrolls the first
+   * editable failed field into view.
+   */
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const ce = event as CustomEvent<MatchEligibilityFailedDetail>;
+      const detail = ce.detail;
+      if (!detail || detail.matchId !== matchId) return;
+
+      setFailedFields(detail.failedFields ?? []);
+      setDenialReasons(detail.denialReasons ?? []);
+
+      // Auto-open the form prefilled from current match data so the user can fix it
+      setForm((prev) => ({
+        ...EMPTY_FORM,
+        ...prev,
+        quantity_amount: prev.quantity_amount || matchData?.quantity_amount?.toString() || "",
+        quantity_unit: prev.quantity_unit || matchData?.quantity_unit || "MT",
+        price_amount: prev.price_amount || matchData?.price_amount?.toString() || "",
+        price_currency: prev.price_currency || matchData?.price_currency || "USD",
+      }));
+      setShowForm(true);
+
+      // Scroll the first editable failed field into view on the next paint
+      const editable = (detail.failedFields ?? []).find((f) => fieldRefs.current[f]);
+      if (editable) {
+        requestAnimationFrame(() => {
+          const el = fieldRefs.current[editable];
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Focus the input itself when possible (it may be the wrapper for Select)
+            const focusable = el.matches("input, select, button, [tabindex]")
+              ? el
+              : el.querySelector<HTMLElement>("input, button, [tabindex]");
+            focusable?.focus({ preventScroll: true });
+          }
+        });
+      }
+    };
+
+    window.addEventListener(MATCH_ELIGIBILITY_FAILED_EVENT, handler as EventListener);
+    return () => window.removeEventListener(MATCH_ELIGIBILITY_FAILED_EVENT, handler as EventListener);
+  }, [matchId, matchData]);
+
+  // Clear highlights as soon as the user edits any of the offending fields
+  useEffect(() => {
+    if (failedFields.length === 0) return;
+    setFailedFields((prev) => prev.filter((f) => {
+      switch (f) {
+        case "quantity_amount": return !form.quantity_amount;
+        case "quantity_unit": return !form.quantity_unit;
+        case "price_amount": return !form.price_amount;
+        case "price_currency": return !form.price_currency;
+        default: return true; // non-editable here, keep highlighted in banner
+      }
+    }));
+  }, [form.quantity_amount, form.quantity_unit, form.price_amount, form.price_currency]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isFieldFailed = (field: string) => failedFields.includes(field);
+  const failedRing = "ring-2 ring-destructive ring-offset-1 border-destructive focus-visible:ring-destructive";
 
   const handleCancelForm = () => {
     if (formDirty.current) {
@@ -391,14 +465,39 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
             <CardDescription>Capture the key commercial terms for this deal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {failedFields.length > 0 && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-1.5"
+              >
+                <p className="text-sm font-medium flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  POI generation blocked — please correct the highlighted fields
+                </p>
+                {denialReasons.length > 0 && (
+                  <ul className="text-xs text-destructive/90 list-disc pl-5 space-y-0.5">
+                    {denialReasons.slice(0, 5).map((reason, i) => (
+                      <li key={i}>{reason}</li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-xs text-muted-foreground pt-1">
+                  No credits were deducted. Fix the fields below and try again.
+                </p>
+              </div>
+            )}
+
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-primary" />
                 Commercial Terms (required to proceed to POI)
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Quantity</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["quantity_amount"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("quantity_amount") && "text-destructive")}>Quantity</Label>
                   <Input
                     type="number"
                     min="0"
@@ -407,19 +506,29 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                     onChange={(e) => setForm({ ...form, quantity_amount: e.target.value })}
                     placeholder="e.g. 1000"
                     aria-label="Quantity"
+                    aria-invalid={isFieldFailed("quantity_amount") || undefined}
+                    className={cn(isFieldFailed("quantity_amount") && failedRing)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Unit</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["quantity_unit"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("quantity_unit") && "text-destructive")}>Unit</Label>
                   <Input
                     value={form.quantity_unit}
                     onChange={(e) => setForm({ ...form, quantity_unit: e.target.value })}
                     placeholder="e.g. MT, kg, bags"
                     aria-label="Quantity unit"
+                    aria-invalid={isFieldFailed("quantity_unit") || undefined}
+                    className={cn(isFieldFailed("quantity_unit") && failedRing)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Price per unit</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["price_amount"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("price_amount") && "text-destructive")}>Price per unit</Label>
                   <Input
                     type="number"
                     min="0"
@@ -428,15 +537,24 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                     onChange={(e) => setForm({ ...form, price_amount: e.target.value })}
                     placeholder="e.g. 500"
                     aria-label="Price"
+                    aria-invalid={isFieldFailed("price_amount") || undefined}
+                    className={cn(isFieldFailed("price_amount") && failedRing)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Currency</Label>
+                <div
+                  className="space-y-1.5"
+                  ref={(el) => { fieldRefs.current["price_currency"] = el; }}
+                >
+                  <Label className={cn(isFieldFailed("price_currency") && "text-destructive")}>Currency</Label>
                   <Select
                     value={form.price_currency}
                     onValueChange={(value) => setForm({ ...form, price_currency: value })}
                   >
-                    <SelectTrigger aria-label="Currency">
+                    <SelectTrigger
+                      aria-label="Currency"
+                      aria-invalid={isFieldFailed("price_currency") || undefined}
+                      className={cn(isFieldFailed("price_currency") && failedRing)}
+                    >
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent>
