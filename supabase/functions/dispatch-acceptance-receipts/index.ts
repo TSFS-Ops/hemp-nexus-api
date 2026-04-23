@@ -2,13 +2,16 @@
  * dispatch-acceptance-receipts
  * ────────────────────────────
  * Drains pending email rows in `notification_dispatches` for acceptance
- * receipts and invokes `send-transactional-email` for each. On success the
- * dispatch row is marked `delivered` with the message_id. On failure it is
- * marked `failed` with the error. Backfilled receipts are processed too so
- * historical rows (e.g. Daniel/platinum) become observable.
+ * receipts and invokes `send-transactional-email` for each.
  *
- * Triggered by pg_cron every 2 minutes. Safe to invoke manually for
- * targeted reprocessing.
+ * Hardening (post-QA):
+ *  - A dispatch is ONLY marked `delivered` when the downstream send
+ *    returns a non-empty messageId AND we can locate the corresponding
+ *    `email_send_log` row. Otherwise it is marked `failed` so the
+ *    reconciler can alarm. No silent rubber-stamping.
+ *  - We mirror the message_id back into `notification_dispatches` so
+ *    the cross-table parity invariant (dispatch ↔ email_send_log) holds.
+ *  - We persist a structured error message on every failure path.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
@@ -42,7 +45,6 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
-  // Pull a small batch of pending email dispatches for acceptance receipts.
   const { data: pending, error: pendingErr } = await supabase
     .from('notification_dispatches')
     .select('id, reference_id, recipient_address, recipient_user_id, metadata')
@@ -62,7 +64,6 @@ Deno.serve(async (req) => {
   const results: Array<Record<string, unknown>> = []
 
   for (const dispatch of (pending ?? []) as DispatchRow[]) {
-    // Resolve recipient address: column first, then auth lookup by user_id.
     let recipient = dispatch.recipient_address?.trim() || null
     if (!recipient && dispatch.recipient_user_id) {
       const { data: userRow } = await supabase
@@ -73,7 +74,6 @@ Deno.serve(async (req) => {
       recipient = (userRow as { email?: string } | null)?.email ?? null
     }
 
-    // Pull the receipt + match info for templateData.
     const { data: receipt } = await supabase
       .from('acceptance_receipts')
       .select('id, match_id, accepted_at, counterparty_email, signature_hash, metadata')
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (!recipient || !receipt) {
-      const reason = !recipient ? 'no recipient address resolvable' : 'receipt not found'
+      const reason = !recipient ? 'no_recipient_resolvable' : 'receipt_not_found'
       await supabase
         .from('notification_dispatches')
         .update({ status: 'failed', failed_at: new Date().toISOString(), error_message: reason })
@@ -99,12 +99,19 @@ Deno.serve(async (req) => {
 
     const baseUrl = Deno.env.get('PUBLIC_APP_URL') ?? 'https://compliance-matching.lovable.app'
     const matchUrl = `${baseUrl}/dashboard/matches/${r.match_id}`
+    const idempotencyKey = `acceptance-receipt-${r.id}`
+
+    // Mark in-flight before invoking — narrows the failure window.
+    await supabase
+      .from('notification_dispatches')
+      .update({ dispatched_at: new Date().toISOString() })
+      .eq('id', dispatch.id)
 
     const invokeRes = await supabase.functions.invoke('send-transactional-email', {
       body: {
         templateName: 'acceptance-receipt',
         recipientEmail: recipient,
-        idempotencyKey: `acceptance-receipt-${r.id}`,
+        idempotencyKey,
         templateData: {
           matchId: r.match_id,
           commodity: (match as { commodity?: string } | null)?.commodity ?? null,
@@ -130,22 +137,79 @@ Deno.serve(async (req) => {
       continue
     }
 
+    const data = (invokeRes.data ?? {}) as Record<string, unknown>
     const messageId =
-      ((invokeRes.data as Record<string, unknown> | null)?.messageId as string | undefined) ??
-      ((invokeRes.data as Record<string, unknown> | null)?.message_id as string | undefined) ??
+      (data.messageId as string | undefined) ??
+      (data.message_id as string | undefined) ??
       null
+
+    // ── Hard parity check: a delivery only counts if email_send_log proves it.
+    let logProof: { id: string; status: string; message_id: string | null } | null = null
+    if (messageId) {
+      const { data: logRow } = await supabase
+        .from('email_send_log')
+        .select('id, status, message_id')
+        .eq('message_id', messageId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      logProof = (logRow as typeof logProof) ?? null
+    } else {
+      // Fall back to idempotency key correlation (some send paths set message_id later).
+      const { data: logRow } = await supabase
+        .from('email_send_log')
+        .select('id, status, message_id')
+        .or(`message_id.eq.${idempotencyKey},metadata->>idempotency_key.eq.${idempotencyKey}`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      logProof = (logRow as typeof logProof) ?? null
+    }
+
+    if (!logProof) {
+      // Send claimed success but we cannot prove it landed in the log.
+      // Mark failed so the reconciler raises a high-severity item.
+      await supabase
+        .from('notification_dispatches')
+        .update({
+          status: 'failed',
+          failed_at: new Date().toISOString(),
+          error_message: 'send_unverifiable: no email_send_log row located for this dispatch',
+        })
+        .eq('id', dispatch.id)
+      results.push({ id: dispatch.id, status: 'failed', reason: 'send_unverifiable' })
+      continue
+    }
+
+    const logStatusOk = logProof.status === 'sent' || logProof.status === 'pending'
+    if (!logStatusOk) {
+      await supabase
+        .from('notification_dispatches')
+        .update({
+          status: 'failed',
+          failed_at: new Date().toISOString(),
+          error_message: `email_send_log status=${logProof.status}`,
+        })
+        .eq('id', dispatch.id)
+      results.push({ id: dispatch.id, status: 'failed', reason: `email_log_${logProof.status}` })
+      continue
+    }
 
     await supabase
       .from('notification_dispatches')
       .update({
         status: 'delivered',
-        dispatched_at: new Date().toISOString(),
         delivered_at: new Date().toISOString(),
-        message_id: messageId,
+        message_id: logProof.message_id ?? messageId,
       })
       .eq('id', dispatch.id)
 
-    results.push({ id: dispatch.id, status: 'delivered', message_id: messageId })
+    results.push({
+      id: dispatch.id,
+      status: 'delivered',
+      message_id: logProof.message_id ?? messageId,
+      log_id: logProof.id,
+    })
   }
 
   return new Response(JSON.stringify({ processed: results.length, results }), {
