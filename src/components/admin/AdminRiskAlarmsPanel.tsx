@@ -248,7 +248,7 @@ export function AdminRiskAlarmsPanel() {
               {!isFetching && filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                    <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-emerald-500" />
+                    <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--emerald))]" />
                     No reconciliation alarms in the selected window.
                   </TableCell>
                 </TableRow>
