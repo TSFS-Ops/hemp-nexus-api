@@ -64,6 +64,7 @@ export function useAsyncAction<TArgs extends unknown[] = []>(
         options.onSuccess?.();
       } catch (error: unknown) {
         handleApiError(error, options);
+        if (options.rethrow) throw error;
       } finally {
         setLoading(false);
         guardRef.current = false;
