@@ -45,6 +45,7 @@ import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaive
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
+import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 
 // ─────────────────────────────────────────────────────────────────────────────
