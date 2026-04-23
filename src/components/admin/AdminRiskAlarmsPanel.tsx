@@ -324,7 +324,7 @@ function SummaryTile({
     tone === "critical"
       ? "border-destructive/30 bg-destructive/5"
       : tone === "high"
-        ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+      ? "border-amber-300 bg-amber-500/5 dark:bg-amber-500/10"
         : tone === "medium"
           ? "border-border bg-muted/40"
           : "border-border bg-card";
