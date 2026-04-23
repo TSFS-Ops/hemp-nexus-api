@@ -73,39 +73,62 @@ Deno.serve(async (req: Request) => {
       const body = await req.json();
       const { entity_id_a, entity_id_b } = GateCheckSchema.parse(body);
 
-      // Gate #3: UBO integrity - check 100% ownership for both entities
-      const checkUbo = async (entityId: string) => {
-        const { data: links } = await admin
-          .from("ubo_links")
-          .select("ownership_percentage")
-          .eq("company_entity_id", entityId)
-          .eq("status", "verified");
+      // Test-mode bypass: short-circuit both gates as passed.
+      const [bypassUbo, bypassAtb] = await Promise.all([
+        isBypassEnabled(admin, "ubo"),
+        isBypassEnabled(admin, "authority"),
+      ]);
 
-        const totalOwnership = (links || []).reduce((sum: number, l: any) => sum + Number(l.ownership_percentage), 0);
-        return { entity_id: entityId, total_ownership: totalOwnership, passed: totalOwnership >= 100 };
-      };
+      const checkUbo = bypassUbo
+        ? async (entityId: string) => ({ entity_id: entityId, total_ownership: 100, passed: true, bypass: true as const })
+        : async (entityId: string) => {
+            const { data: links } = await admin
+              .from("ubo_links")
+              .select("ownership_percentage")
+              .eq("company_entity_id", entityId)
+              .eq("status", "verified");
+            const totalOwnership = (links || []).reduce((sum: number, l: any) => sum + Number(l.ownership_percentage), 0);
+            return { entity_id: entityId, total_ownership: totalOwnership, passed: totalOwnership >= 100 };
+          };
 
-      const [uboA, uboB] = await Promise.all([checkUbo(entity_id_a), checkUbo(entity_id_b)]);
+      const checkAtb = bypassAtb
+        ? async (entityId: string) => ({ entity_id: entityId, active_records: 1, passed: true, bypass: true as const })
+        : async (entityId: string) => {
+            const { data: records } = await admin
+              .from("authority_records")
+              .select("id, status, expires_at")
+              .eq("company_entity_id", entityId)
+              .eq("status", "verified");
+            const activeRecords = (records || []).filter(
+              (r: any) => !r.expires_at || new Date(r.expires_at) > new Date()
+            );
+            return { entity_id: entityId, active_records: activeRecords.length, passed: activeRecords.length > 0 };
+          };
 
-      // Gate #4: ATB - check verified authority records exist
-      const checkAtb = async (entityId: string) => {
-        const { data: records } = await admin
-          .from("authority_records")
-          .select("id, status, expires_at")
-          .eq("company_entity_id", entityId)
-          .eq("status", "verified");
+      const [uboA, uboB, atbA, atbB] = await Promise.all([
+        checkUbo(entity_id_a),
+        checkUbo(entity_id_b),
+        checkAtb(entity_id_a),
+        checkAtb(entity_id_b),
+      ]);
 
-        const activeRecords = (records || []).filter(
-          (r: any) => !r.expires_at || new Date(r.expires_at) > new Date()
-        );
-        return { entity_id: entityId, active_records: activeRecords.length, passed: activeRecords.length > 0 };
-      };
-
-      const [atbA, atbB] = await Promise.all([checkAtb(entity_id_a), checkAtb(entity_id_b)]);
+      // Audit any bypass usage exactly once per gate-check call.
+      if (bypassUbo) {
+        await recordBypassUsage(admin, {
+          gate: "ubo", source: "authority-bind/check", orgId, actorUserId: authCtx.userId || null,
+          details: { entity_id_a, entity_id_b, gate: 3 },
+        });
+      }
+      if (bypassAtb) {
+        await recordBypassUsage(admin, {
+          gate: "authority", source: "authority-bind/check", orgId, actorUserId: authCtx.userId || null,
+          details: { entity_id_a, entity_id_b, gate: 4 },
+        });
+      }
 
       const gates = {
-        ubo_integrity: { gate: 3, passed: uboA.passed && uboB.passed, details: { entity_a: uboA, entity_b: uboB } },
-        authority_to_bind: { gate: 4, passed: atbA.passed && atbB.passed, details: { entity_a: atbA, entity_b: atbB } },
+        ubo_integrity: { gate: 3, passed: uboA.passed && uboB.passed, bypass: bypassUbo, details: { entity_a: uboA, entity_b: uboB } },
+        authority_to_bind: { gate: 4, passed: atbA.passed && atbB.passed, bypass: bypassAtb, details: { entity_a: atbA, entity_b: atbB } },
         all_passed: (uboA.passed && uboB.passed) && (atbA.passed && atbB.passed),
       };
 

@@ -143,6 +143,33 @@ Deno.serve(async (req: Request) => {
         }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
       }
 
+      // ── Test-mode bypass: report a complete, fully-verified ownership chain ──
+      if (await isBypassEnabled(admin, "ubo")) {
+        await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
+
+        await recordBypassUsage(admin, {
+          gate: "ubo",
+          source: "ubo-verify",
+          orgId,
+          actorUserId: authCtx.userId || null,
+          details: { entity_id, entity_type: entity.entity_type, legal_name: entity.legal_name },
+        });
+
+        return new Response(JSON.stringify(bypassEnvelope({
+          success: true,
+          entity_id,
+          entity_type: entity.entity_type,
+          legal_name: entity.legal_name,
+          total_ownership_pct: 100,
+          is_complete: true,
+          all_verified: true,
+          max_depth: 0,
+          escalation_required: false,
+          escalation_reason: null,
+          ownership_tree: [],
+        })), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+      }
+
       const tree = await buildOwnershipTree(admin, entity_id, orgId);
 
       const isComplete = tree.totalPct >= 100;
