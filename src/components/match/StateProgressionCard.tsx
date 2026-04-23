@@ -210,6 +210,25 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     },
     enabled: canQueryBalance,
     staleTime: 15_000,
+
+  // Surface the most recent evidence-waiver acknowledgement (if any) so users
+  // and admins can download the audit packet PDF directly from the POI step.
+  const { data: latestWaiver } = useQuery({
+    queryKey: ["evidence-waiver-latest", match.id],
+    enabled: !!match.id,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("id, created_at, metadata")
+        .eq("entity_id", match.id)
+        .eq("action", "poi.evidence_waiver_acknowledged")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; created_at: string; metadata: Record<string, unknown> | null } | null;
+    },
   });
 
   const hasVerifiedBalance = typeof balance === "number";
