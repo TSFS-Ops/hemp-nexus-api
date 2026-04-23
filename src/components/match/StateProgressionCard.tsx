@@ -221,6 +221,36 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     !!balanceError;
   const showInsufficientBalance = hasVerifiedBalance && currentBalance < CREDITS_PER_ACTION;
 
+  // ── STRICT EVIDENCE WAIVER GATE (POI generation only) ──
+  // Block POI mint behind an explicit, audited acknowledgement when the deal
+  // has zero supporting documents AND zero notes. Any present evidence skips
+  // the waiver. Documents and notes remain non-mandatory by platform policy
+  // (memory: evidence-strength-indicator) — but the *absence* must itself be
+  // a recorded, attributed decision before a credit-burning, irreversible
+  // POI is sealed on the ledger.
+  const isPoiAction = actionPath === "generate-poi";
+  const { data: evidenceCounts } = useQuery({
+    queryKey: ["state-progression-evidence", match.id],
+    queryFn: async () => {
+      const [docsRes, notesRes] = await Promise.all([
+        supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+        supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+      ]);
+      return {
+        documentCount: docsRes.count ?? 0,
+        notesCount: notesRes.count ?? 0,
+      };
+    },
+    enabled: !!match.id && isPoiAction,
+    staleTime: 5_000,
+  });
+  const documentCount = evidenceCounts?.documentCount ?? 0;
+  const notesCount = evidenceCounts?.notesCount ?? 0;
+  const waiverRequired = isPoiAction && documentCount === 0 && notesCount === 0;
+  const trimmedReason = waiverReason.trim();
+  const waiverReasonValid = !waiverRequired || trimmedReason.length >= 10;
+  const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid));
+
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
 
@@ -234,6 +264,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         }
       }
 
+      // Reset waiver state every time the dialog opens.
+      setWaiverAcknowledged(false);
+      setWaiverReason("");
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
@@ -241,10 +274,51 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   };
 
   const handleDialogConfirm = async () => {
-    setShowDialog(false);
-    if (actionPath) {
-      await onAction(actionPath);
+    if (!actionPath) return;
+    if (loading || waiverSubmitting) return;
+
+    // Strict gate: when waiver is required, both acknowledgement and a
+    // meaningful reason (>= 10 chars) must be present.
+    if (waiverRequired && (!waiverAcknowledged || !waiverReasonValid)) return;
+
+    // If a waiver applies, write the audit record FIRST. If the audit write
+    // fails we MUST NOT proceed to mint the POI — zero swallowed errors.
+    if (waiverRequired) {
+      if (!session?.user?.id || !match.org_id) {
+        toast.error("Cannot record evidence waiver: missing session context. Please refresh and try again.");
+        return;
+      }
+      setWaiverSubmitting(true);
+      try {
+        const { error: auditError } = await supabase.from("audit_logs").insert({
+          org_id: match.org_id,
+          actor_user_id: session.user.id,
+          action: "poi.evidence_waiver_acknowledged",
+          entity_type: "match",
+          entity_id: match.id,
+          metadata: {
+            document_count: documentCount,
+            notes_count: notesCount,
+            waiver_reason: trimmedReason,
+            waived_at: new Date().toISOString(),
+            match_state: currentState,
+            commodity: match.commodity ?? null,
+          },
+        });
+        if (auditError) {
+          toast.error(`Could not record evidence waiver: ${auditError.message}. POI generation aborted.`);
+          return;
+        }
+      } catch (err) {
+        toast.error(`Could not record evidence waiver: ${(err as Error).message}. POI generation aborted.`);
+        return;
+      } finally {
+        setWaiverSubmitting(false);
+      }
     }
+
+    setShowDialog(false);
+    await onAction(actionPath);
   };
 
   return (
