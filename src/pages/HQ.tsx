@@ -40,6 +40,7 @@ import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaiversPanel";
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
@@ -281,12 +282,13 @@ function DisputesTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "audit-logs", ["audit-logs", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "audit-logs", ["audit-logs", "evidence-waivers", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="evidence-waivers">Evidence Waivers</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="event-store">Event Store</TabsTrigger>
           <TabsTrigger value="analytics">System Analytics</TabsTrigger>
@@ -294,6 +296,11 @@ function AuditTab() {
         <TabsContent value="audit-logs">
           <Surface label="Immutable audit trail · public.audit_logs">
             <AdminAuditLogs />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="evidence-waivers">
+          <Surface label="POI evidence waivers · poi.evidence_waiver_acknowledged">
+            <AdminEvidenceWaiversPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="health">
