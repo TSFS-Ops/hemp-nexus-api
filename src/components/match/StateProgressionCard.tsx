@@ -701,9 +701,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                         htmlFor="waiver-ack"
                         className="text-xs leading-relaxed text-foreground cursor-pointer"
                       >
-                        I confirm I am authorised to seal this Proof of Intent without
-                        supporting documents or notes, and I understand this decision is
-                        recorded on the immutable audit trail.
+                        I confirm I am authorised by my organisation to seal
+                        this Proof of Intent without supporting documents or
+                        notes. My current platform roles
+                        ({roles.length > 0 ? roles.join(", ") : "none"}) and
+                        the time of this acknowledgement will be recorded on
+                        the immutable audit trail and may be reviewed by
+                        compliance.
                       </Label>
                     </div>
                   </div>
