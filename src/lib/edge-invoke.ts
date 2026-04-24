@@ -27,6 +27,15 @@ import { notifySessionExpired } from "@/lib/session-expiry-bus";
 /** Codes that should trigger the global SessionExpiredModal. */
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
 
+/**
+ * Returns true when the error is unrecoverable without re-authentication.
+ * Callers can use this to queue a "retry after re-auth" action via
+ * `registerPendingAction()` (see src/lib/pending-action-bus.ts).
+ */
+export function isSessionExpiredError(err: unknown): boolean {
+  return err instanceof EdgeInvokeError && !!err.code && SESSION_DEAD_CODES.has(err.code);
+}
+
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
   status?: number;
