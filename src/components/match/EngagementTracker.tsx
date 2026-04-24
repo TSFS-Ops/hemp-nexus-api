@@ -72,21 +72,22 @@ export function EngagementTracker({
   } = useQuery({
     queryKey: ["engagement-tracker", matchId],
     queryFn: async () => {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session?.access_token) {
-        throw new Error("SESSION_EXPIRED");
-      }
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/by-match/${matchId}`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
+      try {
+        const result = await fetchEdgeFunction<{ engagement?: unknown } | null>(
+          `poi-engagements/by-match/${matchId}`,
+          { method: "GET", label: "load engagement status" }
+        );
+        return (result as { engagement?: unknown } | null)?.engagement || null;
+      } catch (err) {
+        if (err instanceof EdgeInvokeError && err.code === "UNAUTHORIZED") {
+          throw new Error("SESSION_EXPIRED");
         }
-      });
-      if (response.status === 401) {
-        throw new Error("SESSION_EXPIRED");
+        // For non-auth errors, treat as "no engagement yet" (matches prior behaviour)
+        if (err instanceof EdgeInvokeError && err.status && err.status >= 400 && err.status < 500) {
+          return null;
+        }
+        throw err;
       }
-      if (!response.ok) return null;
-      const result = await response.json();
-      return result?.engagement || null;
     },
     refetchInterval: 30000,
     retry: (failureCount, error) => {
