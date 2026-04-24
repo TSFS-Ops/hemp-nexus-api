@@ -10,7 +10,21 @@
 
 // ─── Statuses ───────────────────────────────────────────────────────
 
-export const WAD_STATUSES = ["draft", "sealed", "revoked", "superseded"] as const;
+// NOTE: keep this list in sync with the `wads_status_check` constraint in
+// the database. `awaiting_attestations` is a real persisted status the
+// backend transitions into after the WaD is created (before any signatory
+// has attested). Omitting it here previously caused
+// `canDo("awaiting_attestations", "attest")` to return `false`, which made
+// the WadStepper show "Attestation not available — Only buyer and seller
+// signatories can attest" to legitimate counterparties (incident
+// 2026-04-24: dovedavies14 could not attest as the seller).
+export const WAD_STATUSES = [
+  "draft",
+  "awaiting_attestations",
+  "sealed",
+  "revoked",
+  "superseded",
+] as const;
 export type WadStatusValue = (typeof WAD_STATUSES)[number];
 
 // ─── Actions ────────────────────────────────────────────────────────
@@ -34,6 +48,13 @@ const ALLOWED_ACTIONS: Record<WadStatusValue, readonly WadAction[]> = {
     "seal",
     "view_evidence",
   ],
+  // Same affordances as `draft` — both signatories may still attest, and
+  // sealing is permitted once both attestations are in place.
+  awaiting_attestations: [
+    "attest",
+    "seal",
+    "view_evidence",
+  ],
   sealed: [
     "revoke",
     "download_certificate",
@@ -51,10 +72,11 @@ const ALLOWED_ACTIONS: Record<WadStatusValue, readonly WadAction[]> = {
 // ─── Valid transitions ──────────────────────────────────────────────
 
 export const VALID_TRANSITIONS: Record<WadStatusValue, readonly WadStatusValue[]> = {
-  draft:      ["sealed", "revoked"],
-  sealed:     ["revoked"],
-  revoked:    [],
-  superseded: [],
+  draft:                 ["awaiting_attestations", "sealed", "revoked"],
+  awaiting_attestations: ["sealed", "revoked"],
+  sealed:                ["revoked"],
+  revoked:               [],
+  superseded:            [],
 };
 
 // ─── Public API ─────────────────────────────────────────────────────
@@ -108,6 +130,7 @@ export function isSealed(status: string): boolean {
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     draft: "Draft",
+    awaiting_attestations: "Awaiting attestations",
     sealed: "Sealed",
     revoked: "Revoked",
     superseded: "Superseded",
