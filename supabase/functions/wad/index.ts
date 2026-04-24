@@ -866,7 +866,7 @@ Deno.serve(async (req) => {
         : "wad.certificate.downloaded";
       await writeAuditLog(auditAction, wadId, { format: "pdf" });
 
-      return new Response(pdfBytes, {
+      return new Response(pdfBytes as unknown as BodyInit, {
         status: 200,
         headers: {
           ...headers,
