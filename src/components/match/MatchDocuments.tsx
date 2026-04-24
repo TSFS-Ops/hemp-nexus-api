@@ -366,33 +366,30 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // ── Server-side magic-byte re-validation via document-review ──
       // The file is now in storage. Call the edge function to validate server-side.
       // If the server rejects it, clean up the orphaned storage file.
-      const validateResp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-upload`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            bucket: "match-documents",
-            storage_path: storagePath,
-            client_mime: selectedFile.type,
-            file_size: selectedFile.size,
-          }),
-        }
-      );
-      if (validateResp.ok) {
-        const validateResult = await validateResp.json();
-        if (validateResult.blocked) {
+      try {
+        const validateResult = await fetchEdgeFunction<{ blocked?: boolean; reason?: string }>(
+          "validate-upload",
+          {
+            method: "POST",
+            body: {
+              bucket: "match-documents",
+              storage_path: storagePath,
+              client_mime: selectedFile.type,
+              file_size: selectedFile.size,
+            },
+            label: "validate upload",
+          }
+        );
+        if (validateResult?.blocked) {
           // Clean up orphaned file
           await supabase.storage.from("match-documents").remove([storagePath]);
           setError(validateResult.reason || "Server rejected this file - content does not match declared type.");
           setUploading(false);
           return;
         }
+      } catch {
+        // If the validate-upload function is unavailable, proceed (client-side already validated)
       }
-      // If the validate-upload function is not deployed yet, proceed (client-side already validated)
 
       // Sanitise filename: strip path traversal, null bytes, and non-printable chars
       const sanitisedFilename = selectedFile.name
