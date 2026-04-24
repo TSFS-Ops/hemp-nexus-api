@@ -48,7 +48,12 @@ function MatchDetailsContent() {
     queryFn: async () => {
       try {
         const result = await fetchEdgeFunction<{
-          engagement?: { engagement_status: EngagementStatus };
+          engagement?: {
+            engagement_status: EngagementStatus;
+            counterparty_type: string;
+            counterparty_email: string | null;
+            counterparty_org_id: string | null;
+          };
         } | null>(`poi-engagements/by-match/${matchId}`, {
           method: "GET",
           label: "load engagement status",
