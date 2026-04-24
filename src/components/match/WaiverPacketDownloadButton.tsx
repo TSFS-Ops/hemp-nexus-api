@@ -29,14 +29,30 @@ export function WaiverPacketDownloadButton({
     if (loading) return;
     setLoading(true);
     try {
-      // Verify we still have a live session before invoking. supabase.functions
-      // .invoke silently sends the (possibly expired) JWT and the resulting 401
-      // surfaces as a generic "Edge Function returned a non-2xx status code"
-      // which is what the client has been seeing.
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      // Ensure we have a *live* (non-expired) access token before invoking.
+      // supabase.functions.invoke silently sends whatever JWT is in storage,
+      // so a stale token surfaces server-side as {"error":"Unauthorized"}.
+      // Detect expiry locally and try a refresh first; if that fails the user
+      // must sign in again.
+      let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw new Error(`Session check failed: ${sessionError.message}`);
-      if (!sessionData.session) {
-        throw new Error("Your session has expired. Please log out and log back in, then try again.");
+      let session = sessionData.session;
+
+      const isExpired = (s: typeof session) => {
+        if (!s?.expires_at) return false;
+        // expires_at is unix seconds; refresh if <30s remaining
+        return s.expires_at * 1000 - Date.now() < 30_000;
+      };
+
+      if (!session || isExpired(session)) {
+        console.log("[WaiverPacketDownload] session missing/expired, attempting refresh");
+        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+        if (refreshErr || !refreshed.session) {
+          throw new Error(
+            "Your session has expired. Please sign out and sign back in, then try again."
+          );
+        }
+        session = refreshed.session;
       }
 
       console.log("[WaiverPacketDownload] invoking waiver-packet for", waiverId);
@@ -48,16 +64,45 @@ export function WaiverPacketDownloadButton({
       if (error) {
         // FunctionsHttpError carries a `context.response` with the body
         const ctx = (error as { context?: Response }).context;
-        let serverMsg = error.message;
+        let serverBody = "";
+        let serverStatus: number | undefined;
         if (ctx && typeof ctx.text === "function") {
+          serverStatus = ctx.status;
           try {
-            const text = await ctx.clone().text();
-            serverMsg = `${error.message} — ${text}`;
+            serverBody = await ctx.clone().text();
           } catch {
             // ignore
           }
         }
-        throw new Error(serverMsg);
+
+        // Translate server-side auth failures into a clear, actionable message
+        // instead of leaking the raw {"error":"Unauthorized"} payload.
+        const looksUnauthorized =
+          serverStatus === 401 ||
+          /unauthorized/i.test(serverBody) ||
+          /unauthorized/i.test(error.message);
+        if (looksUnauthorized) {
+          throw new Error(
+            "Your session has expired. Please sign out and sign back in, then try again."
+          );
+        }
+
+        const looksForbidden = serverStatus === 403 || /forbidden/i.test(serverBody);
+        if (looksForbidden) {
+          throw new Error(
+            "You don't have permission to download this waiver packet. Contact an administrator if you believe this is a mistake."
+          );
+        }
+
+        const looksMaintenance =
+          serverStatus === 503 || /maintenance/i.test(serverBody);
+        if (looksMaintenance) {
+          throw new Error(
+            "The platform is in maintenance mode. Please try again shortly."
+          );
+        }
+
+        throw new Error(serverBody ? `${error.message} — ${serverBody}` : error.message);
       }
       const url = (data as { url?: string } | null)?.url;
       if (!url) throw new Error("No signed URL returned by waiver-packet function");
@@ -66,7 +111,7 @@ export function WaiverPacketDownloadButton({
     } catch (err) {
       const msg = (err as Error).message || "Failed to fetch waiver packet";
       console.error("[WaiverPacketDownload] failed", err);
-      toast.error(`Could not download waiver packet: ${msg}`, { duration: 8000 });
+      toast.error(msg, { duration: 8000 });
     } finally {
       setLoading(false);
     }
