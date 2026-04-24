@@ -132,10 +132,15 @@ export function describeEdgeError(err: unknown, fallback = "Something went wrong
 // ── Token freshness ────────────────────────────────────────────────────────
 const REFRESH_SKEW_MS = 30_000; // refresh if <30s remain on access token
 
-async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promise<string | null> {
+async function ensureFreshAccessToken(opts: {
+  requireSession: boolean;
+  context?: string;
+}): Promise<string | null> {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) {
-    throw new EdgeInvokeError(`Session check failed: ${sessionError.message}`);
+    throw new EdgeInvokeError(`Session check failed: ${sessionError.message}`, {
+      context: opts.context,
+    });
   }
   let session = sessionData.session;
 
@@ -148,7 +153,7 @@ async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promis
     if (opts.requireSession) {
       throw new EdgeInvokeError(
         "Your session has expired. Please sign out and sign back in, then try again.",
-        { status: 401, code: "NO_SESSION" }
+        { status: 401, code: "NO_SESSION", context: opts.context }
       );
     }
     return null;
@@ -159,7 +164,7 @@ async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promis
     if (refreshErr || !refreshed.session) {
       throw new EdgeInvokeError(
         "Your session has expired. Please sign out and sign back in, then try again.",
-        { status: 401, code: "REFRESH_FAILED" }
+        { status: 401, code: "REFRESH_FAILED", context: opts.context }
       );
     }
     session = refreshed.session;
