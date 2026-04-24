@@ -292,6 +292,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
   const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
 
+  // ── LEGITIMACY GATE (UX mirror of supabase/functions/_shared/legitimacy.ts) ──
+  // Disable the POI mint button pre-flight when the org is not approved to
+  // trade. The server enforces the same check; this hook is purely so users
+  // see the recovery CTA *before* clicking, not after a 403.
+  const { data: legitimacy, isLoading: legitimacyLoading } = useOrgLegitimacy();
+  const legitimacyBlocksPoi = isPoiAction && !legitimacyLoading && legitimacy?.allowed === false;
+
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
 
