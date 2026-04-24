@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileText, Code, Share2, ShieldCheck, Check, Circle, Loader2, AlertTriangle, ArrowLeft, FileSearch, Copy } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { downloadFile } from "@/lib/download-utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
