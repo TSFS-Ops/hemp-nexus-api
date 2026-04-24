@@ -68,11 +68,11 @@ export function SessionExpiredModal() {
     <AlertDialog open={open}>
       {/* No onOpenChange — this modal is intentionally non-dismissable.
           The only way out is to re-authenticate. */}
+      {/* AlertDialog (vs Dialog) does not close on outside click by design.
+          We additionally block ESC so the only exit is the CTA below. */}
       <AlertDialogContent
         className="max-w-md"
-        // Block ESC and outside-click closes.
         onEscapeKeyDown={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <AlertDialogHeader>
           <AlertDialogTitle>Session expired</AlertDialogTitle>
