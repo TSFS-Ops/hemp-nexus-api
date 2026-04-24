@@ -75,7 +75,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       setLoading(true);
       setVerificationResult(null);
 
-      const data = await fetchEdgeFunction<EvidencePack>(`evidence-pack/${matchId}`, {
+      const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
         method: "GET",
         label: "generate evidence pack",
       });
