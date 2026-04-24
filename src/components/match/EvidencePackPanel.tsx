@@ -61,7 +61,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const [pack, setPack] = useState<EvidencePackData | null>(null);
   const [loading, setLoading] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  // Per-action error slots so each download surface gets its own inline
+  // recovery UI (instead of a transient toast that the client can miss).
+  const [packError, setPackError] = useState<unknown | null>(null);
+  const [reportError, setReportError] = useState<unknown | null>(null);
+  const [certError, setCertError] = useState<unknown | null>(null);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     originalHash: string;
