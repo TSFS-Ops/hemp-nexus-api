@@ -117,6 +117,30 @@ export async function isBypassEnabled(
   }
 
   try {
+    // Expiry check — read the JSON directly so the helper can self-disable
+    // bypasses past expires_at without requiring a cron job.
+    const { data: settingsRow } = await client
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "test_mode_bypass")
+      .maybeSingle();
+    const settings = (settingsRow?.value ?? {}) as Record<string, unknown>;
+    const expiresAt = typeof settings.expires_at === "string" ? settings.expires_at : null;
+    if (expiresAt) {
+      const expiry = new Date(expiresAt).getTime();
+      if (Number.isFinite(expiry) && Date.now() > expiry) {
+        logDecision("test-mode", {
+          source,
+          gate,
+          decision: "real",
+          requestId,
+          reason: "expired",
+          details: { expires_at: expiresAt },
+        });
+        return false;
+      }
+    }
+
     const { data, error } = await client.rpc("is_test_mode_bypass_enabled", { _gate: gate });
     if (error) {
       logDecision("test-mode", {
