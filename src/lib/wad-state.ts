@@ -130,6 +130,7 @@ export function isSealed(status: string): boolean {
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     draft: "Draft",
+    awaiting_attestations: "Awaiting attestations",
     sealed: "Sealed",
     revoked: "Revoked",
     superseded: "Superseded",
