@@ -122,16 +122,11 @@ function CommandBar() {
             <ContextSwitcher tone="dark" />
           </div>
 
-          {/* System status badge */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-sm border border-emerald-900/60 bg-emerald-950/40 shrink-0">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            </span>
-            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-emerald-300">
-              System Status: Operational
-            </span>
-          </div>
+          {/* System status badge — reads live maintenance flag from admin_settings */}
+          <SystemStatusBadge />
+        </div>
+
+        <div className="hidden">{/* spacing preserved */}</div>
         </div>
 
         <div className="flex items-center gap-3 sm:gap-5 shrink-0">

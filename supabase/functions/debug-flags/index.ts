@@ -78,7 +78,9 @@ Deno.serve(async (req) => {
 
     const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
     const isPlatformAdmin = roles.includes("platform_admin");
-    const isAdmin = roles.includes("admin") || roles.includes("org_admin");
+    // Tightened: only platform-wide admin roles. `org_admin` is org-scoped
+    // and must NOT see platform-wide flags.
+    const isAdmin = roles.includes("admin");
 
     if (!isPlatformAdmin && !isAdmin) {
       logDecision("maintenance", {
@@ -136,10 +138,11 @@ Deno.serve(async (req) => {
     }
 
     // ── Email suppression count (frequent culprit for "email never sent") ─
+    // NOTE: actual table name is `suppressed_emails` (see other edge functions).
     let suppressionCount: number | string = 0;
     try {
       const { count, error } = await adminClient
-        .from("email_suppression_list")
+        .from("suppressed_emails")
         .select("*", { count: "exact", head: true });
       suppressionCount = error ? `error: ${error.message}` : count ?? 0;
     } catch (err) {
