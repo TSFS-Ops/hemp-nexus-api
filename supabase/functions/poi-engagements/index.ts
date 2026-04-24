@@ -11,7 +11,7 @@ import {
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision } from "../_shared/test-mode-bypass.ts";
-import { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
