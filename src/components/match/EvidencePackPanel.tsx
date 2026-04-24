@@ -1,5 +1,11 @@
-import { useState, useCallback } from "react";
-import { fetchEdgeFunction, EdgeInvokeError } from "@/lib/edge-invoke";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { fetchEdgeFunction, EdgeInvokeError, isSessionExpiredError } from "@/lib/edge-invoke";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  registerPendingAction,
+  clearPendingAction,
+  consumePendingActionsFor,
+} from "@/lib/pending-action-bus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
