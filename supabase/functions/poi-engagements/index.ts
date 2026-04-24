@@ -547,6 +547,28 @@ Deno.serve(async (req) => {
             contact_date: new Date().toISOString(),
           })
           .eq("id", engagementId);
+
+        // ── Step 3: snapshot the gate posture in force at the moment the
+        // outreach was actually dispatched. The atomic RPC above wrote its
+        // own state-transition audit row; this companion row records the
+        // governance posture so the historical decision is reconstructible.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "engagement.outreach_governance_snapshot",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              recipient,
+              request_id: requestId,
+              gate_position: outreachLegitimacy.gatePosition,
+              governance_profile_id: outreachGovernanceProfile.profileId,
+            },
+          });
+        } catch (snapErr) {
+          console.warn(`[${requestId}] Failed to write governance snapshot audit row:`, snapErr);
+        }
       } else {
         // Post-engagement follow-up: log to outreach_logs + audit_logs without
         // changing engagement state.
