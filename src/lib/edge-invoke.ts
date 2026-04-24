@@ -94,6 +94,18 @@ export function isSessionExpiredError(err: unknown): err is EdgeInvokeError {
   return err instanceof EdgeInvokeError && !!err.code && SESSION_DEAD_CODES.has(err.code);
 }
 
+/**
+ * Format an error for user-facing display, appending the correlation ID
+ * when available so support can locate the failing invocation in logs.
+ */
+export function describeEdgeError(err: unknown, fallback = "Something went wrong."): string {
+  if (err instanceof EdgeInvokeError) {
+    return err.requestId ? `${err.message} (Ref: ${err.requestId})` : err.message;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 // ── Token freshness ────────────────────────────────────────────────────────
 const REFRESH_SKEW_MS = 30_000; // refresh if <30s remain on access token
 
