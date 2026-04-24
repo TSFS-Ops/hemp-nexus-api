@@ -118,7 +118,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       });
     } catch (error) {
       console.error("Report download error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to download evidence report");
+      toast.error(describeEdgeError(error, "Failed to download evidence report"), { duration: 8000 });
     }
   }, [matchId]);
 
