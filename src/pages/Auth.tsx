@@ -383,6 +383,18 @@ export default function Auth() {
             </Link>
           </div>
 
+          {searchParams.get("expired") === "1" && (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
+            >
+              <div className="font-medium">Your session expired.</div>
+              <div className="text-xs opacity-90 mt-0.5">
+                Sign in again to continue where you left off. Any unsaved work was preserved locally and will reappear when you return.
+              </div>
+            </div>
+          )}
+
           {!pageReady ? <div className="flex items-center justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/70" />
             </div> : verificationPending ? <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => {
