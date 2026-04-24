@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── Test-mode bypass: report a complete, fully-verified ownership chain ──
-      if (await isBypassEnabled(admin, "ubo")) {
+      if (await isBypassEnabled(admin, "ubo", "ubo-verify")) {
         await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
 
         await recordBypassUsage(admin, {

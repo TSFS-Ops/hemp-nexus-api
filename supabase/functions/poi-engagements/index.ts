@@ -10,6 +10,7 @@ import {
   lookupIdempotentResponse,
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
+import { checkMaintenanceMode, logDecision } from "../_shared/test-mode-bypass.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
@@ -71,6 +72,46 @@ Deno.serve(async (req) => {
     if (parts[0] === "poi-engagements") parts.shift();
 
     const engagementId = parts[0];
+
+    // Structured request-entry log so we can correlate every poi-engagements
+    // call (especially the email-sending branches that have been failing
+    // intermittently for clients) with downstream decision logs.
+    console.log(
+      `[request] ${JSON.stringify({
+        tag: "poi-engagements",
+        requestId,
+        method: req.method,
+        path: parts.join("/"),
+        engagementId: engagementId ?? null,
+        actorUserId: authCtx.userId ?? null,
+        orgId: authCtx.orgId ?? null,
+        ts: new Date().toISOString(),
+      })}`,
+    );
+
+    // Maintenance gate — only enforced for state-mutating + email-sending POSTs.
+    // GETs (list/preview/log) are allowed through so admins can still
+    // diagnose during a maintenance window.
+    if (req.method === "POST") {
+      const maintenance = await checkMaintenanceMode(supabase, {
+        source: "poi-engagements",
+        requestId,
+        actorUserId: authCtx.userId ?? null,
+        orgId: authCtx.orgId ?? null,
+        action: parts[1] ?? "create_or_update",
+      });
+      if (maintenance.blocked) {
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable — platform is in maintenance mode.",
+            code: "MAINTENANCE_MODE",
+            request_id: requestId,
+          }),
+          { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
 
     // ── GET /poi-engagements — List engagements (admin only) ──
     if (req.method === "GET" && !engagementId) {
@@ -318,6 +359,23 @@ Deno.serve(async (req) => {
       const POST_ENGAGEMENT_STATES = ["contacted", "accepted", "declined", "expired"];
       const isFollowUp = POST_ENGAGEMENT_STATES.includes(currentStatus);
       const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+
+      // Decision log: explain exactly why the email was (or wasn't) gated.
+      logDecision("maintenance", {
+        source: "poi-engagements/send-outreach",
+        decision: !isFollowUp && !allowed.includes("contacted") ? "block" : "allow",
+        requestId,
+        actorUserId: authCtx.userId ?? null,
+        orgId: authCtx.orgId ?? null,
+        reason: isFollowUp ? "follow_up" : (allowed.includes("contacted") ? "transition_ok" : "invalid_transition"),
+        details: {
+          engagement_id: engagementId,
+          current_status: currentStatus,
+          recipient,
+          allowed_transitions: allowed,
+        },
+      });
+
       if (!isFollowUp && !allowed.includes("contacted")) {
         throw new ApiException(
           "INVALID_TRANSITION",
@@ -332,6 +390,15 @@ Deno.serve(async (req) => {
         .eq("email", recipient)
         .maybeSingle();
       if (suppressed) {
+        logDecision("maintenance", {
+          source: "poi-engagements/send-outreach",
+          decision: "block",
+          requestId,
+          actorUserId: authCtx.userId ?? null,
+          orgId: authCtx.orgId ?? null,
+          reason: "recipient_suppressed",
+          details: { engagement_id: engagementId, recipient },
+        });
         throw new ApiException(
           "RECIPIENT_SUPPRESSED",
           `Cannot send: ${recipient} is on the suppression list (previously bounced or unsubscribed). Use 'Mark contacted' to log a non-email outreach instead.`,

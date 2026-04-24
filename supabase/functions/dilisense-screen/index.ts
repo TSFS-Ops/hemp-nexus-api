@@ -282,7 +282,7 @@ Deno.serve(async (req: Request) => {
     const type = screen_type === "entity" ? "entity" : "individual";
 
     // ── Test-mode bypass: synthesize a "clear" screening result without touching any provider ──
-    if (await isBypassEnabled(adminClient, "sanctions")) {
+    if (await isBypassEnabled(adminClient, "sanctions", "dilisense-screen")) {
       const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: new Date().toISOString() }));
       const bypassRecord = {
         org_id,

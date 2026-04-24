@@ -75,8 +75,8 @@ Deno.serve(async (req: Request) => {
 
       // Test-mode bypass: short-circuit both gates as passed.
       const [bypassUbo, bypassAtb] = await Promise.all([
-        isBypassEnabled(admin, "ubo"),
-        isBypassEnabled(admin, "authority"),
+        isBypassEnabled(admin, "ubo", "authority-bind/check", correlationId),
+        isBypassEnabled(admin, "authority", "authority-bind/check", correlationId),
       ]);
 
       const checkUbo = bypassUbo
