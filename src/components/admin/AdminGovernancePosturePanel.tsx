@@ -95,7 +95,7 @@ export function AdminGovernancePosturePanel() {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
-        .from("organisations")
+        .from("organizations")
         .select("id, name")
         .order("name", { ascending: true })
         .limit(500);
@@ -104,7 +104,7 @@ export function AdminGovernancePosturePanel() {
           toast.error(`Could not load organisations: ${error.message}`);
           setOrgs([]);
         } else {
-          setOrgs((data ?? []) as OrgRow[]);
+          setOrgs(((data ?? []) as unknown) as OrgRow[]);
         }
       }
     })();
