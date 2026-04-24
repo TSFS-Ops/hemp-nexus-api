@@ -306,10 +306,12 @@ export async function fetchEdgeFunction<T = unknown>(
     } catch {
       /* ignore */
     }
+    const requestId = extractRequestId(res.headers, serverBody);
     throw translateError(
       res.status,
       serverBody,
-      label ? `Could not ${label}` : `Request to ${trimmed} failed`
+      label ? `Could not ${label}` : `Request to ${trimmed} failed`,
+      requestId
     );
   }
 
