@@ -356,7 +356,8 @@ export async function fetchEdgeFunction<T = unknown>(
       res.status,
       serverBody,
       label ? `Could not ${label}` : `Request to ${trimmed} failed`,
-      requestId
+      requestId,
+      metricsContext
     );
   }
 
