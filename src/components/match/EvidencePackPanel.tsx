@@ -385,14 +385,31 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 <FileJson className="h-4 w-4 mr-2" />
                 Download JSON
               </Button>
-              <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
-                <FileText className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={downloadHtmlReport}
+                disabled={reportLoading}
+              >
+                {reportLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
                 Download Report
               </Button>
               <p className="text-[11px] text-muted-foreground col-span-2 text-center -mt-1">
                 The report downloads as an HTML file. Open it in your browser (Chrome, Edge, Safari) to view.
               </p>
             </div>
+            {reportError && !reportLoading && (
+              <DownloadErrorState
+                title="Couldn't download evidence report"
+                error={reportError}
+                onRetry={downloadHtmlReport}
+                retrying={reportLoading}
+              />
+            )}
 
             {/* Verify button */}
             <Button
