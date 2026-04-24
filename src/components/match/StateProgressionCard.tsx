@@ -43,6 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
+import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
 
 interface FieldCheck {
   label: string;
@@ -290,6 +291,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const waiverReasonValid = !waiverRequired || trimmedReason.length >= 10;
   const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
   const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
+
+  // ── LEGITIMACY GATE (UX mirror of supabase/functions/_shared/legitimacy.ts) ──
+  // Disable the POI mint button pre-flight when the org is not approved to
+  // trade. The server enforces the same check; this hook is purely so users
+  // see the recovery CTA *before* clicking, not after a 403.
+  const { data: legitimacy, isLoading: legitimacyLoading } = useOrgLegitimacy();
+  const legitimacyBlocksPoi = isPoiAction && !legitimacyLoading && legitimacy?.allowed === false;
 
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
@@ -558,7 +566,25 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
         {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && (
           <>
-            {!isFreeAction && isBalancePending ? (
+            {legitimacyBlocksPoi && legitimacy && legitimacy.allowed === false ? (
+              <div
+                role="alert"
+                className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10"
+              >
+                <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Verification required before issuing a Proof of Intent</p>
+                  <p className="text-xs text-muted-foreground">{legitimacy.message}</p>
+                  <Link
+                    to="/desk/settings/identity"
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    <ArrowRight className="h-3 w-3" />
+                    Go to Company Identity
+                  </Link>
+                </div>
+              </div>
+            ) : !isFreeAction && isBalancePending ? (
               <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
                 <Loader2 className="h-4 w-4 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
                 <div className="space-y-1">
@@ -594,7 +620,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </div>
             ) : null}
 
-            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
+            {!legitimacyBlocksPoi && (isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
               <button
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
                 disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled}

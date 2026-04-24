@@ -11,6 +11,7 @@ import {
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision } from "../_shared/test-mode-bypass.ts";
+import { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
@@ -339,6 +340,31 @@ Deno.serve(async (req) => {
 
       if (engErr || !eng) {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
+      // The initiator org is about to project Izenzo's name to a counterparty
+      // via email. Block the send if the initiator org is not formally
+      // approved to trade. Admins acting on behalf of an unverified tenant
+      // are also blocked — the gate is on the org, not on the actor's role.
+      const initiatorOrgIdForGate = (eng as { org_id: string }).org_id;
+      const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate);
+      if (!outreachLegitimacy.allowed) {
+        logDecision("maintenance", {
+          source: "poi-engagements/send-outreach",
+          decision: "block",
+          requestId,
+          actorUserId: authCtx.userId ?? null,
+          orgId: authCtx.orgId ?? null,
+          reason: `org_not_verified:${outreachLegitimacy.reason}`,
+          details: {
+            engagement_id: engagementId,
+            initiator_org_id: initiatorOrgIdForGate,
+            trade_approval_status: outreachLegitimacy.status,
+            valid_until: outreachLegitimacy.validUntil,
+          },
+        });
+        throw new ApiException(ORG_NOT_VERIFIED_CODE, outreachLegitimacy.message, 403);
       }
 
       const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
