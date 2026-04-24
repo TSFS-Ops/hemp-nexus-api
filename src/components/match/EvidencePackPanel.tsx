@@ -69,6 +69,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
   const isSettled = MatchState.isSettled(matchStatus);
   const isCompleted = matchState === "completed";
+  // Evidence pack is generatable as soon as the trade has progressed past
+  // discovery (i.e. POI exists / WaD has been issued). Settlement is no longer
+  // required; the deal certificate (below) remains gated on `completed`.
+  const canGeneratePack =
+    isSettled ||
+    isCompleted ||
+    (!!matchState && matchState !== "discovery");
 
   const generatePack = useCallback(async () => {
     try {
