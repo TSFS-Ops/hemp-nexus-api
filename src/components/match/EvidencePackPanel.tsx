@@ -196,10 +196,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!isSettled && !isCompleted && (
+        {!canGeneratePack && (
           <div className="flex items-center gap-2 p-3 rounded-md bg-muted text-muted-foreground text-sm">
             <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>Evidence packs are available once intent has been confirmed.</span>
+            <span>Evidence packs are available once the Proof of Intent has been generated.</span>
           </div>
         )}
 
