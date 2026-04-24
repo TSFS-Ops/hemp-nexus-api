@@ -96,29 +96,11 @@ export function WebhookManagement() {
     setCreatingWebhook(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url,
-            events: Array.from(selectedEvents),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to create webhook");
-      }
-      const result = await response.json();
+      const result = await fetchEdgeFunction<{ secret?: string }>("webhooks", {
+        method: "POST",
+        body: { url, events: Array.from(selectedEvents) },
+        label: "create webhook",
+      });
 
       toast.success("Webhook endpoint created successfully");
 
