@@ -22,7 +22,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -257,14 +257,16 @@ Deno.serve(async (req) => {
 
       // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
       // Unverified orgs may search, draft and engage internally — but they
-      // MUST NOT mint a counterparty-facing POI under Izenzo's name. This
-      // check runs BEFORE the engagement guard, BEFORE evidence/waiver gates,
-      // and BEFORE the credit burn, so an unverified org never loses tokens
-      // to a blocked mint and the audit trail records the correct denial reason.
-      const legitimacy = await checkOrgLegitimacy(supabase, authCtx.orgId);
+      // MUST NOT mint a counterparty-facing POI under Izenzo's name UNLESS
+      // their tenant posture defers verification to WaD.  This check runs
+      // BEFORE the engagement guard, BEFORE evidence/waiver gates, and
+      // BEFORE the credit burn, so an unverified org never loses tokens to
+      // a blocked mint and the audit trail records the correct denial reason.
+      const governanceProfile = await getActiveGovernanceProfile(supabase, authCtx.orgId);
+      const legitimacy = await checkOrgLegitimacy(supabase, authCtx.orgId, "poi_mint");
       if (!legitimacy.allowed) {
         console.warn(
-          `[${requestId}] LEGITIMACY_GATE_BLOCKED reason=${legitimacy.reason} status=${legitimacy.status} match_id=${matchId} org_id=${authCtx.orgId}`,
+          `[${requestId}] LEGITIMACY_GATE_BLOCKED reason=${legitimacy.reason} status=${legitimacy.status} gate_position=${legitimacy.gatePosition} match_id=${matchId} org_id=${authCtx.orgId}`,
         );
         try {
           await supabase.from("audit_logs").insert({
@@ -280,6 +282,9 @@ Deno.serve(async (req) => {
               legitimacy_reason: legitimacy.reason,
               trade_approval_status: legitimacy.status,
               valid_until: legitimacy.validUntil,
+              // ── Step 3: forensic audit memory ──
+              gate_position: legitimacy.gatePosition,
+              governance_profile_id: governanceProfile.profileId,
             },
           });
         } catch (auditErr) {
