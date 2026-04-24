@@ -16,6 +16,9 @@ interface BypassState {
   kyb: boolean;
   ubo: boolean;
   authority: boolean;
+  risk_scoring: boolean;
+  webhook_connectivity: boolean;
+  screening_recentness: boolean;
   note: string;
 }
 
@@ -26,15 +29,25 @@ const DEFAULT_STATE: BypassState = {
   kyb: false,
   ubo: false,
   authority: false,
+  risk_scoring: false,
+  webhook_connectivity: false,
+  screening_recentness: false,
   note: "",
 };
 
-const GATES: { key: keyof Omit<BypassState, "enabled" | "note">; label: string; description: string }[] = [
-  { key: "idv", label: "Identity verification (IDV)", description: "Skip Onfido / Companies House / CIPC. Entities auto-marked as verified." },
-  { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip Dilisense / Dow Jones / Refinitiv. Returns clear with no hits." },
-  { key: "kyb", label: "Business verification (KYB)", description: "Skip company registry checks. Covered by the IDV bypass for company-type entities." },
-  { key: "ubo", label: "Beneficial ownership (UBO)", description: "Treat ownership as 100% verified across all chain depths." },
-  { key: "authority", label: "Authority-to-bind (ATB)", description: "Treat the signing person as having a verified active authority record." },
+type GateGroup = "upstream" | "wad";
+
+const GATES: { key: keyof Omit<BypassState, "enabled" | "note">; label: string; description: string; group: GateGroup }[] = [
+  // ── Upstream provider gates (skip the external compliance integrations) ──
+  { key: "idv", label: "Identity verification (IDV)", description: "Skip Onfido / Companies House / CIPC. Entities auto-marked as verified.", group: "upstream" },
+  { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip Dilisense / Dow Jones / Refinitiv. Synthesises a 'clear' screening result.", group: "upstream" },
+  { key: "kyb", label: "Business verification (KYB)", description: "Skip company registry checks. Covered by the IDV bypass for company-type entities.", group: "upstream" },
+  { key: "ubo", label: "Beneficial ownership (UBO)", description: "Treat ownership as 100% verified across all chain depths.", group: "upstream" },
+  { key: "authority", label: "Authority-to-bind (ATB)", description: "Treat the signing person as having a verified active authority record.", group: "upstream" },
+  // ── WaD-internal gates (let the workflow reach the evidence pack step) ──
+  { key: "screening_recentness", label: "Screening recentness (WaD)", description: "Skip the 30-day staleness check on screening_results inside the WaD function. Use when a test session outlives its initial screening.", group: "wad" },
+  { key: "risk_scoring", label: "Risk scoring (WaD)", description: "Allow WaD issuance even when a party's dd_risk_scores band is 'high' or 'critical'. The risk record is still kept; just not enforced.", group: "wad" },
+  { key: "webhook_connectivity", label: "Webhook connectivity / Gate 10 (WaD)", description: "Allow WaD issuance when a party's primary webhook endpoint is tripped (status='inactive'). Real settlement should NOT proceed without working webhooks.", group: "wad" },
 ];
 
 export function TestModeBypassPanel() {
