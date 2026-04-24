@@ -356,6 +356,11 @@ function SettingsTab() {
             <AdminSettings />
           </Surface>
         </TabsContent>
+        <TabsContent value="governance-posture">
+          <Surface label="Per-org legitimacy gate posture · public.org_governance_profiles · versioned history">
+            <AdminGovernancePosturePanel />
+          </Surface>
+        </TabsContent>
         <TabsContent value="thresholds">
           <Surface label="Per-org approval thresholds · public.approval_thresholds">
             <AdminApprovalThresholdsPanel />
