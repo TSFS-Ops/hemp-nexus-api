@@ -75,29 +75,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       setLoading(true);
       setVerificationResult(null);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please sign in to generate an evidence pack");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || err.error || "Failed to generate evidence pack");
-      }
-
-      const data = await response.json();
+      const data = await fetchEdgeFunction<EvidencePack>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        label: "generate evidence pack",
+      });
       setPack(data);
       toast.success("Evidence pack generated successfully");
     } catch (error: unknown) {
