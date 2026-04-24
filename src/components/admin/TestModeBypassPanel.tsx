@@ -20,7 +20,11 @@ interface BypassState {
   webhook_connectivity: boolean;
   screening_recentness: boolean;
   note: string;
+  enabled_at: string | null;
+  expires_at: string | null;
 }
+
+const DEFAULT_TTL_DAYS = 7;
 
 const DEFAULT_STATE: BypassState = {
   enabled: false,
@@ -33,7 +37,28 @@ const DEFAULT_STATE: BypassState = {
   webhook_connectivity: false,
   screening_recentness: false,
   note: "",
+  enabled_at: null,
+  expires_at: null,
 };
+
+function addDaysISO(days: number): string {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function formatCountdown(expiresAt: string | null): { label: string; expired: boolean } | null {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(ms)) return null;
+  if (ms <= 0) return { label: "expired — bypasses are inert until you renew", expired: true };
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const mins = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0 || days > 0) parts.push(`${hours}h`);
+  parts.push(`${mins}m`);
+  return { label: `${parts.join(" ")} remaining`, expired: false };
+}
 
 type GateGroup = "upstream" | "wad";
 
