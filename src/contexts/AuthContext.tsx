@@ -4,6 +4,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { setSentryUser, clearSentryUser } from "@/lib/sentry";
+import { notifySessionExpired } from "@/lib/session-expiry-bus";
 
 interface AuthContextType {
   user: User | null;
