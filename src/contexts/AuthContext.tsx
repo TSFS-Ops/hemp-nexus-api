@@ -5,6 +5,7 @@ import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 import { notifySessionExpired } from "@/lib/session-expiry-bus";
+import { recordSessionFailure } from "@/lib/session-failure-metrics";
 
 interface AuthContextType {
   user: User | null;
@@ -152,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Surface the global blocking modal instead of a corner toast
           // (clients were missing the toast — see incident 2026-04-24).
           notifySessionExpired("REFRESH_FAILED");
+          recordSessionFailure("REFRESH_FAILED", { context: "auth-state-change" });
         }
         hadUserRef.current = false;
         setRoles([]);
@@ -239,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
       // New unmissable modal (replaces the easy-to-miss corner toast).
       notifySessionExpired(reason);
+      recordSessionFailure(reason, { context: "background-health-check" });
     };
 
     const intervalId = setInterval(async () => {

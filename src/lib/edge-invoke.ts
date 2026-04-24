@@ -23,6 +23,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { notifySessionExpired } from "@/lib/session-expiry-bus";
+import {
+  recordSessionFailure,
+  type TrackedSessionFailureCode,
+} from "@/lib/session-failure-metrics";
 
 /** Codes that should trigger the global SessionExpiredModal. */
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
@@ -39,9 +43,17 @@ export class EdgeInvokeError extends Error {
    * locate the failing invocation in edge function logs.
    */
   requestId?: string;
+  /** Caller-supplied label (e.g. "download waiver packet") used for metrics context. */
+  context?: string;
   constructor(
     message: string,
-    opts: { status?: number; code?: string; serverBody?: string; requestId?: string } = {}
+    opts: {
+      status?: number;
+      code?: string;
+      serverBody?: string;
+      requestId?: string;
+      context?: string;
+    } = {}
   ) {
     super(message);
     this.name = "EdgeInvokeError";
@@ -49,6 +61,7 @@ export class EdgeInvokeError extends Error {
     this.code = opts.code;
     this.serverBody = opts.serverBody;
     this.requestId = opts.requestId;
+    this.context = opts.context;
 
     // Side-effect: surface a global, blocking re-auth modal whenever the
     // failure means the user's session is unrecoverable. This replaces the
@@ -61,6 +74,16 @@ export class EdgeInvokeError extends Error {
         message,
         opts.requestId
       );
+    }
+    // Increment client-side counter for the two tracked edge-side codes.
+    // NO_SESSION is intentionally excluded — it fires before any network
+    // call (no session at all) and would inflate the "session died mid-
+    // download" signal we actually care about.
+    if (opts.code === "UNAUTHORIZED" || opts.code === "REFRESH_FAILED") {
+      recordSessionFailure(opts.code as TrackedSessionFailureCode, {
+        requestId: opts.requestId,
+        context: opts.context,
+      });
     }
   }
 }
@@ -109,10 +132,15 @@ export function describeEdgeError(err: unknown, fallback = "Something went wrong
 // ── Token freshness ────────────────────────────────────────────────────────
 const REFRESH_SKEW_MS = 30_000; // refresh if <30s remain on access token
 
-async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promise<string | null> {
+async function ensureFreshAccessToken(opts: {
+  requireSession: boolean;
+  context?: string;
+}): Promise<string | null> {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) {
-    throw new EdgeInvokeError(`Session check failed: ${sessionError.message}`);
+    throw new EdgeInvokeError(`Session check failed: ${sessionError.message}`, {
+      context: opts.context,
+    });
   }
   let session = sessionData.session;
 
@@ -125,7 +153,7 @@ async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promis
     if (opts.requireSession) {
       throw new EdgeInvokeError(
         "Your session has expired. Please sign out and sign back in, then try again.",
-        { status: 401, code: "NO_SESSION" }
+        { status: 401, code: "NO_SESSION", context: opts.context }
       );
     }
     return null;
@@ -136,7 +164,7 @@ async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promis
     if (refreshErr || !refreshed.session) {
       throw new EdgeInvokeError(
         "Your session has expired. Please sign out and sign back in, then try again.",
-        { status: 401, code: "REFRESH_FAILED" }
+        { status: 401, code: "REFRESH_FAILED", context: opts.context }
       );
     }
     session = refreshed.session;
@@ -149,7 +177,8 @@ function translateError(
   status: number | undefined,
   body: string,
   fallbackMsg: string,
-  requestId?: string
+  requestId?: string,
+  context?: string
 ): EdgeInvokeError {
   // Try to extract a server-supplied error code/message from JSON body
   let parsed: { error?: string; code?: string; message?: string; requestId?: string; request_id?: string } | null = null;
@@ -167,37 +196,37 @@ function translateError(
   if (status === 401 || /unauthorized/i.test(serverMsg) || /unauthorized/i.test(body)) {
     return new EdgeInvokeError(
       "Your session has expired. Please sign out and sign back in, then try again.",
-      { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid }
+      { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 403 || /forbidden/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You don't have permission to perform this action. Contact an administrator if you believe this is a mistake.",
-      { status, code: "FORBIDDEN", serverBody: body, requestId: rid }
+      { status, code: "FORBIDDEN", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 429 || /rate.?limit/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You're doing that too quickly. Please wait a moment and try again.",
-      { status, code: "RATE_LIMITED", serverBody: body, requestId: rid }
+      { status, code: "RATE_LIMITED", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 503 || serverCode === "MAINTENANCE_MODE" || /maintenance/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "The platform is in maintenance mode. Please try again shortly.",
-      { status, code: "MAINTENANCE_MODE", serverBody: body, requestId: rid }
+      { status, code: "MAINTENANCE_MODE", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 404 || /not.?found/i.test(serverMsg)) {
     return new EdgeInvokeError(
       serverMsg || "The requested resource could not be found.",
-      { status, code: "NOT_FOUND", serverBody: body, requestId: rid }
+      { status, code: "NOT_FOUND", serverBody: body, requestId: rid, context }
     );
   }
 
   return new EdgeInvokeError(
     serverMsg ? `${fallbackMsg} — ${serverMsg}` : fallbackMsg,
-    { status, code: serverCode, serverBody: body, requestId: rid }
+    { status, code: serverCode, serverBody: body, requestId: rid, context }
   );
 }
 
@@ -223,7 +252,8 @@ export async function invokeEdgeFunction<T = unknown>(
   options: InvokeEdgeOptions = {}
 ): Promise<T> {
   const { body, method, headers, requireSession = true, label } = options;
-  await ensureFreshAccessToken({ requireSession });
+  const metricsContext = label || functionName;
+  await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
   const { data, error } = await supabase.functions.invoke(functionName, {
     body: body as Record<string, unknown> | undefined,
@@ -249,7 +279,8 @@ export async function invokeEdgeFunction<T = unknown>(
       serverStatus,
       serverBody,
       label ? `Could not ${label}` : `Edge function ${functionName} failed`,
-      requestId
+      requestId,
+      metricsContext
     );
   }
 
@@ -275,9 +306,11 @@ export async function fetchEdgeFunction<T = unknown>(
   options: FetchEdgeOptions = {}
 ): Promise<T> {
   const { body, headers = {}, requireSession = true, label, query, ...rest } = options;
-  const accessToken = await ensureFreshAccessToken({ requireSession });
+  const trimmedPath = path.replace(/^\/+/, "");
+  const metricsContext = label || trimmedPath;
+  const accessToken = await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
-  const trimmed = path.replace(/^\/+/, "");
+  const trimmed = trimmedPath;
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   let url = `${baseUrl}/functions/v1/${trimmed}`;
   if (query) {
@@ -323,7 +356,8 @@ export async function fetchEdgeFunction<T = unknown>(
       res.status,
       serverBody,
       label ? `Could not ${label}` : `Request to ${trimmed} failed`,
-      requestId
+      requestId,
+      metricsContext
     );
   }
 
