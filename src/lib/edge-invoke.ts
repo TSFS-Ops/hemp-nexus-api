@@ -22,6 +22,10 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { notifySessionExpired } from "@/lib/session-expiry-bus";
+
+/** Codes that should trigger the global SessionExpiredModal. */
+const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
 
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
