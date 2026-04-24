@@ -359,6 +359,23 @@ Deno.serve(async (req) => {
       const POST_ENGAGEMENT_STATES = ["contacted", "accepted", "declined", "expired"];
       const isFollowUp = POST_ENGAGEMENT_STATES.includes(currentStatus);
       const allowed = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+
+      // Decision log: explain exactly why the email was (or wasn't) gated.
+      logDecision("maintenance", {
+        source: "poi-engagements/send-outreach",
+        decision: !isFollowUp && !allowed.includes("contacted") ? "block" : "allow",
+        requestId,
+        actorUserId: authCtx.userId ?? null,
+        orgId: authCtx.orgId ?? null,
+        reason: isFollowUp ? "follow_up" : (allowed.includes("contacted") ? "transition_ok" : "invalid_transition"),
+        details: {
+          engagement_id: engagementId,
+          current_status: currentStatus,
+          recipient,
+          allowed_transitions: allowed,
+        },
+      });
+
       if (!isFollowUp && !allowed.includes("contacted")) {
         throw new ApiException(
           "INVALID_TRANSITION",
@@ -373,6 +390,15 @@ Deno.serve(async (req) => {
         .eq("email", recipient)
         .maybeSingle();
       if (suppressed) {
+        logDecision("maintenance", {
+          source: "poi-engagements/send-outreach",
+          decision: "block",
+          requestId,
+          actorUserId: authCtx.userId ?? null,
+          orgId: authCtx.orgId ?? null,
+          reason: "recipient_suppressed",
+          details: { engagement_id: engagementId, recipient },
+        });
         throw new ApiException(
           "RECIPIENT_SUPPRESSED",
           `Cannot send: ${recipient} is on the suppression list (previously bounced or unsubscribed). Use 'Mark contacted' to log a non-email outreach instead.`,
