@@ -222,26 +222,10 @@ export function EvidencePackView({
       try {
         setLoading(true);
         setError(null);
-        const {
-          data: {
-            session
-          }
-        } = await supabase.auth.getSession();
-        if (!session) {
-          setError("Sign-in required to view this evidence pack.");
-          setLoading(false);
-          return;
-        }
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
+        const data = await fetchEdgeFunction<EvidencePack>(`evidence-pack/${matchId}`, {
+          method: "GET",
+          label: "load evidence pack",
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || err.error || `Request failed (${res.status})`);
-        }
-        const data = (await res.json()) as EvidencePack;
         if (!cancelled) setPack(data);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load evidence pack.");
