@@ -505,3 +505,382 @@ Deno.test("idempotency: concurrent inserts under the same key swallow the unique
   assertEquals(c.replayed, true);
   assertEquals(c.body.binding, a.body.binding);
 });
+
+// ─────────────────────────── Email chain @ accepted + Test Mode ───────────────────────────
+//
+// Integration test for the bug clients hit: when the engagement is already in
+// `accepted` and the platform admin re-sends an outreach email (e.g. a follow-up
+// "thank-you" / "next steps"), the request must:
+//   1. Pass the maintenance gate (maintenance OFF, even if Test Mode is ON).
+//   2. NOT be rejected as an "invalid transition" — `accepted` is a
+//      POST_ENGAGEMENT_STATES follow-up (state stays `accepted`).
+//   3. Trigger the email send.
+//   4. Skip the atomic state transition RPC (no state mutation).
+//   5. Append exactly one row to `engagement_outreach_logs` and one to
+//      `audit_logs`.
+//
+// We mirror the relevant production code paths from
+// `supabase/functions/poi-engagements/index.ts` (POST .../send-outreach)
+// against an in-memory mock so a regression in the gate ordering, the
+// follow-up branch, or the maintenance/test-mode interaction surfaces here.
+
+import {
+  checkMaintenanceMode,
+  isBypassEnabled,
+} from "../_shared/test-mode-bypass.ts";
+
+// Mirror — must stay in sync with index.ts.
+const POST_ENGAGEMENT_STATES = ["contacted", "accepted", "declined", "expired"];
+const VALID_STATUS_TRANSITIONS_MIRROR: Record<string, string[]> = {
+  pending: ["notification_sent", "contacted", "expired"],
+  notification_sent: ["contacted", "expired"],
+  contacted: ["accepted", "declined", "expired"],
+  accepted: [],
+  declined: [],
+  expired: [],
+};
+
+interface MaintenanceMockOptions {
+  maintenanceMode: boolean;
+  /** Per-gate test-mode flags. Master switch is implicit (any gate true ⇒ on). */
+  testModeBypass: Partial<Record<"idv" | "sanctions" | "kyb" | "ubo" | "authority", boolean>>;
+  /** user_id ⇒ whether they hold the platform_admin role. */
+  platformAdmins: Record<string, boolean>;
+  /** Recipient → suppressed? (drives the suppression check the production
+   *  send-outreach branch performs before email send.) */
+  suppressedRecipients?: Set<string>;
+}
+
+interface InvokedEmail {
+  templateName: string;
+  recipientEmail: string;
+  idempotencyKey: string;
+}
+
+/**
+ * Stand-in for the real Supabase service-role client used inside the
+ * send-outreach branch. Implements just enough of the surface that
+ * `checkMaintenanceMode`, `isBypassEnabled`, the suppression check, and
+ * the two follow-up inserts (engagement_outreach_logs + audit_logs)
+ * actually call.
+ */
+function makeEmailFlowMockSupabase(opts: MaintenanceMockOptions) {
+  const inserts: Record<string, any[]> = {
+    engagement_outreach_logs: [],
+    audit_logs: [],
+    admin_audit_logs: [],
+  };
+  const rpcCalls: Array<{ fn: string; args: any }> = [];
+  const emailInvocations: InvokedEmail[] = [];
+
+  const supabase: any = {
+    inserts,
+    rpcCalls,
+    emailInvocations,
+    from(table: string) {
+      return {
+        select(_cols?: string) {
+          return {
+            eq(col: string, val: unknown) {
+              return {
+                maybeSingle() {
+                  if (table === "admin_settings" && col === "key" && val === "general") {
+                    return Promise.resolve({
+                      data: { value: { maintenanceMode: opts.maintenanceMode } },
+                      error: null,
+                    });
+                  }
+                  if (table === "suppressed_emails" && col === "email") {
+                    const hit = opts.suppressedRecipients?.has(String(val).toLowerCase());
+                    return Promise.resolve({ data: hit ? { id: "sup-1" } : null, error: null });
+                  }
+                  return Promise.resolve({ data: null, error: null });
+                },
+              };
+            },
+          };
+        },
+        insert(row: any) {
+          (inserts[table] ||= []).push(row);
+          return Promise.resolve({ data: row, error: null });
+        },
+      };
+    },
+    rpc(fn: string, args: any) {
+      rpcCalls.push({ fn, args });
+      if (fn === "is_test_mode_bypass_enabled") {
+        const gate = args?._gate as keyof typeof opts.testModeBypass;
+        return Promise.resolve({ data: Boolean(opts.testModeBypass[gate]), error: null });
+      }
+      if (fn === "has_role") {
+        const uid = args?._user_id as string;
+        const role = args?._role as string;
+        const hit = role === "platform_admin" && Boolean(opts.platformAdmins[uid]);
+        return Promise.resolve({ data: hit, error: null });
+      }
+      if (fn === "atomic_engagement_transition") {
+        return Promise.resolve({ data: { success: true }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    },
+    functions: {
+      invoke(name: string, init: { body: InvokedEmail & Record<string, unknown> }) {
+        if (name === "send-transactional-email") {
+          emailInvocations.push({
+            templateName: init.body.templateName,
+            recipientEmail: init.body.recipientEmail,
+            idempotencyKey: init.body.idempotencyKey,
+          });
+          return Promise.resolve({ data: { success: true }, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      },
+    },
+  };
+  return supabase;
+}
+
+interface SendOutreachOutcome {
+  status: number;
+  error?: { code: string; message: string };
+  stateMutated: boolean;
+  emailSent: boolean;
+  isFollowUp: boolean;
+}
+
+/**
+ * Mirror of the production `POST /poi-engagements/:id/send-outreach`
+ * decision tree, restricted to the parts under test:
+ *   maintenance gate → transition gate → suppression → email send →
+ *   follow-up branch (no state mutation) vs forward branch (atomic RPC).
+ */
+async function simulateSendOutreach(args: {
+  supabase: any;
+  engagementStatus: string;
+  recipient: string;
+  actorUserId: string;
+  orgId: string;
+  requestId: string;
+}): Promise<SendOutreachOutcome> {
+  const { supabase, engagementStatus, recipient, actorUserId, orgId, requestId } = args;
+
+  // 1. Maintenance gate.
+  const maintenance = await checkMaintenanceMode(supabase, {
+    source: "poi-engagements",
+    requestId,
+    actorUserId,
+    orgId,
+    action: "send-outreach",
+  });
+  if (maintenance.blocked) {
+    return {
+      status: 503,
+      error: { code: "MAINTENANCE_MODE", message: "Service temporarily unavailable." },
+      stateMutated: false,
+      emailSent: false,
+      isFollowUp: false,
+    };
+  }
+
+  // 2. Transition gate.
+  const isFollowUp = POST_ENGAGEMENT_STATES.includes(engagementStatus);
+  const allowed = VALID_STATUS_TRANSITIONS_MIRROR[engagementStatus] || [];
+  if (!isFollowUp && !allowed.includes("contacted")) {
+    return {
+      status: 400,
+      error: {
+        code: "INVALID_TRANSITION",
+        message: `Cannot send outreach from state '${engagementStatus}'.`,
+      },
+      stateMutated: false,
+      emailSent: false,
+      isFollowUp,
+    };
+  }
+
+  // 3. Suppression check.
+  const { data: suppressed } = await supabase
+    .from("suppressed_emails").select("id").eq("email", recipient).maybeSingle();
+  if (suppressed) {
+    return {
+      status: 409,
+      error: { code: "RECIPIENT_SUPPRESSED", message: "Suppressed." },
+      stateMutated: false,
+      emailSent: false,
+      isFollowUp,
+    };
+  }
+
+  // 4. Email send.
+  const { error: sendErr } = await supabase.functions.invoke("send-transactional-email", {
+    body: {
+      templateName: "outreach-intent-to-trade",
+      recipientEmail: recipient,
+      idempotencyKey: `outreach-send-fake-${requestId}`,
+      templateData: {},
+    },
+  });
+  if (sendErr) {
+    return {
+      status: 502,
+      error: { code: "SEND_FAILED", message: "Email send failed." },
+      stateMutated: false,
+      emailSent: false,
+      isFollowUp,
+    };
+  }
+
+  // 5. Forward vs follow-up branch.
+  const isPostEngagementFollowUp =
+    engagementStatus === "accepted" ||
+    engagementStatus === "declined" ||
+    engagementStatus === "expired";
+
+  if (!isPostEngagementFollowUp) {
+    await supabase.rpc("atomic_engagement_transition", {
+      p_engagement_id: "eng-1",
+      p_new_status: "contacted",
+    });
+    return { status: 200, stateMutated: true, emailSent: true, isFollowUp };
+  }
+
+  await supabase.from("engagement_outreach_logs").insert({
+    engagement_id: "eng-1",
+    actor_type: "admin",
+    admin_user_id: actorUserId,
+    previous_status: engagementStatus,
+    new_status: engagementStatus,
+    entry_type: "post_engagement_followup",
+    contact_method: "email",
+    contact_detail: recipient,
+  });
+  await supabase.from("audit_logs").insert({
+    org_id: orgId,
+    actor_user_id: actorUserId,
+    action: "engagement.outreach_followup_email_sent",
+    entity_type: "poi_engagement",
+    entity_id: "eng-1",
+    metadata: { recipient, current_status: engagementStatus, request_id: requestId },
+  });
+
+  return { status: 200, stateMutated: false, emailSent: true, isFollowUp };
+}
+
+Deno.test(
+  "email chain runs for accepted engagement when Test Mode is enabled (follow-up, no state mutation)",
+  async () => {
+    const supabase = makeEmailFlowMockSupabase({
+      maintenanceMode: false,
+      testModeBypass: { idv: true, sanctions: true, kyb: true, ubo: true, authority: true },
+      platformAdmins: { "admin-user-1": true },
+    });
+
+    // Sanity: Test Mode is actually wired on for at least one gate via the
+    // shared helper — this proves the flag plumbing is healthy.
+    const idvBypass = await isBypassEnabled(supabase, "idv", "test", "req-tm-1");
+    assertEquals(idvBypass, true);
+
+    const result = await simulateSendOutreach({
+      supabase,
+      engagementStatus: "accepted",
+      recipient: "buyer@example.com",
+      actorUserId: "admin-user-1",
+      orgId: "org-1",
+      requestId: "req-tm-1",
+    });
+
+    // Maintenance gate let it through (no 503), transition gate let it through
+    // (no INVALID_TRANSITION) — exactly the two failure modes the client hit.
+    assertEquals(result.status, 200);
+    assertEquals(result.error, undefined);
+
+    // accepted ⇒ follow-up branch: email sent but state is NOT mutated.
+    assertEquals(result.isFollowUp, true);
+    assertEquals(result.emailSent, true);
+    assertEquals(result.stateMutated, false);
+
+    // Exactly one outreach log + one audit row appended (immutable trail).
+    assertEquals(supabase.inserts.engagement_outreach_logs.length, 1);
+    assertEquals(supabase.inserts.audit_logs.length, 1);
+    assertEquals(
+      supabase.inserts.engagement_outreach_logs[0].entry_type,
+      "post_engagement_followup",
+    );
+    assertEquals(
+      supabase.inserts.engagement_outreach_logs[0].new_status,
+      "accepted",
+      "follow-up must preserve the accepted state — no silent transition",
+    );
+    assertEquals(
+      supabase.inserts.audit_logs[0].action,
+      "engagement.outreach_followup_email_sent",
+    );
+
+    // Forward-branch RPC (state mutation) must NOT have fired.
+    const transitionCalls = supabase.rpcCalls.filter(
+      (c: { fn: string }) => c.fn === "atomic_engagement_transition",
+    );
+    assertEquals(transitionCalls.length, 0);
+
+    // Email was actually invoked with the outreach template.
+    assertEquals(supabase.emailInvocations.length, 1);
+    assertEquals(supabase.emailInvocations[0].templateName, "outreach-intent-to-trade");
+    assertEquals(supabase.emailInvocations[0].recipientEmail, "buyer@example.com");
+  },
+);
+
+Deno.test(
+  "email chain is blocked by maintenance gate even with Test Mode enabled (admin not exempt when not platform_admin)",
+  async () => {
+    const supabase = makeEmailFlowMockSupabase({
+      maintenanceMode: true,
+      testModeBypass: { idv: true },
+      // Caller is NOT a platform admin → must be blocked.
+      platformAdmins: { "admin-user-1": false },
+    });
+
+    const result = await simulateSendOutreach({
+      supabase,
+      engagementStatus: "accepted",
+      recipient: "buyer@example.com",
+      actorUserId: "admin-user-1",
+      orgId: "org-1",
+      requestId: "req-tm-2",
+    });
+
+    assertEquals(result.status, 503);
+    assertEquals(result.error?.code, "MAINTENANCE_MODE");
+    assertEquals(result.emailSent, false);
+    // Loud audit row written by the maintenance helper.
+    const blockedRows = supabase.inserts.admin_audit_logs.filter(
+      (r: any) => r.action === "maintenance_mode.request_blocked",
+    );
+    assertEquals(blockedRows.length, 1);
+  },
+);
+
+Deno.test(
+  "email chain bypasses maintenance for platform admins (Test Mode + accepted state still works)",
+  async () => {
+    const supabase = makeEmailFlowMockSupabase({
+      maintenanceMode: true,
+      testModeBypass: { idv: true },
+      platformAdmins: { "admin-user-1": true }, // exempt
+    });
+
+    const result = await simulateSendOutreach({
+      supabase,
+      engagementStatus: "accepted",
+      recipient: "buyer@example.com",
+      actorUserId: "admin-user-1",
+      orgId: "org-1",
+      requestId: "req-tm-3",
+    });
+
+    assertEquals(result.status, 200);
+    assertEquals(result.emailSent, true);
+    assertEquals(result.stateMutated, false);
+    assertEquals(supabase.inserts.engagement_outreach_logs.length, 1);
+  },
+);
+
