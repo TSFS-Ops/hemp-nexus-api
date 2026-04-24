@@ -144,7 +144,7 @@ function isUniqueViolation(err: unknown): boolean {
  * they have them.
  */
 export async function assertNotReplayed(
-  supabase: SupabaseClient,
+  supabase: ReplayGuardClient,
   opts: ReplayGuardOptions,
   extraResponseHeaders: Record<string, string> = {},
 ): Promise<ReplayGuardResult> {
