@@ -177,7 +177,8 @@ function translateError(
   status: number | undefined,
   body: string,
   fallbackMsg: string,
-  requestId?: string
+  requestId?: string,
+  context?: string
 ): EdgeInvokeError {
   // Try to extract a server-supplied error code/message from JSON body
   let parsed: { error?: string; code?: string; message?: string; requestId?: string; request_id?: string } | null = null;
