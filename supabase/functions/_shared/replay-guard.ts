@@ -34,7 +34,17 @@
  * valid signature + timestamp first).
  */
 
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+// We accept any object that exposes a chainable `.from(table).insert(row)`
+// returning a `{ error }` shape. This deliberately avoids importing the
+// concrete `SupabaseClient` type, because edge functions in this project
+// import supabase-js from BOTH `npm:` and `https://esm.sh/...`, and the
+// two produce nominally-incompatible classes that cannot be assigned to
+// each other even though they're functionally identical at runtime.
+export interface ReplayGuardClient {
+  from(table: string): {
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+  };
+}
 
 // ── Public types ──────────────────────────────────────────────────────────
 
