@@ -3,7 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
-import { isBypassEnabled, recordBypassUsage, bypassEnvelope } from "../_shared/test-mode-bypass.ts";
+import { isBypassEnabled, recordBypassUsage, bypassEnvelope, checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 
 /**
  * IDV-001 & IDV-002: Identity/Company Verification
@@ -146,6 +146,25 @@ Deno.serve(async (req: Request) => {
     const { actorUserId } = deriveActorIds(authCtx);
 
     if (req.method === "POST") {
+      // ── Maintenance gate (platform admins exempt) ──
+      const maintenance = await checkMaintenanceMode(admin, {
+        source: "idv-verify",
+        requestId,
+        actorUserId,
+        orgId,
+        action: "idv_verify",
+      });
+      if (maintenance.blocked) {
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable — platform is in maintenance mode.",
+            code: "MAINTENANCE_MODE",
+            requestId,
+          }),
+          { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+        );
+      }
+
       const body = await req.json();
       const { entity_id, verification_type } = body;
       // verification_type: "individual" (IDV-001) or "company" (IDV-002)
