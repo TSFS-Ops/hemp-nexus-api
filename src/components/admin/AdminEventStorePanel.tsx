@@ -41,9 +41,16 @@ export function AdminEventStorePanel() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{events.length} event(s) (append-only, immutable)</p>
-      {total !== null && events.length >= EVENT_LIMIT && (
-        <Alert><AlertTriangle className="h-4 w-4" /><AlertDescription>Showing {events.length} of {total} events. Results are capped at {EVENT_LIMIT}.</AlertDescription></Alert>
+      <p className="text-sm text-muted-foreground">
+        Showing {events.length}{total !== null ? ` of ${total}` : ""} event(s) (append-only, immutable)
+      </p>
+      {total !== null && total > EVENT_LIMIT && events.length >= EVENT_LIMIT && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Showing the most recent {EVENT_LIMIT} of {total} events. Older events are not displayed here — query the event store directly to see them.
+          </AlertDescription>
+        </Alert>
       )}
       <Card><CardContent className="p-0">
         <Table>
