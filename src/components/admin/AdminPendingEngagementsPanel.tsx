@@ -729,30 +729,65 @@ export function AdminPendingEngagementsPanel() {
       );
       if (error) {
         // FunctionsHttpError carries the server response body in `context`.
-        // Pull the real reason out so the admin sees something actionable.
+        // The backend uses the standard ApiError envelope:
+        //   { code, message, details?, requestId }
+        // Surface all of it so admins can see *why* the send was rejected
+        // (e.g. MAINTENANCE_MODE, RECIPIENT_SUPPRESSED, INVALID_STATE, …)
+        // instead of the opaque "non-2xx status code" Supabase wraps it in.
         const ctx = (error as { context?: Response }).context;
-        let serverMsg = error.message;
+        const fallback = error.message || "Failed to send outreach email";
+        let title = fallback;
+        let description: string | undefined;
+        let status: number | undefined = ctx?.status;
+
         if (ctx && typeof ctx.text === "function") {
           try {
             const text = await ctx.clone().text();
             try {
               const parsed = JSON.parse(text);
-              serverMsg = parsed.error || parsed.message || text;
+              const code = parsed.code || parsed.error_code;
+              const message =
+                parsed.message || parsed.error || parsed.error_description;
+              if (code && message) {
+                title = `${code}: ${message}`;
+              } else if (message) {
+                title = message;
+              } else if (code) {
+                title = code;
+              } else if (text) {
+                title = text;
+              }
+              const parts: string[] = [];
+              if (status) parts.push(`HTTP ${status}`);
+              if (parsed.requestId) parts.push(`req ${parsed.requestId}`);
+              if (parsed.details) {
+                try {
+                  parts.push(JSON.stringify(parsed.details));
+                } catch {
+                  /* ignore */
+                }
+              }
+              description = parts.join(" · ") || undefined;
             } catch {
-              serverMsg = text;
+              // Non-JSON body — show raw text + status.
+              title = text || fallback;
+              description = status ? `HTTP ${status}` : undefined;
             }
           } catch {
-            // ignore
+            // ignore body read failures
           }
         }
-        throw new Error(serverMsg);
+        throw Object.assign(new Error(title), { description });
       }
       toast.success(`Email sent to ${data?.sent_to ?? outreachRecipient}`);
       setOutreachDialog(null);
       fetchEngagements();
     } catch (err: any) {
       console.error("Send outreach error:", err);
-      toast.error(err?.message || "Failed to send outreach email", { duration: 8000 });
+      toast.error(err?.message || "Failed to send outreach email", {
+        description: err?.description,
+        duration: 12000,
+      });
     } finally {
       setOutreachSending(false);
     }
