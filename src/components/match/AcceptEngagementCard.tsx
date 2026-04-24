@@ -56,28 +56,14 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
     setIsSubmitting(true);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session?.access_token) {
-        toast.error("Session expired. Please sign in again.");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/respond/${match.id}`,
+      await fetchEdgeFunction(
+        `poi-engagements/respond/${match.id}`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${sessionData.session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: pendingAction }),
+          body: { action: pendingAction },
+          label: pendingAction === "accepted" ? "accept the engagement" : "decline the engagement",
         }
       );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || err.error || `HTTP ${response.status}`);
-      }
 
       queryClient.invalidateQueries({ queryKey: ["engagement-tracker"] });
       queryClient.invalidateQueries({ queryKey: ["engagement-status-gate"] });
