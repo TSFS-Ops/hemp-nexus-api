@@ -66,6 +66,15 @@ export class EdgeInvokeError extends Error {
         opts.requestId
       );
     }
+    // Increment client-side counter for the two tracked edge-side codes.
+    // NO_SESSION is intentionally excluded — it fires before any network
+    // call (no session at all) and would inflate the "session died mid-
+    // download" signal we actually care about.
+    if (opts.code === "UNAUTHORIZED" || opts.code === "REFRESH_FAILED") {
+      recordSessionFailure(opts.code as TrackedSessionFailureCode, {
+        requestId: opts.requestId,
+      });
+    }
   }
 }
 
