@@ -338,7 +338,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               <DownloadErrorState
                 title="Couldn't download deal certificate"
                 error={certError}
-                onRetry={downloadDealCertificate}
+                onRetry={() => downloadDealCertificate()}
                 retrying={certLoading}
               />
             )}
@@ -365,7 +365,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               <DownloadErrorState
                 title="Couldn't generate evidence pack"
                 error={packError}
-                onRetry={generatePack}
+                onRetry={() => generatePack()}
                 retrying={loading}
               />
             )}
@@ -490,7 +490,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               <DownloadErrorState
                 title="Couldn't download evidence report"
                 error={reportError}
-                onRetry={downloadHtmlReport}
+                onRetry={() => downloadHtmlReport()}
                 retrying={reportLoading}
               />
             )}
