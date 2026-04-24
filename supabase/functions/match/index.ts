@@ -255,6 +255,39 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
+      // Unverified orgs may search, draft and engage internally — but they
+      // MUST NOT mint a counterparty-facing POI under Izenzo's name. This
+      // check runs BEFORE the engagement guard, BEFORE evidence/waiver gates,
+      // and BEFORE the credit burn, so an unverified org never loses tokens
+      // to a blocked mint and the audit trail records the correct denial reason.
+      const legitimacy = await checkOrgLegitimacy(supabase, authCtx.orgId);
+      if (!legitimacy.allowed) {
+        console.warn(
+          `[${requestId}] LEGITIMACY_GATE_BLOCKED reason=${legitimacy.reason} status=${legitimacy.status} match_id=${matchId} org_id=${authCtx.orgId}`,
+        );
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: match.org_id,
+            actor_user_id: actorUserId,
+            actor_api_key_id: actorApiKeyId,
+            action: "intent.denied",
+            entity_type: "match",
+            entity_id: matchId,
+            metadata: {
+              request_id: requestId,
+              reason: "org_not_verified",
+              legitimacy_reason: legitimacy.reason,
+              trade_approval_status: legitimacy.status,
+              valid_until: legitimacy.validUntil,
+            },
+          });
+        } catch (auditErr) {
+          console.error(`[${requestId}] Failed to write legitimacy denial audit row:`, auditErr);
+        }
+        throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
+      }
+
       // ENGAGEMENT HOLD-POINT GUARD: Block POI generation if counterparty has not accepted
       const { data: engagement, error: engErr } = await supabase
         .from("poi_engagements")
