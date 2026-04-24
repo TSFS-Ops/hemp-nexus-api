@@ -126,9 +126,6 @@ function CommandBar() {
           <SystemStatusBadge />
         </div>
 
-        <div className="hidden">{/* spacing preserved */}</div>
-        </div>
-
         <div className="flex items-center gap-3 sm:gap-5 shrink-0">
           {/* View public marketing site */}
           <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground/70 hover:text-emerald-400 transition-colors" aria-label="Open public marketing site in new tab">
