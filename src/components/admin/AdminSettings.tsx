@@ -174,20 +174,53 @@ export function AdminSettings() {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Maintenance Mode</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Temporarily disable access to the platform
-                  </p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                    Saved as a configuration flag. Enforcement requires deployment of a maintenance gate.
-                  </p>
+              <div className="space-y-3 rounded-md border border-border p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label>Maintenance Mode</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Blocks new trades, engagements, document sharing, identity checks, invitations and team invites for non-admin users. Read-only views (existing trades, messages, search) remain available.
+                    </p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                      ✓ Server-side enforcement active. Platform admins are exempt. Toggling logs an audit row.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={general.maintenanceMode}
+                    onCheckedChange={(checked) =>
+                      setGeneral({
+                        ...general,
+                        maintenanceMode: checked,
+                        // Stamp the moment we turn ON; clear when turning OFF.
+                        maintenanceStartedAt: checked ? new Date().toISOString() : null,
+                      })
+                    }
+                  />
                 </div>
-                <Switch
-                  checked={general.maintenanceMode}
-                  onCheckedChange={(checked) => setGeneral({ ...general, maintenanceMode: checked })}
-                />
+
+                {general.maintenanceMode && (
+                  <div className="space-y-1.5 pt-2 border-t border-border">
+                    <Label htmlFor="maintenanceReason" className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Reason shown to users
+                    </Label>
+                    <Textarea
+                      id="maintenanceReason"
+                      placeholder="e.g. Scheduled database migration. Back online by 18:00 SAST."
+                      value={general.maintenanceReason ?? ""}
+                      onChange={(e) => setGeneral({ ...general, maintenanceReason: e.target.value })}
+                      maxLength={500}
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Appears in the red banner shown to all non-admin users. Leave blank for the default message.
+                      {general.maintenanceStartedAt && (
+                        <span className="block mt-1">
+                          Started: {new Date(general.maintenanceStartedAt).toLocaleString()}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
