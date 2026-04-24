@@ -24,7 +24,7 @@ import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard"
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 
 function MatchDetailsContent() {
