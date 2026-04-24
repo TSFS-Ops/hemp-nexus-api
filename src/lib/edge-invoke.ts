@@ -252,7 +252,8 @@ export async function invokeEdgeFunction<T = unknown>(
   options: InvokeEdgeOptions = {}
 ): Promise<T> {
   const { body, method, headers, requireSession = true, label } = options;
-  await ensureFreshAccessToken({ requireSession });
+  const metricsContext = label || functionName;
+  await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
   const { data, error } = await supabase.functions.invoke(functionName, {
     body: body as Record<string, unknown> | undefined,
@@ -278,7 +279,8 @@ export async function invokeEdgeFunction<T = unknown>(
       serverStatus,
       serverBody,
       label ? `Could not ${label}` : `Edge function ${functionName} failed`,
-      requestId
+      requestId,
+      metricsContext
     );
   }
 
