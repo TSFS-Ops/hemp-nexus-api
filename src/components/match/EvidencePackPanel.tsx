@@ -140,7 +140,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         return;
       }
       console.error("Certificate download error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
+      toast.error(describeEdgeError(error, "Failed to download certificate."), { duration: 8000 });
     } finally {
       setCertLoading(false);
     }
