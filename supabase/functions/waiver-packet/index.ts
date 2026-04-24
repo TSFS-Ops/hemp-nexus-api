@@ -11,6 +11,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { checkMaintenanceMode, logDecision } from "../_shared/test-mode-bypass.ts";
 
 const BUCKET = "evidence-waiver-packets";
 const SIGNED_URL_TTL_SECONDS = 300; // 5 minutes
@@ -199,11 +200,28 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 
+  console.log(
+    `[request] ${JSON.stringify({
+      tag: "waiver-packet",
+      requestId,
+      method: req.method,
+      origin: origin ?? null,
+      ts: new Date().toISOString(),
+    })}`,
+  );
+
   try {
     const corsResp = handleCors(req, allowedOrigins);
     if (corsResp) return corsResp;
 
     if (req.method !== "POST") {
+      logDecision("maintenance", {
+        source: "waiver-packet",
+        decision: "block",
+        requestId,
+        reason: "method_not_allowed",
+        details: { method: req.method },
+      });
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
         headers: { ...headers, "Content-Type": "application/json" },
@@ -218,6 +236,12 @@ Deno.serve(async (req) => {
     // Authenticate caller via JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
+      logDecision("maintenance", {
+        source: "waiver-packet",
+        decision: "block",
+        requestId,
+        reason: "missing_bearer",
+      });
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...headers, "Content-Type": "application/json" },
@@ -228,12 +252,36 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData.user) {
+      logDecision("maintenance", {
+        source: "waiver-packet",
+        decision: "block",
+        requestId,
+        reason: `auth_failed: ${userErr?.message ?? "no_user"}`,
+      });
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
     const userId = userData.user.id;
+
+    // Maintenance gate (platform admins are exempt by default).
+    const maintenance = await checkMaintenanceMode(admin, {
+      source: "waiver-packet",
+      requestId,
+      actorUserId: userId,
+      action: "download_waiver_packet",
+    });
+    if (maintenance.blocked) {
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable — platform is in maintenance mode.",
+          code: "MAINTENANCE_MODE",
+          request_id: requestId,
+        }),
+        { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+      );
+    }
 
     const body = await req.json().catch(() => ({}));
     const waiverId = typeof body.waiver_id === "string" ? body.waiver_id : null;
