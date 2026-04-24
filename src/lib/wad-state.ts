@@ -10,7 +10,21 @@
 
 // ─── Statuses ───────────────────────────────────────────────────────
 
-export const WAD_STATUSES = ["draft", "sealed", "revoked", "superseded"] as const;
+// NOTE: keep this list in sync with the `wads_status_check` constraint in
+// the database. `awaiting_attestations` is a real persisted status the
+// backend transitions into after the WaD is created (before any signatory
+// has attested). Omitting it here previously caused
+// `canDo("awaiting_attestations", "attest")` to return `false`, which made
+// the WadStepper show "Attestation not available — Only buyer and seller
+// signatories can attest" to legitimate counterparties (incident
+// 2026-04-24: dovedavies14 could not attest as the seller).
+export const WAD_STATUSES = [
+  "draft",
+  "awaiting_attestations",
+  "sealed",
+  "revoked",
+  "superseded",
+] as const;
 export type WadStatusValue = (typeof WAD_STATUSES)[number];
 
 // ─── Actions ────────────────────────────────────────────────────────
