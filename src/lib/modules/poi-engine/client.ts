@@ -21,15 +21,14 @@ export async function requestTransition(
   _accessToken?: string
 ): Promise<TransitionResult> {
   try {
-    const data = await fetchEdgeFunction<{ event?: unknown; error?: string; message?: string }>(
-      'poi-transition',
-      {
-        method: 'POST',
-        body: request,
-        label: 'request state transition',
-      }
-    );
-    return { success: true, event: (data as { event: unknown }).event };
+    const data = await fetchEdgeFunction<{
+      event: { id: string; from_state: string; to_state: string; created_at: string };
+    }>('poi-transition', {
+      method: 'POST',
+      body: request,
+      label: 'request state transition',
+    });
+    return { success: true, event: data.event };
   } catch (err) {
     if (err instanceof EdgeInvokeError) {
       return { success: false, error: err.message };
