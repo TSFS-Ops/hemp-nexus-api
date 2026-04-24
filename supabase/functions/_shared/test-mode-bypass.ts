@@ -104,6 +104,18 @@ export async function isBypassEnabled(
   source = "unknown",
   requestId?: string,
 ): Promise<boolean> {
+  // Production lockout — refuse bypasses on the live tier no matter what the DB says.
+  if (isProductionTier()) {
+    logDecision("test-mode", {
+      source,
+      gate,
+      decision: "real",
+      requestId,
+      reason: "production_tier_lockout",
+    });
+    return false;
+  }
+
   try {
     const { data, error } = await client.rpc("is_test_mode_bypass_enabled", { _gate: gate });
     if (error) {
@@ -135,6 +147,24 @@ export async function isBypassEnabled(
     });
     return false;
   }
+}
+
+/**
+ * One-shot helper for "check + audit + return decision" used by call-sites
+ * that just need to know "may I skip this hard-gate?". Returns true when the
+ * bypass actually fired (and an audit row was written), false otherwise.
+ *
+ * Designed for hard-gates inside the WaD function and similar — you call this
+ * inside the failure branch and short-circuit your own throw if it returns true.
+ */
+export async function tryBypass(
+  client: SupabaseClient,
+  ctx: BypassAuditContext,
+): Promise<boolean> {
+  const enabled = await isBypassEnabled(client, ctx.gate, ctx.source, ctx.requestId);
+  if (!enabled) return false;
+  await recordBypassUsage(client, ctx);
+  return true;
 }
 
 /**
