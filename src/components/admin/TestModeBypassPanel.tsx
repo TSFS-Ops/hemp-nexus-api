@@ -62,7 +62,7 @@ function formatCountdown(expiresAt: string | null): { label: string; expired: bo
 
 type GateGroup = "upstream" | "wad";
 
-const GATES: { key: keyof Omit<BypassState, "enabled" | "note">; label: string; description: string; group: GateGroup }[] = [
+const GATES: { key: keyof Omit<BypassState, "enabled" | "note" | "enabled_at" | "expires_at">; label: string; description: string; group: GateGroup }[] = [
   // ── Upstream provider gates (skip the external compliance integrations) ──
   { key: "idv", label: "Identity verification (IDV)", description: "Skip Onfido / Companies House / CIPC. Entities auto-marked as verified.", group: "upstream" },
   { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip Dilisense / Dow Jones / Refinitiv. Synthesises a 'clear' screening result.", group: "upstream" },
