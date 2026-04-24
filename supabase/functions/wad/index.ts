@@ -7,6 +7,13 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
+import { tryBypass } from "../_shared/test-mode-bypass.ts";
+
+type BypassedGateRecord = {
+  gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
+  org_id?: string | null;
+  detail: Record<string, unknown>;
+};
 
 const ATTESTATION_TEXT = "I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed.";
 
@@ -161,6 +168,10 @@ Deno.serve(async (req) => {
       }
 
       // ── Hard-gate: Screening recentness (within 30 days) + risk_band checks ──
+      // These can be bypassed in test mode (master switch + per-gate flag) so the
+      // workflow can be exercised end-to-end while real providers are pending.
+      // Every bypass is audited and stamped onto the WaD's metadata.
+      const bypassedGates: BypassedGateRecord[] = [];
       const partyOrgIds = [poi.buyer_org_id, poi.seller_org_id].filter(Boolean);
       for (const partyOrgId of partyOrgIds) {
         // Check latest screening is within 30 days
@@ -173,21 +184,74 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (!latestScreening) {
+          // Treat "no screening at all" as a recentness failure for bypass purposes —
+          // sanctions screening is the upstream provider; the recentness flag is
+          // what governs whether WaD will accept a missing/stale row.
+          const bypassed = await tryBypass(supabase, {
+            gate: "screening_recentness",
+            source: "wad",
+            orgId: partyOrgId,
+            actorUserId,
+            requestId,
+            details: { poi_id, reason: "no_screening_results_for_org" },
+          });
+          if (bypassed) {
+            bypassedGates.push({
+              gate: "screening_recentness",
+              org_id: partyOrgId,
+              detail: { reason: "no_screening_results_for_org" },
+            });
+            continue; // skip the rest of this org's screening checks
+          }
           throw new ApiException("HARD_GATE_FAILED", `No screening results found for org ${partyOrgId}. WaD denied.`, 422);
         }
 
         const screenedAt = new Date(latestScreening.screened_at);
         const daysSinceScreening = (Date.now() - screenedAt.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceScreening > 30) {
-          throw new ApiException(
-            "HARD_GATE_FAILED",
-            `Screening for org ${partyOrgId} is ${Math.floor(daysSinceScreening)} days old. Must be rescreened within 30 days. WaD denied.`,
-            422
-          );
+          const bypassed = await tryBypass(supabase, {
+            gate: "screening_recentness",
+            source: "wad",
+            orgId: partyOrgId,
+            actorUserId,
+            requestId,
+            details: { poi_id, days_since_screening: Math.floor(daysSinceScreening) },
+          });
+          if (bypassed) {
+            bypassedGates.push({
+              gate: "screening_recentness",
+              org_id: partyOrgId,
+              detail: { days_since_screening: Math.floor(daysSinceScreening) },
+            });
+          } else {
+            throw new ApiException(
+              "HARD_GATE_FAILED",
+              `Screening for org ${partyOrgId} is ${Math.floor(daysSinceScreening)} days old. Must be rescreened within 30 days. WaD denied.`,
+              422
+            );
+          }
         }
 
         if (latestScreening.status !== "clear") {
-          throw new ApiException("HARD_GATE_FAILED", `Screening status for org ${partyOrgId} is '${latestScreening.status}', not 'clear'. WaD denied.`, 422);
+          // Status-not-clear is a sanctions-screening result, not a recentness issue —
+          // honour the existing "sanctions" gate to decide whether to wave it through.
+          const bypassed = await tryBypass(supabase, {
+            gate: "sanctions",
+            source: "wad",
+            orgId: partyOrgId,
+            actorUserId,
+            requestId,
+            details: { poi_id, screening_status: latestScreening.status },
+          });
+          if (bypassed) {
+            bypassedGates.push({
+              gate: "screening_recentness", // recorded under the recentness banner for the WaD stamp
+              org_id: partyOrgId,
+              detail: { reason: "screening_status_not_clear", actual_status: latestScreening.status },
+            });
+          } else {
+            throw new ApiException("HARD_GATE_FAILED", `Screening status for org ${partyOrgId} is '${latestScreening.status}', not 'clear'. WaD denied.`, 422);
+          }
         }
 
         // Check risk_band is not 'critical' or 'high'
@@ -200,11 +264,27 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (riskScore && ["critical", "high"].includes(riskScore.risk_band)) {
-          throw new ApiException(
-            "HARD_GATE_FAILED",
-            `Risk band for org ${partyOrgId} is '${riskScore.risk_band}' (score: ${riskScore.score}). WaD denied.`,
-            422
-          );
+          const bypassed = await tryBypass(supabase, {
+            gate: "risk_scoring",
+            source: "wad",
+            orgId: partyOrgId,
+            actorUserId,
+            requestId,
+            details: { poi_id, risk_band: riskScore.risk_band, score: riskScore.score },
+          });
+          if (bypassed) {
+            bypassedGates.push({
+              gate: "risk_scoring",
+              org_id: partyOrgId,
+              detail: { risk_band: riskScore.risk_band, score: riskScore.score },
+            });
+          } else {
+            throw new ApiException(
+              "HARD_GATE_FAILED",
+              `Risk band for org ${partyOrgId} is '${riskScore.risk_band}' (score: ${riskScore.score}). WaD denied.`,
+              422
+            );
+          }
         }
       }
 
@@ -237,13 +317,32 @@ Deno.serve(async (req) => {
           disabled_at: e.disabled_at,
           consecutive_failures: e.consecutive_failures,
         }));
-        console.warn(`[WaD Gate 10 FAIL] WEBHOOK_CONNECTIVITY_BROKEN`, JSON.stringify(offenders));
-        throw new ApiException(
-          "HARD_GATE_FAILED",
-          "WaD Gate 10 Failure: WEBHOOK_CONNECTIVITY_BROKEN. One or more participants have a disabled primary webhook endpoint. Resolve at /developer/webhooks before re-issuing.",
-          422,
-          { gate: "WEBHOOK_CONNECTIVITY", broken_endpoints: offenders }
-        );
+
+        const bypassed = await tryBypass(supabase, {
+          gate: "webhook_connectivity",
+          source: "wad",
+          orgId: poi.org_id,
+          actorUserId,
+          requestId,
+          details: { poi_id, broken_endpoints: offenders },
+        });
+
+        if (bypassed) {
+          console.warn(`[WaD Gate 10 BYPASSED] WEBHOOK_CONNECTIVITY skipped under test mode`, JSON.stringify(offenders));
+          bypassedGates.push({
+            gate: "webhook_connectivity",
+            org_id: null,
+            detail: { broken_endpoints: offenders },
+          });
+        } else {
+          console.warn(`[WaD Gate 10 FAIL] WEBHOOK_CONNECTIVITY_BROKEN`, JSON.stringify(offenders));
+          throw new ApiException(
+            "HARD_GATE_FAILED",
+            "WaD Gate 10 Failure: WEBHOOK_CONNECTIVITY_BROKEN. One or more participants have a disabled primary webhook endpoint. Resolve at /developer/webhooks before re-issuing.",
+            422,
+            { gate: "WEBHOOK_CONNECTIVITY", broken_endpoints: offenders }
+          );
+        }
       }
 
       // Check if active WaD already exists
@@ -299,6 +398,16 @@ Deno.serve(async (req) => {
         })),
         event_count: events.length,
         event_hashes: events.map(e => e.payload_hash),
+        // ── Forensic memory: which hard-gates were bypassed under test mode ──
+        // Stamped INSIDE evidence_bundle so it gets hashed into the seal — this
+        // makes the bypass record cryptographically bound to the WaD and visible
+        // in the certificate PDF + evidence pack viewer. Empty array when no
+        // bypass fired (the normal/production path).
+        test_mode: {
+          issued_under_test_mode: bypassedGates.length > 0,
+          bypassed_gates: bypassedGates,
+          bypassed_at: bypassedGates.length > 0 ? new Date().toISOString() : null,
+        },
       };
 
       // Get previous ledger entry hash
@@ -326,7 +435,11 @@ Deno.serve(async (req) => {
 
       if (wadError) handleDatabaseError(wadError, requestId);
 
-      await writeAuditLog("wad.created", wad.id, { poi_id });
+      await writeAuditLog("wad.created", wad.id, {
+        poi_id,
+        issued_under_test_mode: bypassedGates.length > 0,
+        bypassed_gates: bypassedGates.map((b) => b.gate),
+      });
 
       return new Response(JSON.stringify(wad), {
         status: 201,
@@ -737,6 +850,38 @@ Deno.serve(async (req) => {
         color: grayscale(0.4),
       });
       y -= LINE_H;
+
+      // ── TEST MODE banner (only when bypasses were applied during issuance) ──
+      const testModeMeta = (wad.evidence_bundle as any)?.test_mode;
+      if (testModeMeta?.issued_under_test_mode) {
+        const bypassedNames = (testModeMeta.bypassed_gates as Array<{ gate: string }>)
+          .map((b) => b.gate.replace(/_/g, " "))
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .join(", ");
+        // Amber alert strip across the page
+        page.drawRectangle({
+          x: MARGIN - 4,
+          y: y - 4,
+          width: CONTENT_W + 8,
+          height: 32,
+          color: rgb(0.98, 0.85, 0.4),
+        });
+        page.drawText("⚠ TEST MODE — DEMO GRADE ONLY", {
+          x: MARGIN,
+          y: y + 14,
+          size: 11,
+          font: helveticaBold,
+          color: rgb(0.4, 0.2, 0),
+        });
+        page.drawText(`Issued without: ${bypassedNames}. Not contractually durable.`, {
+          x: MARGIN,
+          y: y + 2,
+          size: 8,
+          font: helvetica,
+          color: rgb(0.4, 0.2, 0),
+        });
+        y -= 40;
+      }
 
       // ── Certificate Identity ──
       drawSectionHeader("Certificate Details");

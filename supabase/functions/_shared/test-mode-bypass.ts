@@ -22,7 +22,27 @@
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-export type BypassGate = "idv" | "sanctions" | "kyb" | "ubo" | "authority";
+export type BypassGate =
+  | "idv"
+  | "sanctions"
+  | "kyb"
+  | "ubo"
+  | "authority"
+  // ── WaD-internal gates (added to let test mode reach the evidence pack) ──
+  | "risk_scoring"          // bypass dd_risk_scores high/critical block in WaD
+  | "webhook_connectivity"  // bypass WaD Gate 10 (broken primary webhooks)
+  | "screening_recentness"; // bypass the 30-day staleness check on screening_results
+
+/**
+ * Production lockout: even if an admin fat-fingers the master switch on in the
+ * live environment, bypasses physically cannot fire. Set ENVIRONMENT_TIER=production
+ * on the live edge runtime to engage. Anything else (staging/preview/unset) is
+ * treated as non-production and bypasses are honoured per the admin toggles.
+ */
+function isProductionTier(): boolean {
+  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
+  return tier === "production" || tier === "live" || tier === "prod";
+}
 
 export interface BypassAuditContext {
   gate: BypassGate;
@@ -84,6 +104,18 @@ export async function isBypassEnabled(
   source = "unknown",
   requestId?: string,
 ): Promise<boolean> {
+  // Production lockout — refuse bypasses on the live tier no matter what the DB says.
+  if (isProductionTier()) {
+    logDecision("test-mode", {
+      source,
+      gate,
+      decision: "real",
+      requestId,
+      reason: "production_tier_lockout",
+    });
+    return false;
+  }
+
   try {
     const { data, error } = await client.rpc("is_test_mode_bypass_enabled", { _gate: gate });
     if (error) {
@@ -115,6 +147,24 @@ export async function isBypassEnabled(
     });
     return false;
   }
+}
+
+/**
+ * One-shot helper for "check + audit + return decision" used by call-sites
+ * that just need to know "may I skip this hard-gate?". Returns true when the
+ * bypass actually fired (and an audit row was written), false otherwise.
+ *
+ * Designed for hard-gates inside the WaD function and similar — you call this
+ * inside the failure branch and short-circuit your own throw if it returns true.
+ */
+export async function tryBypass(
+  client: SupabaseClient,
+  ctx: BypassAuditContext,
+): Promise<boolean> {
+  const enabled = await isBypassEnabled(client, ctx.gate, ctx.source, ctx.requestId);
+  if (!enabled) return false;
+  await recordBypassUsage(client, ctx);
+  return true;
 }
 
 /**

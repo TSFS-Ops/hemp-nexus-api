@@ -16,6 +16,9 @@ interface BypassState {
   kyb: boolean;
   ubo: boolean;
   authority: boolean;
+  risk_scoring: boolean;
+  webhook_connectivity: boolean;
+  screening_recentness: boolean;
   note: string;
 }
 
@@ -26,15 +29,25 @@ const DEFAULT_STATE: BypassState = {
   kyb: false,
   ubo: false,
   authority: false,
+  risk_scoring: false,
+  webhook_connectivity: false,
+  screening_recentness: false,
   note: "",
 };
 
-const GATES: { key: keyof Omit<BypassState, "enabled" | "note">; label: string; description: string }[] = [
-  { key: "idv", label: "Identity verification (IDV)", description: "Skip Onfido / Companies House / CIPC. Entities auto-marked as verified." },
-  { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip Dilisense / Dow Jones / Refinitiv. Returns clear with no hits." },
-  { key: "kyb", label: "Business verification (KYB)", description: "Skip company registry checks. Covered by the IDV bypass for company-type entities." },
-  { key: "ubo", label: "Beneficial ownership (UBO)", description: "Treat ownership as 100% verified across all chain depths." },
-  { key: "authority", label: "Authority-to-bind (ATB)", description: "Treat the signing person as having a verified active authority record." },
+type GateGroup = "upstream" | "wad";
+
+const GATES: { key: keyof Omit<BypassState, "enabled" | "note">; label: string; description: string; group: GateGroup }[] = [
+  // ── Upstream provider gates (skip the external compliance integrations) ──
+  { key: "idv", label: "Identity verification (IDV)", description: "Skip Onfido / Companies House / CIPC. Entities auto-marked as verified.", group: "upstream" },
+  { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip Dilisense / Dow Jones / Refinitiv. Synthesises a 'clear' screening result.", group: "upstream" },
+  { key: "kyb", label: "Business verification (KYB)", description: "Skip company registry checks. Covered by the IDV bypass for company-type entities.", group: "upstream" },
+  { key: "ubo", label: "Beneficial ownership (UBO)", description: "Treat ownership as 100% verified across all chain depths.", group: "upstream" },
+  { key: "authority", label: "Authority-to-bind (ATB)", description: "Treat the signing person as having a verified active authority record.", group: "upstream" },
+  // ── WaD-internal gates (let the workflow reach the evidence pack step) ──
+  { key: "screening_recentness", label: "Screening recentness (WaD)", description: "Skip the 30-day staleness check on screening_results inside the WaD function. Use when a test session outlives its initial screening.", group: "wad" },
+  { key: "risk_scoring", label: "Risk scoring (WaD)", description: "Allow WaD issuance even when a party's dd_risk_scores band is 'high' or 'critical'. The risk record is still kept; just not enforced.", group: "wad" },
+  { key: "webhook_connectivity", label: "Webhook connectivity / Gate 10 (WaD)", description: "Allow WaD issuance when a party's primary webhook endpoint is tripped (status='inactive'). Real settlement should NOT proceed without working webhooks.", group: "wad" },
 ];
 
 export function TestModeBypassPanel() {
@@ -101,10 +114,12 @@ export function TestModeBypassPanel() {
           <div>
             <CardTitle>Test-mode compliance bypass</CardTitle>
             <CardDescription className="mt-1">
-              Temporarily skip external compliance providers (IDV, sanctions, KYB, UBO, ATB) so the
-              rest of the platform can be tested while real integrations are still being wired.
-              All bypass usage is written to the admin audit log and a global TEST MODE banner is
-              shown to every user while any flag is active.
+              Temporarily skip compliance gates so the rest of the platform can be tested while
+              real integrations are still being wired. Two layers: <strong>upstream provider gates</strong>
+              (IDV / sanctions / KYB / UBO / ATB) and <strong>WaD-internal gates</strong> (screening
+              recentness / risk scoring / webhook connectivity). All bypass usage is written to the
+              admin audit log, every WaD issued under bypass is permanently stamped, and a global
+              TEST MODE banner is shown to every user while any flag is active.
             </CardDescription>
           </div>
         </div>
@@ -123,20 +138,53 @@ export function TestModeBypassPanel() {
           />
         </div>
 
-        <div className="space-y-4">
-          {GATES.map((gate) => (
-            <div key={gate.key} className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <Label className="text-sm">{gate.label}</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">{gate.description}</p>
-              </div>
-              <Switch
-                checked={state[gate.key]}
-                disabled={!state.enabled}
-                onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
-              />
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold mb-3">Upstream provider gates</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Skip the external compliance integrations (IDV, sanctions, KYB, UBO, ATB) that aren't wired in yet.
+            </p>
+            <div className="space-y-4">
+              {GATES.filter((g) => g.group === "upstream").map((gate) => (
+                <div key={gate.key} className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <Label className="text-sm">{gate.label}</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">{gate.description}</p>
+                  </div>
+                  <Switch
+                    checked={state[gate.key]}
+                    disabled={!state.enabled}
+                    onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div className="border-t pt-6">
+            <h4 className="text-sm font-semibold mb-3">WaD-internal gates</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              The WaD function runs four hard-gates of its own that are <em>not</em> covered by the upstream
+              bypasses above. Enable these to let the workflow reach the evidence pack step.
+              Every WaD issued under any of these flags is permanently stamped <strong>"TEST MODE — demo
+              grade only"</strong> on its certificate and in its evidence bundle hash.
+            </p>
+            <div className="space-y-4">
+              {GATES.filter((g) => g.group === "wad").map((gate) => (
+                <div key={gate.key} className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <Label className="text-sm">{gate.label}</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">{gate.description}</p>
+                  </div>
+                  <Switch
+                    checked={state[gate.key]}
+                    disabled={!state.enabled}
+                    onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -151,9 +199,9 @@ export function TestModeBypassPanel() {
         </div>
 
         {state.enabled && anyGateOn && (
-          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
-            <strong>Active:</strong> {GATES.filter((g) => state[g.key]).map((g) => g.label).join(", ")}.
-            Disable as soon as the corresponding integration is live.
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+            <div><strong>Active:</strong> {GATES.filter((g) => state[g.key]).map((g) => g.label).join(", ")}.</div>
+            <div>Disable as soon as the corresponding integration is live. Production-tier deployments ignore these flags entirely.</div>
           </div>
         )}
 
