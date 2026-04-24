@@ -89,9 +89,9 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       setPack(data);
       toast.success("Evidence pack generated successfully");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to generate evidence pack";
+      const message = describeEdgeError(error, "Failed to generate evidence pack");
       console.error("Evidence pack error:", error);
-      toast.error(message);
+      toast.error(message, { duration: 8000 });
     } finally {
       setLoading(false);
     }
