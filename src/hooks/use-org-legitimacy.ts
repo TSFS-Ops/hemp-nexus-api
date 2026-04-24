@@ -25,8 +25,10 @@ export type LegitimacyState =
 
 const RECOVERY_CTA = "Open Settings → Company Identity to start your KYB review.";
 
+type BlockedReason = "no_record" | "not_approved" | "revoked" | "expired" | "no_org";
+
 function buildBlockedMessage(
-  reason: Exclude<LegitimacyState["reason"], undefined>,
+  reason: BlockedReason,
   status: string | null,
 ): string {
   switch (reason) {
