@@ -128,26 +128,16 @@ export function WebhookManagement() {
     if (deletingWebhook) return;
     setDeletingWebhook(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks/${webhookId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to delete webhook");
+      await fetchEdgeFunction(`webhooks/${webhookId}`, {
+        method: "DELETE",
+        label: "delete webhook",
+      });
 
       toast.success("Webhook endpoint deleted");
       fetchWebhooks();
     } catch (error) {
       console.error("Error deleting webhook:", error);
-      toast.error("Failed to delete webhook endpoint");
+      toast.error(error instanceof Error ? error.message : "Failed to delete webhook endpoint");
     } finally {
       setDeletingWebhook(false);
       setDeleteDialog({ open: false, webhookId: null });
