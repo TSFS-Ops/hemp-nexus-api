@@ -29,8 +29,15 @@ export function EvidenceChainIndicator({ matchId, compact = false }: EvidenceCha
         return { eventCount: 0, chainValid: false, hasIntentConfirmed: false, errorType: null };
       }
 
-      // 2. Auth check - surface expired/missing session explicitly
-      const { data: { session } } = await supabase.auth.getSession();
+      // 2. Auth check - surface expired/missing session explicitly. Auto-refresh
+      // the access token if it's about to expire so we don't send a stale JWT
+      // (which would surface server-side as "Unauthorized").
+      let { data: { session } } = await supabase.auth.getSession();
+      const tokenStale = !!session?.expires_at && session.expires_at * 1000 - Date.now() < 30_000;
+      if (session && tokenStale) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed?.session) session = refreshed.session;
+      }
       if (!session) {
         throw new ChainVerificationError("auth_expired", "Please sign in to verify evidence chain");
       }
