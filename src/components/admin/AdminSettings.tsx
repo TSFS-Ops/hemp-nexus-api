@@ -14,6 +14,8 @@ import { TestModeBypassPanel } from "@/components/admin/TestModeBypassPanel";
 interface GeneralSettings {
   siteName: string;
   maintenanceMode: boolean;
+  maintenanceReason?: string;
+  maintenanceStartedAt?: string | null;
   allowNewRegistrations: boolean;
 }
 
@@ -37,6 +39,8 @@ export function AdminSettings() {
   const [general, setGeneral] = useState<GeneralSettings>({
     siteName: "Izenzo",
     maintenanceMode: false,
+    maintenanceReason: "",
+    maintenanceStartedAt: null,
     allowNewRegistrations: true,
   });
   const [api, setApi] = useState<ApiSettings>({
