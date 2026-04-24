@@ -851,6 +851,38 @@ Deno.serve(async (req) => {
       });
       y -= LINE_H;
 
+      // ── TEST MODE banner (only when bypasses were applied during issuance) ──
+      const testModeMeta = (wad.evidence_bundle as any)?.test_mode;
+      if (testModeMeta?.issued_under_test_mode) {
+        const bypassedNames = (testModeMeta.bypassed_gates as Array<{ gate: string }>)
+          .map((b) => b.gate.replace(/_/g, " "))
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .join(", ");
+        // Amber alert strip across the page
+        page.drawRectangle({
+          x: MARGIN - 4,
+          y: y - 4,
+          width: CONTENT_W + 8,
+          height: 32,
+          color: rgb(0.98, 0.85, 0.4),
+        });
+        page.drawText("⚠ TEST MODE — DEMO GRADE ONLY", {
+          x: MARGIN,
+          y: y + 14,
+          size: 11,
+          font: helveticaBold,
+          color: rgb(0.4, 0.2, 0),
+        });
+        page.drawText(`Issued without: ${bypassedNames}. Not contractually durable.`, {
+          x: MARGIN,
+          y: y + 2,
+          size: 8,
+          font: helvetica,
+          color: rgb(0.4, 0.2, 0),
+        });
+        y -= 40;
+      }
+
       // ── Certificate Identity ──
       drawSectionHeader("Certificate Details");
       drawField("WaD Identifier", wadId, true);
