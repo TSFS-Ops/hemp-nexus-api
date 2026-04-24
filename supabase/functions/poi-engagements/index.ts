@@ -574,6 +574,9 @@ Deno.serve(async (req) => {
             current_status: currentStatus,
             subject: parsed.data.subject,
             request_id: requestId,
+            // ── Step 3: forensic audit memory ──
+            gate_position: outreachLegitimacy.gatePosition,
+            governance_profile_id: outreachGovernanceProfile.profileId,
           },
         });
         console.log(
