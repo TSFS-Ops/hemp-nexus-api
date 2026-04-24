@@ -87,6 +87,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const generatePack = useCallback(async () => {
     try {
       setLoading(true);
+      setPackError(null);
       setVerificationResult(null);
 
       const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
@@ -98,6 +99,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to generate evidence pack";
       console.error("Evidence pack error:", error);
+      setPackError(error);
       toast.error(message);
     } finally {
       setLoading(false);
@@ -113,6 +115,8 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
   const downloadHtmlReport = useCallback(async () => {
     try {
+      setReportLoading(true);
+      setReportError(null);
       const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
         method: "GET",
         query: { format: "pdf" },
@@ -125,13 +129,17 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       });
     } catch (error) {
       console.error("Report download error:", error);
+      setReportError(error);
       toast.error(error instanceof Error ? error.message : "Failed to download evidence report");
+    } finally {
+      setReportLoading(false);
     }
   }, [matchId]);
 
   const downloadDealCertificate = useCallback(async () => {
     try {
       setCertLoading(true);
+      setCertError(null);
       const html = await fetchEdgeFunction<string>(`deal-certificate/${matchId}`, {
         method: "GET",
         label: "download deal certificate",
@@ -143,10 +151,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       });
     } catch (error) {
       if (error instanceof EdgeInvokeError && error.status === 422) {
-        toast.error("Certificate is only available once the deal reaches Signed Deal state.");
+        const msg = "Certificate is only available once the deal reaches Signed Deal state.";
+        setCertError(new Error(msg));
+        toast.error(msg);
         return;
       }
       console.error("Certificate download error:", error);
+      setCertError(error);
       toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
     } finally {
       setCertLoading(false);
