@@ -66,6 +66,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Maintenance gate (platform admins are exempt) ──
+    const maintenance = await checkMaintenanceMode(supabase, {
+      source: "send-team-invite",
+      actorUserId: user.id,
+      action: "send_team_invite",
+    });
+    if (maintenance.blocked) {
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable — platform is in maintenance mode.",
+          code: "MAINTENANCE_MODE",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // ── Server-side role enforcement ──
     // The client-side ALLOWED_INVITE_ROLES guard is bypassable. Verify the caller
     // actually holds org_admin or platform_admin via user_roles.
