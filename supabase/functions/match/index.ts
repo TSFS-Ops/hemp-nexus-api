@@ -22,6 +22,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
