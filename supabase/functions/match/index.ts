@@ -17,6 +17,11 @@ import {
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
+import {
+  lookupIdempotentResponse,
+  storeIdempotentResponse,
+  cachedResponseToHttp,
+} from "../_shared/idempotency.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -163,6 +168,35 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] POST /match/${matchId}/${action} (Generate POI) idem=${idempotencyKey}`);
 
+      // --- Idempotent replay short-circuit ---
+      // If we have already processed this exact (org, key, endpoint) combo within
+      // the 24h TTL, return the cached response verbatim. Prevents the second
+      // request from re-running waiver/burn/state-transition logic, and ensures
+      // the client receives the SAME body it would have received on the first
+      // attempt — even if the network dropped before the first response landed.
+      const idemEndpointLabel = `POST ${endpointLabel}`;
+      try {
+        const cached = await lookupIdempotentResponse({
+          supabase,
+          orgId: authCtx.orgId,
+          endpoint: idemEndpointLabel,
+          idempotencyKey,
+          required: true,
+          requestId,
+        });
+        if (cached) {
+          console.log(`[${requestId}] Idempotent replay hit for ${idempotencyKey}`);
+          await logApiRequest({
+            supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+            endpoint: endpointLabel, method: "POST", statusCode: cached.status,
+          });
+          return cachedResponseToHttp(cached, headers);
+        }
+      } catch (idemErr) {
+        // lookupIdempotentResponse only throws when required=true && key missing;
+        // we already validated above, so this branch is defensive.
+        console.error(`[${requestId}] Idempotency lookup error:`, idemErr);
+      }
 
       // --- Fetch match (read-only, for eligibility check & audit metadata) ---
       const { data: match, error: fetchError } = await supabase
@@ -633,6 +667,19 @@ Deno.serve(async (req) => {
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
         endpoint: endpointLabel, method: "POST", statusCode: 200,
       });
+
+      // Cache successful response so any retry with the same Idempotency-Key
+      // returns the SAME body verbatim (with X-Idempotent-Replay marker) for 24h.
+      await storeIdempotentResponse(
+        {
+          supabase,
+          orgId: authCtx.orgId,
+          endpoint: idemEndpointLabel,
+          idempotencyKey,
+          requestId,
+        },
+        { status: 200, body: updated },
+      );
 
       return new Response(JSON.stringify(updated), {
         status: 200,
