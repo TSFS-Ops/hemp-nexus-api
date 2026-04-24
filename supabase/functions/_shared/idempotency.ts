@@ -30,7 +30,7 @@
  *     locks, append-only events).
  */
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 export interface IdempotencyOptions {
   /** Service-role Supabase client (bypasses RLS). */

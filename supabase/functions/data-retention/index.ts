@@ -139,7 +139,7 @@ Deno.serve(async (req: Request) => {
 
       result.scanned = records?.length || 0;
 
-      for (const record of records || []) {
+      for (const record of (records || []) as Array<Record<string, any>>) {
         const createdAt = new Date(record[dateCol]);
         const expiresAt = new Date(createdAt);
         expiresAt.setFullYear(expiresAt.getFullYear() + RETENTION_YEARS);
@@ -263,20 +263,24 @@ Deno.serve(async (req: Request) => {
           }
 
           // Audit log for enforcement
-          await admin.from("audit_logs").insert({
-            org_id: flag.org_id || "00000000-0000-0000-0000-000000000000",
-            action: `retention.enforced.${action}`,
-            entity_type: flag.table_name,
-            entity_id: flag.record_id,
-            metadata: {
-              request_id: requestId,
-              retention_action: action,
-              new_status: newStatus,
-              record_created_at: flag.record_created_at,
-              retention_expires_at: flag.retention_expires_at,
-              retention_years: RETENTION_YEARS,
-            },
-          }).catch((e: unknown) => console.error(`[${requestId}] Audit log error:`, e));
+          try {
+            await admin.from("audit_logs").insert({
+              org_id: flag.org_id || "00000000-0000-0000-0000-000000000000",
+              action: `retention.enforced.${action}`,
+              entity_type: flag.table_name,
+              entity_id: flag.record_id,
+              metadata: {
+                request_id: requestId,
+                retention_action: action,
+                new_status: newStatus,
+                record_created_at: flag.record_created_at,
+                retention_expires_at: flag.retention_expires_at,
+                retention_years: RETENTION_YEARS,
+              },
+            });
+          } catch (e: unknown) {
+            console.error(`[${requestId}] Audit log error:`, e);
+          }
 
           result.enforced++;
         }
@@ -292,21 +296,25 @@ Deno.serve(async (req: Request) => {
     const totalSkipped = Object.values(results).reduce((s, r) => s + r.skipped_already_actioned, 0);
 
     if (!dryRun) {
-      await admin.from("audit_logs").insert({
-        org_id: "00000000-0000-0000-0000-000000000000",
-        action: "retention.scan.completed",
-        entity_type: "system",
-        metadata: {
-          request_id: requestId,
-          dry_run: dryRun,
-          enforce_expired: enforceExpired,
-          results,
-          retention_years: RETENTION_YEARS,
-          warning_days: WARNING_DAYS,
-          scanned_at: now.toISOString(),
-          summary: { totalFlagged, totalExpired, totalEnforced, totalSkipped },
-        },
-      }).catch((e: unknown) => console.error(`[${requestId}] Summary audit error:`, e));
+      try {
+        await admin.from("audit_logs").insert({
+          org_id: "00000000-0000-0000-0000-000000000000",
+          action: "retention.scan.completed",
+          entity_type: "system",
+          metadata: {
+            request_id: requestId,
+            dry_run: dryRun,
+            enforce_expired: enforceExpired,
+            results,
+            retention_years: RETENTION_YEARS,
+            warning_days: WARNING_DAYS,
+            scanned_at: now.toISOString(),
+            summary: { totalFlagged, totalExpired, totalEnforced, totalSkipped },
+          },
+        });
+      } catch (e: unknown) {
+        console.error(`[${requestId}] Summary audit error:`, e);
+      }
     }
 
     return new Response(

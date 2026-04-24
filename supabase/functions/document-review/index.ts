@@ -27,7 +27,7 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const VALID_TRANSITIONS: Record<string, Record<string, string[]>> = {
+const VALID_TRANSITIONS: Record<string, { from: string[]; to: string }> = {
   request_review: { from: ["uploaded", "rejected"], to: "pending_review" },
   accept: { from: ["pending_review"], to: "accepted" },
   reject: { from: ["pending_review"], to: "rejected" },

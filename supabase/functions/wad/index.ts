@@ -598,7 +598,7 @@ Deno.serve(async (req) => {
         maxW: number,
         font: typeof helvetica,
         size: number,
-        color = rgb(0.15, 0.15, 0.15),
+        color: any = rgb(0.15, 0.15, 0.15),
         lineH = SMALL_LINE_H
       ): number => {
         const words = text.split(" ");
@@ -866,7 +866,7 @@ Deno.serve(async (req) => {
         : "wad.certificate.downloaded";
       await writeAuditLog(auditAction, wadId, { format: "pdf" });
 
-      return new Response(pdfBytes, {
+      return new Response(pdfBytes as unknown as BodyInit, {
         status: 200,
         headers: {
           ...headers,
