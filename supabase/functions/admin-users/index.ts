@@ -120,9 +120,9 @@ async function handleListUsers(supabaseAdmin: any) {
     .from('user_roles')
     .select('user_id, role');
 
-  const enrichedUsers = allUsers.map((authUser) => {
-    const profile = profiles?.find((p) => p.id === authUser.id);
-    const userRoles = roles?.filter((r) => r.user_id === authUser.id) || [];
+  const enrichedUsers = allUsers.map((authUser: any) => {
+    const profile = profiles?.find((p: any) => p.id === authUser.id);
+    const userRoles = roles?.filter((r: any) => r.user_id === authUser.id) || [];
 
     let orgName = 'Unknown';
     if (profile?.organisations) {
@@ -144,7 +144,7 @@ async function handleListUsers(supabaseAdmin: any) {
       created_at: authUser.created_at,
       last_sign_in_at: authUser.last_sign_in_at,
       email_confirmed_at: authUser.email_confirmed_at,
-      roles: userRoles.map((r) => r.role),
+      roles: userRoles.map((r: any) => r.role),
     };
   });
 
@@ -183,15 +183,15 @@ async function handleLookupProfiles(
     return jsonResponse({ error: 'Failed to fetch profiles' }, 500);
   }
 
-  const orgIds = [...new Set(profiles?.map((p) => p.org_id) ?? [])];
+  const orgIds = [...new Set(profiles?.map((p: any) => p.org_id) ?? [])];
   const { data: orgs } = await supabaseAdmin
     .from('organizations')
     .select('id, name')
     .in('id', orgIds);
 
-  const orgMap = new Map(orgs?.map((o) => [o.id, o.name]) ?? []);
+  const orgMap = new Map((orgs ?? []).map((o: any) => [o.id, o.name]));
 
-  const results = (profiles ?? []).map((p) => ({
+  const results = (profiles ?? []).map((p: any) => ({
     id: p.id,
     email: p.email,
     full_name: p.full_name,
