@@ -43,6 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
+import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
 
 interface FieldCheck {
   label: string;
