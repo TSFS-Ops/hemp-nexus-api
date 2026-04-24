@@ -199,6 +199,7 @@ function App() {
                 </Routes>
               </Suspense>
               <Sonner />
+              <SessionExpiredModal />
             </HostnameRouter>
           </Router>
         </TooltipProvider>
