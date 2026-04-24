@@ -4,6 +4,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import { type AppRole, PLATFORM_ADMIN_ROLES, APP_ROLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { setSentryUser, clearSentryUser } from "@/lib/sentry";
+import { notifySessionExpired } from "@/lib/session-expiry-bus";
 
 interface AuthContextType {
   user: User | null;
@@ -141,23 +142,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (!wasExplicit && hadUserRef.current) {
-          // This is a genuine session expiry, not an explicit logout
-          // Dispatch custom event so draft-persistence hooks can emergency-save
+          // This is a genuine session expiry, not an explicit logout.
+          // Dispatch custom event so draft-persistence hooks can emergency-save.
           window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
-          // Also fire beforeunload so useUnsavedChanges can warn
+          // Also fire beforeunload so useUnsavedChanges can warn.
           const beforeUnloadEvent = new Event("beforeunload", { cancelable: true });
           window.dispatchEvent(beforeUnloadEvent);
-          
-          const currentPath = window.location.pathname + window.location.search;
-          const returnTo = encodeURIComponent(currentPath);
-          toast.error("Your session has expired. Redirecting to sign in…", {
-            description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
-            duration: Infinity,
-          });
-          // Give the user time to read the toast before redirecting
-          setTimeout(() => {
-            window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
-          }, 4000);
+
+          // Surface the global blocking modal instead of a corner toast
+          // (clients were missing the toast — see incident 2026-04-24).
+          notifySessionExpired("REFRESH_FAILED");
         }
         hadUserRef.current = false;
         setRoles([]);
@@ -229,6 +223,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // still valid. If it's gone, we trigger the same expiry flow.
   useEffect(() => {
     const HEALTH_CHECK_INTERVAL = 60_000; // 60 seconds
+    // Refresh access token if it has <2 minutes left, instead of waiting for
+    // an action to discover the session is dead. This catches the case where
+    // a user leaves the tab open for hours: the access token expires (~1h),
+    // and although getSession() still returns the cached session object,
+    // any subsequent edge-function call would 401. We pre-empt that.
+    const REFRESH_SKEW_MS = 120_000;
+
+    const triggerExpiry = (reason: "HEALTH_CHECK_FAILED" | "REFRESH_FAILED") => {
+      hadUserRef.current = false;
+      setUser(null);
+      setSession(null);
+      setRoles([]);
+      // Legacy event for draft-persistence emergency-save hooks.
+      window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+      // New unmissable modal (replaces the easy-to-miss corner toast).
+      notifySessionExpired(reason);
+    };
+
     const intervalId = setInterval(async () => {
       if (!hadUserRef.current) return; // no user to check
       if (explicitSignOutRef.current) return; // signing out
@@ -237,23 +249,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         if (error || !currentSession) {
-          // Session is genuinely gone - trigger expiry
-          hadUserRef.current = false;
-          setUser(null);
-          setSession(null);
-          setRoles([]);
+          triggerExpiry("HEALTH_CHECK_FAILED");
+          return;
+        }
 
-          window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
-
-          const currentPath = window.location.pathname + window.location.search;
-          const returnTo = encodeURIComponent(currentPath);
-          toast.error("Your session has expired. Redirecting to sign in…", {
-            description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
-            duration: Infinity,
-          });
-          setTimeout(() => {
-            window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
-          }, 4000);
+        // Proactively refresh if the access token is close to expiry.
+        // If the refresh token itself has died, this will fail and we
+        // surface the modal immediately, rather than on the next click.
+        const expiresAtMs = (currentSession.expires_at ?? 0) * 1000;
+        const needsRefresh = expiresAtMs - Date.now() < REFRESH_SKEW_MS;
+        if (needsRefresh) {
+          const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+          if (refreshErr || !refreshed.session) {
+            triggerExpiry("REFRESH_FAILED");
+            return;
+          }
+          // refreshSession() updates auth state; onAuthStateChange will
+          // update our React state for us.
+          fetchRoles(refreshed.session.user.id);
         } else {
           // Session healthy - opportunistically refresh roles so a demoted
           // user in an idle background tab is reflected within ~60s without
@@ -261,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchRoles(currentSession.user.id);
         }
       } catch {
-        // Network error - don't treat as session expiry, just skip
+        // Network error - don't treat as session expiry, just skip.
       }
     }, HEALTH_CHECK_INTERVAL);
 

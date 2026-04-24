@@ -22,6 +22,10 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { notifySessionExpired } from "@/lib/session-expiry-bus";
+
+/** Codes that should trigger the global SessionExpiredModal. */
+const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
 
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
@@ -34,6 +38,15 @@ export class EdgeInvokeError extends Error {
     this.status = opts.status;
     this.code = opts.code;
     this.serverBody = opts.serverBody;
+
+    // Side-effect: surface a global, blocking re-auth modal whenever the
+    // failure means the user's session is unrecoverable. This replaces the
+    // easy-to-miss bottom-right toast that confused clients in the past
+    // (incident 2026-04-24: client repeatedly clicked "Download waiver
+    // pack" without noticing the corner toast).
+    if (opts.code && SESSION_DEAD_CODES.has(opts.code)) {
+      notifySessionExpired(opts.code as "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED", message);
+    }
   }
 }
 
