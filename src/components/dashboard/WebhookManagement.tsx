@@ -71,24 +71,14 @@ export function WebhookManagement() {
   const fetchWebhooks = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch webhooks");
-      const result = await response.json();
-      setWebhooks(result.data || []);
+      const result = await fetchEdgeFunction<{ data?: unknown[] }>("webhooks", {
+        method: "GET",
+        label: "load webhooks",
+      });
+      setWebhooks((result?.data as typeof webhooks) || []);
     } catch (error) {
       console.error("Error fetching webhooks:", error);
-      toast.error("Failed to load webhooks");
+      toast.error(error instanceof Error ? error.message : "Failed to load webhooks");
     } finally {
       setLoading(false);
     }
