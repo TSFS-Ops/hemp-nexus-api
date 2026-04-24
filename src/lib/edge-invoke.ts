@@ -310,7 +310,7 @@ export async function fetchEdgeFunction<T = unknown>(
   const metricsContext = label || trimmedPath;
   const accessToken = await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
-  const trimmed = path.replace(/^\/+/, "");
+  const trimmed = trimmedPath;
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   let url = `${baseUrl}/functions/v1/${trimmed}`;
   if (query) {
