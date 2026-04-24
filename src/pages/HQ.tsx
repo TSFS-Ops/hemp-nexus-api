@@ -338,12 +338,13 @@ function AuditTab() {
 }
 function SettingsTab() {
   // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
-  const [sub, setSub] = useUrlTab("sub", "platform", ["platform", "thresholds", "tokens", "signing", "brd", "overrides"]);
+  const [sub, setSub] = useUrlTab("sub", "platform", ["platform", "governance-posture", "thresholds", "tokens", "signing", "brd", "overrides"]);
   return <>
       <TabHeader id="settings" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="platform">Platform</TabsTrigger>
+          <TabsTrigger value="governance-posture">Governance Posture</TabsTrigger>
           <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
           <TabsTrigger value="tokens">Credit Management</TabsTrigger>
           <TabsTrigger value="signing">Signing Keys</TabsTrigger>
