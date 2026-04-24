@@ -249,23 +249,15 @@ export function EvidencePackView({
   }
   async function handleDownloadReport() {
     try {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}?format=pdf`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+      const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        query: { format: "pdf" },
+        label: "download evidence report",
       });
-      if (!res.ok) throw new Error("Download failed");
-      const html = await res.text();
       downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
       toast.success("Evidence report downloaded.");
-    } catch {
-      toast.error("Failed to download report.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to download report.");
     }
   }
   function handleShare() {
