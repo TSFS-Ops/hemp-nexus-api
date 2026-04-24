@@ -39,6 +39,7 @@ import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel";
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernancePosturePanel";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaiversPanel";
