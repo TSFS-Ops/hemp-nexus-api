@@ -48,6 +48,13 @@ const ALLOWED_ACTIONS: Record<WadStatusValue, readonly WadAction[]> = {
     "seal",
     "view_evidence",
   ],
+  // Same affordances as `draft` — both signatories may still attest, and
+  // sealing is permitted once both attestations are in place.
+  awaiting_attestations: [
+    "attest",
+    "seal",
+    "view_evidence",
+  ],
   sealed: [
     "revoke",
     "download_certificate",
