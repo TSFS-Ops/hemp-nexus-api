@@ -142,23 +142,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (!wasExplicit && hadUserRef.current) {
-          // This is a genuine session expiry, not an explicit logout
-          // Dispatch custom event so draft-persistence hooks can emergency-save
+          // This is a genuine session expiry, not an explicit logout.
+          // Dispatch custom event so draft-persistence hooks can emergency-save.
           window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
-          // Also fire beforeunload so useUnsavedChanges can warn
+          // Also fire beforeunload so useUnsavedChanges can warn.
           const beforeUnloadEvent = new Event("beforeunload", { cancelable: true });
           window.dispatchEvent(beforeUnloadEvent);
-          
-          const currentPath = window.location.pathname + window.location.search;
-          const returnTo = encodeURIComponent(currentPath);
-          toast.error("Your session has expired. Redirecting to sign in…", {
-            description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
-            duration: Infinity,
-          });
-          // Give the user time to read the toast before redirecting
-          setTimeout(() => {
-            window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
-          }, 4000);
+
+          // Surface the global blocking modal instead of a corner toast
+          // (clients were missing the toast — see incident 2026-04-24).
+          notifySessionExpired("REFRESH_FAILED");
         }
         hadUserRef.current = false;
         setRoles([]);
