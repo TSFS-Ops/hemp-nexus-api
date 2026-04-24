@@ -23,6 +23,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { notifySessionExpired } from "@/lib/session-expiry-bus";
+import {
+  recordSessionFailure,
+  type TrackedSessionFailureCode,
+} from "@/lib/session-failure-metrics";
 
 /** Codes that should trigger the global SessionExpiredModal. */
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
