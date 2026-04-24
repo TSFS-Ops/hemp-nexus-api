@@ -36,7 +36,27 @@ export function WaiverPacketDownloadButton({
       });
       const url = data?.url;
       if (!url) throw new Error("No signed URL returned by waiver-packet function");
-      window.open(url, "_blank", "noopener,noreferrer");
+
+      // Fetch the PDF bytes and trigger a download via an anchor element.
+      // We deliberately avoid `window.open(url)` here because, after an
+      // `await`, browsers treat the call as not-user-initiated and silently
+      // block the popup, leaving the user with "nothing happens".
+      const pdfResp = await fetch(url);
+      if (!pdfResp.ok) {
+        throw new Error(`Could not fetch waiver packet (HTTP ${pdfResp.status}).`);
+      }
+      const blob = await pdfResp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `waiver-packet-${waiverId}.pdf`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Revoke after a short delay so the click has time to start the download.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+      toast.success("Waiver packet downloaded");
     } catch (err) {
       const msg = (err as Error).message || "Failed to fetch waiver packet";
       console.error("[WaiverPacketDownload] failed", err);
