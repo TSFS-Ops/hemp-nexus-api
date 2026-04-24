@@ -13,6 +13,7 @@ import { LegacyRedirect } from "@/components/LegacyRedirect";
 import { LegacyRedirectBanner } from "@/components/LegacyRedirectBanner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TestModeBanner } from "@/components/TestModeBanner";
+import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
@@ -96,6 +97,7 @@ function App() {
         <TooltipProvider>
           <Router>
             <HostnameRouter>
+              <MaintenanceBanner />
               <TestModeBanner />
               <LegacyRedirectBanner />
               <Suspense fallback={<FullPageLoader />}>

@@ -5,6 +5,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 
 const corsHeaders = {
@@ -80,6 +81,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const callerOrgId = callerProfile.org_id;
+
+    // ── Maintenance gate (platform admins are exempt) ──
+    const maintenanceClient = createClient(supabaseUrl, serviceKey);
+    const maintenance = await checkMaintenanceMode(maintenanceClient, {
+      source: "poi-transition",
+      actorUserId: user.id,
+      orgId: callerOrgId,
+      action: "poi_transition",
+    });
+    if (maintenance.blocked) {
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable — platform is in maintenance mode.",
+          code: "MAINTENANCE_MODE",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Rate limit: protect lock contention and DB writes
     const rlClient = createClient(supabaseUrl, serviceKey);

@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -63,6 +64,22 @@ Deno.serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ── Maintenance gate (platform admins are exempt) ──
+    const maintenance = await checkMaintenanceMode(supabase, {
+      source: "send-team-invite",
+      actorUserId: user.id,
+      action: "send_team_invite",
+    });
+    if (maintenance.blocked) {
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable — platform is in maintenance mode.",
+          code: "MAINTENANCE_MODE",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // ── Server-side role enforcement ──

@@ -16,6 +16,7 @@ import {
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -104,7 +105,31 @@ Deno.serve(async (req) => {
     
     // Derive actor IDs once for use throughout the request
     const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
-    
+
+    // ── Maintenance gate: block all mutating methods (read-only stays available) ──
+    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+      const maintenance = await checkMaintenanceMode(supabase, {
+        source: "match",
+        actorUserId: actorUserId ?? null,
+        orgId: authCtx.orgId,
+        action: `match:${req.method}:${action ?? "root"}`,
+      });
+      if (maintenance.blocked) {
+        await logApiRequest({
+          supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+          endpoint: `match`, method: req.method, statusCode: 503,
+          errorMessage: "maintenance_mode",
+        });
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable — platform is in maintenance mode.",
+            code: "MAINTENANCE_MODE",
+          }),
+          { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // NOTE: Token burn: only 1 credit charged for the full POI generation.
     // The settle/declare-intent endpoint chains all transitions (discovery → committed) in one call.
 
