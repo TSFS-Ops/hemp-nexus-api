@@ -73,16 +73,17 @@ export function EngagementTracker({
     queryKey: ["engagement-tracker", matchId],
     queryFn: async () => {
       try {
-        const result = await fetchEdgeFunction<{ engagement?: unknown } | null>(
-          `poi-engagements/by-match/${matchId}`,
-          { method: "GET", label: "load engagement status" }
-        );
-        return (result as { engagement?: unknown } | null)?.engagement || null;
+        const result = await fetchEdgeFunction<{
+          engagement?: { engagement_status: EngagementStatus; counterparty_type?: string };
+        } | null>(`poi-engagements/by-match/${matchId}`, {
+          method: "GET",
+          label: "load engagement status",
+        });
+        return result?.engagement || null;
       } catch (err) {
         if (err instanceof EdgeInvokeError && err.code === "UNAUTHORIZED") {
           throw new Error("SESSION_EXPIRED");
         }
-        // For non-auth errors, treat as "no engagement yet" (matches prior behaviour)
         if (err instanceof EdgeInvokeError && err.status && err.status >= 400 && err.status < 500) {
           return null;
         }
