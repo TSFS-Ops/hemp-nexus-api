@@ -32,12 +32,23 @@ export class EdgeInvokeError extends Error {
   status?: number;
   code?: string;
   serverBody?: string;
-  constructor(message: string, opts: { status?: number; code?: string; serverBody?: string } = {}) {
+  /**
+   * Server-supplied correlation ID (from `x-request-id`, `sb-request-id`,
+   * or `cf-ray` response headers; falls back to a parsed JSON body field
+   * when present). Surface this in user-facing error UI so support can
+   * locate the failing invocation in edge function logs.
+   */
+  requestId?: string;
+  constructor(
+    message: string,
+    opts: { status?: number; code?: string; serverBody?: string; requestId?: string } = {}
+  ) {
     super(message);
     this.name = "EdgeInvokeError";
     this.status = opts.status;
     this.code = opts.code;
     this.serverBody = opts.serverBody;
+    this.requestId = opts.requestId;
 
     // Side-effect: surface a global, blocking re-auth modal whenever the
     // failure means the user's session is unrecoverable. This replaces the
@@ -45,9 +56,42 @@ export class EdgeInvokeError extends Error {
     // (incident 2026-04-24: client repeatedly clicked "Download waiver
     // pack" without noticing the corner toast).
     if (opts.code && SESSION_DEAD_CODES.has(opts.code)) {
-      notifySessionExpired(opts.code as "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED", message);
+      notifySessionExpired(
+        opts.code as "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED",
+        message,
+        opts.requestId
+      );
     }
   }
+}
+
+/** Best-effort extraction of a correlation ID from an edge response. */
+export function extractRequestId(
+  headers: Headers | undefined,
+  body: string | undefined
+): string | undefined {
+  if (headers) {
+    const fromHeader =
+      headers.get("x-request-id") ||
+      headers.get("sb-request-id") ||
+      headers.get("x-supabase-request-id") ||
+      headers.get("cf-ray");
+    if (fromHeader) return fromHeader;
+  }
+  if (body) {
+    try {
+      const parsed = JSON.parse(body) as { requestId?: string; request_id?: string };
+      return parsed.requestId || parsed.request_id;
+    } catch {
+      /* not JSON */
+    }
+  }
+  return undefined;
+}
+
+/** True when the error means the current session can't recover without re-auth. */
+export function isSessionExpiredError(err: unknown): err is EdgeInvokeError {
+  return err instanceof EdgeInvokeError && !!err.code && SESSION_DEAD_CODES.has(err.code);
 }
 
 // ── Token freshness ────────────────────────────────────────────────────────
