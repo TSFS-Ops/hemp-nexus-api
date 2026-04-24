@@ -3670,6 +3670,42 @@ export type Database = {
           },
         ]
       }
+      org_governance_profiles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          notes: string | null
+          org_id: string
+          updated_at: string
+          verification_gate_position: Database["public"]["Enums"]["gate_position"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          updated_at?: string
+          verification_gate_position?: Database["public"]["Enums"]["gate_position"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          updated_at?: string
+          verification_gate_position?: Database["public"]["Enums"]["gate_position"]
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           address: Json | null
@@ -6817,6 +6853,10 @@ export type Database = {
           status: string
         }[]
       }
+      get_org_gate_position: {
+        Args: { _org_id: string }
+        Returns: Database["public"]["Enums"]["gate_position"]
+      }
       get_test_mode_bypass_state: { Args: never; Returns: Json }
       get_user_email: { Args: { target_user_id: string }; Returns: string }
       has_dd_role: {
@@ -6964,6 +7004,7 @@ export type Database = {
         | "accepted"
         | "declined"
         | "expired"
+      gate_position: "entry" | "poi_mint" | "wad_only"
       signal_type: "buyer" | "seller"
     }
     CompositeTypes: {
@@ -7116,6 +7157,7 @@ export const Constants = {
         "declined",
         "expired",
       ],
+      gate_position: ["entry", "poi_mint", "wad_only"],
       signal_type: ["buyer", "seller"],
     },
   },

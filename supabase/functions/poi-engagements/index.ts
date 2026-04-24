@@ -11,7 +11,7 @@ import {
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision } from "../_shared/test-mode-bypass.ts";
-import { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
@@ -345,10 +345,13 @@ Deno.serve(async (req) => {
       // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
       // The initiator org is about to project Izenzo's name to a counterparty
       // via email. Block the send if the initiator org is not formally
-      // approved to trade. Admins acting on behalf of an unverified tenant
-      // are also blocked — the gate is on the org, not on the actor's role.
+      // approved to trade — UNLESS the tenant posture is `wad_only`, in
+      // which case verification is deferred to WaD execution.
+      // Admins acting on behalf of an unverified tenant are also blocked —
+      // the gate is on the org, not on the actor's role.
       const initiatorOrgIdForGate = (eng as { org_id: string }).org_id;
-      const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate);
+      const outreachGovernanceProfile = await getActiveGovernanceProfile(supabase, initiatorOrgIdForGate);
+      const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate, "outreach");
       if (!outreachLegitimacy.allowed) {
         logDecision("maintenance", {
           source: "poi-engagements/send-outreach",
@@ -362,6 +365,9 @@ Deno.serve(async (req) => {
             initiator_org_id: initiatorOrgIdForGate,
             trade_approval_status: outreachLegitimacy.status,
             valid_until: outreachLegitimacy.validUntil,
+            // ── Step 3: forensic audit memory ──
+            gate_position: outreachLegitimacy.gatePosition,
+            governance_profile_id: outreachGovernanceProfile.profileId,
           },
         });
         throw new ApiException(ORG_NOT_VERIFIED_CODE, outreachLegitimacy.message, 403);
@@ -541,6 +547,28 @@ Deno.serve(async (req) => {
             contact_date: new Date().toISOString(),
           })
           .eq("id", engagementId);
+
+        // ── Step 3: snapshot the gate posture in force at the moment the
+        // outreach was actually dispatched. The atomic RPC above wrote its
+        // own state-transition audit row; this companion row records the
+        // governance posture so the historical decision is reconstructible.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "engagement.outreach_governance_snapshot",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              recipient,
+              request_id: requestId,
+              gate_position: outreachLegitimacy.gatePosition,
+              governance_profile_id: outreachGovernanceProfile.profileId,
+            },
+          });
+        } catch (snapErr) {
+          console.warn(`[${requestId}] Failed to write governance snapshot audit row:`, snapErr);
+        }
       } else {
         // Post-engagement follow-up: log to outreach_logs + audit_logs without
         // changing engagement state.
@@ -568,6 +596,9 @@ Deno.serve(async (req) => {
             current_status: currentStatus,
             subject: parsed.data.subject,
             request_id: requestId,
+            // ── Step 3: forensic audit memory ──
+            gate_position: outreachLegitimacy.gatePosition,
+            governance_profile_id: outreachGovernanceProfile.profileId,
           },
         });
         console.log(

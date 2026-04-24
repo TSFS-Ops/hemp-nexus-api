@@ -39,6 +39,7 @@ import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel";
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernancePosturePanel";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaiversPanel";
@@ -337,12 +338,13 @@ function AuditTab() {
 }
 function SettingsTab() {
   // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
-  const [sub, setSub] = useUrlTab("sub", "platform", ["platform", "thresholds", "tokens", "signing", "brd", "overrides"]);
+  const [sub, setSub] = useUrlTab("sub", "platform", ["platform", "governance-posture", "thresholds", "tokens", "signing", "brd", "overrides"]);
   return <>
       <TabHeader id="settings" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="platform">Platform</TabsTrigger>
+          <TabsTrigger value="governance-posture">Governance Posture</TabsTrigger>
           <TabsTrigger value="thresholds">Approval Thresholds</TabsTrigger>
           <TabsTrigger value="tokens">Credit Management</TabsTrigger>
           <TabsTrigger value="signing">Signing Keys</TabsTrigger>
@@ -352,6 +354,11 @@ function SettingsTab() {
         <TabsContent value="platform">
           <Surface label="Global platform variables · public.admin_settings">
             <AdminSettings />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="governance-posture">
+          <Surface label="Per-org legitimacy gate posture · public.org_governance_profiles · versioned history">
+            <AdminGovernancePosturePanel />
           </Surface>
         </TabsContent>
         <TabsContent value="thresholds">
