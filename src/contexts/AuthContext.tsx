@@ -241,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
       // New unmissable modal (replaces the easy-to-miss corner toast).
       notifySessionExpired(reason);
+      recordSessionFailure(reason, { context: "background-health-check" });
     };
 
     const intervalId = setInterval(async () => {
