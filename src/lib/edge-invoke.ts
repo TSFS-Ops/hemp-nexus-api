@@ -133,9 +133,14 @@ async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promis
 }
 
 // ── Status → friendly message translation ─────────────────────────────────
-function translateError(status: number | undefined, body: string, fallbackMsg: string): EdgeInvokeError {
+function translateError(
+  status: number | undefined,
+  body: string,
+  fallbackMsg: string,
+  requestId?: string
+): EdgeInvokeError {
   // Try to extract a server-supplied error code/message from JSON body
-  let parsed: { error?: string; code?: string; message?: string } | null = null;
+  let parsed: { error?: string; code?: string; message?: string; requestId?: string; request_id?: string } | null = null;
   if (body) {
     try {
       parsed = JSON.parse(body);
@@ -145,41 +150,42 @@ function translateError(status: number | undefined, body: string, fallbackMsg: s
   }
   const serverMsg = parsed?.error || parsed?.message || "";
   const serverCode = parsed?.code || "";
+  const rid = requestId || parsed?.requestId || parsed?.request_id;
 
   if (status === 401 || /unauthorized/i.test(serverMsg) || /unauthorized/i.test(body)) {
     return new EdgeInvokeError(
       "Your session has expired. Please sign out and sign back in, then try again.",
-      { status, code: "UNAUTHORIZED", serverBody: body }
+      { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid }
     );
   }
   if (status === 403 || /forbidden/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You don't have permission to perform this action. Contact an administrator if you believe this is a mistake.",
-      { status, code: "FORBIDDEN", serverBody: body }
+      { status, code: "FORBIDDEN", serverBody: body, requestId: rid }
     );
   }
   if (status === 429 || /rate.?limit/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You're doing that too quickly. Please wait a moment and try again.",
-      { status, code: "RATE_LIMITED", serverBody: body }
+      { status, code: "RATE_LIMITED", serverBody: body, requestId: rid }
     );
   }
   if (status === 503 || serverCode === "MAINTENANCE_MODE" || /maintenance/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "The platform is in maintenance mode. Please try again shortly.",
-      { status, code: "MAINTENANCE_MODE", serverBody: body }
+      { status, code: "MAINTENANCE_MODE", serverBody: body, requestId: rid }
     );
   }
   if (status === 404 || /not.?found/i.test(serverMsg)) {
     return new EdgeInvokeError(
       serverMsg || "The requested resource could not be found.",
-      { status, code: "NOT_FOUND", serverBody: body }
+      { status, code: "NOT_FOUND", serverBody: body, requestId: rid }
     );
   }
 
   return new EdgeInvokeError(
     serverMsg ? `${fallbackMsg} — ${serverMsg}` : fallbackMsg,
-    { status, code: serverCode, serverBody: body }
+    { status, code: serverCode, serverBody: body, requestId: rid }
   );
 }
 
