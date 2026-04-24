@@ -7,6 +7,13 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
+import { tryBypass } from "../_shared/test-mode-bypass.ts";
+
+type BypassedGateRecord = {
+  gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
+  org_id?: string | null;
+  detail: Record<string, unknown>;
+};
 
 const ATTESTATION_TEXT = "I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed.";
 
