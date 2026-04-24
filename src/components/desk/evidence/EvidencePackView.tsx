@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileText, Code, Share2, ShieldCheck, Check, Circle, Loader2, AlertTriangle, ArrowLeft, FileSearch, Copy } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { downloadFile } from "@/lib/download-utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -222,26 +222,10 @@ export function EvidencePackView({
       try {
         setLoading(true);
         setError(null);
-        const {
-          data: {
-            session
-          }
-        } = await supabase.auth.getSession();
-        if (!session) {
-          setError("Sign-in required to view this evidence pack.");
-          setLoading(false);
-          return;
-        }
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
+        const data = await fetchEdgeFunction<EvidencePack>(`evidence-pack/${matchId}`, {
+          method: "GET",
+          label: "load evidence pack",
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || err.error || `Request failed (${res.status})`);
-        }
-        const data = (await res.json()) as EvidencePack;
         if (!cancelled) setPack(data);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load evidence pack.");
@@ -265,23 +249,15 @@ export function EvidencePackView({
   }
   async function handleDownloadReport() {
     try {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}?format=pdf`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+      const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        query: { format: "pdf" },
+        label: "download evidence report",
       });
-      if (!res.ok) throw new Error("Download failed");
-      const html = await res.text();
       downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
       toast.success("Evidence report downloaded.");
-    } catch {
-      toast.error("Failed to download report.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to download report.");
     }
   }
   function handleShare() {

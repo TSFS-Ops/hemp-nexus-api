@@ -24,7 +24,7 @@ import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard"
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 
 function MatchDetailsContent() {
@@ -46,15 +46,22 @@ function MatchDetailsContent() {
   const { data: engagementData } = useQuery({
     queryKey: ["engagement-status-gate", matchId],
     queryFn: async () => {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session?.access_token) return null;
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/by-match/${matchId}`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } }
-      );
-      if (!response.ok) return null;
-      const result = await response.json();
-      return result?.engagement || null;
+      try {
+        const result = await fetchEdgeFunction<{
+          engagement?: {
+            engagement_status: EngagementStatus;
+            counterparty_type: string;
+            counterparty_email: string | null;
+            counterparty_org_id: string | null;
+          };
+        } | null>(`poi-engagements/by-match/${matchId}`, {
+          method: "GET",
+          label: "load engagement status",
+        });
+        return result?.engagement || null;
+      } catch {
+        return null;
+      }
     },
     enabled: !!matchId,
     refetchInterval: 30000,

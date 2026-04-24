@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction, EdgeInvokeError } from "@/lib/edge-invoke";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,21 +72,23 @@ export function EngagementTracker({
   } = useQuery({
     queryKey: ["engagement-tracker", matchId],
     queryFn: async () => {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session?.access_token) {
-        throw new Error("SESSION_EXPIRED");
-      }
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/by-match/${matchId}`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
+      try {
+        const result = await fetchEdgeFunction<{
+          engagement?: { engagement_status: EngagementStatus; counterparty_type?: string };
+        } | null>(`poi-engagements/by-match/${matchId}`, {
+          method: "GET",
+          label: "load engagement status",
+        });
+        return result?.engagement || null;
+      } catch (err) {
+        if (err instanceof EdgeInvokeError && err.code === "UNAUTHORIZED") {
+          throw new Error("SESSION_EXPIRED");
         }
-      });
-      if (response.status === 401) {
-        throw new Error("SESSION_EXPIRED");
+        if (err instanceof EdgeInvokeError && err.status && err.status >= 400 && err.status < 500) {
+          return null;
+        }
+        throw err;
       }
-      if (!response.ok) return null;
-      const result = await response.json();
-      return result?.engagement || null;
     },
     refetchInterval: 30000,
     retry: (failureCount, error) => {

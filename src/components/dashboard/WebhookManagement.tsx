@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,24 +71,14 @@ export function WebhookManagement() {
   const fetchWebhooks = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch webhooks");
-      const result = await response.json();
-      setWebhooks(result.data || []);
+      const result = await fetchEdgeFunction<{ data?: unknown[] }>("webhooks", {
+        method: "GET",
+        label: "load webhooks",
+      });
+      setWebhooks((result?.data as typeof webhooks) || []);
     } catch (error) {
       console.error("Error fetching webhooks:", error);
-      toast.error("Failed to load webhooks");
+      toast.error(error instanceof Error ? error.message : "Failed to load webhooks");
     } finally {
       setLoading(false);
     }
@@ -106,29 +96,11 @@ export function WebhookManagement() {
     setCreatingWebhook(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url,
-            events: Array.from(selectedEvents),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to create webhook");
-      }
-      const result = await response.json();
+      const result = await fetchEdgeFunction<{ secret?: string }>("webhooks", {
+        method: "POST",
+        body: { url, events: Array.from(selectedEvents) },
+        label: "create webhook",
+      });
 
       toast.success("Webhook endpoint created successfully");
 
@@ -156,26 +128,16 @@ export function WebhookManagement() {
     if (deletingWebhook) return;
     setDeletingWebhook(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhooks/${webhookId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to delete webhook");
+      await fetchEdgeFunction(`webhooks/${webhookId}`, {
+        method: "DELETE",
+        label: "delete webhook",
+      });
 
       toast.success("Webhook endpoint deleted");
       fetchWebhooks();
     } catch (error) {
       console.error("Error deleting webhook:", error);
-      toast.error("Failed to delete webhook endpoint");
+      toast.error(error instanceof Error ? error.message : "Failed to delete webhook endpoint");
     } finally {
       setDeletingWebhook(false);
       setDeleteDialog({ open: false, webhookId: null });

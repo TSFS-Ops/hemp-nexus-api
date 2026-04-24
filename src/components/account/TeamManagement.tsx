@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -145,28 +146,21 @@ export function TeamManagement() {
 
       const signupUrl = `${window.location.origin}/auth`;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        try {
-          const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-team-invite`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${session.access_token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: inviteEmail.trim().toLowerCase(),
-              role: inviteRole,
-              org_name: orgData?.name || "Your organisation",
-              inviter_name: inviterProfile?.full_name || user.email,
-              signup_url: signupUrl,
-            }),
-          });
-          emailSent = emailRes.ok;
-        } catch (emailErr) {
-          console.warn("[TeamManagement] Invite email failed to send:", emailErr);
-        }
+      try {
+        await fetchEdgeFunction("send-team-invite", {
+          method: "POST",
+          body: {
+            email: inviteEmail.trim().toLowerCase(),
+            role: inviteRole,
+            org_name: orgData?.name || "Your organisation",
+            inviter_name: inviterProfile?.full_name || user.email,
+            signup_url: signupUrl,
+          },
+          label: "send team invite",
+        });
+        emailSent = true;
+      } catch (emailErr) {
+        console.warn("[TeamManagement] Invite email failed to send:", emailErr);
       }
 
       if (emailSent) {

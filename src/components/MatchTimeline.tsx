@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,22 +66,10 @@ export function MatchTimeline({ matchId }: MatchTimelineProps) {
 
   const downloadEvidencePack = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
-        {
-          method: "GET", // Explicit: evidence-pack is GET-only
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
+      const evidencePack = await fetchEdgeFunction<Record<string, unknown>>(
+        `evidence-pack/${matchId}`,
+        { method: "GET", label: "download evidence pack" }
       );
-
-      if (!response.ok) throw new Error("Failed to generate evidence pack");
-
-      const evidencePack = await response.json();
       const blob = new Blob([JSON.stringify(evidencePack, null, 2)], {
         type: "application/json",
       });

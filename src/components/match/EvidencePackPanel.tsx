@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction, EdgeInvokeError } from "@/lib/edge-invoke";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,29 +75,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       setLoading(true);
       setVerificationResult(null);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please sign in to generate an evidence pack");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || err.error || "Failed to generate evidence pack");
-      }
-
-      const data = await response.json();
+      const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        label: "generate evidence pack",
+      });
       setPack(data);
       toast.success("Evidence pack generated successfully");
     } catch (error: unknown) {
@@ -118,20 +99,11 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
   const downloadHtmlReport = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}?format=pdf`,
-        {
-          method: "GET",
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to download report");
-
-      const html = await response.text();
+      const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        query: { format: "pdf" },
+        label: "download evidence report",
+      });
       downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
       toast.success("Evidence report downloaded", {
         description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
@@ -139,43 +111,27 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       });
     } catch (error) {
       console.error("Report download error:", error);
-      toast.error("Failed to download evidence report");
+      toast.error(error instanceof Error ? error.message : "Failed to download evidence report");
     }
   }, [matchId]);
 
   const downloadDealCertificate = useCallback(async () => {
     try {
       setCertLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please sign in to download the deal certificate.");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deal-certificate/${matchId}`,
-        {
-          method: "GET",
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        if (response.status === 422) {
-          toast.error("Certificate is only available once the deal reaches Signed Deal state.");
-          return;
-        }
-        throw new Error(err.message || err.error || "Failed to generate certificate");
-      }
-
-      const html = await response.text();
+      const html = await fetchEdgeFunction<string>(`deal-certificate/${matchId}`, {
+        method: "GET",
+        label: "download deal certificate",
+      });
       downloadFile(html, `deal-certificate-${matchId}.html`, "text/html");
       toast.success("Deal certificate downloaded.", {
         description: "Open the HTML file in your browser to view the formatted certificate.",
         duration: 6000,
       });
     } catch (error) {
+      if (error instanceof EdgeInvokeError && error.status === 422) {
+        toast.error("Certificate is only available once the deal reaches Signed Deal state.");
+        return;
+      }
       console.error("Certificate download error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
     } finally {
@@ -192,23 +148,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
     try {
       setVerifying(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Verification request failed");
-
-      const freshPack = await response.json();
+      const freshPack = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        label: "verify evidence pack",
+      });
       const hashesMatch = pack.packHash === freshPack.packHash;
 
       setVerificationResult({

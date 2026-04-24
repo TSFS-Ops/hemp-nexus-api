@@ -3,38 +3,41 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEdgeFunction, EdgeInvokeError } from '@/lib/edge-invoke';
 import type { TransitionRequest, TransitionResult } from './state-machine';
 
 /**
  * Request a Intent state transition via the backend edge function.
  * All validation and audit logging happens server-side.
+ *
+ * Note: the legacy signature accepted an explicit `accessToken` for callers
+ * that managed sessions manually. It is now ignored — `fetchEdgeFunction`
+ * pulls a fresh token from the live Supabase session and refreshes it if
+ * it's about to expire, so callers no longer leak `Unauthorized` to users
+ * when their token has gone stale.
  */
 export async function requestTransition(
   request: TransitionRequest,
-  accessToken: string
+  _accessToken?: string
 ): Promise<TransitionResult> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-transition`,
-    {
+  try {
+    const data = await fetchEdgeFunction<{
+      event: { id: string; from_state: string; to_state: string; created_at: string };
+    }>('poi-transition', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
+      body: request,
+      label: 'request state transition',
+    });
+    return { success: true, event: data.event };
+  } catch (err) {
+    if (err instanceof EdgeInvokeError) {
+      return { success: false, error: err.message };
     }
-  );
-
-  const data = await response.json();
-
-  if (!response.ok) {
     return {
       success: false,
-      error: data.error || data.message || 'Transition failed',
+      error: (err as Error).message || 'Transition failed',
     };
   }
-
-  return { success: true, event: data.event };
 }
 
 /**

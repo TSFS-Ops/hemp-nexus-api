@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,16 +95,11 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
       const idempotencyKey = generateIdempotencyKey(`accept-bind-${match.id}`);
 
       // Call the match edge function to bind the trading partner
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match`,
-        {
+      try {
+        await fetchEdgeFunction("match", {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${freshSession.session.access_token}`,
-            "Content-Type": "application/json",
-            "Idempotency-Key": idempotencyKey,
-          },
-          body: JSON.stringify({
+          headers: { "Idempotency-Key": idempotencyKey },
+          body: {
             matchId: match.id,
             action: "accept-bind",
             counterparty: {
@@ -112,18 +108,17 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
               role: buyerSlotOpen ? "buyer" : "seller",
             },
             expected_state: match.state || "discovery",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        if (response.status === 409) {
+          },
+          label: "accept the engagement",
+        });
+      } catch (e) {
+        const err = e as { status?: number; message?: string };
+        if (err.status === 409) {
           toast.warning("This match has already been updated. Refreshing…");
           onAccepted();
           return;
         }
-        throw new Error(err.message || err.error || `HTTP ${response.status}`);
+        throw e;
       }
 
       queryClient.invalidateQueries({ queryKey: ["token-balance"] });

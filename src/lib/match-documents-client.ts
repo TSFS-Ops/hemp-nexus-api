@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 
 export type MatchDocumentListItem = {
   id: string;
@@ -53,25 +53,18 @@ export async function listMatchDocuments(
   matchId: string,
   opts?: { order?: "asc" | "desc" }
 ): Promise<MatchDocumentsResult> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("Not signed in");
-  }
-
   const order = opts?.order ?? "desc";
-  const res = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match-documents/${matchId}?order=${order}`,
+
+  const payload = await fetchEdgeFunction<MatchDocumentsResponse>(
+    `match-documents/${matchId}`,
     {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
+      query: { order },
+      label: "load documents",
     }
   );
 
-  const payload = (await res.json().catch(() => null)) as MatchDocumentsResponse | null;
-
-  if (!res.ok || !payload || payload.success !== true) {
+  if (!payload || payload.success !== true) {
     const msg = payload?.error || payload?.message || "Failed to load documents";
     throw new Error(msg);
   }
@@ -82,3 +75,4 @@ export async function listMatchDocuments(
     warning: payload.data?.warning,
   };
 }
+
