@@ -212,13 +212,47 @@ export async function triggerWebhooks(
 // All counterparty communication is handled externally by the calling system
 
 /**
- * Verify webhook signature (for incoming webhooks if needed)
+ * Verify webhook signature for an inbound webhook.
+ *
+ * Returns true ONLY if both:
+ *   1. The HMAC signature matches the payload + secret, AND
+ *   2. (When `replay` is provided) the signature has not been seen before
+ *      within the replay-guard window.
+ *
+ * Callers that omit `replay` get signature-only verification, but should
+ * be migrated — replay protection is required for any webhook that has
+ * side effects. See supabase/functions/_shared/replay-guard.ts for the
+ * full design rationale.
  */
 export async function verifyWebhookSignature(
   payload: string,
   signature: string,
-  secret: string
-): Promise<boolean> {
+  secret: string,
+  replay?: {
+    supabase: SupabaseClient;
+    source: string;
+    timestampHeader?: string | null;
+  },
+): Promise<{ ok: boolean; replayResponse?: Response }> {
   const expectedSignature = await generateSignature(payload, secret);
-  return signature === expectedSignature;
+  // Constant-time-ish compare: lengths must match, then char-by-char.
+  if (signature.length !== expectedSignature.length) return { ok: false };
+  let mismatch = 0;
+  for (let i = 0; i < signature.length; i++) {
+    mismatch |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+  }
+  if (mismatch !== 0) return { ok: false };
+
+  if (replay) {
+    // Lazy import so functions that don't use replay don't pay for it.
+    const { assertNotReplayed } = await import("./replay-guard.ts");
+    const guard = await assertNotReplayed(replay.supabase, {
+      source: replay.source,
+      signature,
+      timestampHeader: replay.timestampHeader,
+    });
+    if (!guard.ok) return { ok: false, replayResponse: guard.response };
+  }
+
+  return { ok: true };
 }
