@@ -114,10 +114,12 @@ export function TestModeBypassPanel() {
           <div>
             <CardTitle>Test-mode compliance bypass</CardTitle>
             <CardDescription className="mt-1">
-              Temporarily skip external compliance providers (IDV, sanctions, KYB, UBO, ATB) so the
-              rest of the platform can be tested while real integrations are still being wired.
-              All bypass usage is written to the admin audit log and a global TEST MODE banner is
-              shown to every user while any flag is active.
+              Temporarily skip compliance gates so the rest of the platform can be tested while
+              real integrations are still being wired. Two layers: <strong>upstream provider gates</strong>
+              (IDV / sanctions / KYB / UBO / ATB) and <strong>WaD-internal gates</strong> (screening
+              recentness / risk scoring / webhook connectivity). All bypass usage is written to the
+              admin audit log, every WaD issued under bypass is permanently stamped, and a global
+              TEST MODE banner is shown to every user while any flag is active.
             </CardDescription>
           </div>
         </div>
