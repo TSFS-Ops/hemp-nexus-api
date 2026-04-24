@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
 
 /**
  * Attestations Edge Function
@@ -49,6 +50,37 @@ Deno.serve(async (req: Request) => {
       const hasRole = authCtx.roles?.some((r: string) => allowedRoles.includes(r));
       if (!hasRole) {
         throw new ApiException("FORBIDDEN", "Only directors, signatories, or admins can create attestations", 403);
+      }
+
+      // ── TEST-MODE SETTLEMENT GUARD ──
+      // Director sign-off is the irrevocable commercial act on a WaD. If the
+      // linked WaD was issued under any test-mode bypass, refuse — the WaD
+      // must be re-issued under live conditions before director attestation.
+      const effectiveType = attestation_type || "director_sign_off";
+      if (wad_id && effectiveType === "director_sign_off") {
+        const { data: linkedWad } = await admin
+          .from("wads")
+          .select("id, evidence_bundle, status")
+          .eq("id", wad_id)
+          .maybeSingle();
+
+        if (linkedWad) {
+          const guard = await assertWadIsSettleable(admin, linkedWad, {
+            source: "attestation",
+            actorUserId,
+            orgId,
+            requestId,
+            action: "director_sign_off",
+          });
+          if (guard.blocked) {
+            throw new ApiException(
+              "TEST_MODE_WAD_NOT_SETTLEABLE",
+              `Director sign-off cannot be recorded against a test-mode WaD (gates bypassed: ${guard.bypassedGates.map((b) => b.gate).join(", ")}). Revoke this WaD, disable the relevant test-mode flags, then re-issue under live conditions before attesting.`,
+              422,
+              { wad_id, bypassed_gates: guard.bypassedGates.map((b) => b.gate) }
+            );
+          }
+        }
       }
 
       // Build canonical signature payload
