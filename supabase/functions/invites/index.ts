@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
@@ -45,6 +46,27 @@ Deno.serve(async (req) => {
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     const { actorUserId, actorApiKeyId } = deriveActorIds(authCtx);
     console.log(`[${requestId}] ${req.method} /invites${inviteId ? `/${inviteId}` : ""}${action ? `/${action}` : ""} org:${authCtx.orgId}`);
+
+    // ── Maintenance gate: block mutating methods (GET listings stay available) ──
+    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+      const maintenance = await checkMaintenanceMode(supabase, {
+        source: "invites",
+        requestId,
+        actorUserId: authCtx.userId,
+        orgId: authCtx.orgId,
+        action: `invites:${req.method}:${action ?? "root"}`,
+      });
+      if (maintenance.blocked) {
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable — platform is in maintenance mode.",
+            code: "MAINTENANCE_MODE",
+            requestId,
+          }),
+          { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // Helper: fetch invite and verify it exists + is pending
     const fetchPendingInvite = async (id: string) => {
