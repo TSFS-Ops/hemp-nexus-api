@@ -196,37 +196,37 @@ function translateError(
   if (status === 401 || /unauthorized/i.test(serverMsg) || /unauthorized/i.test(body)) {
     return new EdgeInvokeError(
       "Your session has expired. Please sign out and sign back in, then try again.",
-      { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid }
+      { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 403 || /forbidden/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You don't have permission to perform this action. Contact an administrator if you believe this is a mistake.",
-      { status, code: "FORBIDDEN", serverBody: body, requestId: rid }
+      { status, code: "FORBIDDEN", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 429 || /rate.?limit/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You're doing that too quickly. Please wait a moment and try again.",
-      { status, code: "RATE_LIMITED", serverBody: body, requestId: rid }
+      { status, code: "RATE_LIMITED", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 503 || serverCode === "MAINTENANCE_MODE" || /maintenance/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "The platform is in maintenance mode. Please try again shortly.",
-      { status, code: "MAINTENANCE_MODE", serverBody: body, requestId: rid }
+      { status, code: "MAINTENANCE_MODE", serverBody: body, requestId: rid, context }
     );
   }
   if (status === 404 || /not.?found/i.test(serverMsg)) {
     return new EdgeInvokeError(
       serverMsg || "The requested resource could not be found.",
-      { status, code: "NOT_FOUND", serverBody: body, requestId: rid }
+      { status, code: "NOT_FOUND", serverBody: body, requestId: rid, context }
     );
   }
 
   return new EdgeInvokeError(
     serverMsg ? `${fallbackMsg} — ${serverMsg}` : fallbackMsg,
-    { status, code: serverCode, serverBody: body, requestId: rid }
+    { status, code: serverCode, serverBody: body, requestId: rid, context }
   );
 }
 
