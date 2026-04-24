@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -49,6 +50,26 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Declare Interest ──
     if (req.method === "POST") {
+      // ── Maintenance gate (platform admins exempt) ──
+      const maintenance = await checkMaintenanceMode(admin, {
+        source: "interests",
+        requestId: correlationId,
+        actorUserId: authCtx.userId,
+        orgId,
+        action: "declare_interest",
+      });
+      if (maintenance.blocked) {
+        return new Response(
+          JSON.stringify({
+            status: "ERROR",
+            timestamp: new Date().toISOString(),
+            correlation_id: correlationId,
+            error: { code: "MAINTENANCE_MODE", message: "Service temporarily unavailable — platform is in maintenance mode." },
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) {
         throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
