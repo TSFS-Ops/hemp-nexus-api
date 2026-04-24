@@ -465,6 +465,11 @@ Deno.serve(async (req) => {
             tokens_burned: ACTION_TOKEN_COSTS.declare_intent,
             previous_state: currentState,
             new_state: updated?.state || 'committed',
+            // ── Step 3: forensic audit memory of the legitimacy posture in
+            // force at the moment of mint. Lets reviewers reconstruct WHY a
+            // historical mint was permitted (e.g. wad_only deferred posture).
+            gate_position: legitimacy.gatePosition,
+            governance_profile_id: governanceProfile.profileId,
             note: "POI generated - single credit charge. Discovery → Committed in one step."
           }
         });
