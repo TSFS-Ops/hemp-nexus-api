@@ -6324,6 +6324,27 @@ export type Database = {
           },
         ]
       }
+      webhook_replay_guard: {
+        Row: {
+          id: number
+          seen_at: string
+          signature_hash: string
+          source: string
+        }
+        Insert: {
+          id?: number
+          seen_at?: string
+          signature_hash: string
+          source: string
+        }
+        Update: {
+          id?: number
+          seen_at?: string
+          signature_hash?: string
+          source?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       api_keys_safe: {
@@ -6897,6 +6918,7 @@ export type Database = {
         }
         Returns: number
       }
+      prune_webhook_replay_guard: { Args: never; Returns: number }
       purge_old_email_send_log: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
