@@ -148,23 +148,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
     try {
       setVerifying(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evidence-pack/${matchId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Verification request failed");
-
-      const freshPack = await response.json();
+      const freshPack = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        label: "verify evidence pack",
+      });
       const hashesMatch = pack.packHash === freshPack.packHash;
 
       setVerificationResult({
