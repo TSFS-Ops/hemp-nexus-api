@@ -162,13 +162,14 @@ Deno.serve(async (req: Request) => {
       if (!entity) throw new ApiException("NOT_FOUND", "Entity not found", 404);
 
       // ── Test-mode bypass: short-circuit any provider call when admin has flipped the flag ──
-      if (await isBypassEnabled(admin, "idv")) {
+      if (await isBypassEnabled(admin, "idv", "idv-verify", requestId)) {
         const isCompanyBypass = entity.entity_type === "company" || entity.entity_type === "corporate" || verification_type === "company";
         await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
 
         await recordBypassUsage(admin, {
           gate: "idv",
           source: "idv-verify",
+          requestId,
           orgId,
           actorUserId,
           details: {
