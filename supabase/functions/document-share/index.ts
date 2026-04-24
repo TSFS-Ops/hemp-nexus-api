@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 
 /**
  * Document Share Endpoint
@@ -69,6 +70,25 @@ Deno.serve(async (req) => {
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
 
     console.log(`[${requestId}] PATCH /document-share/${documentId} by user ${authCtx.userId}`);
+
+    // ── Maintenance gate (platform admins exempt) ──
+    const maintenance = await checkMaintenanceMode(supabase, {
+      source: "document-share",
+      requestId,
+      actorUserId: authCtx.userId,
+      orgId: authCtx.orgId,
+      action: "document_share_update",
+    });
+    if (maintenance.blocked) {
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable — platform is in maintenance mode.",
+          code: "MAINTENANCE_MODE",
+          requestId,
+        }),
+        { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+      );
+    }
 
     // Fetch document
     const { data: document, error: docError } = await supabase
