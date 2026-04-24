@@ -13,7 +13,7 @@
  * This module lets a download button do:
  *   const id = registerPendingAction({ kind: "waiver-packet", waiverId });
  *   try { await invoke(...); clearPendingAction(id); }
- *   catch (e) { if (sessionDead(e)) { /* modal will fire, leave queued */ } }
+ *   catch (e) { if (sessionDead(e)) { /* modal will fire, leave queued *\/ } }
  *
  * On every page mount, `consumePendingActionsFor(kind)` is called once the
  * auth context reports a live session. Matching entries are dispatched back
