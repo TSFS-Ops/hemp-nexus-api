@@ -16,6 +16,7 @@ import {
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
