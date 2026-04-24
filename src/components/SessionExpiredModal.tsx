@@ -40,13 +40,16 @@ const REASON_COPY: Record<SessionExpiryReason, string> = {
 export function SessionExpiredModal() {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<SessionExpiryReason>("UNAUTHORIZED");
+  const [requestId, setRequestId] = useState<string | undefined>();
   const [signingIn, setSigningIn] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     return onSessionExpired((detail) => {
       // If the user is already on the auth page, no need to interrupt.
       if (window.location.pathname.startsWith("/auth")) return;
       setReason(detail.reason);
+      setRequestId(detail.requestId);
       setOpen(true);
     });
   }, []);
@@ -64,6 +67,17 @@ export function SessionExpiredModal() {
     window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
   };
 
+  const handleCopyRequestId = async () => {
+    if (!requestId) return;
+    try {
+      await navigator.clipboard.writeText(requestId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
   return (
     <AlertDialog open={open}>
       {/* No onOpenChange — this modal is intentionally non-dismissable.
@@ -78,6 +92,23 @@ export function SessionExpiredModal() {
           <AlertDialogTitle>Session expired</AlertDialogTitle>
           <AlertDialogDescription>{REASON_COPY[reason]}</AlertDialogDescription>
         </AlertDialogHeader>
+        {requestId && (
+          <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
+            <div className="text-muted-foreground mb-1">
+              Reference ID (include this when reporting the issue):
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <code className="font-mono text-[11px] break-all">{requestId}</code>
+              <button
+                type="button"
+                onClick={handleCopyRequestId}
+                className="shrink-0 text-primary hover:underline"
+              >
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+        )}
         <AlertDialogFooter>
           <Button onClick={handleSignInAgain} disabled={signingIn} className="w-full sm:w-auto">
             <LogIn className="h-4 w-4 mr-2" />

@@ -1,11 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { fetchEdgeFunction, EdgeInvokeError, isSessionExpiredError } from "@/lib/edge-invoke";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  registerPendingAction,
-  clearPendingAction,
-  consumePendingActionsFor,
-} from "@/lib/pending-action-bus";
+import { useState, useCallback } from "react";
+import { fetchEdgeFunction, EdgeInvokeError, describeEdgeError } from "@/lib/edge-invoke";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +21,6 @@ import {
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
 import { downloadFile } from "@/lib/download-utils";
-import { DownloadErrorState } from "./DownloadErrorState";
 
 interface EvidencePackPanelProps {
   matchId: string;
@@ -64,28 +57,15 @@ interface EvidencePackData {
 }
 
 export function EvidencePackPanel({ matchId, matchStatus, matchState }: EvidencePackPanelProps) {
-  const { session } = useAuth();
   const [pack, setPack] = useState<EvidencePackData | null>(null);
   const [loading, setLoading] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
-  const [reportLoading, setReportLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  // Per-action error slots so each download surface gets its own inline
-  // recovery UI (instead of a transient toast that the client can miss).
-  const [packError, setPackError] = useState<unknown | null>(null);
-  const [reportError, setReportError] = useState<unknown | null>(null);
-  const [certError, setCertError] = useState<unknown | null>(null);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     originalHash: string;
     recomputedHash: string;
   } | null>(null);
-
-  // Track per-action pending-retry ids so we can clear on success or on
-  // non-auth failure (avoids replaying a doomed call after re-auth).
-  const packPendingId = useRef<string | null>(null);
-  const reportPendingId = useRef<string | null>(null);
-  const certPendingId = useRef<string | null>(null);
 
   const isSettled = MatchState.isSettled(matchStatus);
   const isCompleted = matchState === "completed";
@@ -97,44 +77,25 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     isCompleted ||
     (!!matchState && matchState !== "discovery");
 
-  const generatePack = useCallback(
-    async (opts?: { auto?: boolean }) => {
-      try {
-        setLoading(true);
-        setPackError(null);
-        setVerificationResult(null);
-        packPendingId.current = registerPendingAction({
-          kind: "evidence-pack",
-          payload: { matchId },
-        });
+  const generatePack = useCallback(async () => {
+    try {
+      setLoading(true);
+      setVerificationResult(null);
 
-        const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
-          method: "GET",
-          label: "generate evidence pack",
-        });
-        setPack(data);
-        if (packPendingId.current) clearPendingAction(packPendingId.current);
-        packPendingId.current = null;
-        toast.success(opts?.auto ? "Evidence pack generated (resumed after sign-in)" : "Evidence pack generated successfully");
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to generate evidence pack";
-        console.error("Evidence pack error:", error);
-        if (isSessionExpiredError(error)) {
-          // Modal will redirect; leave the queued retry in place so it
-          // replays automatically once the user signs back in.
-          setPackError(null);
-        } else {
-          if (packPendingId.current) clearPendingAction(packPendingId.current);
-          packPendingId.current = null;
-          setPackError(error);
-          toast.error(message);
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [matchId]
-  );
+      const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        label: "generate evidence pack",
+      });
+      setPack(data);
+      toast.success("Evidence pack generated successfully");
+    } catch (error: unknown) {
+      const message = describeEdgeError(error, "Failed to generate evidence pack");
+      console.error("Evidence pack error:", error);
+      toast.error(message, { duration: 8000 });
+    } finally {
+      setLoading(false);
+    }
+  }, [matchId]);
 
   const downloadJson = useCallback(() => {
     if (!pack) return;
@@ -143,110 +104,47 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     toast.success("JSON evidence pack downloaded");
   }, [pack, matchId]);
 
-  const downloadHtmlReport = useCallback(
-    async (opts?: { auto?: boolean }) => {
-      try {
-        setReportLoading(true);
-        setReportError(null);
-        reportPendingId.current = registerPendingAction({
-          kind: "evidence-report",
-          payload: { matchId },
-        });
+  const downloadHtmlReport = useCallback(async () => {
+    try {
+      const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
+        method: "GET",
+        query: { format: "pdf" },
+        label: "download evidence report",
+      });
+      downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
+      toast.success("Evidence report downloaded", {
+        description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
+        duration: 8000,
+      });
+    } catch (error) {
+      console.error("Report download error:", error);
+      toast.error(describeEdgeError(error, "Failed to download evidence report"), { duration: 8000 });
+    }
+  }, [matchId]);
 
-        const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
-          method: "GET",
-          query: { format: "pdf" },
-          label: "download evidence report",
-        });
-        downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
-        if (reportPendingId.current) clearPendingAction(reportPendingId.current);
-        reportPendingId.current = null;
-        toast.success(opts?.auto ? "Evidence report downloaded (resumed after sign-in)" : "Evidence report downloaded", {
-          description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
-          duration: 8000,
-        });
-      } catch (error) {
-        console.error("Report download error:", error);
-        if (isSessionExpiredError(error)) {
-          setReportError(null);
-        } else {
-          if (reportPendingId.current) clearPendingAction(reportPendingId.current);
-          reportPendingId.current = null;
-          setReportError(error);
-          toast.error(error instanceof Error ? error.message : "Failed to download evidence report");
-        }
-      } finally {
-        setReportLoading(false);
+  const downloadDealCertificate = useCallback(async () => {
+    try {
+      setCertLoading(true);
+      const html = await fetchEdgeFunction<string>(`deal-certificate/${matchId}`, {
+        method: "GET",
+        label: "download deal certificate",
+      });
+      downloadFile(html, `deal-certificate-${matchId}.html`, "text/html");
+      toast.success("Deal certificate downloaded.", {
+        description: "Open the HTML file in your browser to view the formatted certificate.",
+        duration: 6000,
+      });
+    } catch (error) {
+      if (error instanceof EdgeInvokeError && error.status === 422) {
+        toast.error("Certificate is only available once the deal reaches Signed Deal state.");
+        return;
       }
-    },
-    [matchId]
-  );
-
-  const downloadDealCertificate = useCallback(
-    async (opts?: { auto?: boolean }) => {
-      try {
-        setCertLoading(true);
-        setCertError(null);
-        certPendingId.current = registerPendingAction({
-          kind: "deal-certificate",
-          payload: { matchId },
-        });
-
-        const html = await fetchEdgeFunction<string>(`deal-certificate/${matchId}`, {
-          method: "GET",
-          label: "download deal certificate",
-        });
-        downloadFile(html, `deal-certificate-${matchId}.html`, "text/html");
-        if (certPendingId.current) clearPendingAction(certPendingId.current);
-        certPendingId.current = null;
-        toast.success(opts?.auto ? "Deal certificate downloaded (resumed after sign-in)" : "Deal certificate downloaded.", {
-          description: "Open the HTML file in your browser to view the formatted certificate.",
-          duration: 6000,
-        });
-      } catch (error) {
-        if (error instanceof EdgeInvokeError && error.status === 422) {
-          // Permanent precondition failure — don't retry after re-auth.
-          if (certPendingId.current) clearPendingAction(certPendingId.current);
-          certPendingId.current = null;
-          const msg = "Certificate is only available once the deal reaches Signed Deal state.";
-          setCertError(new Error(msg));
-          toast.error(msg);
-          return;
-        }
-        console.error("Certificate download error:", error);
-        if (isSessionExpiredError(error)) {
-          setCertError(null);
-        } else {
-          if (certPendingId.current) clearPendingAction(certPendingId.current);
-          certPendingId.current = null;
-          setCertError(error);
-          toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
-        }
-      } finally {
-        setCertLoading(false);
-      }
-    },
-    [matchId]
-  );
-
-  // After a successful re-auth, drain any queued retries that belong to
-  // this match. Only one of each kind can be queued at a time (de-duped by
-  // payload), so each consume runs at most once per session resumption.
-  useEffect(() => {
-    if (!session) return;
-    consumePendingActionsFor<{ matchId: string }>("evidence-pack", (payload) => {
-      if (payload.matchId !== matchId) return;
-      void generatePack({ auto: true });
-    });
-    consumePendingActionsFor<{ matchId: string }>("evidence-report", (payload) => {
-      if (payload.matchId !== matchId) return;
-      void downloadHtmlReport({ auto: true });
-    });
-    consumePendingActionsFor<{ matchId: string }>("deal-certificate", (payload) => {
-      if (payload.matchId !== matchId) return;
-      void downloadDealCertificate({ auto: true });
-    });
-  }, [session, matchId, generatePack, downloadHtmlReport, downloadDealCertificate]);
+      console.error("Certificate download error:", error);
+      toast.error(describeEdgeError(error, "Failed to download certificate."), { duration: 8000 });
+    } finally {
+      setCertLoading(false);
+    }
+  }, [matchId]);
 
   /**
    * Verification: regenerate the pack and compare hashes.
@@ -318,7 +216,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               containing partner identities, trade terms, and hash-chain integrity verification.
             </p>
             <Button
-              onClick={() => downloadDealCertificate()}
+              onClick={downloadDealCertificate}
               disabled={certLoading}
               className="w-full"
             >
@@ -334,42 +232,24 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 </>
               )}
             </Button>
-            {certError && !certLoading && (
-              <DownloadErrorState
-                title="Couldn't download deal certificate"
-                error={certError}
-                onRetry={() => downloadDealCertificate()}
-                retrying={certLoading}
-              />
-            )}
           </div>
         )}
 
         {/* Generate button */}
         {canGeneratePack && !pack && (
-          <div className="space-y-2">
-            <Button onClick={() => generatePack()} disabled={loading} className="w-full">
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Generate Evidence Pack
-                </>
-              )}
-            </Button>
-            {packError && !loading && (
-              <DownloadErrorState
-                title="Couldn't generate evidence pack"
-                error={packError}
-                onRetry={() => generatePack()}
-                retrying={loading}
-              />
+          <Button onClick={generatePack} disabled={loading} className="w-full">
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating…
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                Generate Evidence Pack
+              </>
             )}
-          </div>
+          </Button>
         )}
 
         {/* Pack details */}
@@ -469,31 +349,14 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 <FileJson className="h-4 w-4 mr-2" />
                 Download JSON
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => downloadHtmlReport()}
-                disabled={reportLoading}
-              >
-                {reportLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
+              <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
+                <FileText className="h-4 w-4 mr-2" />
                 Download Report
               </Button>
               <p className="text-[11px] text-muted-foreground col-span-2 text-center -mt-1">
                 The report downloads as an HTML file. Open it in your browser (Chrome, Edge, Safari) to view.
               </p>
             </div>
-            {reportError && !reportLoading && (
-              <DownloadErrorState
-                title="Couldn't download evidence report"
-                error={reportError}
-                onRetry={() => downloadHtmlReport()}
-                retrying={reportLoading}
-              />
-            )}
 
             {/* Verify button */}
             <Button
@@ -555,7 +418,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               variant="ghost"
               size="sm"
               className="w-full text-xs"
-              onClick={() => generatePack()}
+              onClick={generatePack}
               disabled={loading}
             >
               <Download className="h-3 w-3 mr-1" />

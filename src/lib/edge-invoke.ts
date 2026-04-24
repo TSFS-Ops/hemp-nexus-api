@@ -27,26 +27,28 @@ import { notifySessionExpired } from "@/lib/session-expiry-bus";
 /** Codes that should trigger the global SessionExpiredModal. */
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
 
-/**
- * Returns true when the error is unrecoverable without re-authentication.
- * Callers can use this to queue a "retry after re-auth" action via
- * `registerPendingAction()` (see src/lib/pending-action-bus.ts).
- */
-export function isSessionExpiredError(err: unknown): boolean {
-  return err instanceof EdgeInvokeError && !!err.code && SESSION_DEAD_CODES.has(err.code);
-}
-
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
   status?: number;
   code?: string;
   serverBody?: string;
-  constructor(message: string, opts: { status?: number; code?: string; serverBody?: string } = {}) {
+  /**
+   * Server-supplied correlation ID (from `x-request-id`, `sb-request-id`,
+   * or `cf-ray` response headers; falls back to a parsed JSON body field
+   * when present). Surface this in user-facing error UI so support can
+   * locate the failing invocation in edge function logs.
+   */
+  requestId?: string;
+  constructor(
+    message: string,
+    opts: { status?: number; code?: string; serverBody?: string; requestId?: string } = {}
+  ) {
     super(message);
     this.name = "EdgeInvokeError";
     this.status = opts.status;
     this.code = opts.code;
     this.serverBody = opts.serverBody;
+    this.requestId = opts.requestId;
 
     // Side-effect: surface a global, blocking re-auth modal whenever the
     // failure means the user's session is unrecoverable. This replaces the
@@ -54,9 +56,54 @@ export class EdgeInvokeError extends Error {
     // (incident 2026-04-24: client repeatedly clicked "Download waiver
     // pack" without noticing the corner toast).
     if (opts.code && SESSION_DEAD_CODES.has(opts.code)) {
-      notifySessionExpired(opts.code as "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED", message);
+      notifySessionExpired(
+        opts.code as "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED",
+        message,
+        opts.requestId
+      );
     }
   }
+}
+
+/** Best-effort extraction of a correlation ID from an edge response. */
+export function extractRequestId(
+  headers: Headers | undefined,
+  body: string | undefined
+): string | undefined {
+  if (headers) {
+    const fromHeader =
+      headers.get("x-request-id") ||
+      headers.get("sb-request-id") ||
+      headers.get("x-supabase-request-id") ||
+      headers.get("cf-ray");
+    if (fromHeader) return fromHeader;
+  }
+  if (body) {
+    try {
+      const parsed = JSON.parse(body) as { requestId?: string; request_id?: string };
+      return parsed.requestId || parsed.request_id;
+    } catch {
+      /* not JSON */
+    }
+  }
+  return undefined;
+}
+
+/** True when the error means the current session can't recover without re-auth. */
+export function isSessionExpiredError(err: unknown): err is EdgeInvokeError {
+  return err instanceof EdgeInvokeError && !!err.code && SESSION_DEAD_CODES.has(err.code);
+}
+
+/**
+ * Format an error for user-facing display, appending the correlation ID
+ * when available so support can locate the failing invocation in logs.
+ */
+export function describeEdgeError(err: unknown, fallback = "Something went wrong."): string {
+  if (err instanceof EdgeInvokeError) {
+    return err.requestId ? `${err.message} (Ref: ${err.requestId})` : err.message;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
 }
 
 // ── Token freshness ────────────────────────────────────────────────────────
@@ -98,9 +145,14 @@ async function ensureFreshAccessToken(opts: { requireSession: boolean }): Promis
 }
 
 // ── Status → friendly message translation ─────────────────────────────────
-function translateError(status: number | undefined, body: string, fallbackMsg: string): EdgeInvokeError {
+function translateError(
+  status: number | undefined,
+  body: string,
+  fallbackMsg: string,
+  requestId?: string
+): EdgeInvokeError {
   // Try to extract a server-supplied error code/message from JSON body
-  let parsed: { error?: string; code?: string; message?: string } | null = null;
+  let parsed: { error?: string; code?: string; message?: string; requestId?: string; request_id?: string } | null = null;
   if (body) {
     try {
       parsed = JSON.parse(body);
@@ -110,41 +162,42 @@ function translateError(status: number | undefined, body: string, fallbackMsg: s
   }
   const serverMsg = parsed?.error || parsed?.message || "";
   const serverCode = parsed?.code || "";
+  const rid = requestId || parsed?.requestId || parsed?.request_id;
 
   if (status === 401 || /unauthorized/i.test(serverMsg) || /unauthorized/i.test(body)) {
     return new EdgeInvokeError(
       "Your session has expired. Please sign out and sign back in, then try again.",
-      { status, code: "UNAUTHORIZED", serverBody: body }
+      { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid }
     );
   }
   if (status === 403 || /forbidden/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You don't have permission to perform this action. Contact an administrator if you believe this is a mistake.",
-      { status, code: "FORBIDDEN", serverBody: body }
+      { status, code: "FORBIDDEN", serverBody: body, requestId: rid }
     );
   }
   if (status === 429 || /rate.?limit/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "You're doing that too quickly. Please wait a moment and try again.",
-      { status, code: "RATE_LIMITED", serverBody: body }
+      { status, code: "RATE_LIMITED", serverBody: body, requestId: rid }
     );
   }
   if (status === 503 || serverCode === "MAINTENANCE_MODE" || /maintenance/i.test(serverMsg)) {
     return new EdgeInvokeError(
       "The platform is in maintenance mode. Please try again shortly.",
-      { status, code: "MAINTENANCE_MODE", serverBody: body }
+      { status, code: "MAINTENANCE_MODE", serverBody: body, requestId: rid }
     );
   }
   if (status === 404 || /not.?found/i.test(serverMsg)) {
     return new EdgeInvokeError(
       serverMsg || "The requested resource could not be found.",
-      { status, code: "NOT_FOUND", serverBody: body }
+      { status, code: "NOT_FOUND", serverBody: body, requestId: rid }
     );
   }
 
   return new EdgeInvokeError(
     serverMsg ? `${fallbackMsg} — ${serverMsg}` : fallbackMsg,
-    { status, code: serverCode, serverBody: body }
+    { status, code: serverCode, serverBody: body, requestId: rid }
   );
 }
 
@@ -182,6 +235,7 @@ export async function invokeEdgeFunction<T = unknown>(
     const ctx = (error as { context?: Response }).context;
     let serverBody = "";
     let serverStatus: number | undefined;
+    let requestId: string | undefined;
     if (ctx && typeof ctx.text === "function") {
       serverStatus = ctx.status;
       try {
@@ -189,11 +243,13 @@ export async function invokeEdgeFunction<T = unknown>(
       } catch {
         /* ignore */
       }
+      requestId = extractRequestId(ctx.headers, serverBody);
     }
     throw translateError(
       serverStatus,
       serverBody,
-      label ? `Could not ${label}` : `Edge function ${functionName} failed`
+      label ? `Could not ${label}` : `Edge function ${functionName} failed`,
+      requestId
     );
   }
 
@@ -262,10 +318,12 @@ export async function fetchEdgeFunction<T = unknown>(
     } catch {
       /* ignore */
     }
+    const requestId = extractRequestId(res.headers, serverBody);
     throw translateError(
       res.status,
       serverBody,
-      label ? `Could not ${label}` : `Request to ${trimmed} failed`
+      label ? `Could not ${label}` : `Request to ${trimmed} failed`,
+      requestId
     );
   }
 

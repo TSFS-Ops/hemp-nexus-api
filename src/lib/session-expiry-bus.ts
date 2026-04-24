@@ -23,16 +23,22 @@ export interface SessionExpiryDetail {
   reason: SessionExpiryReason;
   /** Optional human-readable context (e.g. server message). */
   detail?: string;
+  /** Server-supplied correlation ID for support diagnostics. */
+  requestId?: string;
 }
 
 export const SESSION_EXPIRY_EVENT = "izenzo:session-force-reauth";
 
 /** Fire the global "session expired, force re-auth" event. Idempotent. */
-export function notifySessionExpired(reason: SessionExpiryReason, detail?: string): void {
+export function notifySessionExpired(
+  reason: SessionExpiryReason,
+  detail?: string,
+  requestId?: string
+): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent<SessionExpiryDetail>(SESSION_EXPIRY_EVENT, {
-      detail: { reason, detail },
+      detail: { reason, detail, requestId },
     })
   );
 }
