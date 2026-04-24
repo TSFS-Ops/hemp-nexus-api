@@ -136,20 +136,53 @@ export function TestModeBypassPanel() {
           />
         </div>
 
-        <div className="space-y-4">
-          {GATES.map((gate) => (
-            <div key={gate.key} className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <Label className="text-sm">{gate.label}</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">{gate.description}</p>
-              </div>
-              <Switch
-                checked={state[gate.key]}
-                disabled={!state.enabled}
-                onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
-              />
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold mb-3">Upstream provider gates</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Skip the external compliance integrations (IDV, sanctions, KYB, UBO, ATB) that aren't wired in yet.
+            </p>
+            <div className="space-y-4">
+              {GATES.filter((g) => g.group === "upstream").map((gate) => (
+                <div key={gate.key} className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <Label className="text-sm">{gate.label}</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">{gate.description}</p>
+                  </div>
+                  <Switch
+                    checked={state[gate.key]}
+                    disabled={!state.enabled}
+                    onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div className="border-t pt-6">
+            <h4 className="text-sm font-semibold mb-3">WaD-internal gates</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              The WaD function runs four hard-gates of its own that are <em>not</em> covered by the upstream
+              bypasses above. Enable these to let the workflow reach the evidence pack step.
+              Every WaD issued under any of these flags is permanently stamped <strong>"TEST MODE — demo
+              grade only"</strong> on its certificate and in its evidence bundle hash.
+            </p>
+            <div className="space-y-4">
+              {GATES.filter((g) => g.group === "wad").map((gate) => (
+                <div key={gate.key} className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <Label className="text-sm">{gate.label}</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">{gate.description}</p>
+                  </div>
+                  <Switch
+                    checked={state[gate.key]}
+                    disabled={!state.enabled}
+                    onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -164,9 +197,9 @@ export function TestModeBypassPanel() {
         </div>
 
         {state.enabled && anyGateOn && (
-          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
-            <strong>Active:</strong> {GATES.filter((g) => state[g.key]).map((g) => g.label).join(", ")}.
-            Disable as soon as the corresponding integration is live.
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+            <div><strong>Active:</strong> {GATES.filter((g) => state[g.key]).map((g) => g.label).join(", ")}.</div>
+            <div>Disable as soon as the corresponding integration is live. Production-tier deployments ignore these flags entirely.</div>
           </div>
         )}
 
