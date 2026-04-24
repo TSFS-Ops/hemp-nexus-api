@@ -153,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Surface the global blocking modal instead of a corner toast
           // (clients were missing the toast — see incident 2026-04-24).
           notifySessionExpired("REFRESH_FAILED");
+          recordSessionFailure("REFRESH_FAILED", { context: "auth-state-change" });
         }
         hadUserRef.current = false;
         setRoles([]);
