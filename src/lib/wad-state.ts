@@ -72,10 +72,11 @@ const ALLOWED_ACTIONS: Record<WadStatusValue, readonly WadAction[]> = {
 // ─── Valid transitions ──────────────────────────────────────────────
 
 export const VALID_TRANSITIONS: Record<WadStatusValue, readonly WadStatusValue[]> = {
-  draft:      ["sealed", "revoked"],
-  sealed:     ["revoked"],
-  revoked:    [],
-  superseded: [],
+  draft:                 ["awaiting_attestations", "sealed", "revoked"],
+  awaiting_attestations: ["sealed", "revoked"],
+  sealed:                ["revoked"],
+  revoked:               [],
+  superseded:            [],
 };
 
 // ─── Public API ─────────────────────────────────────────────────────
