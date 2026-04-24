@@ -237,6 +237,128 @@ export function bypassEnvelope<T extends Record<string, unknown>>(
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Settlement guard for test-mode WaDs
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Inspects a WaD's evidence_bundle to determine whether it was issued under any
+ * test-mode bypass. The bypass record lives inside `evidence_bundle.test_mode`
+ * and — because evidence_bundle is hashed into the seal — is cryptographically
+ * bound to the WaD and impossible to retroactively scrub.
+ *
+ * Returns null if the WaD is clean (i.e. all gates passed under real conditions).
+ * Returns the bypass list if the WaD is demo-grade and must NOT be progressed
+ * to settlement-grade actions (final commercial certificate, director sign-off).
+ */
+export function inspectWadTestMode(wad: { evidence_bundle?: unknown } | null | undefined): {
+  isTestMode: boolean;
+  bypassedGates: Array<{ gate: string; org_id?: string | null; detail?: Record<string, unknown> }>;
+  bypassedAt: string | null;
+} {
+  const bundle = (wad?.evidence_bundle ?? {}) as Record<string, unknown>;
+  const tm = (bundle.test_mode ?? {}) as Record<string, unknown>;
+  const isTestMode = tm.issued_under_test_mode === true;
+  const bypassedGates = Array.isArray(tm.bypassed_gates)
+    ? (tm.bypassed_gates as Array<{ gate: string; org_id?: string | null; detail?: Record<string, unknown> }>)
+    : [];
+  const bypassedAt = typeof tm.bypassed_at === "string" ? tm.bypassed_at : null;
+  return { isTestMode, bypassedGates, bypassedAt };
+}
+
+export interface WadSettlementGuardOptions {
+  /** Calling function name (audit + log traceability). */
+  source: string;
+  /** Acting user, if known. */
+  actorUserId?: string | null;
+  /** Org context, if known. */
+  orgId?: string | null;
+  /** Request id for log/audit correlation. */
+  requestId?: string;
+  /** Action verb being attempted ("director_attestation", "deal_certificate"). */
+  action: string;
+}
+
+export interface WadSettlementDecision {
+  blocked: boolean;
+  reason: string;
+  isTestMode: boolean;
+  bypassedGates: Array<{ gate: string }>;
+}
+
+/**
+ * Refuses settlement-grade actions on test-mode WaDs.
+ *
+ * Workflow steps that are still ALLOWED under test mode (so the client gets the
+ * full visual walkthrough): WaD creation, party attestations, sealing, evidence
+ * pack assembly, certificate-PDF download (the PDF carries the TEST MODE banner).
+ *
+ * Workflow steps that are BLOCKED under test mode (the irrevocable commercial
+ * acts that confer real legal weight): director sign-off attestations and the
+ * final deal certificate.
+ *
+ * The block is recorded in `admin_audit_logs` with action `test_mode.settlement_blocked`
+ * and the recommended remediation: revoke the test WaD, disable test mode, re-issue.
+ */
+export async function assertWadIsSettleable(
+  client: SupabaseClient,
+  wad: { id?: string; evidence_bundle?: unknown } | null | undefined,
+  opts: WadSettlementGuardOptions,
+): Promise<WadSettlementDecision> {
+  const { isTestMode, bypassedGates } = inspectWadTestMode(wad);
+
+  if (!isTestMode) {
+    logDecision("test-mode", {
+      source: opts.source,
+      decision: "allow",
+      requestId: opts.requestId,
+      orgId: opts.orgId,
+      actorUserId: opts.actorUserId,
+      reason: "wad_clean",
+      details: { action: opts.action, wad_id: wad?.id ?? null },
+    });
+    return { blocked: false, reason: "wad_clean", isTestMode: false, bypassedGates: [] };
+  }
+
+  // BLOCK. Loud structured log + audit row.
+  const gateNames = bypassedGates.map((b) => b.gate);
+  logDecision("test-mode", {
+    source: opts.source,
+    decision: "block",
+    requestId: opts.requestId,
+    orgId: opts.orgId,
+    actorUserId: opts.actorUserId,
+    reason: "test_mode_wad_not_settleable",
+    details: { action: opts.action, wad_id: wad?.id ?? null, bypassed_gates: gateNames },
+  });
+
+  try {
+    await client.from("admin_audit_logs").insert({
+      action: "test_mode.settlement_blocked",
+      target_type: "wad",
+      target_id: wad?.id ?? null,
+      admin_user_id: opts.actorUserId ?? null,
+      details: {
+        source: opts.source,
+        action: opts.action,
+        org_id: opts.orgId ?? null,
+        request_id: opts.requestId ?? null,
+        bypassed_gates: gateNames,
+        remediation: "Revoke this WaD, disable the relevant test-mode flags, then re-issue under live conditions.",
+      },
+    });
+  } catch (err) {
+    console.error("[settlement-guard] audit insert failed:", err);
+  }
+
+  return {
+    blocked: true,
+    reason: "test_mode_wad_not_settleable",
+    isTestMode: true,
+    bypassedGates: bypassedGates.map((b) => ({ gate: b.gate })),
+  };
+}
+
 /** Build a service-role client from env (helper used by edge functions). */
 export function createServiceClient(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL")!;
