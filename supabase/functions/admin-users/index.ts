@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
 // ── List Users ────────────────────────────────────────────────────────────
 
-async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
+async function handleListUsers(supabaseAdmin: any) {
   // GoTrue paginated fetch - loop until we get a partial page
   const allUsers: any[] = [];
   const perPage = 1000;
@@ -154,7 +154,7 @@ async function handleListUsers(supabaseAdmin: ReturnType<typeof createClient>) {
 // ── Lookup Profiles ───────────────────────────────────────────────────────
 
 async function handleLookupProfiles(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   adminUserId: string,
   body: Record<string, unknown>,
 ) {

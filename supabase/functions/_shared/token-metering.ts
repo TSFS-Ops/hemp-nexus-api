@@ -489,8 +489,9 @@ export async function checkSufficientTokensForAction(
     .eq("org_id", orgId)
     .maybeSingle();
   
-  const currentBalance = balance?.balance || 0;
-  const minRequired = balance?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
+  const balanceRow = balance as { balance?: number; minimum_required?: number } | null;
+  const currentBalance = balanceRow?.balance || 0;
+  const minRequired = balanceRow?.minimum_required ?? DEFAULT_MINIMUM_TOKEN_BALANCE;
   const available = Math.max(0, currentBalance - minRequired);
   
   return {
