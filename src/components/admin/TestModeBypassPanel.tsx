@@ -150,17 +150,54 @@ export function TestModeBypassPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 flex items-center justify-between">
-          <div>
-            <Label className="text-sm font-semibold">Master switch</Label>
-            <p className="text-xs text-muted-foreground mt-1">
-              Off by default. When off, all per-gate flags below are ignored.
-            </p>
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label className="text-sm font-semibold">Master switch</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Off by default. When off, all per-gate flags below are ignored.
+                Enabling auto-stamps a {DEFAULT_TTL_DAYS}-day expiry — bypasses self-disable on that date.
+              </p>
+            </div>
+            <Switch
+              checked={state.enabled}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  setState({
+                    ...state,
+                    enabled: true,
+                    enabled_at: state.enabled_at ?? new Date().toISOString(),
+                    expires_at: state.expires_at ?? addDaysISO(DEFAULT_TTL_DAYS),
+                  });
+                } else {
+                  setState({ ...state, enabled: false });
+                }
+              }}
+            />
           </div>
-          <Switch
-            checked={state.enabled}
-            onCheckedChange={(checked) => setState({ ...state, enabled: checked })}
-          />
+          {state.enabled && (() => {
+            const cd = formatCountdown(state.expires_at);
+            if (!cd) return null;
+            return (
+              <div className={`flex items-center justify-between gap-3 rounded-sm px-3 py-2 text-xs ${cd.expired ? "bg-destructive/10 text-destructive" : "bg-background/60 text-muted-foreground"}`}>
+                <div>
+                  <strong>Auto-expiry:</strong> {cd.label}
+                  {state.expires_at && (
+                    <span className="ml-1 opacity-70">
+                      (expires {new Date(state.expires_at).toUTCString()})
+                    </span>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setState({ ...state, expires_at: addDaysISO(DEFAULT_TTL_DAYS) })}
+                >
+                  Renew {DEFAULT_TTL_DAYS}d
+                </Button>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="space-y-6">
