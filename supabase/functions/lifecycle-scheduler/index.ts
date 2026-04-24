@@ -392,6 +392,24 @@ Deno.serve(async (req: Request) => {
       error: staleErr?.message || null,
     };
 
+    // ── Webhook replay-guard pruning ──
+    // Drops webhook_replay_guard rows older than 24h so the table stays
+    // bounded. Safe to call even if there's nothing to prune.
+    try {
+      const { data: prunedCount, error: pruneErr } = await admin.rpc(
+        "prune_webhook_replay_guard",
+      );
+      results.webhook_replay_guard_pruned = {
+        deleted: prunedCount ?? 0,
+        error: pruneErr?.message || null,
+      };
+    } catch (pruneErr) {
+      results.webhook_replay_guard_pruned = {
+        deleted: 0,
+        error: pruneErr instanceof Error ? pruneErr.message : String(pruneErr),
+      };
+    }
+
     // ── Audit ──
     await admin.from("audit_logs").insert({
       org_id: "00000000-0000-0000-0000-000000000000",
