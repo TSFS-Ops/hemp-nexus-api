@@ -318,7 +318,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               containing partner identities, trade terms, and hash-chain integrity verification.
             </p>
             <Button
-              onClick={downloadDealCertificate}
+              onClick={() => downloadDealCertificate()}
               disabled={certLoading}
               className="w-full"
             >
@@ -348,7 +348,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         {/* Generate button */}
         {canGeneratePack && !pack && (
           <div className="space-y-2">
-            <Button onClick={generatePack} disabled={loading} className="w-full">
+            <Button onClick={() => generatePack()} disabled={loading} className="w-full">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -472,7 +472,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={downloadHtmlReport}
+                onClick={() => downloadHtmlReport()}
                 disabled={reportLoading}
               >
                 {reportLoading ? (
@@ -555,7 +555,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
               variant="ghost"
               size="sm"
               className="w-full text-xs"
-              onClick={generatePack}
+              onClick={() => generatePack()}
               disabled={loading}
             >
               <Download className="h-3 w-3 mr-1" />
