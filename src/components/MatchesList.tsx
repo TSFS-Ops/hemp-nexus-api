@@ -324,13 +324,26 @@ export function MatchesList() {
           } else {
             failed++;
             failedIds.push(matchId);
-            try {
-              const body = await res.json();
-              const msg = body?.error || body?.message || `HTTP ${res.status}`;
-              if (!errors.includes(msg)) errors.push(msg);
-            } catch {
-              errors.push(`HTTP ${res.status}`);
+            // Friendly error translation — never leak raw "Unauthorized" or
+            // "non-2xx status code" to the user.
+            let msg: string;
+            if (res.status === 401) {
+              msg = "Your session has expired. Please sign out and sign back in.";
+            } else if (res.status === 403) {
+              msg = "You don't have permission to confirm this match.";
+            } else if (res.status === 429) {
+              msg = "You're doing that too quickly. Please wait and retry.";
+            } else if (res.status === 503) {
+              msg = "Platform is in maintenance mode. Please try again shortly.";
+            } else {
+              try {
+                const body = await res.json();
+                msg = body?.error || body?.message || `HTTP ${res.status}`;
+              } catch {
+                msg = `HTTP ${res.status}`;
+              }
             }
+            if (!errors.includes(msg)) errors.push(msg);
           }
         } catch {
           failed++;
