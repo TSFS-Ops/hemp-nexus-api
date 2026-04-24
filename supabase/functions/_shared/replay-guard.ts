@@ -35,16 +35,18 @@
  */
 
 // We accept any object that exposes a chainable `.from(table).insert(row)`
-// returning a `{ error }` shape. This deliberately avoids importing the
-// concrete `SupabaseClient` type, because edge functions in this project
-// import supabase-js from BOTH `npm:` and `https://esm.sh/...`, and the
-// two produce nominally-incompatible classes that cannot be assigned to
-// each other even though they're functionally identical at runtime.
-export interface ReplayGuardClient {
-  from(table: string): {
-    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
-  };
-}
+// returning a thenable that resolves to a `{ error }` shape. This
+// deliberately avoids importing the concrete `SupabaseClient` type,
+// because edge functions in this project import supabase-js from BOTH
+// `npm:` and `https://esm.sh/...`, and the two produce
+// nominally-incompatible classes that cannot be assigned to each other
+// even though they're functionally identical at runtime.
+//
+// We also use `unknown` for the row type to avoid colliding with the
+// generated table types which may not include webhook_replay_guard yet
+// in callers that haven't regenerated.
+// deno-lint-ignore no-explicit-any
+export type ReplayGuardClient = any;
 
 // ── Public types ──────────────────────────────────────────────────────────
 
