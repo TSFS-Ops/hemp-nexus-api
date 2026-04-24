@@ -263,19 +263,29 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
         {/* Generate button */}
         {canGeneratePack && !pack && (
-          <Button onClick={generatePack} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="h-4 w-4 mr-2" />
-                Generate Evidence Pack
-              </>
+          <div className="space-y-2">
+            <Button onClick={generatePack} disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Generate Evidence Pack
+                </>
+              )}
+            </Button>
+            {packError && !loading && (
+              <DownloadErrorState
+                title="Couldn't generate evidence pack"
+                error={packError}
+                onRetry={generatePack}
+                retrying={loading}
+              />
             )}
-          </Button>
+          </div>
         )}
 
         {/* Pack details */}
