@@ -46,15 +46,17 @@ function MatchDetailsContent() {
   const { data: engagementData } = useQuery({
     queryKey: ["engagement-status-gate", matchId],
     queryFn: async () => {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session?.access_token) return null;
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poi-engagements/by-match/${matchId}`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } }
-      );
-      if (!response.ok) return null;
-      const result = await response.json();
-      return result?.engagement || null;
+      try {
+        const result = await fetchEdgeFunction<{
+          engagement?: { engagement_status: EngagementStatus };
+        } | null>(`poi-engagements/by-match/${matchId}`, {
+          method: "GET",
+          label: "load engagement status",
+        });
+        return result?.engagement || null;
+      } catch {
+        return null;
+      }
     },
     enabled: !!matchId,
     refetchInterval: 30000,
