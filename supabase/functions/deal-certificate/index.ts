@@ -476,6 +476,44 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── TEST-MODE SETTLEMENT GUARD ──
+    // The WaD certificate may exist (and may even have been sealed) under test
+    // mode for demo purposes. The FINAL deal certificate is settlement-grade and
+    // must NOT be issued for a test-mode WaD — it would be indistinguishable
+    // from a real one. Look up the active WaD for this match and inspect.
+    const { data: linkedWad } = await supabase
+      .from("wads")
+      .select("id, evidence_bundle, status")
+      .eq("poi_id", matchId)
+      .neq("status", "revoked")
+      .neq("status", "superseded")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (linkedWad) {
+      const guard = await assertWadIsSettleable(supabase, linkedWad, {
+        source: "deal-certificate",
+        actorUserId: authCtx.userId ?? null,
+        orgId: authCtx.orgId ?? null,
+        requestId,
+        action: "issue_deal_certificate",
+      });
+      if (guard.blocked) {
+        log("warn", "Certificate blocked: test-mode WaD", {
+          matchId,
+          wadId: linkedWad.id,
+          bypassedGates: guard.bypassedGates.map((b) => b.gate),
+        });
+        throw new ApiException(
+          "TEST_MODE_WAD_NOT_SETTLEABLE",
+          `This deal was issued under test mode (gates bypassed: ${guard.bypassedGates.map((b) => b.gate).join(", ")}). The final deal certificate cannot be generated for a demo-grade WaD. Revoke the WaD, disable test mode, then re-issue under live conditions.`,
+          422,
+          { wad_id: linkedWad.id, bypassed_gates: guard.bypassedGates.map((b) => b.gate) }
+        );
+      }
+    }
+
     // Fetch events, documents, collapse record in parallel
     const [eventsRes, docsRes, collapseRes] = await Promise.all([
       supabase
