@@ -398,6 +398,16 @@ Deno.serve(async (req) => {
         })),
         event_count: events.length,
         event_hashes: events.map(e => e.payload_hash),
+        // ── Forensic memory: which hard-gates were bypassed under test mode ──
+        // Stamped INSIDE evidence_bundle so it gets hashed into the seal — this
+        // makes the bypass record cryptographically bound to the WaD and visible
+        // in the certificate PDF + evidence pack viewer. Empty array when no
+        // bypass fired (the normal/production path).
+        test_mode: {
+          issued_under_test_mode: bypassedGates.length > 0,
+          bypassed_gates: bypassedGates,
+          bypassed_at: bypassedGates.length > 0 ? new Date().toISOString() : null,
+        },
       };
 
       // Get previous ledger entry hash
@@ -425,7 +435,11 @@ Deno.serve(async (req) => {
 
       if (wadError) handleDatabaseError(wadError, requestId);
 
-      await writeAuditLog("wad.created", wad.id, { poi_id });
+      await writeAuditLog("wad.created", wad.id, {
+        poi_id,
+        issued_under_test_mode: bypassedGates.length > 0,
+        bypassed_gates: bypassedGates.map((b) => b.gate),
+      });
 
       return new Response(JSON.stringify(wad), {
         status: 201,
