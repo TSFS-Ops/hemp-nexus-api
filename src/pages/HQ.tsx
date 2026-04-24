@@ -48,6 +48,7 @@ import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
+import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
