@@ -1,5 +1,5 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2.39.3'
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10

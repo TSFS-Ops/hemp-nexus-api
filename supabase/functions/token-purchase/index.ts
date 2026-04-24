@@ -20,7 +20,7 @@
  *   2. Hard check: UNIQUE INDEX on token_ledger(request_id) - catches TOCTOU races
  *   If both webhook and verify race, the loser's INSERT fails, and its atomic credit is reversed.
  */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
