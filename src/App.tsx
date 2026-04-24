@@ -14,6 +14,7 @@ import { LegacyRedirectBanner } from "@/components/LegacyRedirectBanner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TestModeBanner } from "@/components/TestModeBanner";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
+import { SessionExpiredModal } from "@/components/SessionExpiredModal";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
