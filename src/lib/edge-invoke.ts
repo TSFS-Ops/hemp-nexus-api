@@ -43,9 +43,17 @@ export class EdgeInvokeError extends Error {
    * locate the failing invocation in edge function logs.
    */
   requestId?: string;
+  /** Caller-supplied label (e.g. "download waiver packet") used for metrics context. */
+  context?: string;
   constructor(
     message: string,
-    opts: { status?: number; code?: string; serverBody?: string; requestId?: string } = {}
+    opts: {
+      status?: number;
+      code?: string;
+      serverBody?: string;
+      requestId?: string;
+      context?: string;
+    } = {}
   ) {
     super(message);
     this.name = "EdgeInvokeError";
@@ -53,6 +61,7 @@ export class EdgeInvokeError extends Error {
     this.code = opts.code;
     this.serverBody = opts.serverBody;
     this.requestId = opts.requestId;
+    this.context = opts.context;
 
     // Side-effect: surface a global, blocking re-auth modal whenever the
     // failure means the user's session is unrecoverable. This replaces the
@@ -73,6 +82,7 @@ export class EdgeInvokeError extends Error {
     if (opts.code === "UNAUTHORIZED" || opts.code === "REFRESH_FAILED") {
       recordSessionFailure(opts.code as TrackedSessionFailureCode, {
         requestId: opts.requestId,
+        context: opts.context,
       });
     }
   }
