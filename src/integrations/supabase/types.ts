@@ -187,6 +187,13 @@ export type Database = {
             foreignKeyName: "acceptance_receipts_engagement_id_fkey"
             columns: ["engagement_id"]
             isOneToOne: true
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "acceptance_receipts_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
             referencedRelation: "poi_engagements"
             referencedColumns: ["id"]
           },
@@ -2155,6 +2162,13 @@ export type Database = {
           previous_status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "engagement_outreach_logs_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
           {
             foreignKeyName: "engagement_outreach_logs_engagement_id_fkey"
             columns: ["engagement_id"]
@@ -6378,6 +6392,33 @@ export type Database = {
           template_name?: string | null
         }
         Relationships: []
+      }
+      engagement_email_sent_but_status_stuck: {
+        Row: {
+          current_status: string | null
+          engagement_id: string | null
+          entry_type: string | null
+          log_created_at: string | null
+          match_id: string | null
+          outreach_log_id: string | null
+          recipient: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poi_engagements_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       match_evidence: {
         Row: {
