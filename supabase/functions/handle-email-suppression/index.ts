@@ -81,6 +81,19 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+  // ── Replay protection ──────────────────────────────────────────────────
+  // verifyWebhookRequest above proves the signature was valid and the
+  // timestamp is fresh. assertNotReplayed atomically records the signature
+  // hash so a captured-and-resent valid request is rejected the second
+  // time with a stable 409 / WEBHOOK_REPLAY response.
+  const replayCheck = await assertNotReplayed(supabase, {
+    source: 'lovable_suppression',
+    signature: req.headers.get('x-lovable-signature') ?? '',
+    timestampHeader: req.headers.get('x-lovable-timestamp'),
+  })
+  if (!replayCheck.ok) return replayCheck.response
+
   const normalizedEmail = payload.email.toLowerCase()
 
   // 1. Upsert to suppressed_emails (idempotent - safe for retries)
