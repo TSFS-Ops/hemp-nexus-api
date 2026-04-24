@@ -345,10 +345,13 @@ Deno.serve(async (req) => {
       // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
       // The initiator org is about to project Izenzo's name to a counterparty
       // via email. Block the send if the initiator org is not formally
-      // approved to trade. Admins acting on behalf of an unverified tenant
-      // are also blocked — the gate is on the org, not on the actor's role.
+      // approved to trade — UNLESS the tenant posture is `wad_only`, in
+      // which case verification is deferred to WaD execution.
+      // Admins acting on behalf of an unverified tenant are also blocked —
+      // the gate is on the org, not on the actor's role.
       const initiatorOrgIdForGate = (eng as { org_id: string }).org_id;
-      const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate);
+      const outreachGovernanceProfile = await getActiveGovernanceProfile(supabase, initiatorOrgIdForGate);
+      const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate, "outreach");
       if (!outreachLegitimacy.allowed) {
         logDecision("maintenance", {
           source: "poi-engagements/send-outreach",
@@ -362,6 +365,9 @@ Deno.serve(async (req) => {
             initiator_org_id: initiatorOrgIdForGate,
             trade_approval_status: outreachLegitimacy.status,
             valid_until: outreachLegitimacy.validUntil,
+            // ── Step 3: forensic audit memory ──
+            gate_position: outreachLegitimacy.gatePosition,
+            governance_profile_id: outreachGovernanceProfile.profileId,
           },
         });
         throw new ApiException(ORG_NOT_VERIFIED_CODE, outreachLegitimacy.message, 403);
