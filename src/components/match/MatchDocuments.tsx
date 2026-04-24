@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Card,
