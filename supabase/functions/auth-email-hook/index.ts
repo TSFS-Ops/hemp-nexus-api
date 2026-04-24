@@ -211,6 +211,31 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
+  // ── Replay protection ────────────────────────────────────────────────
+  // verifyWebhookRequest above proves the signature is valid and the
+  // timestamp is fresh. assertNotReplayed atomically records the signature
+  // hash so a captured-and-resent valid request is rejected the second
+  // time with a stable 409 / WEBHOOK_REPLAY response. We do this BEFORE
+  // payload-shape checks so a replay never reaches downstream side effects
+  // (enqueueing an email, etc.).
+  const replayClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
+  const replayCheck = await assertNotReplayed(replayClient, {
+    source: 'lovable_email',
+    signature: req.headers.get('x-lovable-signature') ?? '',
+    timestampHeader: req.headers.get('x-lovable-timestamp'),
+  })
+  if (!replayCheck.ok) {
+    // Merge our CORS headers into the guard's response.
+    const guardBody = await replayCheck.response.text()
+    return new Response(guardBody, {
+      status: replayCheck.response.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   if (!run_id) {
     console.error('Webhook payload missing run_id')
     return new Response(
