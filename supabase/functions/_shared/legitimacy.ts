@@ -4,25 +4,37 @@
  * An organisation is LEGITIMATE for outreach + POI mint when it has an
  * `approved` row in `trade_approvals` whose validity window has not lapsed.
  *
- * Per current product policy (default tenant posture: `poi_mint`), the gate
- * fires at two enforcement points:
- *   • POI mint               (supabase/functions/match/index.ts → atomic_generate_poi_v2)
- *   • Counterparty outreach  (supabase/functions/poi-engagements/index.ts → send-outreach)
+ * GATE POSITION (Step 2 — per-tenant configurability):
+ *   • `entry`     → verification required from registration. By the time we
+ *                   reach POI mint / outreach, an entry-tenant is already
+ *                   verified, so behaviour at THESE callsites matches `poi_mint`.
+ *   • `poi_mint`  → verification required before issuing a POI or sending
+ *                   outreach under Izenzo's name. (Default for every org.)
+ *   • `wad_only`  → defer verification entirely to WaD 9-gate execution.
+ *                   Mint and outreach are allowed without trade approval.
+ *
+ * The active position is read from `public.get_org_gate_position(org_id)`
+ * (returns `poi_mint` if no profile row exists, preserving Step 1 behaviour).
  *
  * The gate is INTENTIONALLY NOT applied to: registration, search, draft trade
  * creation, internal notes, or admin preview tooling — those are "Access" /
  * "Discovery" surfaces that David explicitly wants to keep frictionless.
- *
- * Future work (Step 2 of the plan): replace the hard-coded posture with a
- * per-org `org_governance_profiles.verification_gate_position` lookup so a
- * tenant can defer the gate to WaD only.
  */
 
 // deno-lint-ignore no-explicit-any
 type AdminClient = any;
 
+export type GatePosition = "entry" | "poi_mint" | "wad_only";
+export type GateCallsite = "poi_mint" | "outreach";
+
 export type LegitimacyDecision =
-  | { allowed: true; status: "approved"; approvalId: string; validUntil: string | null }
+  | {
+      allowed: true;
+      status: "approved" | "deferred";
+      gatePosition: GatePosition;
+      approvalId: string | null;
+      validUntil: string | null;
+    }
   | {
       allowed: false;
       reason:
@@ -31,23 +43,29 @@ export type LegitimacyDecision =
         | "revoked"
         | "expired"
         | "lookup_failed";
+      gatePosition: GatePosition;
       status: string | null;
       validUntil: string | null;
       message: string;
     };
 
 /**
- * Resolve the legitimacy state of an org. Pure read; never mutates.
- * Pass the SERVICE-ROLE client so RLS can't hide a row from this check.
+ * Resolve the legitimacy state of an org for a specific callsite.
+ *
+ * @param admin     SERVICE-ROLE supabase client (RLS must not hide rows)
+ * @param orgId     The org being checked
+ * @param callsite  Where the gate is firing (poi_mint or outreach)
  */
 export async function checkOrgLegitimacy(
   admin: AdminClient,
   orgId: string | null | undefined,
+  callsite: GateCallsite = "poi_mint",
 ): Promise<LegitimacyDecision> {
   if (!orgId) {
     return {
       allowed: false,
       reason: "no_record",
+      gatePosition: "poi_mint",
       status: null,
       validUntil: null,
       message:
@@ -55,6 +73,33 @@ export async function checkOrgLegitimacy(
     };
   }
 
+  // Resolve the active gate posture (default: 'poi_mint').
+  let gatePosition: GatePosition = "poi_mint";
+  try {
+    const { data: positionData, error: positionErr } = await admin.rpc(
+      "get_org_gate_position",
+      { _org_id: orgId },
+    );
+    if (!positionErr && positionData) {
+      gatePosition = positionData as GatePosition;
+    }
+  } catch {
+    // Fallback to default — never fail-open on a config lookup error.
+    gatePosition = "poi_mint";
+  }
+
+  // ── wad_only: skip verification at this callsite; WaD will gate execution ──
+  if (gatePosition === "wad_only") {
+    return {
+      allowed: true,
+      status: "deferred",
+      gatePosition,
+      approvalId: null,
+      validUntil: null,
+    };
+  }
+
+  // ── entry & poi_mint: enforce trade_approvals = 'approved' ──
   const { data, error } = await admin
     .from("trade_approvals")
     .select("id, status, valid_until")
@@ -67,6 +112,7 @@ export async function checkOrgLegitimacy(
     return {
       allowed: false,
       reason: "lookup_failed",
+      gatePosition,
       status: null,
       validUntil: null,
       message:
@@ -78,6 +124,7 @@ export async function checkOrgLegitimacy(
     return {
       allowed: false,
       reason: "no_record",
+      gatePosition,
       status: null,
       validUntil: null,
       message:
@@ -92,6 +139,7 @@ export async function checkOrgLegitimacy(
     return {
       allowed: false,
       reason: "revoked",
+      gatePosition,
       status,
       validUntil,
       message:
@@ -103,6 +151,7 @@ export async function checkOrgLegitimacy(
     return {
       allowed: false,
       reason: "not_approved",
+      gatePosition,
       status,
       validUntil,
       message:
@@ -116,6 +165,7 @@ export async function checkOrgLegitimacy(
       return {
         allowed: false,
         reason: "expired",
+        gatePosition,
         status,
         validUntil,
         message:
@@ -127,9 +177,37 @@ export async function checkOrgLegitimacy(
   return {
     allowed: true,
     status: "approved",
+    gatePosition,
     approvalId: data.id as string,
     validUntil,
   };
+}
+
+/**
+ * Resolve the active org_governance_profile row (id + position) for forensic
+ * audit memory (Step 3). Returns nulls if no profile exists. Cheap — uses the
+ * partial unique index on org_id WHERE effective_to IS NULL.
+ */
+export async function getActiveGovernanceProfile(
+  admin: AdminClient,
+  orgId: string | null | undefined,
+): Promise<{ profileId: string | null; position: GatePosition }> {
+  if (!orgId) return { profileId: null, position: "poi_mint" };
+  try {
+    const { data } = await admin
+      .from("org_governance_profiles")
+      .select("id, verification_gate_position")
+      .eq("org_id", orgId)
+      .is("effective_to", null)
+      .maybeSingle();
+    if (!data) return { profileId: null, position: "poi_mint" };
+    return {
+      profileId: data.id as string,
+      position: data.verification_gate_position as GatePosition,
+    };
+  } catch {
+    return { profileId: null, position: "poi_mint" };
+  }
 }
 
 /**
