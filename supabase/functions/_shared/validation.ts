@@ -5,6 +5,7 @@ import { ApiException } from "./errors.ts";
 const partySchema = z.object({
   id: z.string().trim().min(1).max(100),
   name: z.string().trim().min(1).max(200),
+  org_id: z.string().uuid().nullable().optional(),
 });
 
 export const matchSchema = z.object({
@@ -22,6 +23,9 @@ export const matchSchema = z.object({
   terms: z.string().trim().min(1).max(1000).nullable().optional(),
   match_type: z.enum(["search", "bilateral", "unilateral"]).optional().default("search"),
   metadata: z.record(z.unknown()).optional(),
+  origin_country: z.string().trim().max(100).nullable().optional(),
+  destination_country: z.string().trim().max(100).nullable().optional(),
+  trade_request_id: z.string().uuid().nullable().optional(),
 }).refine(
   (data) => {
     // At least one party is required

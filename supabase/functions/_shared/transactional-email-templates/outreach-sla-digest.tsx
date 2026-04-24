@@ -33,7 +33,7 @@ const OutreachSlaDigest = ({
 }: OutreachSlaDigestProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>{overdueCount} POI engagement{overdueCount === 1 ? '' : 's'} overdue beyond {thresholdHours}h</Preview>
+    <Preview>{`${overdueCount} POI engagement${overdueCount === 1 ? '' : 's'} overdue beyond ${thresholdHours}h`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>Outreach SLA Breach</Heading>
