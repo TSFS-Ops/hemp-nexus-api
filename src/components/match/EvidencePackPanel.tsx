@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
 import { downloadFile } from "@/lib/download-utils";
+import { DownloadErrorState } from "./DownloadErrorState";
 
 interface EvidencePackPanelProps {
   matchId: string;
@@ -60,7 +61,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const [pack, setPack] = useState<EvidencePackData | null>(null);
   const [loading, setLoading] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  // Per-action error slots so each download surface gets its own inline
+  // recovery UI (instead of a transient toast that the client can miss).
+  const [packError, setPackError] = useState<unknown | null>(null);
+  const [reportError, setReportError] = useState<unknown | null>(null);
+  const [certError, setCertError] = useState<unknown | null>(null);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     originalHash: string;
@@ -80,6 +87,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const generatePack = useCallback(async () => {
     try {
       setLoading(true);
+      setPackError(null);
       setVerificationResult(null);
 
       const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
@@ -91,6 +99,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to generate evidence pack";
       console.error("Evidence pack error:", error);
+      setPackError(error);
       toast.error(message);
     } finally {
       setLoading(false);
@@ -106,6 +115,8 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
   const downloadHtmlReport = useCallback(async () => {
     try {
+      setReportLoading(true);
+      setReportError(null);
       const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
         method: "GET",
         query: { format: "pdf" },
@@ -118,13 +129,17 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       });
     } catch (error) {
       console.error("Report download error:", error);
+      setReportError(error);
       toast.error(error instanceof Error ? error.message : "Failed to download evidence report");
+    } finally {
+      setReportLoading(false);
     }
   }, [matchId]);
 
   const downloadDealCertificate = useCallback(async () => {
     try {
       setCertLoading(true);
+      setCertError(null);
       const html = await fetchEdgeFunction<string>(`deal-certificate/${matchId}`, {
         method: "GET",
         label: "download deal certificate",
@@ -136,10 +151,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       });
     } catch (error) {
       if (error instanceof EdgeInvokeError && error.status === 422) {
-        toast.error("Certificate is only available once the deal reaches Signed Deal state.");
+        const msg = "Certificate is only available once the deal reaches Signed Deal state.";
+        setCertError(new Error(msg));
+        toast.error(msg);
         return;
       }
       console.error("Certificate download error:", error);
+      setCertError(error);
       toast.error(error instanceof Error ? error.message : "Failed to download certificate.");
     } finally {
       setCertLoading(false);
@@ -232,24 +250,42 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 </>
               )}
             </Button>
+            {certError && !certLoading && (
+              <DownloadErrorState
+                title="Couldn't download deal certificate"
+                error={certError}
+                onRetry={downloadDealCertificate}
+                retrying={certLoading}
+              />
+            )}
           </div>
         )}
 
         {/* Generate button */}
         {canGeneratePack && !pack && (
-          <Button onClick={generatePack} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="h-4 w-4 mr-2" />
-                Generate Evidence Pack
-              </>
+          <div className="space-y-2">
+            <Button onClick={generatePack} disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Generate Evidence Pack
+                </>
+              )}
+            </Button>
+            {packError && !loading && (
+              <DownloadErrorState
+                title="Couldn't generate evidence pack"
+                error={packError}
+                onRetry={generatePack}
+                retrying={loading}
+              />
             )}
-          </Button>
+          </div>
         )}
 
         {/* Pack details */}
@@ -349,14 +385,31 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 <FileJson className="h-4 w-4 mr-2" />
                 Download JSON
               </Button>
-              <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
-                <FileText className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={downloadHtmlReport}
+                disabled={reportLoading}
+              >
+                {reportLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
                 Download Report
               </Button>
               <p className="text-[11px] text-muted-foreground col-span-2 text-center -mt-1">
                 The report downloads as an HTML file. Open it in your browser (Chrome, Edge, Safari) to view.
               </p>
             </div>
+            {reportError && !reportLoading && (
+              <DownloadErrorState
+                title="Couldn't download evidence report"
+                error={reportError}
+                onRetry={downloadHtmlReport}
+                retrying={reportLoading}
+              />
+            )}
 
             {/* Verify button */}
             <Button

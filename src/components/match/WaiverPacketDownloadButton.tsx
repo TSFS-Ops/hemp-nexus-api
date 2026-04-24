@@ -1,12 +1,17 @@
 /**
  * WaiverPacketDownloadButton — Fetches a short-lived signed URL for the POI
  * evidence waiver packet PDF and triggers the browser download.
+ *
+ * On failure the component renders an inline `DownloadErrorState` (with
+ * details + "Try again") instead of relying solely on a transient toast,
+ * so users can never miss that the download didn't happen.
  */
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { invokeEdgeFunction } from "@/lib/edge-invoke";
 import { Button } from "@/components/ui/button";
+import { DownloadErrorState } from "./DownloadErrorState";
 
 interface Props {
   waiverId: string;
@@ -24,10 +29,12 @@ export function WaiverPacketDownloadButton({
   className,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<unknown | null>(null);
 
   const handleClick = async () => {
     if (loading) return;
     setLoading(true);
+    setError(null);
     try {
       console.log("[WaiverPacketDownload] invoking waiver-packet for", waiverId);
       const data = await invokeEdgeFunction<{ url?: string }>("waiver-packet", {
@@ -60,26 +67,38 @@ export function WaiverPacketDownloadButton({
     } catch (err) {
       const msg = (err as Error).message || "Failed to fetch waiver packet";
       console.error("[WaiverPacketDownload] failed", err);
-      toast.error(msg, { duration: 8000 });
+      setError(err);
+      toast.error(msg, { duration: 6000 });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={handleClick}
-      disabled={loading}
-      className={className}
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-      ) : (
-        <Download className="h-4 w-4 mr-2" />
+    <div className={"space-y-2 " + (className ?? "")}>
+      <Button
+        variant={variant}
+        size={size}
+        onClick={handleClick}
+        disabled={loading}
+        className={error ? "w-full" : undefined}
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4 mr-2" />
+        )}
+        {label}
+      </Button>
+
+      {error && !loading && (
+        <DownloadErrorState
+          title="Couldn't download waiver packet"
+          error={error}
+          onRetry={handleClick}
+          retrying={loading}
+        />
       )}
-      {label}
-    </Button>
+    </div>
   );
 }
