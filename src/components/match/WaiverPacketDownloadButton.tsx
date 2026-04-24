@@ -58,7 +58,7 @@ export function WaiverPacketDownloadButton({
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
       toast.success("Waiver packet downloaded");
     } catch (err) {
-      const msg = (err as Error).message || "Failed to fetch waiver packet";
+      const msg = describeEdgeError(err, "Failed to fetch waiver packet");
       console.error("[WaiverPacketDownload] failed", err);
       toast.error(msg, { duration: 8000 });
     } finally {
