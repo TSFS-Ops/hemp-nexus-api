@@ -223,6 +223,7 @@ export async function invokeEdgeFunction<T = unknown>(
     const ctx = (error as { context?: Response }).context;
     let serverBody = "";
     let serverStatus: number | undefined;
+    let requestId: string | undefined;
     if (ctx && typeof ctx.text === "function") {
       serverStatus = ctx.status;
       try {
@@ -230,11 +231,13 @@ export async function invokeEdgeFunction<T = unknown>(
       } catch {
         /* ignore */
       }
+      requestId = extractRequestId(ctx.headers, serverBody);
     }
     throw translateError(
       serverStatus,
       serverBody,
-      label ? `Could not ${label}` : `Edge function ${functionName} failed`
+      label ? `Could not ${label}` : `Edge function ${functionName} failed`,
+      requestId
     );
   }
 
