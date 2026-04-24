@@ -306,7 +306,9 @@ export async function fetchEdgeFunction<T = unknown>(
   options: FetchEdgeOptions = {}
 ): Promise<T> {
   const { body, headers = {}, requireSession = true, label, query, ...rest } = options;
-  const accessToken = await ensureFreshAccessToken({ requireSession });
+  const trimmedPath = path.replace(/^\/+/, "");
+  const metricsContext = label || trimmedPath;
+  const accessToken = await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
   const trimmed = path.replace(/^\/+/, "");
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
