@@ -5,6 +5,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 
 const corsHeaders = {
