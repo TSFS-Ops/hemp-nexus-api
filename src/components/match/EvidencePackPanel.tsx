@@ -236,7 +236,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         )}
 
         {/* Generate button */}
-        {isSettled && !pack && (
+        {canGeneratePack && !pack && (
           <Button onClick={generatePack} disabled={loading} className="w-full">
             {loading ? (
               <>
