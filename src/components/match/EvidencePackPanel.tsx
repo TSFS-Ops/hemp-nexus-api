@@ -250,6 +250,14 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 </>
               )}
             </Button>
+            {certError && !certLoading && (
+              <DownloadErrorState
+                title="Couldn't download deal certificate"
+                error={certError}
+                onRetry={downloadDealCertificate}
+                retrying={certLoading}
+              />
+            )}
           </div>
         )}
 
