@@ -342,38 +342,26 @@ export function DealWizard({
         // Never auto-leave the Match step.
         if (matchSubTab === "terms") setMatchSubTab("documents");
       }} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
-      {activeStep === 2 && <div className="space-y-4">
+      {activeStep === 2 && (
+        <div className="space-y-4">
           <StepPoi match={match} onStateAction={onStateAction} loading={stateActionLoading || confirming} engagementStatus={engagementStatus} />
-          {/* Hold-point notice shown on POI step since WaD step is locked */}
-          {poiHoldActive && <Card className="border-dashed border-primary/30">
-              <CardContent className="py-6 text-center space-y-3">
-                <ShieldAlert className="h-7 w-7 text-primary mx-auto" />
-                <h3 className="font-semibold text-sm">Signed Deal Step Locked, Awaiting Trading Partner</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  The trade request has been generated. The next step (Signed Deal) is locked until the trading partner engagement is accepted.
-                </p>
-                {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
-                    <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
-                    Current status: {engagementStatus === "notification_sent" ? "Awaiting outreach" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
-                  </div>}
-              </CardContent>
-            </Card>}
-        </div>}
-      {activeStep === 3 && (poiHoldActive ? <Card className="border-dashed border-primary/30">
+        </div>
+      )}
+      {activeStep === 3 && (
+        poiHoldActive ? (
+          <Card className="border-dashed border-border bg-muted/30 shadow-none">
             <CardContent className="py-8 text-center space-y-3">
-              <ShieldAlert className="h-8 w-8 text-primary mx-auto" />
-              <h3 className="font-semibold">Awaiting Trading Partner Engagement</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                The trade request has been generated and the trading partner has been notified. 
-                This step is paused until the trading partner has been engaged and has responded.
+              <Lock className="h-7 w-7 text-muted-foreground/60 mx-auto" />
+              <h3 className="font-semibold text-sm text-muted-foreground">Step locked — see status above</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                The Signed Deal step opens once the trading partner accepts. The full status is tracked in the focal banner above and the engagement tracker beneath the page heading.
               </p>
-              {/* Inline engagement status, no need to scroll up */}
-              {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
-                  <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
-                  Current status: {engagementStatus === "notification_sent" ? "Awaiting outreach" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
-                </div>}
             </CardContent>
-          </Card> : <StepWad match={match} onRefresh={onRefresh} />)}
+          </Card>
+        ) : (
+          <StepWad match={match} onRefresh={onRefresh} />
+        )
+      )}
       {activeStep === 4 && <StepEvidence match={match} currentState={currentState} />}
     </div>;
 }
