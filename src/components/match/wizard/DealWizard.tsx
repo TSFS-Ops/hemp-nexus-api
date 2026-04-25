@@ -204,17 +204,135 @@ export function DealWizard({
     }
     setActiveStep(idx);
   }, [steps, activeStep, matchSubTab, setMatchSubTab]);
-  return <div className="space-y-6">
+  // ── FOCAL BANNER DERIVATION ──
+  // Computes the single most important "what now" message for the user.
+  const focal = useMemo<{
+    tone: "action" | "locked" | "complete";
+    eyebrow: string;
+    title: string;
+    description: string;
+    helpText?: string;
+  }>(() => {
+    if (isCompleted) {
+      return {
+        tone: "complete",
+        eyebrow: "Trade complete",
+        title: "Evidence record sealed",
+        description: "All gates have been passed and the regulatory evidence pack is finalised. No further action is required.",
+      };
+    }
+    const activeId = steps[activeStep]?.id;
+    if (poiHoldActive) {
+      const statusText = engagementStatus === "notification_sent" ? "Awaiting outreach"
+        : engagementStatus === "contacted" ? "Contacted"
+        : engagementStatus === "declined" ? "Declined"
+        : engagementStatus === "expired" ? "Expired"
+        : "In progress";
+      return {
+        tone: "locked",
+        eyebrow: "Waiting on counterparty",
+        title: `Trading partner engagement — ${statusText}`,
+        description: "Proof of Intent is sealed. The Signed Deal step unlocks once the trading partner accepts the engagement. No action required from you right now.",
+        helpText: "Locked steps are gated by external events (counterparty acceptance, scheduled jobs). You'll be notified by email when this step unlocks.",
+      };
+    }
+    if (activeId === "search") {
+      return {
+        tone: "action",
+        eyebrow: "Your turn",
+        title: "Open the Match step to review terms",
+        description: "A trading partner has been identified. Move to the Match step to review the deal terms, attach evidence and prepare for Proof of Intent.",
+      };
+    }
+    if (activeId === "match") {
+      return {
+        tone: commercialTermsComplete ? "complete" : "action",
+        eyebrow: commercialTermsComplete ? "Ready to advance" : "Your turn",
+        title: commercialTermsComplete
+          ? "Commercial terms complete — proceed to Proof of Intent"
+          : "Complete the commercial terms",
+        description: commercialTermsComplete
+          ? "Buyer, seller, commodity, quantity and price are all set. You can now generate a Proof of Intent (1 credit, R10)."
+          : "Set the buyer, seller, commodity, quantity and price on the Terms tab before you can generate a Proof of Intent.",
+        helpText: "All five commercial terms are required by the POI gate. Documents and notes are optional but improve your evidence score.",
+      };
+    }
+    if (activeId === "poi") {
+      return {
+        tone: "action",
+        eyebrow: "Your turn",
+        title: "Generate a Proof of Intent",
+        description: "Mint a Proof of Intent on the audit ledger to formally signal commercial intent to your trading partner. Costs 1 credit (R10), irreversible, fully audited.",
+        helpText: "POI generation is the platform's hold-point. Once minted, your trading partner is notified and you cannot edit the commercial terms.",
+      };
+    }
+    if (activeId === "wad") {
+      return {
+        tone: "action",
+        eyebrow: "Your turn",
+        title: "Build the Signed Deal evidence bundle",
+        description: "Submit governance documents and run the 9-gate compliance validation. Once sealed, the Evidence Pack step unlocks for final regulatory archive.",
+        helpText: "The Signed Deal (WaD — Without a Doubt) bundle is the platform's compliance certificate. It must be sealed before the trade is regulatorily complete.",
+      };
+    }
+    if (activeId === "evidence") {
+      return {
+        tone: "action",
+        eyebrow: "Final step",
+        title: "Generate the regulatory Evidence Pack",
+        description: "Bundle the sealed Signed Deal and full audit timeline into a SHA-256 hashed, tamper-evident archive for your records and your regulator.",
+      };
+    }
+    return {
+      tone: "locked",
+      eyebrow: "Status",
+      title: "No action available",
+      description: "Continue when the next step unlocks.",
+    };
+  }, [activeStep, steps, poiHoldActive, engagementStatus, commercialTermsComplete, isCompleted]);
+
+  return <div className="space-y-5">
       {/* a11y: announce stepper sub-tab interception to screen readers */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {stepperAnnouncement}
       </div>
-      {/* Wizard Stepper */}
-      <Card>
-        <CardContent className="pt-5 pb-4">
+      {/* ── HERO: Macro deal progression ── */}
+      <Card className="shadow-md border-border/80">
+        <CardContent className="pt-6 pb-5 px-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-1.5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+                Deal progression
+              </p>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" aria-label="About deal progression" className="text-muted-foreground/50 hover:text-foreground transition-colors">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-xs">
+                    The five-step lifecycle for every Izenzo trade. Steps unlock sequentially; locked steps either require you to complete an earlier step or are waiting on a counterparty.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              Step {activeStep + 1} of {steps.length}
+            </span>
+          </div>
           <WizardStepper steps={steps} activeStep={activeStep} onStepClick={handleStepClick} />
         </CardContent>
       </Card>
+
+      {/* ── FOCAL POINT: What do I do next? ── */}
+      <ActionRequiredBanner
+        tone={focal.tone}
+        eyebrow={focal.eyebrow}
+        title={focal.title}
+        description={focal.description}
+        helpText={focal.helpText}
+      />
 
       {/* Step Content */}
       {activeStep === 0 && <StepSearch match={match} />}
