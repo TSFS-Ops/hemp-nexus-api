@@ -107,6 +107,12 @@ export function ComplianceProfile() {
   const [org, setOrg] = useState<Org | null>(null);
   const [owners, setOwners] = useState<UboRow[]>([]);
   const [docs, setDocs] = useState<KycDoc[]>([]);
+  const [updateOpen, setUpdateOpen] = useState(false);
+
+  const goToStep = (step: StepKey) => {
+    setUpdateOpen(false);
+    navigate(`/desk/settings/company?step=${step}`);
+  };
 
   useEffect(() => {
     if (!orgId) return;
