@@ -387,11 +387,56 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                   Download Canonical JSON
                 </Button>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={togglePreview}
+                disabled={previewLoading}
+              >
+                {previewLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading preview…
+                  </>
+                ) : previewOpen ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Hide in-page preview
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview evidence pack in-page
+                  </>
+                )}
+              </Button>
               <p className="text-[11px] text-muted-foreground">
                 The HTML report is the human-readable, printable evidence pack (match summary, event timeline,
                 documents, approval chain, full audit references). Open it in any browser. The JSON is the
                 machine-readable canonical source used to compute the SHA-256 hash above.
               </p>
+
+              {/* In-page preview panel */}
+              {previewOpen && previewHtml && (
+                <div className="mt-2 rounded-md border border-border bg-background overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                      <FileText className="h-3.5 w-3.5" />
+                      Evidence Pack Preview
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      Read-only · sandboxed
+                    </span>
+                  </div>
+                  <iframe
+                    title="Evidence pack preview"
+                    sandbox=""
+                    srcDoc={previewHtml}
+                    className="block w-full h-[520px] bg-background"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Verify button */}
