@@ -132,62 +132,94 @@ export function EngagementTracker({
     const target = isUnilateral ? `${ROUTES.DASHBOARD}?section=unilateral&${params.toString()}` : `${ROUTES.DASHBOARD}?section=bilateral&${params.toString()}`;
     navigate(target);
   };
-  return <Card className="border-dashed">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Clock className="h-4 w-4 text-primary" />
-          Trading Partner Engagement
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <div className="flex items-center gap-0">
-          {STEPS.map((step, index) => {
-          const state = getStepState(step.key, status, index);
-
-          // If terminal and this is the "accepted" step, show the terminal override
-          if (isTerminal && step.key === "accepted" && terminalInfo) {
-            const TermIcon = terminalInfo.icon;
-            return <div key={step.key} className="flex items-center">
-                  {index > 0 && <div className={cn("w-6 sm:w-10 h-0.5", "bg-destructive/30")} />}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className={cn("h-8 w-8 rounded-full flex items-center justify-center border-2", "border-destructive bg-destructive/10 text-destructive")}>
-                      <TermIcon className="h-4 w-4" />
-                    </div>
-                    <span className="text-[10px] text-destructive font-medium text-center max-w-[70px]">
-                      {terminalInfo.label}
-                    </span>
-                  </div>
-                </div>;
-          }
-          const StepIcon = step.icon;
-          return <div key={step.key} className="flex items-center">
-                {index > 0 && <div className={cn("w-6 sm:w-10 h-0.5 transition-colors", state === "complete" ? "bg-primary" : state === "current" ? "bg-primary/40" : "bg-muted")} />}
-                <div className="flex flex-col items-center gap-1">
-                  <div className={cn("h-8 w-8 rounded-full flex items-center justify-center border-2 transition-colors", state === "complete" ? "border-primary bg-primary text-primary-foreground" : state === "current" ? "border-primary bg-primary/10 text-primary" : "border-muted bg-muted/30 text-muted-foreground")}>
-                    {state === "complete" ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
-                  </div>
-                  <span className={cn("text-[10px] font-medium text-center max-w-[70px]", state === "complete" ? "text-primary" : state === "current" ? "text-foreground" : "text-muted-foreground")}>
-                    {step.label}
-                  </span>
-                </div>
-              </div>;
-        })}
+  return (
+    <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 mb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <p className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground font-medium truncate">
+            Counterparty engagement
+          </p>
         </div>
+        {!isTerminal && (
+          <span className="text-[10px] font-medium text-muted-foreground shrink-0">
+            {STEPS.findIndex((s) => s.key === status) + 1}/3
+          </span>
+        )}
+      </div>
 
-        {/* Status message */}
-        <p className="text-xs text-muted-foreground mt-3">
-          {status === "notification_sent" && (counterpartyType === "known" ? "Your trading partner has been notified directly. Waiting for their response." : "Your trading partner has been notified. Waiting for engagement.")}
-          {status === "contacted" && (counterpartyType === "known" ? "Your trading partner has been contacted. Awaiting their response." : "Support has contacted the trading partner on your behalf. Awaiting their response.")}
-          {status === "accepted" && "Trading partner has accepted. You may proceed with the trade."}
-          {status === "declined" && "Trading partner declined this trade. You can re-use your trade details to approach a different trading partner."}
-          {status === "expired" && "This engagement has expired. You can re-use your trade details to try a different trading partner."}
-        </p>
+      {/* Compact horizontal micro-stepper — visually distinct from the macro WizardStepper */}
+      <div className="flex items-center gap-1.5">
+        {STEPS.map((step, index) => {
+          const state = getStepState(step.key, status, index);
+          if (isTerminal && step.key === "accepted" && terminalInfo) {
+            return (
+              <div key={step.key} className="flex items-center gap-1.5 flex-1 min-w-0">
+                {index > 0 && <div className="h-px flex-1 bg-destructive/30" />}
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-medium">
+                  <terminalInfo.icon className="h-3 w-3" />
+                  <span>{terminalInfo.label}</span>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={step.key} className="flex items-center gap-1.5 flex-1 min-w-0">
+              {index > 0 && (
+                <div
+                  className={cn(
+                    "h-px flex-1 transition-colors",
+                    state === "complete" ? "bg-primary/60" : "bg-border",
+                  )}
+                />
+              )}
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border whitespace-nowrap",
+                  state === "complete" && "bg-primary/10 text-primary border-primary/20",
+                  state === "current" && "bg-card text-foreground border-primary/40 shadow-sm",
+                  state === "upcoming" && "bg-transparent text-muted-foreground/70 border-border",
+                )}
+              >
+                {state === "complete" ? (
+                  <Check className="h-3 w-3" />
+                ) : (
+                  <step.icon className="h-3 w-3" />
+                )}
+                <span>{step.label}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* Re-use CTA for terminal states */}
-        {isTerminal && <Button variant="outline" size="sm" className="mt-3 w-full sm:w-auto" onClick={handleReuse}>
-            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-            Re-use Trade Details
-          </Button>}
-      </CardContent>
-    </Card>;
+      <p className="text-[11px] text-muted-foreground mt-2.5 leading-snug">
+        {status === "notification_sent" &&
+          (counterpartyType === "known"
+            ? "Trading partner notified directly. Awaiting their response."
+            : "Trading partner notified. Awaiting engagement.")}
+        {status === "contacted" &&
+          (counterpartyType === "known"
+            ? "Trading partner has been contacted. Awaiting their response."
+            : "Support has contacted the trading partner. Awaiting their response.")}
+        {status === "accepted" && "Trading partner has accepted. You may proceed."}
+        {status === "declined" &&
+          "Trading partner declined this trade. Re-use details to approach a different partner."}
+        {status === "expired" &&
+          "This engagement has expired. Re-use details to try a different partner."}
+      </p>
+
+      {isTerminal && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2.5 w-full sm:w-auto h-7 text-xs"
+          onClick={handleReuse}
+        >
+          <RotateCcw className="h-3 w-3 mr-1.5" />
+          Re-use trade details
+        </Button>
+      )}
+    </div>
+  );
 }
