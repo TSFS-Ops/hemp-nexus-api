@@ -302,7 +302,56 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
       }
 
-      const idempotencyKey = req.headers.get("Idempotency-Key") || `outreach-${engagementId}-${Date.now()}`;
+      // ── Validate body FIRST so we can derive a stable idempotency key from
+      // its content. Previously we fell back to `Date.now()` whenever the
+      // client omitted the Idempotency-Key header, which made every retry
+      // generate a fresh key and silently bypass dedupe. The Supabase JS SDK
+      // does not surface a header API on functions.invoke(), so admins
+      // double-clicking "Send" or browsers retrying on transient network
+      // failure could fire two real emails. The fix: hash the request body
+      // so identical retries collide on the same key, while a deliberate
+      // re-send (different subject/body) still produces a new send.
+      const SendSchema = z.object({
+        subject: z.string().min(1).max(200),
+        custom_message: z.string().max(5000).optional(),
+        counterparty_name: z.string().max(200).optional(),
+        recipient_override: z.string().email().optional(),
+      });
+      const rawBody = await req.text();
+      let parsedBody: unknown;
+      try {
+        parsedBody = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        throw new ApiException("VALIDATION_ERROR", "Body must be valid JSON", 400);
+      }
+      const parsed = SendSchema.safeParse(parsedBody);
+      if (!parsed.success) {
+        throw new ApiException("VALIDATION_ERROR", JSON.stringify(parsed.error.flatten().fieldErrors), 400);
+      }
+
+      // Stable key: SHA-256 of the canonical body. Same body + same engagement
+      // = same key = idempotent. Different body = new send (admin chose to
+      // re-send with edits). Header still wins when the client provides one.
+      const headerKey = req.headers.get("Idempotency-Key");
+      let idempotencyKey: string;
+      if (headerKey && headerKey.trim().length > 0) {
+        idempotencyKey = headerKey.trim();
+      } else {
+        const canonical = JSON.stringify({
+          subject: parsed.data.subject,
+          custom_message: parsed.data.custom_message ?? null,
+          counterparty_name: parsed.data.counterparty_name ?? null,
+          recipient_override: parsed.data.recipient_override ?? null,
+        });
+        const hashBuf = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(canonical)
+        );
+        const hashHex = Array.from(new Uint8Array(hashBuf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        idempotencyKey = `outreach-${engagementId}-${hashHex.slice(0, 32)}`;
+      }
       const idemOpts = {
         supabase,
         orgId: authCtx.orgId ?? "platform",
@@ -312,17 +361,6 @@ Deno.serve(async (req) => {
       };
       const cached = await lookupIdempotentResponse(idemOpts);
       if (cached) return cachedResponseToHttp(cached, headers);
-
-      const SendSchema = z.object({
-        subject: z.string().min(1).max(200),
-        custom_message: z.string().max(5000).optional(),
-        counterparty_name: z.string().max(200).optional(),
-        recipient_override: z.string().email().optional(),
-      });
-      const parsed = SendSchema.safeParse(await req.json());
-      if (!parsed.success) {
-        throw new ApiException("VALIDATION_ERROR", JSON.stringify(parsed.error.flatten().fieldErrors), 400);
-      }
 
       const { data: eng, error: engErr } = await supabase
         .from("poi_engagements")
