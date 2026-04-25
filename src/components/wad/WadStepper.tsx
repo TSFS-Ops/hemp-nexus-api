@@ -50,6 +50,8 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
+  const [attestError, setAttestError] = useState<{ message: string; requestId?: string } | null>(null);
+  const [refCopied, setRefCopied] = useState(false);
 
   // All decision logic comes from consequenceState - no inline derivation
   const {
@@ -86,15 +88,31 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     }
 
     setAttesting(true);
+    setAttestError(null);
     const role = resolveAttestationRole(userOrgId, wad.buyer_org_id, wad.seller_org_id);
     const result = await submitAttestation(wad.id, attestedName, role);
     setAttesting(false);
 
     if (result.success) {
       toast.success("Attestation recorded");
+      setAttestError(null);
       onUpdate();
     } else {
-      toast.error(result.error || "Failed to attest");
+      const baseMsg = result.error || "Failed to attest";
+      const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
+      toast.error(toastMsg, { duration: 8000 });
+      setAttestError({ message: baseMsg, requestId: result.requestId });
+    }
+  };
+
+  const handleCopyAttestRef = async () => {
+    if (!attestError?.requestId) return;
+    try {
+      await navigator.clipboard.writeText(attestError.requestId);
+      setRefCopied(true);
+      setTimeout(() => setRefCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
     }
   };
 
