@@ -16,7 +16,7 @@ import {
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
-import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
+import { checkMaintenanceMode, tryBypass } from "../_shared/test-mode-bypass.ts";
 import {
   lookupIdempotentResponse,
   storeIdempotentResponse,
@@ -265,32 +265,50 @@ Deno.serve(async (req) => {
       const governanceProfile = await getActiveGovernanceProfile(supabase, authCtx.orgId);
       const legitimacy = await checkOrgLegitimacy(supabase, authCtx.orgId, "poi_mint");
       if (!legitimacy.allowed) {
-        console.warn(
-          `[${requestId}] LEGITIMACY_GATE_BLOCKED reason=${legitimacy.reason} status=${legitimacy.status} gate_position=${legitimacy.gatePosition} match_id=${matchId} org_id=${authCtx.orgId}`,
-        );
-        try {
-          await supabase.from("audit_logs").insert({
-            org_id: match.org_id,
-            actor_user_id: actorUserId,
-            actor_api_key_id: actorApiKeyId,
-            action: "intent.denied",
-            entity_type: "match",
-            entity_id: matchId,
-            metadata: {
-              request_id: requestId,
-              reason: "org_not_verified",
-              legitimacy_reason: legitimacy.reason,
-              trade_approval_status: legitimacy.status,
-              valid_until: legitimacy.validUntil,
-              // ── Step 3: forensic audit memory ──
-              gate_position: legitimacy.gatePosition,
-              governance_profile_id: governanceProfile.profileId,
-            },
-          });
-        } catch (auditErr) {
-          console.error(`[${requestId}] Failed to write legitimacy denial audit row:`, auditErr);
+        // Test-mode bypass: admin-controlled "kyb" flag short-circuits the
+        // legitimacy gate so unverified orgs can still mint POIs in non-prod
+        // environments. Production tier is locked out inside tryBypass.
+        const bypassed = await tryBypass(supabase, {
+          gate: "kyb",
+          source: "match",
+          orgId: authCtx.orgId,
+          actorUserId,
+          requestId,
+          details: {
+            callsite: "poi_mint",
+            match_id: matchId,
+            legitimacy_reason: legitimacy.reason,
+            gate_position: legitimacy.gatePosition,
+          },
+        });
+        if (!bypassed) {
+          console.warn(
+            `[${requestId}] LEGITIMACY_GATE_BLOCKED reason=${legitimacy.reason} status=${legitimacy.status} gate_position=${legitimacy.gatePosition} match_id=${matchId} org_id=${authCtx.orgId}`,
+          );
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: match.org_id,
+              actor_user_id: actorUserId,
+              actor_api_key_id: actorApiKeyId,
+              action: "intent.denied",
+              entity_type: "match",
+              entity_id: matchId,
+              metadata: {
+                request_id: requestId,
+                reason: "org_not_verified",
+                legitimacy_reason: legitimacy.reason,
+                trade_approval_status: legitimacy.status,
+                valid_until: legitimacy.validUntil,
+                // ── Step 3: forensic audit memory ──
+                gate_position: legitimacy.gatePosition,
+                governance_profile_id: governanceProfile.profileId,
+              },
+            });
+          } catch (auditErr) {
+            console.error(`[${requestId}] Failed to write legitimacy denial audit row:`, auditErr);
+          }
+          throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
         }
-        throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
       }
 
       // ENGAGEMENT HOLD-POINT GUARD: Block POI generation if counterparty has not accepted

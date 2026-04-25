@@ -8,6 +8,7 @@ import {
   getActiveGovernanceProfile,
   ORG_NOT_VERIFIED_CODE,
 } from "../_shared/legitimacy.ts";
+import { tryBypass } from "../_shared/test-mode-bypass.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -173,33 +174,51 @@ Deno.serve(async (req: Request) => {
       const governanceProfile = await getActiveGovernanceProfile(admin, orgId);
       const legitimacy = await checkOrgLegitimacy(admin, orgId, "poi_mint");
       if (!legitimacy.allowed) {
-        console.warn(
-          `[${correlationId}] LEGITIMACY_GATE_BLOCKED endpoint=pois poi_type=${parsed.poi_type} reason=${legitimacy.reason} status=${legitimacy.status} gate_position=${legitimacy.gatePosition} org_id=${orgId}`,
-        );
-        try {
-          await admin.from("audit_logs").insert({
-            org_id: orgId,
-            actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
-            action: "poi.mint_denied",
-            entity_type: "poi",
-            entity_id: null,
-            metadata: {
-              correlation_id: correlationId,
-              endpoint: "pois",
-              actor_is_api_key: authCtx.isApiKey,
-              poi_type: parsed.poi_type,
-              reason: "org_not_verified",
-              legitimacy_reason: legitimacy.reason,
-              trade_approval_status: legitimacy.status,
-              valid_until: legitimacy.validUntil,
-              gate_position: legitimacy.gatePosition,
-              governance_profile_id: governanceProfile.profileId,
-            },
-          });
-        } catch (auditErr) {
-          console.error(`[${correlationId}] Failed to write legitimacy denial audit row:`, auditErr);
+        // Test-mode bypass: admin-controlled "kyb" flag short-circuits the
+        // legitimacy gate so unverified orgs can still mint POIs in non-prod
+        // environments. Production tier is locked out inside tryBypass.
+        const bypassed = await tryBypass(admin, {
+          gate: "kyb",
+          source: "pois",
+          orgId,
+          actorUserId: authCtx.isApiKey ? null : authCtx.userId,
+          requestId: correlationId,
+          details: {
+            callsite: "poi_mint",
+            poi_type: parsed.poi_type,
+            legitimacy_reason: legitimacy.reason,
+            gate_position: legitimacy.gatePosition,
+          },
+        });
+        if (!bypassed) {
+          console.warn(
+            `[${correlationId}] LEGITIMACY_GATE_BLOCKED endpoint=pois poi_type=${parsed.poi_type} reason=${legitimacy.reason} status=${legitimacy.status} gate_position=${legitimacy.gatePosition} org_id=${orgId}`,
+          );
+          try {
+            await admin.from("audit_logs").insert({
+              org_id: orgId,
+              actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+              action: "poi.mint_denied",
+              entity_type: "poi",
+              entity_id: null,
+              metadata: {
+                correlation_id: correlationId,
+                endpoint: "pois",
+                actor_is_api_key: authCtx.isApiKey,
+                poi_type: parsed.poi_type,
+                reason: "org_not_verified",
+                legitimacy_reason: legitimacy.reason,
+                trade_approval_status: legitimacy.status,
+                valid_until: legitimacy.validUntil,
+                gate_position: legitimacy.gatePosition,
+                governance_profile_id: governanceProfile.profileId,
+              },
+            });
+          } catch (auditErr) {
+            console.error(`[${correlationId}] Failed to write legitimacy denial audit row:`, auditErr);
+          }
+          throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
         }
-        throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
       }
 
       if (parsed.poi_type === "bilateral") {
