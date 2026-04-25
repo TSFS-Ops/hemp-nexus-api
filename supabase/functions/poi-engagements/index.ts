@@ -10,7 +10,7 @@ import {
   lookupIdempotentResponse,
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
-import { checkMaintenanceMode, logDecision } from "../_shared/test-mode-bypass.ts";
+import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 
 const EngagementStatusSchema = z.enum([
@@ -353,24 +353,45 @@ Deno.serve(async (req) => {
       const outreachGovernanceProfile = await getActiveGovernanceProfile(supabase, initiatorOrgIdForGate);
       const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate, "outreach");
       if (!outreachLegitimacy.allowed) {
-        logDecision("maintenance", {
+        // Test-mode bypass: admin-controlled "kyb" flag short-circuits the
+        // legitimacy gate so unverified orgs can still send outreach in
+        // non-prod environments. Production tier is locked out inside
+        // tryBypass. Mirrors the symmetry already in match/index.ts and
+        // pois/index.ts so the TEST MODE banner's KYB promise is truthful
+        // across every counterparty-facing surface.
+        const bypassed = await tryBypass(supabase, {
+          gate: "kyb",
           source: "poi-engagements/send-outreach",
-          decision: "block",
-          requestId,
+          orgId: initiatorOrgIdForGate,
           actorUserId: authCtx.userId ?? null,
-          orgId: authCtx.orgId ?? null,
-          reason: `org_not_verified:${outreachLegitimacy.reason}`,
+          requestId,
           details: {
+            callsite: "outreach",
             engagement_id: engagementId,
-            initiator_org_id: initiatorOrgIdForGate,
-            trade_approval_status: outreachLegitimacy.status,
-            valid_until: outreachLegitimacy.validUntil,
-            // ── Step 3: forensic audit memory ──
+            legitimacy_reason: outreachLegitimacy.reason,
             gate_position: outreachLegitimacy.gatePosition,
-            governance_profile_id: outreachGovernanceProfile.profileId,
           },
         });
-        throw new ApiException(ORG_NOT_VERIFIED_CODE, outreachLegitimacy.message, 403);
+        if (!bypassed) {
+          logDecision("maintenance", {
+            source: "poi-engagements/send-outreach",
+            decision: "block",
+            requestId,
+            actorUserId: authCtx.userId ?? null,
+            orgId: authCtx.orgId ?? null,
+            reason: `org_not_verified:${outreachLegitimacy.reason}`,
+            details: {
+              engagement_id: engagementId,
+              initiator_org_id: initiatorOrgIdForGate,
+              trade_approval_status: outreachLegitimacy.status,
+              valid_until: outreachLegitimacy.validUntil,
+              // ── Step 3: forensic audit memory ──
+              gate_position: outreachLegitimacy.gatePosition,
+              governance_profile_id: outreachGovernanceProfile.profileId,
+            },
+          });
+          throw new ApiException(ORG_NOT_VERIFIED_CODE, outreachLegitimacy.message, 403);
+        }
       }
 
       const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
