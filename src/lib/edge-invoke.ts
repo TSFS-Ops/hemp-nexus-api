@@ -306,36 +306,54 @@ export async function invokeEdgeFunction<T = unknown>(
   const metricsContext = label || functionName;
   await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    body: body as Record<string, unknown> | undefined,
-    method,
-    headers,
-  });
+  const isIdempotent = !body && (!method || method === "GET");
 
-  if (error) {
-    const ctx = (error as { context?: Response }).context;
-    let serverBody = "";
-    let serverStatus: number | undefined;
-    let requestId: string | undefined;
-    if (ctx && typeof ctx.text === "function") {
-      serverStatus = ctx.status;
-      try {
-        serverBody = await ctx.clone().text();
-      } catch {
-        /* ignore */
+  const doInvoke = async (): Promise<T> => {
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: body as Record<string, unknown> | undefined,
+      method,
+      headers,
+    });
+
+    if (error) {
+      const ctx = (error as { context?: Response }).context;
+      let serverBody = "";
+      let serverStatus: number | undefined;
+      let requestId: string | undefined;
+      if (ctx && typeof ctx.text === "function") {
+        serverStatus = ctx.status;
+        try {
+          serverBody = await ctx.clone().text();
+        } catch {
+          /* ignore */
+        }
+        requestId = extractRequestId(ctx.headers, serverBody);
       }
-      requestId = extractRequestId(ctx.headers, serverBody);
+      throw translateError(
+        serverStatus,
+        serverBody,
+        label ? `Could not ${label}` : `Edge function ${functionName} failed`,
+        requestId,
+        metricsContext
+      );
     }
-    throw translateError(
-      serverStatus,
-      serverBody,
-      label ? `Could not ${label}` : `Edge function ${functionName} failed`,
-      requestId,
-      metricsContext
-    );
-  }
 
-  return data as T;
+    return data as T;
+  };
+
+  if (!isIdempotent) return doInvoke();
+
+  return withTransientRetry(doInvoke, {
+    retries: 2,
+    baseDelayMs: 200,
+    isTransient: (err) => {
+      if (isTransientFetchError(err)) return true;
+      if (err instanceof EdgeInvokeError) {
+        return isTransientServerResponse(err.status, err.serverBody || "");
+      }
+      return false;
+    },
+  });
 }
 
 // ── fetchEdgeFunction (wraps native fetch for path-based calls) ───────────
