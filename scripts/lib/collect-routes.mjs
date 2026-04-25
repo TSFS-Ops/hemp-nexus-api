@@ -93,3 +93,84 @@ export function collectRoutePatterns(files, routeConsts) {
   }
   return patterns;
 }
+
+/**
+ * Strict, nesting-aware route extractor for codegen.
+ *
+ * Walks <Route> tokens linearly tracking a parent-path stack so children of
+ * `<Route path="settings">` are emitted as `settings/company`, never as the
+ * unqualified `company`. This is what makes `routeTo("/desk/company")` fail
+ * to compile while `routeTo("/desk/settings/company")` succeeds.
+ *
+ * Trade-off vs. the lenient scanner above: this only emits routes whose
+ * full nesting can be resolved with literal paths. The lenient matcher in
+ * check-routes.mjs is still in play to catch typos in JSX-expression cases.
+ */
+export function collectRoutePatternsStrict(files, routeConsts) {
+  const out = new Set();
+  for (const file of files) {
+    const src = readFileSync(file, "utf8");
+    const prefix = SHELL_PREFIXES[file] ?? "";
+    if (prefix) out.add(prefix);
+    for (const p of strictWalk(src, routeConsts)) {
+      out.add(joinRoute(prefix, p));
+    }
+  }
+  return out;
+}
+
+/**
+ * Token walker that tracks <Route ...> open/close to resolve true parent
+ * paths. Emits any path whose subtree contains no further `<Route>` children
+ * (i.e. genuine navigable leaves). `<Route index>` contributes the parent's
+ * own path. Routes whose `path` attribute is a non-literal expression are
+ * skipped (we cannot statically resolve them).
+ */
+function strictWalk(src, routeConsts) {
+  const ROUTE_TAG_RE = /<Route\b([^>]*?)(\/?)>|<\/Route>/g;
+  const PATH_LIT_RE = /\bpath\s*=\s*"([^"]+)"/;
+  const PATH_CONST_RE = /\bpath\s*=\s*\{ROUTES\.(\w+)\}/;
+  const stack = [];
+  const childCount = [];
+  const emitted = new Set();
+
+  let m;
+  ROUTE_TAG_RE.lastIndex = 0;
+  while ((m = ROUTE_TAG_RE.exec(src)) !== null) {
+    const isClose = m[0] === "</Route>";
+    if (isClose) {
+      const popped = stack.pop();
+      const kids = childCount.pop();
+      if (popped !== undefined && kids === 0) emitted.add(popped);
+      continue;
+    }
+    const attrs = m[1];
+    const selfClosing = m[2] === "/";
+    const litMatch = attrs.match(PATH_LIT_RE);
+    const constMatch = attrs.match(PATH_CONST_RE);
+    const raw = litMatch ? litMatch[1] : constMatch ? routeConsts.get(constMatch[1]) : null;
+    const isIndex = /\bindex\b/.test(attrs);
+
+    const parent = stack[stack.length - 1] ?? "";
+    let composed;
+    if (raw == null && isIndex) composed = parent;
+    else if (raw == null) composed = null;
+    else if (raw.startsWith("/")) composed = raw.replace(/^\/+/, "");
+    else composed = parent ? `${parent}/${raw}` : raw;
+
+    if (childCount.length > 0) childCount[childCount.length - 1] += 1;
+
+    if (selfClosing) {
+      if (composed != null) emitted.add(composed);
+    } else {
+      stack.push(composed ?? parent);
+      childCount.push(0);
+    }
+  }
+  while (stack.length) {
+    const popped = stack.pop();
+    const kids = childCount.pop();
+    if (popped !== undefined && kids === 0) emitted.add(popped);
+  }
+  return emitted;
+}
