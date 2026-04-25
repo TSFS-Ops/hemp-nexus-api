@@ -11,10 +11,27 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, FileWarning, Loader2 } from "lucide-react";
+import { Building2, Check, FileWarning, FileText, Loader2, Users, ChevronRight, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg } from "@/hooks/use-user-org";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type StepKey = "entity" | "owners" | "documents";
+type Gap = {
+  step: StepKey;
+  title: string;
+  description: string;
+  cta: string;
+  icon: LucideIcon;
+};
 
 type Org = {
   id: string;
@@ -90,6 +107,12 @@ export function ComplianceProfile() {
   const [org, setOrg] = useState<Org | null>(null);
   const [owners, setOwners] = useState<UboRow[]>([]);
   const [docs, setDocs] = useState<KycDoc[]>([]);
+  const [updateOpen, setUpdateOpen] = useState(false);
+
+  const goToStep = (step: StepKey) => {
+    setUpdateOpen(false);
+    navigate(`/desk/settings/company?step=${step}`);
+  };
 
   useEffect(() => {
     if (!orgId) return;
@@ -145,7 +168,55 @@ export function ComplianceProfile() {
     org &&
     (org.legal_name || org.registration_number || org.vat_number || org.address)
   );
+  const identityFullyOnFile = !!(
+    org &&
+    org.legal_name &&
+    org.registration_number &&
+    org.address &&
+    (org.jurisdictions?.length ?? 0) > 0
+  );
   const isComplete = hasIdentity && owners.length > 0 && docs.length > 0;
+  const aggregateOwnership = owners.reduce(
+    (sum, o) => (o.status === "verified" ? sum + Number(o.ownership_percentage || 0) : sum),
+    0
+  );
+
+  // Each gap maps to the first actionable sub-step in CompanyIdentityTab so
+  // "Request Data Update" never lands the user on a tab that is already complete.
+  const gaps: Gap[] = [];
+  if (!identityFullyOnFile) {
+    gaps.push({
+      step: "entity",
+      title: "Complete registered identity",
+      description:
+        "Legal name, registration number, registered address and jurisdiction must all be on file.",
+      cta: "Update Identity",
+      icon: Building2,
+    });
+  }
+  if (owners.length === 0 || aggregateOwnership < 75) {
+    gaps.push({
+      step: "owners",
+      title:
+        owners.length === 0 ? "Declare beneficial owners" : "Reach 75% verified ownership",
+      description:
+        owners.length === 0
+          ? "KYB requires at least one declared UBO. Add owners and percentages to satisfy the gate."
+          : "Aggregate verified ownership is below the 75% KYB threshold. Add or verify additional owners.",
+      cta: owners.length === 0 ? "Declare Owners" : "Update Owners",
+      icon: Users,
+    });
+  }
+  if (docs.length === 0) {
+    gaps.push({
+      step: "documents",
+      title: "Upload regulatory evidence",
+      description:
+        "Registration certificate, tax clearance and KYC pack are required for counterparty verification.",
+      cta: "Upload Documents",
+      icon: FileText,
+    });
+  }
 
   // ── Empty state ────────────────────────────────────────────
   // Triggered only when the org has *no* identity, *no* declared owners
@@ -222,10 +293,32 @@ export function ComplianceProfile() {
         </div>
         <button
           type="button"
-          onClick={() => navigate("/desk/settings/company?step=entity")}
+          onClick={() => {
+            // If the profile has gaps, surface them in a step-specific modal so
+            // the user can jump straight to the missing tab. When the profile
+            // is fully complete, fall back to the entity tab (the canonical
+            // "edit" landing) since there is nothing missing to deep-link to.
+            if (gaps.length === 0) {
+              goToStep("entity");
+              return;
+            }
+            if (gaps.length === 1) {
+              goToStep(gaps[0].step);
+              return;
+            }
+            setUpdateOpen(true);
+          }}
           className="self-start md:shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-sm transition-colors"
         >
           Request Data Update
+          {gaps.length > 0 && (
+            <span
+              aria-label={`${gaps.length} outstanding`}
+              className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-400 text-slate-900 text-[11px] font-semibold tabular-nums"
+            >
+              {gaps.length}
+            </span>
+          )}
         </button>
       </header>
 
@@ -429,6 +522,68 @@ export function ComplianceProfile() {
           via the Without-a-Doubt attestation endpoint.
         </p>
       </footer>
+
+      {/* ── REQUEST DATA UPDATE · STEP-SPECIFIC PICKER ───────── */}
+      <Dialog open={updateOpen} onOpenChange={setUpdateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request a data update</DialogTitle>
+            <DialogDescription>
+              {gaps.length > 0
+                ? "Pick the area you want to update. Each link drops you straight onto the right Company Identity (KYB) sub-step."
+                : "Your profile is up to date. Open Company Identity to make discretionary edits."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ul className="mt-2 space-y-2">
+            {gaps.map((gap) => {
+              const Icon = gap.icon;
+              return (
+                <li key={gap.step}>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(gap.step)}
+                    className="w-full flex items-start gap-3 p-3 rounded-md border border-border bg-card text-left hover:bg-muted hover:border-foreground/20 transition-colors group"
+                  >
+                    <span className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                      <Icon className="h-4 w-4" strokeWidth={1.75} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground">
+                        {gap.title}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground leading-snug">
+                        {gap.description}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="h-4 w-4 mt-2 text-muted-foreground group-hover:text-foreground shrink-0"
+                      strokeWidth={1.75}
+                    />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <DialogFooter className="mt-2 sm:justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setUpdateOpen(false)}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => goToStep("entity")}
+              className="text-xs font-medium text-foreground underline underline-offset-4 hover:no-underline"
+            >
+              Open Company Identity anyway
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
