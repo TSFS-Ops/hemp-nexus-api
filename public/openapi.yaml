@@ -1040,9 +1040,12 @@ paths:
                       helperText: "Both signatories have attested. Sealing finalises the evidence bundle."
                       viewerRole: seller_signatory
                       hasAttested: true
+                      viewerAttestedAt: "2025-04-24T11:02:08.913Z"
                       attestations:
                         buyerAttested: true
                         sellerAttested: true
+                        buyerAttestedAt: "2025-04-24T09:15:32.412Z"
+                        sellerAttestedAt: "2025-04-24T11:02:08.913Z"
                         total: 2
                       nextAction: seal
                     request_id: "1f2e3d4c-5b6a-4789-9012-345678901234"
