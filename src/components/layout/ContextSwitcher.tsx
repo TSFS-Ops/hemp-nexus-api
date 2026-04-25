@@ -115,8 +115,13 @@ export function ContextSwitcher({
               <ActiveIcon className={iconClasses} strokeWidth={1.75} />
             </span>
             <span className="flex-1 min-w-0">
-              <span className={`block ${labelClasses}`}>Workspace</span>
+              {isDark && <span className={`block ${labelClasses}`}>Workspace</span>}
               <span className={`block truncate ${valueClasses}`}>{active.label}</span>
+              {!isDark && (
+                <span className="block truncate text-[10px] text-muted-foreground mt-0.5">
+                  {active.caption}
+                </span>
+              )}
             </span>
             <ChevronsUpDown className={chevronClasses} strokeWidth={1.5} />
           </button>
