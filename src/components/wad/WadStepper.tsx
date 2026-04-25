@@ -140,7 +140,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           ? {
               label: "Copy Ref",
               onClick: () => {
-                void handleCopyAttestRef(result.requestId);
+                void handleCopyAttestRef(result.requestId, "toast");
               },
             }
           : undefined,
