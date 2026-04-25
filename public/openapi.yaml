@@ -1063,9 +1063,12 @@ paths:
                       helperText: "All required attestations are in place. The certificate is available to download."
                       viewerRole: buyer_signatory
                       hasAttested: true
+                      viewerAttestedAt: "2025-04-24T09:15:32.412Z"
                       attestations:
                         buyerAttested: true
                         sellerAttested: true
+                        buyerAttestedAt: "2025-04-24T09:15:32.412Z"
+                        sellerAttestedAt: "2025-04-24T11:02:08.913Z"
                         total: 2
                       nextAction: download_certificate
                     request_id: "abcd1234-ef56-4789-9abc-def012345678"
