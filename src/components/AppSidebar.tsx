@@ -59,7 +59,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="border-r border-border">
+    <Sidebar className="border-r border-border bg-[hsl(var(--surface-sidebar))] shadow-sm">
       <SidebarHeader className="border-b border-border px-4 py-3">
         <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <div className="h-7 w-7 rounded flex items-center justify-center" style={{ backgroundColor: 'hsl(160, 84%, 29%)' }}>
