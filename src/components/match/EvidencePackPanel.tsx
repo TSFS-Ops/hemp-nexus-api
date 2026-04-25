@@ -19,6 +19,7 @@ import {
   Award,
   Eye,
   EyeOff,
+  ScrollText,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
@@ -63,6 +64,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const [loading, setLoading] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -185,6 +187,41 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
       duration: 8000,
     });
   }, [pack, fetchHtmlReport, previewHtml, matchId, buildArtifactSlug]);
+
+  /**
+   * Standalone Audit Trail export — separate file (CSV by default, JSON optional)
+   * containing only the audit_logs entries for this match. Includes its own
+   * SHA-256 trail hash + the parent pack hash for cross-traceability so a
+   * compliance reviewer can ingest it independently of the full evidence pack.
+   */
+  const downloadAuditTrail = useCallback(
+    async (variant: "csv" | "json" = "csv") => {
+      try {
+        setAuditLoading(true);
+        const data = await fetchEdgeFunction<string>(`evidence-pack/${matchId}/audit`, {
+          method: "GET",
+          query: { format: variant },
+          label: "export audit trail",
+        });
+        const body = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+        const ext = variant === "json" ? "json" : "csv";
+        const mime = variant === "json" ? "application/json" : "text/csv";
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-").replace(/Z$/, "Z");
+        const filename = `audit-trail-${matchId}-${stamp}.${ext}`;
+        downloadFile(body, filename, mime);
+        toast.success("Audit trail exported", {
+          description: `Saved as ${filename} — standalone audit log for compliance review.`,
+          duration: 7000,
+        });
+      } catch (error) {
+        console.error("Audit trail export error:", error);
+        toast.error(describeEdgeError(error, "Failed to export audit trail"), { duration: 8000 });
+      } finally {
+        setAuditLoading(false);
+      }
+    },
+    [matchId],
+  );
 
   const togglePreview = useCallback(async () => {
     if (previewOpen) {
@@ -478,6 +515,51 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                   </>
                 )}
               </Button>
+
+              {/* Standalone audit-trail export — separate file for compliance review */}
+              <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                  <ScrollText className="h-3.5 w-3.5" />
+                  Audit Trail (standalone)
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Download just the audit log entries for this trade as a separate file
+                  — for compliance reviewers who only need the chronological action log.
+                  Includes a SHA-256 trail hash plus the parent pack hash for cross-traceability.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => downloadAuditTrail("csv")}
+                    disabled={auditLoading}
+                  >
+                    {auditLoading ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                        Exporting…
+                      </>
+                    ) : (
+                      <>
+                        <ScrollText className="h-3.5 w-3.5 mr-2" />
+                        Export Audit Trail (CSV)
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => downloadAuditTrail("json")}
+                    disabled={auditLoading}
+                  >
+                    <FileJson className="h-3.5 w-3.5 mr-2" />
+                    Export as JSON
+                  </Button>
+                </div>
+              </div>
+
               <p className="text-[11px] text-muted-foreground">
                 The HTML report is the human-readable, printable evidence pack (match summary, event timeline,
                 documents, approval chain, full audit references). Open it in any browser. The JSON is the
