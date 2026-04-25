@@ -88,10 +88,12 @@ const LANE_META = [
 ] as const;
 
 // Tone-of-voice colour per lane - used for the subtle top accent and the stage pill.
-const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string }> = {
-  draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500" },
-  awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500" },
-  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-[hsl(var(--emerald))]" },
+// `tint` provides a soft column background so the white deal cards visibly "pop"
+// off the lane (Institutional Premium hierarchy: depth via tint + shadow, never flat).
+const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string; tint: string; ring: string }> = {
+  draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500", tint: "bg-slate-50/70",  ring: "ring-1 ring-inset ring-slate-200/70" },
+  awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500",  tint: "bg-amber-50/40",  ring: "ring-1 ring-inset ring-amber-200/60" },
+  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-[hsl(var(--emerald))]", tint: "bg-emerald-50/40", ring: "ring-1 ring-inset ring-emerald-200/60" },
 };
 const LANE_PILL_LABEL: Record<string, string> = {
   draft: "Draft",
