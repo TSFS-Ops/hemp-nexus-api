@@ -1139,7 +1139,7 @@ Deno.serve(async (req) => {
           thickness: 0.5,
           color: grayscale(0.7),
         });
-        p.drawText(`Generated: ${generatedAt}`, {
+        p.drawText(safe(`Generated: ${generatedAt}`), {
           x: MARGIN,
           y: footerY,
           size: 7,
