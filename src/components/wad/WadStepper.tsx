@@ -388,11 +388,16 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             </div>
             {attestError && (
               <div
+                ref={attestErrorRef}
                 role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+                aria-live="assertive"
+                aria-atomic="true"
+                tabIndex={-1}
+                id="attest-error"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2 outline-none focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:ring-offset-2"
               >
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-destructive">Attestation failed</p>
                     <p className="text-destructive/90 break-words">{attestError.message}</p>
@@ -401,15 +406,22 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                 {attestError.requestId && (
                   <div className="flex items-center justify-between gap-2 rounded border border-destructive/20 bg-background/60 px-2 py-1.5">
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground" id="attest-ref-label">
                         Reference ID
                       </p>
-                      <code className="font-mono text-[11px] break-all">{attestError.requestId}</code>
+                      <code className="font-mono text-[11px] break-all" aria-labelledby="attest-ref-label">
+                        {attestError.requestId}
+                      </code>
                     </div>
                     <button
                       type="button"
                       onClick={handleCopyAttestRef}
-                      className="shrink-0 text-xs text-primary hover:underline"
+                      aria-label={
+                        refCopied
+                          ? "Reference ID copied to clipboard"
+                          : `Copy reference ID ${attestError.requestId} to clipboard`
+                      }
+                      className="shrink-0 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
                     >
                       {refCopied ? "Copied" : "Copy"}
                     </button>
@@ -421,13 +433,21 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               </div>
             )}
             <Button
+              ref={attestButtonRef}
               onClick={handleAttest}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
+              aria-describedby={attestError ? "attest-error" : undefined}
+              aria-busy={attesting || undefined}
               className="w-full"
             >
-              {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Check className="h-4 w-4 mr-2" />
-              {attestError ? "Retry attestation" : "Attest"}
+              {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />}
+              <Check className="h-4 w-4 mr-2" aria-hidden="true" />
+              {attesting
+                ? "Submitting attestation…"
+                : attestError
+                ? "Retry attestation"
+                : "Attest"}
+              {attesting && <span className="sr-only">, please wait</span>}
             </Button>
           </div>
         );
