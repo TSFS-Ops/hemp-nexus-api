@@ -908,10 +908,20 @@ export function AdminPendingEngagementsPanel() {
             <button
               type="button"
               onClick={() => setScope("all")}
-              className={`px-3 py-1.5 border-l border-slate-200 ${scope === "all" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
-              title="Diagnostic: include known-counterparty (already-on-platform) engagements too"
+              className={`px-3 py-1.5 border-l border-slate-200 inline-flex items-center gap-1.5 ${scope === "all" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              title="Include known-counterparty (already-on-platform) engagements. Engagements auto-promote here as soon as their counterparty email matches a registered organisation."
             >
               All
+              {knownTotalCount > 0 && (
+                <span
+                  className={`inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded-full text-[10px] font-semibold ${
+                    scope === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
+                  }`}
+                  title={`${knownTotalCount} engagement(s) on this platform have a known (registered) counterparty`}
+                >
+                  +{knownTotalCount}
+                </span>
+              )}
             </button>
           </div>
           <Button
