@@ -28,6 +28,10 @@ import {
   clearAttestError,
 } from "@/lib/wad/attest-error-storage";
 import {
+  buildAttestErrorReport,
+  buildAttestErrorReportFilename,
+} from "@/lib/wad/attest-error-report";
+import {
   trackClientEvent,
   CLIENT_ANALYTICS_EVENT_NAMES,
   type CopyRefSurface,
@@ -207,6 +211,56 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           outcome: "denied",
           hasRef: true,
           context: "wad_attest_error",
+          reason: err instanceof Error ? err.name : "unknown",
+        },
+      });
+    }
+  };
+
+  // Build a small text incident report and trigger a browser download.
+  // We deliberately do this entirely client-side: no network round-trip,
+  // no PII leaves the device unless the user themselves attaches it
+  // when emailing support.
+  const handleDownloadErrorReport = () => {
+    if (!attestError) return;
+    const role = resolveAttestationRole(userOrgId, wad.buyer_org_id, wad.seller_org_id);
+    const report = buildAttestErrorReport({
+      wadId: wad.id,
+      matchId: match?.id,
+      buyerOrgId: wad.buyer_org_id,
+      sellerOrgId: wad.seller_org_id,
+      userOrgId,
+      resolvedRole: role,
+      attestedName,
+      attestConfirmed,
+      error: {
+        message: attestError.message,
+        requestId: attestError.requestId,
+        kind: attestError.kind,
+      },
+    });
+    try {
+      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+      triggerBlobDownload(blob, buildAttestErrorReportFilename(wad.id));
+      toast.success("Error report downloaded");
+      trackClientEvent({
+        name: CLIENT_ANALYTICS_EVENT_NAMES.DOWNLOAD_ERROR_REPORT,
+        payload: {
+          outcome: "success",
+          hasRef: Boolean(attestError.requestId),
+          context: "wad_attest_error",
+          errorKind: attestError.kind,
+        },
+      });
+    } catch (err) {
+      toast.error("Could not generate report — please copy the details manually");
+      trackClientEvent({
+        name: CLIENT_ANALYTICS_EVENT_NAMES.DOWNLOAD_ERROR_REPORT,
+        payload: {
+          outcome: "failed",
+          hasRef: Boolean(attestError.requestId),
+          context: "wad_attest_error",
+          errorKind: attestError.kind,
           reason: err instanceof Error ? err.name : "unknown",
         },
       });
@@ -543,6 +597,21 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     </p>
                   );
                 })()}
+                {/* Download a plain-text incident report. Always rendered
+                    when the alert is up — even without a Reference ID it
+                    captures the message, timestamp, form fields and
+                    environment for support triage. */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    data-testid="attest-error-download-report"
+                    onClick={handleDownloadErrorReport}
+                    className="inline-flex items-center gap-1.5 rounded border border-destructive/30 bg-background/60 px-2 py-1 text-xs text-destructive hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download error report
+                  </button>
+                </div>
               </div>
             )}
             <Button
