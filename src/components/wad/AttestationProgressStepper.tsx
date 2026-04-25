@@ -454,7 +454,10 @@ export function AttestationProgressStepper({
       <div
         id={nextActionId}
         role="note"
-        aria-label={`Next action: ${nextAction.label}. ${nextAction.description}`}
+        aria-label={t("wad.progress.next.aria", {
+          label: nextLabel,
+          description: nextDescription,
+        })}
         className={cn(
           "rounded-md border px-3 py-2 flex items-start gap-3",
           TONE_CLASSES[nextAction.tone]
@@ -463,10 +466,10 @@ export function AttestationProgressStepper({
         <NextIcon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
         <div className="min-w-0 flex-1" aria-hidden="true">
           <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
-            Next
+            {t("wad.progress.next.heading")}
           </p>
-          <p className="text-sm font-medium leading-tight">{nextAction.label}</p>
-          <p className="text-xs opacity-90 mt-0.5">{nextAction.description}</p>
+          <p className="text-sm font-medium leading-tight">{nextLabel}</p>
+          <p className="text-xs opacity-90 mt-0.5">{nextDescription}</p>
         </div>
       </div>
     </section>
