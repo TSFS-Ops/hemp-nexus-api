@@ -148,56 +148,44 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
 }
 
 /**
- * Brace + string aware JSX walker. Returns container `<Route>` blocks (those
- * with an explicit `</Route>` close, not self-closing) along with their
- * inner body text. Used to compose one level of parent/child route paths.
+ * Scan for `<Route>` container blocks (those with an explicit `</Route>`
+ * close, not self-closing) and return each container's path + inner body.
+ * Used to compose one level of parent/child route paths so that nested
+ * tabbed sub-views like `<Route path="settings"><Route path="company"/>`
+ * register as `/desk/settings/company`.
+ *
+ * We deliberately do NOT track curly-brace nesting when locating the end
+ * of an opening tag. Embedded `>` characters (e.g. inside `element={<Foo>`)
+ * would otherwise hide `<Route path="settings">` blocks that live inside
+ * an `element={…}` expression of a self-closing parent — which is exactly
+ * the structure used by /desk/* in this codebase. Treating every `>` as
+ * end-of-tag means some non-Route JSX is briefly misread, but only `<Route`
+ * tokens are pushed to the stack so the consequence is harmless.
  */
 function findContainerRoutes(src) {
   const out = [];
   const stack = []; // { path, bodyStart }
-  let i = 0;
-  while (i < src.length) {
-    if (src[i] !== "<") { i++; continue; }
-    if (src.startsWith("</Route", i)) {
-      const end = src.indexOf(">", i);
-      if (end === -1) break;
+  // Match either an opening <Route ...> (with the rest of its tag up to
+  // the next `>`) or a closing </Route>. We do NOT require self-closing
+  // tags to balance — they are detected by the trailing `/` in the body.
+  const TAG_RE = /<(\/)?Route\b([^>]*)>/g;
+  let m;
+  while ((m = TAG_RE.exec(src)) !== null) {
+    const isClose = m[1] === "/";
+    if (isClose) {
       const frame = stack.pop();
       if (frame) {
-        out.push({ path: frame.path, body: src.slice(frame.bodyStart, i) });
+        out.push({ path: frame.path, body: src.slice(frame.bodyStart, m.index) });
       }
-      i = end + 1;
       continue;
     }
-    if (!src.startsWith("<Route", i)) { i++; continue; }
-    const after = src[i + 6];
-    if (after && /[A-Za-z0-9_]/.test(after)) { i++; continue; }
-    // Walk forward to the end of the opening tag, tracking { } depth and
-    // strings so embedded `>` characters don't fool us.
-    let j = i + 6;
-    let depth = 0;
-    let inStr = null;
-    while (j < src.length) {
-      const c = src[j];
-      if (inStr) {
-        if (c === "\\") { j += 2; continue; }
-        if (c === inStr) inStr = null;
-      } else if (c === '"' || c === "'" || c === "`") {
-        inStr = c;
-      } else if (c === "{") depth++;
-      else if (c === "}") { if (depth > 0) depth--; }
-      else if (c === ">" && depth === 0) break;
-      j++;
-    }
-    if (j >= src.length) break;
-    let attrs = src.slice(i + 6, j);
+    let attrs = m[2];
     const selfClosing = attrs.trimEnd().endsWith("/");
-    if (selfClosing) attrs = attrs.trimEnd().slice(0, -1);
+    if (selfClosing) continue; // self-closing: contributes nothing to the parent stack
+    if (attrs.trimEnd().slice(-1) === "/") attrs = attrs.trimEnd().slice(0, -1);
     const litMatch = attrs.match(/\bpath\s*=\s*"([^"]+)"/);
     const path = litMatch ? litMatch[1] : null;
-    if (!selfClosing) {
-      stack.push({ path, bodyStart: j + 1 });
-    }
-    i = j + 1;
+    stack.push({ path, bodyStart: m.index + m[0].length });
   }
   return out;
 }
