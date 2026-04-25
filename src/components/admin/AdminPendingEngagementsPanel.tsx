@@ -144,6 +144,11 @@ export function AdminPendingEngagementsPanel() {
   // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  // Off-scope counters: when admin is on "Unknown only", we still surface how many
+  // engagements live in the "All" bucket and how many of those auto-promoted in the
+  // last 7 days. This prevents the "my row vanished after auto-link" support pattern.
+  const [knownTotalCount, setKnownTotalCount] = useState<number>(0);
+  const [knownRecentCount, setKnownRecentCount] = useState<number>(0);
 
   // ── Reviewer support-notes filter ──
   // notesFilter: "any" (no filter) | "with" (has notes) | "without" (no notes)
@@ -384,6 +389,30 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  // ── Off-scope visibility: count engagements that auto-linked to a known org ──
+  // We query directly (no edge call) for two cheap counts so the "All" bucket is
+  // never invisible. Failures here are non-fatal — we just hide the badge.
+  const fetchKnownCounts = async () => {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [totalRes, recentRes] = await Promise.all([
+        supabase
+          .from("poi_engagements")
+          .select("id", { count: "exact", head: true })
+          .eq("counterparty_type", "known"),
+        supabase
+          .from("poi_engagements")
+          .select("id", { count: "exact", head: true })
+          .eq("counterparty_type", "known")
+          .gte("updated_at", sevenDaysAgo),
+      ]);
+      if (!totalRes.error) setKnownTotalCount(totalRes.count ?? 0);
+      if (!recentRes.error) setKnownRecentCount(recentRes.count ?? 0);
+    } catch {
+      // non-fatal
+    }
+  };
+
   // ── Load SLA settings (threshold + reminder recipient) from admin_settings ──
   const fetchSlaSettings = async () => {
     const { data, error } = await supabase
@@ -441,6 +470,7 @@ export function AdminPendingEngagementsPanel() {
 
   useEffect(() => {
     fetchEngagements();
+    fetchKnownCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
@@ -458,6 +488,7 @@ export function AdminPendingEngagementsPanel() {
       if (debounce) clearTimeout(debounce);
       debounce = setTimeout(() => {
         fetchEngagements();
+        fetchKnownCounts();
       }, 400);
     };
 
@@ -862,6 +893,25 @@ export function AdminPendingEngagementsPanel() {
               </span>
             )}
           </p>
+          {scope === "unknown" && knownRecentCount > 0 && (
+            <div className="mt-3 max-w-2xl rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 flex items-start gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-sky-700" />
+              <div className="flex-1">
+                <strong>Looking for an engagement that disappeared?</strong>{" "}
+                {knownRecentCount} engagement{knownRecentCount === 1 ? "" : "s"} moved out of this view
+                in the last 7 days because the counterparty email matched a registered organisation.
+                They are still live — they're now visible under <strong>All</strong> (the row is filed
+                under the counterparty's organisation, not as an "unknown outreach" task).
+                <button
+                  type="button"
+                  onClick={() => setScope("all")}
+                  className="ml-1 underline font-medium hover:text-sky-700"
+                >
+                  Switch to All →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex gap-2 items-center flex-wrap">
           {/* Scope toggle: unknown-only is the default; "all" is a diagnostic mode */}
@@ -877,10 +927,20 @@ export function AdminPendingEngagementsPanel() {
             <button
               type="button"
               onClick={() => setScope("all")}
-              className={`px-3 py-1.5 border-l border-slate-200 ${scope === "all" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
-              title="Diagnostic: include known-counterparty (already-on-platform) engagements too"
+              className={`px-3 py-1.5 border-l border-slate-200 inline-flex items-center gap-1.5 ${scope === "all" ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              title="Include known-counterparty (already-on-platform) engagements. Engagements auto-promote here as soon as their counterparty email matches a registered organisation."
             >
               All
+              {knownTotalCount > 0 && (
+                <span
+                  className={`inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded-full text-[10px] font-semibold ${
+                    scope === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
+                  }`}
+                  title={`${knownTotalCount} engagement(s) on this platform have a known (registered) counterparty`}
+                >
+                  +{knownTotalCount}
+                </span>
+              )}
             </button>
           </div>
           <Button
