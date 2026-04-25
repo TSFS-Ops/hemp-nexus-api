@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,6 @@ import {
   type ConsequenceState,
 } from "@/lib/modules/consequence";
 import { AttestationProgressStepper } from "./AttestationProgressStepper";
-import { useTranslation } from "@/hooks/useTranslation";
 
 type Match = Tables<"matches">;
 
@@ -42,29 +41,21 @@ const STEPS = [
   { id: "certificate", label: "Sealed Certificate", icon: Lock },
 ];
 
-// Attestation statement copy lives in the i18n catalogue under
-// `wad.attest.statement` so it can be translated without touching this file.
+const ATTESTATION_TEXT = "I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed.";
 
 export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }: WadStepperProps) {
-  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
   const [attesting, setAttesting] = useState(false);
   const [sealing, setSealing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
-  const [attestError, setAttestError] = useState<{ message: string; requestId?: string } | null>(null);
+  const [attestError, setAttestError] = useState<{
+    message: string;
+    requestId?: string;
+    kind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
+  } | null>(null);
   const [refCopied, setRefCopied] = useState(false);
-  const attestErrorRef = useRef<HTMLDivElement>(null);
-  const attestButtonRef = useRef<HTMLButtonElement>(null);
-
-  // When an attestation error appears, move keyboard focus to the alert so
-  // assistive tech announces it AND the user can immediately Tab to "Retry".
-  useEffect(() => {
-    if (attestError && attestErrorRef.current) {
-      attestErrorRef.current.focus();
-    }
-  }, [attestError]);
 
   // All decision logic comes from consequenceState - no inline derivation
   const {
@@ -96,7 +87,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
 
   const handleAttest = async () => {
     if (!attestedName.trim() || !attestConfirmed) {
-      toast.error(!attestedName.trim() ? t("wad.attest.toast.nameRequired") : t("wad.attest.toast.confirmRequired"));
+      toast.error(!attestedName.trim() ? "Please enter your name" : "Please confirm the attestation statement");
       return;
     }
 
@@ -107,16 +98,14 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     setAttesting(false);
 
     if (result.success) {
-      toast.success(t("wad.attest.toast.recorded"));
+      toast.success("Attestation recorded");
       setAttestError(null);
       onUpdate();
     } else {
-      const baseMsg = result.error || t("wad.attest.error.fallback");
-      const toastMsg = result.requestId
-        ? t("wad.attest.error.withRef", { message: baseMsg, requestId: result.requestId })
-        : baseMsg;
+      const baseMsg = result.error || "Failed to attest";
+      const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
       toast.error(toastMsg, { duration: 8000 });
-      setAttestError({ message: baseMsg, requestId: result.requestId });
+      setAttestError({ message: baseMsg, requestId: result.requestId, kind: result.errorKind });
     }
   };
 
@@ -260,7 +249,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         return (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {t("wad.signatories.intro")}
+              Both buyer and seller must attest before the Signed Deal can be sealed.
             </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 border rounded-lg">
@@ -271,12 +260,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     <Clock className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
-                    <p className="font-medium">{t("wad.signatories.buyer")}</p>
+                    <p className="font-medium">Buyer Signatory</p>
                     <p className="text-sm text-muted-foreground">{match.buyer_name}</p>
                   </div>
                 </div>
                 {attestations.buyerAttested && (
-                  <Badge variant="outline" className="text-green-600">{t("wad.signatories.attestedBadge")}</Badge>
+                  <Badge variant="outline" className="text-green-600">Attested</Badge>
                 )}
               </div>
               <div className="flex items-center justify-between p-3 border rounded-lg">
@@ -287,12 +276,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     <Clock className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
-                    <p className="font-medium">{t("wad.signatories.seller")}</p>
+                    <p className="font-medium">Seller Signatory</p>
                     <p className="text-sm text-muted-foreground">{match.seller_name}</p>
                   </div>
                 </div>
                 {attestations.sellerAttested && (
-                  <Badge variant="outline" className="text-green-600">{t("wad.signatories.attestedBadge")}</Badge>
+                  <Badge variant="outline" className="text-green-600">Attested</Badge>
                 )}
               </div>
             </div>
@@ -322,8 +311,8 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           return (
             <div className="text-center py-6">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <p className="font-medium">{t("wad.attest.sealed.title")}</p>
-              <p className="text-sm text-muted-foreground">{t("wad.attest.sealed.body")}</p>
+              <p className="font-medium">Signed Deal has been sealed</p>
+              <p className="text-sm text-muted-foreground">All attestations complete</p>
             </div>
           );
         }
@@ -333,8 +322,8 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             <div className="space-y-4">
               <div className="text-center py-4">
                 <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-3" />
-                <p className="font-medium">{t("wad.attest.alreadyAttested.title")}</p>
-                <p className="text-sm text-muted-foreground">{t("wad.attest.alreadyAttested.body")}</p>
+                <p className="font-medium">You have already attested</p>
+                <p className="text-sm text-muted-foreground">Waiting for other party</p>
               </div>
               {canSeal && (
                 <>
@@ -354,9 +343,9 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           return (
             <div className="text-center py-6">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="font-medium">{t("wad.attest.notAvailable.title")}</p>
+              <p className="font-medium">Attestation not available</p>
               <p className="text-sm text-muted-foreground">
-                {t("wad.attest.notAvailable.body")}
+                Only buyer and seller signatories can attest on this Signed Deal.
               </p>
             </div>
           );
@@ -365,17 +354,17 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         return (
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-2">{t("wad.attest.statementLabel")}</p>
-              <p className="text-sm italic text-muted-foreground">"{t("wad.attest.statement")}"</p>
+              <p className="text-sm font-medium mb-2">Attestation Statement:</p>
+              <p className="text-sm italic text-muted-foreground">"{ATTESTATION_TEXT}"</p>
             </div>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="attested-name">{t("wad.attest.nameLabel")}</Label>
+                <Label htmlFor="attested-name">Your Full Name (as signatory)</Label>
                 <Input
                   id="attested-name"
                   value={attestedName}
                   onChange={(e) => setAttestedName(e.target.value)}
-                  placeholder={t("wad.attest.namePlaceholder")}
+                  placeholder="Enter your full legal name"
                   className="mt-1"
                 />
               </div>
@@ -386,72 +375,86 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                   onCheckedChange={(checked) => setAttestConfirmed(checked === true)}
                 />
                 <Label htmlFor="attest-confirm" className="text-sm leading-relaxed cursor-pointer">
-                  {t("wad.attest.confirmCheckbox")}
+                  I confirm that this is NOT a contract, involves NO payment, and creates NO legal obligation.
+                  This is an evidence record that intent was confirmed.
                 </Label>
               </div>
             </div>
             {attestError && (
               <div
-                ref={attestErrorRef}
                 role="alert"
-                aria-live="assertive"
-                aria-atomic="true"
-                tabIndex={-1}
-                id="attest-error"
-                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2 outline-none focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:ring-offset-2"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
               >
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" aria-hidden="true" />
+                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-destructive">{t("wad.attest.error.title")}</p>
+                    <p className="font-medium text-destructive">Attestation failed</p>
                     <p className="text-destructive/90 break-words">{attestError.message}</p>
                   </div>
                 </div>
                 {attestError.requestId && (
                   <div className="flex items-center justify-between gap-2 rounded border border-destructive/20 bg-background/60 px-2 py-1.5">
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground" id="attest-ref-label">
-                        {t("wad.attest.error.refLabel")}
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        Reference ID
                       </p>
-                      <code className="font-mono text-[11px] break-all" aria-labelledby="attest-ref-label">
-                        {attestError.requestId}
-                      </code>
+                      <code className="font-mono text-[11px] break-all">{attestError.requestId}</code>
                     </div>
                     <button
                       type="button"
                       onClick={handleCopyAttestRef}
-                      aria-label={
-                        refCopied
-                          ? t("wad.attest.error.copiedAria")
-                          : t("wad.attest.error.copyAria", { id: attestError.requestId })
-                      }
-                      className="shrink-0 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                      className="shrink-0 text-xs text-primary hover:underline"
                     >
-                      {refCopied ? t("wad.attest.error.copied") : t("wad.attest.error.copy")}
+                      {refCopied ? "Copied" : "Copy"}
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  {t("wad.attest.error.refHelp")}
-                </p>
+                {(() => {
+                  const refSuffix = attestError.requestId ? ` with Ref ${attestError.requestId}` : "";
+                  let hint: string;
+                  switch (attestError.kind) {
+                    case "auth_required":
+                      hint = "Your session has expired. Please sign in again, then retry the attestation.";
+                      break;
+                    case "client_error":
+                      hint =
+                        "Please check the details above (name and confirmation) and try again. If you keep seeing this, contact support" +
+                        refSuffix +
+                        ".";
+                      break;
+                    case "server_error":
+                      hint =
+                        "This looks like a temporary problem on our side. Please retry in a moment — if it keeps failing, contact support" +
+                        refSuffix +
+                        ".";
+                      break;
+                    case "network_error":
+                      hint =
+                        "We couldn't reach the server. Check your connection and retry. If the issue persists, contact support" +
+                        refSuffix +
+                        ".";
+                      break;
+                    default:
+                      hint = attestError.requestId
+                        ? `Please include the Reference ID when reporting this issue to support.`
+                        : "If this keeps happening, please contact support.";
+                  }
+                  return (
+                    <p className="text-xs text-muted-foreground" data-testid="attest-error-hint">
+                      {hint}
+                    </p>
+                  );
+                })()}
               </div>
             )}
             <Button
-              ref={attestButtonRef}
               onClick={handleAttest}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
-              aria-describedby={attestError ? "attest-error" : undefined}
-              aria-busy={attesting || undefined}
               className="w-full"
             >
-              {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />}
-              <Check className="h-4 w-4 mr-2" aria-hidden="true" />
-              {attesting
-                ? t("wad.attest.button.submitting")
-                : attestError
-                ? t("wad.attest.button.retry")
-                : t("wad.attest.button.attest")}
-              {attesting && <span className="sr-only">{t("wad.attest.button.pleaseWait")}</span>}
+              {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Check className="h-4 w-4 mr-2" />
+              {attestError ? "Retry attestation" : "Attest"}
             </Button>
           </div>
         );

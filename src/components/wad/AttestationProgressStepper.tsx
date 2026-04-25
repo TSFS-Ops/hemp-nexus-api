@@ -2,9 +2,6 @@ import { CheckCircle2, Clock, Lock, ShieldCheck, XCircle, type LucideIcon } from
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ConsequenceState, WadRecord } from "@/lib/modules/consequence";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
-import { useTranslation } from "@/hooks/useTranslation";
-import type { TranslationKey } from "@/i18n";
 
 interface AttestationProgressStepperProps {
   wad: WadRecord;
@@ -29,9 +26,8 @@ interface SignatoryNode {
 }
 
 interface NextAction {
-  /** Translation keys — resolved by the component, not at derivation time. */
-  labelKey: TranslationKey;
-  descriptionKey: TranslationKey;
+  label: string;
+  description: string;
   icon: LucideIcon;
   tone: "primary" | "success" | "muted" | "destructive";
 }
@@ -46,14 +42,14 @@ function deriveNextAction(
   if (uiStatus === "sealed") {
     return canDownloadCertificate
       ? {
-          labelKey: "wad.next.sealed.download.label",
-          descriptionKey: "wad.next.sealed.download.desc",
+          label: "Download certificate",
+          description: "Sealed — PDF certificate is available.",
           icon: ShieldCheck,
           tone: "success",
         }
       : {
-          labelKey: "wad.next.sealed.label",
-          descriptionKey: "wad.next.sealed.desc",
+          label: "Sealed",
+          description: "All attestations recorded and the deal is sealed.",
           icon: Lock,
           tone: "success",
         };
@@ -61,8 +57,8 @@ function deriveNextAction(
 
   if (uiStatus === "revoked") {
     return {
-      labelKey: "wad.next.revoked.label",
-      descriptionKey: "wad.next.revoked.desc",
+      label: "Revoked",
+      description: "This Signed Deal has been revoked.",
       icon: XCircle,
       tone: "destructive",
     };
@@ -70,8 +66,8 @@ function deriveNextAction(
 
   if (uiStatus === "superseded") {
     return {
-      labelKey: "wad.next.superseded.label",
-      descriptionKey: "wad.next.superseded.desc",
+      label: "Superseded",
+      description: "A newer Signed Deal has replaced this one.",
       icon: XCircle,
       tone: "muted",
     };
@@ -79,8 +75,8 @@ function deriveNextAction(
 
   if (canSeal) {
     return {
-      labelKey: "wad.next.canSeal.label",
-      descriptionKey: "wad.next.canSeal.desc",
+      label: "Seal Signed Deal",
+      description: "Both signatories have attested — ready to seal.",
       icon: Lock,
       tone: "primary",
     };
@@ -88,8 +84,8 @@ function deriveNextAction(
 
   if (canAttest) {
     return {
-      labelKey: "wad.next.canAttest.label",
-      descriptionKey: "wad.next.canAttest.desc",
+      label: "Attest now",
+      description: "Your attestation is required to progress this deal.",
       icon: ShieldCheck,
       tone: "primary",
     };
@@ -97,8 +93,8 @@ function deriveNextAction(
 
   if (hasAttested) {
     return {
-      labelKey: "wad.next.awaitingOther.label",
-      descriptionKey: "wad.next.awaitingOther.desc",
+      label: "Awaiting other party",
+      description: "You've attested — waiting for the counterparty to attest.",
       icon: Clock,
       tone: "muted",
     };
@@ -106,89 +102,16 @@ function deriveNextAction(
 
   if (hasYou) {
     return {
-      labelKey: "wad.next.awaitingAll.label",
-      descriptionKey: "wad.next.awaitingAll.desc",
+      label: "Awaiting attestations",
+      description: "Both signatories must attest before this deal can be sealed.",
       icon: Clock,
       tone: "muted",
     };
   }
 
   return {
-    labelKey: "wad.next.viewOnly.label",
-    descriptionKey: "wad.next.viewOnly.desc",
-    icon: Clock,
-    tone: "muted",
-  };
-}
-
-/**
- * Pre-rollout copy: generic buyer/seller-signatory phrasing without
- * status-specific descriptions. Used when the
- * `wad.statusSpecificAttestationCopy` feature flag is OFF.
- */
-function deriveLegacyNextAction(
-  consequenceState: ConsequenceState,
-  hasYou: boolean
-): NextAction {
-  const { canAttest, hasAttested, canSeal, canDownloadCertificate, uiStatus } =
-    consequenceState;
-
-  if (uiStatus === "sealed") {
-    return {
-      labelKey: canDownloadCertificate
-        ? "wad.next.sealed.download.label"
-        : "wad.next.sealed.label",
-      descriptionKey: "wad.next.legacy.canSealDesc",
-      icon: canDownloadCertificate ? ShieldCheck : Lock,
-      tone: "success",
-    };
-  }
-  if (uiStatus === "revoked" || uiStatus === "superseded") {
-    return {
-      labelKey:
-        uiStatus === "revoked"
-          ? "wad.next.revoked.label"
-          : "wad.next.superseded.label",
-      descriptionKey: "wad.next.legacy.terminalDesc",
-      icon: XCircle,
-      tone: uiStatus === "revoked" ? "destructive" : "muted",
-    };
-  }
-  if (canSeal) {
-    return {
-      labelKey: "wad.next.canSeal.label",
-      descriptionKey: "wad.next.legacy.canSealDesc",
-      icon: Lock,
-      tone: "primary",
-    };
-  }
-  if (canAttest) {
-    return {
-      labelKey: "wad.next.canAttest.label",
-      descriptionKey: "wad.next.legacy.canAttestDesc",
-      icon: ShieldCheck,
-      tone: "primary",
-    };
-  }
-  if (hasAttested) {
-    return {
-      labelKey: "wad.next.legacy.awaitingOtherLabel",
-      descriptionKey: "wad.next.legacy.awaitingDesc",
-      icon: Clock,
-      tone: "muted",
-    };
-  }
-  if (hasYou) {
-    return {
-      labelKey: "wad.next.awaitingAll.label",
-      descriptionKey: "wad.next.legacy.awaitingDesc",
-      icon: Clock,
-      tone: "muted",
-    };
-  }
-  return {
-    labelKey: "wad.next.viewOnly.label",
-    descriptionKey: "wad.next.viewOnly.desc",
+    label: "View only",
+    description: "Only buyer and seller signatories can attest on this deal.",
     icon: Clock,
     tone: "muted",
   };
@@ -214,7 +137,6 @@ export function AttestationProgressStepper({
   userOrgId,
   className,
 }: AttestationProgressStepperProps) {
-  const { t } = useTranslation();
   const buyerAttestation = wad.attestations?.find(
     (a) => a.role === "buyer_signatory"
   );
@@ -244,7 +166,7 @@ export function AttestationProgressStepper({
   const nodes: SignatoryNode[] = [
     {
       key: "buyer",
-      label: t("wad.signatories.buyer"),
+      label: "Buyer signatory",
       party: buyerName || "Buyer",
       state: buyerState,
       attestedAt: buyerAttestation?.attested_at,
@@ -253,7 +175,7 @@ export function AttestationProgressStepper({
     },
     {
       key: "seller",
-      label: t("wad.signatories.seller"),
+      label: "Seller signatory",
       party: sellerName || "Seller",
       state: sellerState,
       attestedAt: sellerAttestation?.attested_at,
@@ -266,70 +188,29 @@ export function AttestationProgressStepper({
   const total = nodes.length;
   const pct = Math.round((attestedCount / total) * 100);
 
-  // Feature-flagged staged rollout: status-specific copy is opt-in until
-  // we've validated wording with operators. When OFF, fall back to the
-  // generic buyer/seller-signatory phrasing.
-  const statusSpecificCopyEnabled = useFeatureFlag(
-    "wad.statusSpecificAttestationCopy"
-  );
-  const nextAction = statusSpecificCopyEnabled
-    ? deriveNextAction(consequenceState, hasYou)
-    : deriveLegacyNextAction(consequenceState, hasYou);
+  const nextAction = deriveNextAction(consequenceState, hasYou);
   const NextIcon = nextAction.icon;
-  const nextLabel = t(nextAction.labelKey);
-  const nextDescription = t(nextAction.descriptionKey);
-
-  // Live announcement for assistive tech: short, status-aware sentence updated
-  // whenever attestation count or next action changes. Rendered inside an
-  // aria-live="polite" region so screen readers don't interrupt typing.
-  const liveAnnouncement = t("wad.progress.live", {
-    attested: attestedCount,
-    total,
-    next: nextLabel,
-  });
-
-  const headingId = `attestation-progress-heading-${wad.id}`;
-  const summaryId = `attestation-progress-summary-${wad.id}`;
-  const nextActionId = `attestation-progress-next-${wad.id}`;
 
   return (
     <section
-      aria-labelledby={headingId}
-      aria-describedby={`${summaryId} ${nextActionId}`}
+      aria-label="Attestation progress"
       className={cn(
         "rounded-lg border bg-card p-4 space-y-4",
         className
       )}
     >
-      {/* Polite live region — announces progress changes without stealing focus. */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {liveAnnouncement}
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3
-            id={headingId}
-            className="text-sm font-semibold flex items-center gap-2"
-          >
-            <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
-            {t("wad.progress.heading")}
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Attestation progress
           </h3>
-          <p id={summaryId} className="text-xs text-muted-foreground mt-0.5">
-            {t("wad.progress.summary", { attested: attestedCount, total })}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {attestedCount} of {total} signatories attested
           </p>
         </div>
-        <Badge
-          variant="outline"
-          className="font-mono text-xs"
-          aria-hidden="true"
-        >
+        <Badge variant="outline" className="font-mono text-xs">
           {pct}%
         </Badge>
       </div>
@@ -338,15 +219,9 @@ export function AttestationProgressStepper({
       <div
         className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
         role="progressbar"
-        aria-label={t("wad.progress.barLabel")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-valuetext={t("wad.progress.barValueText", {
-          attested: attestedCount,
-          total,
-          pct,
-        })}
       >
         <div
           className={cn(
@@ -358,40 +233,12 @@ export function AttestationProgressStepper({
       </div>
 
       {/* Signatory nodes */}
-      <ol
-        className="grid gap-3 sm:grid-cols-2"
-        aria-label={t("wad.progress.signatoriesLabel")}
-      >
+      <ol className="grid gap-3 sm:grid-cols-2">
         {nodes.map((node) => {
           const Icon = nodeIcon(node.state);
-          const stateLabel =
-            node.state === "attested"
-              ? t("wad.progress.node.attested")
-              : isTerminal
-              ? t("wad.progress.node.closed")
-              : t("wad.progress.node.pending");
-          // Compose an accessible name so screen readers hear the role,
-          // party name, "you" hint, status, and (when attested) signatory + time
-          // as one coherent sentence per node.
-          const accessibleName = [
-            node.label,
-            node.party,
-            node.isYou ? t("wad.progress.node.youHint") : null,
-            `— ${stateLabel}`,
-            node.state === "attested" && node.attestedName
-              ? `by ${node.attestedName}`
-              : null,
-            node.state === "attested" && node.attestedAt
-              ? `on ${new Date(node.attestedAt).toLocaleString()}`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" ");
           return (
             <li
               key={node.key}
-              aria-label={accessibleName}
-              aria-current={node.isYou ? "true" : undefined}
               className={cn(
                 "rounded-md border p-3 flex items-start gap-3",
                 node.state === "attested"
@@ -400,7 +247,6 @@ export function AttestationProgressStepper({
               )}
             >
               <div
-                aria-hidden="true"
                 className={cn(
                   "rounded-full p-1.5 shrink-0",
                   node.state === "attested"
@@ -410,14 +256,12 @@ export function AttestationProgressStepper({
               >
                 <Icon className="h-4 w-4" />
               </div>
-              <div className="min-w-0 flex-1" aria-hidden="true">
-                {/* Visual content is mirrored in the li's aria-label above so
-                    screen readers don't double-announce. */}
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium truncate">{node.label}</p>
                   {node.isYou && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      {t("wad.progress.node.you")}
+                      You
                     </Badge>
                   )}
                   {node.state === "attested" && (
@@ -425,7 +269,7 @@ export function AttestationProgressStepper({
                       variant="outline"
                       className="text-[10px] px-1.5 py-0 border-green-500/40 text-green-700 dark:text-green-400"
                     >
-                      {t("wad.signatories.attestedBadge")}
+                      Attested
                     </Badge>
                   )}
                 </div>
@@ -441,7 +285,7 @@ export function AttestationProgressStepper({
                   </p>
                 ) : (
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    {stateLabel}
+                    {isTerminal ? "Attestation closed" : "Awaiting attestation"}
                   </p>
                 )}
               </div>
@@ -452,24 +296,18 @@ export function AttestationProgressStepper({
 
       {/* Next action */}
       <div
-        id={nextActionId}
-        role="note"
-        aria-label={t("wad.progress.next.aria", {
-          label: nextLabel,
-          description: nextDescription,
-        })}
         className={cn(
           "rounded-md border px-3 py-2 flex items-start gap-3",
           TONE_CLASSES[nextAction.tone]
         )}
       >
-        <NextIcon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
-        <div className="min-w-0 flex-1" aria-hidden="true">
+        <NextIcon className="h-4 w-4 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
-            {t("wad.progress.next.heading")}
+            Next
           </p>
-          <p className="text-sm font-medium leading-tight">{nextLabel}</p>
-          <p className="text-xs opacity-90 mt-0.5">{nextDescription}</p>
+          <p className="text-sm font-medium leading-tight">{nextAction.label}</p>
+          <p className="text-xs opacity-90 mt-0.5">{nextAction.description}</p>
         </div>
       </div>
     </section>
