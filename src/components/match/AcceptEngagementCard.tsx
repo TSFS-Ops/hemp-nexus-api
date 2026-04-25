@@ -11,7 +11,7 @@ import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Handshake, XCircle, ShieldCheck } from "lucide-react";
+import { Loader2, Handshake, XCircle, ShieldCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
 import {
@@ -82,13 +82,27 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       // *why* their accept was refused. Stuck-at-notification_sent means the
       // initiator has not yet sent their outreach email — the engagement
       // can only progress to 'accepted' after the initiator transitions it
-      // to 'contacted'. Surface a plain-English explanation instead of the
-      // raw "Cannot transition from 'notification_sent' to 'accepted'" line.
-      const isStuckAtNotificationSent =
-        /from\s+'?notification_sent'?\s+to\s+'?accepted'?/i.test(raw);
-      const friendly = isStuckAtNotificationSent
-        ? "We can't accept this trade yet — the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work."
-        : raw;
+      // to 'contacted'. Translate any illegal-transition error from the
+      // poi-engagements state machine into plain English so the counterparty
+      // is never shown a raw "Cannot transition from 'X' to 'Y'" line. We
+      // also catch the loose-quote / no-quote / INVALID_TRANSITION code
+      // shapes so server wording drift doesn't silently re-expose the bug.
+      const isInvalidTransition =
+        /cannot\s+transition\s+from/i.test(raw) ||
+        /invalid[_\s-]?transition/i.test(raw) ||
+        /allowed\s*(transitions|:)/i.test(raw);
+      const isFromNotificationSent =
+        /from\s+["']?notification_sent["']?/i.test(raw);
+      const isFromPending =
+        /from\s+["']?pending["']?/i.test(raw);
+      let friendly = raw;
+      if (isInvalidTransition && (isFromNotificationSent || isFromPending)) {
+        friendly =
+          "We can't accept this trade yet — the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work.";
+      } else if (isInvalidTransition) {
+        friendly =
+          "This trade can't be accepted in its current state. Please refresh the page; if the problem persists, ask the initiator or an admin to advance the engagement to 'contacted'.";
+      }
       toast.error(friendly);
     } finally {
       setIsSubmitting(false);
@@ -122,6 +136,23 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
               </ul>
             </div>
           </div>
+
+          {engagementStatus === "notification_sent" && (
+            <div
+              role="status"
+              className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10"
+            >
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-amber-900 dark:text-amber-100 space-y-1">
+                <p className="font-medium">Waiting for the initiating party</p>
+                <p className="text-xs">
+                  Accept will become active as soon as the initiator sends their
+                  outreach email (or an admin marks the engagement as
+                  "contacted"). You can still decline at any time.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
