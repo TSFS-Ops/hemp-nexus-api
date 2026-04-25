@@ -1109,9 +1109,12 @@ paths:
                       helperText: "This Signed Deal has been revoked: counterparty withdrew."
                       viewerRole: buyer_signatory
                       hasAttested: false
+                      viewerAttestedAt: null
                       attestations:
                         buyerAttested: false
                         sellerAttested: false
+                        buyerAttestedAt: null
+                        sellerAttestedAt: null
                         total: 0
                       nextAction: view_only
                     request_id: "deadbeef-1111-4222-9333-444455556666"
