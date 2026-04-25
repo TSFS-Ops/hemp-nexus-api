@@ -30,7 +30,7 @@ type Gap = {
   title: string;
   description: string;
   cta: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: LucideIcon;
 };
 
 type Org = {
