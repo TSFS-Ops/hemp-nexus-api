@@ -230,6 +230,57 @@ function translateError(
   );
 }
 
+// ── Transient-failure retry ───────────────────────────────────────────────
+//
+// Supabase Edge Runtime occasionally returns a 503 SUPABASE_EDGE_RUNTIME_ERROR
+// or kills the TCP connection (surfacing in the browser as
+// `TypeError: Failed to fetch`) when an isolate cold-boots under load. The
+// failure is genuinely transient — the immediately-retried request succeeds
+// (see network trace 2026-04-25T15:01:39Z poi-engagements 503 → 15:01:42Z 200).
+//
+// To prevent these blips from blanking out the UI, we retry idempotent calls
+// (GET / no body) up to twice with short backoff. Mutating calls are NOT
+// retried automatically because the original request may have partially
+// succeeded server-side.
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
+const TRANSIENT_BODY_CODES = ["SUPABASE_EDGE_RUNTIME_ERROR", "BOOT_ERROR", "WORKER_LIMIT"];
+
+function isTransientFetchError(err: unknown): boolean {
+  if (err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message)) {
+    return true;
+  }
+  return false;
+}
+
+function isTransientServerResponse(status: number | undefined, body: string): boolean {
+  if (status && TRANSIENT_STATUSES.has(status)) {
+    // Maintenance mode is an explicit 503 we do NOT want to retry — surface it.
+    if (/maintenance/i.test(body)) return false;
+    return true;
+  }
+  if (body && TRANSIENT_BODY_CODES.some((c) => body.includes(c))) return true;
+  return false;
+}
+
+async function withTransientRetry<T>(
+  fn: () => Promise<T>,
+  opts: { retries: number; baseDelayMs: number; isTransient: (err: unknown) => boolean }
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= opts.retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === opts.retries || !opts.isTransient(err)) throw err;
+      // Jittered backoff: 200ms, 600ms
+      const delay = opts.baseDelayMs * (attempt + 1) + Math.random() * 100;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
 // ── invokeEdgeFunction (wraps supabase.functions.invoke) ──────────────────
 export interface InvokeEdgeOptions {
   /** Request body (JSON). */
