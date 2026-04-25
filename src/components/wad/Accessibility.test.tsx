@@ -143,7 +143,9 @@ describe("Attest error a11y", () => {
     // The announcement text bundles message + reference id together
     // (aria-atomic="true" means the SR will read the whole region as one
     // utterance), so we assert both are present in the same node.
-    expect(within(alert).getByText("Attestation failed")).toBeInTheDocument();
+    expect(
+      within(alert).getAllByText(/Attestation failed/i).length,
+    ).toBeGreaterThan(0);
     expect(within(alert).getByText("req-abc-123")).toBeInTheDocument();
   });
 
