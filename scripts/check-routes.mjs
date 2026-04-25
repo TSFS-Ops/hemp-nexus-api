@@ -70,11 +70,11 @@ function loadRouteConstants() {
   const map = new Map();
   try {
     const src = readFileSync("src/lib/constants.ts", "utf8");
-    // Grab the ROUTES object body.
     const blockMatch = src.match(/ROUTES\s*=\s*\{([\s\S]*?)\}\s*as const/);
     if (!blockMatch) return map;
     const body = blockMatch[1];
-    const entryRe = /(\w+)\s*:\s*"([^"]+)"/g;
+    // Accept single OR double-quoted string literals.
+    const entryRe = /(\w+)\s*:\s*['"]([^'"]+)['"]/g;
     let m;
     while ((m = entryRe.exec(body)) !== null) {
       map.set(m[1], m[2]);
@@ -85,36 +85,83 @@ function loadRouteConstants() {
   return map;
 }
 
-function collectRoutePatterns(files, routeConsts) {
+/**
+ * Nesting-aware <Route> extractor. Walks the source linearly tracking a
+ * stack of parent paths so that
+ *   <Route path="settings"><Route path="company" /></Route>
+ * yields both "settings" and "settings/company" — which then get prefixed
+ * with the shell mount (e.g. "/desk") to produce the full registered path.
+ *
+ * We accept both `path="literal"` and `path={ROUTES.KEY}` forms. Routes
+ * without a path (e.g. `<Route index ...>`) are still pushed as a frame so
+ * the nesting depth stays correct, but they contribute the parent path
+ * itself as a registered route (an index route renders at the parent URL).
+ */
+function extractRoutesFromSource(src, prefix, routeConsts) {
   const patterns = new Set();
-  // Also accept <Route path={ROUTES.X}> forms.
-  const ROUTE_CONST_RE = /<Route\b[^>]*?\bpath\s*=\s*\{ROUTES\.(\w+)\}/g;
+  const stack = []; // each frame: { path: string|null, depth: number, selfClosed: bool }
 
-  for (const file of files) {
-    const src = readFileSync(file, "utf8");
-    const prefix = SHELL_PREFIXES[file] ?? "";
+  // Tokeniser: walk the source matching either an opening Route tag or a
+  // closing </Route>. We carry along the current index.
+  const TAG_RE = /<Route\b([^>]*?)(\/?)>|<\/Route\s*>/g;
+  let m;
+  while ((m = TAG_RE.exec(src)) !== null) {
+    const isClose = m[0].startsWith("</");
+    if (isClose) {
+      stack.pop();
+      continue;
+    }
+    const attrs = m[1];
+    const selfClosing = m[2] === "/";
+    let path = null;
+    const litMatch = attrs.match(/\bpath\s*=\s*"([^"]+)"/);
+    const constMatch = attrs.match(/\bpath\s*=\s*\{ROUTES\.(\w+)\}/);
+    if (litMatch) path = litMatch[1];
+    else if (constMatch) path = routeConsts.get(constMatch[1]) ?? null;
 
-    let m;
-    ROUTE_PATH_RE.lastIndex = 0;
-    while ((m = ROUTE_PATH_RE.exec(src)) !== null) {
-      const child = m[1];
-      patterns.add(joinRoute(prefix, child));
+    // Compose the full path from the stack.
+    const parentSegments = stack
+      .map((f) => f.path)
+      .filter((p) => p != null && p !== "");
+    const segments = path != null ? [...parentSegments, path] : parentSegments;
+    const fullChild = composeSegments(segments);
+    if (fullChild != null) {
+      patterns.add(joinRoute(prefix, fullChild));
     }
 
-    ROUTE_CONST_RE.lastIndex = 0;
-    while ((m = ROUTE_CONST_RE.exec(src)) !== null) {
-      const literal = routeConsts.get(m[1]);
-      if (literal) patterns.add(joinRoute(prefix, literal));
+    if (!selfClosing) {
+      stack.push({ path });
     }
   }
   return patterns;
 }
 
-function joinRoute(prefix, child) {
-  if (!prefix) return child;
-  if (child.startsWith("/")) return child;
-  if (child === "" || child === "*") return `${prefix}/*`;
-  return `${prefix}/${child}`;
+/** Compose route segments respecting React-Router's rule that an absolute
+ *  child path replaces, rather than appends to, the parent. */
+function composeSegments(segments) {
+  if (segments.length === 0) return null;
+  let acc = "";
+  for (const seg of segments) {
+    if (seg.startsWith("/")) acc = seg;
+    else if (acc === "" || acc.endsWith("/")) acc = acc + seg;
+    else acc = acc + "/" + seg;
+  }
+  return acc;
+}
+
+function collectRoutePatterns(files, routeConsts) {
+  const patterns = new Set();
+  for (const file of files) {
+    const src = readFileSync(file, "utf8");
+    const prefix = SHELL_PREFIXES[file] ?? "";
+    const filePatterns = extractRoutesFromSource(src, prefix, routeConsts);
+    for (const p of filePatterns) patterns.add(p);
+    // For shell files, also register the bare prefix itself — the shell's
+    // top-level <Routes> renders an index/overview at e.g. `/desk` even
+    // though no <Route path="/desk"> is declared anywhere.
+    if (prefix) patterns.add(prefix);
+  }
+  return patterns;
 }
 
 // ── Link target extraction ─────────────────────────────────────────────────
