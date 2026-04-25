@@ -1185,7 +1185,7 @@ Deno.serve(async (req) => {
           page = pdfDoc.addPage([PAGE_W, PAGE_H]);
           y = PAGE_H - MARGIN;
         }
-        page.drawText(label, {
+        page.drawText(safe(label), {
           x: MARGIN,
           y,
           size: 9,
