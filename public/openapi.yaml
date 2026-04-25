@@ -948,6 +948,173 @@ paths:
                 items:
                   $ref: '#/components/schemas/Webhook'
 
+  /wad/{wadId}/attestation-ui:
+    get:
+      tags: [WaD]
+      summary: Get the status-specific attestation UI model for a Signed Deal
+      description: |
+        Returns the same attestation UI model the web client renders, so non-web
+        clients (CLI tools, partner integrations, mobile) can show consistent
+        copy and call-to-action wording without re-implementing the WaD state
+        machine.
+
+        The response includes:
+        - **`ui.canAttest` / `ui.canSeal`** — server-authoritative gates
+        - **`ui.title` / `ui.buttonText` / `ui.helperText`** — pre-localised copy
+        - **`ui.viewerRole`** — caller's signatory role on this deal
+        - **`ui.nextAction`** — machine-readable next step the UI should drive
+        - **`ui.attestations`** — per-side attestation tally
+        - **`request_id`** — server correlation ID; surface this in user-facing
+          error messages so support can trace failures.
+
+        Requires the caller to be a party to the WaD (buyer or seller org)
+        or an admin.
+      operationId: getWadAttestationUi
+      parameters:
+        - $ref: '#/components/parameters/WadIdParam'
+      responses:
+        '200':
+          description: Attestation UI model
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WadAttestationUiResponse'
+              examples:
+                draftFirstSignatory:
+                  summary: Draft — caller is first to attest
+                  value:
+                    wad_id: "f3b1f0d2-8e6a-4d2c-9b3e-2c1f7a0e9d11"
+                    status: draft
+                    isTerminal: false
+                    ui:
+                      canAttest: true
+                      canSeal: false
+                      title: "Attestations open"
+                      buttonText: "Attest as first signatory"
+                      helperText: "You'll be the first to attest. The other party still needs to attest before this deal can be sealed."
+                      viewerRole: buyer_signatory
+                      hasAttested: false
+                      attestations:
+                        buyerAttested: false
+                        sellerAttested: false
+                        total: 0
+                      nextAction: attest
+                    request_id: "550e8400-e29b-41d4-a716-446655440000"
+                awaitingOtherParty:
+                  summary: Caller has attested, awaiting counterparty
+                  value:
+                    wad_id: "f3b1f0d2-8e6a-4d2c-9b3e-2c1f7a0e9d11"
+                    status: awaiting_attestations
+                    isTerminal: false
+                    ui:
+                      canAttest: false
+                      canSeal: false
+                      title: "Awaiting other party"
+                      buttonText: null
+                      helperText: "You've attested. Waiting for the counterparty signatory to attest."
+                      viewerRole: buyer_signatory
+                      hasAttested: true
+                      attestations:
+                        buyerAttested: true
+                        sellerAttested: false
+                        total: 1
+                      nextAction: await_other_party
+                    request_id: "9d3a4f6c-1b2e-4a8b-9c0d-7e5f4a3b2c10"
+                readyToSeal:
+                  summary: Both parties attested — ready to seal
+                  value:
+                    wad_id: "f3b1f0d2-8e6a-4d2c-9b3e-2c1f7a0e9d11"
+                    status: awaiting_attestations
+                    isTerminal: false
+                    ui:
+                      canAttest: false
+                      canSeal: true
+                      title: "Ready to seal"
+                      buttonText: "Seal Signed Deal"
+                      helperText: "Both signatories have attested. Sealing finalises the evidence bundle."
+                      viewerRole: seller_signatory
+                      hasAttested: true
+                      attestations:
+                        buyerAttested: true
+                        sellerAttested: true
+                        total: 2
+                      nextAction: seal
+                    request_id: "1f2e3d4c-5b6a-4789-9012-345678901234"
+                sealed:
+                  summary: Sealed — certificate available
+                  value:
+                    wad_id: "f3b1f0d2-8e6a-4d2c-9b3e-2c1f7a0e9d11"
+                    status: sealed
+                    isTerminal: false
+                    ui:
+                      canAttest: false
+                      canSeal: false
+                      title: "Signed Deal is sealed"
+                      buttonText: null
+                      helperText: "All required attestations are in place. The certificate is available to download."
+                      viewerRole: buyer_signatory
+                      hasAttested: true
+                      attestations:
+                        buyerAttested: true
+                        sellerAttested: true
+                        total: 2
+                      nextAction: download_certificate
+                    request_id: "abcd1234-ef56-4789-9abc-def012345678"
+                witnessView:
+                  summary: Non-party (witness/admin) view
+                  value:
+                    wad_id: "f3b1f0d2-8e6a-4d2c-9b3e-2c1f7a0e9d11"
+                    status: awaiting_attestations
+                    isTerminal: false
+                    ui:
+                      canAttest: false
+                      canSeal: false
+                      title: "Awaiting buyer & seller attestations"
+                      buttonText: null
+                      helperText: "Only the nominated buyer and seller signatories for this trade can attest. You're viewing as a witness/observer."
+                      viewerRole: witness
+                      hasAttested: false
+                      attestations:
+                        buyerAttested: false
+                        sellerAttested: true
+                        total: 1
+                      nextAction: view_only
+                    request_id: "0a1b2c3d-4e5f-4607-8819-9a0b1c2d3e4f"
+                revoked:
+                  summary: Terminal — revoked
+                  value:
+                    wad_id: "f3b1f0d2-8e6a-4d2c-9b3e-2c1f7a0e9d11"
+                    status: revoked
+                    isTerminal: true
+                    ui:
+                      canAttest: false
+                      canSeal: false
+                      title: "Signed Deal revoked"
+                      buttonText: null
+                      helperText: "This Signed Deal has been revoked: counterparty withdrew."
+                      viewerRole: buyer_signatory
+                      hasAttested: false
+                      attestations:
+                        buyerAttested: false
+                        sellerAttested: false
+                        total: 0
+                      nextAction: view_only
+                    request_id: "deadbeef-1111-4222-9333-444455556666"
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          description: Caller is not a party to this WaD and not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: FORBIDDEN
+                message: "Not authorised to view this WaD"
+                requestId: "550e8400-e29b-41d4-a716-446655440000"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /healthz:
     get:
       tags: [Health]
@@ -991,6 +1158,14 @@ components:
         type: string
         format: uuid
       description: Match UUID
+    WadIdParam:
+      name: wadId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: WaD (Signed Deal) UUID
 
   schemas:
     SuccessEnvelope:
@@ -1532,6 +1707,106 @@ components:
         requestId:
           type: string
           format: uuid
+
+    WadAttestationCounts:
+      type: object
+      description: Per-side attestation tally for a WaD.
+      required: [buyerAttested, sellerAttested, total]
+      properties:
+        buyerAttested:
+          type: boolean
+          description: True once the buyer signatory has attested.
+        sellerAttested:
+          type: boolean
+          description: True once the seller signatory has attested.
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of attestation records (includes witnesses if present).
+
+    WadAttestationUi:
+      type: object
+      description: |
+        Status-specific attestation UI model. Mirrors the rules used by the
+        web client so other surfaces can render consistent copy and CTAs.
+      required:
+        - canAttest
+        - canSeal
+        - title
+        - buttonText
+        - helperText
+        - viewerRole
+        - hasAttested
+        - attestations
+        - nextAction
+      properties:
+        canAttest:
+          type: boolean
+          description: Server-authoritative flag — caller may submit an attestation now.
+        canSeal:
+          type: boolean
+          description: Server-authoritative flag — both parties have attested and the WaD can be sealed.
+        title:
+          type: string
+          description: Short headline copy describing the current attestation state.
+          example: "Your attestation is required"
+        buttonText:
+          type: string
+          nullable: true
+          description: Primary CTA label, or null when no action is available to the caller.
+          example: "Attest & advance to seal"
+        helperText:
+          type: string
+          description: Longer descriptive copy explaining what will happen next.
+        viewerRole:
+          type: string
+          enum: [buyer_signatory, seller_signatory, witness]
+          description: Caller's signatory role on this WaD (witness = non-party / admin observer).
+        hasAttested:
+          type: boolean
+          description: Whether the caller has already attested on this WaD.
+        attestations:
+          $ref: '#/components/schemas/WadAttestationCounts'
+        nextAction:
+          type: string
+          enum:
+            - attest
+            - seal
+            - await_other_party
+            - download_certificate
+            - view_only
+          description: |
+            Machine-readable next action the UI should drive:
+            * `attest` — render attestation form and CTA
+            * `seal` — render seal CTA (both parties attested)
+            * `await_other_party` — caller has attested; show waiting state
+            * `download_certificate` — terminal sealed state; offer certificate download
+            * `view_only` — read-only (revoked / superseded / non-party / draft observer)
+
+    WadAttestationUiResponse:
+      type: object
+      description: Envelope returned by GET /wad/{wadId}/attestation-ui.
+      required: [wad_id, status, isTerminal, ui, request_id]
+      properties:
+        wad_id:
+          type: string
+          format: uuid
+          description: WaD identifier echoed back from the path.
+        status:
+          type: string
+          enum: [draft, awaiting_attestations, sealed, revoked, superseded]
+          description: Current persisted WaD status.
+        isTerminal:
+          type: boolean
+          description: True when status is `revoked` or `superseded` (no further state changes).
+        ui:
+          $ref: '#/components/schemas/WadAttestationUi'
+        request_id:
+          type: string
+          format: uuid
+          description: |
+            Server correlation ID for this response. Surface this in any
+            user-facing error messaging so support can trace the call.
 
   responses:
     ValidationError:
