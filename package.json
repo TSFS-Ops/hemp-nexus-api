@@ -9,7 +9,9 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check:drift": "node scripts/check-drift.mjs"
+    "check:drift": "node scripts/check-drift.mjs",
+    "test:summary": "node scripts/test-summary.mjs",
+    "test:summary:strict": "node scripts/test-summary.mjs --strict"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
