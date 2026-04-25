@@ -185,7 +185,7 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
                     step.state === "complete" &&
                       "border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
                     step.state === "active" &&
-                      "border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400 animate-pulse",
+                      "border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400 motion-safe:animate-pulse",
                     step.state === "pending" &&
                       "border-muted-foreground/30 bg-background text-muted-foreground",
                   )}
