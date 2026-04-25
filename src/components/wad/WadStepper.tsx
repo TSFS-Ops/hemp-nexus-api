@@ -374,7 +374,13 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                 <Input
                   id="attested-name"
                   value={attestedName}
-                  onChange={(e) => setAttestedName(e.target.value)}
+                  onChange={(e) => {
+                    setAttestedName(e.target.value);
+                    // Any edit to the form invalidates the previous failure
+                    // — clear the inline error so the user isn't stared at
+                    // by a stale "Attestation failed" alert while correcting input.
+                    if (attestError) setAttestError(null);
+                  }}
                   placeholder={t("wad.attest.namePlaceholder")}
                   className="mt-1"
                 />
@@ -383,7 +389,10 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                 <Checkbox
                   id="attest-confirm"
                   checked={attestConfirmed}
-                  onCheckedChange={(checked) => setAttestConfirmed(checked === true)}
+                  onCheckedChange={(checked) => {
+                    setAttestConfirmed(checked === true);
+                    if (attestError) setAttestError(null);
+                  }}
                 />
                 <Label htmlFor="attest-confirm" className="text-sm leading-relaxed cursor-pointer">
                   {t("wad.attest.confirmCheckbox")}
