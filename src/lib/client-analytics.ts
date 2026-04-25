@@ -38,8 +38,14 @@ export type CopyRefOutcome =
   /** Caller tried to copy but no requestId was available. */
   | "no_ref";
 
+export type DownloadErrorReportOutcome =
+  | "success"
+  /** Browser/Blob API unavailable or threw. */
+  | "failed";
+
 export const CLIENT_ANALYTICS_EVENT_NAMES = {
   COPY_REF: "wad.attest_error.copy_ref",
+  DOWNLOAD_ERROR_REPORT: "wad.attest_error.download_report",
 } as const;
 
 export type ClientAnalyticsEvent =
@@ -53,6 +59,20 @@ export type ClientAnalyticsEvent =
         hasRef: boolean;
         /** Context label so the same event can be reused outside attest. */
         context?: string;
+        /** Reason string for failures (e.g. error.name). */
+        reason?: string;
+      };
+    }
+  | {
+      name: typeof CLIENT_ANALYTICS_EVENT_NAMES.DOWNLOAD_ERROR_REPORT;
+      payload: {
+        outcome: DownloadErrorReportOutcome;
+        /** Whether a requestId was included in the report. */
+        hasRef: boolean;
+        /** Context label so the same event can be reused outside attest. */
+        context?: string;
+        /** Error kind classification copied from the alert. */
+        errorKind?: string;
         /** Reason string for failures (e.g. error.name). */
         reason?: string;
       };
