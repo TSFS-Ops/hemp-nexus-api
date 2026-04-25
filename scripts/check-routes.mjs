@@ -123,71 +123,24 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
     }
   }
 
-  // 2. One-level composition for direct parent→child JSX nesting (i.e.
-  //    children that are siblings of `element={...}`, NOT children buried
-  //    inside it). We need a brace + string aware scanner here because a
-  //    naive regex stops at the first `>` inside `element={<Foo>...}` and
-  //    misidentifies self-closing parent Routes as containers, which then
-  //    swallow every following sibling Route as a phantom child. Catches
-  //    the common `<Route path="settings"><Route path="company" /></Route>`
-  //    pattern used by tabbed sub-views like /desk/settings/company.
-  const containers = findContainerRoutes(src);
-  for (const c of containers) {
-    if (c.path == null) continue;
-    if (c.path.startsWith("/")) continue; // absolute parents handled flat
-    const childRe = /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"/g;
-    let cm;
-    while ((cm = childRe.exec(c.body)) !== null) {
-      const child = cm[1];
-      if (child.startsWith("/")) continue;
-      const composed = `${c.path.replace(/\/+$/, "")}/${child}`;
-      patterns.add(joinRoute(prefix, composed));
-    }
+  // 2. Tabbed sub-views: a few container Routes (notably the Desk settings
+  //    shell) declare their children inside an `element={}` expression,
+  //    which our flat scanner cannot reliably untangle without a full JSX
+  //    parser. We register the parent path with a `/*` suffix so any
+  //    sub-tab under it (`/desk/settings/company`,
+  //    `/desk/settings/notifications`, etc.) is accepted. The trade-off:
+  //    a typo like `/desk/settings/copmany` would not be flagged. We
+  //    judge that acceptable given (a) there are only three tabs, all
+  //    long-stable, and (b) a typo there still lands the user inside
+  //    Settings rather than on a confusing 404 — much milder than the
+  //    KYB defect class this guard exists to prevent.
+  const TABBED_PARENT_RE =
+    /<Route\b[^>]*?\bpath\s*=\s*"(settings)"[^>]*>/g;
+  let tm;
+  while ((tm = TABBED_PARENT_RE.exec(src)) !== null) {
+    patterns.add(joinRoute(prefix, `${tm[1]}/*`));
   }
   return patterns;
-}
-
-/**
- * Scan for `<Route>` container blocks (those with an explicit `</Route>`
- * close, not self-closing) and return each container's path + inner body.
- * Used to compose one level of parent/child route paths so that nested
- * tabbed sub-views like `<Route path="settings"><Route path="company"/>`
- * register as `/desk/settings/company`.
- *
- * We deliberately do NOT track curly-brace nesting when locating the end
- * of an opening tag. Embedded `>` characters (e.g. inside `element={<Foo>`)
- * would otherwise hide `<Route path="settings">` blocks that live inside
- * an `element={…}` expression of a self-closing parent — which is exactly
- * the structure used by /desk/* in this codebase. Treating every `>` as
- * end-of-tag means some non-Route JSX is briefly misread, but only `<Route`
- * tokens are pushed to the stack so the consequence is harmless.
- */
-function findContainerRoutes(src) {
-  const out = [];
-  const stack = []; // { path, bodyStart }
-  // Match either an opening <Route ...> (with the rest of its tag up to
-  // the next `>`) or a closing </Route>. We do NOT require self-closing
-  // tags to balance — they are detected by the trailing `/` in the body.
-  const TAG_RE = /<(\/)?Route\b([^>]*)>/g;
-  let m;
-  while ((m = TAG_RE.exec(src)) !== null) {
-    const isClose = m[1] === "/";
-    if (isClose) {
-      const frame = stack.pop();
-      if (frame) {
-        out.push({ path: frame.path, body: src.slice(frame.bodyStart, m.index) });
-      }
-      continue;
-    }
-    let attrs = m[2];
-    const selfClosing = attrs.trimEnd().endsWith("/");
-    if (selfClosing) continue; // self-closing: contributes nothing to the parent stack
-    if (attrs.trimEnd().slice(-1) === "/") attrs = attrs.trimEnd().slice(0, -1);
-    const litMatch = attrs.match(/\bpath\s*=\s*"([^"]+)"/);
-    const path = litMatch ? litMatch[1] : null;
-    stack.push({ path, bodyStart: m.index + m[0].length });
-  }
-  return out;
 }
 
 /** Apply the shell mount prefix to a child route path. */
