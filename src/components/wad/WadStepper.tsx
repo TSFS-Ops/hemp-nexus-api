@@ -107,12 +107,14 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     setAttesting(false);
 
     if (result.success) {
-      toast.success("Attestation recorded");
+      toast.success(t("wad.attest.toast.recorded"));
       setAttestError(null);
       onUpdate();
     } else {
-      const baseMsg = result.error || "Failed to attest";
-      const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
+      const baseMsg = result.error || t("wad.attest.error.fallback");
+      const toastMsg = result.requestId
+        ? t("wad.attest.error.withRef", { message: baseMsg, requestId: result.requestId })
+        : baseMsg;
       toast.error(toastMsg, { duration: 8000 });
       setAttestError({ message: baseMsg, requestId: result.requestId });
     }
