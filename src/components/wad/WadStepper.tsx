@@ -21,6 +21,7 @@ import {
   type WadRecord,
   type ConsequenceState,
 } from "@/lib/modules/consequence";
+import { AttestationProgressStepper } from "./AttestationProgressStepper";
 
 type Match = Tables<"matches">;
 
@@ -428,6 +429,15 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         </div>
       </CardHeader>
       <CardContent>
+        <AttestationProgressStepper
+          wad={wad}
+          consequenceState={consequenceState}
+          buyerName={match.buyer_name ?? "Buyer"}
+          sellerName={match.seller_name ?? "Seller"}
+          userOrgId={userOrgId}
+          className="mb-6"
+        />
+
         {/* Step indicators */}
         <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2 -mx-2 px-2 lg:justify-between lg:gap-0 lg:mx-0 lg:px-0">
           {STEPS.map((step, index) => {
