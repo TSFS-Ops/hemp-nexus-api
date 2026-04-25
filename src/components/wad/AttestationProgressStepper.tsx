@@ -360,16 +360,16 @@ export function AttestationProgressStepper({
       {/* Signatory nodes */}
       <ol
         className="grid gap-3 sm:grid-cols-2"
-        aria-label="Signatories"
+        aria-label={t("wad.progress.signatoriesLabel")}
       >
         {nodes.map((node) => {
           const Icon = nodeIcon(node.state);
           const stateLabel =
             node.state === "attested"
-              ? "Attested"
+              ? t("wad.progress.node.attested")
               : isTerminal
-              ? "Attestation closed"
-              : "Awaiting attestation";
+              ? t("wad.progress.node.closed")
+              : t("wad.progress.node.pending");
           // Compose an accessible name so screen readers hear the role,
           // party name, "you" hint, status, and (when attested) signatory + time
           // as one coherent sentence per node.
