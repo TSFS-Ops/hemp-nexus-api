@@ -90,7 +90,7 @@ export function WizardStepper({ steps, activeStep, onStepClick }: WizardStepperP
                   className={cn(
                     "relative flex items-center justify-center h-10 w-10 rounded-full border-2 transition-all duration-300",
                     isComplete && "border-primary bg-primary text-primary-foreground shadow-sm",
-                    isActive && !isComplete && "border-primary bg-card text-primary ring-4 ring-primary/15 shadow-sm animate-step-pulse",
+                    isActive && !isComplete && "border-primary bg-card text-primary ring-2 ring-primary/10 shadow-sm motion-safe:animate-step-pulse",
                     !isActive && !isComplete && !isLocked && "border-border bg-card text-muted-foreground group-hover:border-primary/60 group-hover:text-primary",
                     isLocked && "border-dashed border-muted-foreground/30 bg-muted/40 text-muted-foreground/50",
                   )}
