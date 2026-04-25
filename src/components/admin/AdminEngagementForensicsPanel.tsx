@@ -187,15 +187,23 @@ function ForensicTrace({ engagement }: { engagement: EngagementRow }) {
   const { data: dispatches = [] } = useQuery({
     queryKey: ["forensic-dispatches", engagement.id, receipt?.id],
     queryFn: async () => {
-      if (!receipt?.id) return [];
+      // Surface BOTH dispatch families so support sees the complete
+      // notification history, not just acceptance ones:
+      //   1. reference_id = receipt.id  → acceptance dispatches
+      //   2. reference_id = engagement.id → outreach / status-change dispatches
+      // Without (2) the panel silently hides outreach emails and "no
+      // dispatches" was previously misread as "the counterparty was never
+      // contacted" when in fact the outreach email had been sent.
+      const ids: string[] = [engagement.id];
+      if (receipt?.id) ids.push(receipt.id);
       const { data } = await supabase
         .from("notification_dispatches")
         .select("*")
-        .eq("reference_id", receipt.id)
+        .in("reference_id", ids)
         .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!receipt?.id,
+    enabled: true,
   });
 
   const { data: outreach = [] } = useQuery({
@@ -230,6 +238,15 @@ function ForensicTrace({ engagement }: { engagement: EngagementRow }) {
           </h3>
           {receipt ? (
             <div className="rounded-sm border border-border p-3 text-xs space-y-1">
+              {(receipt as { metadata?: { backfill?: boolean; backfill_reason?: string } }).metadata?.backfill && (
+                <div className="rounded-sm bg-muted/40 border border-muted px-2 py-1 mb-1 flex items-start gap-2">
+                  <Badge variant="outline" className="shrink-0">Backfilled</Badge>
+                  <span className="text-muted-foreground">
+                    {(receipt as { metadata?: { backfill_reason?: string } }).metadata?.backfill_reason ||
+                      "Legacy seed receipt — predates the dispatch system; no notification was expected."}
+                  </span>
+                </div>
+              )}
               <p><span className="text-muted-foreground">Receipt ID:</span> <span className="font-mono">{receipt.id}</span></p>
               <p><span className="text-muted-foreground">Accepted at:</span> {format(new Date(receipt.accepted_at), "yyyy-MM-dd HH:mm:ss")}</p>
               <p><span className="text-muted-foreground">Signature:</span> <span className="font-mono break-all">{receipt.signature_hash}</span></p>
@@ -246,10 +263,16 @@ function ForensicTrace({ engagement }: { engagement: EngagementRow }) {
             Notification dispatches ({dispatches.length})
           </h3>
           {dispatches.length === 0 ? (
-            <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-              <span>No dispatch records found for this engagement's acceptance receipt.</span>
-            </div>
+            (receipt as { metadata?: { backfill?: boolean } } | null)?.metadata?.backfill ? (
+              <p className="text-xs text-muted-foreground italic">
+                No dispatches expected — this is a backfilled receipt from before the dispatch system existed.
+              </p>
+            ) : (
+              <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <span>No dispatch records found for this engagement (neither outreach nor acceptance notifications).</span>
+              </div>
+            )
           ) : (
             <div className="space-y-2">
               {dispatches.map((d: any) => (
