@@ -100,10 +100,23 @@ export async function submitAttestation(
     });
     return { success: true };
   } catch (err) {
+    let errorKind: ConsequenceResult<void>["errorKind"] = "unknown";
+    let errorStatus: number | undefined;
+    if (err instanceof AuthRequiredError) {
+      errorKind = "auth_required";
+    } else if (err instanceof ApiError) {
+      errorStatus = err.status;
+      if (err.status === 0) errorKind = "network_error";
+      else if (err.status === 401) errorKind = "auth_required";
+      else if (err.status >= 500) errorKind = "server_error";
+      else if (err.status >= 400) errorKind = "client_error";
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to submit attestation",
       requestId: err instanceof ApiError ? err.requestId ?? undefined : undefined,
+      errorKind,
+      errorStatus,
     };
   }
 }
