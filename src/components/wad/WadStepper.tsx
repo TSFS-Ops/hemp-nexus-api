@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +52,16 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [attestConfirmed, setAttestConfirmed] = useState(false);
   const [attestError, setAttestError] = useState<{ message: string; requestId?: string } | null>(null);
   const [refCopied, setRefCopied] = useState(false);
+  const attestErrorRef = useRef<HTMLDivElement>(null);
+  const attestButtonRef = useRef<HTMLButtonElement>(null);
+
+  // When an attestation error appears, move keyboard focus to the alert so
+  // assistive tech announces it AND the user can immediately Tab to "Retry".
+  useEffect(() => {
+    if (attestError && attestErrorRef.current) {
+      attestErrorRef.current.focus();
+    }
+  }, [attestError]);
 
   // All decision logic comes from consequenceState - no inline derivation
   const {
