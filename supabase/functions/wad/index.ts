@@ -482,6 +482,265 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── GET /wad/:wadId/attestation-ui ──
+    // Returns the status-specific attestation UI model the client should render
+    // (canAttest, buttonText, helperText, etc.) plus per-side and viewer-specific
+    // attested_at timestamps. Mirrors the logic in src/components/wad/WadStepper
+    // so non-web clients (CLI, partner integrations) get the same wording and
+    // timestamps without re-implementing the rules.
+    if (req.method === "GET" && parts.length === 2 && parts[1] === "attestation-ui") {
+      const wadId = parts[0];
+
+      const { data: wad, error: wadError } = await supabase
+        .from("wads")
+        .select("id, status, buyer_org_id, seller_org_id, sealed_at, revoked_reason")
+        .eq("id", wadId)
+        .single();
+
+      if (wadError || !wad) {
+        throw new ApiException("NOT_FOUND", "WaD not found", 404);
+      }
+
+      if (!isPartyToWad(wad, authCtx.orgId) && !isAdmin(authCtx)) {
+        throw new ApiException("FORBIDDEN", "Not authorised to view this WaD", 403);
+      }
+
+      const { data: attestations } = await supabase
+        .from("wad_attestations")
+        .select("user_id, org_id, role, attested_at")
+        .eq("wad_id", wadId)
+        .order("attested_at", { ascending: true });
+
+      const list = attestations || [];
+
+      // Earliest attestation per side wins (ordered ASC above).
+      const buyerAttestation = list.find((a) => a.role === "buyer_signatory");
+      const sellerAttestation = list.find((a) => a.role === "seller_signatory");
+      const buyerAttested = !!buyerAttestation;
+      const sellerAttested = !!sellerAttestation;
+      const buyerAttestedAt: string | null = buyerAttestation?.attested_at ?? null;
+      const sellerAttestedAt: string | null = sellerAttestation?.attested_at ?? null;
+
+      const allAttested = buyerAttested && sellerAttested;
+      const userOrgId = authCtx.orgId;
+      const userId = authCtx.userId;
+
+      // Viewer-specific attestation record (prefer match on user_id, fall back to org_id
+      // to cover service-account / actor-on-behalf flows where user_id may differ).
+      const viewerAttestation =
+        list.find((a) => a.user_id === userId) ||
+        list.find((a) => a.org_id === userOrgId);
+      const hasAttested = !!viewerAttestation;
+      const viewerAttestedAt: string | null = viewerAttestation?.attested_at ?? null;
+
+      const isParty = userOrgId === wad.buyer_org_id || userOrgId === wad.seller_org_id;
+      const isTerminal = wad.status === "revoked" || wad.status === "superseded";
+
+      // Resolve viewer role (mirrors resolveAttestationRole on the client).
+      let viewerRole: "buyer_signatory" | "seller_signatory" | "witness" = "witness";
+      if (userOrgId === wad.buyer_org_id) viewerRole = "buyer_signatory";
+      else if (userOrgId === wad.seller_org_id) viewerRole = "seller_signatory";
+
+      // canAttest gate (matches client's WadState.canDo + party check).
+      const ATTEST_ALLOWED_STATUSES = new Set(["draft", "awaiting_attestations"]);
+      const canAttest =
+        isParty && !hasAttested && ATTEST_ALLOWED_STATUSES.has(wad.status);
+      const canSeal = allAttested && ATTEST_ALLOWED_STATUSES.has(wad.status);
+
+      type NextAction =
+        | "attest"
+        | "seal"
+        | "await_other_party"
+        | "download_certificate"
+        | "view_only";
+
+      type UiModel = {
+        canAttest: boolean;
+        canSeal: boolean;
+        title: string;
+        buttonText: string | null;
+        helperText: string;
+        viewerRole: typeof viewerRole;
+        hasAttested: boolean;
+        /** ISO-8601 timestamp of the caller's attestation, or null if not attested. */
+        viewerAttestedAt: string | null;
+        attestations: {
+          buyerAttested: boolean;
+          sellerAttested: boolean;
+          /** ISO-8601 timestamp of the buyer's attestation, or null. */
+          buyerAttestedAt: string | null;
+          /** ISO-8601 timestamp of the seller's attestation, or null. */
+          sellerAttestedAt: string | null;
+          total: number;
+        };
+        nextAction: NextAction;
+      };
+
+      const counts = {
+        buyerAttested,
+        sellerAttested,
+        buyerAttestedAt,
+        sellerAttestedAt,
+        total: list.length,
+      };
+
+      const ui: UiModel = (() => {
+        // Terminal states first.
+        if (wad.status === "sealed") {
+          return {
+            canAttest: false,
+            canSeal: false,
+            title: "Signed Deal is sealed",
+            buttonText: null,
+            helperText: "All required attestations are in place. The certificate is available to download.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "download_certificate",
+          };
+        }
+        if (wad.status === "revoked") {
+          return {
+            canAttest: false,
+            canSeal: false,
+            title: "Signed Deal revoked",
+            buttonText: null,
+            helperText: wad.revoked_reason
+              ? `This Signed Deal has been revoked: ${wad.revoked_reason}`
+              : "This Signed Deal has been revoked, so attestations are no longer accepted.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "view_only",
+          };
+        }
+        if (wad.status === "superseded") {
+          return {
+            canAttest: false,
+            canSeal: false,
+            title: "Superseded by a newer Signed Deal",
+            buttonText: null,
+            helperText: "A newer Signed Deal has replaced this one. Attest on the active deal instead.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "view_only",
+          };
+        }
+
+        // Active (draft / awaiting_attestations) states.
+        if (canSeal) {
+          return {
+            canAttest: false,
+            canSeal: true,
+            title: "Ready to seal",
+            buttonText: "Seal Signed Deal",
+            helperText: "Both signatories have attested. Sealing finalises the evidence bundle.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "seal",
+          };
+        }
+
+        if (canAttest) {
+          if (wad.status === "draft") {
+            return {
+              canAttest: true,
+              canSeal: false,
+              title: "Attestations open",
+              buttonText: "Attest as first signatory",
+              helperText:
+                "You'll be the first to attest. The other party still needs to attest before this deal can be sealed.",
+              viewerRole,
+              hasAttested,
+              viewerAttestedAt,
+              attestations: counts,
+              nextAction: "attest",
+            };
+          }
+          // awaiting_attestations
+          return {
+            canAttest: true,
+            canSeal: false,
+            title: "Your attestation is required",
+            buttonText: "Attest & advance to seal",
+            helperText:
+              "The other signatory has already attested. Your attestation will move this deal to Ready to seal.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "attest",
+          };
+        }
+
+        // Party but already attested → waiting for the other side.
+        if (isParty && hasAttested) {
+          return {
+            canAttest: false,
+            canSeal: false,
+            title: "Awaiting other party",
+            buttonText: null,
+            helperText: "You've attested. Waiting for the counterparty signatory to attest.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "await_other_party",
+          };
+        }
+
+        // Non-party / witness viewer.
+        if (wad.status === "draft") {
+          return {
+            canAttest: false,
+            canSeal: false,
+            title: "Attestations not yet open",
+            buttonText: null,
+            helperText:
+              "This Signed Deal is still in draft. Once it moves to Awaiting attestations, the buyer and seller signatories can attest here.",
+            viewerRole,
+            hasAttested,
+            viewerAttestedAt,
+            attestations: counts,
+            nextAction: "view_only",
+          };
+        }
+        return {
+          canAttest: false,
+          canSeal: false,
+          title: "Awaiting buyer & seller attestations",
+          buttonText: null,
+          helperText:
+            "Only the nominated buyer and seller signatories for this trade can attest. You're viewing as a witness/observer.",
+          viewerRole,
+          hasAttested,
+          viewerAttestedAt,
+          attestations: counts,
+          nextAction: "view_only",
+        };
+      })();
+
+      return new Response(
+        JSON.stringify({
+          wad_id: wad.id,
+          status: wad.status,
+          isTerminal,
+          ui,
+          request_id: requestId,
+        }),
+        {
+          status: 200,
+          headers: { ...headers, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // ── POST /wad/:wadId/attest ── Add attestation
     if (req.method === "POST" && parts.length === 2 && parts[1] === "attest") {
       const wadId = parts[0];
