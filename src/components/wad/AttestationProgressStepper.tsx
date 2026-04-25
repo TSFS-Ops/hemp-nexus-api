@@ -257,7 +257,15 @@ export function AttestationProgressStepper({
   const total = nodes.length;
   const pct = Math.round((attestedCount / total) * 100);
 
-  const nextAction = deriveNextAction(consequenceState, hasYou);
+  // Feature-flagged staged rollout: status-specific copy is opt-in until
+  // we've validated wording with operators. When OFF, fall back to the
+  // generic buyer/seller-signatory phrasing.
+  const statusSpecificCopyEnabled = useFeatureFlag(
+    "wad.statusSpecificAttestationCopy"
+  );
+  const nextAction = statusSpecificCopyEnabled
+    ? deriveNextAction(consequenceState, hasYou)
+    : deriveLegacyNextAction(consequenceState, hasYou);
   const NextIcon = nextAction.icon;
 
   // Live announcement for assistive tech: short, status-aware sentence updated
