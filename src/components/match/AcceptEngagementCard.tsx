@@ -137,6 +137,23 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             </div>
           </div>
 
+          {engagementStatus === "notification_sent" && (
+            <div
+              role="status"
+              className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10"
+            >
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-amber-900 dark:text-amber-100 space-y-1">
+                <p className="font-medium">Waiting for the initiating party</p>
+                <p className="text-xs">
+                  Accept will become active as soon as the initiator sends their
+                  outreach email (or an admin marks the engagement as
+                  "contacted"). You can still decline at any time.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={() => setPendingAction("accepted")}
