@@ -180,13 +180,13 @@ Deno.serve(async (req: Request) => {
           await admin.from("audit_logs").insert({
             org_id: orgId,
             actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
-            actor_api_key_id: authCtx.isApiKey ? authCtx.apiKeyId ?? null : null,
             action: "poi.mint_denied",
             entity_type: "poi",
             entity_id: null,
             metadata: {
               correlation_id: correlationId,
               endpoint: "pois",
+              actor_is_api_key: authCtx.isApiKey,
               poi_type: parsed.poi_type,
               reason: "org_not_verified",
               legitimacy_reason: legitimacy.reason,
