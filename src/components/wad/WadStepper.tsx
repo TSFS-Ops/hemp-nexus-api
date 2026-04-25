@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +92,30 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
       clearAttestError(wad.id);
     }
   }, [hasAttested, attestError, wad.id]);
+
+  // Focus management for the attestation error.
+  // ---------------------------------------------
+  // When a new attest error appears we move focus to the error region so:
+  //   1. Screen-reader users hear the alert immediately even if their SR
+  //      doesn't announce role="alert" reliably (some Linux SRs ignore
+  //      alerts that mount before the user has interacted).
+  //   2. Sighted keyboard users can immediately Tab forward to the
+  //      "Copy Ref" / "Retry" controls without hunting back up the page.
+  // We deliberately key the effect on (requestId || message) rather than
+  // the whole object reference, so re-renders that don't change the error
+  // identity (e.g. the "you" badge updating) don't steal focus repeatedly.
+  const attestErrorRef = useRef<HTMLDivElement | null>(null);
+  const errorIdentity = attestError
+    ? `${attestError.requestId ?? ""}::${attestError.message}`
+    : null;
+  useEffect(() => {
+    if (!errorIdentity) return;
+    // Allow the alert to mount before focusing.
+    const node = attestErrorRef.current;
+    if (node && typeof node.focus === "function") {
+      node.focus();
+    }
+  }, [errorIdentity]);
 
   const getStatusBadge = () => {
     switch (uiStatus) {
@@ -419,8 +443,13 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             </div>
             {attestError && (
               <div
+                ref={attestErrorRef}
                 role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+                aria-live="assertive"
+                aria-atomic="true"
+                tabIndex={-1}
+                data-testid="attest-error-alert"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
               >
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
