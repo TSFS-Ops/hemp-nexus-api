@@ -414,7 +414,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     </div>
                     <button
                       type="button"
-                      onClick={handleCopyAttestRef}
+                      onClick={() => { void handleCopyAttestRef(); }}
                       className="shrink-0 text-xs text-primary hover:underline"
                     >
                       {refCopied ? "Copied" : "Copy"}
