@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Save, AlertTriangle } from "lucide-react";
+import { Loader2, Save, AlertTriangle, Sparkles, PowerOff } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
 interface BypassState {
