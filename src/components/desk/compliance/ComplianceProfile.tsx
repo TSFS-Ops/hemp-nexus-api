@@ -293,10 +293,32 @@ export function ComplianceProfile() {
         </div>
         <button
           type="button"
-          onClick={() => navigate("/desk/settings/company?step=entity")}
+          onClick={() => {
+            // If the profile has gaps, surface them in a step-specific modal so
+            // the user can jump straight to the missing tab. When the profile
+            // is fully complete, fall back to the entity tab (the canonical
+            // "edit" landing) since there is nothing missing to deep-link to.
+            if (gaps.length === 0) {
+              goToStep("entity");
+              return;
+            }
+            if (gaps.length === 1) {
+              goToStep(gaps[0].step);
+              return;
+            }
+            setUpdateOpen(true);
+          }}
           className="self-start md:shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-sm transition-colors"
         >
           Request Data Update
+          {gaps.length > 0 && (
+            <span
+              aria-label={`${gaps.length} outstanding`}
+              className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-400 text-slate-900 text-[11px] font-semibold tabular-nums"
+            >
+              {gaps.length}
+            </span>
+          )}
         </button>
       </header>
 
