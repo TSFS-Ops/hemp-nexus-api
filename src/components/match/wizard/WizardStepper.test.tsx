@@ -75,16 +75,21 @@ describe("WizardStepper a11y", () => {
     }
   });
 
-  it("hides the active-step description paragraph from screen readers", () => {
-    // The button for the active step already includes the description in its
-    // aria-label; if the paragraph below also exposed it, screen readers
-    // would announce the description twice.
+  it("does not duplicate the active-step description in a separate visible paragraph", () => {
+    // After the redesign, the active-step description is no longer rendered
+    // beneath the rail (it lives in the focal ActionRequiredBanner instead).
+    // The active step's button still carries the description in its aria-label,
+    // so screen reader users get the full context exactly once.
     const { container } = render(
       <WizardStepper steps={STEPS} activeStep={1} onStepClick={vi.fn()} />,
     );
 
-    const desc = container.querySelector("p[aria-hidden=\"true\"]");
-    expect(desc).not.toBeNull();
-    expect(desc?.textContent).toBe("Confirm match details.");
+    const descParagraphs = Array.from(container.querySelectorAll("p")).filter(
+      (p) => p.textContent === "Confirm match details.",
+    );
+    expect(descParagraphs.length).toBe(0);
+
+    const activeButton = container.querySelector('[aria-current="step"] button');
+    expect(activeButton?.getAttribute("aria-label")).toContain("Confirm match details.");
   });
 });
