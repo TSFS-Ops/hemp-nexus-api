@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EdgeInvokeError } from "@/lib/edge-invoke";
 
 const REFRESH_SKEW_MS = 30_000;
+const UUID_FUNCTION_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/|$)/i;
 
 let installed = false;
 
@@ -94,6 +95,20 @@ export function installEdgeInvokeShim(): void {
   };
 
   fnApi.invoke = async (name: string, opts?: Record<string, unknown>) => {
+    if (UUID_FUNCTION_RE.test(name)) {
+      return {
+        data: null,
+        error: new EdgeInvokeError(
+          "This action could not be completed because the backend request was routed incorrectly. Please refresh and try again.",
+          {
+            status: 400,
+            code: "INVALID_FUNCTION_PATH",
+            serverBody: `Refused to call UUID as edge function name: ${name}`,
+            context: name,
+          },
+        ),
+      };
+    }
     try { await ensureFresh(); } catch { /* don't block invoke on refresh hiccup */ }
     const res = await original(name, opts);
     if (res.error) {
