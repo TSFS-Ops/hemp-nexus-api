@@ -8,6 +8,7 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
 import { tryBypass } from "../_shared/test-mode-bypass.ts";
+import { decideIdempotency, hashAttestBody } from "../_shared/idempotency.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -744,8 +745,58 @@ Deno.serve(async (req) => {
     // ── POST /wad/:wadId/attest ── Add attestation
     if (req.method === "POST" && parts.length === 2 && parts[1] === "attest") {
       const wadId = parts[0];
-      const body = await req.json();
-      const { attested_name, role } = validateInput(attestSchema, body);
+
+      // Idempotency-Key handling (optional). When the client supplies one, a
+      // repeat request with the SAME body returns the original 201 response
+      // (no second insert). A repeat with the SAME key but a DIFFERENT body
+      // returns 409 IDEMPOTENCY_KEY_MISMATCH so the client knows it reused
+      // a key incorrectly. Keys are scoped to (org, endpoint) and expire
+      // after 24h via the idempotency_keys table default.
+      const idempotencyKey =
+        req.headers.get("Idempotency-Key") || req.headers.get("idempotency-key");
+      const idempotencyEndpoint = `POST /wad/${wadId}/attest`;
+
+      const rawBody = await req.text();
+      let parsedBody: unknown;
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        throw new ApiException("VALIDATION_ERROR", "Request body must be valid JSON", 400);
+      }
+      const { attested_name, role } = validateInput(attestSchema, parsedBody);
+
+      // Hash the canonical body so two payloads with the same fields in
+      // different key order still match (helper is unit-tested).
+      const requestHash = await hashAttestBody({ attested_name, role });
+
+      if (idempotencyKey) {
+        const { data: existing } = await supabase
+          .from("idempotency_keys")
+          .select("response_data, response_status_code, request_hash")
+          .eq("org_id", authCtx.orgId)
+          .eq("idempotency_key", idempotencyKey)
+          .eq("endpoint", idempotencyEndpoint)
+          .maybeSingle();
+
+        const decision = decideIdempotency(existing ?? null, requestHash);
+        if (decision.kind === "mismatch") {
+          throw new ApiException(
+            "IDEMPOTENCY_KEY_MISMATCH",
+            "Idempotency-Key was reused with a different request body",
+            409,
+          );
+        }
+        if (decision.kind === "replay") {
+          return new Response(JSON.stringify(decision.responseData), {
+            status: decision.statusCode,
+            headers: {
+              ...headers,
+              "Content-Type": "application/json",
+              "Idempotent-Replay": "true",
+            },
+          });
+        }
+      }
 
       const { data: wad, error: wadError } = await supabase
         .from("wads")
@@ -801,6 +852,20 @@ Deno.serve(async (req) => {
       }
 
       await writeAuditLog("wad.attested", wadId, { role });
+
+      // Persist idempotency record so a retry returns the same response.
+      // Best-effort: a 23505 here means a concurrent request raced us — that's
+      // fine, the next retry will hit the cached response on lookup.
+      if (idempotencyKey) {
+        await supabase.from("idempotency_keys").insert({
+          org_id: authCtx.orgId,
+          idempotency_key: idempotencyKey,
+          endpoint: idempotencyEndpoint,
+          request_hash: requestHash,
+          response_data: attestation,
+          response_status_code: 201,
+        });
+      }
 
       return new Response(JSON.stringify(attestation), {
         status: 201,
