@@ -1145,7 +1145,22 @@ Deno.serve(async (req) => {
         }
       );
 
-      if (txnErr) throw txnErr;
+      // Wrap raw Postgres errors into an ApiException so the client gets a
+      // diagnosable 500 instead of the opaque "An internal error occurred"
+      // shim. Surfaces the SQLSTATE/message for the request log without
+      // leaking the stack trace.
+      if (txnErr) {
+        const pgCode = (txnErr as { code?: string }).code || "unknown";
+        const pgMsg = (txnErr as { message?: string }).message || String(txnErr);
+        console.error(
+          `[${requestId}] atomic_engagement_transition failed for engagement ${engagement.id}: code=${pgCode} msg=${pgMsg}`
+        );
+        throw new ApiException(
+          "TRANSITION_FAILED",
+          `Could not record your response (db ${pgCode}). The team has been notified — please try again in a moment.`,
+          500
+        );
+      }
       const txn = txnResult as { success: boolean; error?: string } | null;
       if (!txn?.success) {
         throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
