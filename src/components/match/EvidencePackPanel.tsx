@@ -106,9 +106,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
   const downloadJson = useCallback(() => {
     if (!pack) return;
+    const filename = `evidence-pack-${matchId}.json`;
     const json = JSON.stringify(pack, null, 2);
-    downloadFile(json, `evidence-pack-${matchId}.json`, "application/json");
-    toast.success("JSON evidence pack downloaded");
+    downloadFile(json, filename, "application/json");
+    toast.success("Canonical JSON downloaded", {
+      description: `Saved as ${filename} — machine-readable canonical evidence pack.`,
+      duration: 6000,
+    });
   }, [pack, matchId]);
 
   const fetchHtmlReport = useCallback(async (): Promise<string | null> => {
@@ -129,9 +133,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const downloadHtmlReport = useCallback(async () => {
     const html = previewHtml ?? (await fetchHtmlReport());
     if (!html) return;
-    downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
+    const filename = `evidence-pack-${matchId}.html`;
+    downloadFile(html, filename, "text/html");
     toast.success("Evidence report downloaded", {
-      description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
+      description: `Saved as ${filename} — open it in any browser (Chrome, Edge, Safari) to view the formatted report.`,
       duration: 8000,
     });
   }, [fetchHtmlReport, previewHtml, matchId]);
