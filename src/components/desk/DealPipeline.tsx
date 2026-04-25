@@ -579,9 +579,12 @@ export function DealPipeline() {
                         <LaneEmptyState />
                       </div>
                     ) : (
-                      <ul className="divide-y divide-border">
+                      <ul className="space-y-1.5">
                         {lane.deals.map((deal) => (
-                          <li key={deal.id}>
+                          <li
+                            key={deal.id}
+                            className="bg-card rounded-md border border-slate-200/70 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                          >
                             <DealDocumentCard
                               deal={deal}
                               laneId={lane.id}
