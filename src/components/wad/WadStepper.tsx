@@ -597,6 +597,21 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     </p>
                   );
                 })()}
+                {/* Download a plain-text incident report. Always rendered
+                    when the alert is up — even without a Reference ID it
+                    captures the message, timestamp, form fields and
+                    environment for support triage. */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    data-testid="attest-error-download-report"
+                    onClick={handleDownloadErrorReport}
+                    className="inline-flex items-center gap-1.5 rounded border border-destructive/30 bg-background/60 px-2 py-1 text-xs text-destructive hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download error report
+                  </button>
+                </div>
               </div>
             )}
             <Button
