@@ -130,7 +130,7 @@ Deno.test("OPTIONS /deal-certificate/:id returns 204 with CORS echo", async () =
   assertCorsHeaders(res);
 });
 
-Deno.test("OPTIONS rejects non-whitelisted origin without leaking allow-origin", async () => {
+Deno.test("OPTIONS /wad/:id/certificate rejects non-whitelisted origin without leaking allow-origin", async () => {
   const res = await fetch(`${WAD_BASE}/00000000-0000-0000-0000-000000000000/certificate`, {
     method: "OPTIONS",
     headers: {
