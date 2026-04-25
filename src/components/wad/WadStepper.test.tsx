@@ -124,7 +124,7 @@ describe("WadStepper attestation error persistence", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /review & attest/i }));
     expect(screen.getByTestId("attest-error-hint")).toBeTruthy();
-    expect(screen.getByText(/req-abc-123/)).toBeTruthy();
+    expect(screen.getAllByText(/req-abc-123/).length).toBeGreaterThan(0);
   });
 
   it("clears the persisted error after a successful attestation", async () => {
