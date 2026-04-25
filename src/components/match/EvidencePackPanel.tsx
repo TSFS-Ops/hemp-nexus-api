@@ -515,6 +515,51 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                   </>
                 )}
               </Button>
+
+              {/* Standalone audit-trail export — separate file for compliance review */}
+              <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                  <ScrollText className="h-3.5 w-3.5" />
+                  Audit Trail (standalone)
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Download just the audit log entries for this trade as a separate file
+                  — for compliance reviewers who only need the chronological action log.
+                  Includes a SHA-256 trail hash plus the parent pack hash for cross-traceability.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => downloadAuditTrail("csv")}
+                    disabled={auditLoading}
+                  >
+                    {auditLoading ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                        Exporting…
+                      </>
+                    ) : (
+                      <>
+                        <ScrollText className="h-3.5 w-3.5 mr-2" />
+                        Export Audit Trail (CSV)
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => downloadAuditTrail("json")}
+                    disabled={auditLoading}
+                  >
+                    <FileJson className="h-3.5 w-3.5 mr-2" />
+                    Export as JSON
+                  </Button>
+                </div>
+              </div>
+
               <p className="text-[11px] text-muted-foreground">
                 The HTML report is the human-readable, printable evidence pack (match summary, event timeline,
                 documents, approval chain, full audit references). Open it in any browser. The JSON is the
