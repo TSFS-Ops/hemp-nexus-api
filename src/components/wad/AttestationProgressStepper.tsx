@@ -29,8 +29,9 @@ interface SignatoryNode {
 }
 
 interface NextAction {
-  label: string;
-  description: string;
+  /** Translation keys — resolved by the component, not at derivation time. */
+  labelKey: TranslationKey;
+  descriptionKey: TranslationKey;
   icon: LucideIcon;
   tone: "primary" | "success" | "muted" | "destructive";
 }
@@ -45,14 +46,14 @@ function deriveNextAction(
   if (uiStatus === "sealed") {
     return canDownloadCertificate
       ? {
-          label: "Download certificate",
-          description: "Sealed — PDF certificate is available.",
+          labelKey: "wad.next.sealed.download.label",
+          descriptionKey: "wad.next.sealed.download.desc",
           icon: ShieldCheck,
           tone: "success",
         }
       : {
-          label: "Sealed",
-          description: "All attestations recorded and the deal is sealed.",
+          labelKey: "wad.next.sealed.label",
+          descriptionKey: "wad.next.sealed.desc",
           icon: Lock,
           tone: "success",
         };
@@ -60,8 +61,8 @@ function deriveNextAction(
 
   if (uiStatus === "revoked") {
     return {
-      label: "Revoked",
-      description: "This Signed Deal has been revoked.",
+      labelKey: "wad.next.revoked.label",
+      descriptionKey: "wad.next.revoked.desc",
       icon: XCircle,
       tone: "destructive",
     };
@@ -69,8 +70,8 @@ function deriveNextAction(
 
   if (uiStatus === "superseded") {
     return {
-      label: "Superseded",
-      description: "A newer Signed Deal has replaced this one.",
+      labelKey: "wad.next.superseded.label",
+      descriptionKey: "wad.next.superseded.desc",
       icon: XCircle,
       tone: "muted",
     };
@@ -78,8 +79,8 @@ function deriveNextAction(
 
   if (canSeal) {
     return {
-      label: "Seal Signed Deal",
-      description: "Both signatories have attested — ready to seal.",
+      labelKey: "wad.next.canSeal.label",
+      descriptionKey: "wad.next.canSeal.desc",
       icon: Lock,
       tone: "primary",
     };
@@ -87,8 +88,8 @@ function deriveNextAction(
 
   if (canAttest) {
     return {
-      label: "Attest now",
-      description: "Your attestation is required to progress this deal.",
+      labelKey: "wad.next.canAttest.label",
+      descriptionKey: "wad.next.canAttest.desc",
       icon: ShieldCheck,
       tone: "primary",
     };
@@ -96,8 +97,8 @@ function deriveNextAction(
 
   if (hasAttested) {
     return {
-      label: "Awaiting other party",
-      description: "You've attested — waiting for the counterparty to attest.",
+      labelKey: "wad.next.awaitingOther.label",
+      descriptionKey: "wad.next.awaitingOther.desc",
       icon: Clock,
       tone: "muted",
     };
@@ -105,16 +106,16 @@ function deriveNextAction(
 
   if (hasYou) {
     return {
-      label: "Awaiting attestations",
-      description: "Both signatories must attest before this deal can be sealed.",
+      labelKey: "wad.next.awaitingAll.label",
+      descriptionKey: "wad.next.awaitingAll.desc",
       icon: Clock,
       tone: "muted",
     };
   }
 
   return {
-    label: "View only",
-    description: "Only buyer and seller signatories can attest on this deal.",
+    labelKey: "wad.next.viewOnly.label",
+    descriptionKey: "wad.next.viewOnly.desc",
     icon: Clock,
     tone: "muted",
   };
@@ -134,55 +135,60 @@ function deriveLegacyNextAction(
 
   if (uiStatus === "sealed") {
     return {
-      label: canDownloadCertificate ? "Download certificate" : "Sealed",
-      description: "Buyer and seller signatories have attested.",
+      labelKey: canDownloadCertificate
+        ? "wad.next.sealed.download.label"
+        : "wad.next.sealed.label",
+      descriptionKey: "wad.next.legacy.canSealDesc",
       icon: canDownloadCertificate ? ShieldCheck : Lock,
       tone: "success",
     };
   }
   if (uiStatus === "revoked" || uiStatus === "superseded") {
     return {
-      label: uiStatus === "revoked" ? "Revoked" : "Superseded",
-      description: "Buyer and seller signatories cannot attest on this deal.",
+      labelKey:
+        uiStatus === "revoked"
+          ? "wad.next.revoked.label"
+          : "wad.next.superseded.label",
+      descriptionKey: "wad.next.legacy.terminalDesc",
       icon: XCircle,
       tone: uiStatus === "revoked" ? "destructive" : "muted",
     };
   }
   if (canSeal) {
     return {
-      label: "Seal Signed Deal",
-      description: "Buyer and seller signatories have attested.",
+      labelKey: "wad.next.canSeal.label",
+      descriptionKey: "wad.next.legacy.canSealDesc",
       icon: Lock,
       tone: "primary",
     };
   }
   if (canAttest) {
     return {
-      label: "Attest now",
-      description: "Buyer and seller signatories must attest.",
+      labelKey: "wad.next.canAttest.label",
+      descriptionKey: "wad.next.legacy.canAttestDesc",
       icon: ShieldCheck,
       tone: "primary",
     };
   }
   if (hasAttested) {
     return {
-      label: "Awaiting other signatory",
-      description: "Buyer and seller signatories must attest.",
+      labelKey: "wad.next.legacy.awaitingOtherLabel",
+      descriptionKey: "wad.next.legacy.awaitingDesc",
       icon: Clock,
       tone: "muted",
     };
   }
   if (hasYou) {
     return {
-      label: "Awaiting attestations",
-      description: "Buyer and seller signatories must attest.",
+      labelKey: "wad.next.awaitingAll.label",
+      descriptionKey: "wad.next.legacy.awaitingDesc",
       icon: Clock,
       tone: "muted",
     };
   }
   return {
-    label: "View only",
-    description: "Only buyer and seller signatories can attest on this deal.",
+    labelKey: "wad.next.viewOnly.label",
+    descriptionKey: "wad.next.viewOnly.desc",
     icon: Clock,
     tone: "muted",
   };
