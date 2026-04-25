@@ -104,16 +104,49 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     }
   }, [matchId]);
 
+  // Build a self-describing artifact slug: <matchId>-<version>-<shortHash>-<utcStamp>
+  // so the file on disk is unambiguously traceable back to the pack version + hash + moment of generation.
+  const buildArtifactSlug = useCallback(
+    (p: EvidencePackData): { slug: string; shortHash: string; utcStamp: string; version: string } => {
+      const version = p.metadata.format || "v1";
+      const shortHash = p.packHash ? p.packHash.slice(0, 12) : "nohash";
+      const utcStamp = (p.metadata.generatedAt || new Date().toISOString())
+        .replace(/[:.]/g, "-")
+        .replace(/Z$/, "Z");
+      return {
+        slug: `${matchId}-${version}-${shortHash}-${utcStamp}`,
+        shortHash,
+        utcStamp,
+        version,
+      };
+    },
+    [matchId],
+  );
+
   const downloadJson = useCallback(() => {
     if (!pack) return;
-    const filename = `evidence-pack-${matchId}.json`;
-    const json = JSON.stringify(pack, null, 2);
+    const { slug, shortHash, version } = buildArtifactSlug(pack);
+    const filename = `evidence-pack-${slug}.json`;
+    // Annotate the canonical pack with traceability fields without mutating the canonical block
+    // (which is the SHA-256 source of truth — must NOT be modified).
+    const annotated = {
+      ...pack,
+      traceability: {
+        artifactVersion: version,
+        sha256: pack.packHash,
+        sha256Short: shortHash,
+        generatedAtUtc: pack.metadata.generatedAt,
+        downloadedAtUtc: new Date().toISOString(),
+        matchId,
+      },
+    };
+    const json = JSON.stringify(annotated, null, 2);
     downloadFile(json, filename, "application/json");
     toast.success("Canonical JSON downloaded", {
-      description: `Saved as ${filename} — machine-readable canonical evidence pack.`,
+      description: `Saved as ${filename} · ${version} · SHA-256 ${shortHash}…`,
       duration: 6000,
     });
-  }, [pack, matchId]);
+  }, [pack, matchId, buildArtifactSlug]);
 
   const fetchHtmlReport = useCallback(async (): Promise<string | null> => {
     try {
@@ -131,15 +164,27 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   }, [matchId]);
 
   const downloadHtmlReport = useCallback(async () => {
+    if (!pack) return;
     const html = previewHtml ?? (await fetchHtmlReport());
     if (!html) return;
-    const filename = `evidence-pack-${matchId}.html`;
-    downloadFile(html, filename, "text/html");
+    const { slug, shortHash, utcStamp, version } = buildArtifactSlug(pack);
+    const filename = `evidence-pack-${slug}.html`;
+    // Prepend a non-rendering HTML comment carrying traceability metadata so the file
+    // on disk is self-describing even when opened in a text editor.
+    const header =
+      `<!-- Izenzo Evidence Pack\n` +
+      `     Match ID: ${matchId}\n` +
+      `     Artifact version: ${version}\n` +
+      `     SHA-256: ${pack.packHash}\n` +
+      `     Generated (UTC): ${pack.metadata.generatedAt}\n` +
+      `     Downloaded (UTC): ${new Date().toISOString()}\n` +
+      `-->\n`;
+    downloadFile(header + html, filename, "text/html");
     toast.success("Evidence report downloaded", {
-      description: `Saved as ${filename} — open it in any browser (Chrome, Edge, Safari) to view the formatted report.`,
+      description: `Saved as ${filename} · ${version} · SHA-256 ${shortHash}… · generated ${utcStamp}`,
       duration: 8000,
     });
-  }, [fetchHtmlReport, previewHtml, matchId]);
+  }, [pack, fetchHtmlReport, previewHtml, matchId, buildArtifactSlug]);
 
   const togglePreview = useCallback(async () => {
     if (previewOpen) {
