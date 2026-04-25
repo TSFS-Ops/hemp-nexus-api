@@ -149,6 +149,14 @@ function composeSegments(segments) {
   return acc;
 }
 
+/** Apply the shell mount prefix to a child route path. */
+function joinRoute(prefix, child) {
+  if (!prefix) return child;
+  if (child.startsWith("/")) return child;
+  if (child === "" || child === "*") return `${prefix}/*`;
+  return `${prefix}/${child}`;
+}
+
 function collectRoutePatterns(files, routeConsts) {
   const patterns = new Set();
   for (const file of files) {
