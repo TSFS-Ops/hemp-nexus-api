@@ -443,8 +443,13 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             </div>
             {attestError && (
               <div
+                ref={attestErrorRef}
                 role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+                aria-live="assertive"
+                aria-atomic="true"
+                tabIndex={-1}
+                data-testid="attest-error-alert"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
               >
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
