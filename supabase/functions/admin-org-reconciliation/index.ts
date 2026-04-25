@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       poisResult,
       ledgerResult,
       auditResult,
-      governanceProfile,
+      legitimacy,
     ] = await Promise.all([
       admin
         .from("organizations")
