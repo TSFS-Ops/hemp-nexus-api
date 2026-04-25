@@ -344,7 +344,7 @@ export function ComplianceProfile() {
       {/* ── CARDS ─────────────────────────────────────────────── */}
       <div className="space-y-6">
         {/* Card 1 · Registered Identity */}
-        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
           <CardHeader index="01" title="Registered Identity" kicker="Statutory Record" />
           <div className="p-6">
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -369,7 +369,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 2 · Ownership (UBO) */}
-        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
           <CardHeader
             index="02"
             title="Ownership (UBO)"
@@ -440,7 +440,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 3 · Regulatory Evidence */}
-        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
           <CardHeader index="03" title="Regulatory Evidence" kicker="Active Licences" />
           <div className="p-6">
             {docs.length === 0 ? (
