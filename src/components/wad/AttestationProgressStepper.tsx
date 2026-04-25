@@ -276,11 +276,17 @@ export function AttestationProgressStepper({
     ? deriveNextAction(consequenceState, hasYou)
     : deriveLegacyNextAction(consequenceState, hasYou);
   const NextIcon = nextAction.icon;
+  const nextLabel = t(nextAction.labelKey);
+  const nextDescription = t(nextAction.descriptionKey);
 
   // Live announcement for assistive tech: short, status-aware sentence updated
   // whenever attestation count or next action changes. Rendered inside an
   // aria-live="polite" region so screen readers don't interrupt typing.
-  const liveAnnouncement = `Attestation progress: ${attestedCount} of ${total} signatories attested. Next: ${nextAction.label}.`;
+  const liveAnnouncement = t("wad.progress.live", {
+    attested: attestedCount,
+    total,
+    next: nextLabel,
+  });
 
   const headingId = `attestation-progress-heading-${wad.id}`;
   const summaryId = `attestation-progress-summary-${wad.id}`;
