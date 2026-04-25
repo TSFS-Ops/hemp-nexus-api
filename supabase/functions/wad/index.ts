@@ -1251,14 +1251,14 @@ Deno.serve(async (req) => {
           height: 32,
           color: rgb(0.98, 0.85, 0.4),
         });
-        page.drawText("⚠ TEST MODE — DEMO GRADE ONLY", {
+        page.drawText(safe("\u26A0 TEST MODE \u2014 DEMO GRADE ONLY"), {
           x: MARGIN,
           y: y + 14,
           size: 11,
           font: helveticaBold,
           color: rgb(0.4, 0.2, 0),
         });
-        page.drawText(`Issued without: ${bypassedNames}. Not contractually durable.`, {
+        page.drawText(safe(`Issued without: ${bypassedNames}. Not contractually durable.`), {
           x: MARGIN,
           y: y + 2,
           size: 8,
