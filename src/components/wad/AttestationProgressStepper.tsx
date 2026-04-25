@@ -2,6 +2,7 @@ import { CheckCircle2, Clock, Lock, ShieldCheck, XCircle, type LucideIcon } from
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ConsequenceState, WadRecord } from "@/lib/modules/consequence";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 interface AttestationProgressStepperProps {
   wad: WadRecord;
@@ -117,6 +118,74 @@ function deriveNextAction(
   };
 }
 
+/**
+ * Pre-rollout copy: generic buyer/seller-signatory phrasing without
+ * status-specific descriptions. Used when the
+ * `wad.statusSpecificAttestationCopy` feature flag is OFF.
+ */
+function deriveLegacyNextAction(
+  consequenceState: ConsequenceState,
+  hasYou: boolean
+): NextAction {
+  const { canAttest, hasAttested, canSeal, canDownloadCertificate, uiStatus } =
+    consequenceState;
+
+  if (uiStatus === "sealed") {
+    return {
+      label: canDownloadCertificate ? "Download certificate" : "Sealed",
+      description: "Buyer and seller signatories have attested.",
+      icon: canDownloadCertificate ? ShieldCheck : Lock,
+      tone: "success",
+    };
+  }
+  if (uiStatus === "revoked" || uiStatus === "superseded") {
+    return {
+      label: uiStatus === "revoked" ? "Revoked" : "Superseded",
+      description: "Buyer and seller signatories cannot attest on this deal.",
+      icon: XCircle,
+      tone: uiStatus === "revoked" ? "destructive" : "muted",
+    };
+  }
+  if (canSeal) {
+    return {
+      label: "Seal Signed Deal",
+      description: "Buyer and seller signatories have attested.",
+      icon: Lock,
+      tone: "primary",
+    };
+  }
+  if (canAttest) {
+    return {
+      label: "Attest now",
+      description: "Buyer and seller signatories must attest.",
+      icon: ShieldCheck,
+      tone: "primary",
+    };
+  }
+  if (hasAttested) {
+    return {
+      label: "Awaiting other signatory",
+      description: "Buyer and seller signatories must attest.",
+      icon: Clock,
+      tone: "muted",
+    };
+  }
+  if (hasYou) {
+    return {
+      label: "Awaiting attestations",
+      description: "Buyer and seller signatories must attest.",
+      icon: Clock,
+      tone: "muted",
+    };
+  }
+  return {
+    label: "View only",
+    description: "Only buyer and seller signatories can attest on this deal.",
+    icon: Clock,
+    tone: "muted",
+  };
+}
+
 function nodeIcon(state: SignatoryNodeState): LucideIcon {
   if (state === "attested") return CheckCircle2;
   return Clock;
@@ -188,7 +257,15 @@ export function AttestationProgressStepper({
   const total = nodes.length;
   const pct = Math.round((attestedCount / total) * 100);
 
-  const nextAction = deriveNextAction(consequenceState, hasYou);
+  // Feature-flagged staged rollout: status-specific copy is opt-in until
+  // we've validated wording with operators. When OFF, fall back to the
+  // generic buyer/seller-signatory phrasing.
+  const statusSpecificCopyEnabled = useFeatureFlag(
+    "wad.statusSpecificAttestationCopy"
+  );
+  const nextAction = statusSpecificCopyEnabled
+    ? deriveNextAction(consequenceState, hasYou)
+    : deriveLegacyNextAction(consequenceState, hasYou);
   const NextIcon = nextAction.icon;
 
   // Live announcement for assistive tech: short, status-aware sentence updated
