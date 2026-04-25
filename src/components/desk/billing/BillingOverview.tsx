@@ -124,7 +124,7 @@ export function BillingOverview() {
           {PACKS.map((pack) => (
             <div
               key={pack.credits}
-              className="grid grid-cols-12 gap-6 items-center bg-card border border-border rounded-sm px-6 py-5 hover:border-slate-400 transition-colors"
+              className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all"
             >
               {/* Credits column */}
               <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
