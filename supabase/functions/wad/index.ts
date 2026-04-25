@@ -766,15 +766,8 @@ Deno.serve(async (req) => {
       const { attested_name, role } = validateInput(attestSchema, parsedBody);
 
       // Hash the canonical body so two payloads with the same fields in
-      // different key order still match.
-      const canonical = JSON.stringify({ attested_name, role });
-      const hashBytes = await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode(canonical),
-      );
-      const requestHash = Array.from(new Uint8Array(hashBytes))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
+      // different key order still match (helper is unit-tested).
+      const requestHash = await hashAttestBody({ attested_name, role });
 
       if (idempotencyKey) {
         const { data: existing } = await supabase
@@ -785,16 +778,17 @@ Deno.serve(async (req) => {
           .eq("endpoint", idempotencyEndpoint)
           .maybeSingle();
 
-        if (existing) {
-          if (existing.request_hash !== requestHash) {
-            throw new ApiException(
-              "IDEMPOTENCY_KEY_MISMATCH",
-              "Idempotency-Key was reused with a different request body",
-              409,
-            );
-          }
-          return new Response(JSON.stringify(existing.response_data), {
-            status: existing.response_status_code,
+        const decision = decideIdempotency(existing ?? null, requestHash);
+        if (decision.kind === "mismatch") {
+          throw new ApiException(
+            "IDEMPOTENCY_KEY_MISMATCH",
+            "Idempotency-Key was reused with a different request body",
+            409,
+          );
+        }
+        if (decision.kind === "replay") {
+          return new Response(JSON.stringify(decision.responseData), {
+            status: decision.statusCode,
             headers: {
               ...headers,
               "Content-Type": "application/json",
