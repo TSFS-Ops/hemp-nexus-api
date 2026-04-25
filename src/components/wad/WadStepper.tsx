@@ -485,7 +485,33 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               </div>
             )}
             <Button
+              data-testid="attest-submit-button"
               onClick={handleAttest}
+              // Explicit, focus-scoped Enter/Space shortcut. Native <button>
+              // already activates on Enter/Space, but we intercept here for
+              // two reasons:
+              //   1. stopPropagation prevents any ancestor key listener
+              //      (e.g. a future global stepper-navigation handler that
+              //      uses Enter to advance to the next step) from also
+              //      firing on the same keystroke.
+              //   2. Because the listener is on the button itself, it ONLY
+              //      runs when the Attest/Retry button is the focused
+              //      element — pressing Enter while focus is on the
+              //      stepper, the name input, or the consent checkbox
+              //      does not trigger an attestation.
+              // We also gate on the same disabled conditions the click
+              // path uses so a stale keystroke after submission can't
+              // double-fire.
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                // Modifier combos belong to the OS / browser, not us.
+                if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+                if (e.repeat) return;
+                if (attesting || !attestedName.trim() || !attestConfirmed) return;
+                e.preventDefault();
+                e.stopPropagation();
+                void handleAttest();
+              }}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
               className="w-full"
             >
