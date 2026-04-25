@@ -28,6 +28,10 @@ import {
   clearAttestError,
 } from "@/lib/wad/attest-error-storage";
 import {
+  buildAttestErrorReport,
+  buildAttestErrorReportFilename,
+} from "@/lib/wad/attest-error-report";
+import {
   trackClientEvent,
   CLIENT_ANALYTICS_EVENT_NAMES,
   type CopyRefSurface,
