@@ -8,6 +8,7 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
 import { tryBypass } from "../_shared/test-mode-bypass.ts";
+import { decideIdempotency, hashAttestBody } from "../_shared/idempotency.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
