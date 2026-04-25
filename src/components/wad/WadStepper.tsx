@@ -105,7 +105,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
       const baseMsg = result.error || "Failed to attest";
       const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
       toast.error(toastMsg, { duration: 8000 });
-      setAttestError({ message: baseMsg, requestId: result.requestId });
+      setAttestError({ message: baseMsg, requestId: result.requestId, kind: result.errorKind });
     }
   };
 
