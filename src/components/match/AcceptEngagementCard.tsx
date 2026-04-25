@@ -82,13 +82,27 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       // *why* their accept was refused. Stuck-at-notification_sent means the
       // initiator has not yet sent their outreach email — the engagement
       // can only progress to 'accepted' after the initiator transitions it
-      // to 'contacted'. Surface a plain-English explanation instead of the
-      // raw "Cannot transition from 'notification_sent' to 'accepted'" line.
-      const isStuckAtNotificationSent =
-        /from\s+'?notification_sent'?\s+to\s+'?accepted'?/i.test(raw);
-      const friendly = isStuckAtNotificationSent
-        ? "We can't accept this trade yet — the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work."
-        : raw;
+      // to 'contacted'. Translate any illegal-transition error from the
+      // poi-engagements state machine into plain English so the counterparty
+      // is never shown a raw "Cannot transition from 'X' to 'Y'" line. We
+      // also catch the loose-quote / no-quote / INVALID_TRANSITION code
+      // shapes so server wording drift doesn't silently re-expose the bug.
+      const isInvalidTransition =
+        /cannot\s+transition\s+from/i.test(raw) ||
+        /invalid[_\s-]?transition/i.test(raw) ||
+        /allowed\s*(transitions|:)/i.test(raw);
+      const isFromNotificationSent =
+        /from\s+["']?notification_sent["']?/i.test(raw);
+      const isFromPending =
+        /from\s+["']?pending["']?/i.test(raw);
+      let friendly = raw;
+      if (isInvalidTransition && (isFromNotificationSent || isFromPending)) {
+        friendly =
+          "We can't accept this trade yet — the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work.";
+      } else if (isInvalidTransition) {
+        friendly =
+          "This trade can't be accepted in its current state. Please refresh the page; if the problem persists, ask the initiator or an admin to advance the engagement to 'contacted'.";
+      }
       toast.error(friendly);
     } finally {
       setIsSubmitting(false);
