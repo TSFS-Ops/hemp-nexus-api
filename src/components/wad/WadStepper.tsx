@@ -104,19 +104,31 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     } else {
       const baseMsg = result.error || "Failed to attest";
       const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
-      toast.error(toastMsg, { duration: 8000 });
+      toast.error(toastMsg, {
+        duration: 8000,
+        action: result.requestId
+          ? {
+              label: "Copy Ref",
+              onClick: () => {
+                void handleCopyAttestRef(result.requestId);
+              },
+            }
+          : undefined,
+      });
       setAttestError({ message: baseMsg, requestId: result.requestId, kind: result.errorKind });
     }
   };
 
-  const handleCopyAttestRef = async () => {
-    if (!attestError?.requestId) return;
+  const handleCopyAttestRef = async (refId?: string) => {
+    const ref = refId ?? attestError?.requestId;
+    if (!ref) return;
     try {
-      await navigator.clipboard.writeText(attestError.requestId);
+      await navigator.clipboard.writeText(ref);
       setRefCopied(true);
+      toast.success("Reference ID copied");
       setTimeout(() => setRefCopied(false), 2000);
     } catch {
-      /* clipboard unavailable */
+      toast.error("Could not copy — please copy the Ref manually");
     }
   };
 
