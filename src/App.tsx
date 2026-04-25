@@ -102,7 +102,8 @@ function App() {
               <MaintenanceBanner />
               <TestModeBanner />
               <LegacyRedirectBanner />
-              <Suspense fallback={<FullPageLoader />}>
+              <RouteErrorBoundary>
+                <Suspense fallback={<FullPageLoader />}>
                 <Routes>
                   <Route path={ROUTES.ROOT} element={<RootElement />} />
                   {/* Canonical redirect: /landing → / */}
