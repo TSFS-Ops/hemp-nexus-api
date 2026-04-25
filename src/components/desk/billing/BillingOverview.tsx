@@ -124,7 +124,7 @@ export function BillingOverview() {
           {PACKS.map((pack) => (
             <div
               key={pack.credits}
-              className="grid grid-cols-12 gap-6 items-center bg-card border border-border rounded-sm px-6 py-5 hover:border-slate-400 transition-colors"
+              className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all"
             >
               {/* Credits column */}
               <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
@@ -242,11 +242,19 @@ export function BillingOverview() {
                   : isBurn
                     ? "POI Generated"
                     : (row.action_type ?? "Activity");
+                // Semantic badge palette - matches the "Institutional Premium" pill
+                // language used across the desk (slate = neutral, emerald = sealed,
+                // amber = burn / spend).
+                const badgeClasses = isPurchase
+                  ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                  : isBurn
+                    ? "bg-amber-100 text-amber-800 border border-amber-200"
+                    : "bg-slate-100 text-slate-600 border border-slate-200";
 
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors"
+                    className="border-b border-border last:border-b-0 hover:bg-slate-50 transition-colors"
                   >
                     <td className="px-5 py-3.5 font-mono text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
                       {new Date(row.created_at).toLocaleDateString("en-GB", {
@@ -260,7 +268,13 @@ export function BillingOverview() {
                         minute: "2-digit",
                       })}
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-foreground">{action}</td>
+                    <td className="px-5 py-3.5 text-sm">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-wide ${badgeClasses}`}
+                      >
+                        {action}
+                      </span>
+                    </td>
                     <td className="px-5 py-3.5 font-mono text-[11px] text-muted-foreground">
                       {row.id}
                     </td>

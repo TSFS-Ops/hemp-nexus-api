@@ -122,19 +122,44 @@ export function AttentionPipeline() {
 
   const highCount = sorted.filter((i) => i.priority === "high").length;
 
+  const hasUrgent = highCount > 0;
+
   return (
-    <section className="bg-card border border-border shadow-sm rounded-xl overflow-hidden mb-8">
-      <div className="bg-muted/80 border-b border-border px-5 py-3 flex items-center justify-between">
+    <section
+      className={cn(
+        "border shadow-sm rounded-xl overflow-hidden mb-8 transition-colors",
+        hasUrgent
+          ? "bg-amber-50/40 border-amber-300/70 ring-1 ring-inset ring-amber-200/60"
+          : "bg-card border-border",
+      )}
+    >
+      <div
+        className={cn(
+          "border-b px-5 py-3 flex items-center justify-between",
+          hasUrgent
+            ? "bg-amber-100/70 border-amber-200"
+            : "bg-muted/80 border-border",
+        )}
+      >
         <div className="flex items-center gap-2">
-          <AlertCircle className="h-3.5 w-3.5 text-amber-600" strokeWidth={2} />
-          <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
+          <AlertCircle
+            className={cn(
+              "h-3.5 w-3.5",
+              hasUrgent ? "text-amber-700 motion-safe:animate-pulse" : "text-amber-600",
+            )}
+            strokeWidth={2}
+          />
+          <h2 className={cn(
+            "text-xs font-bold tracking-widest uppercase",
+            hasUrgent ? "text-amber-900" : "text-muted-foreground",
+          )}>
             Requires Your Attention
           </h2>
         </div>
         {sorted.length > 0 && (
           <div className="flex items-center gap-1.5">
             {highCount > 0 && (
-              <span className="bg-red-50 text-red-700 border border-red-200/60 text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide">
+              <span className="bg-red-100 text-red-800 border border-red-300 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide motion-safe:animate-pulse">
                 {highCount} urgent
               </span>
             )}
@@ -151,19 +176,26 @@ export function AttentionPipeline() {
         ) : sorted.length === 0 ? (
           <EmptyState />
         ) : (
-          <ul className="divide-y divide-border">
-            {sorted.map((item) => (
-              <li
-                key={item.id}
-                className="group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-muted rounded-md transition-colors"
-              >
+          <ul className="space-y-1.5">
+            {sorted.map((item) => {
+              const isHigh = item.priority === "high";
+              return (
+                <li
+                  key={item.id}
+                  className={cn(
+                    "group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md transition-all border shadow-sm",
+                    isHigh
+                      ? "bg-amber-50 border-amber-300 hover:bg-amber-100/70 hover:shadow-md"
+                      : "bg-card border-slate-200/70 hover:bg-muted hover:shadow-md",
+                  )}
+                >
                 {/* Priority dot */}
                 <span
                   aria-hidden
                   className={cn(
                     "shrink-0 w-2 h-2 rounded-full",
                     PRIORITY_DOT[item.priority],
-                    item.priority === "high" && "ring-2 ring-red-200",
+                    isHigh && "ring-2 ring-amber-300 motion-safe:animate-pulse",
                   )}
                   title={`${item.priority} priority`}
                 />
@@ -211,17 +243,21 @@ export function AttentionPipeline() {
                   </p>
                 </div>
 
-                {/* CTA */}
+                {/* CTA - high-priority items get a gentle pulsing ring to drive completion */}
                 <button
                   onClick={() => navigate(item.href)}
-                  className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))] shadow-sm transition-colors"
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))] shadow-sm transition-all",
+                    isHigh && "motion-safe:animate-pulse ring-2 ring-amber-300/70 hover:ring-amber-400 shadow-md",
+                  )}
                 >
                   <span className="hidden sm:inline">Review &amp; Seal</span>
                   <span className="sm:hidden">Review</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>

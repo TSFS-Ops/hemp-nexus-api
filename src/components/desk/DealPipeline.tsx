@@ -88,10 +88,12 @@ const LANE_META = [
 ] as const;
 
 // Tone-of-voice colour per lane - used for the subtle top accent and the stage pill.
-const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string }> = {
-  draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500" },
-  awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500" },
-  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-[hsl(var(--emerald))]" },
+// `tint` provides a soft column background so the white deal cards visibly "pop"
+// off the lane (Institutional Premium hierarchy: depth via tint + shadow, never flat).
+const LANE_ACCENT: Record<string, { bar: string; pill: string; dot: string; tint: string; ring: string }> = {
+  draft:    { bar: "bg-indigo-400/70",   pill: "text-indigo-700 bg-indigo-50",   dot: "bg-indigo-500", tint: "bg-slate-50/70",  ring: "ring-1 ring-inset ring-slate-200/70" },
+  awaiting: { bar: "bg-amber-400/70",    pill: "text-amber-700 bg-amber-50",    dot: "bg-amber-500",  tint: "bg-amber-50/40",  ring: "ring-1 ring-inset ring-amber-200/60" },
+  poi:      { bar: "bg-emerald-400/70",  pill: "text-[hsl(var(--emerald))] bg-[hsl(var(--emerald-muted))]", dot: "bg-[hsl(var(--emerald))]", tint: "bg-emerald-50/40", ring: "ring-1 ring-inset ring-emerald-200/60" },
 };
 const LANE_PILL_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -515,7 +517,11 @@ export function DealPipeline() {
           return (
             <div
               key={lane.id}
-              className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden"
+              className={cn(
+                "flex flex-col rounded-xl border border-border shadow-sm overflow-hidden",
+                accent.tint,
+                accent.ring,
+              )}
             >
               {/* Top accent bar - sets lane identity without shouting. */}
               <div className={cn("h-0.5 w-full", accent.bar)} />
@@ -573,9 +579,12 @@ export function DealPipeline() {
                         <LaneEmptyState />
                       </div>
                     ) : (
-                      <ul className="divide-y divide-border">
+                      <ul className="space-y-1.5">
                         {lane.deals.map((deal) => (
-                          <li key={deal.id}>
+                          <li
+                            key={deal.id}
+                            className="bg-card rounded-md border border-slate-200/70 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                          >
                             <DealDocumentCard
                               deal={deal}
                               laneId={lane.id}
@@ -841,7 +850,7 @@ function DealDocumentCard({
   return (
     <button
       onClick={onClick}
-      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
+      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
     >
       {/* Lane priority dot */}
       <span

@@ -344,7 +344,7 @@ export function ComplianceProfile() {
       {/* ── CARDS ─────────────────────────────────────────────── */}
       <div className="space-y-6">
         {/* Card 1 · Registered Identity */}
-        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
           <CardHeader index="01" title="Registered Identity" kicker="Statutory Record" />
           <div className="p-6">
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -369,7 +369,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 2 · Ownership (UBO) */}
-        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
           <CardHeader
             index="02"
             title="Ownership (UBO)"
@@ -440,7 +440,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 3 · Regulatory Evidence */}
-        <article className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
           <CardHeader index="03" title="Regulatory Evidence" kicker="Active Licences" />
           <div className="p-6">
             {docs.length === 0 ? (
@@ -626,15 +626,23 @@ function EmptyRow({
   onClick: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2">
-      <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 rounded-lg border border-amber-300/70 bg-amber-50/60 ring-1 ring-inset ring-amber-200/50 shadow-sm">
+      <div className="flex items-start gap-3 min-w-0">
+        <span
+          aria-hidden
+          className="shrink-0 mt-0.5 inline-flex items-center justify-center h-6 w-6 rounded-full bg-amber-100 border border-amber-300 text-amber-700"
+        >
+          <FileWarning className="h-3.5 w-3.5" strokeWidth={2} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-amber-900">{title}</p>
+          <p className="mt-1 text-xs text-amber-800/80 leading-snug">{hint}</p>
+        </div>
       </div>
       <button
         type="button"
         onClick={onClick}
-        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground text-sm font-medium shadow-sm transition-colors"
+        className="shrink-0 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-md ring-2 ring-amber-300/70 hover:ring-amber-400 motion-safe:animate-pulse transition-all"
       >
         {cta}
       </button>
