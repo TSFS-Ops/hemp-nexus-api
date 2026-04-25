@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,12 +50,18 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
-  const [attestError, setAttestError] = useState<{
-    message: string;
-    requestId?: string;
-    kind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
-  } | null>(null);
+  const [attestError, setAttestError] = useState<{ message: string; requestId?: string } | null>(null);
   const [refCopied, setRefCopied] = useState(false);
+  const attestErrorRef = useRef<HTMLDivElement>(null);
+  const attestButtonRef = useRef<HTMLButtonElement>(null);
+
+  // When an attestation error appears, move keyboard focus to the alert so
+  // assistive tech announces it AND the user can immediately Tab to "Retry".
+  useEffect(() => {
+    if (attestError && attestErrorRef.current) {
+      attestErrorRef.current.focus();
+    }
+  }, [attestError]);
 
   // All decision logic comes from consequenceState - no inline derivation
   const {
@@ -104,31 +110,19 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     } else {
       const baseMsg = result.error || "Failed to attest";
       const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
-      toast.error(toastMsg, {
-        duration: 8000,
-        action: result.requestId
-          ? {
-              label: "Copy Ref",
-              onClick: () => {
-                void handleCopyAttestRef(result.requestId);
-              },
-            }
-          : undefined,
-      });
-      setAttestError({ message: baseMsg, requestId: result.requestId, kind: result.errorKind });
+      toast.error(toastMsg, { duration: 8000 });
+      setAttestError({ message: baseMsg, requestId: result.requestId });
     }
   };
 
-  const handleCopyAttestRef = async (refId?: string) => {
-    const ref = refId ?? attestError?.requestId;
-    if (!ref) return;
+  const handleCopyAttestRef = async () => {
+    if (!attestError?.requestId) return;
     try {
-      await navigator.clipboard.writeText(ref);
+      await navigator.clipboard.writeText(attestError.requestId);
       setRefCopied(true);
-      toast.success("Reference ID copied");
       setTimeout(() => setRefCopied(false), 2000);
     } catch {
-      toast.error("Could not copy — please copy the Ref manually");
+      /* clipboard unavailable */
     }
   };
 
@@ -394,79 +388,83 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             </div>
             {attestError && (
               <div
+                ref={attestErrorRef}
                 role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+                aria-live="assertive"
+                aria-atomic="true"
+                tabIndex={-1}
+                id="attest-error"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2 outline-none focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:ring-offset-2"
               >
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-destructive">Attestation failed</p>
-                    <p className="text-destructive/90 break-words">{attestError.message}</p>
+                    <p className="text-destructive/90 break-words">
+                      {attestError.message}
+                      {attestError.requestId && (
+                        <>
+                          {" "}
+                          <span className="text-destructive/80">
+                            (Reference ID:{" "}
+                            <code className="font-mono text-[12px] break-all">
+                              {attestError.requestId}
+                            </code>
+                            ).
+                          </span>{" "}
+                          <span className="text-muted-foreground">
+                            This message will stay visible until you attest successfully.
+                          </span>
+                        </>
+                      )}
+                    </p>
                   </div>
                 </div>
                 {attestError.requestId && (
                   <div className="flex items-center justify-between gap-2 rounded border border-destructive/20 bg-background/60 px-2 py-1.5">
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground" id="attest-ref-label">
                         Reference ID
                       </p>
-                      <code className="font-mono text-[11px] break-all">{attestError.requestId}</code>
+                      <code className="font-mono text-[11px] break-all" aria-labelledby="attest-ref-label">
+                        {attestError.requestId}
+                      </code>
                     </div>
                     <button
                       type="button"
-                      onClick={() => { void handleCopyAttestRef(); }}
-                      className="shrink-0 text-xs text-primary hover:underline"
+                      onClick={handleCopyAttestRef}
+                      aria-label={
+                        refCopied
+                          ? "Reference ID copied to clipboard"
+                          : `Copy reference ID ${attestError.requestId} to clipboard`
+                      }
+                      className="shrink-0 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
                     >
                       {refCopied ? "Copied" : "Copy"}
                     </button>
                   </div>
                 )}
-                {(() => {
-                  const refSuffix = attestError.requestId ? ` with Ref ${attestError.requestId}` : "";
-                  let hint: string;
-                  switch (attestError.kind) {
-                    case "auth_required":
-                      hint = "Your session has expired. Please sign in again, then retry the attestation.";
-                      break;
-                    case "client_error":
-                      hint =
-                        "Please check the details above (name and confirmation) and try again. If you keep seeing this, contact support" +
-                        refSuffix +
-                        ".";
-                      break;
-                    case "server_error":
-                      hint =
-                        "This looks like a temporary problem on our side. Please retry in a moment — if it keeps failing, contact support" +
-                        refSuffix +
-                        ".";
-                      break;
-                    case "network_error":
-                      hint =
-                        "We couldn't reach the server. Check your connection and retry. If the issue persists, contact support" +
-                        refSuffix +
-                        ".";
-                      break;
-                    default:
-                      hint = attestError.requestId
-                        ? `Please include the Reference ID when reporting this issue to support.`
-                        : "If this keeps happening, please contact support.";
-                  }
-                  return (
-                    <p className="text-xs text-muted-foreground" data-testid="attest-error-hint">
-                      {hint}
-                    </p>
-                  );
-                })()}
+                <p className="text-xs text-muted-foreground">
+                  Please include the Reference ID when reporting this issue to support.
+                </p>
               </div>
             )}
             <Button
+              ref={attestButtonRef}
               onClick={handleAttest}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
+              aria-describedby={attestError ? "attest-error" : undefined}
+              aria-busy={attesting || undefined}
               className="w-full"
             >
-              {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Check className="h-4 w-4 mr-2" />
-              {attestError ? "Retry attestation" : "Attest"}
+              {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />}
+              <Check className="h-4 w-4 mr-2" aria-hidden="true" />
+              {attesting
+                ? "Submitting attestation…"
+                : attestError
+                ? "Retry attestation"
+                : "Attest"}
+              {attesting && <span className="sr-only">, please wait</span>}
             </Button>
           </div>
         );
