@@ -187,15 +187,23 @@ function ForensicTrace({ engagement }: { engagement: EngagementRow }) {
   const { data: dispatches = [] } = useQuery({
     queryKey: ["forensic-dispatches", engagement.id, receipt?.id],
     queryFn: async () => {
-      if (!receipt?.id) return [];
+      // Surface BOTH dispatch families so support sees the complete
+      // notification history, not just acceptance ones:
+      //   1. reference_id = receipt.id  → acceptance dispatches
+      //   2. reference_id = engagement.id → outreach / status-change dispatches
+      // Without (2) the panel silently hides outreach emails and "no
+      // dispatches" was previously misread as "the counterparty was never
+      // contacted" when in fact the outreach email had been sent.
+      const ids: string[] = [engagement.id];
+      if (receipt?.id) ids.push(receipt.id);
       const { data } = await supabase
         .from("notification_dispatches")
         .select("*")
-        .eq("reference_id", receipt.id)
+        .in("reference_id", ids)
         .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!receipt?.id,
+    enabled: true,
   });
 
   const { data: outreach = [] } = useQuery({
