@@ -144,6 +144,8 @@ let totalTests = 0;
 let passed = 0;
 let skipped = 0;
 
+// Pass 1: collect raw failures with classification metadata.
+const rawFailures = [];
 for (const suite of blob.testResults ?? []) {
   const file = suite.name || suite.testFilePath || "";
   for (const t of suite.assertionResults ?? []) {
@@ -153,18 +155,33 @@ for (const suite of blob.testResults ?? []) {
     if (t.status !== "failed") continue;
 
     const message = (t.failureMessages ?? []).join("\n");
-    const entry = {
+    rawFailures.push({
       file,
       title: t.fullName || t.title,
       message: message.slice(0, 800),
-    };
-    if (isUatFile(file) && isCredentialFailure(message)) {
-      preExistingUat.push(entry);
-    } else {
-      newFailures.push(entry);
-    }
+      isUat: isUatFile(file),
+      matchesCredSignature: isCredentialFailure(message),
+    });
   }
 }
+
+// Pass 2: any UAT file where at least one failure matches a known credential
+// signature is treated as a "broken setup" file — every failure in it is a
+// cascade of the same root cause and is classified pre-existing.
+const tainted = new Set(
+  rawFailures
+    .filter((f) => f.isUat && f.matchesCredSignature)
+    .map((f) => f.file),
+);
+
+for (const f of rawFailures) {
+  const isPreExisting =
+    f.isUat && (f.matchesCredSignature || tainted.has(f.file));
+  const entry = { file: f.file, title: f.title, message: f.message };
+  if (isPreExisting) preExistingUat.push(entry);
+  else newFailures.push(entry);
+}
+
 
 const summary = {
   totalTests,
