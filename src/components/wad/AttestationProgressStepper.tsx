@@ -417,7 +417,7 @@ export function AttestationProgressStepper({
                   <p className="text-sm font-medium truncate">{node.label}</p>
                   {node.isYou && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      You
+                      {t("wad.progress.node.you")}
                     </Badge>
                   )}
                   {node.state === "attested" && (
@@ -425,7 +425,7 @@ export function AttestationProgressStepper({
                       variant="outline"
                       className="text-[10px] px-1.5 py-0 border-green-500/40 text-green-700 dark:text-green-400"
                     >
-                      Attested
+                      {t("wad.signatories.attestedBadge")}
                     </Badge>
                   )}
                 </div>
