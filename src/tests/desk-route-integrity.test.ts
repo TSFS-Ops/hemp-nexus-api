@@ -134,17 +134,32 @@ function collectDeskLinks(): LinkRef[] {
   const files = walk(SRC_DIR);
   const refs: LinkRef[] = [];
 
-  // Capture three forms:
-  //   to="/desk/..."          (JSX attribute, single or double quotes)
-  //   to={`/desk/...`}        (template literal)
-  //   navigate("/desk/...")   (function call, single/double/backtick)
+  // Capture three forms used by react-router-dom for actual user-driven nav:
+  //   <Link to="/desk/...">          (JSX attribute, single or double quotes)
+  //   <Link to={`/desk/...`}>        (template literal)
+  //   navigate("/desk/...")          (imperative)
+  //
+  // Excluded by design (different semantics, not user-clickable links):
+  //   • <Navigate to="..."/>             — declarative redirect inside the
+  //     router tree itself; lives in pages/Desk.tsx and is defining behaviour,
+  //     not consuming it.
+  //   • <LegacyRedirect to="..."/>       — custom wrapper whose `to` prop is a
+  //     fallback label; the real destination is computed via `resolveTo`.
+  //   • The Desk router file itself (src/pages/Desk.tsx) — it DEFINES routes
+  //     and is allowed to reference its own forward targets.
   const patterns: Array<{ re: RegExp; group: number }> = [
-    { re: /\bto=["'](\/desk[^"']*)["']/g, group: 1 },
-    { re: /\bto=\{`(\/desk[^`]*)`\}/g, group: 1 },
+    // <Link to="...">  — anchored on `<Link ` to exclude <Navigate /<LegacyRedirect.
+    { re: /<Link\s+[^>]*\bto=["'](\/desk[^"']*)["']/g, group: 1 },
+    { re: /<Link\s+[^>]*\bto=\{`(\/desk[^`]*)`\}/g, group: 1 },
+    // navigate("/desk/...") — react-router useNavigate.
     { re: /\bnavigate\(\s*["'`](\/desk[^"'`]*)["'`]/g, group: 1 },
   ];
 
   for (const file of files) {
+    // Skip the Desk router file itself — it defines redirect targets that
+    // intentionally reference its own routes via <Navigate>.
+    if (file === DESK_FILE) continue;
+
     const src = readFileSync(file, "utf8");
     for (const { re, group } of patterns) {
       let m: RegExpExecArray | null;
