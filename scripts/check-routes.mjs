@@ -160,7 +160,13 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
 
     const parentSegments = stack
       .map((f) => f.path)
-      .filter((p) => p != null && p !== "");
+      // Skip parents with no path contribution: null (no-path frames),
+      // empty strings, and "*" wildcards. A `<Route path="*">` parent in
+      // React Router consumes no URL segment of its own — its children
+      // are reachable at the parent's path directly. We want
+      // `<Route path="discover">` nested under `<Route path="*">` inside
+      // the /desk shell to register as `/desk/discover`, not `/desk/*/discover`.
+      .filter((p) => p != null && p !== "" && p !== "*");
     const segments = path != null ? [...parentSegments, path] : parentSegments;
     const fullChild = composeSegments(segments);
     if (fullChild != null) {
