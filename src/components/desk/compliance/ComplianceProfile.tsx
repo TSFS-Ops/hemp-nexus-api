@@ -522,6 +522,68 @@ export function ComplianceProfile() {
           via the Without-a-Doubt attestation endpoint.
         </p>
       </footer>
+
+      {/* ── REQUEST DATA UPDATE · STEP-SPECIFIC PICKER ───────── */}
+      <Dialog open={updateOpen} onOpenChange={setUpdateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request a data update</DialogTitle>
+            <DialogDescription>
+              {gaps.length > 0
+                ? "Pick the area you want to update. Each link drops you straight onto the right Company Identity (KYB) sub-step."
+                : "Your profile is up to date. Open Company Identity to make discretionary edits."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ul className="mt-2 space-y-2">
+            {gaps.map((gap) => {
+              const Icon = gap.icon;
+              return (
+                <li key={gap.step}>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(gap.step)}
+                    className="w-full flex items-start gap-3 p-3 rounded-md border border-border bg-card text-left hover:bg-muted hover:border-foreground/20 transition-colors group"
+                  >
+                    <span className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                      <Icon className="h-4 w-4" strokeWidth={1.75} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground">
+                        {gap.title}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground leading-snug">
+                        {gap.description}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="h-4 w-4 mt-2 text-muted-foreground group-hover:text-foreground shrink-0"
+                      strokeWidth={1.75}
+                    />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <DialogFooter className="mt-2 sm:justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setUpdateOpen(false)}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => goToStep("entity")}
+              className="text-xs font-medium text-foreground underline underline-offset-4 hover:no-underline"
+            >
+              Open Company Identity anyway
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
