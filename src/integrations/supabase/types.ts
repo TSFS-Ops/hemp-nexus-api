@@ -4283,6 +4283,8 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deletion_reason: string | null
+          deletion_requested_at: string | null
           email: string
           full_name: string | null
           full_name_previous: string | null
@@ -4294,6 +4296,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deletion_reason?: string | null
+          deletion_requested_at?: string | null
           email: string
           full_name?: string | null
           full_name_previous?: string | null
@@ -4305,6 +4309,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deletion_reason?: string | null
+          deletion_requested_at?: string | null
           email?: string
           full_name?: string | null
           full_name_previous?: string | null
