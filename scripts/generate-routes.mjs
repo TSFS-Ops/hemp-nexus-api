@@ -22,14 +22,14 @@
  */
 
 import { writeFileSync } from "fs";
-import { collectRoutePatterns, loadRouteConstants, walk } from "./lib/collect-routes.mjs";
+import { collectRoutePatternsStrict, loadRouteConstants, walk } from "./lib/collect-routes.mjs";
 
 const OUT = "src/lib/routes.generated.ts";
 
 // ── Collect ────────────────────────────────────────────────────────────────
 const files = walk("src");
 const routeConsts = loadRouteConstants();
-const rawPatterns = [...collectRoutePatterns(files, routeConsts)];
+const rawPatterns = [...collectRoutePatternsStrict(files, routeConsts)];
 
 if (rawPatterns.length === 0) {
   console.error("[generate-routes] FATAL: no routes discovered. Refusing to emit empty union.");
