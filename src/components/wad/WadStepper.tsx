@@ -27,6 +27,11 @@ import {
   saveAttestError,
   clearAttestError,
 } from "@/lib/wad/attest-error-storage";
+import {
+  trackClientEvent,
+  CLIENT_ANALYTICS_EVENT_NAMES,
+  type CopyRefSurface,
+} from "@/lib/client-analytics";
 
 type Match = Tables<"matches">;
 
