@@ -27,6 +27,11 @@ import {
   saveAttestError,
   clearAttestError,
 } from "@/lib/wad/attest-error-storage";
+import {
+  trackClientEvent,
+  CLIENT_ANALYTICS_EVENT_NAMES,
+  type CopyRefSurface,
+} from "@/lib/client-analytics";
 
 type Match = Tables<"matches">;
 
@@ -159,7 +164,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           ? {
               label: "Copy Ref",
               onClick: () => {
-                void handleCopyAttestRef(result.requestId);
+                void handleCopyAttestRef(result.requestId, "toast");
               },
             }
           : undefined,
@@ -168,16 +173,43 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     }
   };
 
-  const handleCopyAttestRef = async (refId?: string) => {
+  // `surface` lets analytics distinguish the inline alert button from the
+  // sonner toast action so we can compare conversion of the two surfaces.
+  const handleCopyAttestRef = async (
+    refId?: string,
+    surface: CopyRefSurface = "alert",
+  ) => {
     const ref = refId ?? attestError?.requestId;
-    if (!ref) return;
+    if (!ref) {
+      // We still emit so we can spot UX bugs where users mash a Copy
+      // button that has no value to copy (e.g. error cleared mid-click).
+      trackClientEvent({
+        name: CLIENT_ANALYTICS_EVENT_NAMES.COPY_REF,
+        payload: { surface, outcome: "no_ref", hasRef: false, context: "wad_attest_error" },
+      });
+      return;
+    }
     try {
       await navigator.clipboard.writeText(ref);
       setRefCopied(true);
       toast.success("Reference ID copied");
       setTimeout(() => setRefCopied(false), 2000);
-    } catch {
+      trackClientEvent({
+        name: CLIENT_ANALYTICS_EVENT_NAMES.COPY_REF,
+        payload: { surface, outcome: "success", hasRef: true, context: "wad_attest_error" },
+      });
+    } catch (err) {
       toast.error("Could not copy — please copy the Ref manually");
+      trackClientEvent({
+        name: CLIENT_ANALYTICS_EVENT_NAMES.COPY_REF,
+        payload: {
+          surface,
+          outcome: "denied",
+          hasRef: true,
+          context: "wad_attest_error",
+          reason: err instanceof Error ? err.name : "unknown",
+        },
+      });
     }
   };
 
@@ -468,7 +500,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     </div>
                     <button
                       type="button"
-                      onClick={() => { void handleCopyAttestRef(); }}
+                      onClick={() => { void handleCopyAttestRef(undefined, "alert"); }}
                       className="shrink-0 text-xs text-primary hover:underline"
                     >
                       {refCopied ? "Copied" : "Copy"}
