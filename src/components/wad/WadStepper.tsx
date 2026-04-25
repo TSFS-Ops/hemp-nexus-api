@@ -93,6 +93,30 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     }
   }, [hasAttested, attestError, wad.id]);
 
+  // Focus management for the attestation error.
+  // ---------------------------------------------
+  // When a new attest error appears we move focus to the error region so:
+  //   1. Screen-reader users hear the alert immediately even if their SR
+  //      doesn't announce role="alert" reliably (some Linux SRs ignore
+  //      alerts that mount before the user has interacted).
+  //   2. Sighted keyboard users can immediately Tab forward to the
+  //      "Copy Ref" / "Retry" controls without hunting back up the page.
+  // We deliberately key the effect on (requestId || message) rather than
+  // the whole object reference, so re-renders that don't change the error
+  // identity (e.g. the "you" badge updating) don't steal focus repeatedly.
+  const attestErrorRef = useRef<HTMLDivElement | null>(null);
+  const errorIdentity = attestError
+    ? `${attestError.requestId ?? ""}::${attestError.message}`
+    : null;
+  useEffect(() => {
+    if (!errorIdentity) return;
+    // Allow the alert to mount before focusing.
+    const node = attestErrorRef.current;
+    if (node && typeof node.focus === "function") {
+      node.focus();
+    }
+  }, [errorIdentity]);
+
   const getStatusBadge = () => {
     switch (uiStatus) {
       case "draft":
