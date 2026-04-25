@@ -19,6 +19,7 @@ import {
   Award,
   Eye,
   EyeOff,
+  ScrollText,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
