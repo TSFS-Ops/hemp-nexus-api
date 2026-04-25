@@ -15,6 +15,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { TestModeBanner } from "@/components/TestModeBanner";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 import { SessionExpiredModal } from "@/components/SessionExpiredModal";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
