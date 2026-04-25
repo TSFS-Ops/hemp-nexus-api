@@ -89,7 +89,7 @@ export function BulkConfirmDialog({
                   <p className="text-sm text-muted-foreground">
                     Processing {matchCount} match{matchCount > 1 ? "es" : ""} sequentially. Please do not close this dialogue.
                   </p>
-                  <Progress value={undefined} className="h-2 animate-pulse" />
+                  <Progress value={undefined} className="h-2 motion-safe:animate-pulse" />
                   <p className="text-xs text-muted-foreground">
                     Each match is confirmed individually to ensure accurate credit deductions. This may take a moment.
                   </p>
