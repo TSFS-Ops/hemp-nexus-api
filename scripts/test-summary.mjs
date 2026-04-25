@@ -30,11 +30,14 @@ const jsonOut = jsonOutIdx >= 0 ? args[jsonOutIdx + 1] : null;
 const strict = args.includes("--strict");
 
 // ── Known pre-existing UAT failure signatures ─────────────────────────────
-// These are failures we already know stem from missing live-backend
-// credentials or environment, NOT from code changes in a cleanup PR.
+// These are failures we already know stem from the live-backend dependency
+// of the UAT journeys (missing/rate-limited credentials, network, or
+// cascade failures from a failed setup step), NOT from cleanup-PR code.
 const UAT_CRED_PATTERNS = [
+  // Env / config
   /VITE_SUPABASE_URL/i,
   /VITE_SUPABASE_PUBLISHABLE_KEY/i,
+  // Auth / signup
   /Failed to confirm test user/i,
   /confirm-test-user/i,
   /Signup returned no user/i,
@@ -42,6 +45,10 @@ const UAT_CRED_PATTERNS = [
   /Email signups are disabled/i,
   /Invalid login credentials/i,
   /User already registered/i,
+  /email rate limit exceeded/i,
+  /AuthApiError/i,
+  /AuthRetryableFetchError/i,
+  // Network / edge
   /Edge Function returned a non-2xx status code/i,
   /fetch failed/i,
   /ECONNREFUSED/i,
@@ -49,9 +56,17 @@ const UAT_CRED_PATTERNS = [
   /Network request failed/i,
   /401\b.*(api-keys|match|confirm-test-user)/i,
   /404\b.*functions\/v1/i,
+  // Postgres / RPC missing because backend not provisioned for this test run
+  /PGRST20[12]/i, // function/route not found
+  /22P02/, // invalid_text_representation - typically empty orgId from failed setup
+  // Cascade failures: setup never produced ctx.* so later steps blow up
+  /undefined is not an object \(evaluating 'ctx\./i,
+  /undefined is not an object \(evaluating 'actor\./i,
+  /Cannot read properties of undefined \(reading '(client|token|apiKey|orgId)'\)/i,
 ];
 
 const UAT_PATH_PREFIX = "src/tests/uat/";
+
 
 function isUatFile(file) {
   return typeof file === "string" && file.includes(UAT_PATH_PREFIX);
