@@ -22,6 +22,7 @@ import {
   type ConsequenceState,
 } from "@/lib/modules/consequence";
 import { AttestationProgressStepper } from "./AttestationProgressStepper";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Match = Tables<"matches">;
 
