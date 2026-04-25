@@ -22,6 +22,11 @@ import {
   type ConsequenceState,
 } from "@/lib/modules/consequence";
 import { AttestationProgressStepper } from "./AttestationProgressStepper";
+import {
+  loadAttestError,
+  saveAttestError,
+  clearAttestError,
+} from "@/lib/wad/attest-error-storage";
 
 type Match = Tables<"matches">;
 
