@@ -15,7 +15,7 @@ import { en } from "./en";
 export const DEFAULT_LOCALE = "en" as const;
 
 export type Catalog = typeof en;
-export type TranslationKey = keyof Catalog;
+export type TranslationKey = Extract<keyof Catalog, string>;
 
 export const CATALOGS = {
   en,
