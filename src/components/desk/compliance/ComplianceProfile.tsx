@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Check, FileWarning, FileText, Loader2, Users, ChevronRight } from "lucide-react";
+import { Building2, Check, FileWarning, FileText, Loader2, Users, ChevronRight, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg } from "@/hooks/use-user-org";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
