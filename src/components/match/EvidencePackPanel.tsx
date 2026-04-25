@@ -86,6 +86,8 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     try {
       setLoading(true);
       setVerificationResult(null);
+      setPreviewHtml(null);
+      setPreviewOpen(false);
 
       const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
         method: "GET",
