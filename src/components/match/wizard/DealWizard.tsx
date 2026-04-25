@@ -144,19 +144,26 @@ export function DealWizard({
     label: "Proof of Intent",
     description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit (R10). Non-binding, irreversible, fully audited.",
     complete: poiComplete && engagementAccepted,
-    locked: !commercialTermsComplete // POI gate is commercial-only; supporting evidence handled via waiver flow
+    locked: !commercialTermsComplete,
+    lockedReason: !commercialTermsComplete ? "Complete the required commercial terms (commodity, parties, quantity, price) on the Match step before generating Proof of Intent." : undefined,
   }, {
     id: "wad",
     label: "Signed Deal",
     description: poiHoldActive ? "Locked. Trading partner must accept before you can proceed to Signed Deal." : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
     complete: wadComplete,
-    locked: !poiComplete || poiHoldActive // HOLD POINT: locked until engagement accepted
+    locked: !poiComplete || poiHoldActive,
+    lockedReason: !poiComplete
+      ? "Generate a Proof of Intent first. Signed Deal compiles the 9-gate evidence bundle on top of a sealed POI."
+      : poiHoldActive
+        ? "The trading partner has been notified but has not yet accepted. Signed Deal unlocks when they engage."
+        : undefined,
   }, {
     id: "evidence",
     label: "Evidence Pack",
     description: "Generate a SHA-256 hashed, tamper-evident evidence bundle for regulatory finality.",
     complete: evidenceComplete,
-    locked: !wadComplete // Strict: locked until WaD sealed
+    locked: !wadComplete,
+    lockedReason: !wadComplete ? "Seal the Signed Deal first. Evidence Pack bundles the sealed WaD and full audit trail into the final regulatory archive." : undefined,
   }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted, commercialTermsComplete]);
 
   // Strict landing policy (Option B):
