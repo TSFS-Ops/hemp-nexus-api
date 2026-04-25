@@ -156,8 +156,8 @@ export default {
           "50%": { opacity: "0.6" },
         },
         "step-pulse": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.45)" },
-          "50%":      { boxShadow: "0 0 0 8px hsl(var(--primary) / 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.18)" },
+          "50%":      { boxShadow: "0 0 0 4px hsl(var(--primary) / 0)" },
         },
       },
       animation: {
