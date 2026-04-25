@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { routeTo } from "@/lib/routes.generated";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -576,7 +577,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <p className="text-sm font-medium">Verification required before issuing a Proof of Intent</p>
                   <p className="text-xs text-muted-foreground">{legitimacy.message}</p>
                   <Link
-                    to="/desk/settings/company?step=entity"
+                    to={routeTo("/desk/settings/company", { query: { step: "entity" } })}
                     className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                   >
                     <ArrowRight className="h-3 w-3" />
