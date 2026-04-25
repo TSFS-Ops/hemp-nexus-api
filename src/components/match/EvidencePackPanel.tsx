@@ -64,6 +64,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const [loading, setLoading] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
