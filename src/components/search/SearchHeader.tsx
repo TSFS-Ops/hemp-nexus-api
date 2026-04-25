@@ -30,7 +30,7 @@ export function SearchHeader({
   onSideChange,
 }: SearchHeaderProps) {
   return (
-    <Card>
+    <Card className="border-slate-200 shadow-md hover:shadow-lg transition-shadow">
       <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -41,42 +41,53 @@ export function SearchHeader({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
-        {/* Side toggle, always visible so user can set/change role */}
+        {/* Side toggle, always visible so user can set/change role.
+            Styled as a deeply interactive segmented control: the active
+            side gets a strong filled background and shadow so the
+            persona choice is unmistakable. */}
         {onSideChange && (
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               I am a
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div
+              role="tablist"
+              aria-label="Trade persona"
+              className="inline-flex w-full p-1 rounded-lg bg-slate-100 border border-slate-200 shadow-inner"
+            >
               <button
                 type="button"
+                role="tab"
+                aria-selected={side === "buyer"}
                 disabled={isSearching}
                 onClick={() => onSideChange("buyer")}
                 className={cn(
-                  "h-10 rounded-lg text-xs font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0",
+                  "flex-1 h-10 rounded-md text-xs font-semibold transition-all duration-200 flex flex-col items-center justify-center gap-0",
                   side === "buyer"
-                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
-                    : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/50",
+                    ? "bg-card text-slate-900 shadow-md ring-1 ring-slate-300"
+                    : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/40",
                   isSearching && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <span>Buyer</span>
-                <span className="text-[9px] font-normal opacity-60">Looking to purchase</span>
+                <span className="text-[9px] font-normal opacity-70">Looking to purchase</span>
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={side === "seller"}
                 disabled={isSearching}
                 onClick={() => onSideChange("seller")}
                 className={cn(
-                  "h-10 rounded-lg text-xs font-semibold transition-all duration-200 border flex flex-col items-center justify-center gap-0",
+                  "flex-1 h-10 rounded-md text-xs font-semibold transition-all duration-200 flex flex-col items-center justify-center gap-0",
                   side === "seller"
-                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
-                    : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/50",
+                    ? "bg-card text-slate-900 shadow-md ring-1 ring-slate-300"
+                    : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/40",
                   isSearching && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <span>Seller</span>
-                <span className="text-[9px] font-normal opacity-60">Looking to supply</span>
+                <span className="text-[9px] font-normal opacity-70">Looking to supply</span>
               </button>
             </div>
           </div>
