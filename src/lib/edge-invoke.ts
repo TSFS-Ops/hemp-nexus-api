@@ -407,37 +407,56 @@ export async function fetchEdgeFunction<T = unknown>(
     }
   }
 
-  const res = await fetch(url, {
-    ...rest,
-    headers: finalHeaders,
-    body: serialisedBody,
-  });
+  const httpMethod = (rest.method || (serialisedBody ? "POST" : "GET")).toUpperCase();
+  const isIdempotent = httpMethod === "GET" || httpMethod === "HEAD";
 
-  if (!res.ok) {
-    let serverBody = "";
-    try {
-      serverBody = await res.text();
-    } catch {
-      /* ignore */
+  const doFetch = async (): Promise<T> => {
+    const res = await fetch(url, {
+      ...rest,
+      headers: finalHeaders,
+      body: serialisedBody,
+    });
+
+    if (!res.ok) {
+      let serverBody = "";
+      try {
+        serverBody = await res.text();
+      } catch {
+        /* ignore */
+      }
+      const requestId = extractRequestId(res.headers, serverBody);
+      throw translateError(
+        res.status,
+        serverBody,
+        label ? `Could not ${label}` : `Request to ${trimmed} failed`,
+        requestId,
+        metricsContext
+      );
     }
-    const requestId = extractRequestId(res.headers, serverBody);
-    throw translateError(
-      res.status,
-      serverBody,
-      label ? `Could not ${label}` : `Request to ${trimmed} failed`,
-      requestId,
-      metricsContext
-    );
-  }
 
-  // Some functions return 204 No Content
-  if (res.status === 204) return undefined as unknown as T;
+    // Some functions return 204 No Content
+    if (res.status === 204) return undefined as unknown as T;
 
-  const text = await res.text();
-  if (!text) return undefined as unknown as T;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return text as unknown as T;
-  }
+    const text = await res.text();
+    if (!text) return undefined as unknown as T;
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return text as unknown as T;
+    }
+  };
+
+  if (!isIdempotent) return doFetch();
+
+  return withTransientRetry(doFetch, {
+    retries: 2,
+    baseDelayMs: 200,
+    isTransient: (err) => {
+      if (isTransientFetchError(err)) return true;
+      if (err instanceof EdgeInvokeError) {
+        return isTransientServerResponse(err.status, err.serverBody || "");
+      }
+      return false;
+    },
+  });
 }
