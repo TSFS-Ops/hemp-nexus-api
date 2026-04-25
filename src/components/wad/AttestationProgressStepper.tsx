@@ -2,6 +2,7 @@ import { CheckCircle2, Clock, Lock, ShieldCheck, XCircle, type LucideIcon } from
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ConsequenceState, WadRecord } from "@/lib/modules/consequence";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 interface AttestationProgressStepperProps {
   wad: WadRecord;
