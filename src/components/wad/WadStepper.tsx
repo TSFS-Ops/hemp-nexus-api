@@ -50,7 +50,11 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
-  const [attestError, setAttestError] = useState<{ message: string; requestId?: string } | null>(null);
+  const [attestError, setAttestError] = useState<{
+    message: string;
+    requestId?: string;
+    kind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
+  } | null>(null);
   const [refCopied, setRefCopied] = useState(false);
 
   // All decision logic comes from consequenceState - no inline derivation
