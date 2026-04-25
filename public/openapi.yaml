@@ -994,9 +994,12 @@ paths:
                       helperText: "You'll be the first to attest. The other party still needs to attest before this deal can be sealed."
                       viewerRole: buyer_signatory
                       hasAttested: false
+                      viewerAttestedAt: null
                       attestations:
                         buyerAttested: false
                         sellerAttested: false
+                        buyerAttestedAt: null
+                        sellerAttestedAt: null
                         total: 0
                       nextAction: attest
                     request_id: "550e8400-e29b-41d4-a716-446655440000"
