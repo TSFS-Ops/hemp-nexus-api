@@ -96,7 +96,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
 
   const handleAttest = async () => {
     if (!attestedName.trim() || !attestConfirmed) {
-      toast.error(!attestedName.trim() ? "Please enter your name" : "Please confirm the attestation statement");
+      toast.error(!attestedName.trim() ? t("wad.attest.toast.nameRequired") : t("wad.attest.toast.confirmRequired"));
       return;
     }
 
