@@ -1054,9 +1054,42 @@ Deno.serve(async (req) => {
       let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
       let y = PAGE_H - MARGIN;
 
+      // pdf-lib's StandardFonts (Helvetica/Courier) only support the WinAnsi
+      // (CP1252) glyph set. Any character outside that range — emoji, smart
+      // quotes, em/en dashes, ellipsis, accented Unicode from user content —
+      // will throw "WinAnsi cannot encode" mid-render and surface to the user
+      // as "An internal error occurred". Sanitise every string before drawing.
+      const safe = (input: unknown): string => {
+        if (input === null || input === undefined) return "";
+        const str = String(input);
+        const replacements: Record<string, string> = {
+          "\u2013": "-", "\u2014": "-",            // – —
+          "\u2018": "'", "\u2019": "'", "\u201A": "'", "\u201B": "'",
+          "\u201C": '"', "\u201D": '"', "\u201E": '"', "\u201F": '"',
+          "\u2026": "...",                           // …
+          "\u2022": "*", "\u00B7": "*",            // • ·
+          "\u26A0": "[!]", "\u26A0\uFE0F": "[!]",   // ⚠
+          "\u2705": "[OK]", "\u2713": "[OK]",       // ✅ ✓
+          "\u274C": "[X]", "\u2717": "[X]",         // ❌ ✗
+          "\u2192": "->", "\u2190": "<-",            // → ←
+          "\u00A0": " ",                              // NBSP
+        };
+        let out = "";
+        for (const ch of str) {
+          if (replacements[ch] !== undefined) { out += replacements[ch]; continue; }
+          const code = ch.codePointAt(0) ?? 0;
+          // Keep printable ASCII + Latin-1 supplement (covered by WinAnsi)
+          if (code <= 0x7E && code >= 0x20) { out += ch; continue; }
+          if (code >= 0xA1 && code <= 0xFF) { out += ch; continue; }
+          if (ch === "\n" || ch === "\t") { out += " "; continue; }
+          out += "?"; // fallback for any other unsupported codepoint
+        }
+        return out;
+      };
+
       // Utility: draw text with wrapping, returns new y
       const drawWrapped = (
-        text: string,
+        rawText: string,
         x: number,
         startY: number,
         maxW: number,
@@ -1065,6 +1098,7 @@ Deno.serve(async (req) => {
         color: any = rgb(0.15, 0.15, 0.15),
         lineH = SMALL_LINE_H
       ): number => {
+        const text = safe(rawText);
         const words = text.split(" ");
         let line = "";
         let cy = startY;
@@ -1105,7 +1139,7 @@ Deno.serve(async (req) => {
           thickness: 0.5,
           color: grayscale(0.7),
         });
-        p.drawText(`Generated: ${generatedAt}`, {
+        p.drawText(safe(`Generated: ${generatedAt}`), {
           x: MARGIN,
           y: footerY,
           size: 7,
@@ -1135,7 +1169,7 @@ Deno.serve(async (req) => {
           color: grayscale(0.8),
         });
         y -= LINE_H;
-        page.drawText(label, {
+        page.drawText(safe(label), {
           x: MARGIN,
           y,
           size: 12,
@@ -1151,7 +1185,7 @@ Deno.serve(async (req) => {
           page = pdfDoc.addPage([PAGE_W, PAGE_H]);
           y = PAGE_H - MARGIN;
         }
-        page.drawText(label, {
+        page.drawText(safe(label), {
           x: MARGIN,
           y,
           size: 9,
@@ -1217,14 +1251,14 @@ Deno.serve(async (req) => {
           height: 32,
           color: rgb(0.98, 0.85, 0.4),
         });
-        page.drawText("⚠ TEST MODE — DEMO GRADE ONLY", {
+        page.drawText(safe("\u26A0 TEST MODE \u2014 DEMO GRADE ONLY"), {
           x: MARGIN,
           y: y + 14,
           size: 11,
           font: helveticaBold,
           color: rgb(0.4, 0.2, 0),
         });
-        page.drawText(`Issued without: ${bypassedNames}. Not contractually durable.`, {
+        page.drawText(safe(`Issued without: ${bypassedNames}. Not contractually durable.`), {
           x: MARGIN,
           y: y + 2,
           size: 8,

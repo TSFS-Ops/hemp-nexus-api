@@ -616,9 +616,12 @@ Deno.serve(async (req) => {
       totalMs: Date.now() - startMs,
     });
 
-    // Graceful degradation: if it's a timeout or internal error, return a user-friendly response
+    // Graceful degradation: if it's a timeout or internal error, return a user-friendly response.
+    // NOTE: errorResponse signature is (error, requestId, headers) — passing them in any other
+    // order strips the CORS headers off the response, which causes the browser to surface the
+    // server-side error as an opaque "Failed to fetch" instead of the real 4xx/5xx body.
     if (error instanceof ApiException) {
-      return errorResponse(error, headers, requestId);
+      return errorResponse(error, requestId, headers);
     }
 
     // For unexpected errors, return a polite degradation message
