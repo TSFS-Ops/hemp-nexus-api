@@ -102,8 +102,11 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
   const stack = []; // each frame: { path: string|null, depth: number, selfClosed: bool }
 
   // Tokeniser: walk the source matching either an opening Route tag or a
-  // closing </Route>. We carry along the current index.
-  const TAG_RE = /<Route\b([^>]*?)(\/?)>|<\/Route\s*>/g;
+  // closing </Route>. We use a greedy [^>]* attribute body and then inspect
+  // the trailing character to decide self-closing vs container, because a
+  // non-greedy match would silently treat self-closing tags as containers
+  // and corrupt the parent stack.
+  const TAG_RE = /<Route\b([^>]*)>|<\/Route\s*>/g;
   let m;
   while ((m = TAG_RE.exec(src)) !== null) {
     const isClose = m[0].startsWith("</");
@@ -111,8 +114,9 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
       stack.pop();
       continue;
     }
-    const attrs = m[1];
-    const selfClosing = m[2] === "/";
+    let attrs = m[1];
+    const selfClosing = attrs.trimEnd().endsWith("/");
+    if (selfClosing) attrs = attrs.trimEnd().slice(0, -1);
     let path = null;
     const litMatch = attrs.match(/\bpath\s*=\s*"([^"]+)"/);
     const constMatch = attrs.match(/\bpath\s*=\s*\{ROUTES\.(\w+)\}/);
