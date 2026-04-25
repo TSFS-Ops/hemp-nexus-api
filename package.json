@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check:drift": "node scripts/check-drift.mjs",
+    "check:routes": "node scripts/check-routes.mjs",
     "test:summary": "node scripts/test-summary.mjs",
     "test:summary:strict": "node scripts/test-summary.mjs --strict"
   },
