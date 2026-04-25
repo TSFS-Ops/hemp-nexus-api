@@ -50,6 +50,8 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
+  const [attestError, setAttestError] = useState<{ message: string; requestId?: string } | null>(null);
+  const [refCopied, setRefCopied] = useState(false);
 
   // All decision logic comes from consequenceState - no inline derivation
   const {
@@ -86,15 +88,31 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     }
 
     setAttesting(true);
+    setAttestError(null);
     const role = resolveAttestationRole(userOrgId, wad.buyer_org_id, wad.seller_org_id);
     const result = await submitAttestation(wad.id, attestedName, role);
     setAttesting(false);
 
     if (result.success) {
       toast.success("Attestation recorded");
+      setAttestError(null);
       onUpdate();
     } else {
-      toast.error(result.error || "Failed to attest");
+      const baseMsg = result.error || "Failed to attest";
+      const toastMsg = result.requestId ? `${baseMsg} (Ref: ${result.requestId})` : baseMsg;
+      toast.error(toastMsg, { duration: 8000 });
+      setAttestError({ message: baseMsg, requestId: result.requestId });
+    }
+  };
+
+  const handleCopyAttestRef = async () => {
+    if (!attestError?.requestId) return;
+    try {
+      await navigator.clipboard.writeText(attestError.requestId);
+      setRefCopied(true);
+      setTimeout(() => setRefCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
     }
   };
 
@@ -318,63 +336,16 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         }
 
         if (!canAttest) {
-          // Status-specific "can't attest" copy so witnesses/observers see why,
-          // not just the generic "buyer/seller signatories" line.
-          const notAvailableCopy: Record<string, { title: string; body: string }> = {
-            draft: {
-              title: "Attestations not yet open",
-              body: "This Signed Deal is still in draft. Once it moves to Awaiting attestations, the buyer and seller signatories can attest here.",
-            },
-            awaiting_attestations: {
-              title: "Awaiting buyer & seller attestations",
-              body: "Only the nominated buyer and seller signatories for this trade can attest. You're viewing as a witness/observer.",
-            },
-            sealed: {
-              title: "Signed Deal is sealed",
-              body: "All required attestations are in place and the deal has been sealed. No further attestations are needed.",
-            },
-            revoked: {
-              title: "Signed Deal revoked",
-              body: "This Signed Deal has been revoked, so attestations are no longer accepted.",
-            },
-            superseded: {
-              title: "Superseded by a newer Signed Deal",
-              body: "A newer Signed Deal has replaced this one. Attest on the active deal instead.",
-            },
-          };
-          const copy =
-            notAvailableCopy[wad.status] ?? {
-              title: "Attestation not available",
-              body: "Only buyer and seller signatories can attest on this Signed Deal.",
-            };
           return (
             <div className="text-center py-6">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="font-medium">{copy.title}</p>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                {copy.body}
+              <p className="font-medium">Attestation not available</p>
+              <p className="text-sm text-muted-foreground">
+                Only buyer and seller signatories can attest on this Signed Deal.
               </p>
             </div>
           );
         }
-
-        // Status-specific button label + helper text for the active attester.
-        const attestCopy: Record<string, { button: string; helper: string }> = {
-          draft: {
-            button: "Attest as first signatory",
-            helper: "You'll be the first to attest. The other party still needs to attest before the deal can be sealed.",
-          },
-          awaiting_attestations: {
-            button: "Attest & advance to seal",
-            helper: "The other signatory has already attested. Your attestation will move this deal to Ready to seal.",
-          },
-        };
-        const otherAttested =
-          (attestations.buyerAttested && userOrgId !== wad.buyer_org_id) ||
-          (attestations.sellerAttested && userOrgId !== wad.seller_org_id);
-        const activeCopy =
-          attestCopy[wad.status] ??
-          (otherAttested ? attestCopy.awaiting_attestations : attestCopy.draft);
 
         return (
           <div className="space-y-4">
@@ -405,6 +376,40 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                 </Label>
               </div>
             </div>
+            {attestError && (
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-destructive">Attestation failed</p>
+                    <p className="text-destructive/90 break-words">{attestError.message}</p>
+                  </div>
+                </div>
+                {attestError.requestId && (
+                  <div className="flex items-center justify-between gap-2 rounded border border-destructive/20 bg-background/60 px-2 py-1.5">
+                    <div className="min-w-0">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        Reference ID
+                      </p>
+                      <code className="font-mono text-[11px] break-all">{attestError.requestId}</code>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyAttestRef}
+                      className="shrink-0 text-xs text-primary hover:underline"
+                    >
+                      {refCopied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Please include the Reference ID when reporting this issue to support.
+                </p>
+              </div>
+            )}
             <Button
               onClick={handleAttest}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
@@ -412,13 +417,9 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             >
               {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <Check className="h-4 w-4 mr-2" />
-              {activeCopy.button}
+              {attestError ? "Retry attestation" : "Attest"}
             </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              {activeCopy.helper}
-            </p>
           </div>
-
         );
 
       case "certificate":

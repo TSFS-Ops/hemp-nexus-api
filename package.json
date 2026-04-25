@@ -5,12 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run check:wad-statuses && vite build",
-    "build:dev": "npm run check:wad-statuses && vite build --mode development",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check:drift": "node scripts/check-drift.mjs",
-    "check:wad-statuses": "node scripts/check-wad-statuses.mjs"
+    "check:drift": "node scripts/check-drift.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

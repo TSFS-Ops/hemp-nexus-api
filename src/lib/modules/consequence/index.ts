@@ -8,7 +8,7 @@
  * - Async orchestration (API calls) lives here
  */
 
-import { apiFetch, AuthRequiredError } from "@/lib/api-client";
+import { apiFetch, ApiError, AuthRequiredError } from "@/lib/api-client";
 import * as WadState from "@/lib/wad-state";
 
 // Re-export all pure logic and types
@@ -103,6 +103,7 @@ export async function submitAttestation(
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to submit attestation",
+      requestId: err instanceof ApiError ? err.requestId ?? undefined : undefined,
     };
   }
 }
