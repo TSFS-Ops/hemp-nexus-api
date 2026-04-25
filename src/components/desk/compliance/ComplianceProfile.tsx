@@ -9,7 +9,7 @@
  *   - kyc_documents         → uploaded regulatory evidence
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, Check, FileWarning, FileText, Loader2, Users, ChevronRight, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
