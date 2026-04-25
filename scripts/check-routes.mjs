@@ -99,19 +99,19 @@ function loadRouteConstants() {
  */
 function extractRoutesFromSource(src, prefix, routeConsts) {
   const patterns = new Set();
-  // Flat extraction: every literal `<Route path="...">` (and the constant
-  // form `<Route path={ROUTES.X}>`) anywhere in the file becomes a
-  // registered pattern. We deliberately do NOT try to compose nested
-  // parent/child paths — Routes nested inside `element={<Outer><Routes>…`
-  // expressions make full composition fragile, and a flat scan covers
-  // every legitimate URL at the cost of also accepting some non-existent
-  // permutations (e.g. `/desk/company` even though the real path is
-  // `/desk/settings/company`). The guard's purpose is to catch *typos*
-  // in CTAs — `/desk/initiate`, `/desk/setings/company` — and a flat
-  // scan does that without false positives on real, working links.
+  // 1. Flat extraction: every literal `<Route path="...">` (and the
+  //    constant form `<Route path={ROUTES.X}>`) anywhere in the file
+  //    becomes a registered pattern. We do not try to fully compose
+  //    arbitrarily nested parent/child paths because Routes nested inside
+  //    `element={<Outer><Routes>…` expressions make full composition
+  //    fragile. A flat scan covers every legitimate URL at the cost of
+  //    also accepting some non-existent permutations (e.g. `/desk/company`
+  //    even though the real path is `/desk/settings/company`). The guard's
+  //    purpose is catching link *typos* like `/desk/initiate`, not policing
+  //    route definitions.
   const LIT_RE = /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"/g;
   const CONST_RE = /<Route\b[^>]*?\bpath\s*=\s*\{ROUTES\.(\w+)\}/g;
-
+  const flat = [];
   for (const re of [LIT_RE, CONST_RE]) {
     re.lastIndex = 0;
     let m;
@@ -119,6 +119,28 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
       const raw = re === LIT_RE ? m[1] : routeConsts.get(m[1]);
       if (!raw) continue;
       patterns.add(joinRoute(prefix, raw));
+      flat.push(raw);
+    }
+  }
+
+  // 2. One-level composition for direct parent→child JSX nesting (i.e.
+  //    children that are siblings of `element={...}`, NOT children buried
+  //    inside it). Catches the common `<Route path="settings"><Route
+  //    path="company" /></Route>` pattern used by tabbed sub-views like
+  //    /desk/settings/company.
+  const NESTED_RE =
+    /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"[^>]*>([\s\S]*?)<\/Route\s*>/g;
+  let m;
+  while ((m = NESTED_RE.exec(src)) !== null) {
+    const parent = m[1];
+    const body = m[2];
+    const childRe = /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"/g;
+    let cm;
+    while ((cm = childRe.exec(body)) !== null) {
+      const child = cm[1];
+      if (child.startsWith("/")) continue; // absolute children replace, not append
+      const composed = `${parent.replace(/\/+$/, "")}/${child}`;
+      patterns.add(joinRoute(prefix, composed));
     }
   }
   return patterns;
