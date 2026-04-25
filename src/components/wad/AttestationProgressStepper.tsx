@@ -376,7 +376,7 @@ export function AttestationProgressStepper({
           const accessibleName = [
             node.label,
             node.party,
-            node.isYou ? "(you)" : null,
+            node.isYou ? t("wad.progress.node.youHint") : null,
             `— ${stateLabel}`,
             node.state === "attested" && node.attestedName
               ? `by ${node.attestedName}`
