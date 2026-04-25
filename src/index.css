@@ -628,7 +628,11 @@ button:focus-visible,
   50%      { transform: scale(0.985); }
 }
 
-/* Accessibility: honour reduced motion */
+/* Accessibility: honour reduced motion.
+   Photosensitivity-safe defaults — disable flashing/pulsing/bouncing animations
+   for users who request reduced motion. We deliberately keep `animate-spin`
+   (loading spinners) intact since rotation is the recognised "in-progress"
+   affordance and does not flash. */
 @media (prefers-reduced-motion: reduce) {
   [data-hover] {
     transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -642,4 +646,15 @@ button:focus-visible,
   [data-hover="navigation"]::after {
     display: none;
   }
+
+  /* Hard kill-switch for every flashing/pulsing animation in the design system. */
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce,
+  .animate-step-pulse,
+  .animate-ledger-pulse,
+  .animate-shimmer {
+    animation: none !important;
+  }
 }
+
