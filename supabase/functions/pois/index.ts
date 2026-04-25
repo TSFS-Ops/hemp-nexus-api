@@ -162,6 +162,46 @@ Deno.serve(async (req: Request) => {
 
       const parsed = PoiCreateSchema.parse(body);
 
+      // ── LEGITIMACY GATE (mirror of match/index.ts) ──
+      // Mint paths in this function bypass the `match` edge function and so
+      // bypassed the legitimacy check until now. An unverified org could mint
+      // a POI directly via this endpoint despite the UI alert in
+      // StateProgressionCard claiming "Verification required". This gate
+      // restores symmetry: the server now enforces the same rule the client
+      // shows. Runs BEFORE the handler so no `pois` row, `event_store` row,
+      // or `idempotency_keys` row is written for a blocked attempt.
+      const governanceProfile = await getActiveGovernanceProfile(admin, orgId);
+      const legitimacy = await checkOrgLegitimacy(admin, orgId, "poi_mint");
+      if (!legitimacy.allowed) {
+        console.warn(
+          `[${correlationId}] LEGITIMACY_GATE_BLOCKED endpoint=pois poi_type=${parsed.poi_type} reason=${legitimacy.reason} status=${legitimacy.status} gate_position=${legitimacy.gatePosition} org_id=${orgId}`,
+        );
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+            actor_api_key_id: authCtx.isApiKey ? authCtx.apiKeyId ?? null : null,
+            action: "poi.mint_denied",
+            entity_type: "poi",
+            entity_id: null,
+            metadata: {
+              correlation_id: correlationId,
+              endpoint: "pois",
+              poi_type: parsed.poi_type,
+              reason: "org_not_verified",
+              legitimacy_reason: legitimacy.reason,
+              trade_approval_status: legitimacy.status,
+              valid_until: legitimacy.validUntil,
+              gate_position: legitimacy.gatePosition,
+              governance_profile_id: governanceProfile.profileId,
+            },
+          });
+        } catch (auditErr) {
+          console.error(`[${correlationId}] Failed to write legitimacy denial audit row:`, auditErr);
+        }
+        throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
+      }
+
       if (parsed.poi_type === "bilateral") {
         return await handleBilateralCreate(admin, orgId, parsed, authCtx, idempotencyKey, correlationId);
       } else {
