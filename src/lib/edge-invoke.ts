@@ -244,6 +244,20 @@ function translateError(
 // succeeded server-side.
 const TRANSIENT_STATUSES = new Set([502, 503, 504]);
 const TRANSIENT_BODY_CODES = ["SUPABASE_EDGE_RUNTIME_ERROR", "BOOT_ERROR", "WORKER_LIMIT"];
+const UUID_PATH_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/|$)/i;
+
+function assertFunctionPath(path: string, context?: string): void {
+  if (!UUID_PATH_RE.test(path)) return;
+  throw new EdgeInvokeError(
+    "This action could not be completed because the backend request was routed incorrectly. Please refresh and try again.",
+    {
+      status: 400,
+      code: "INVALID_FUNCTION_PATH",
+      serverBody: `Refused to call UUID as edge function path: ${path}`,
+      context,
+    }
+  );
+}
 
 function isTransientFetchError(err: unknown): boolean {
   if (err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message)) {
@@ -304,6 +318,7 @@ export async function invokeEdgeFunction<T = unknown>(
 ): Promise<T> {
   const { body, method, headers, requireSession = true, label } = options;
   const metricsContext = label || functionName;
+  assertFunctionPath(functionName, metricsContext);
   await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
   const isIdempotent = !body && (!method || method === "GET");
@@ -377,6 +392,7 @@ export async function fetchEdgeFunction<T = unknown>(
   const { body, headers = {}, requireSession = true, label, query, ...rest } = options;
   const trimmedPath = path.replace(/^\/+/, "");
   const metricsContext = label || trimmedPath;
+  assertFunctionPath(trimmedPath, metricsContext);
   const accessToken = await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
   const trimmed = trimmedPath;
