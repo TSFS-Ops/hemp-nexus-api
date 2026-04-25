@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Award,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
