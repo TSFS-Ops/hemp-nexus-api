@@ -193,7 +193,16 @@ function patternToRegex(pattern) {
 }
 
 function buildMatcher(patterns) {
-  const compiled = [...patterns].map((p) => ({ pattern: p, re: patternToRegex(p) }));
+  // The shell mount points (e.g. <Route path="/desk/*">) are catch-alls that
+  // would happily swallow `/desk/typo`. We deliberately strip them from the
+  // matcher so a misspelled sub-route (the original KYB defect class) still
+  // fails. The shell's own nested children (/desk/discover, /desk/settings/...)
+  // remain in the pattern set and provide the legitimate matches.
+  const shellCatchAlls = new Set(
+    Object.values(SHELL_PREFIXES).map((p) => `${p}/*`),
+  );
+  const effective = [...patterns].filter((p) => !shellCatchAlls.has(p));
+  const compiled = effective.map((p) => ({ pattern: p, re: patternToRegex(p) }));
   return (target) => {
     const norm = normalise(target);
     return compiled.some(({ re }) => re.test(norm));
