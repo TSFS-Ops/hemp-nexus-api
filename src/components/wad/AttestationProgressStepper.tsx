@@ -338,11 +338,15 @@ export function AttestationProgressStepper({
       <div
         className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
         role="progressbar"
-        aria-label="Signatories attested"
+        aria-label={t("wad.progress.barLabel")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-valuetext={`${attestedCount} of ${total} signatories attested (${pct}%)`}
+        aria-valuetext={t("wad.progress.barValueText", {
+          attested: attestedCount,
+          total,
+          pct,
+        })}
       >
         <div
           className={cn(
