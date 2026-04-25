@@ -77,7 +77,19 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       onResponded();
     } catch (error) {
       console.error("Engagement response error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to respond. Try again.");
+      const raw = error instanceof Error ? error.message : "Failed to respond. Try again.";
+      // Translate the raw state-machine error so the counterparty understands
+      // *why* their accept was refused. Stuck-at-notification_sent means the
+      // initiator has not yet sent their outreach email — the engagement
+      // can only progress to 'accepted' after the initiator transitions it
+      // to 'contacted'. Surface a plain-English explanation instead of the
+      // raw "Cannot transition from 'notification_sent' to 'accepted'" line.
+      const isStuckAtNotificationSent =
+        /from\s+'?notification_sent'?\s+to\s+'?accepted'?/i.test(raw);
+      const friendly = isStuckAtNotificationSent
+        ? "We can't accept this trade yet — the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work."
+        : raw;
+      toast.error(friendly);
     } finally {
       setIsSubmitting(false);
     }
