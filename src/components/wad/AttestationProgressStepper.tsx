@@ -214,6 +214,7 @@ export function AttestationProgressStepper({
   userOrgId,
   className,
 }: AttestationProgressStepperProps) {
+  const { t } = useTranslation();
   const buyerAttestation = wad.attestations?.find(
     (a) => a.role === "buyer_signatory"
   );
