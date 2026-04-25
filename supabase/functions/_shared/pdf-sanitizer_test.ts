@@ -121,11 +121,11 @@ Deno.test("safePdfText replaces CJK characters with '?' (does not throw)", () =>
   assertEquals(safePdfText("公司 договор"), "?? ???????");
 });
 
-Deno.test("safePdfText replaces zero-width joiners and combining marks with '?'", () => {
-  // 0x200D ZWJ is not in the drop-list, so falls through to '?'
-  const out = safePdfText("a\u200Db");
-  // ZWJ is not whitelisted → '?'
-  assertEquals(out, "a?b");
+Deno.test("safePdfText drops zero-width joiners (emoji modifier, no textual value)", () => {
+  // U+200D (ZWJ) is used to combine emoji (e.g. 👨‍💻 = man + ZWJ + computer).
+  // It carries no standalone meaning when stripped, so we drop it rather
+  // than emit '?'.
+  assertEquals(safePdfText("a\u200Db"), "ab");
 });
 
 // ─────────────────────────── Replacement table integrity ───────────────────────────
