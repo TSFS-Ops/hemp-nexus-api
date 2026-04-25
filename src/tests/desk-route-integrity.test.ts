@@ -18,9 +18,12 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, readdirSync, statSync } from "fs";
+import { join, resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
 const SRC_DIR = resolve(PROJECT_ROOT, "src");
 const DESK_FILE = resolve(SRC_DIR, "pages", "Desk.tsx");
