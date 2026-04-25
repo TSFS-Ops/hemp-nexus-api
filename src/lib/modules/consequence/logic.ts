@@ -76,6 +76,11 @@ export interface ConsequenceResult<T> {
   data?: T;
   error?: string;
   gateFailures?: string[];
+  /**
+   * Server correlation ID surfaced from ApiError (or other transports) so the
+   * UI can show a "Reference ID" the user can include when reporting issues.
+   */
+  requestId?: string;
 }
 
 // ─── State Derivation ───────────────────────────────────────────────
