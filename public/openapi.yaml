@@ -1710,8 +1710,13 @@ components:
 
     WadAttestationCounts:
       type: object
-      description: Per-side attestation tally for a WaD.
-      required: [buyerAttested, sellerAttested, total]
+      description: Per-side attestation tally for a WaD, with timestamps.
+      required:
+        - buyerAttested
+        - sellerAttested
+        - buyerAttestedAt
+        - sellerAttestedAt
+        - total
       properties:
         buyerAttested:
           type: boolean
@@ -1719,6 +1724,16 @@ components:
         sellerAttested:
           type: boolean
           description: True once the seller signatory has attested.
+        buyerAttestedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of the buyer's attestation, or null if not yet attested.
+        sellerAttestedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of the seller's attestation, or null if not yet attested.
         total:
           type: integer
           minimum: 0
