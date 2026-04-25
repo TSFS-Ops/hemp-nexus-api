@@ -140,7 +140,7 @@ describe("Attest error a11y", () => {
         onUpdate={() => {}}
       />,
     );
-    await submitOnce();
+    await submitOnceAndWait();
 
     // The alert must be discoverable by its semantic role — that's the
     // only contract screen readers actually consume.
@@ -174,7 +174,7 @@ describe("Attest error a11y", () => {
         onUpdate={() => {}}
       />,
     );
-    await submitOnce();
+    await submitOnceAndWait();
 
     const alert = await screen.findByTestId("attest-error-alert");
     await waitFor(() => expect(document.activeElement).toBe(alert));
@@ -202,7 +202,7 @@ describe("Attest error a11y", () => {
         onUpdate={() => {}}
       />,
     );
-    await submitOnce();
+    await submitOnceAndWait();
     await screen.findByTestId("attest-error-alert");
 
     // User Tabs away to the Copy Ref control.
@@ -242,7 +242,7 @@ describe("Attest error a11y", () => {
         onUpdate={() => {}}
       />,
     );
-    await submitOnce();
+    await submitOnceAndWait();
     let alert = await screen.findByTestId("attest-error-alert");
     await waitFor(() => expect(document.activeElement).toBe(alert));
 
