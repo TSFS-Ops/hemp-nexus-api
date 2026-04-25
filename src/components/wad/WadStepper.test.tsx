@@ -337,7 +337,9 @@ describe("WadStepper attest keyboard shortcut", () => {
     fireEvent.keyDown(btn, { key: "Enter" });
 
     // Attest fired …
-    expect(submitAttestationMock).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(submitAttestationMock).toHaveBeenCalledTimes(1),
+    );
     // … but the ancestor listener did NOT receive the bubbled event.
     expect(ancestorListener).not.toHaveBeenCalled();
   });
