@@ -96,14 +96,22 @@ const buyerAttestation = (): WadAttestation =>
     attestation_text: "I confirm",
   });
 
-// Drives the form to the "ready to submit" state, then submits once.
-async function submitOnce() {
+// Drives the form to the "ready to submit" state, then submits once and
+// waits for the resulting alert (or absence of one) to settle so the
+// async submitAttestation state update lands inside an act() boundary.
+async function submitOnceAndWait() {
   fireEvent.click(screen.getByRole("button", { name: /review & attest/i }));
   fireEvent.change(screen.getByLabelText(/your full name/i), {
     target: { value: "Jane Doe" },
   });
   fireEvent.click(screen.getByLabelText(/i confirm that this is not a contract/i));
   fireEvent.click(screen.getByTestId("attest-submit-button"));
+  // Let the mocked promise + setState pair flush.
+  await waitFor(() => {
+    // Either the alert appears (failure path) or attesting flips back to
+    // false (success path). We just need the microtask queue to drain.
+    expect(submitAttestationMock).toHaveBeenCalled();
+  });
 }
 
 // ──────────────────────────────────────────────────────────────────────
