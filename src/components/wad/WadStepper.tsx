@@ -322,8 +322,8 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           return (
             <div className="text-center py-6">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <p className="font-medium">Signed Deal has been sealed</p>
-              <p className="text-sm text-muted-foreground">All attestations complete</p>
+              <p className="font-medium">{t("wad.attest.sealed.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("wad.attest.sealed.body")}</p>
             </div>
           );
         }
@@ -333,8 +333,8 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             <div className="space-y-4">
               <div className="text-center py-4">
                 <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-3" />
-                <p className="font-medium">You have already attested</p>
-                <p className="text-sm text-muted-foreground">Waiting for other party</p>
+                <p className="font-medium">{t("wad.attest.alreadyAttested.title")}</p>
+                <p className="text-sm text-muted-foreground">{t("wad.attest.alreadyAttested.body")}</p>
               </div>
               {canSeal && (
                 <>
@@ -354,9 +354,9 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           return (
             <div className="text-center py-6">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="font-medium">Attestation not available</p>
+              <p className="font-medium">{t("wad.attest.notAvailable.title")}</p>
               <p className="text-sm text-muted-foreground">
-                Only buyer and seller signatories can attest on this Signed Deal.
+                {t("wad.attest.notAvailable.body")}
               </p>
             </div>
           );
@@ -365,17 +365,17 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         return (
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-2">Attestation Statement:</p>
-              <p className="text-sm italic text-muted-foreground">"{ATTESTATION_TEXT}"</p>
+              <p className="text-sm font-medium mb-2">{t("wad.attest.statementLabel")}</p>
+              <p className="text-sm italic text-muted-foreground">"{t("wad.attest.statement")}"</p>
             </div>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="attested-name">Your Full Name (as signatory)</Label>
+                <Label htmlFor="attested-name">{t("wad.attest.nameLabel")}</Label>
                 <Input
                   id="attested-name"
                   value={attestedName}
                   onChange={(e) => setAttestedName(e.target.value)}
-                  placeholder="Enter your full legal name"
+                  placeholder={t("wad.attest.namePlaceholder")}
                   className="mt-1"
                 />
               </div>
@@ -386,8 +386,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                   onCheckedChange={(checked) => setAttestConfirmed(checked === true)}
                 />
                 <Label htmlFor="attest-confirm" className="text-sm leading-relaxed cursor-pointer">
-                  I confirm that this is NOT a contract, involves NO payment, and creates NO legal obligation.
-                  This is an evidence record that intent was confirmed.
+                  {t("wad.attest.confirmCheckbox")}
                 </Label>
               </div>
             </div>
@@ -404,7 +403,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-destructive">Attestation failed</p>
+                    <p className="font-medium text-destructive">{t("wad.attest.error.title")}</p>
                     <p className="text-destructive/90 break-words">{attestError.message}</p>
                   </div>
                 </div>
@@ -412,7 +411,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                   <div className="flex items-center justify-between gap-2 rounded border border-destructive/20 bg-background/60 px-2 py-1.5">
                     <div className="min-w-0">
                       <p className="text-[11px] uppercase tracking-wide text-muted-foreground" id="attest-ref-label">
-                        Reference ID
+                        {t("wad.attest.error.refLabel")}
                       </p>
                       <code className="font-mono text-[11px] break-all" aria-labelledby="attest-ref-label">
                         {attestError.requestId}
@@ -423,17 +422,17 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                       onClick={handleCopyAttestRef}
                       aria-label={
                         refCopied
-                          ? "Reference ID copied to clipboard"
-                          : `Copy reference ID ${attestError.requestId} to clipboard`
+                          ? t("wad.attest.error.copiedAria")
+                          : t("wad.attest.error.copyAria", { id: attestError.requestId })
                       }
                       className="shrink-0 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
                     >
-                      {refCopied ? "Copied" : "Copy"}
+                      {refCopied ? t("wad.attest.error.copied") : t("wad.attest.error.copy")}
                     </button>
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Please include the Reference ID when reporting this issue to support.
+                  {t("wad.attest.error.refHelp")}
                 </p>
               </div>
             )}
@@ -448,11 +447,11 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />}
               <Check className="h-4 w-4 mr-2" aria-hidden="true" />
               {attesting
-                ? "Submitting attestation…"
+                ? t("wad.attest.button.submitting")
                 : attestError
-                ? "Retry attestation"
-                : "Attest"}
-              {attesting && <span className="sr-only">, please wait</span>}
+                ? t("wad.attest.button.retry")
+                : t("wad.attest.button.attest")}
+              {attesting && <span className="sr-only">{t("wad.attest.button.pleaseWait")}</span>}
             </Button>
           </div>
         );
