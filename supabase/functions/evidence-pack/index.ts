@@ -369,6 +369,117 @@ Deno.serve(async (req) => {
       metadata: { packHash, format, chainValid, requestId },
     });
 
+    // ── Audit-trail standalone export ──────────────────────────────
+    // Returns just the audit_logs entries for this match, in CSV (default)
+    // or JSON, so compliance reviewers can ingest the trail independently
+    // of the full evidence pack. Hash + version metadata are included for
+    // traceability back to the canonical pack.
+    if (format === "audit-csv" || format === "audit-json") {
+      const trail = auditLogs.map((l) => ({
+        id: l.id,
+        action: l.action,
+        entity_type: l.entity_type,
+        entity_id: l.entity_id,
+        actor_user_id: l.actor_user_id ?? null,
+        actor_api_key_id: l.actor_api_key_id ?? null,
+        org_id: l.org_id ?? null,
+        ip_address: (l as Record<string, unknown>).ip_address ?? null,
+        user_agent: (l as Record<string, unknown>).user_agent ?? null,
+        request_id: (l.metadata as Record<string, unknown> | null)?.requestId ?? null,
+        created_at: l.created_at,
+        metadata: l.metadata ?? null,
+      }));
+
+      // Hash of the trail itself, for tamper-evidence on the standalone export.
+      const trailCanonical = canonicalStringify(trail);
+      const trailHash = await sha256Hex(trailCanonical);
+
+      // Audit the export itself.
+      await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: "audit-trail.exported",
+        entity_type: "match",
+        entity_id: matchId,
+        metadata: {
+          format,
+          entryCount: trail.length,
+          trailHash,
+          packHash,
+          requestId,
+        },
+      });
+
+      if (format === "audit-json") {
+        const body = {
+          metadata: {
+            exportId: crypto.randomUUID(),
+            generatedAt,
+            generatedBy: authCtx.userId,
+            requestId,
+            format: "audit-trail-v1",
+            matchId,
+            entryCount: trail.length,
+          },
+          traceability: {
+            packHash,
+            trailHash,
+            hashAlgorithm: "SHA-256",
+            chainValid,
+          },
+          entries: trail,
+        };
+        return new Response(JSON.stringify(body, null, 2), {
+          status: 200,
+          headers: {
+            ...headers,
+            "Content-Type": "application/json",
+            "Content-Disposition": `attachment; filename="audit-trail-${matchId}.json"`,
+          },
+        });
+      }
+
+      // CSV (default for compliance ingestion)
+      const csvEscape = (val: unknown): string => {
+        if (val === null || val === undefined) return "";
+        const s = typeof val === "string" ? val : JSON.stringify(val);
+        // RFC 4180: wrap in quotes, double any embedded quote, preserve newlines.
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      const cols = [
+        "id", "action", "entity_type", "entity_id",
+        "actor_user_id", "actor_api_key_id", "org_id",
+        "ip_address", "user_agent", "request_id",
+        "created_at", "metadata",
+      ] as const;
+      const headerRow = cols.join(",");
+      const preamble = [
+        `# Izenzo Audit Trail Export`,
+        `# Match ID: ${matchId}`,
+        `# Generated (UTC): ${generatedAt}`,
+        `# Entry count: ${trail.length}`,
+        `# Pack SHA-256: ${packHash}`,
+        `# Trail SHA-256: ${trailHash}`,
+        `# Hash algorithm: SHA-256`,
+        `# Format: audit-trail-v1`,
+      ].join("\n");
+      const rows = trail.map((e) =>
+        cols.map((c) => csvEscape((e as Record<string, unknown>)[c])).join(",")
+      );
+      const csv = `${preamble}\n${headerRow}\n${rows.join("\n")}\n`;
+      return new Response(csv, {
+        status: 200,
+        headers: {
+          ...headers,
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="audit-trail-${matchId}.csv"`,
+          "X-Trail-SHA256": trailHash,
+          "X-Pack-SHA256": packHash,
+        },
+      });
+    }
+
     if (format === "pdf") {
       const html = generatePdfHtml(canonical, packHash, signatureValid, generatedAt);
 
