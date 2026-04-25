@@ -73,15 +73,6 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   };
   const [refCopied, setRefCopied] = useState(false);
 
-  // If the user has already attested (e.g. via another tab/device), the error
-  // is no longer actionable — clear it from state and storage.
-  useEffect(() => {
-    if (hasAttested && attestError) {
-      setAttestErrorRaw(null);
-      clearAttestError(wad.id);
-    }
-  }, [hasAttested, attestError, wad.id]);
-
   // All decision logic comes from consequenceState - no inline derivation
   const {
     canAttest,
@@ -92,6 +83,15 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     uiStatus,
     statusLabel,
   } = consequenceState;
+
+  // If the user has already attested (e.g. via another tab/device), the error
+  // is no longer actionable — clear it from state and storage.
+  useEffect(() => {
+    if (hasAttested && attestError) {
+      setAttestErrorRaw(null);
+      clearAttestError(wad.id);
+    }
+  }, [hasAttested, attestError, wad.id]);
 
   const getStatusBadge = () => {
     switch (uiStatus) {
