@@ -411,52 +411,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center justify-between">
-          Deal Progression
-          <Badge variant="outline" className="font-mono text-xs">
+    <Card className="shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center justify-between">
+          <span>Readiness check</span>
+          <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider">
             {MatchState.statusLabel(currentState)}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between gap-1">
-          {MatchState.MATCH_STATES.map((state, idx) => {
-            const isComplete = idx < currentIdx;
-            const isCurrent = idx === currentIdx;
-
-            return (
-              <div key={state} className="flex items-center flex-1 min-w-0">
-                <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                  {isComplete ? (
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
-                  ) : isCurrent ? (
-                    <div className="h-6 w-6 rounded-full border-2 border-primary bg-primary/10 flex items-center justify-center">
-                      <Circle className="h-3 w-3 fill-primary text-primary" />
-                    </div>
-                  ) : (
-                    <Circle className="h-6 w-6 text-muted-foreground/30" />
-                  )}
-                  <span
-                    className={`text-[10px] text-center leading-tight max-w-[70px] ${
-                      isCurrent
-                        ? "font-semibold text-foreground"
-                        : isComplete
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                    }`}
-                  >
-                    {MatchState.STATE_LABELS[state]}
-                  </span>
-                </div>
-                {idx < MatchState.MATCH_STATES.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-1 ${idx < currentIdx ? "bg-primary" : "bg-muted"}`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+      <CardContent className="space-y-4">
 
         <p className="text-sm text-muted-foreground">
           {engagementStatus === "accepted" && ["intent_declared", "counterparty_sighted", "committed"].includes(currentState)
