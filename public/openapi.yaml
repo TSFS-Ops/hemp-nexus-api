@@ -1086,9 +1086,12 @@ paths:
                       helperText: "Only the nominated buyer and seller signatories for this trade can attest. You're viewing as a witness/observer."
                       viewerRole: witness
                       hasAttested: false
+                      viewerAttestedAt: null
                       attestations:
                         buyerAttested: false
                         sellerAttested: true
+                        buyerAttestedAt: null
+                        sellerAttestedAt: "2025-04-24T11:02:08.913Z"
                         total: 1
                       nextAction: view_only
                     request_id: "0a1b2c3d-4e5f-4607-8819-9a0b1c2d3e4f"
