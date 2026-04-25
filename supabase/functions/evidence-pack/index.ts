@@ -289,7 +289,15 @@ Deno.serve(async (req) => {
     }
 
     // Determine format from subAction or query param
-    const format = subAction === "pdf" ? "pdf" : (url.searchParams.get("format") || "json");
+    // Supported: "json" (default), "pdf" (HTML evidence report),
+    // "audit-csv" (audit trail CSV), "audit-json" (audit trail JSON)
+    let format: string;
+    if (subAction === "pdf") format = "pdf";
+    else if (subAction === "audit") {
+      format = url.searchParams.get("format") === "json" ? "audit-json" : "audit-csv";
+    } else {
+      format = url.searchParams.get("format") || "json";
+    }
 
     // ── Fetch all data in parallel ──
     const [matchRes, eventsRes, docsRes, auditRes, collapseRes] = await Promise.all([
