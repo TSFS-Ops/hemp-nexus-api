@@ -88,7 +88,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   }
 
   return (
-    <Card>
+    <Card className="bg-muted/30 shadow-sm border-border/80">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>

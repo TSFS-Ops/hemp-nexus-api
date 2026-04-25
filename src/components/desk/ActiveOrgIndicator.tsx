@@ -84,13 +84,13 @@ export function ActiveOrgIndicator({ className }: { className?: string }) {
   return (
     <div
       className={
-        "inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground " +
+        "flex items-center gap-2 rounded-md bg-muted/60 px-2.5 py-1.5 text-xs " +
         (className ?? "")
       }
     >
-      <Building2 className="h-3.5 w-3.5" />
-      <span className="font-mono tracking-wide">
-        Acting as <span className="text-foreground font-medium">{org.name}</span>
+      <Building2 className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+      <span className="truncate text-muted-foreground">
+        <span className="text-foreground/80 font-medium">{org.name}</span>
       </span>
     </div>
   );

@@ -31,9 +31,11 @@ import { EvidencePackPanel } from "@/components/match/EvidencePackPanel";
 import { MatchTimeline } from "@/components/MatchTimeline";
 import { PoiEventsTimeline } from "@/components/match/PoiEventsTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, ArrowRight } from "lucide-react";
+import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, ArrowRight, HelpCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
+import { ActionRequiredBanner } from "@/components/match/ActionRequiredBanner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Match } from "@/hooks/use-match-details";
 export type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
 interface DealWizardProps {
@@ -144,19 +146,26 @@ export function DealWizard({
     label: "Proof of Intent",
     description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit (R10). Non-binding, irreversible, fully audited.",
     complete: poiComplete && engagementAccepted,
-    locked: !commercialTermsComplete // POI gate is commercial-only; supporting evidence handled via waiver flow
+    locked: !commercialTermsComplete,
+    lockedReason: !commercialTermsComplete ? "Complete the required commercial terms (commodity, parties, quantity, price) on the Match step before generating Proof of Intent." : undefined,
   }, {
     id: "wad",
     label: "Signed Deal",
     description: poiHoldActive ? "Locked. Trading partner must accept before you can proceed to Signed Deal." : "Create a Signed Deal evidence bundle with 9-gate compliance validation.",
     complete: wadComplete,
-    locked: !poiComplete || poiHoldActive // HOLD POINT: locked until engagement accepted
+    locked: !poiComplete || poiHoldActive,
+    lockedReason: !poiComplete
+      ? "Generate a Proof of Intent first. Signed Deal compiles the 9-gate evidence bundle on top of a sealed POI."
+      : poiHoldActive
+        ? "The trading partner has been notified but has not yet accepted. Signed Deal unlocks when they engage."
+        : undefined,
   }, {
     id: "evidence",
     label: "Evidence Pack",
     description: "Generate a SHA-256 hashed, tamper-evident evidence bundle for regulatory finality.",
     complete: evidenceComplete,
-    locked: !wadComplete // Strict: locked until WaD sealed
+    locked: !wadComplete,
+    lockedReason: !wadComplete ? "Seal the Signed Deal first. Evidence Pack bundles the sealed WaD and full audit trail into the final regulatory archive." : undefined,
   }], [searchComplete, matchComplete, poiComplete, wadComplete, evidenceComplete, poiHoldActive, engagementAccepted, commercialTermsComplete]);
 
   // Strict landing policy (Option B):
@@ -195,17 +204,135 @@ export function DealWizard({
     }
     setActiveStep(idx);
   }, [steps, activeStep, matchSubTab, setMatchSubTab]);
-  return <div className="space-y-6">
+  // ── FOCAL BANNER DERIVATION ──
+  // Computes the single most important "what now" message for the user.
+  const focal = useMemo<{
+    tone: "action" | "locked" | "complete";
+    eyebrow: string;
+    title: string;
+    description: string;
+    helpText?: string;
+  }>(() => {
+    if (isCompleted) {
+      return {
+        tone: "complete",
+        eyebrow: "Trade complete",
+        title: "Evidence record sealed",
+        description: "All gates have been passed and the regulatory evidence pack is finalised. No further action is required.",
+      };
+    }
+    const activeId = steps[activeStep]?.id;
+    if (poiHoldActive) {
+      const statusText = engagementStatus === "notification_sent" ? "Awaiting outreach"
+        : engagementStatus === "contacted" ? "Contacted"
+        : engagementStatus === "declined" ? "Declined"
+        : engagementStatus === "expired" ? "Expired"
+        : "In progress";
+      return {
+        tone: "locked",
+        eyebrow: "Waiting on counterparty",
+        title: `Trading partner engagement — ${statusText}`,
+        description: "Proof of Intent is sealed. The Signed Deal step unlocks once the trading partner accepts the engagement. No action required from you right now.",
+        helpText: "Locked steps are gated by external events (counterparty acceptance, scheduled jobs). You'll be notified by email when this step unlocks.",
+      };
+    }
+    if (activeId === "search") {
+      return {
+        tone: "action",
+        eyebrow: "Your turn",
+        title: "Open the Match step to review terms",
+        description: "A trading partner has been identified. Move to the Match step to review the deal terms, attach evidence and prepare for Proof of Intent.",
+      };
+    }
+    if (activeId === "match") {
+      return {
+        tone: commercialTermsComplete ? "complete" : "action",
+        eyebrow: commercialTermsComplete ? "Ready to advance" : "Your turn",
+        title: commercialTermsComplete
+          ? "Commercial terms complete — proceed to Proof of Intent"
+          : "Complete the commercial terms",
+        description: commercialTermsComplete
+          ? "Buyer, seller, commodity, quantity and price are all set. You can now generate a Proof of Intent (1 credit, R10)."
+          : "Set the buyer, seller, commodity, quantity and price on the Terms tab before you can generate a Proof of Intent.",
+        helpText: "All five commercial terms are required by the POI gate. Documents and notes are optional but improve your evidence score.",
+      };
+    }
+    if (activeId === "poi") {
+      return {
+        tone: "action",
+        eyebrow: "Your turn",
+        title: "Generate a Proof of Intent",
+        description: "Mint a Proof of Intent on the audit ledger to formally signal commercial intent to your trading partner. Costs 1 credit (R10), irreversible, fully audited.",
+        helpText: "POI generation is the platform's hold-point. Once minted, your trading partner is notified and you cannot edit the commercial terms.",
+      };
+    }
+    if (activeId === "wad") {
+      return {
+        tone: "action",
+        eyebrow: "Your turn",
+        title: "Build the Signed Deal evidence bundle",
+        description: "Submit governance documents and run the 9-gate compliance validation. Once sealed, the Evidence Pack step unlocks for final regulatory archive.",
+        helpText: "The Signed Deal (WaD — Without a Doubt) bundle is the platform's compliance certificate. It must be sealed before the trade is regulatorily complete.",
+      };
+    }
+    if (activeId === "evidence") {
+      return {
+        tone: "action",
+        eyebrow: "Final step",
+        title: "Generate the regulatory Evidence Pack",
+        description: "Bundle the sealed Signed Deal and full audit timeline into a SHA-256 hashed, tamper-evident archive for your records and your regulator.",
+      };
+    }
+    return {
+      tone: "locked",
+      eyebrow: "Status",
+      title: "No action available",
+      description: "Continue when the next step unlocks.",
+    };
+  }, [activeStep, steps, poiHoldActive, engagementStatus, commercialTermsComplete, isCompleted]);
+
+  return <div className="space-y-5">
       {/* a11y: announce stepper sub-tab interception to screen readers */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {stepperAnnouncement}
       </div>
-      {/* Wizard Stepper */}
-      <Card>
-        <CardContent className="pt-5 pb-4">
+      {/* ── HERO: Macro deal progression ── */}
+      <Card className="shadow-md border-border/80">
+        <CardContent className="pt-6 pb-5 px-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-1.5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+                Deal progression
+              </p>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" aria-label="About deal progression" className="text-muted-foreground/50 hover:text-foreground transition-colors">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-xs">
+                    The five-step lifecycle for every Izenzo trade. Steps unlock sequentially; locked steps either require you to complete an earlier step or are waiting on a counterparty.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              Step {activeStep + 1} of {steps.length}
+            </span>
+          </div>
           <WizardStepper steps={steps} activeStep={activeStep} onStepClick={handleStepClick} />
         </CardContent>
       </Card>
+
+      {/* ── FOCAL POINT: What do I do next? ── */}
+      <ActionRequiredBanner
+        tone={focal.tone}
+        eyebrow={focal.eyebrow}
+        title={focal.title}
+        description={focal.description}
+        helpText={focal.helpText}
+      />
 
       {/* Step Content */}
       {activeStep === 0 && <StepSearch match={match} />}
@@ -215,38 +342,26 @@ export function DealWizard({
         // Never auto-leave the Match step.
         if (matchSubTab === "terms") setMatchSubTab("documents");
       }} onProceedToPoi={() => setActiveStep(2)} subTab={matchSubTab} onSubTabChange={setMatchSubTab} />}
-      {activeStep === 2 && <div className="space-y-4">
+      {activeStep === 2 && (
+        <div className="space-y-4">
           <StepPoi match={match} onStateAction={onStateAction} loading={stateActionLoading || confirming} engagementStatus={engagementStatus} />
-          {/* Hold-point notice shown on POI step since WaD step is locked */}
-          {poiHoldActive && <Card className="border-dashed border-primary/30">
-              <CardContent className="py-6 text-center space-y-3">
-                <ShieldAlert className="h-7 w-7 text-primary mx-auto" />
-                <h3 className="font-semibold text-sm">Signed Deal Step Locked, Awaiting Trading Partner</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  The trade request has been generated. The next step (Signed Deal) is locked until the trading partner engagement is accepted.
-                </p>
-                {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
-                    <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
-                    Current status: {engagementStatus === "notification_sent" ? "Awaiting outreach" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
-                  </div>}
-              </CardContent>
-            </Card>}
-        </div>}
-      {activeStep === 3 && (poiHoldActive ? <Card className="border-dashed border-primary/30">
+        </div>
+      )}
+      {activeStep === 3 && (
+        poiHoldActive ? (
+          <Card className="border-dashed border-border bg-muted/30 shadow-none">
             <CardContent className="py-8 text-center space-y-3">
-              <ShieldAlert className="h-8 w-8 text-primary mx-auto" />
-              <h3 className="font-semibold">Awaiting Trading Partner Engagement</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                The trade request has been generated and the trading partner has been notified. 
-                This step is paused until the trading partner has been engaged and has responded.
+              <Lock className="h-7 w-7 text-muted-foreground/60 mx-auto" />
+              <h3 className="font-semibold text-sm text-muted-foreground">Step locked — see status above</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                The Signed Deal step opens once the trading partner accepts. The full status is tracked in the focal banner above and the engagement tracker beneath the page heading.
               </p>
-              {/* Inline engagement status, no need to scroll up */}
-              {engagementStatus && <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/50 text-xs font-medium">
-                  <span className={`h-2 w-2 rounded-full ${engagementStatus === "declined" || engagementStatus === "expired" ? "bg-destructive" : "bg-amber-500 animate-pulse"}`} />
-                  Current status: {engagementStatus === "notification_sent" ? "Awaiting outreach" : engagementStatus === "contacted" ? "Contacted" : engagementStatus === "declined" ? "Declined" : engagementStatus === "expired" ? "Expired" : engagementStatus}
-                </div>}
             </CardContent>
-          </Card> : <StepWad match={match} onRefresh={onRefresh} />)}
+          </Card>
+        ) : (
+          <StepWad match={match} onRefresh={onRefresh} />
+        )
+      )}
       {activeStep === 4 && <StepEvidence match={match} currentState={currentState} />}
     </div>;
 }
