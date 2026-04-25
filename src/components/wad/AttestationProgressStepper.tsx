@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ConsequenceState, WadRecord } from "@/lib/modules/consequence";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { TranslationKey } from "@/i18n";
 
 interface AttestationProgressStepperProps {
   wad: WadRecord;
