@@ -376,6 +376,40 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                 </Label>
               </div>
             </div>
+            {attestError && (
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-destructive">Attestation failed</p>
+                    <p className="text-destructive/90 break-words">{attestError.message}</p>
+                  </div>
+                </div>
+                {attestError.requestId && (
+                  <div className="flex items-center justify-between gap-2 rounded border border-destructive/20 bg-background/60 px-2 py-1.5">
+                    <div className="min-w-0">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        Reference ID
+                      </p>
+                      <code className="font-mono text-[11px] break-all">{attestError.requestId}</code>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyAttestRef}
+                      className="shrink-0 text-xs text-primary hover:underline"
+                    >
+                      {refCopied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Please include the Reference ID when reporting this issue to support.
+                </p>
+              </div>
+            )}
             <Button
               onClick={handleAttest}
               disabled={attesting || !attestedName.trim() || !attestConfirmed}
@@ -383,7 +417,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             >
               {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <Check className="h-4 w-4 mr-2" />
-              Attest
+              {attestError ? "Retry attestation" : "Attest"}
             </Button>
           </div>
         );
