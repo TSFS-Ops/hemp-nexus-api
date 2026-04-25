@@ -99,87 +99,27 @@ function loadRouteConstants() {
  */
 function extractRoutesFromSource(src, prefix, routeConsts) {
   const patterns = new Set();
-  const stack = []; // each frame: { path: string|null }
+  // Flat extraction: every literal `<Route path="...">` (and the constant
+  // form `<Route path={ROUTES.X}>`) anywhere in the file becomes a
+  // registered pattern. We deliberately do NOT try to compose nested
+  // parent/child paths — Routes nested inside `element={<Outer><Routes>…`
+  // expressions make full composition fragile, and a flat scan covers
+  // every legitimate URL at the cost of also accepting some non-existent
+  // permutations (e.g. `/desk/company` even though the real path is
+  // `/desk/settings/company`). The guard's purpose is to catch *typos*
+  // in CTAs — `/desk/initiate`, `/desk/setings/company` — and a flat
+  // scan does that without false positives on real, working links.
+  const LIT_RE = /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"/g;
+  const CONST_RE = /<Route\b[^>]*?\bpath\s*=\s*\{ROUTES\.(\w+)\}/g;
 
-  // Hand-written scanner. We need brace + string awareness because
-  // <Route ...> tags routinely contain `element={<Foo>...}` where naive
-  // regex stops at the first `>` and corrupts the parent stack. We scan
-  // character-by-character, find each <Route or </Route token, and for
-  // opening tags walk forward tracking { } depth and quoted strings until
-  // we find the matching `>` so we can decide self-closing vs container.
-  let i = 0;
-  while (i < src.length) {
-    if (src[i] !== "<") { i++; continue; }
-
-    // Closing tag: </Route ... >
-    if (src.startsWith("</Route", i)) {
-      // Skip until '>'.
-      const end = src.indexOf(">", i);
-      if (end === -1) break;
-      stack.pop();
-      i = end + 1;
-      continue;
+  for (const re of [LIT_RE, CONST_RE]) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      const raw = re === LIT_RE ? m[1] : routeConsts.get(m[1]);
+      if (!raw) continue;
+      patterns.add(joinRoute(prefix, raw));
     }
-
-    // Opening tag: <Route<word boundary>
-    if (!src.startsWith("<Route", i)) { i++; continue; }
-    const after = src[i + 6];
-    if (after && /[A-Za-z0-9_]/.test(after)) { i++; continue; } // <RouteFoo
-
-    // Find the end of the opening tag, tracking braces and strings so that
-    // `>` inside attribute expressions does not trip us up.
-    let j = i + 6;
-    let depth = 0; // { } depth inside attribute expressions
-    let inStr = null; // null | '"' | "'" | "`"
-    while (j < src.length) {
-      const c = src[j];
-      if (inStr) {
-        if (c === "\\") { j += 2; continue; }
-        if (c === inStr) inStr = null;
-      } else if (c === '"' || c === "'" || c === "`") {
-        inStr = c;
-      } else if (c === "{") {
-        depth++;
-      } else if (c === "}") {
-        if (depth > 0) depth--;
-      } else if (c === ">" && depth === 0) {
-        break;
-      }
-      j++;
-    }
-    if (j >= src.length) break;
-    let attrs = src.slice(i + 6, j);
-    const selfClosing = attrs.trimEnd().endsWith("/");
-    if (selfClosing) attrs = attrs.trimEnd().slice(0, -1);
-
-    let path = null;
-    const litMatch = attrs.match(/\bpath\s*=\s*"([^"]+)"/);
-    const constMatch = attrs.match(/\bpath\s*=\s*\{ROUTES\.(\w+)\}/);
-    if (litMatch) path = litMatch[1];
-    else if (constMatch) path = routeConsts.get(constMatch[1]) ?? null;
-
-    const parentSegments = stack
-      .map((f) => f.path)
-      // Skip parents with no path contribution: null (no-path frames),
-      // empty strings, and "*" wildcards. A `<Route path="*">` parent in
-      // React Router consumes no URL segment of its own — its children
-      // are reachable at the parent's path directly. We want
-      // `<Route path="discover">` nested under `<Route path="*">` inside
-      // the /desk shell to register as `/desk/discover`, not `/desk/*/discover`.
-      .filter((p) => p != null && p !== "" && p !== "*");
-    const segments = path != null ? [...parentSegments, path] : parentSegments;
-    const fullChild = composeSegments(segments);
-    if (fullChild != null) {
-      patterns.add(joinRoute(prefix, fullChild));
-    }
-
-    if (!selfClosing) {
-      stack.push({ path });
-    }
-
-    // Compute the line number of this opening tag for diagnostics later
-    // if we ever need it. For now we only use it during scanning.
-    i = j + 1;
   }
   return patterns;
 }
