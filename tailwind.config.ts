@@ -156,8 +156,8 @@ export default {
           "50%": { opacity: "0.6" },
         },
         "step-pulse": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.45)" },
-          "50%":      { boxShadow: "0 0 0 8px hsl(var(--primary) / 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.18)" },
+          "50%":      { boxShadow: "0 0 0 4px hsl(var(--primary) / 0)" },
         },
       },
       animation: {
@@ -169,7 +169,7 @@ export default {
         ticker: "ticker 60s linear infinite",
         "section-enter": "section-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both",
         "ledger-pulse": "ledger-pulse 2s ease-in-out 1",
-        "step-pulse": "step-pulse 2.2s ease-in-out infinite",
+        "step-pulse": "step-pulse 3.6s ease-in-out infinite",
       },
     },
   },
