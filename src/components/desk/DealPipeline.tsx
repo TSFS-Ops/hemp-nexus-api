@@ -850,7 +850,7 @@ function DealDocumentCard({
   return (
     <button
       onClick={onClick}
-      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
+      className="group w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md text-left hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30"
     >
       {/* Lane priority dot */}
       <span
