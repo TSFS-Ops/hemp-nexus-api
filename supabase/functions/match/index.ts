@@ -16,7 +16,7 @@ import {
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
-import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
+import { checkMaintenanceMode, tryBypass } from "../_shared/test-mode-bypass.ts";
 import {
   lookupIdempotentResponse,
   storeIdempotentResponse,
