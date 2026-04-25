@@ -55,12 +55,32 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
-  const [attestError, setAttestError] = useState<{
+  type AttestErrorState = {
     message: string;
     requestId?: string;
     kind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
-  } | null>(null);
+  };
+  const [attestError, setAttestErrorRaw] = useState<AttestErrorState | null>(() => {
+    const persisted = loadAttestError(wad.id);
+    if (!persisted) return null;
+    return { message: persisted.message, requestId: persisted.requestId, kind: persisted.kind };
+  });
+  // Wrapper that mirrors writes to sessionStorage so a reload restores the error.
+  const setAttestError = (next: AttestErrorState | null) => {
+    setAttestErrorRaw(next);
+    if (next) saveAttestError(wad.id, next);
+    else clearAttestError(wad.id);
+  };
   const [refCopied, setRefCopied] = useState(false);
+
+  // If the user has already attested (e.g. via another tab/device), the error
+  // is no longer actionable — clear it from state and storage.
+  useEffect(() => {
+    if (hasAttested && attestError) {
+      setAttestErrorRaw(null);
+      clearAttestError(wad.id);
+    }
+  }, [hasAttested, attestError, wad.id]);
 
   // All decision logic comes from consequenceState - no inline derivation
   const {
