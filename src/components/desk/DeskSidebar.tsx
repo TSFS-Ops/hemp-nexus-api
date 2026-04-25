@@ -19,9 +19,9 @@ export function DeskSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden md:flex w-[250px] shrink-0 flex-col bg-card border-r border-border">
+    <aside className="hidden md:flex w-[260px] shrink-0 flex-col bg-[hsl(var(--surface-sidebar))] border-r border-border shadow-sm">
       {/* Wordmark */}
-      <div className="px-6 pt-8 pb-4">
+      <div className="px-6 pt-7 pb-5 border-b border-border/60">
         <h2 className="font-mono text-xs font-medium tracking-[0.25em] text-foreground uppercase">
           Izenzo
         </h2>
@@ -30,15 +30,24 @@ export function DeskSidebar() {
         </p>
       </div>
 
-      {/* Workspace switcher (Command Bridge) */}
-      <div className="px-4 pb-3">
+      {/* Workspace switcher (Command Bridge) — interactive surface */}
+      <div className="px-4 pt-4 pb-2">
+        <p className="px-1 mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/60">
+          Workspace
+        </p>
         <ContextSwitcher tone="light" />
       </div>
 
-      {/* Active org indicator — surfaces legacy/placeholder orgs everywhere */}
-      <div className="px-4 pb-4">
+      {/* Active org indicator — passive identity badge */}
+      <div className="px-4 pt-3 pb-4">
+        <p className="px-1 mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/60">
+          Acting as
+        </p>
         <ActiveOrgIndicator />
       </div>
+
+      {/* Section divider */}
+      <div className="mx-4 border-t border-border/60" />
 
       {/* Nav */}
       <nav className="flex-1 px-4">
