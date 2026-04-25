@@ -50,8 +50,11 @@ export function DeskSidebar() {
       <div className="mx-4 border-t border-border/60" />
 
       {/* Nav */}
-      <nav className="flex-1 px-4">
-        <ul className="space-y-1">
+      <nav className="flex-1 px-3 pt-4">
+        <p className="px-3 mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/60">
+          Navigation
+        </p>
+        <ul className="space-y-0.5">
           {NAV.map((item) => {
             const Icon = item.icon;
             return (
@@ -61,20 +64,33 @@ export function DeskSidebar() {
                   end={item.end}
                   className={({ isActive }) =>
                     [
-                      "flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors",
+                      "relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-150",
                       isActive
-                        ? "bg-muted text-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                        ? "bg-card text-foreground font-medium shadow-sm border border-border/60"
+                        : "text-muted-foreground hover:text-foreground hover:bg-card/60",
                     ].join(" ")
                   }
                 >
-                  <Icon className="h-4 w-4" strokeWidth={1.5} />
-                  <span>{item.label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <span
+                          aria-hidden
+                          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary"
+                        />
+                      )}
+                      <Icon
+                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        strokeWidth={isActive ? 2 : 1.5}
+                      />
+                      <span>{item.label}</span>
+                    </>
+                  )}
                 </NavLink>
               </li>
             );
           })}
-          <li>
+          <li className="pt-1">
             <SidebarNotificationItem tone="light" />
           </li>
         </ul>
