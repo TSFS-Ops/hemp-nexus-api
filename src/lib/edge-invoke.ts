@@ -230,6 +230,57 @@ function translateError(
   );
 }
 
+// ── Transient-failure retry ───────────────────────────────────────────────
+//
+// Supabase Edge Runtime occasionally returns a 503 SUPABASE_EDGE_RUNTIME_ERROR
+// or kills the TCP connection (surfacing in the browser as
+// `TypeError: Failed to fetch`) when an isolate cold-boots under load. The
+// failure is genuinely transient — the immediately-retried request succeeds
+// (see network trace 2026-04-25T15:01:39Z poi-engagements 503 → 15:01:42Z 200).
+//
+// To prevent these blips from blanking out the UI, we retry idempotent calls
+// (GET / no body) up to twice with short backoff. Mutating calls are NOT
+// retried automatically because the original request may have partially
+// succeeded server-side.
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
+const TRANSIENT_BODY_CODES = ["SUPABASE_EDGE_RUNTIME_ERROR", "BOOT_ERROR", "WORKER_LIMIT"];
+
+function isTransientFetchError(err: unknown): boolean {
+  if (err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message)) {
+    return true;
+  }
+  return false;
+}
+
+function isTransientServerResponse(status: number | undefined, body: string): boolean {
+  if (status && TRANSIENT_STATUSES.has(status)) {
+    // Maintenance mode is an explicit 503 we do NOT want to retry — surface it.
+    if (/maintenance/i.test(body)) return false;
+    return true;
+  }
+  if (body && TRANSIENT_BODY_CODES.some((c) => body.includes(c))) return true;
+  return false;
+}
+
+async function withTransientRetry<T>(
+  fn: () => Promise<T>,
+  opts: { retries: number; baseDelayMs: number; isTransient: (err: unknown) => boolean }
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= opts.retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === opts.retries || !opts.isTransient(err)) throw err;
+      // Jittered backoff: 200ms, 600ms
+      const delay = opts.baseDelayMs * (attempt + 1) + Math.random() * 100;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
 // ── invokeEdgeFunction (wraps supabase.functions.invoke) ──────────────────
 export interface InvokeEdgeOptions {
   /** Request body (JSON). */
@@ -255,36 +306,54 @@ export async function invokeEdgeFunction<T = unknown>(
   const metricsContext = label || functionName;
   await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    body: body as Record<string, unknown> | undefined,
-    method,
-    headers,
-  });
+  const isIdempotent = !body && (!method || method === "GET");
 
-  if (error) {
-    const ctx = (error as { context?: Response }).context;
-    let serverBody = "";
-    let serverStatus: number | undefined;
-    let requestId: string | undefined;
-    if (ctx && typeof ctx.text === "function") {
-      serverStatus = ctx.status;
-      try {
-        serverBody = await ctx.clone().text();
-      } catch {
-        /* ignore */
+  const doInvoke = async (): Promise<T> => {
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: body as Record<string, unknown> | undefined,
+      method,
+      headers,
+    });
+
+    if (error) {
+      const ctx = (error as { context?: Response }).context;
+      let serverBody = "";
+      let serverStatus: number | undefined;
+      let requestId: string | undefined;
+      if (ctx && typeof ctx.text === "function") {
+        serverStatus = ctx.status;
+        try {
+          serverBody = await ctx.clone().text();
+        } catch {
+          /* ignore */
+        }
+        requestId = extractRequestId(ctx.headers, serverBody);
       }
-      requestId = extractRequestId(ctx.headers, serverBody);
+      throw translateError(
+        serverStatus,
+        serverBody,
+        label ? `Could not ${label}` : `Edge function ${functionName} failed`,
+        requestId,
+        metricsContext
+      );
     }
-    throw translateError(
-      serverStatus,
-      serverBody,
-      label ? `Could not ${label}` : `Edge function ${functionName} failed`,
-      requestId,
-      metricsContext
-    );
-  }
 
-  return data as T;
+    return data as T;
+  };
+
+  if (!isIdempotent) return doInvoke();
+
+  return withTransientRetry(doInvoke, {
+    retries: 2,
+    baseDelayMs: 200,
+    isTransient: (err) => {
+      if (isTransientFetchError(err)) return true;
+      if (err instanceof EdgeInvokeError) {
+        return isTransientServerResponse(err.status, err.serverBody || "");
+      }
+      return false;
+    },
+  });
 }
 
 // ── fetchEdgeFunction (wraps native fetch for path-based calls) ───────────
@@ -338,37 +407,56 @@ export async function fetchEdgeFunction<T = unknown>(
     }
   }
 
-  const res = await fetch(url, {
-    ...rest,
-    headers: finalHeaders,
-    body: serialisedBody,
-  });
+  const httpMethod = (rest.method || (serialisedBody ? "POST" : "GET")).toUpperCase();
+  const isIdempotent = httpMethod === "GET" || httpMethod === "HEAD";
 
-  if (!res.ok) {
-    let serverBody = "";
-    try {
-      serverBody = await res.text();
-    } catch {
-      /* ignore */
+  const doFetch = async (): Promise<T> => {
+    const res = await fetch(url, {
+      ...rest,
+      headers: finalHeaders,
+      body: serialisedBody,
+    });
+
+    if (!res.ok) {
+      let serverBody = "";
+      try {
+        serverBody = await res.text();
+      } catch {
+        /* ignore */
+      }
+      const requestId = extractRequestId(res.headers, serverBody);
+      throw translateError(
+        res.status,
+        serverBody,
+        label ? `Could not ${label}` : `Request to ${trimmed} failed`,
+        requestId,
+        metricsContext
+      );
     }
-    const requestId = extractRequestId(res.headers, serverBody);
-    throw translateError(
-      res.status,
-      serverBody,
-      label ? `Could not ${label}` : `Request to ${trimmed} failed`,
-      requestId,
-      metricsContext
-    );
-  }
 
-  // Some functions return 204 No Content
-  if (res.status === 204) return undefined as unknown as T;
+    // Some functions return 204 No Content
+    if (res.status === 204) return undefined as unknown as T;
 
-  const text = await res.text();
-  if (!text) return undefined as unknown as T;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return text as unknown as T;
-  }
+    const text = await res.text();
+    if (!text) return undefined as unknown as T;
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return text as unknown as T;
+    }
+  };
+
+  if (!isIdempotent) return doFetch();
+
+  return withTransientRetry(doFetch, {
+    retries: 2,
+    baseDelayMs: 200,
+    isTransient: (err) => {
+      if (isTransientFetchError(err)) return true;
+      if (err instanceof EdgeInvokeError) {
+        return isTransientServerResponse(err.status, err.serverBody || "");
+      }
+      return false;
+    },
+  });
 }
