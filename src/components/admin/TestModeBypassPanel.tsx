@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Save, AlertTriangle } from "lucide-react";
+import { Loader2, Save, AlertTriangle, Sparkles, PowerOff } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
 interface BypassState {
@@ -198,6 +198,45 @@ export function TestModeBypassPanel() {
               </div>
             );
           })()}
+
+          {/* Demo preset controls */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-dashed border-amber-500/40 bg-background/40 px-3 py-2">
+            <div className="text-xs text-muted-foreground">
+              <strong className="text-foreground">One-click demo preset:</strong> enables the master switch
+              and every upstream + WaD gate so a client can run signup → POI → WaD end-to-end without friction.
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => {
+                  const allOn = GATES.reduce((acc, g) => ({ ...acc, [g.key]: true }), {} as Partial<BypassState>);
+                  setState({
+                    ...state,
+                    ...allOn,
+                    enabled: true,
+                    enabled_at: state.enabled_at ?? new Date().toISOString(),
+                    expires_at: addDaysISO(DEFAULT_TTL_DAYS),
+                    note: state.note?.trim() ? state.note : "Demo preset — full bypass for client walkthrough",
+                  });
+                }}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                Enable all for demo
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const allOff = GATES.reduce((acc, g) => ({ ...acc, [g.key]: false }), {} as Partial<BypassState>);
+                  setState({ ...state, ...allOff, enabled: false });
+                }}
+              >
+                <PowerOff className="h-3.5 w-3.5 mr-1.5" />
+                Disable all
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
