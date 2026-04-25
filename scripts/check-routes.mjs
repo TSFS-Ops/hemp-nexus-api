@@ -125,25 +125,81 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
 
   // 2. One-level composition for direct parent→child JSX nesting (i.e.
   //    children that are siblings of `element={...}`, NOT children buried
-  //    inside it). Catches the common `<Route path="settings"><Route
-  //    path="company" /></Route>` pattern used by tabbed sub-views like
-  //    /desk/settings/company.
-  const NESTED_RE =
-    /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"[^>]*>([\s\S]*?)<\/Route\s*>/g;
-  let m;
-  while ((m = NESTED_RE.exec(src)) !== null) {
-    const parent = m[1];
-    const body = m[2];
+  //    inside it). We need a brace + string aware scanner here because a
+  //    naive regex stops at the first `>` inside `element={<Foo>...}` and
+  //    misidentifies self-closing parent Routes as containers, which then
+  //    swallow every following sibling Route as a phantom child. Catches
+  //    the common `<Route path="settings"><Route path="company" /></Route>`
+  //    pattern used by tabbed sub-views like /desk/settings/company.
+  const containers = findContainerRoutes(src);
+  for (const c of containers) {
+    if (c.path == null) continue;
+    if (c.path.startsWith("/")) continue; // absolute parents handled flat
     const childRe = /<Route\b[^>]*?\bpath\s*=\s*"([^"]+)"/g;
     let cm;
-    while ((cm = childRe.exec(body)) !== null) {
+    while ((cm = childRe.exec(c.body)) !== null) {
       const child = cm[1];
-      if (child.startsWith("/")) continue; // absolute children replace, not append
-      const composed = `${parent.replace(/\/+$/, "")}/${child}`;
+      if (child.startsWith("/")) continue;
+      const composed = `${c.path.replace(/\/+$/, "")}/${child}`;
       patterns.add(joinRoute(prefix, composed));
     }
   }
   return patterns;
+}
+
+/**
+ * Brace + string aware JSX walker. Returns container `<Route>` blocks (those
+ * with an explicit `</Route>` close, not self-closing) along with their
+ * inner body text. Used to compose one level of parent/child route paths.
+ */
+function findContainerRoutes(src) {
+  const out = [];
+  const stack = []; // { path, bodyStart }
+  let i = 0;
+  while (i < src.length) {
+    if (src[i] !== "<") { i++; continue; }
+    if (src.startsWith("</Route", i)) {
+      const end = src.indexOf(">", i);
+      if (end === -1) break;
+      const frame = stack.pop();
+      if (frame) {
+        out.push({ path: frame.path, body: src.slice(frame.bodyStart, i) });
+      }
+      i = end + 1;
+      continue;
+    }
+    if (!src.startsWith("<Route", i)) { i++; continue; }
+    const after = src[i + 6];
+    if (after && /[A-Za-z0-9_]/.test(after)) { i++; continue; }
+    // Walk forward to the end of the opening tag, tracking { } depth and
+    // strings so embedded `>` characters don't fool us.
+    let j = i + 6;
+    let depth = 0;
+    let inStr = null;
+    while (j < src.length) {
+      const c = src[j];
+      if (inStr) {
+        if (c === "\\") { j += 2; continue; }
+        if (c === inStr) inStr = null;
+      } else if (c === '"' || c === "'" || c === "`") {
+        inStr = c;
+      } else if (c === "{") depth++;
+      else if (c === "}") { if (depth > 0) depth--; }
+      else if (c === ">" && depth === 0) break;
+      j++;
+    }
+    if (j >= src.length) break;
+    let attrs = src.slice(i + 6, j);
+    const selfClosing = attrs.trimEnd().endsWith("/");
+    if (selfClosing) attrs = attrs.trimEnd().slice(0, -1);
+    const litMatch = attrs.match(/\bpath\s*=\s*"([^"]+)"/);
+    const path = litMatch ? litMatch[1] : null;
+    if (!selfClosing) {
+      stack.push({ path, bodyStart: j + 1 });
+    }
+    i = j + 1;
+  }
+  return out;
 }
 
 /** Apply the shell mount prefix to a child route path. */
