@@ -90,6 +90,13 @@ export function safePdfText(input: unknown): string {
     if (code >= 0xA1 && code <= 0xFF) { out += ch; continue; }
     // Newlines / tabs → spaces; callers wrap text manually
     if (ch === "\n" || ch === "\t" || ch === "\r") { out += " "; continue; }
+    // Variation selectors (U+FE00–U+FE0F) and zero-width joiners (U+200D)
+    // are emoji-presentation modifiers that follow base glyphs (e.g. ⚠️ is
+    // U+26A0 + U+FE0F). The base glyph is replaced via PDF_SAFE_REPLACEMENTS;
+    // the trailing modifier carries no textual content and must be dropped
+    // rather than mapped to "?", which would produce e.g. "[!]?".
+    if (code >= 0xFE00 && code <= 0xFE0F) { continue; }
+    if (code === 0x200D) { continue; }
     // Unknown / unsupported codepoint
     out += "?";
   }
