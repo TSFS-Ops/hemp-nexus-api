@@ -191,37 +191,57 @@ export function AttestationProgressStepper({
   const nextAction = deriveNextAction(consequenceState, hasYou);
   const NextIcon = nextAction.icon;
 
+  // Identify the next "actionable" step so we can mark it with aria-current="step"
+  // for screen readers. Preference order: the viewer's own pending node, otherwise
+  // the first pending node.
+  const nextStepIndex = (() => {
+    if (isTerminal) return -1;
+    const ownPendingIdx = nodes.findIndex((n) => n.isYou && n.state === "pending");
+    if (ownPendingIdx !== -1) return ownPendingIdx;
+    return nodes.findIndex((n) => n.state === "pending");
+  })();
+
   return (
     <section
-      aria-label="Attestation progress"
+      aria-labelledby="attestation-progress-heading"
       className={cn(
         "rounded-lg border bg-card p-4 space-y-4",
         className
       )}
     >
-      {/* Header */}
+      {/* Header — single source of truth for the textual progress summary.
+          The progress bar below carries the same value as a non-text
+          announcement, so we keep it but hide its redundant aria-label. */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
+          <h3
+            id="attestation-progress-heading"
+            className="text-sm font-semibold flex items-center gap-2"
+          >
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-primary" />
             Attestation progress
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {attestedCount} of {total} signatories attested
           </p>
         </div>
-        <Badge variant="outline" className="font-mono text-xs">
+        <Badge
+          variant="outline"
+          className="font-mono text-xs"
+          aria-hidden="true"
+        >
           {pct}%
         </Badge>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar — aria-hidden because the heading paragraph above already
+          announces "{attestedCount} of {total} signatories attested" verbatim.
+          Re-announcing the same fact via role=progressbar produces a
+          double-announcement on most screen readers. The bar remains visible
+          for sighted users. */}
       <div
         className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={pct}
+        aria-hidden="true"
       >
         <div
           className={cn(
@@ -232,77 +252,123 @@ export function AttestationProgressStepper({
         />
       </div>
 
-      {/* Signatory nodes */}
-      <ol className="grid gap-3 sm:grid-cols-2">
-        {nodes.map((node) => {
+      {/* Signatory nodes — explicit ordered list semantics. Each step gets a
+          single consolidated aria-label so screen readers announce
+          "Step 1 of 2: Buyer signatory (you), attested by Jane Doe at …"
+          instead of reading every nested badge/paragraph separately. */}
+      <ol
+        role="list"
+        aria-label="Signatory attestations"
+        className="grid gap-3 sm:grid-cols-2"
+      >
+        {nodes.map((node, idx) => {
           const Icon = nodeIcon(node.state);
+          const stepNumber = idx + 1;
+          const stateText =
+            node.state === "attested"
+              ? `attested${
+                  node.attestedName ? ` by ${node.attestedName}` : ""
+                }${
+                  node.attestedAt
+                    ? ` at ${new Date(node.attestedAt).toLocaleString()}`
+                    : ""
+                }`
+              : isTerminal
+              ? "attestation closed"
+              : "awaiting attestation";
+
+          const ariaLabel = [
+            `Step ${stepNumber} of ${total}`,
+            node.label,
+            node.isYou ? "(you)" : null,
+            `for ${node.party}`,
+            `— ${stateText}`,
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          const isCurrent = idx === nextStepIndex;
+
           return (
             <li
               key={node.key}
+              aria-label={ariaLabel}
+              aria-current={isCurrent ? "step" : undefined}
+              tabIndex={0}
               className={cn(
                 "rounded-md border p-3 flex items-start gap-3",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 node.state === "attested"
                   ? "border-green-500/40 bg-green-500/5"
-                  : "border-border bg-background"
+                  : "border-border bg-background",
+                isCurrent && node.state !== "attested" && "ring-1 ring-primary/40"
               )}
             >
-              <div
-                className={cn(
-                  "rounded-full p-1.5 shrink-0",
-                  node.state === "attested"
-                    ? "bg-green-500/15 text-green-600 dark:text-green-400"
-                    : "bg-muted text-muted-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-medium truncate">{node.label}</p>
-                  {node.isYou && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      You
-                    </Badge>
+              {/* Visual-only block. aria-hidden because the parent <li>
+                  already provides the consolidated label. */}
+              <div aria-hidden="true" className="contents">
+                <div
+                  className={cn(
+                    "rounded-full p-1.5 shrink-0",
+                    node.state === "attested"
+                      ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                      : "bg-muted text-muted-foreground"
                   )}
-                  {node.state === "attested" && (
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] px-1.5 py-0 border-green-500/40 text-green-700 dark:text-green-400"
-                    >
-                      Attested
-                    </Badge>
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium truncate">{node.label}</p>
+                    {node.isYou && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        You
+                      </Badge>
+                    )}
+                    {node.state === "attested" && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-0 border-green-500/40 text-green-700 dark:text-green-400"
+                      >
+                        Attested
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {node.party}
+                  </p>
+                  {node.state === "attested" ? (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {node.attestedName}
+                      {node.attestedAt && (
+                        <> · {new Date(node.attestedAt).toLocaleString()}</>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {isTerminal ? "Attestation closed" : "Awaiting attestation"}
+                    </p>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {node.party}
-                </p>
-                {node.state === "attested" ? (
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {node.attestedName}
-                    {node.attestedAt && (
-                      <> · {new Date(node.attestedAt).toLocaleString()}</>
-                    )}
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {isTerminal ? "Attestation closed" : "Awaiting attestation"}
-                  </p>
-                )}
               </div>
             </li>
           );
         })}
       </ol>
 
-      {/* Next action */}
+      {/* Next action — distinct landmark so SRs read it separately from the
+          step list. */}
       <div
+        role="status"
+        aria-live="polite"
+        aria-label={`Next: ${nextAction.label}. ${nextAction.description}`}
         className={cn(
           "rounded-md border px-3 py-2 flex items-start gap-3",
           TONE_CLASSES[nextAction.tone]
         )}
       >
-        <NextIcon className="h-4 w-4 mt-0.5 shrink-0" />
-        <div className="min-w-0 flex-1">
+        <NextIcon aria-hidden="true" className="h-4 w-4 mt-0.5 shrink-0" />
+        <div aria-hidden="true" className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
             Next
           </p>
