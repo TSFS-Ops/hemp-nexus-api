@@ -3,6 +3,11 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import {
+  checkOrgLegitimacy,
+  getActiveGovernanceProfile,
+  ORG_NOT_VERIFIED_CODE,
+} from "../_shared/legitimacy.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
