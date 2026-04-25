@@ -1155,6 +1155,21 @@ paths:
                         total: 0
                       nextAction: view_only
                     request_id: "deadbeef-1111-4222-9333-444455556666"
+        '304':
+          description: |
+            Not Modified — the payload has not changed since the validator
+            supplied in `If-None-Match` was issued. Response body is empty;
+            clients should reuse their cached representation.
+          headers:
+            ETag:
+              description: Same validator the client supplied (echoed for cache priming).
+              schema:
+                type: string
+            Cache-Control:
+              description: Caching directive (always `private` — viewer-specific).
+              schema:
+                type: string
+              example: "private, max-age=10, stale-while-revalidate=30"
         '401':
           $ref: '#/components/responses/Unauthorised'
         '403':
