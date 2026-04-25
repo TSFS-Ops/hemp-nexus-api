@@ -260,7 +260,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         return (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Both buyer and seller must attest before the Signed Deal can be sealed.
+              {t("wad.signatories.intro")}
             </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 border rounded-lg">
@@ -271,12 +271,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     <Clock className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
-                    <p className="font-medium">Buyer Signatory</p>
+                    <p className="font-medium">{t("wad.signatories.buyer")}</p>
                     <p className="text-sm text-muted-foreground">{match.buyer_name}</p>
                   </div>
                 </div>
                 {attestations.buyerAttested && (
-                  <Badge variant="outline" className="text-green-600">Attested</Badge>
+                  <Badge variant="outline" className="text-green-600">{t("wad.signatories.attestedBadge")}</Badge>
                 )}
               </div>
               <div className="flex items-center justify-between p-3 border rounded-lg">
@@ -287,12 +287,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     <Clock className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
-                    <p className="font-medium">Seller Signatory</p>
+                    <p className="font-medium">{t("wad.signatories.seller")}</p>
                     <p className="text-sm text-muted-foreground">{match.seller_name}</p>
                   </div>
                 </div>
                 {attestations.sellerAttested && (
-                  <Badge variant="outline" className="text-green-600">Attested</Badge>
+                  <Badge variant="outline" className="text-green-600">{t("wad.signatories.attestedBadge")}</Badge>
                 )}
               </div>
             </div>
