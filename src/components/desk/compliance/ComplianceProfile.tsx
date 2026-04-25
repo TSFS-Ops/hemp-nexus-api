@@ -168,7 +168,55 @@ export function ComplianceProfile() {
     org &&
     (org.legal_name || org.registration_number || org.vat_number || org.address)
   );
+  const identityFullyOnFile = !!(
+    org &&
+    org.legal_name &&
+    org.registration_number &&
+    org.address &&
+    (org.jurisdictions?.length ?? 0) > 0
+  );
   const isComplete = hasIdentity && owners.length > 0 && docs.length > 0;
+  const aggregateOwnership = owners.reduce(
+    (sum, o) => (o.status === "verified" ? sum + Number(o.ownership_percentage || 0) : sum),
+    0
+  );
+
+  // Each gap maps to the first actionable sub-step in CompanyIdentityTab so
+  // "Request Data Update" never lands the user on a tab that is already complete.
+  const gaps: Gap[] = [];
+  if (!identityFullyOnFile) {
+    gaps.push({
+      step: "entity",
+      title: "Complete registered identity",
+      description:
+        "Legal name, registration number, registered address and jurisdiction must all be on file.",
+      cta: "Update Identity",
+      icon: Building2,
+    });
+  }
+  if (owners.length === 0 || aggregateOwnership < 75) {
+    gaps.push({
+      step: "owners",
+      title:
+        owners.length === 0 ? "Declare beneficial owners" : "Reach 75% verified ownership",
+      description:
+        owners.length === 0
+          ? "KYB requires at least one declared UBO. Add owners and percentages to satisfy the gate."
+          : "Aggregate verified ownership is below the 75% KYB threshold. Add or verify additional owners.",
+      cta: owners.length === 0 ? "Declare Owners" : "Update Owners",
+      icon: Users,
+    });
+  }
+  if (docs.length === 0) {
+    gaps.push({
+      step: "documents",
+      title: "Upload regulatory evidence",
+      description:
+        "Registration certificate, tax clearance and KYC pack are required for counterparty verification.",
+      cta: "Upload Documents",
+      icon: FileText,
+    });
+  }
 
   // ── Empty state ────────────────────────────────────────────
   // Triggered only when the org has *no* identity, *no* declared owners
