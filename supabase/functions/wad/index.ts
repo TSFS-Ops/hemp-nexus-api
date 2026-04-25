@@ -1059,34 +1059,10 @@ Deno.serve(async (req) => {
       // (CP1252) glyph set. Any character outside that range — emoji, smart
       // quotes, em/en dashes, ellipsis, accented Unicode from user content —
       // will throw "WinAnsi cannot encode" mid-render and surface to the user
-      // as "An internal error occurred". Sanitise every string before drawing.
-      const safe = (input: unknown): string => {
-        if (input === null || input === undefined) return "";
-        const str = String(input);
-        const replacements: Record<string, string> = {
-          "\u2013": "-", "\u2014": "-",            // – —
-          "\u2018": "'", "\u2019": "'", "\u201A": "'", "\u201B": "'",
-          "\u201C": '"', "\u201D": '"', "\u201E": '"', "\u201F": '"',
-          "\u2026": "...",                           // …
-          "\u2022": "*", "\u00B7": "*",            // • ·
-          "\u26A0": "[!]", "\u26A0\uFE0F": "[!]",   // ⚠
-          "\u2705": "[OK]", "\u2713": "[OK]",       // ✅ ✓
-          "\u274C": "[X]", "\u2717": "[X]",         // ❌ ✗
-          "\u2192": "->", "\u2190": "<-",            // → ←
-          "\u00A0": " ",                              // NBSP
-        };
-        let out = "";
-        for (const ch of str) {
-          if (replacements[ch] !== undefined) { out += replacements[ch]; continue; }
-          const code = ch.codePointAt(0) ?? 0;
-          // Keep printable ASCII + Latin-1 supplement (covered by WinAnsi)
-          if (code <= 0x7E && code >= 0x20) { out += ch; continue; }
-          if (code >= 0xA1 && code <= 0xFF) { out += ch; continue; }
-          if (ch === "\n" || ch === "\t") { out += " "; continue; }
-          out += "?"; // fallback for any other unsupported codepoint
-        }
-        return out;
-      };
+      // as "An internal error occurred". Sanitise every string before drawing
+      // via the shared safePdfText helper (see _shared/pdf-sanitizer.ts and
+      // its test suite for the exact codepoint coverage matrix).
+      const safe = safePdfText;
 
       // Utility: draw text with wrapping, returns new y
       const drawWrapped = (
