@@ -67,7 +67,10 @@ async function triggerAttestError(kind: "auth_required" | "client_error" | "serv
 }
 
 describe("WadStepper attestation error hints", () => {
-  beforeEach(() => submitAttestationMock.mockReset());
+  beforeEach(() => {
+    submitAttestationMock.mockReset();
+    sessionStorage.clear();
+  });
 
   it("shows auth-required hint for expired session", async () => {
     await triggerAttestError("auth_required");
@@ -91,5 +94,48 @@ describe("WadStepper attestation error hints", () => {
   it("shows network-error hint about connectivity", async () => {
     await triggerAttestError("network_error");
     expect(screen.getByTestId("attest-error-hint").textContent).toMatch(/couldn't reach the server/i);
+  });
+});
+
+describe("WadStepper attestation error persistence", () => {
+  beforeEach(() => {
+    submitAttestationMock.mockReset();
+    sessionStorage.clear();
+  });
+
+  it("persists the error to sessionStorage and restores it on remount", async () => {
+    await triggerAttestError("server_error");
+    const stored = sessionStorage.getItem("wad:attestError:wad-1");
+    expect(stored).toBeTruthy();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.requestId).toBe("req-abc-123");
+    expect(parsed.kind).toBe("server_error");
+
+    // Simulate a reload: unmount + fresh render with the same wad id.
+    document.body.innerHTML = "";
+    render(
+      <WadStepper
+        wad={makeWad()}
+        match={makeMatch()}
+        consequenceState={makeState()}
+        userOrgId="org-buyer"
+        onUpdate={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /review & attest/i }));
+    expect(screen.getByTestId("attest-error-hint")).toBeTruthy();
+    expect(screen.getByText(/req-abc-123/)).toBeTruthy();
+  });
+
+  it("clears the persisted error after a successful attestation", async () => {
+    await triggerAttestError("client_error");
+    expect(sessionStorage.getItem("wad:attestError:wad-1")).toBeTruthy();
+
+    submitAttestationMock.mockResolvedValueOnce({ success: true });
+    fireEvent.click(screen.getByRole("button", { name: /retry attestation/i }));
+    await waitFor(() => {
+      expect(screen.queryByTestId("attest-error-hint")).toBeNull();
+    });
+    expect(sessionStorage.getItem("wad:attestError:wad-1")).toBeNull();
   });
 });
