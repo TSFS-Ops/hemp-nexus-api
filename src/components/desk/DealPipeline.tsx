@@ -517,7 +517,11 @@ export function DealPipeline() {
           return (
             <div
               key={lane.id}
-              className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden"
+              className={cn(
+                "flex flex-col rounded-xl border border-border shadow-sm overflow-hidden",
+                accent.tint,
+                accent.ring,
+              )}
             >
               {/* Top accent bar - sets lane identity without shouting. */}
               <div className={cn("h-0.5 w-full", accent.bar)} />
