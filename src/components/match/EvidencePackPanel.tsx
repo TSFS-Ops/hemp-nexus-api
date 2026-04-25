@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Award,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
@@ -61,6 +63,9 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const [loading, setLoading] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     originalHash: string;
@@ -81,6 +86,8 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     try {
       setLoading(true);
       setVerificationResult(null);
+      setPreviewHtml(null);
+      setPreviewOpen(false);
 
       const data = await fetchEdgeFunction<EvidencePackData>(`evidence-pack/${matchId}`, {
         method: "GET",
@@ -104,23 +111,48 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     toast.success("JSON evidence pack downloaded");
   }, [pack, matchId]);
 
-  const downloadHtmlReport = useCallback(async () => {
+  const fetchHtmlReport = useCallback(async (): Promise<string | null> => {
     try {
       const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
         method: "GET",
         query: { format: "pdf" },
-        label: "download evidence report",
+        label: "load evidence report",
       });
-      downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
-      toast.success("Evidence report downloaded", {
-        description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
-        duration: 8000,
-      });
+      return typeof html === "string" ? html : String(html ?? "");
     } catch (error) {
-      console.error("Report download error:", error);
-      toast.error(describeEdgeError(error, "Failed to download evidence report"), { duration: 8000 });
+      console.error("Report fetch error:", error);
+      toast.error(describeEdgeError(error, "Failed to load evidence report"), { duration: 8000 });
+      return null;
     }
   }, [matchId]);
+
+  const downloadHtmlReport = useCallback(async () => {
+    const html = previewHtml ?? (await fetchHtmlReport());
+    if (!html) return;
+    downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
+    toast.success("Evidence report downloaded", {
+      description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
+      duration: 8000,
+    });
+  }, [fetchHtmlReport, previewHtml, matchId]);
+
+  const togglePreview = useCallback(async () => {
+    if (previewOpen) {
+      setPreviewOpen(false);
+      return;
+    }
+    if (previewHtml) {
+      setPreviewOpen(true);
+      return;
+    }
+    setPreviewLoading(true);
+    const html = await fetchHtmlReport();
+    setPreviewLoading(false);
+    if (html) {
+      setPreviewHtml(html);
+      setPreviewOpen(true);
+    }
+  }, [fetchHtmlReport, previewHtml, previewOpen]);
 
   const downloadDealCertificate = useCallback(async () => {
     try {
@@ -355,11 +387,56 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                   Download Canonical JSON
                 </Button>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={togglePreview}
+                disabled={previewLoading}
+              >
+                {previewLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading preview…
+                  </>
+                ) : previewOpen ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Hide in-page preview
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview evidence pack in-page
+                  </>
+                )}
+              </Button>
               <p className="text-[11px] text-muted-foreground">
                 The HTML report is the human-readable, printable evidence pack (match summary, event timeline,
                 documents, approval chain, full audit references). Open it in any browser. The JSON is the
                 machine-readable canonical source used to compute the SHA-256 hash above.
               </p>
+
+              {/* In-page preview panel */}
+              {previewOpen && previewHtml && (
+                <div className="mt-2 rounded-md border border-border bg-background overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                      <FileText className="h-3.5 w-3.5" />
+                      Evidence Pack Preview
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      Read-only · sandboxed
+                    </span>
+                  </div>
+                  <iframe
+                    title="Evidence pack preview"
+                    sandbox=""
+                    srcDoc={previewHtml}
+                    className="block w-full h-[520px] bg-background"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Verify button */}
