@@ -244,7 +244,7 @@ export function AttestationProgressStepper({
   const nodes: SignatoryNode[] = [
     {
       key: "buyer",
-      label: "Buyer signatory",
+      label: t("wad.signatories.buyer"),
       party: buyerName || "Buyer",
       state: buyerState,
       attestedAt: buyerAttestation?.attested_at,
@@ -253,7 +253,7 @@ export function AttestationProgressStepper({
     },
     {
       key: "seller",
-      label: "Seller signatory",
+      label: t("wad.signatories.seller"),
       party: sellerName || "Seller",
       state: sellerState,
       attestedAt: sellerAttestation?.attested_at,
