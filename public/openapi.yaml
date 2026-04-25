@@ -994,9 +994,12 @@ paths:
                       helperText: "You'll be the first to attest. The other party still needs to attest before this deal can be sealed."
                       viewerRole: buyer_signatory
                       hasAttested: false
+                      viewerAttestedAt: null
                       attestations:
                         buyerAttested: false
                         sellerAttested: false
+                        buyerAttestedAt: null
+                        sellerAttestedAt: null
                         total: 0
                       nextAction: attest
                     request_id: "550e8400-e29b-41d4-a716-446655440000"
@@ -1014,9 +1017,12 @@ paths:
                       helperText: "You've attested. Waiting for the counterparty signatory to attest."
                       viewerRole: buyer_signatory
                       hasAttested: true
+                      viewerAttestedAt: "2025-04-24T09:15:32.412Z"
                       attestations:
                         buyerAttested: true
                         sellerAttested: false
+                        buyerAttestedAt: "2025-04-24T09:15:32.412Z"
+                        sellerAttestedAt: null
                         total: 1
                       nextAction: await_other_party
                     request_id: "9d3a4f6c-1b2e-4a8b-9c0d-7e5f4a3b2c10"
@@ -1034,9 +1040,12 @@ paths:
                       helperText: "Both signatories have attested. Sealing finalises the evidence bundle."
                       viewerRole: seller_signatory
                       hasAttested: true
+                      viewerAttestedAt: "2025-04-24T11:02:08.913Z"
                       attestations:
                         buyerAttested: true
                         sellerAttested: true
+                        buyerAttestedAt: "2025-04-24T09:15:32.412Z"
+                        sellerAttestedAt: "2025-04-24T11:02:08.913Z"
                         total: 2
                       nextAction: seal
                     request_id: "1f2e3d4c-5b6a-4789-9012-345678901234"
@@ -1054,9 +1063,12 @@ paths:
                       helperText: "All required attestations are in place. The certificate is available to download."
                       viewerRole: buyer_signatory
                       hasAttested: true
+                      viewerAttestedAt: "2025-04-24T09:15:32.412Z"
                       attestations:
                         buyerAttested: true
                         sellerAttested: true
+                        buyerAttestedAt: "2025-04-24T09:15:32.412Z"
+                        sellerAttestedAt: "2025-04-24T11:02:08.913Z"
                         total: 2
                       nextAction: download_certificate
                     request_id: "abcd1234-ef56-4789-9abc-def012345678"
@@ -1074,9 +1086,12 @@ paths:
                       helperText: "Only the nominated buyer and seller signatories for this trade can attest. You're viewing as a witness/observer."
                       viewerRole: witness
                       hasAttested: false
+                      viewerAttestedAt: null
                       attestations:
                         buyerAttested: false
                         sellerAttested: true
+                        buyerAttestedAt: null
+                        sellerAttestedAt: "2025-04-24T11:02:08.913Z"
                         total: 1
                       nextAction: view_only
                     request_id: "0a1b2c3d-4e5f-4607-8819-9a0b1c2d3e4f"
@@ -1094,9 +1109,12 @@ paths:
                       helperText: "This Signed Deal has been revoked: counterparty withdrew."
                       viewerRole: buyer_signatory
                       hasAttested: false
+                      viewerAttestedAt: null
                       attestations:
                         buyerAttested: false
                         sellerAttested: false
+                        buyerAttestedAt: null
+                        sellerAttestedAt: null
                         total: 0
                       nextAction: view_only
                     request_id: "deadbeef-1111-4222-9333-444455556666"
@@ -1710,8 +1728,13 @@ components:
 
     WadAttestationCounts:
       type: object
-      description: Per-side attestation tally for a WaD.
-      required: [buyerAttested, sellerAttested, total]
+      description: Per-side attestation tally for a WaD, with timestamps.
+      required:
+        - buyerAttested
+        - sellerAttested
+        - buyerAttestedAt
+        - sellerAttestedAt
+        - total
       properties:
         buyerAttested:
           type: boolean
@@ -1719,6 +1742,16 @@ components:
         sellerAttested:
           type: boolean
           description: True once the seller signatory has attested.
+        buyerAttestedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of the buyer's attestation, or null if not yet attested.
+        sellerAttestedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of the seller's attestation, or null if not yet attested.
         total:
           type: integer
           minimum: 0
@@ -1737,6 +1770,7 @@ components:
         - helperText
         - viewerRole
         - hasAttested
+        - viewerAttestedAt
         - attestations
         - nextAction
       properties:
@@ -1765,6 +1799,14 @@ components:
         hasAttested:
           type: boolean
           description: Whether the caller has already attested on this WaD.
+        viewerAttestedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            ISO-8601 timestamp of the caller's own attestation on this WaD, or
+            null if the caller has not attested. Convenience field — equivalent
+            to the matching entry in `attestations` for the caller's role.
         attestations:
           $ref: '#/components/schemas/WadAttestationCounts'
         nextAction:
