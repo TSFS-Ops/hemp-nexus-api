@@ -214,6 +214,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
           reason: err instanceof Error ? err.name : "unknown",
         },
       });
+    }
   };
 
   // Build a small text incident report and trigger a browser download.
