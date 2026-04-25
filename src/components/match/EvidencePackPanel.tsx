@@ -427,6 +427,23 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
             {/* Download buttons */}
             <div className="space-y-2">
+              {/* Artifact fingerprint — surfaces version + full SHA-256 + generated UTC
+                  on the download surface itself so what you see matches what hits disk. */}
+              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[11px] font-mono text-muted-foreground space-y-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span>
+                    <span className="text-foreground font-semibold">Version:</span>{" "}
+                    {pack.metadata.format || "v1"}
+                  </span>
+                  <span>
+                    <span className="text-foreground font-semibold">Generated (UTC):</span>{" "}
+                    {pack.metadata.generatedAt}
+                  </span>
+                </div>
+                <div className="break-all">
+                  <span className="text-foreground font-semibold">SHA-256:</span> {pack.packHash}
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="default" className="flex-1" onClick={downloadHtmlReport}>
                   <FileText className="h-4 w-4 mr-2" />
