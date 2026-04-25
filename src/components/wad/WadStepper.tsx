@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,11 @@ import {
   type ConsequenceState,
 } from "@/lib/modules/consequence";
 import { AttestationProgressStepper } from "./AttestationProgressStepper";
+import {
+  loadAttestError,
+  saveAttestError,
+  clearAttestError,
+} from "@/lib/wad/attest-error-storage";
 
 type Match = Tables<"matches">;
 
@@ -50,11 +55,22 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
-  const [attestError, setAttestError] = useState<{
+  type AttestErrorState = {
     message: string;
     requestId?: string;
     kind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
-  } | null>(null);
+  };
+  const [attestError, setAttestErrorRaw] = useState<AttestErrorState | null>(() => {
+    const persisted = loadAttestError(wad.id);
+    if (!persisted) return null;
+    return { message: persisted.message, requestId: persisted.requestId, kind: persisted.kind };
+  });
+  // Wrapper that mirrors writes to sessionStorage so a reload restores the error.
+  const setAttestError = (next: AttestErrorState | null) => {
+    setAttestErrorRaw(next);
+    if (next) saveAttestError(wad.id, next);
+    else clearAttestError(wad.id);
+  };
   const [refCopied, setRefCopied] = useState(false);
 
   // All decision logic comes from consequenceState - no inline derivation
@@ -67,6 +83,15 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
     uiStatus,
     statusLabel,
   } = consequenceState;
+
+  // If the user has already attested (e.g. via another tab/device), the error
+  // is no longer actionable — clear it from state and storage.
+  useEffect(() => {
+    if (hasAttested && attestError) {
+      setAttestErrorRaw(null);
+      clearAttestError(wad.id);
+    }
+  }, [hasAttested, attestError, wad.id]);
 
   const getStatusBadge = () => {
     switch (uiStatus) {
