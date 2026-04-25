@@ -60,7 +60,7 @@ async function triggerAttestError(kind: "auth_required" | "client_error" | "serv
   );
   // navigate to Review & Attest step
   fireEvent.click(screen.getByRole("button", { name: /review & attest/i }));
-  fireEvent.change(screen.getByLabelText(/your full legal name/i), { target: { value: "Jane Doe" } });
+  fireEvent.change(screen.getByLabelText(/your full name/i), { target: { value: "Jane Doe" } });
   fireEvent.click(screen.getByLabelText(/i confirm that this is not a contract/i));
   fireEvent.click(screen.getByRole("button", { name: /^attest$/i }));
   await waitFor(() => screen.getByTestId("attest-error-hint"));
