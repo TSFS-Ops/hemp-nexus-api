@@ -106,9 +106,13 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
   const downloadJson = useCallback(() => {
     if (!pack) return;
+    const filename = `evidence-pack-${matchId}.json`;
     const json = JSON.stringify(pack, null, 2);
-    downloadFile(json, `evidence-pack-${matchId}.json`, "application/json");
-    toast.success("JSON evidence pack downloaded");
+    downloadFile(json, filename, "application/json");
+    toast.success("Canonical JSON downloaded", {
+      description: `Saved as ${filename} — machine-readable canonical evidence pack.`,
+      duration: 6000,
+    });
   }, [pack, matchId]);
 
   const fetchHtmlReport = useCallback(async (): Promise<string | null> => {
