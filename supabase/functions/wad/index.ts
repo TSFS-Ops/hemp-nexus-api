@@ -9,6 +9,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
 import { tryBypass } from "../_shared/test-mode-bypass.ts";
 import { decideIdempotency, hashAttestBody } from "../_shared/idempotency.ts";
+import { computeETag, ifNoneMatchMatches, notModifiedResponse } from "../_shared/etag.ts";
+import { cacheHeaders } from "../_shared/cache.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -727,17 +729,42 @@ Deno.serve(async (req) => {
         };
       })();
 
+      // Build the canonical response payload. We deliberately exclude
+      // `request_id` from the ETag input because it changes per-request
+      // (instrumentation) and would defeat caching. Clients that care about
+      // the request id can still read it from the response body or the
+      // x-request-id header on a 200; on a 304 they already know the
+      // payload is unchanged so the prior request_id is irrelevant.
+      const responsePayload = {
+        wad_id: wad.id,
+        status: wad.status,
+        isTerminal,
+        ui,
+      };
+
+      const etag = await computeETag(responsePayload);
+      // Private + short max-age: this is per-viewer (helperText, viewerRole,
+      // viewerAttestedAt all depend on the caller) so we MUST NOT let shared
+      // caches store it. The ETag still lets the same client skip the body
+      // on a poll within the freshness window.
+      const cacheCtrl = cacheHeaders("private-short");
+
+      const ifNoneMatch =
+        req.headers.get("If-None-Match") || req.headers.get("if-none-match");
+      if (ifNoneMatchMatches(ifNoneMatch, etag)) {
+        return notModifiedResponse(etag, { ...headers, ...cacheCtrl });
+      }
+
       return new Response(
-        JSON.stringify({
-          wad_id: wad.id,
-          status: wad.status,
-          isTerminal,
-          ui,
-          request_id: requestId,
-        }),
+        JSON.stringify({ ...responsePayload, request_id: requestId }),
         {
           status: 200,
-          headers: { ...headers, "Content-Type": "application/json" },
+          headers: {
+            ...headers,
+            ...cacheCtrl,
+            ETag: etag,
+            "Content-Type": "application/json",
+          },
         },
       );
     }

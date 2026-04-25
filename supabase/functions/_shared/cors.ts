@@ -3,9 +3,9 @@
 // Wildcard ('*') is permitted ONLY when ALLOWED_ORIGINS is explicitly set to '*' (dev/test).
 
 const BASE_HEADERS = {
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, idempotency-key, x-request-id, x-internal-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, idempotency-key, x-request-id, x-internal-key, if-none-match',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-  'Access-Control-Expose-Headers': 'X-Idempotent-Replay, X-Match-Duplicate',
+  'Access-Control-Expose-Headers': 'X-Idempotent-Replay, X-Match-Duplicate, ETag',
   'Vary': 'Origin',
 };
 

@@ -967,14 +967,51 @@ paths:
         - **`request_id`** — server correlation ID; surface this in user-facing
           error messages so support can trace failures.
 
+        ### Conditional GET (caching)
+
+        The response carries a strong `ETag` validator computed from the
+        canonical UI payload (excluding the per-request `request_id`).
+        Clients that poll for state changes SHOULD echo the previously seen
+        validator back in `If-None-Match`. When the payload is unchanged the
+        server returns `304 Not Modified` with no body, saving bandwidth and
+        DB cost.
+
+        Because the payload is per-viewer (helper text, viewer role and
+        viewer-specific timestamps depend on the caller), the response is
+        marked `Cache-Control: private, max-age=10, stale-while-revalidate=30`
+        — shared caches MUST NOT store it.
+
         Requires the caller to be a party to the WaD (buyer or seller org)
         or an admin.
       operationId: getWadAttestationUi
       parameters:
         - $ref: '#/components/parameters/WadIdParam'
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            Previously seen `ETag` value. When supplied and still current,
+            the server returns `304 Not Modified` with no body.
+          example: '"3f786850e387550fdab836ed7e6dc881de23001b1c5e3b6c5b5d5b5e5d5b5e5d"'
       responses:
         '200':
           description: Attestation UI model
+          headers:
+            ETag:
+              description: |
+                Strong validator for the response payload. Echo this back in
+                `If-None-Match` on subsequent polls to receive `304 Not Modified`
+                when the payload is unchanged.
+              schema:
+                type: string
+              example: '"3f786850e387550fdab836ed7e6dc881de23001b1c5e3b6c5b5d5b5e5d5b5e5d"'
+            Cache-Control:
+              description: Caching directive (always `private` — viewer-specific).
+              schema:
+                type: string
+              example: "private, max-age=10, stale-while-revalidate=30"
           content:
             application/json:
               schema:
@@ -1118,6 +1155,21 @@ paths:
                         total: 0
                       nextAction: view_only
                     request_id: "deadbeef-1111-4222-9333-444455556666"
+        '304':
+          description: |
+            Not Modified — the payload has not changed since the validator
+            supplied in `If-None-Match` was issued. Response body is empty;
+            clients should reuse their cached representation.
+          headers:
+            ETag:
+              description: Same validator the client supplied (echoed for cache priming).
+              schema:
+                type: string
+            Cache-Control:
+              description: Caching directive (always `private` — viewer-specific).
+              schema:
+                type: string
+              example: "private, max-age=10, stale-while-revalidate=30"
         '401':
           $ref: '#/components/responses/Unauthorised'
         '403':
