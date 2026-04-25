@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
 
 export function MyProfileTab() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -78,6 +80,119 @@ export function MyProfileTab() {
           {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
+
+      <DangerZone
+        userEmail={user?.email ?? ""}
+        onDeleted={async () => {
+          await supabase.auth.signOut();
+          navigate("/", { replace: true });
+        }}
+      />
+    </div>
+  );
+}
+
+function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: () => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleDelete = async () => {
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-account", {
+        body: { confirmation, reason },
+      });
+      if (error) {
+        // Edge function returns structured errors in `data` on non-2xx.
+        const msg =
+          (data as { message?: string } | null)?.message ??
+          error.message ??
+          "Could not delete account.";
+        toast.error(msg);
+        return;
+      }
+      toast.success(
+        (data as { message?: string } | null)?.message ??
+          "Account scheduled for deletion. You can sign in within 30 days to cancel.",
+        { duration: 8000 },
+      );
+      await onDeleted();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete account.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-12 border-t border-destructive/30 pt-8">
+      <h3 className="text-sm font-medium tracking-wider uppercase text-destructive mb-2">
+        Danger zone
+      </h3>
+      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+        Delete your account if you no longer need access. Your trade and compliance
+        records are retained for the 7-year regulatory window, but your personal
+        details are anonymised immediately. You have a 30-day grace period to
+        recover the account by signing back in.
+      </p>
+
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center justify-center px-4 py-2.5 rounded-md border border-destructive/50 text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors min-h-[44px]"
+        >
+          Delete my account
+        </button>
+      ) : (
+        <div className="space-y-4 bg-destructive/5 border border-destructive/30 rounded-md p-4 md:p-6">
+          <div className="space-y-2">
+            <label className="block text-xs font-medium tracking-wider uppercase text-muted-foreground">
+              Reason (optional)
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder="Help us improve — why are you leaving?"
+              className="w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-foreground focus:outline-none focus:border-slate-400 transition-colors resize-none"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium tracking-wider uppercase text-muted-foreground">
+              Type <span className="font-mono text-foreground">{userEmail}</span> to confirm
+            </label>
+            <input
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+              autoComplete="off"
+              className="w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-foreground focus:outline-none focus:border-destructive transition-colors font-mono"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              onClick={handleDelete}
+              disabled={submitting || confirmation.trim().toLowerCase() !== userEmail.toLowerCase()}
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+            >
+              {submitting ? "Deleting…" : "Permanently delete account"}
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                setConfirmation("");
+                setReason("");
+              }}
+              disabled={submitting}
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded-md border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
