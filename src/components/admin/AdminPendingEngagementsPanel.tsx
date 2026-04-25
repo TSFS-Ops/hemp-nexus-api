@@ -144,6 +144,11 @@ export function AdminPendingEngagementsPanel() {
   // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  // Off-scope counters: when admin is on "Unknown only", we still surface how many
+  // engagements live in the "All" bucket and how many of those auto-promoted in the
+  // last 7 days. This prevents the "my row vanished after auto-link" support pattern.
+  const [knownTotalCount, setKnownTotalCount] = useState<number>(0);
+  const [knownRecentCount, setKnownRecentCount] = useState<number>(0);
 
   // ── Reviewer support-notes filter ──
   // notesFilter: "any" (no filter) | "with" (has notes) | "without" (no notes)
