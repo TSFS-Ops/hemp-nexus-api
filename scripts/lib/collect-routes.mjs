@@ -95,85 +95,55 @@ export function collectRoutePatterns(files, routeConsts) {
 }
 
 /**
- * Strict, nesting-aware route extractor for codegen.
+ * Nested-parent registry: maps `<shellPrefix><parent>` → list of child
+ * segments declared inside that parent's <Route> block. Encoded explicitly
+ * because JSX inside `element={…}` props defeats regex-based depth tracking,
+ * and the project has only one nested parent in the entire codebase
+ * (Desk → settings).
  *
- * Walks <Route> tokens linearly tracking a parent-path stack so children of
- * `<Route path="settings">` are emitted as `settings/company`, never as the
- * unqualified `company`. This is what makes `routeTo("/desk/company")` fail
- * to compile while `routeTo("/desk/settings/company")` succeeds.
- *
- * Trade-off vs. the lenient scanner above: this only emits routes whose
- * full nesting can be resolved with literal paths. The lenient matcher in
- * check-routes.mjs is still in play to catch typos in JSX-expression cases.
+ * If a future PR adds another nested parent, add it here AND ensure the
+ * lenient flat scan keeps treating the parent as `parent/*` (it does, via
+ * the `TABBED_PARENT_RE` rule above).
  */
-export function collectRoutePatternsStrict(files, routeConsts) {
-  const out = new Set();
-  for (const file of files) {
-    const src = readFileSync(file, "utf8");
-    const prefix = SHELL_PREFIXES[file] ?? "";
-    if (prefix) out.add(prefix);
-    for (const p of strictWalk(src, routeConsts)) {
-      out.add(joinRoute(prefix, p));
-    }
-  }
-  return out;
-}
+export const NESTED_PARENTS = {
+  "/desk/settings": ["company", "notifications", "balance"],
+};
 
 /**
- * Token walker that tracks <Route ...> open/close to resolve true parent
- * paths. Emits any path whose subtree contains no further `<Route>` children
- * (i.e. genuine navigable leaves). `<Route index>` contributes the parent's
- * own path. Routes whose `path` attribute is a non-literal expression are
- * skipped (we cannot statically resolve them).
+ * Strict route extractor for codegen. Returns the same set as the lenient
+ * scanner BUT:
+ *   • drops orphan tab paths whose real home is a nested parent (so
+ *     `/desk/company` is removed in favour of `/desk/settings/company`)
+ *   • adds the composed nested children explicitly
+ *
+ * Result: a `RoutePath` union that contains only paths the runtime router
+ * actually serves, so `routeTo("/desk/company")` fails to compile.
  */
-function strictWalk(src, routeConsts) {
-  const ROUTE_TAG_RE = /<Route\b([^>]*?)(\/?)>|<\/Route>/g;
-  const PATH_LIT_RE = /\bpath\s*=\s*"([^"]+)"/;
-  const PATH_CONST_RE = /\bpath\s*=\s*\{ROUTES\.(\w+)\}/;
-  const stack = [];
-  const childCount = [];
-  const emitted = new Set();
+export function collectRoutePatternsStrict(files, routeConsts) {
+  const lenient = collectRoutePatterns(files, routeConsts);
 
-  let m;
-  ROUTE_TAG_RE.lastIndex = 0;
-  while ((m = ROUTE_TAG_RE.exec(src)) !== null) {
-    const isClose = m[0] === "</Route>";
-    if (isClose) {
-      const popped = stack.pop();
-      const kids = childCount.pop();
-      if (popped !== undefined && kids === 0) emitted.add(popped);
-      continue;
-    }
-    const attrs = m[1];
-    const selfClosing = m[2] === "/";
-    const litMatch = attrs.match(PATH_LIT_RE);
-    const constMatch = attrs.match(PATH_CONST_RE);
-    const raw = litMatch ? litMatch[1] : constMatch ? routeConsts.get(constMatch[1]) : null;
-    const isIndex = /\bindex\b/.test(attrs);
-
-    // Treat parents of "*" or "" as empty: a `<Route path="*">` is a
-    // pass-through container that hosts nested <Routes>, not a real prefix.
-    const parentRaw = stack[stack.length - 1] ?? "";
-    const parent = parentRaw === "*" ? "" : parentRaw;
-    let composed;
-    if (raw == null && isIndex) composed = parent;
-    else if (raw == null) composed = null;
-    else if (raw.startsWith("/")) composed = raw.replace(/^\/+/, "");
-    else composed = parent ? `${parent}/${raw}` : raw;
-
-    if (childCount.length > 0) childCount[childCount.length - 1] += 1;
-
-    if (selfClosing) {
-      if (composed != null && composed !== "*" && composed !== "") emitted.add(composed);
-    } else {
-      stack.push(composed ?? parent);
-      childCount.push(0);
+  // Build the orphan set: every child that is registered under a nested
+  // parent must NOT also appear at the shell-root level.
+  const orphans = new Set();
+  for (const [parentPath, children] of Object.entries(NESTED_PARENTS)) {
+    const lastSlash = parentPath.lastIndexOf("/");
+    const shellPrefix = parentPath.slice(0, lastSlash); // e.g. "/desk"
+    for (const child of children) {
+      orphans.add(`${shellPrefix}/${child}`);
     }
   }
-  while (stack.length) {
-    const popped = stack.pop();
-    const kids = childCount.pop();
-    if (popped !== undefined && kids === 0) emitted.add(popped);
+
+  const out = new Set();
+  for (const p of lenient) {
+    if (orphans.has(p)) continue; // drop the false-flat duplicate
+    if (p === "*") continue;
+    if (p.endsWith("/*")) continue; // catch-alls aren't navigable destinations
+    out.add(p);
   }
-  return emitted;
+  // Add the true nested paths.
+  for (const [parentPath, children] of Object.entries(NESTED_PARENTS)) {
+    out.add(parentPath); // the parent itself renders an index
+    for (const child of children) out.add(`${parentPath}/${child}`);
+  }
+  return out;
 }
