@@ -409,9 +409,42 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Please include the Reference ID when reporting this issue to support.
-                </p>
+                {(() => {
+                  const refSuffix = attestError.requestId ? ` with Ref ${attestError.requestId}` : "";
+                  let hint: string;
+                  switch (attestError.kind) {
+                    case "auth_required":
+                      hint = "Your session has expired. Please sign in again, then retry the attestation.";
+                      break;
+                    case "client_error":
+                      hint =
+                        "Please check the details above (name and confirmation) and try again. If you keep seeing this, contact support" +
+                        refSuffix +
+                        ".";
+                      break;
+                    case "server_error":
+                      hint =
+                        "This looks like a temporary problem on our side. Please retry in a moment — if it keeps failing, contact support" +
+                        refSuffix +
+                        ".";
+                      break;
+                    case "network_error":
+                      hint =
+                        "We couldn't reach the server. Check your connection and retry. If the issue persists, contact support" +
+                        refSuffix +
+                        ".";
+                      break;
+                    default:
+                      hint = attestError.requestId
+                        ? `Please include the Reference ID when reporting this issue to support.`
+                        : "If this keeps happening, please contact support.";
+                  }
+                  return (
+                    <p className="text-xs text-muted-foreground" data-testid="attest-error-hint">
+                      {hint}
+                    </p>
+                  );
+                })()}
               </div>
             )}
             <Button
