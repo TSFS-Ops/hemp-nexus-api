@@ -184,3 +184,73 @@ export function cachedResponseToHttp(
     },
   });
 }
+
+// Shared helpers for Idempotency-Key handling.
+//
+// Pulled out of supabase/functions/wad/index.ts so the request-hashing rules
+// (which determine whether a "repeat" request really has the same payload)
+// can be unit-tested without spinning up Supabase. Keep this file pure —
+// no DB calls, no Supabase imports.
+
+/**
+ * Lower-case hex SHA-256 of the input string. Used to fingerprint the
+ * canonical request body so a retry with the same data short-circuits to
+ * the cached response, while a retry with a different body returns 409.
+ */
+export async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Build the canonical (key-order-independent) JSON string for an attest
+ * request. We only include the fields that semantically define the action;
+ * incidental headers / IP / user agent are intentionally excluded so retries
+ * from different network paths still match.
+ */
+export function canonicalAttestBody(input: {
+  attested_name: string;
+  role: string;
+}): string {
+  return JSON.stringify({
+    attested_name: input.attested_name,
+    role: input.role,
+  });
+}
+
+/**
+ * Convenience: hash the canonical attest body in one step.
+ */
+export function hashAttestBody(input: {
+  attested_name: string;
+  role: string;
+}): Promise<string> {
+  return sha256Hex(canonicalAttestBody(input));
+}
+
+/**
+ * Decide what to do given an existing idempotency record (or the absence of
+ * one). Pure function — easy to unit test the branching without hitting a DB.
+ */
+export type IdempotencyDecision =
+  | { kind: "miss" } // no prior record — proceed with the real handler
+  | { kind: "replay"; responseData: unknown; statusCode: number } // return cached response
+  | { kind: "mismatch" }; // same key, different body — caller should 409
+
+export function decideIdempotency(
+  existing: { request_hash: string; response_data: unknown; response_status_code: number } | null,
+  incomingHash: string,
+): IdempotencyDecision {
+  if (!existing) return { kind: "miss" };
+  if (existing.request_hash !== incomingHash) return { kind: "mismatch" };
+  return {
+    kind: "replay",
+    responseData: existing.response_data,
+    statusCode: existing.response_status_code,
+  };
+}
