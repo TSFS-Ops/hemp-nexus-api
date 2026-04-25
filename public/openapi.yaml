@@ -1158,6 +1158,14 @@ components:
         type: string
         format: uuid
       description: Match UUID
+    WadIdParam:
+      name: wadId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: WaD (Signed Deal) UUID
 
   schemas:
     SuccessEnvelope:
