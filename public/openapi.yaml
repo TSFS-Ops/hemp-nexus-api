@@ -998,6 +998,20 @@ paths:
       responses:
         '200':
           description: Attestation UI model
+          headers:
+            ETag:
+              description: |
+                Strong validator for the response payload. Echo this back in
+                `If-None-Match` on subsequent polls to receive `304 Not Modified`
+                when the payload is unchanged.
+              schema:
+                type: string
+              example: '"3f786850e387550fdab836ed7e6dc881de23001b1c5e3b6c5b5d5b5e5d5b5e5d"'
+            Cache-Control:
+              description: Caching directive (always `private` — viewer-specific).
+              schema:
+                type: string
+              example: "private, max-age=10, stale-while-revalidate=30"
           content:
             application/json:
               schema:
