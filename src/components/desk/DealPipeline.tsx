@@ -472,7 +472,7 @@ export function DealPipeline() {
           }}
           secondaryAction={{
             label: "Initiate Trade Request",
-            onClick: () => navigate("/desk/initiate"),
+            onClick: () => navigate("/desk/match/new"),
           }}
         />
       </section>

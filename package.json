@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/generate-routes.mjs && node scripts/check-routes.mjs",
     "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build:dev": "node scripts/generate-routes.mjs && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "check:drift": "node scripts/check-drift.mjs",
     "check:routes": "node scripts/check-routes.mjs",
+    "generate:routes": "node scripts/generate-routes.mjs",
     "test:summary": "node scripts/test-summary.mjs",
     "test:summary:strict": "node scripts/test-summary.mjs --strict"
   },
