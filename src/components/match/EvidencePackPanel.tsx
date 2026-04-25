@@ -133,9 +133,10 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   const downloadHtmlReport = useCallback(async () => {
     const html = previewHtml ?? (await fetchHtmlReport());
     if (!html) return;
-    downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
+    const filename = `evidence-pack-${matchId}.html`;
+    downloadFile(html, filename, "text/html");
     toast.success("Evidence report downloaded", {
-      description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
+      description: `Saved as ${filename} — open it in any browser (Chrome, Edge, Safari) to view the formatted report.`,
       duration: 8000,
     });
   }, [fetchHtmlReport, previewHtml, matchId]);
