@@ -199,7 +199,8 @@ function App() {
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </Suspense>
+                </Suspense>
+              </RouteErrorBoundary>
               <Sonner />
               <SessionExpiredModal />
             </HostnameRouter>
