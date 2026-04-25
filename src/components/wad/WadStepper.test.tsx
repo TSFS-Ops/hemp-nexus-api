@@ -308,7 +308,7 @@ describe("WadStepper attest keyboard shortcut", () => {
     expect(submitAttestationMock).not.toHaveBeenCalled();
   });
 
-  it("stops propagation so an ancestor listener can't also fire", () => {
+  it("stops propagation so an ancestor listener can't also fire", async () => {
     submitAttestationMock.mockResolvedValueOnce({ success: true });
     const ancestorListener = vi.fn();
 
