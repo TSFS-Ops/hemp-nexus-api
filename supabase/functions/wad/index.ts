@@ -1169,7 +1169,7 @@ Deno.serve(async (req) => {
           color: grayscale(0.8),
         });
         y -= LINE_H;
-        page.drawText(label, {
+        page.drawText(safe(label), {
           x: MARGIN,
           y,
           size: 12,
