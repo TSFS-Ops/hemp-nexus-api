@@ -9,12 +9,29 @@
  *   - kyc_documents         → uploaded regulatory evidence
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, FileWarning, Loader2 } from "lucide-react";
+import { Building2, Check, FileWarning, FileText, Loader2, Users, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg } from "@/hooks/use-user-org";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type StepKey = "entity" | "owners" | "documents";
+type Gap = {
+  step: StepKey;
+  title: string;
+  description: string;
+  cta: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+};
 
 type Org = {
   id: string;
