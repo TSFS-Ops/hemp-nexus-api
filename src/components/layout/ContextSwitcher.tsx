@@ -101,12 +101,12 @@ export function ContextSwitcher({
   }
   const ActiveIcon = active.icon;
   const isDark = tone === "dark";
-  const triggerClasses = isDark ? "w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border border-slate-800 bg-slate-950 hover:bg-slate-900 transition-colors text-left" : "w-full flex items-center gap-2.5 px-3 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-left";
-  const labelClasses = isDark ? "font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500" : "font-mono text-[10px] uppercase tracking-[0.25em] text-slate-400";
-  const valueClasses = isDark ? "text-[13px] text-slate-100 font-medium tracking-tight" : "text-[13px] text-slate-900 font-medium tracking-tight";
-  const chevronClasses = isDark ? "h-3.5 w-3.5 text-slate-500" : "h-3.5 w-3.5 text-slate-400";
-  const iconWrapClasses = isDark ? "h-7 w-7 rounded-sm bg-slate-900 border border-slate-800 flex items-center justify-center" : "h-7 w-7 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-center";
-  const iconClasses = isDark ? "h-3.5 w-3.5 text-emerald-400" : "h-3.5 w-3.5 text-slate-700";
+  const triggerClasses = isDark ? "w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border border-slate-800 bg-slate-950 hover:bg-slate-900 transition-colors text-left" : "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md border border-border bg-card hover:bg-accent shadow-sm hover:shadow transition-all text-left group";
+  const labelClasses = isDark ? "font-mono text-[11px] uppercase tracking-[0.2em] text-slate-500" : "font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/70";
+  const valueClasses = isDark ? "text-[13px] text-slate-100 font-medium tracking-tight" : "text-[13px] text-foreground font-semibold tracking-tight";
+  const chevronClasses = isDark ? "h-3.5 w-3.5 text-slate-500" : "h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors";
+  const iconWrapClasses = isDark ? "h-7 w-7 rounded-sm bg-slate-900 border border-slate-800 flex items-center justify-center" : "h-7 w-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center";
+  const iconClasses = isDark ? "h-3.5 w-3.5 text-emerald-400" : "h-3.5 w-3.5 text-primary";
   return <div className={className}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
