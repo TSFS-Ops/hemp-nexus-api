@@ -124,19 +124,6 @@ function extractRoutesFromSource(src, prefix, routeConsts) {
   return patterns;
 }
 
-/** Compose route segments respecting React-Router's rule that an absolute
- *  child path replaces, rather than appends to, the parent. */
-function composeSegments(segments) {
-  if (segments.length === 0) return null;
-  let acc = "";
-  for (const seg of segments) {
-    if (seg.startsWith("/")) acc = seg;
-    else if (acc === "" || acc.endsWith("/")) acc = acc + seg;
-    else acc = acc + "/" + seg;
-  }
-  return acc;
-}
-
 /** Apply the shell mount prefix to a child route path. */
 function joinRoute(prefix, child) {
   if (!prefix) return child;
