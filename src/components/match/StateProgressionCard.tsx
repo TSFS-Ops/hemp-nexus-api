@@ -576,7 +576,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <p className="text-sm font-medium">Verification required before issuing a Proof of Intent</p>
                   <p className="text-xs text-muted-foreground">{legitimacy.message}</p>
                   <Link
-                    to="/desk/settings/identity"
+                    to="/desk/settings/company"
                     className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                   >
                     <ArrowRight className="h-3 w-3" />
