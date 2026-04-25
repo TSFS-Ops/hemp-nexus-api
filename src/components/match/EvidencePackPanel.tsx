@@ -109,23 +109,48 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     toast.success("JSON evidence pack downloaded");
   }, [pack, matchId]);
 
-  const downloadHtmlReport = useCallback(async () => {
+  const fetchHtmlReport = useCallback(async (): Promise<string | null> => {
     try {
       const html = await fetchEdgeFunction<string>(`evidence-pack/${matchId}`, {
         method: "GET",
         query: { format: "pdf" },
-        label: "download evidence report",
+        label: "load evidence report",
       });
-      downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
-      toast.success("Evidence report downloaded", {
-        description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
-        duration: 8000,
-      });
+      return typeof html === "string" ? html : String(html ?? "");
     } catch (error) {
-      console.error("Report download error:", error);
-      toast.error(describeEdgeError(error, "Failed to download evidence report"), { duration: 8000 });
+      console.error("Report fetch error:", error);
+      toast.error(describeEdgeError(error, "Failed to load evidence report"), { duration: 8000 });
+      return null;
     }
   }, [matchId]);
+
+  const downloadHtmlReport = useCallback(async () => {
+    const html = previewHtml ?? (await fetchHtmlReport());
+    if (!html) return;
+    downloadFile(html, `evidence-pack-${matchId}.html`, "text/html");
+    toast.success("Evidence report downloaded", {
+      description: "This is an HTML file. Double-click it or drag it into your browser to view the formatted report.",
+      duration: 8000,
+    });
+  }, [fetchHtmlReport, previewHtml, matchId]);
+
+  const togglePreview = useCallback(async () => {
+    if (previewOpen) {
+      setPreviewOpen(false);
+      return;
+    }
+    if (previewHtml) {
+      setPreviewOpen(true);
+      return;
+    }
+    setPreviewLoading(true);
+    const html = await fetchHtmlReport();
+    setPreviewLoading(false);
+    if (html) {
+      setPreviewHtml(html);
+      setPreviewOpen(true);
+    }
+  }, [fetchHtmlReport, previewHtml, previewOpen]);
 
   const downloadDealCertificate = useCallback(async () => {
     try {
