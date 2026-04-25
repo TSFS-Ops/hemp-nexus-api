@@ -400,7 +400,24 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                   <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-destructive">Attestation failed</p>
-                    <p className="text-destructive/90 break-words">{attestError.message}</p>
+                    <p className="text-destructive/90 break-words">
+                      {attestError.message}
+                      {attestError.requestId && (
+                        <>
+                          {" "}
+                          <span className="text-destructive/80">
+                            (Reference ID:{" "}
+                            <code className="font-mono text-[12px] break-all">
+                              {attestError.requestId}
+                            </code>
+                            ).
+                          </span>{" "}
+                          <span className="text-muted-foreground">
+                            This message will stay visible until you attest successfully.
+                          </span>
+                        </>
+                      )}
+                    </p>
                   </div>
                 </div>
                 {attestError.requestId && (
