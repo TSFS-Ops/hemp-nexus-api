@@ -1017,9 +1017,12 @@ paths:
                       helperText: "You've attested. Waiting for the counterparty signatory to attest."
                       viewerRole: buyer_signatory
                       hasAttested: true
+                      viewerAttestedAt: "2025-04-24T09:15:32.412Z"
                       attestations:
                         buyerAttested: true
                         sellerAttested: false
+                        buyerAttestedAt: "2025-04-24T09:15:32.412Z"
+                        sellerAttestedAt: null
                         total: 1
                       nextAction: await_other_party
                     request_id: "9d3a4f6c-1b2e-4a8b-9c0d-7e5f4a3b2c10"
