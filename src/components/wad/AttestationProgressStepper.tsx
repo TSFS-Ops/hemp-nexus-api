@@ -319,10 +319,10 @@ export function AttestationProgressStepper({
             className="text-sm font-semibold flex items-center gap-2"
           >
             <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
-            Attestation progress
+            {t("wad.progress.heading")}
           </h3>
           <p id={summaryId} className="text-xs text-muted-foreground mt-0.5">
-            {attestedCount} of {total} signatories attested
+            {t("wad.progress.summary", { attested: attestedCount, total })}
           </p>
         </div>
         <Badge
