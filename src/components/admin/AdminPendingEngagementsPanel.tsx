@@ -488,6 +488,7 @@ export function AdminPendingEngagementsPanel() {
       if (debounce) clearTimeout(debounce);
       debounce = setTimeout(() => {
         fetchEngagements();
+        fetchKnownCounts();
       }, 400);
     };
 
