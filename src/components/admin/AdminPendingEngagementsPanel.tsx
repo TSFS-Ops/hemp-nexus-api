@@ -389,6 +389,30 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  // ── Off-scope visibility: count engagements that auto-linked to a known org ──
+  // We query directly (no edge call) for two cheap counts so the "All" bucket is
+  // never invisible. Failures here are non-fatal — we just hide the badge.
+  const fetchKnownCounts = async () => {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [totalRes, recentRes] = await Promise.all([
+        supabase
+          .from("poi_engagements")
+          .select("id", { count: "exact", head: true })
+          .eq("counterparty_type", "known"),
+        supabase
+          .from("poi_engagements")
+          .select("id", { count: "exact", head: true })
+          .eq("counterparty_type", "known")
+          .gte("updated_at", sevenDaysAgo),
+      ]);
+      if (!totalRes.error) setKnownTotalCount(totalRes.count ?? 0);
+      if (!recentRes.error) setKnownRecentCount(recentRes.count ?? 0);
+    } catch {
+      // non-fatal
+    }
+  };
+
   // ── Load SLA settings (threshold + reminder recipient) from admin_settings ──
   const fetchSlaSettings = async () => {
     const { data, error } = await supabase
