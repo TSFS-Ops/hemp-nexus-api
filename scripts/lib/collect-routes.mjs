@@ -164,7 +164,7 @@ function strictWalk(src, routeConsts) {
     if (childCount.length > 0) childCount[childCount.length - 1] += 1;
 
     if (selfClosing) {
-      if (composed != null) emitted.add(composed);
+      if (composed != null && composed !== "*" && composed !== "") emitted.add(composed);
     } else {
       stack.push(composed ?? parent);
       childCount.push(0);
