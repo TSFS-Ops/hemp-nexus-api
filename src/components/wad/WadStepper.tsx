@@ -318,16 +318,63 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         }
 
         if (!canAttest) {
+          // Status-specific "can't attest" copy so witnesses/observers see why,
+          // not just the generic "buyer/seller signatories" line.
+          const notAvailableCopy: Record<string, { title: string; body: string }> = {
+            draft: {
+              title: "Attestations not yet open",
+              body: "This Signed Deal is still in draft. Once it moves to Awaiting attestations, the buyer and seller signatories can attest here.",
+            },
+            awaiting_attestations: {
+              title: "Awaiting buyer & seller attestations",
+              body: "Only the nominated buyer and seller signatories for this trade can attest. You're viewing as a witness/observer.",
+            },
+            sealed: {
+              title: "Signed Deal is sealed",
+              body: "All required attestations are in place and the deal has been sealed. No further attestations are needed.",
+            },
+            revoked: {
+              title: "Signed Deal revoked",
+              body: "This Signed Deal has been revoked, so attestations are no longer accepted.",
+            },
+            superseded: {
+              title: "Superseded by a newer Signed Deal",
+              body: "A newer Signed Deal has replaced this one. Attest on the active deal instead.",
+            },
+          };
+          const copy =
+            notAvailableCopy[wad.status] ?? {
+              title: "Attestation not available",
+              body: "Only buyer and seller signatories can attest on this Signed Deal.",
+            };
           return (
             <div className="text-center py-6">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="font-medium">Attestation not available</p>
-              <p className="text-sm text-muted-foreground">
-                Only buyer and seller signatories can attest on this Signed Deal.
+              <p className="font-medium">{copy.title}</p>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {copy.body}
               </p>
             </div>
           );
         }
+
+        // Status-specific button label + helper text for the active attester.
+        const attestCopy: Record<string, { button: string; helper: string }> = {
+          draft: {
+            button: "Attest as first signatory",
+            helper: "You'll be the first to attest. The other party still needs to attest before the deal can be sealed.",
+          },
+          awaiting_attestations: {
+            button: "Attest & advance to seal",
+            helper: "The other signatory has already attested. Your attestation will move this deal to Ready to seal.",
+          },
+        };
+        const otherAttested =
+          (attestations.buyerAttested && userOrgId !== wad.buyer_org_id) ||
+          (attestations.sellerAttested && userOrgId !== wad.seller_org_id);
+        const activeCopy =
+          attestCopy[wad.status] ??
+          (otherAttested ? attestCopy.awaiting_attestations : attestCopy.draft);
 
         return (
           <div className="space-y-4">
@@ -365,9 +412,13 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
             >
               {attesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <Check className="h-4 w-4 mr-2" />
-              Attest
+              {activeCopy.button}
             </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              {activeCopy.helper}
+            </p>
           </div>
+
         );
 
       case "certificate":
