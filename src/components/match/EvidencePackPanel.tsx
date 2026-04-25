@@ -344,17 +344,21 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
             <Separator />
 
             {/* Download buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" className="flex-1" onClick={downloadJson}>
-                <FileJson className="h-4 w-4 mr-2" />
-                Download JSON
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={downloadHtmlReport}>
-                <FileText className="h-4 w-4 mr-2" />
-                Download Report
-              </Button>
-              <p className="text-[11px] text-muted-foreground col-span-2 text-center -mt-1">
-                The report downloads as an HTML file. Open it in your browser (Chrome, Edge, Safari) to view.
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="default" className="flex-1" onClick={downloadHtmlReport}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Download Evidence Report (HTML)
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={downloadJson}>
+                  <FileJson className="h-4 w-4 mr-2" />
+                  Download Canonical JSON
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                The HTML report is the human-readable, printable evidence pack (match summary, event timeline,
+                documents, approval chain, full audit references). Open it in any browser. The JSON is the
+                machine-readable canonical source used to compute the SHA-256 hash above.
               </p>
             </div>
 
