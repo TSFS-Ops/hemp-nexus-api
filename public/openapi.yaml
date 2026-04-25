@@ -967,11 +967,34 @@ paths:
         - **`request_id`** — server correlation ID; surface this in user-facing
           error messages so support can trace failures.
 
+        ### Conditional GET (caching)
+
+        The response carries a strong `ETag` validator computed from the
+        canonical UI payload (excluding the per-request `request_id`).
+        Clients that poll for state changes SHOULD echo the previously seen
+        validator back in `If-None-Match`. When the payload is unchanged the
+        server returns `304 Not Modified` with no body, saving bandwidth and
+        DB cost.
+
+        Because the payload is per-viewer (helper text, viewer role and
+        viewer-specific timestamps depend on the caller), the response is
+        marked `Cache-Control: private, max-age=10, stale-while-revalidate=30`
+        — shared caches MUST NOT store it.
+
         Requires the caller to be a party to the WaD (buyer or seller org)
         or an admin.
       operationId: getWadAttestationUi
       parameters:
         - $ref: '#/components/parameters/WadIdParam'
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            Previously seen `ETag` value. When supplied and still current,
+            the server returns `304 Not Modified` with no body.
+          example: '"3f786850e387550fdab836ed7e6dc881de23001b1c5e3b6c5b5d5b5e5d5b5e5d"'
       responses:
         '200':
           description: Attestation UI model
