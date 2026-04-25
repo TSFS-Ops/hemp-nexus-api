@@ -628,7 +628,10 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </div>
             ) : null}
 
-            {!legitimacyBlocksPoi && (isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
+            {/* Button always renders when balance/credits are OK. The legitimacy
+                gate is enforced server-side and now honours admin test-mode bypass,
+                so we never silently hide the action — the warning above is advisory. */}
+            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
               <button
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
                 disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled}
