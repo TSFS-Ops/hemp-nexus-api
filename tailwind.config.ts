@@ -114,8 +114,13 @@ export default {
         widest: "0.05em",
       },
       boxShadow: {
-        sm: "none",
-        "inner-metallic": "none",
+        // Restored institutional depth — used for floating cards & primary surfaces.
+        // Kept very subtle to preserve the Sovereign aesthetic (no heavy drop shadows).
+        sm: "0 1px 2px 0 hsl(var(--deep-slate) / 0.04), 0 1px 1px 0 hsl(var(--deep-slate) / 0.03)",
+        DEFAULT: "0 1px 3px 0 hsl(var(--deep-slate) / 0.06), 0 1px 2px -1px hsl(var(--deep-slate) / 0.04)",
+        md: "0 4px 8px -2px hsl(var(--deep-slate) / 0.06), 0 2px 4px -2px hsl(var(--deep-slate) / 0.04)",
+        lg: "0 10px 20px -4px hsl(var(--deep-slate) / 0.08), 0 4px 8px -4px hsl(var(--deep-slate) / 0.04)",
+        "inner-metallic": "inset 0 1px 0 0 rgba(255,255,255,0.15), inset 0 -1px 0 0 rgba(0,0,0,0.1)",
         none: "0 0 #0000",
       },
       keyframes: {
@@ -150,6 +155,10 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.6" },
         },
+        "step-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.45)" },
+          "50%":      { boxShadow: "0 0 0 8px hsl(var(--primary) / 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -160,6 +169,7 @@ export default {
         ticker: "ticker 60s linear infinite",
         "section-enter": "section-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both",
         "ledger-pulse": "ledger-pulse 2s ease-in-out 1",
+        "step-pulse": "step-pulse 2.2s ease-in-out infinite",
       },
     },
   },
