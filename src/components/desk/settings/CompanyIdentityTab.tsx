@@ -191,7 +191,7 @@ export function CompanyIdentityTab() {
         <div>
           <h2 className="text-lg md:text-xl font-medium text-foreground tracking-tight">Company Identity</h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
-            Your verified Know-Your-Business profile. This identity is bound to every Proof of Intent you generate.
+            Optional now — completing this speeds up your first Proof of Intent. Identity is bound to every POI you generate.
           </p>
         </div>
         <div className="self-start"><VerificationBadge state={verification} /></div>
@@ -697,17 +697,19 @@ function VerificationBadge({ state }: { state: VerificationState }) {
     );
   }
   if (state === "in_review") {
+    // Muted per "light wedge" policy: avoid loud amber "Awaiting Compliance Review"
+    // pre-engagement. KYB enforcement still fires at POI mint / WaD gates.
     return (
-      <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+      <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-muted border border-border text-muted-foreground text-xs font-medium">
         <Clock className="h-3.5 w-3.5" strokeWidth={2} />
-        Awaiting Compliance Review
+        Profile in progress
       </div>
     );
   }
   return (
-    <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+    <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-muted border border-border text-muted-foreground text-xs font-medium">
       <ShieldAlert className="h-3.5 w-3.5" strokeWidth={2} />
-      KYB Not Started
+      Complete when ready
     </div>
   );
 }
