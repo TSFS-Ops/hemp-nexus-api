@@ -42,9 +42,11 @@ const STEPS = [
   { id: "certificate", label: "Sealed Certificate", icon: Lock },
 ];
 
-const ATTESTATION_TEXT = "I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed.";
+// Attestation statement copy lives in the i18n catalogue under
+// `wad.attest.statement` so it can be translated without touching this file.
 
 export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }: WadStepperProps) {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
   const [attesting, setAttesting] = useState(false);
   const [sealing, setSealing] = useState(false);
