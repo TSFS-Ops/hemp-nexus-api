@@ -151,7 +151,10 @@ function strictWalk(src, routeConsts) {
     const raw = litMatch ? litMatch[1] : constMatch ? routeConsts.get(constMatch[1]) : null;
     const isIndex = /\bindex\b/.test(attrs);
 
-    const parent = stack[stack.length - 1] ?? "";
+    // Treat parents of "*" or "" as empty: a `<Route path="*">` is a
+    // pass-through container that hosts nested <Routes>, not a real prefix.
+    const parentRaw = stack[stack.length - 1] ?? "";
+    const parent = parentRaw === "*" ? "" : parentRaw;
     let composed;
     if (raw == null && isIndex) composed = parent;
     else if (raw == null) composed = null;
