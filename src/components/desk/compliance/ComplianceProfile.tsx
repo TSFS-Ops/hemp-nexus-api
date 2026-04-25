@@ -310,7 +310,7 @@ export function ComplianceProfile() {
           }}
           className="self-start md:shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shadow-sm transition-colors"
         >
-          Request Data Update
+          Improve Profile
           {gaps.length > 0 && (
             <span
               aria-label={`${gaps.length} outstanding`}
