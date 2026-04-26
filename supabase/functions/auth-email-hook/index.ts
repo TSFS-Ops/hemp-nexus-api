@@ -226,6 +226,8 @@ async function handleWebhook(req: Request): Promise<Response> {
     source: 'lovable_email',
     signature: req.headers.get('x-lovable-signature') ?? '',
     timestampHeader: req.headers.get('x-lovable-timestamp'),
+    fnName: 'auth-email-hook',
+    requestId: req.headers.get('x-request-id'),
   })
   if (!replayCheck.ok) {
     // Merge our CORS headers into the guard's response.

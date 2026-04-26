@@ -91,6 +91,8 @@ Deno.serve(async (req) => {
     source: 'lovable_suppression',
     signature: req.headers.get('x-lovable-signature') ?? '',
     timestampHeader: req.headers.get('x-lovable-timestamp'),
+    fnName: 'handle-email-suppression',
+    requestId: req.headers.get('x-request-id'),
   })
   if (!replayCheck.ok) return replayCheck.response
 

@@ -219,6 +219,11 @@ export async function triggerWebhooks(
  *   2. (When `replay` is provided) the signature has not been seen before
  *      within the replay-guard window.
  *
+ * Every decision (accept or reject) emits a single structured JSON line
+ * via webhook-decision-log so operators can grep `function_edge_logs`
+ * for `"evt":"webhook.decision"` and answer "did this webhook arrive,
+ * verify, and survive replay protection?" without reading prose.
+ *
  * Callers that omit `replay` get signature-only verification, but should
  * be migrated — replay protection is required for any webhook that has
  * side effects. See supabase/functions/_shared/replay-guard.ts for the
@@ -232,16 +237,65 @@ export async function verifyWebhookSignature(
     supabase: SupabaseClient;
     source: string;
     timestampHeader?: string | null;
+    /** Edge-function name, used in structured decision logs. */
+    fnName?: string;
+    /** Caller's own request id for log correlation. */
+    requestId?: string | null;
   },
 ): Promise<{ ok: boolean; replayResponse?: Response }> {
+  const { logWebhookDecision, signaturePrefix } = await import(
+    "./webhook-decision-log.ts"
+  );
+  const fnName = replay?.fnName ?? "unknown";
+  const requestId = replay?.requestId ?? null;
+  const source = replay?.source;
+  const sigPrefix = await signaturePrefix(signature);
+
+  if (!signature || signature.length === 0) {
+    logWebhookDecision({
+      fn: fnName,
+      phase: "signature",
+      decision: "reject",
+      reason: "missing_signature",
+      source,
+      requestId,
+    });
+    return { ok: false };
+  }
+
   const expectedSignature = await generateSignature(payload, secret);
   // Constant-time-ish compare: lengths must match, then char-by-char.
-  if (signature.length !== expectedSignature.length) return { ok: false };
-  let mismatch = 0;
-  for (let i = 0; i < signature.length; i++) {
-    mismatch |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+  let signatureOk = signature.length === expectedSignature.length;
+  if (signatureOk) {
+    let mismatch = 0;
+    for (let i = 0; i < signature.length; i++) {
+      mismatch |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+    }
+    signatureOk = mismatch === 0;
   }
-  if (mismatch !== 0) return { ok: false };
+
+  if (!signatureOk) {
+    logWebhookDecision({
+      fn: fnName,
+      phase: "signature",
+      decision: "reject",
+      reason: "invalid_signature",
+      source,
+      signaturePrefix: sigPrefix,
+      requestId,
+    });
+    return { ok: false };
+  }
+
+  logWebhookDecision({
+    fn: fnName,
+    phase: "signature",
+    decision: "accept",
+    reason: "ok",
+    source,
+    signaturePrefix: sigPrefix,
+    requestId,
+  });
 
   if (replay) {
     // Lazy import so functions that don't use replay don't pay for it.
@@ -250,6 +304,8 @@ export async function verifyWebhookSignature(
       source: replay.source,
       signature,
       timestampHeader: replay.timestampHeader,
+      fnName: replay.fnName,
+      requestId: replay.requestId,
     });
     if (!guard.ok) return { ok: false, replayResponse: guard.response };
   }
