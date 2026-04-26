@@ -196,36 +196,53 @@ export function TokenBalanceTab() {
           Top Up
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PACKS.map((pack) => (
-            <div
-              key={pack.name}
-              className="border border-border rounded-md p-8 hover:border-slate-400 transition-colors flex flex-col"
-            >
-              <p className="text-xs font-medium tracking-wider uppercase text-muted-foreground mb-4">
-                {pack.name}
-              </p>
-              <div className="mb-2">
-                <span className="font-mono text-3xl font-semibold text-foreground tracking-tight">
-                  {pack.price}
-                </span>
-              </div>
-              <p className="text-xs font-mono text-muted-foreground/70 mb-6">{pack.unit}</p>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
-                {pack.description}
-              </p>
-              <button
-                onClick={() => handlePurchase(pack.name)}
-                className={[
-                  "w-full py-3 rounded-md text-sm font-medium transition-colors",
-                  pack.highlight
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border border-border text-foreground hover:border-slate-900",
-                ].join(" ")}
+          {PACKS.map((pack) => {
+            const error = packErrors[pack.id];
+            const isPending = purchasing === pack.id;
+            return (
+              <div
+                key={pack.id}
+                className="border border-border rounded-md p-8 hover:border-slate-400 transition-colors flex flex-col"
               >
-                {pack.cta}
-              </button>
-            </div>
-          ))}
+                <p className="text-xs font-medium tracking-wider uppercase text-muted-foreground mb-4">
+                  {pack.name}
+                </p>
+                <div className="mb-2">
+                  <span className="font-mono text-3xl font-semibold text-foreground tracking-tight">
+                    {pack.price}
+                  </span>
+                </div>
+                <p className="text-xs font-mono text-muted-foreground/70 mb-6">{pack.unit}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
+                  {pack.description}
+                </p>
+                <button
+                  onClick={() => handlePurchase(pack)}
+                  disabled={purchasing !== null}
+                  aria-describedby={error ? `tbt-pack-error-${pack.id}` : undefined}
+                  className={[
+                    "w-full py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
+                    pack.highlight
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border border-border text-foreground hover:border-slate-900",
+                  ].join(" ")}
+                >
+                  {isPending ? "Redirecting…" : error ? "Try again" : pack.cta}
+                </button>
+                {error && (
+                  <div id={`tbt-pack-error-${pack.id}`} className="mt-4">
+                    <CheckoutErrorNotice
+                      message={error}
+                      retrying={isPending}
+                      variant="inline"
+                      onRetry={() => handlePurchase(pack)}
+                      onDismiss={() => dismissPackError(pack.id)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
