@@ -44,7 +44,20 @@ interface User {
   last_sign_in_at: string | null;
   email_confirmed_at: string | null;
   roles: string[];
+  deletion_requested_at: string | null;
+  deletion_reason: string | null;
+  deletion_category: string | null;
 }
+
+const DELETION_CATEGORY_LABELS: Record<string, string> = {
+  no_longer_needed: "No longer needed",
+  switched_provider: "Switched provider",
+  privacy_concerns: "Privacy concerns",
+  missing_features: "Missing features",
+  too_complex: "Too complex",
+  cost: "Cost",
+  other: "Other",
+};
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
