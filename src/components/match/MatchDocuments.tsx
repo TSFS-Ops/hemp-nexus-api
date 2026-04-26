@@ -214,9 +214,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // logic centralized with the same rules as downloads.
       const result = await listMatchDocuments(matchId, { order: "desc" });
       setDocuments(result.documents as unknown as MatchDocument[]);
-      if (result.truncated) {
-        toast.warning(result.warning || "Document list may be incomplete due to volume.");
-      }
+      setDocsTruncated(!!result.truncated);
+      setDocsTruncationWarning(result.truncated ? (result.warning || null) : null);
     } catch (err) {
       console.error("Error fetching documents:", err);
       const message = err instanceof Error ? err.message : "Failed to load documents";
