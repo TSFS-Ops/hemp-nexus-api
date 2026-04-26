@@ -963,6 +963,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
 
