@@ -13,6 +13,7 @@
  * to be addressed before any further interaction.
  */
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import { onSessionExpired, type SessionExpiryReason } from "@/lib/session-expiry-bus";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,7 @@ const REASON_COPY: Record<SessionExpiryReason, string> = {
 };
 
 export function SessionExpiredModal() {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<SessionExpiryReason>("UNAUTHORIZED");
   const [requestId, setRequestId] = useState<string | undefined>();
@@ -53,6 +55,13 @@ export function SessionExpiredModal() {
       setOpen(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/auth")) {
+      setOpen(false);
+      setSigningIn(false);
+    }
+  }, [location.pathname]);
 
   const handleSignInAgain = async () => {
     if (signingIn) return;
