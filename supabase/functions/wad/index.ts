@@ -969,6 +969,54 @@ Deno.serve(async (req) => {
 
       await writeAuditLog("wad.sealed", wadId, { seal_hash: sealHash });
 
+      // ── Revenue notification → support@izenzo.co.za ──
+      // Sealing is the moment a trade is certified ("the sale completes").
+      // Best-effort, never blocks the seal response. Idempotency keyed on
+      // wad.id so re-attempts never spam the inbox.
+      (async () => {
+        try {
+          const [buyerOrgRes, sellerOrgRes] = await Promise.all([
+            wad.buyer_org_id
+              ? supabase.from("organizations").select("name").eq("id", wad.buyer_org_id).maybeSingle()
+              : Promise.resolve({ data: null }),
+            wad.seller_org_id
+              ? supabase.from("organizations").select("name").eq("id", wad.seller_org_id).maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
+          const buyerName = (buyerOrgRes.data?.name as string) || wad.buyer_org_id || "Unknown buyer";
+          const sellerName = (sellerOrgRes.data?.name as string) || wad.seller_org_id || "Unknown seller";
+
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "revenue-event-notify",
+              recipientEmail: "support@izenzo.co.za",
+              idempotencyKey: `revenue-wad-sealed-${wadId}`,
+              templateData: {
+                eventType: "wad_sealed",
+                headline: `WaD sealed — ${sellerName} → ${buyerName}`,
+                orgName: sellerName,
+                orgId: wad.seller_org_id || wad.buyer_org_id || null,
+                contactEmail: null,
+                details: {
+                  Buyer: buyerName,
+                  Seller: sellerName,
+                  "POI / Match ID": wad.poi_id || "—",
+                  Attestations: attestations.length,
+                  "Documents bound": documents.length,
+                  "Seal hash": sealHash.slice(0, 16) + "…",
+                },
+                consoleUrl: `https://compliance-matching.lovable.app/desk/match/${wad.poi_id || ""}`,
+                consoleLabel: "Open trade",
+                occurredAt: new Date().toISOString(),
+                referenceId: wadId,
+              },
+            },
+          });
+        } catch (notifErr) {
+          console.error(`[${requestId}] Revenue notify (wad_sealed) failed:`, notifErr);
+        }
+      })();
+
       return new Response(JSON.stringify(sealedWad), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
