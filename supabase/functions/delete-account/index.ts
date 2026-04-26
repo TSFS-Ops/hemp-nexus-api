@@ -32,10 +32,15 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const withRequestId = (req: Request, body: Record<string, unknown>) => ({
+  ...body,
+  request_id: req.headers.get("x-request-id") ?? crypto.randomUUID(),
+});
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-  try { assertIdempotencyKey(req); } catch (e: any) { return json({ error: e.message, code: e.code }, e.statusCode || 400); }
+  if (req.method !== "POST") return json(withRequestId(req, { error: "method_not_allowed" }), 405);
+  try { assertIdempotencyKey(req); } catch (e: any) { return json(withRequestId(req, { error: e.message, code: e.code }), e.statusCode || 400); }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -47,7 +52,7 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
+  if (userErr || !userData?.user) return json(withRequestId(req, { error: "unauthorized" }), 401);
   const user = userData.user;
 
   // Parse confirmation payload.
@@ -59,7 +64,7 @@ Deno.serve(async (req) => {
   }
   if (!body.confirmation || body.confirmation.trim().toLowerCase() !== (user.email ?? "").toLowerCase()) {
     return json(
-      { error: "confirmation_mismatch", message: "Type your email exactly to confirm." },
+      withRequestId(req, { error: "confirmation_mismatch", message: "Type your email exactly to confirm." }),
       400,
     );
   }
@@ -78,19 +83,19 @@ Deno.serve(async (req) => {
   const categoryRaw = (body.category ?? "").trim();
   if (reasonText.length < 5) {
     return json(
-      {
+      withRequestId(req, {
         error: "reason_required",
         message: "Tell us why you're leaving (at least 5 characters). This helps us improve.",
-      },
+      }),
       400,
     );
   }
   if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
     return json(
-      {
+      withRequestId(req, {
         error: "category_required",
         message: "Pick a reason category before deleting your account.",
-      },
+      }),
       400,
     );
   }
