@@ -34,7 +34,7 @@ const PRIMARY: Item[] = [
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, signOut, user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (path: string, exact?: boolean) =>
