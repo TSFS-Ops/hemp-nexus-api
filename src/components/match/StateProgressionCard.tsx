@@ -637,10 +637,10 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent className="max-h-[90dvh] sm:max-h-[85vh] flex flex-col overflow-hidden sm:max-w-lg">
-          <AlertDialogHeader>
+          <AlertDialogHeader className="shrink-0">
             <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "") || "Confirm action"}?</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3">
+              <div className="flex-1 overflow-y-auto overscroll-contain -mx-6 px-6 space-y-3 max-h-[60dvh]">
                 <p>{nextDescription}</p>
                 {isFreeAction ? (
                   <div className="rounded-md border border-border p-3 text-sm">
