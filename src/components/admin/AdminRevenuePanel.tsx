@@ -378,15 +378,17 @@ export function AdminRevenuePanel() {
       credits: 0,
       purchases: rows.length,
       buyers: new Set<string>(),
-      paid: 0,
-      manual: 0,
+      paid: 0,         // settled via Paystack webhook (audit_log row)
+      manual: 0,       // manual reconciliation written direct to ledger
+      backfilled: 0,   // reconstructed from evidence; flagged for auditors
     };
     for (const r of rows) {
       out.revenue += r.amount_zar;
       out.credits += r.credits;
       if (r.org_id) out.buyers.add(r.org_id);
-      if ((r.endpoint ?? "").includes("manual")) out.manual += 1;
-      else if ((r.endpoint ?? "").startsWith("payment:")) out.paid += 1;
+      if (r.source === "ledger:manual") out.manual += 1;
+      else out.paid += 1;
+      if (r.backfilled) out.backfilled += 1;
     }
     return out;
   }, [rows]);
@@ -455,9 +457,10 @@ export function AdminRevenuePanel() {
       "amount_zar",
       "package_id",
       "payment_reference",
-      "customer_email",
       "source",
-      "request_id",
+      "backfilled",
+      "audit_log_id",
+      "ledger_id",
     ];
     const lines = [header.join(",")];
     for (const r of rows) {
@@ -469,9 +472,10 @@ export function AdminRevenuePanel() {
         String(r.amount_zar),
         r.package_id ?? "",
         r.payment_reference ?? "",
-        r.customer_email ?? "",
-        r.source ?? "",
-        r.request_id ?? "",
+        r.source,
+        r.backfilled ? "true" : "false",
+        r.audit_log_id ?? "",
+        r.ledger_id ?? "",
       ];
       lines.push(cells.join(","));
     }
