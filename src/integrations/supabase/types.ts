@@ -4283,6 +4283,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deletion_category: string | null
           deletion_reason: string | null
           deletion_requested_at: string | null
           email: string
@@ -4296,6 +4297,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deletion_category?: string | null
           deletion_reason?: string | null
           deletion_requested_at?: string | null
           email: string
@@ -4309,6 +4311,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deletion_category?: string | null
           deletion_reason?: string | null
           deletion_requested_at?: string | null
           email?: string
