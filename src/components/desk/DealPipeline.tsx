@@ -461,6 +461,19 @@ export function DealPipeline() {
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
 
+  // Collect every visible match id and ask for the freshest activity signal.
+  // This runs after the base lists land, so the "Recently active" sort and the
+  // age label are eventually-consistent (cards may briefly show created_at,
+  // then climb to "5m ago" once the enrichment resolves). That's acceptable -
+  // the alternative is blocking the pipeline render on a secondary query.
+  const visibleMatchIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of activeQ.data?.cards ?? []) ids.add(c.id);
+    for (const c of sealedQ.data?.cards ?? []) ids.add(c.id);
+    return Array.from(ids);
+  }, [activeQ.data, sealedQ.data]);
+  const lastActivityQ = useLastActivity(visibleMatchIds);
+
   const isLoading = (activeQ.isLoading && !activeQ.data) || (sealedQ.isLoading && !sealedQ.data);
   const isSealedFetching = sealedQ.isFetching;
   const isActiveFetching = activeQ.isFetching;
@@ -477,8 +490,22 @@ export function DealPipeline() {
   }, [activeQ.data, sealedQ.data]);
 
   const lanes = useMemo(() => {
-    const activeCards = activeQ.data?.cards ?? [];
-    const sealedCards = sealedQ.data?.cards ?? [];
+    const activityMap = lastActivityQ.data;
+    // Merge the activity enrichment onto each card. We never mutate the
+    // upstream query data; we project a new card with last_activity_at
+    // derived from whichever signal is most recent.
+    const enrich = (c: DealCard): DealCard => {
+      const hit = activityMap?.get(c.id);
+      if (!hit) return c;
+      const candidate = new Date(hit.at).getTime();
+      const baseline = new Date(c.last_activity_at).getTime();
+      if (Number.isFinite(candidate) && candidate > baseline) {
+        return { ...c, last_activity_at: hit.at, last_activity_source: hit.source };
+      }
+      return c;
+    };
+    const activeCards = (activeQ.data?.cards ?? []).map(enrich);
+    const sealedCards = (sealedQ.data?.cards ?? []).map(enrich);
     // De-dupe: the active query may have already returned some sealed records
     // that the paginated sealed query also returns. Sealed page wins because
     // it owns that lane's growth.
@@ -491,6 +518,12 @@ export function DealPipeline() {
       const tCreatedA = new Date(a.created_at).getTime();
       const tCreatedB = new Date(b.created_at).getTime();
       switch (sortKey) {
+        case "recent": {
+          const ta = new Date(a.last_activity_at).getTime();
+          const tb = new Date(b.last_activity_at).getTime();
+          if (tb !== ta) return tb - ta;
+          return tCreatedB - tCreatedA;
+        }
         case "oldest":
           return tCreatedA - tCreatedB;
         case "volume_desc": {
@@ -530,7 +563,7 @@ export function DealPipeline() {
       const filtered = laneIncluded ? sourceDeals.filter(matchesFilters) : [];
       return { ...meta, deals: [...filtered].sort(compare), suppressedByLane: !laneIncluded };
     });
-  }, [activeQ.data, sealedQ.data, sortKey, counterpartyQuery, commodityFilter, laneFilter]);
+  }, [activeQ.data, sealedQ.data, lastActivityQ.data, sortKey, counterpartyQuery, commodityFilter, laneFilter]);
 
   const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
   const hasActiveFilters =
