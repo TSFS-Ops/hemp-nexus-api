@@ -507,6 +507,7 @@ function handleGetPackages(): Response {
     credits: pkg.credits,
     priceZar: pkg.price_zar,
     pricePerCredit: pkg.pricePerCredit,
+    saving: pkg.saving ?? null,
   }));
 
   return new Response(
