@@ -256,10 +256,6 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
           </>
         )}
 
-        {/* Evidence Strength */}
-        <Separator className="my-6" />
-        <EvidenceStrengthIndicator documentCount={govDocCount ?? 0} />
-
         {isSettled && (
           <>
             <Separator className="my-6" />

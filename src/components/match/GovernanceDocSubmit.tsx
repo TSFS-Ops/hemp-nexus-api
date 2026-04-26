@@ -246,8 +246,6 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Evidence Strength Indicator */}
-        <EvidenceStrengthIndicator documentCount={submitted.length} />
         {/* Already submitted */}
         {submitted.length > 0 && (
           <div className="space-y-2">
