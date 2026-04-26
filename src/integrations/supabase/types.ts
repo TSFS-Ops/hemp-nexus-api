@@ -6858,6 +6858,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_sole_member_is_org_admin: {
+        Args: { _org_id: string }
+        Returns: undefined
+      }
       ensure_user_profile: {
         Args: { p_email: string; p_user_id: string }
         Returns: Json
