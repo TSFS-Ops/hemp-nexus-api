@@ -1,19 +1,24 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import { useState } from "react";
+import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
+import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
 
 type Tier = {
-  id: string;
+  id: CreditPackageId;
   credits: number;
   priceZAR: number;
   label: string;
   recommended?: boolean;
 };
 
+// Pricing must match the backend `TOKEN_PACKAGES` registry in
+// supabase/functions/token-purchase/index.ts. Drift here will cause
+// the checkout to charge a different amount than the UI advertises.
 const TIERS: Tier[] = [
   { id: "single", credits: 1, priceZAR: 10, label: "Single Action" },
-  { id: "starter", credits: 20, priceZAR: 180, label: "Trade Starter", recommended: true },
-  { id: "institutional", credits: 100, priceZAR: 850, label: "Institutional" },
+  { id: "pack_50", credits: 50, priceZAR: 450, label: "Trade Starter", recommended: true },
+  { id: "pack_200", credits: 200, priceZAR: 1600, label: "Institutional" },
 ];
 
 interface CreditProvisioningPanelProps {
