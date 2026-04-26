@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "POST") {
+      assertIdempotencyKey(req);
       if (!isDirector) {
         throw new ApiException("FORBIDDEN", "Break-glass actions require Director role", 403);
       }

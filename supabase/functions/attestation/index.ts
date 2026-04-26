@@ -4,6 +4,7 @@ import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * Attestations Edge Function
@@ -38,6 +39,7 @@ Deno.serve(async (req: Request) => {
     const { actorUserId } = deriveActorIds(authCtx);
 
     if (req.method === "POST") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const { match_id, wad_id, poi_id, attestation_type, attestation_text, attester_name, attester_role } = body;
 

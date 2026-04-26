@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { isBypassEnabled, recordBypassUsage, bypassEnvelope } from "../_shared/test-mode-bypass.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * OWN-001: UBO Ownership Verification
@@ -116,6 +117,7 @@ Deno.serve(async (req: Request) => {
     if (!orgId) throw new ApiException("FORBIDDEN", "No organisation", 403);
 
     if (req.method === "POST") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const { entity_id } = body;
       if (!entity_id) throw new ApiException("VALIDATION_ERROR", "entity_id required", 400);
