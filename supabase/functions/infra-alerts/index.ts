@@ -199,6 +199,51 @@ Deno.serve(async (req) => {
     console.error("Rate limit check failed:", err);
   }
 
+  // ── 5. Revenue notification email failures (30-min window) ───────
+  // Watches the revenue_notification_audit table written by the
+  // poi-mint / credits-purchased / wad-sealed hooks. Alerts admins if
+  // emails to support@izenzo.co.za are repeatedly failing for any event
+  // type — this is critical because it means revenue events are happening
+  // silently for the support desk.
+  try {
+    const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
+
+    const { data: recentRows, error: revenueErr } = await supabase
+      .from("revenue_notification_audit")
+      .select("event_type, status")
+      .gte("created_at", thirtyMinAgo)
+      .eq("recipient_email", "support@izenzo.co.za");
+
+    if (revenueErr) throw revenueErr;
+
+    if (recentRows && recentRows.length > 0) {
+      const tally = new Map<string, { total: number; failed: number }>();
+      for (const r of recentRows as Array<{ event_type: string; status: string }>) {
+        const t = tally.get(r.event_type) || { total: 0, failed: 0 };
+        t.total += 1;
+        if (r.status === "failed") t.failed += 1;
+        tally.set(r.event_type, t);
+      }
+
+      for (const [eventType, t] of tally.entries()) {
+        const rate = t.total > 0 ? (t.failed / t.total) * 100 : 0;
+        // Alert when: ≥3 failures AND >50% failure rate, OR ≥5 failures regardless of rate.
+        const trip = (t.failed >= 3 && rate > 50) || t.failed >= 5;
+        if (trip) {
+          alerts.push({
+            metric: `Revenue Email Failures — ${eventType} (30 min)`,
+            threshold: "< 3 failures or ≤ 50% failure rate",
+            actual: `${t.failed}/${t.total} failed (${rate.toFixed(0)}%)`,
+            severity: t.failed >= 5 || rate >= 80 ? "critical" : "warning",
+            details: `Notifications to support@izenzo.co.za for ${eventType} are failing repeatedly. Revenue events may be going unnoticed by the support desk. Investigate the send-transactional-email queue and the revenue_notification_audit table for error_message details.`,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Revenue email failure check failed:", err);
+  }
+
   // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(
