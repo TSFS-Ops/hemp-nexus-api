@@ -151,26 +151,47 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    // Global 401 handler: expired session → emergency-save drafts, notify, then redirect
+    // Global 401 handler — but ONLY treat the session as truly dead after a
+    // server-side `auth.getUser()` round-trip confirms the JWT is invalid.
+    // Some edge functions return 401 for resource-specific reasons (e.g. an
+    // RLS path that hasn't been authorised yet) while the browser session is
+    // still perfectly valid; previously this signed the user out mid-flow
+    // — the "paperclip" forced-sign-out pattern. See edge-invoke.ts for the
+    // sibling guard that protects `supabase.functions.invoke()` callers.
     if (res.status === 401) {
-      // Dispatch session-expiry event so useDraftPersistence hooks can emergency-save
-      window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
+      let sessionConfirmedDead = false;
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        sessionConfirmedDead = !!error || !data?.user;
+      } catch {
+        // Network error verifying — be conservative and assume dead so the
+        // user can re-auth rather than loop on 401s.
+        sessionConfirmedDead = true;
+      }
 
-      const currentPath = window.location.pathname + window.location.search;
-      const returnTo = encodeURIComponent(currentPath);
+      if (sessionConfirmedDead) {
+        // Dispatch session-expiry event so useDraftPersistence hooks can emergency-save
+        window.dispatchEvent(new CustomEvent("izenzo:session-expiry"));
 
-      toast.error("Your session has expired. Redirecting to sign in…", {
-        description: "Unsaved form data has been preserved where possible. You will return to this page after signing in.",
-        duration: Infinity,
-      });
+        const currentPath = window.location.pathname + window.location.search;
+        const returnTo = encodeURIComponent(currentPath);
 
-      // Match AuthContext's 4-second delay so user can read the toast
-      setTimeout(() => {
-        window.location.href = `/auth?returnTo=${returnTo}`;
-      }, 4000);
+        toast.error("Your session has expired. Redirecting to sign in…", {
+          description: "Form fields you were editing have been saved to this browser. You may need to re-select any attached files after signing back in.",
+          duration: Infinity,
+        });
 
-      // Throw so calling code stops execution immediately
-      throw new AuthRequiredError();
+        // Match AuthContext's 4-second delay so user can read the toast
+        setTimeout(() => {
+          window.location.href = `/auth?returnTo=${returnTo}`;
+        }, 4000);
+
+        // Throw so calling code stops execution immediately
+        throw new AuthRequiredError();
+      }
+      // Session is still valid — surface the 401 as a normal API error so the
+      // caller can show a contextual message (e.g. "you don't have access to
+      // this match"), instead of force-bouncing to /auth.
     }
     throw await ApiError.fromResponse(res);
   }
