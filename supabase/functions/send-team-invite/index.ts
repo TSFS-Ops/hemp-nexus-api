@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -43,6 +44,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    if (req.method === "POST") {
+      try { assertIdempotencyKey(req); } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message, code: e.code }), {
+          status: e.statusCode || 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
     }

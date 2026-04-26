@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -61,6 +62,14 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    if (req.method === "POST") {
+      try { assertIdempotencyKey(req); } catch (e: any) {
+        return new Response(JSON.stringify({ success: false, error: e.message, code: e.code }), {
+          status: e.statusCode || 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+    }
     // Verify authentication - require valid JWT
     const authHeader = req.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
