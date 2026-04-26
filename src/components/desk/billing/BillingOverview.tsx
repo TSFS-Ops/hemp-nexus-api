@@ -50,6 +50,10 @@ export function BillingOverview() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  // Reference picked up from the Paystack redirect query string — passed
+  // down to PaymentReferenceStatus so it can prioritise polling that ref.
+  const [activeReference, setActiveReference] = useState<string | null>(null);
   // Per-pack error message — when the Paystack initialisation fails we
   // surface the backend's reason inline beside the failing Purchase
   // button (with a Retry control), instead of just a transient toast.
