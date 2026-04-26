@@ -12,6 +12,7 @@ import { decideIdempotency, hashAttestBody } from "../_shared/idempotency.ts";
 import { computeETag, ifNoneMatchMatches, notModifiedResponse } from "../_shared/etag.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
 import { safePdfText } from "../_shared/pdf-sanitizer.ts";
+import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -974,47 +975,35 @@ Deno.serve(async (req) => {
       // Best-effort, never blocks the seal response. Idempotency keyed on
       // wad.id so re-attempts never spam the inbox.
       (async () => {
-        try {
-          const [buyerOrgRes, sellerOrgRes] = await Promise.all([
-            wad.buyer_org_id
-              ? supabase.from("organizations").select("name").eq("id", wad.buyer_org_id).maybeSingle()
-              : Promise.resolve({ data: null }),
-            wad.seller_org_id
-              ? supabase.from("organizations").select("name").eq("id", wad.seller_org_id).maybeSingle()
-              : Promise.resolve({ data: null }),
-          ]);
-          const buyerName = (buyerOrgRes.data?.name as string) || wad.buyer_org_id || "Unknown buyer";
-          const sellerName = (sellerOrgRes.data?.name as string) || wad.seller_org_id || "Unknown seller";
+        const [buyerOrgRes, sellerOrgRes] = await Promise.all([
+          wad.buyer_org_id
+            ? supabase.from("organizations").select("name").eq("id", wad.buyer_org_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+          wad.seller_org_id
+            ? supabase.from("organizations").select("name").eq("id", wad.seller_org_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]);
+        const buyerName = (buyerOrgRes.data?.name as string) || wad.buyer_org_id || "Unknown buyer";
+        const sellerName = (sellerOrgRes.data?.name as string) || wad.seller_org_id || "Unknown seller";
 
-          await supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "revenue-event-notify",
-              recipientEmail: "support@izenzo.co.za",
-              idempotencyKey: `revenue-wad-sealed-${wadId}`,
-              templateData: {
-                eventType: "wad_sealed",
-                headline: `WaD sealed — ${sellerName} → ${buyerName}`,
-                orgName: sellerName,
-                orgId: wad.seller_org_id || wad.buyer_org_id || null,
-                contactEmail: null,
-                details: {
-                  Buyer: buyerName,
-                  Seller: sellerName,
-                  "POI / Match ID": wad.poi_id || "—",
-                  Attestations: attestations.length,
-                  "Documents bound": documents.length,
-                  "Seal hash": sealHash.slice(0, 16) + "…",
-                },
-                consoleUrl: `https://compliance-matching.lovable.app/desk/match/${wad.poi_id || ""}`,
-                consoleLabel: "Open trade",
-                occurredAt: new Date().toISOString(),
-                referenceId: wadId,
-              },
-            },
-          });
-        } catch (notifErr) {
-          console.error(`[${requestId}] Revenue notify (wad_sealed) failed:`, notifErr);
-        }
+        await emitRevenueNotification(supabase, {
+          eventType: "wad_sealed",
+          idempotencyKey: `revenue-wad-sealed-${wadId}`,
+          referenceId: wadId,
+          orgId: wad.seller_org_id || wad.buyer_org_id || null,
+          orgName: sellerName,
+          headline: `WaD sealed — ${sellerName} → ${buyerName}`,
+          details: {
+            Buyer: buyerName,
+            Seller: sellerName,
+            "POI / Match ID": wad.poi_id || "—",
+            Attestations: attestations.length,
+            "Documents bound": documents.length,
+            "Seal hash": sealHash.slice(0, 16) + "…",
+          },
+          consoleUrl: `https://compliance-matching.lovable.app/desk/match/${wad.poi_id || ""}`,
+          consoleLabel: "Open trade",
+        });
       })();
 
       return new Response(JSON.stringify(sealedWad), {

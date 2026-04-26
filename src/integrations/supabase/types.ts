@@ -4850,6 +4850,48 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_notification_audit: {
+        Row: {
+          created_at: string
+          details: Json
+          error_message: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          org_id: string | null
+          org_name: string | null
+          recipient_email: string
+          reference_id: string | null
+          status: Database["public"]["Enums"]["revenue_notification_status"]
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          error_message?: string | null
+          event_type: string
+          id?: string
+          idempotency_key: string
+          org_id?: string | null
+          org_name?: string | null
+          recipient_email: string
+          reference_id?: string | null
+          status: Database["public"]["Enums"]["revenue_notification_status"]
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string
+          org_id?: string | null
+          org_name?: string | null
+          recipient_email?: string
+          reference_id?: string | null
+          status?: Database["public"]["Enums"]["revenue_notification_status"]
+        }
+        Relationships: []
+      }
       risk_snapshots: {
         Row: {
           created_at: string
@@ -7038,6 +7080,7 @@ export type Database = {
         | "declined"
         | "expired"
       gate_position: "entry" | "poi_mint" | "wad_only"
+      revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
     }
     CompositeTypes: {
@@ -7191,6 +7234,7 @@ export const Constants = {
         "expired",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
+      revenue_notification_status: ["sent", "failed", "skipped"],
       signal_type: ["buyer", "seller"],
     },
   },

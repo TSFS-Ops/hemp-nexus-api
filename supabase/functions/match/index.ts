@@ -23,6 +23,7 @@ import {
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -729,38 +730,30 @@ Deno.serve(async (req) => {
             const counterpartyName = match.buyer_org_id === creatorOrgId
               ? (match.seller_name || match.seller_id || 'Unknown')
               : (match.buyer_name || match.buyer_id || 'Unknown');
-            await supabase.functions.invoke('send-transactional-email', {
-              body: {
-                templateName: 'revenue-event-notify',
-                recipientEmail: 'support@izenzo.co.za',
-                idempotencyKey: `revenue-poi-mint-${matchId}`,
-                templateData: {
-                  eventType: 'poi_minted',
-                  headline: `POI minted by ${creatorOrgName} — ${match.commodity || 'Trade'}`,
-                  orgName: creatorOrgName,
-                  orgId: creatorOrgId,
-                  contactEmail: creatorEmail,
-                  details: {
-                    Commodity: match.commodity || '—',
-                    Counterparty: counterpartyName,
-                    Quantity: match.quantity_amount
-                      ? `${match.quantity_amount} ${match.quantity_unit || ''}`.trim()
-                      : '—',
-                    Price: match.price_amount
-                      ? `${match.price_currency || ''} ${match.price_amount}`.trim()
-                      : '—',
-                    'Credits burned': 1,
-                    Route: 'Bilateral (both parties on platform)',
-                  },
-                  consoleUrl: `https://compliance-matching.lovable.app/desk/match/${matchId}`,
-                  consoleLabel: 'Open match',
-                  occurredAt: now,
-                  referenceId: matchId,
-                },
+            await emitRevenueNotification(supabase, {
+              eventType: 'poi_minted',
+              idempotencyKey: `revenue-poi-mint-${matchId}`,
+              referenceId: matchId,
+              orgId: creatorOrgId,
+              orgName: creatorOrgName,
+              contactEmail: creatorEmail,
+              headline: `POI minted by ${creatorOrgName} — ${match.commodity || 'Trade'}`,
+              details: {
+                Commodity: match.commodity || '—',
+                Counterparty: counterpartyName,
+                Quantity: match.quantity_amount
+                  ? `${match.quantity_amount} ${match.quantity_unit || ''}`.trim()
+                  : '—',
+                Price: match.price_amount
+                  ? `${match.price_currency || ''} ${match.price_amount}`.trim()
+                  : '—',
+                'Credits burned': 1,
+                Route: 'Bilateral (both parties on platform)',
               },
-            }).catch((err: any) =>
-              console.error(`[${requestId}] Revenue notify (poi_minted) failed:`, err)
-            );
+              consoleUrl: `https://compliance-matching.lovable.app/desk/match/${matchId}`,
+              consoleLabel: 'Open match',
+              occurredAt: now,
+            });
           }
         } catch (notifErr) {
           // Never fail the POI response because notifications failed
