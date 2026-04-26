@@ -68,6 +68,26 @@ export function NewTradeInitiation() {
   const [submitting, setSubmitting] = useState(false);
   const debouncedQuery = useDebounce(counterpartyLabel, 250);
 
+  // ── Draft persistence: emergency-save the form on session expiry / page unload.
+  // Listens for `izenzo:session-expiry` (fired by the session-expiry bus before
+  // the SessionExpiredModal opens) and `beforeunload`. On restore after sign-in,
+  // the saved values rehydrate so the user does not lose typed input.
+  const draft = useDraftPersistence<{
+    commodity: string;
+    side: "buyer" | "seller";
+    counterpartyLabel: string;
+  }>("new-trade-initiation", () => ({ commodity, side, counterpartyLabel }));
+  useEffect(() => {
+    const restored = draft.restoreDraft();
+    if (restored) {
+      if (restored.commodity) setCommodity(restored.commodity);
+      if (restored.side) setSide(restored.side);
+      if (restored.counterpartyLabel) setCounterpartyLabel(restored.counterpartyLabel);
+    }
+    // Only run on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Live counterparty lookup against the real `counterparties` table.
   useEffect(() => {
     if (selectedCounterparty || debouncedQuery.trim().length < 2) {
