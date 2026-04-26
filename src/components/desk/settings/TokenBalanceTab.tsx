@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  startCreditCheckout,
+  verifyCreditCheckout,
+  type CreditPackageId,
+} from "@/lib/credit-checkout";
 
 interface LedgerEntry {
   id: string;
@@ -13,30 +18,42 @@ interface LedgerEntry {
   created_at: string;
 }
 
-const PACKS = [
+const PACKS: Array<{
+  id: CreditPackageId;
+  name: string;
+  price: string;
+  unit: string;
+  credits: number;
+  description: string;
+  cta: string;
+  highlight?: boolean;
+}> = [
   {
+    id: "single",
     name: "Pay-as-you-go",
     price: "R10",
     unit: "per credit",
     credits: 1,
-    description: "Buy credits on demand. No commitment, no expiry.",
+    description: "Buy a single credit on demand. No commitment, no expiry.",
     cta: "Purchase 1 credit",
   },
   {
+    id: "pack_50",
     name: "Starter Pack",
-    price: "R1,799",
-    unit: "200 credits",
-    credits: 200,
-    description: "For desks running multiple trades each week. Roughly 10% saving.",
+    price: "R450",
+    unit: "50 credits · 10% saving",
+    credits: 50,
+    description: "For desks running multiple trades each week.",
     cta: "Purchase Starter",
     highlight: true,
   },
   {
+    id: "pack_200",
     name: "Professional Pack",
-    price: "R6,299",
-    unit: "750 credits",
-    credits: 750,
-    description: "For high-volume institutional desks. Roughly 16% saving.",
+    price: "R1,600",
+    unit: "200 credits · 20% saving",
+    credits: 200,
+    description: "For high-volume institutional desks.",
     cta: "Purchase Professional",
   },
 ];
@@ -46,40 +63,96 @@ export function TokenBalanceTab() {
   const [balance, setBalance] = useState<number | null>(null);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+
+  const refresh = async () => {
+    if (!user) return;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
+    const [walletRes, ledgerRes] = await Promise.all([
+      supabase
+        .from("token_wallets")
+        .select("balance")
+        .eq("org_id", profile.org_id)
+        .maybeSingle(),
+      supabase
+        .from("token_ledger")
+        .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
+        .eq("org_id", profile.org_id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    setBalance(Number(walletRes.data?.balance ?? 0));
+    setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!profile?.org_id) {
-        setLoading(false);
-        return;
-      }
-      const [walletRes, ledgerRes] = await Promise.all([
-        supabase
-          .from("token_wallets")
-          .select("balance")
-          .eq("org_id", profile.org_id)
-          .maybeSingle(),
-        supabase
-          .from("token_ledger")
-          .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
-          .eq("org_id", profile.org_id)
-          .order("created_at", { ascending: false })
-          .limit(20),
-      ]);
-      setBalance(Number(walletRes.data?.balance ?? 0));
-      setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
-      setLoading(false);
-    })();
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handlePurchase = (pack: string) => {
-    toast.info(`${pack}: checkout coming online soon.`);
+  // Process Paystack redirect-back ?status=…&reference=…
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const reference =
+      params.get("reference") || params.get("trxref") || params.get("tx_ref");
+    if (!reference) return;
+    (async () => {
+      try {
+        if (status === "cancelled") {
+          toast.info("Payment cancelled. No credits were charged.");
+        } else {
+          const result = await verifyCreditCheckout(reference);
+          if (result.success) {
+            toast.success(
+              result.alreadyCredited
+                ? "Credits already applied to your wallet."
+                : `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
+            );
+            await refresh();
+          } else {
+            toast.error(result.message ?? "Payment was not successful.");
+          }
+        }
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Could not verify payment. Contact support@izenzo.co.za."
+        );
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("status");
+        url.searchParams.delete("reference");
+        url.searchParams.delete("trxref");
+        url.searchParams.delete("tx_ref");
+        window.history.replaceState({}, "", url.toString());
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const handlePurchase = async (pack: { id: CreditPackageId; name: string }) => {
+    if (purchasing) return;
+    setPurchasing(pack.id);
+    try {
+      const { checkoutUrl } = await startCreditCheckout(pack.id);
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : `${pack.name}: could not start checkout.`
+      );
+      setPurchasing(null);
+    }
   };
 
   return (
@@ -124,15 +197,16 @@ export function TokenBalanceTab() {
                 {pack.description}
               </p>
               <button
-                onClick={() => handlePurchase(pack.name)}
+                onClick={() => handlePurchase(pack)}
+                disabled={purchasing !== null}
                 className={[
-                  "w-full py-3 rounded-md text-sm font-medium transition-colors",
+                  "w-full py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
                   pack.highlight
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "border border-border text-foreground hover:border-slate-900",
                 ].join(" ")}
               >
-                {pack.cta}
+                {purchasing === pack.id ? "Redirecting…" : pack.cta}
               </button>
             </div>
           ))}

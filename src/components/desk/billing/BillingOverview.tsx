@@ -10,6 +10,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  startCreditCheckout,
+  verifyCreditCheckout,
+  type CreditPackageId,
+} from "@/lib/credit-checkout";
 
 interface LedgerEntry {
   id: string;
@@ -21,10 +26,16 @@ interface LedgerEntry {
   created_at: string;
 }
 
-const PACKS = [
-  { credits: 10, price: "R100", unit: "R10.00 / credit" },
-  { credits: 50, price: "R450", unit: "R9.00 / credit", saving: "10% saving" },
-  { credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
+const PACKS: Array<{
+  id: CreditPackageId;
+  credits: number;
+  price: string;
+  unit: string;
+  saving?: string;
+}> = [
+  { id: "pack_10", credits: 10, price: "R100", unit: "R10.00 / credit" },
+  { id: "pack_50", credits: 50, price: "R450", unit: "R9.00 / credit", saving: "10% saving" },
+  { id: "pack_200", credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
 ];
 
 // Dark institutional green, matches the "Sealed" tone used in compliance.
@@ -36,40 +47,103 @@ export function BillingOverview() {
   const [balance, setBalance] = useState<number | null>(null);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+
+  // Stable refresh that re-reads the wallet + recent ledger so we can
+  // call it both on mount and after a successful Paystack verify.
+  const refresh = async () => {
+    if (!user) return;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
+    const [walletRes, ledgerRes] = await Promise.all([
+      supabase
+        .from("token_wallets")
+        .select("balance")
+        .eq("org_id", profile.org_id)
+        .maybeSingle(),
+      supabase
+        .from("token_ledger")
+        .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
+        .eq("org_id", profile.org_id)
+        .order("created_at", { ascending: false })
+        .limit(40),
+    ]);
+    setBalance(Number(walletRes.data?.balance ?? 0));
+    setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!profile?.org_id) {
-        setLoading(false);
-        return;
-      }
-      const [walletRes, ledgerRes] = await Promise.all([
-        supabase
-          .from("token_wallets")
-          .select("balance")
-          .eq("org_id", profile.org_id)
-          .maybeSingle(),
-        supabase
-          .from("token_ledger")
-          .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
-          .eq("org_id", profile.org_id)
-          .order("created_at", { ascending: false })
-          .limit(40),
-      ]);
-      setBalance(Number(walletRes.data?.balance ?? 0));
-      setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
-      setLoading(false);
-    })();
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handlePurchase = (credits: number) => {
-    toast.info(`${credits} credits: checkout coming online soon.`);
+  // Handle the redirect-back from Paystack: ?status=success&reference=…
+  // Verify with the backend (idempotent), surface a toast, then strip
+  // the query params so a refresh doesn't re-toast.
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const reference =
+      params.get("reference") || params.get("trxref") || params.get("tx_ref");
+    if (!reference) return;
+
+    (async () => {
+      try {
+        if (status === "cancelled") {
+          toast.info("Payment cancelled. No credits were charged.");
+        } else {
+          const result = await verifyCreditCheckout(reference);
+          if (result.success) {
+            if (result.alreadyCredited) {
+              toast.success("Credits already applied to your wallet.");
+            } else {
+              toast.success(
+                `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
+              );
+            }
+            await refresh();
+          } else {
+            toast.error(result.message ?? "Payment was not successful.");
+          }
+        }
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Could not verify payment. Contact support@izenzo.co.za."
+        );
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("status");
+        url.searchParams.delete("reference");
+        url.searchParams.delete("trxref");
+        url.searchParams.delete("tx_ref");
+        window.history.replaceState({}, "", url.toString());
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const handlePurchase = async (pack: { id: CreditPackageId; credits: number }) => {
+    if (purchasing) return;
+    setPurchasing(pack.id);
+    try {
+      const { checkoutUrl } = await startCreditCheckout(pack.id);
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not start checkout. Please try again."
+      );
+      setPurchasing(null);
+    }
   };
 
   const displayBalance = balance ?? 0;
@@ -163,17 +237,18 @@ export function BillingOverview() {
               <div className="col-span-12 sm:col-span-3 sm:text-right">
                 <button
                   type="button"
-                  onClick={() => handlePurchase(pack.credits)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto"
+                  onClick={() => handlePurchase(pack)}
+                  disabled={purchasing !== null}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ backgroundColor: INK_GREEN }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
+                    if (purchasing === null) e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = INK_GREEN;
                   }}
                 >
-                  Purchase
+                  {purchasing === pack.id ? "Redirecting…" : "Purchase"}
                 </button>
               </div>
             </div>

@@ -1,19 +1,24 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
 
 type Tier = {
-  id: string;
+  id: CreditPackageId;
   credits: number;
   priceZAR: number;
   label: string;
   recommended?: boolean;
 };
 
+// Pricing must match the backend `TOKEN_PACKAGES` registry in
+// supabase/functions/token-purchase/index.ts. Drift here will cause
+// the checkout to charge a different amount than the UI advertises.
 const TIERS: Tier[] = [
   { id: "single", credits: 1, priceZAR: 10, label: "Single Action" },
-  { id: "starter", credits: 20, priceZAR: 180, label: "Trade Starter", recommended: true },
-  { id: "institutional", credits: 100, priceZAR: 850, label: "Institutional" },
+  { id: "pack_50", credits: 50, priceZAR: 450, label: "Trade Starter", recommended: true },
+  { id: "pack_200", credits: 200, priceZAR: 1600, label: "Institutional" },
 ];
 
 interface CreditProvisioningPanelProps {
@@ -27,7 +32,25 @@ export function CreditProvisioningPanel({
   onClose,
   currentBalance = 0,
 }: CreditProvisioningPanelProps) {
-  const [selected, setSelected] = useState<string>("starter");
+  const [selected, setSelected] = useState<CreditPackageId>("pack_50");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleProceed = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const { checkoutUrl } = await startCreditCheckout(selected);
+      // Full-page redirect — Paystack returns the user to the same URL
+      // with ?status=success&reference=… which BillingOverview /
+      // TokenBalanceTab will pick up and verify.
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not start checkout. Please try again."
+      );
+      setSubmitting(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -147,15 +170,19 @@ export function CreditProvisioningPanel({
             {/* Footer · Payment */}
             <footer className="px-8 pt-5 pb-8 border-t border-border bg-card">
               <motion.button
-                whileHover={{ scale: 0.99 }}
-                whileTap={{ scale: 0.985 }}
+                onClick={handleProceed}
+                disabled={submitting}
+                whileHover={submitting ? undefined : { scale: 0.99 }}
+                whileTap={submitting ? undefined : { scale: 0.985 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Proceed to Payment
-                <span className="font-mono text-[11px] tracking-wider opacity-80">
-                  R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}
-                </span>
+                {submitting ? "Redirecting to Paystack…" : "Proceed to Payment"}
+                {!submitting && (
+                  <span className="font-mono text-[11px] tracking-wider opacity-80">
+                    R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}
+                  </span>
+                )}
               </motion.button>
 
               <p className="mt-4 text-center font-mono text-[9px] tracking-[0.3em] uppercase text-muted-foreground/70">
