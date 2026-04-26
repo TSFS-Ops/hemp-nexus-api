@@ -4,6 +4,7 @@ import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage, bypassEnvelope, checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * IDV-001 & IDV-002: Identity/Company Verification
@@ -146,6 +147,7 @@ Deno.serve(async (req: Request) => {
     const { actorUserId } = deriveActorIds(authCtx);
 
     if (req.method === "POST") {
+      assertIdempotencyKey(req);
       // ── Maintenance gate (platform admins exempt) ──
       const maintenance = await checkMaintenanceMode(admin, {
         source: "idv-verify",

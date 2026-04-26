@@ -10,6 +10,7 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
 
     // POST / - Create new signal and trigger search
     if (req.method === "POST" && parts.length === 0) {
+      assertIdempotencyKey(req);
       // Check body size to prevent DoS attacks
       const contentLength = req.headers.get("content-length");
       if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
@@ -238,6 +240,7 @@ Deno.serve(async (req) => {
 
     // POST /:id/select - Select an option and hand off
     if (req.method === "POST" && parts.length === 2 && parts[1] === "select") {
+      assertIdempotencyKey(req);
       const signalId = parts[0];
       
       // Validate signalId is a valid UUID

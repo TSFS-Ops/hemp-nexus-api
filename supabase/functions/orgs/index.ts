@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { errorResponse, ApiException, handleDatabaseError } from '../_shared/errors.ts';
 import { authenticateRequest, requireRole, requireScope } from '../_shared/auth.ts';
 import { orgCreateSchema, orgUpdateSchema, validateInput } from '../_shared/validation.ts';
+import { assertIdempotencyKey } from '../_shared/idempotency.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -51,6 +52,7 @@ Deno.serve(async (req) => {
 
     // POST /orgs - Create organisation
     if (req.method === 'POST' && pathParts.length === 1) {
+      assertIdempotencyKey(req);
       const rawBody = await req.json();
       
       let validatedData;

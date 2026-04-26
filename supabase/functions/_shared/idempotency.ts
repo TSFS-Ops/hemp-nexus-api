@@ -185,6 +185,61 @@ export function cachedResponseToHttp(
   });
 }
 
+/**
+ * Hard guard: extract and validate the Idempotency-Key header from a request.
+ * Throws an ApiException-shaped error (statusCode 400, code IDEMPOTENCY_KEY_REQUIRED)
+ * when the header is missing on a mutating request.
+ *
+ * Usage at the top of any mutating handler branch:
+ *   const idempotencyKey = assertIdempotencyKey(req);
+ *
+ * Why a single guard:
+ *  - Uniform 400 response shape across all client-callable mutations
+ *  - One audit point — search for `assertIdempotencyKey` to enumerate
+ *    every endpoint that hard-enforces the header
+ *  - Cron / system / external-webhook receivers must NOT call this
+ *    (they have their own replay protection: webhook signatures,
+ *    INTERNAL_CRON_KEY, or service-role auth)
+ *
+ * Exempt-list (do NOT add this guard):
+ *   • lifecycle-scheduler, outreach-sla-monitor, infra-alerts,
+ *     notification-dispatch, match-auto-link-audit, process-email-queue,
+ *     calculate-reputation, compute-counterparty-ratings,
+ *     api-key-expiry, data-retention, storage-orphan-cleanup,
+ *     storage-retention-cleanup, transaction-reconciliation,
+ *     webhook-retry, dispatch-acceptance-receipts, engagement-reminder,
+ *     cold-storage-archive, admin-org-reconciliation
+ *     (cron / system jobs — replay-protected by INTERNAL_CRON_KEY or service-role JWT)
+ *   • handle-email-suppression, handle-email-unsubscribe, webhook-events
+ *     (inbound 3rd-party webhooks — replay-protected by signature + replay-guard)
+ *   • search, preflight, liquidity-check, discovery-eligibility,
+ *     poi-probability, dilisense-screen, draft-poi, sr-discover,
+ *     intel-crawl, web-search, due-diligence, audit-logs
+ *     (read-shaped POSTs — no state mutation, idempotent by definition)
+ */
+export function assertIdempotencyKey(req: Request): string {
+  const key =
+    req.headers.get("Idempotency-Key") || req.headers.get("idempotency-key");
+  if (!key || key.trim().length === 0) {
+    const err = new Error("Idempotency-Key header is required");
+    (err as any).statusCode = 400;
+    (err as any).code = "IDEMPOTENCY_KEY_REQUIRED";
+    throw err;
+  }
+  // Reject obviously malformed keys: must be 8–200 chars, no whitespace.
+  // We do NOT require UUID format — clients may use ULIDs, prefixed IDs, etc.
+  const trimmed = key.trim();
+  if (trimmed.length < 8 || trimmed.length > 200 || /\s/.test(trimmed)) {
+    const err = new Error(
+      "Idempotency-Key must be 8–200 chars with no whitespace",
+    );
+    (err as any).statusCode = 400;
+    (err as any).code = "IDEMPOTENCY_KEY_INVALID";
+    throw err;
+  }
+  return trimmed;
+}
+
 // Shared helpers for Idempotency-Key handling.
 //
 // Pulled out of supabase/functions/wad/index.ts so the request-hashing rules

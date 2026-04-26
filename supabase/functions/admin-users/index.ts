@@ -9,6 +9,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { assertIdempotencyKey } from '../_shared/idempotency.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
 
     // POST: lookup_profiles action OR default list
     if (req.method === 'POST') {
+      try { assertIdempotencyKey(req); } catch (e: any) { return jsonResponse({ error: e.message, code: e.code }, e.statusCode || 400); }
       let body: Record<string, unknown> = {};
       const contentType = req.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {

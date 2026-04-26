@@ -7,6 +7,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 // Server-enforced cost — must match atomic_generate_poi.v_token_cost
 const CREDITS_PER_POI = 1;
@@ -32,6 +33,7 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
+    assertIdempotencyKey(req);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

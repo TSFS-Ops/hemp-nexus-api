@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * Document Share Endpoint
@@ -28,6 +29,7 @@ Deno.serve(async (req) => {
     if (req.method !== "PATCH") {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
+    assertIdempotencyKey(req);
 
     const url = new URL(req.url);
     const rawParts = url.pathname.split("/").filter(Boolean);

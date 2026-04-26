@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * Signing Keys Management - ECDSA P-256 Key Registry
@@ -48,6 +49,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Register key ──
     if (req.method === "POST") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const parsed = RegisterKeySchema.parse(body);
 

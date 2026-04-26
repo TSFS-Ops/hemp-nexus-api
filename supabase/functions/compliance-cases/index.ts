@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * Compliance Cases Edge Function - V3 Sprint 4
@@ -68,6 +69,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Open case ──
     if (req.method === "POST") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const parsed = CaseCreateSchema.parse(body);
 
