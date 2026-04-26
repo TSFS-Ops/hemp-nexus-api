@@ -48,6 +48,7 @@ export function AdminEngagementForensicsPanel() {
   const [status, setStatus] = useState<string>("any");
   const [selected, setSelected] = useState<EngagementRow | null>(null);
 
+  const FORENSICS_LIMIT = 200;
   const { data: rows = [], isFetching, refetch } = useQuery({
     queryKey: ["admin-forensics", matchId, email, orgId, status],
     queryFn: async () => {
@@ -55,7 +56,7 @@ export function AdminEngagementForensicsPanel() {
         .from("poi_engagements")
         .select("id, match_id, org_id, counterparty_org_id, counterparty_email, engagement_status, created_at, responded_at")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(FORENSICS_LIMIT);
 
       if (matchId.trim()) q = q.ilike("match_id", `%${matchId.trim()}%`);
       if (email.trim()) q = q.ilike("counterparty_email", `%${email.trim()}%`);
@@ -68,6 +69,10 @@ export function AdminEngagementForensicsPanel() {
     },
     enabled: false,
   });
+  // Surface silent truncation: a forensics search returning exactly the cap is
+  // almost certainly truncated. Tell the admin to narrow filters rather than
+  // silently dropping rows past row 200.
+  const forensicsTruncated = rows.length >= FORENSICS_LIMIT;
 
   const statusVariant = (s: EngagementStatus) => {
     switch (s) {
@@ -127,7 +132,15 @@ export function AdminEngagementForensicsPanel() {
 
       {rows.length > 0 && (
         <Card>
-          <CardContent className="pt-5">
+          <CardContent className="pt-5 space-y-3">
+            {forensicsTruncated && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                <span className="font-semibold">Results capped.</span>
+                <span>
+                  Showing the most recent {FORENSICS_LIMIT} engagements that match these filters. Older matches are not displayed — narrow by Match ID, email, org or status to surface them.
+                </span>
+              </div>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>

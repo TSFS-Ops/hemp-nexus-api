@@ -83,7 +83,16 @@ Deno.serve(async (req: Request) => {
     if (req.method === "POST") {
       // Idempotency guard — duplicate submissions must not double-insert
       // governance documents or fire the validated→token-burn pipeline twice.
+      // Header is REQUIRED (hard-mode) — token-burning endpoints cannot afford
+      // to silently let retries through without dedupe.
       const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Idempotency-Key header is required",
+          400,
+        );
+      }
       const idemOpts = {
         supabase: admin,
         orgId,
@@ -175,7 +184,15 @@ Deno.serve(async (req: Request) => {
       }
 
       // Idempotency guard — token burns must never double-charge on retry.
+      // Header is REQUIRED (hard-mode).
       const patchKey = req.headers.get("Idempotency-Key");
+      if (!patchKey) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Idempotency-Key header is required",
+          400,
+        );
+      }
       const patchIdemOpts = {
         supabase: admin,
         orgId,

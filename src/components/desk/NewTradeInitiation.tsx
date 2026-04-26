@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { sha256Hex, canonicalTermsPayload } from "@/lib/crypto";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
 const initiationSchema = z.object({
   commodity: z.string().trim().min(2, "Select or enter a commodity").max(120),
@@ -66,6 +67,26 @@ export function NewTradeInitiation() {
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const debouncedQuery = useDebounce(counterpartyLabel, 250);
+
+  // ── Draft persistence: emergency-save the form on session expiry / page unload.
+  // Listens for `izenzo:session-expiry` (fired by the session-expiry bus before
+  // the SessionExpiredModal opens) and `beforeunload`. On restore after sign-in,
+  // the saved values rehydrate so the user does not lose typed input.
+  const draft = useDraftPersistence<{
+    commodity: string;
+    side: "buyer" | "seller";
+    counterpartyLabel: string;
+  }>("new-trade-initiation", () => ({ commodity, side, counterpartyLabel }));
+  useEffect(() => {
+    const restored = draft.restoreDraft();
+    if (restored) {
+      if (restored.commodity) setCommodity(restored.commodity);
+      if (restored.side) setSide(restored.side);
+      if (restored.counterpartyLabel) setCounterpartyLabel(restored.counterpartyLabel);
+    }
+    // Only run on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Live counterparty lookup against the real `counterparties` table.
   useEffect(() => {
@@ -160,6 +181,7 @@ export function NewTradeInitiation() {
       } = await supabase.from("matches").insert(insertRow).select("id").single();
       if (error) throw error;
       if (!data?.id) throw new Error("Match created but no id returned");
+      draft.clearDraft();
       toast.success("Trade initiated. Routing to the Match Compiler.");
       navigate(`/desk/match/${data.id}`, {
         replace: true

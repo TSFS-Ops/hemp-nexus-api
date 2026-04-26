@@ -696,8 +696,17 @@ Deno.serve(async (req) => {
       }
 
       // ── Idempotency: short-circuit duplicate PATCHes (status transitions
-      // and outreach-log inserts must never double-fire on retries) ──
+      // and outreach-log inserts must never double-fire on retries).
+      // Header is REQUIRED (hard-mode) — admins re-clicking accept/decline
+      // must collide on the key, not generate a fresh state transition.
       const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Idempotency-Key header is required",
+          400,
+        );
+      }
       const idemOpts = {
         supabase,
         orgId: authCtx.orgId ?? "platform",
