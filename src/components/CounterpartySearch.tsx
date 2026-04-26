@@ -352,12 +352,18 @@ export default function CounterpartySearch() {
                 "Idempotency-Key": idempotencyKey,
               },
               body: JSON.stringify({
+                // R1: never send `id` for the counterparty side — search-result IDs are
+                // NOT org UUIDs and would either resolve to null (best case) or, if the
+                // string happens to collide with a real org UUID, write the WRONG org
+                // into the buyer/seller slot. Only send a verified org_id for the
+                // creator's own side; leave the counterparty slot empty so the
+                // auto_link_engagement_on_signup trigger fills it on signup.
                 buyer: tradeContext.side === "seller"
-                  ? { id: selectedResult.id, name: selectedResult.title }
-                  : { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation", org_id: profile.org_id },
+                  ? { name: selectedResult.title }
+                  : { name: org?.name || profile.full_name || "Your Organisation", org_id: profile.org_id },
                 seller: tradeContext.side === "seller"
-                  ? { id: profile.org_id, name: org?.name || profile.full_name || "Your Organisation", org_id: profile.org_id }
-                  : { id: selectedResult.id, name: selectedResult.title },
+                  ? { name: org?.name || profile.full_name || "Your Organisation", org_id: profile.org_id }
+                  : { name: selectedResult.title },
                 commodity: parsedQuery?.product || query,
                 quantity: (() => {
                   const v = tradeContext.volume ? parseFloat(tradeContext.volume) : NaN;
