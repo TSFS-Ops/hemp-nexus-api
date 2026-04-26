@@ -4,6 +4,7 @@ import { errorResponse, ApiException, handleDatabaseError } from '../_shared/err
 import { authenticateRequest, hashApiKey, requireScope } from '../_shared/auth.ts';
 import { apiKeyCreateSchema, validateInput } from '../_shared/validation.ts';
 import { deriveActorIds } from '../_shared/actor-context.ts';
+import { assertIdempotencyKey } from '../_shared/idempotency.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -37,6 +38,7 @@ Deno.serve(async (req) => {
 
     // POST / - Create new API key
     if (req.method === 'POST' && parts.length === 0) {
+      assertIdempotencyKey(req);
       const rawBody = await req.json();
       
       let validatedData;
