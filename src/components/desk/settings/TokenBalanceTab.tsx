@@ -197,15 +197,16 @@ export function TokenBalanceTab() {
                 {pack.description}
               </p>
               <button
-                onClick={() => handlePurchase(pack.name)}
+                onClick={() => handlePurchase(pack)}
+                disabled={purchasing !== null}
                 className={[
-                  "w-full py-3 rounded-md text-sm font-medium transition-colors",
+                  "w-full py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
                   pack.highlight
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "border border-border text-foreground hover:border-slate-900",
                 ].join(" ")}
               >
-                {pack.cta}
+                {purchasing === pack.id ? "Redirecting…" : pack.cta}
               </button>
             </div>
           ))}
