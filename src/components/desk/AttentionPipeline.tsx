@@ -274,6 +274,7 @@ export function AttentionPipeline() {
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </li>
+              );
             })}
           </ul>
         )}
