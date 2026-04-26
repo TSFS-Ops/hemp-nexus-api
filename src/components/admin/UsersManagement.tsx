@@ -335,16 +335,23 @@ export default function UsersManagement() {
                     )}
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t gap-2">
-                    <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
-                      <SelectTrigger className="w-28 h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="suspended">Suspended</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {user.status === "pending_deletion" ? (
+                      <Badge variant="destructive" className="text-[10px]">
+                        <UserX className="h-2.5 w-2.5 mr-0.5" />
+                        Pending deletion
+                      </Badge>
+                    ) : (
+                      <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
+                        <SelectTrigger className="w-28 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="suspended">Suspended</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 touch-target" onClick={() => { setSelectedUser(user); setShowResetDialog(true); }}>
                         <Mail className="h-4 w-4" />
