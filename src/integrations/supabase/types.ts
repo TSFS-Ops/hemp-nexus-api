@@ -6988,6 +6988,7 @@ export type Database = {
         Returns: Json
       }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
+      touch_match_view: { Args: { _match_id: string }; Returns: string }
       try_lifecycle_lock: { Args: never; Returns: boolean }
       verify_acceptance_receipt: {
         Args: { p_receipt_id: string }

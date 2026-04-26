@@ -35,6 +35,16 @@ interface DealCard {
   quantityValue: number | null;
   state: string;
   created_at: string;
+  /**
+   * Last meaningful activity on the deal as observed by the current user.
+   * Computed as max(this user's match_ui_prefs.updated_at, latest match_events.created_at).
+   * Falls back to created_at when neither exists.
+   * This is what the card renders so a deal you opened five minutes ago does
+   * not appear as "3d ago" just because that's when it was created.
+   */
+  last_activity_at: string;
+  /** Where the activity timestamp came from, for tooltip clarity. */
+  last_activity_source: "viewed" | "event" | "created";
   /** Inferred deadline - uses explicit deal expiry if present, otherwise a
    *  lane-based heuristic so "nearest deadline" remains meaningful even when
    *  the underlying record has no SLA timestamp. */
@@ -42,9 +52,10 @@ interface DealCard {
   laneId: "draft" | "awaiting" | "poi";
 }
 
-type SortKey = "newest" | "oldest" | "volume_desc" | "deadline";
+type SortKey = "recent" | "newest" | "oldest" | "volume_desc" | "deadline";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "recent", label: "Recently active" },
   { value: "newest", label: "Newest first" },
   { value: "oldest", label: "Oldest first" },
   { value: "volume_desc", label: "Highest volume" },
@@ -145,6 +156,67 @@ function useOrgId() {
 }
 
 /**
+ * Last-activity enrichment.
+ *
+ * For the visible set of match ids, fetch:
+ *   1. The current user's own match_ui_prefs.updated_at (per-user "last viewed").
+ *   2. The most recent match_events.created_at across the whole org's activity.
+ *
+ * The card's displayed timestamp is the max of those signals, falling back to
+ * the match's created_at when neither exists. This is what lets a deal Daniel
+ * just opened show "5m ago" instead of "3d ago".
+ *
+ * Both reads are bounded by the visible page (matchIds.length is at most
+ * ACTIVE_PAGE_SIZE + sealedWindow), so this never grows with table size.
+ * RLS already restricts both tables to the user's org, so we don't add
+ * extra filters here.
+ */
+function useLastActivity(matchIds: string[]) {
+  const { user } = useAuth();
+  const key = matchIds.length === 0 ? "" : [...matchIds].sort().join(",");
+
+  return useQuery({
+    queryKey: ["desk-pipeline-last-activity", user?.id, key],
+    enabled: !!user && matchIds.length > 0,
+    staleTime: 15_000, // re-fetch frequently so a deal opened in another tab climbs quickly
+    queryFn: async () => {
+      const result = new Map<string, { at: string; source: "viewed" | "event" }>();
+      if (!user || matchIds.length === 0) return result;
+
+      // Per-user "last viewed" via match_ui_prefs.
+      const { data: prefs } = await supabase
+        .from("match_ui_prefs")
+        .select("match_id, updated_at")
+        .eq("user_id", user.id)
+        .in("match_id", matchIds);
+
+      for (const p of prefs ?? []) {
+        if (!p.match_id || !p.updated_at) continue;
+        result.set(p.match_id, { at: p.updated_at, source: "viewed" });
+      }
+
+      // Most recent event per match. We pull all events for the visible page
+      // (capped, ordered desc) and keep only the newest per match_id.
+      const { data: events } = await supabase
+        .from("match_events")
+        .select("match_id, created_at")
+        .in("match_id", matchIds)
+        .order("created_at", { ascending: false })
+        .limit(matchIds.length * 5); // 5 most-recent slots per match is plenty
+
+      for (const e of events ?? []) {
+        if (!e.match_id || !e.created_at) continue;
+        const existing = result.get(e.match_id);
+        if (!existing || new Date(e.created_at).getTime() > new Date(existing.at).getTime()) {
+          result.set(e.match_id, { at: e.created_at, source: "event" });
+        }
+      }
+      return result;
+    },
+  });
+}
+
+/**
  * Active lanes (Draft + Awaiting) - bounded query.
  *
  * These states are bounded by business reality (an org rarely holds more than
@@ -203,6 +275,8 @@ function useActiveLanes(orgId: string | null, page: number) {
           quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
           state,
           created_at: m.created_at,
+          last_activity_at: m.created_at, // enriched downstream by useLastActivity
+          last_activity_source: "created" as const,
           deadline_at: inferDeadline(m.created_at, laneId),
           laneId,
         };
@@ -270,6 +344,8 @@ function useSealedPage(orgId: string | null, page: number) {
             quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
             state: m.state ?? "",
             created_at: m.created_at,
+            last_activity_at: m.created_at,
+            last_activity_source: "created" as const,
             deadline_at: inferDeadline(m.created_at, "poi"),
             laneId: "poi" as const,
           };
@@ -309,13 +385,20 @@ export function DealPipeline() {
   };
 
   const isSortKey = (v: unknown): v is SortKey =>
-    v === "newest" || v === "oldest" || v === "volume_desc" || v === "deadline";
+    v === "recent" ||
+    v === "newest" ||
+    v === "oldest" ||
+    v === "volume_desc" ||
+    v === "deadline";
   const isLaneFilter = (v: unknown): v is "all" | DealCard["laneId"] =>
     v === "all" || v === "draft" || v === "awaiting" || v === "poi";
   const isString = (v: unknown): v is string => typeof v === "string";
 
+  // Default sort is "Recently active" so the deal a user just had open
+  // (e.g. Daniel returning to a sealed deal he was reviewing seconds ago)
+  // surfaces at the top of its lane instead of being buried by creation date.
   const [sortKey, setSortKey] = useState<SortKey>(() =>
-    readStorage<SortKey>(SORT_KEY_STORAGE, "newest", isSortKey),
+    readStorage<SortKey>(SORT_KEY_STORAGE, "recent", isSortKey),
   );
 
   // Per-lane collapse state - persisted to localStorage so a user who prefers
@@ -378,6 +461,19 @@ export function DealPipeline() {
   const activeQ = useActiveLanes(orgId ?? null, activePage);
   const sealedQ = useSealedPage(orgId ?? null, sealedPage);
 
+  // Collect every visible match id and ask for the freshest activity signal.
+  // This runs after the base lists land, so the "Recently active" sort and the
+  // age label are eventually-consistent (cards may briefly show created_at,
+  // then climb to "5m ago" once the enrichment resolves). That's acceptable -
+  // the alternative is blocking the pipeline render on a secondary query.
+  const visibleMatchIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of activeQ.data?.cards ?? []) ids.add(c.id);
+    for (const c of sealedQ.data?.cards ?? []) ids.add(c.id);
+    return Array.from(ids);
+  }, [activeQ.data, sealedQ.data]);
+  const lastActivityQ = useLastActivity(visibleMatchIds);
+
   const isLoading = (activeQ.isLoading && !activeQ.data) || (sealedQ.isLoading && !sealedQ.data);
   const isSealedFetching = sealedQ.isFetching;
   const isActiveFetching = activeQ.isFetching;
@@ -394,8 +490,22 @@ export function DealPipeline() {
   }, [activeQ.data, sealedQ.data]);
 
   const lanes = useMemo(() => {
-    const activeCards = activeQ.data?.cards ?? [];
-    const sealedCards = sealedQ.data?.cards ?? [];
+    const activityMap = lastActivityQ.data;
+    // Merge the activity enrichment onto each card. We never mutate the
+    // upstream query data; we project a new card with last_activity_at
+    // derived from whichever signal is most recent.
+    const enrich = (c: DealCard): DealCard => {
+      const hit = activityMap?.get(c.id);
+      if (!hit) return c;
+      const candidate = new Date(hit.at).getTime();
+      const baseline = new Date(c.last_activity_at).getTime();
+      if (Number.isFinite(candidate) && candidate > baseline) {
+        return { ...c, last_activity_at: hit.at, last_activity_source: hit.source };
+      }
+      return c;
+    };
+    const activeCards = (activeQ.data?.cards ?? []).map(enrich);
+    const sealedCards = (sealedQ.data?.cards ?? []).map(enrich);
     // De-dupe: the active query may have already returned some sealed records
     // that the paginated sealed query also returns. Sealed page wins because
     // it owns that lane's growth.
@@ -408,6 +518,12 @@ export function DealPipeline() {
       const tCreatedA = new Date(a.created_at).getTime();
       const tCreatedB = new Date(b.created_at).getTime();
       switch (sortKey) {
+        case "recent": {
+          const ta = new Date(a.last_activity_at).getTime();
+          const tb = new Date(b.last_activity_at).getTime();
+          if (tb !== ta) return tb - ta;
+          return tCreatedB - tCreatedA;
+        }
         case "oldest":
           return tCreatedA - tCreatedB;
         case "volume_desc": {
@@ -447,7 +563,7 @@ export function DealPipeline() {
       const filtered = laneIncluded ? sourceDeals.filter(matchesFilters) : [];
       return { ...meta, deals: [...filtered].sort(compare), suppressedByLane: !laneIncluded };
     });
-  }, [activeQ.data, sealedQ.data, sortKey, counterpartyQuery, commodityFilter, laneFilter]);
+  }, [activeQ.data, sealedQ.data, lastActivityQ.data, sortKey, counterpartyQuery, commodityFilter, laneFilter]);
 
   const totalDeals = lanes.reduce((sum, l) => sum + l.deals.length, 0);
   const hasActiveFilters =
@@ -843,7 +959,25 @@ function DealDocumentCard({
   onClick: () => void;
 }) {
   const accent = LANE_ACCENT[laneId];
-  const ageLabel = relativeAge(deal.created_at);
+  // Display the freshest activity, not the creation date - so a deal the user
+  // just opened doesn't read "3d ago" the moment they navigate back to the desk.
+  const activityIso = deal.last_activity_at || deal.created_at;
+  const ageLabel = relativeAge(activityIso);
+  const ageTooltip = (() => {
+    const ts = new Date(activityIso).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    switch (deal.last_activity_source) {
+      case "viewed":
+        return `Last viewed by you ${ts}`;
+      case "event":
+        return `Last activity ${ts}`;
+      case "created":
+      default:
+        return `Created ${ts}`;
+    }
+  })();
   const deadlineLabel = deadlineFromIso(deal.deadline_at);
   const initials = initialsOf(deal.counterparty);
 
@@ -876,7 +1010,7 @@ function DealDocumentCard({
         <p className="text-[11px] text-muted-foreground leading-snug truncate flex items-center gap-1.5 flex-wrap">
           <span className="truncate">with <span className="text-muted-foreground">{deal.counterparty}</span></span>
           <span className="text-muted-foreground/50">·</span>
-          <span className="font-mono text-muted-foreground/70">{ageLabel}</span>
+          <span className="font-mono text-muted-foreground/70 cursor-help" title={ageTooltip}>{ageLabel}</span>
           {deadlineLabel && (
             <>
               <span className="text-muted-foreground/50">·</span>
