@@ -44,7 +44,7 @@ function seedCounts(partial: Partial<MatchEvidenceCounts>): MatchEvidenceCounts 
     partial.documentCount ?? matchDocumentCount + governanceDocumentCount;
   const notesCount = partial.notesCount ?? 0;
   const hasSupportingEvidence =
-    partial.hasSupportingEvidence ?? documentCount > 0 || notesCount > 0;
+    partial.hasSupportingEvidence ?? (documentCount > 0 || notesCount > 0);
   return {
     matchDocumentCount,
     governanceDocumentCount,
