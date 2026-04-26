@@ -320,7 +320,19 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       setWaiverAcknowledged(false);
       setWaiverReason("");
       setWaiverCategory("");
-      if (waiverRequired) {
+
+      // Stale-evidence guard at OPEN time: re-fetch the combined evidence
+      // count (match_documents + governance_documents + match_notes) so the
+      // red waiver banner is never shown when a doc was just attached.
+      let openWaiverRequired = waiverRequired;
+      if (isPoiAction) {
+        const fresh = await refetchEvidence();
+        const freshDocs = fresh.data?.documentCount ?? 0;
+        const freshNotes = fresh.data?.notesCount ?? 0;
+        openWaiverRequired = freshDocs === 0 && freshNotes === 0;
+      }
+
+      if (openWaiverRequired) {
         setShowDialog(false);
         setShowInlineWaiver(true);
         return;
