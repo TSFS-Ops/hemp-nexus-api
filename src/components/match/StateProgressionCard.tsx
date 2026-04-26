@@ -12,6 +12,7 @@ import { routeTo } from "@/lib/routes.generated";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
+import { EvidenceDebugPanel } from "@/components/match/EvidenceDebugPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -274,7 +275,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   // a recorded, attributed decision before a credit-burning, irreversible
   // POI is sealed on the ledger.
   const isPoiAction = actionPath === "generate-poi";
-  const { data: evidenceCounts, refetch: refetchEvidence } = useQuery({
+  const {
+    data: evidenceCounts,
+    refetch: refetchEvidence,
+    isLoading: evidenceLoading,
+    isFetching: evidenceFetching,
+    error: evidenceError,
+  } = useQuery({
     queryKey: ["state-progression-evidence", match.id],
     queryFn: () => getMatchEvidenceCounts(match.id),
     enabled: !!match.id && isPoiAction,
@@ -614,6 +621,18 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 </div>
               </div>
             ) : null}
+
+            {isPoiAction && (
+              <EvidenceDebugPanel
+                matchId={match.id}
+                data={evidenceCounts}
+                isLoading={evidenceLoading}
+                isFetching={evidenceFetching}
+                error={evidenceError}
+                onRefetch={() => { void refetchEvidence(); }}
+                effectiveWaiverRequired={waiverRequired}
+              />
+            )}
 
             {/* Button always renders when balance/credits are OK. The legitimacy
                 gate is enforced server-side and now honours admin test-mode bypass,
