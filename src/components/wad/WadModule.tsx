@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,22 +33,24 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   const [userOrgId, setUserOrgId] = useState<string | null>(null);
   const [jurisdictionSelected, setJurisdictionSelected] = useState(false);
   const [selectedJurisdiction, setSelectedJurisdiction] = useState<string | null>(null);
-  const [govDocCount, setGovDocCount] = useState<number>(0);
+  const { data: govDocCount = 0 } = useQuery({
+    queryKey: ["gov-doc-count", match.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("governance_documents")
+        .select("id", { count: "exact", head: true })
+        .eq("deal_reference_id", match.id);
+      return count ?? 0;
+    },
+    enabled: !!match.id,
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+  });
 
   useEffect(() => {
     loadUserOrg();
     loadWad();
-    loadGovDocCount();
   }, [match.id]);
-
-  const loadGovDocCount = async () => {
-    const { count } = await supabase
-      .from("governance_documents")
-      .select("id", { count: "exact", head: true })
-      .eq("deal_reference_id", match.id);
-    setGovDocCount(count ?? 0);
-  };
-
   const loadUserOrg = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
