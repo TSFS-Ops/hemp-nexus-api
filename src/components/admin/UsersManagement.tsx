@@ -200,7 +200,7 @@ export default function UsersManagement() {
   };
 
   const exportToCSV = (usersToExport: User[]) => {
-    const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status"];
+    const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status", "Deletion Requested", "Deletion Category", "Deletion Reason"];
     const rows = usersToExport.map((user) => [
       user.email,
       user.full_name || "",
@@ -210,6 +210,9 @@ export default function UsersManagement() {
       user.email_confirmed_at ? "Yes" : "No",
       getUserRoles(user),
       user.status,
+      user.deletion_requested_at ? new Date(user.deletion_requested_at).toISOString() : "",
+      user.deletion_category ? (DELETION_CATEGORY_LABELS[user.deletion_category] || user.deletion_category) : "",
+      user.deletion_reason || "",
     ]);
 
     const csvContent = [
