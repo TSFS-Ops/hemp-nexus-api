@@ -12,6 +12,7 @@ import { routeTo } from "@/lib/routes.generated";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
+import { EvidenceDebugPanel } from "@/components/match/EvidenceDebugPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
