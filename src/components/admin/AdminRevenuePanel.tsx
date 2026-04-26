@@ -101,11 +101,20 @@ const ZAR = new Intl.NumberFormat("en-ZA", {
 const NUM = new Intl.NumberFormat("en-ZA");
 
 /**
- * A purchase row is any ledger entry that represents real revenue:
- *   - action_type = 'credit_purchase' (Paystack-driven, may be negative tokens_burned)
- *   - OR endpoint starts with 'payment:'
- * We then derive credits + amount_zar from metadata where possible, falling
- * back to abs(tokens_burned) for credits and 0 for unknown amounts.
+ * A real revenue row in `token_ledger` is identified by:
+ *   • action_type = 'credit_purchase'  — the canonical, server-authored marker
+ *     written by the Paystack webhook + manual reconciliation paths, AND
+ *   • metadata.price_zar present and > 0 — guarantees an amount was paid
+ *     (filters out promotional credits, system grants, and reconciliation
+ *     adjustments that share the action_type).
+ *
+ * We deliberately do NOT filter on endpoint LIKE 'payment:%' because that
+ * pattern also matches non-revenue rows (e.g. action_type='credit' with
+ * endpoint='credit_purchase' is a free grant, not a sale).
+ *
+ * Credits granted are read from metadata.credits when present; otherwise
+ * we fall back to abs(tokens_burned) (Paystack writes a negative burn to
+ * represent a credit grant in the ledger).
  */
 function enrichPurchase(
   row: PurchaseRow,
@@ -129,6 +138,17 @@ function enrichPurchase(
     customer_email: typeof meta.customer_email === "string" ? meta.customer_email : null,
     source: row.endpoint ?? row.action_type,
   };
+}
+
+/**
+ * Server-side filter: `action_type = 'credit_purchase'`.
+ * Client-side filter: `metadata.price_zar` > 0 (PostgREST cannot reliably
+ * compare jsonb numerics without a typed view, so we narrow in JS).
+ */
+function isRevenueRow(row: PurchaseRow): boolean {
+  if (row.action_type !== "credit_purchase") return false;
+  const price = row.metadata?.price_zar;
+  return typeof price === "number" && price > 0;
 }
 
 function bucketKey(iso: string, granularity: "day" | "month"): string {
@@ -155,12 +175,15 @@ export function AdminRevenuePanel() {
   const { data, isLoading, isFetching, refetch, isError, error } = useQuery({
     queryKey: ["admin-revenue", timeWindow],
     queryFn: async () => {
-      // 1) Pull purchase ledger rows. We deliberately use a broad filter and
-      //    let the client narrow further so admins can see manual/test rows too.
+      // 1) Pull canonical credit-purchase rows. action_type='credit_purchase'
+      //    is the only marker the Paystack webhook + manual reconciliation
+      //    write; we then narrow client-side to rows that actually carry a
+      //    paid amount (metadata.price_zar > 0) so promotional grants and
+      //    reconciliation adjustments never inflate revenue totals.
       let q = supabase
         .from("token_ledger")
         .select("id, org_id, endpoint, action_type, tokens_burned, remaining_balance, metadata, created_at, request_id")
-        .or("action_type.eq.credit_purchase,endpoint.like.payment:%")
+        .eq("action_type", "credit_purchase")
         .order("created_at", { ascending: false })
         .limit(2000);
 
@@ -169,7 +192,7 @@ export function AdminRevenuePanel() {
       const { data: ledger, error: ledgerErr } = await q;
       if (ledgerErr) throw ledgerErr;
 
-      const rows = (ledger ?? []) as PurchaseRow[];
+      const rows = ((ledger ?? []) as PurchaseRow[]).filter(isRevenueRow);
       const orgIds = Array.from(
         new Set(rows.map((r) => r.org_id).filter((x): x is string => !!x)),
       );
