@@ -499,7 +499,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       console.error("Error uploading document:", err);
       const message = err instanceof Error ? err.message : "Failed to upload document";
       setError(message);
-      toast.error("Failed to upload document");
+      toast.error("Failed to upload document", { description: message });
     } finally {
       setUploading(false);
     }
