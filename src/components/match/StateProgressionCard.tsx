@@ -290,7 +290,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const notesCount = evidenceCounts?.notesCount ?? 0;
   const waiverRequired = isPoiAction && documentCount === 0 && notesCount === 0;
   const trimmedReason = waiverReason.trim();
-  const waiverReasonValid = !waiverRequired || trimmedReason.length >= 10;
+  const waiverReasonValid = !waiverRequired || trimmedReason.length > 0;
   const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
   const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
 
@@ -676,7 +676,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     className="text-sm"
                     maxLength={500}
                   />
-                  <p className="text-[11px] text-muted-foreground">Minimum 10 characters. {trimmedReason.length}/500.</p>
+                  <p className="text-[11px] text-muted-foreground">Reason required. {trimmedReason.length}/500.</p>
                 </div>
 
                 <div className="flex items-start gap-2">
@@ -825,7 +825,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                         maxLength={500}
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Minimum 10 characters. {trimmedReason.length}/500.
+                        Reason required. {trimmedReason.length}/500.
                       </p>
                     </div>
 
