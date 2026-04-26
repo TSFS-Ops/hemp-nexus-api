@@ -283,7 +283,7 @@ function DisputesTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "evidence-waivers", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "evidence-waivers", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -291,6 +291,7 @@ function AuditTab() {
           <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
           <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
           <TabsTrigger value="evidence-waivers">Evidence Waivers</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="event-store">Event Store</TabsTrigger>
@@ -309,6 +310,11 @@ function AuditTab() {
         <TabsContent value="audit-logs">
           <Surface label="Immutable audit trail · public.audit_logs">
             <AdminAuditLogs />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="revenue-notifications">
+          <Surface label="Revenue email attempts · public.revenue_notification_audit · support@izenzo.co.za">
+            <AdminRevenueNotificationsPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="evidence-waivers">
