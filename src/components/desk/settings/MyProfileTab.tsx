@@ -92,20 +92,35 @@ export function MyProfileTab() {
   );
 }
 
+const DELETION_CATEGORIES: { value: string; label: string }[] = [
+  { value: "no_longer_needed", label: "No longer need the platform" },
+  { value: "switched_provider", label: "Switched to another provider" },
+  { value: "privacy_concerns", label: "Privacy concerns" },
+  { value: "missing_features", label: "Missing features" },
+  { value: "too_complex", label: "Too complex to use" },
+  { value: "cost", label: "Cost" },
+  { value: "other", label: "Other" },
+];
+
 function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: () => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [reason, setReason] = useState("");
+  const [category, setCategory] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const reasonValid = reason.trim().length >= 5;
+  const categoryValid = DELETION_CATEGORIES.some((c) => c.value === category);
+  const confirmationValid = confirmation.trim().toLowerCase() === userEmail.toLowerCase();
+  const canSubmit = !submitting && reasonValid && categoryValid && confirmationValid;
 
   const handleDelete = async () => {
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("delete-account", {
-        body: { confirmation, reason },
+        body: { confirmation, reason: reason.trim(), category },
       });
       if (error) {
-        // Edge function returns structured errors in `data` on non-2xx.
         const msg =
           (data as { message?: string } | null)?.message ??
           error.message ??
@@ -149,20 +164,41 @@ function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: ()
         <div className="space-y-4 bg-destructive/5 border border-destructive/30 rounded-md p-4 md:p-6">
           <div className="space-y-2">
             <label className="block text-xs font-medium tracking-wider uppercase text-muted-foreground">
-              Reason (optional)
+              Reason category <span className="text-destructive">*</span>
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-foreground focus:outline-none focus:border-slate-400 transition-colors"
+              aria-required="true"
+            >
+              <option value="">Select a reason…</option>
+              {DELETION_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium tracking-wider uppercase text-muted-foreground">
+              Tell us more <span className="text-destructive">*</span>
+              <span className="ml-2 normal-case tracking-normal text-muted-foreground/70">(min 5 characters, max 500)</span>
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              rows={2}
+              rows={3}
               maxLength={500}
-              placeholder="Help us improve — why are you leaving?"
+              placeholder="Help us improve — what's prompting you to leave?"
               className="w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-foreground focus:outline-none focus:border-slate-400 transition-colors resize-none"
+              aria-required="true"
             />
+            <p className="text-xs text-muted-foreground/70">
+              {reason.trim().length}/500 — admins review these to improve the platform.
+            </p>
           </div>
           <div className="space-y-2">
             <label className="block text-xs font-medium tracking-wider uppercase text-muted-foreground">
-              Type <span className="font-mono text-foreground">{userEmail}</span> to confirm
+              Type <span className="font-mono text-foreground">{userEmail}</span> to confirm <span className="text-destructive">*</span>
             </label>
             <input
               value={confirmation}
@@ -174,7 +210,7 @@ function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: ()
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={handleDelete}
-              disabled={submitting || confirmation.trim().toLowerCase() !== userEmail.toLowerCase()}
+              disabled={!canSubmit}
               className="inline-flex items-center justify-center px-4 py-2.5 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
             >
               {submitting ? "Deleting…" : "Permanently delete account"}
@@ -184,6 +220,7 @@ function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: ()
                 setOpen(false);
                 setConfirmation("");
                 setReason("");
+                setCategory("");
               }}
               disabled={submitting}
               className="inline-flex items-center justify-center px-4 py-2.5 rounded-md border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
