@@ -49,8 +49,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/error-state";
-import { Loader2, RefreshCw, Search, AlertTriangle, CheckCircle2, MinusCircle } from "lucide-react";
-import { format, formatDistanceToNow, subDays } from "date-fns";
+import { Loader2, RefreshCw, Search, AlertTriangle, CheckCircle2, MinusCircle, X } from "lucide-react";
+import { format, formatDistanceToNow, subDays, startOfDay, endOfDay } from "date-fns";
 
 type EventType = "poi_minted" | "credits_purchased" | "wad_sealed";
 type StatusType = "sent" | "failed" | "skipped";
@@ -77,30 +77,70 @@ const EVENT_LABELS: Record<EventType, string> = {
 
 const PAGE_SIZE = 100;
 
-const TIME_WINDOWS = [
+const PRESET_RANGES = [
   { value: "24h", label: "Last 24 hours", days: 1 },
   { value: "7d", label: "Last 7 days", days: 7 },
   { value: "30d", label: "Last 30 days", days: 30 },
   { value: "all", label: "All time", days: 0 },
+  { value: "custom", label: "Custom range", days: -1 },
 ] as const;
 
-type TimeWindowValue = typeof TIME_WINDOWS[number]["value"];
+type PresetValue = typeof PRESET_RANGES[number]["value"];
+
+const toDateInputValue = (d: Date) => format(d, "yyyy-MM-dd");
 
 export function AdminRevenueNotificationsPanel() {
   const [eventFilter, setEventFilter] = useState<"all" | EventType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | StatusType>("all");
+  const [recipientFilter, setRecipientFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [timeWindow, setTimeWindow] = useState<TimeWindowValue>("7d");
+  const [preset, setPreset] = useState<PresetValue>("7d");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   const [selected, setSelected] = useState<RevenueAuditRow | null>(null);
 
-  const sinceIso = useMemo(() => {
-    const win = TIME_WINDOWS.find((w) => w.value === timeWindow);
-    if (!win || win.days === 0) return null;
-    return subDays(new Date(), win.days).toISOString();
-  }, [timeWindow]);
+  // Resolve the active date range from preset OR custom inputs.
+  const { fromIso, toIso } = useMemo(() => {
+    if (preset === "custom") {
+      return {
+        fromIso: customFrom ? startOfDay(new Date(customFrom)).toISOString() : null,
+        toIso: customTo ? endOfDay(new Date(customTo)).toISOString() : null,
+      };
+    }
+    const p = PRESET_RANGES.find((r) => r.value === preset);
+    if (!p || p.days === 0 || p.days < 0) return { fromIso: null, toIso: null };
+    return { fromIso: subDays(new Date(), p.days).toISOString(), toIso: null };
+  }, [preset, customFrom, customTo]);
+
+  // Distinct recipients (used to populate the recipient dropdown). Cached
+  // separately so it doesn't refetch on every filter change.
+  const { data: recipientOptions = [] } = useQuery({
+    queryKey: ["admin-revenue-notifications-recipients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("revenue_notification_audit")
+        .select("recipient_email")
+        .order("recipient_email")
+        .limit(1000);
+      if (error) throw error;
+      const uniq = Array.from(
+        new Set((data || []).map((r: { recipient_email: string }) => r.recipient_email)),
+      );
+      return uniq;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["admin-revenue-notifications", eventFilter, statusFilter, search, timeWindow],
+    queryKey: [
+      "admin-revenue-notifications",
+      eventFilter,
+      statusFilter,
+      recipientFilter,
+      search,
+      fromIso,
+      toIso,
+    ],
     queryFn: async () => {
       let query = supabase
         .from("revenue_notification_audit")
@@ -110,7 +150,9 @@ export function AdminRevenueNotificationsPanel() {
 
       if (eventFilter !== "all") query = query.eq("event_type", eventFilter);
       if (statusFilter !== "all") query = query.eq("status", statusFilter);
-      if (sinceIso) query = query.gte("created_at", sinceIso);
+      if (recipientFilter !== "all") query = query.eq("recipient_email", recipientFilter);
+      if (fromIso) query = query.gte("created_at", fromIso);
+      if (toIso) query = query.lte("created_at", toIso);
       if (search.trim()) {
         const term = `%${search.trim()}%`;
         query = query.or(
@@ -185,7 +227,7 @@ export function AdminRevenueNotificationsPanel() {
             <SummaryStat label="Skipped" value={String(summary.skipped)} tone="muted" />
           </div>
 
-          {/* Filters */}
+          {/* Filters — row 1: search + event + status + recipient */}
           <div className="grid gap-3 md:grid-cols-12">
             <div className="md:col-span-4 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -222,19 +264,83 @@ export function AdminRevenueNotificationsPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="md:col-span-2">
-              <Select value={timeWindow} onValueChange={(v) => setTimeWindow(v as TimeWindowValue)}>
+            <div className="md:col-span-3">
+              <Select value={recipientFilter} onValueChange={setRecipientFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Window" />
+                  <SelectValue placeholder="Recipient" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_WINDOWS.map((w) => (
-                    <SelectItem key={w.value} value={w.value}>
-                      {w.label}
+                  <SelectItem value="all">All recipients</SelectItem>
+                  {recipientOptions.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Filters — row 2: date range preset + custom from/to + refresh */}
+          <div className="grid gap-3 md:grid-cols-12 items-end">
+            <div className="md:col-span-3">
+              <label className="text-[11px] uppercase tracking-wide text-muted-foreground block mb-1">
+                Date range
+              </label>
+              <Select value={preset} onValueChange={(v) => setPreset(v as PresetValue)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRESET_RANGES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-3">
+              <label className="text-[11px] uppercase tracking-wide text-muted-foreground block mb-1">
+                From
+              </label>
+              <Input
+                type="date"
+                value={customFrom}
+                disabled={preset !== "custom"}
+                max={customTo || toDateInputValue(new Date())}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+            </div>
+            <div className="md:col-span-3">
+              <label className="text-[11px] uppercase tracking-wide text-muted-foreground block mb-1">
+                To
+              </label>
+              <Input
+                type="date"
+                value={customTo}
+                disabled={preset !== "custom"}
+                min={customFrom || undefined}
+                max={toDateInputValue(new Date())}
+                onChange={(e) => setCustomTo(e.target.value)}
+              />
+            </div>
+            <div className="md:col-span-2 flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEventFilter("all");
+                  setStatusFilter("all");
+                  setRecipientFilter("all");
+                  setSearch("");
+                  setPreset("7d");
+                  setCustomFrom("");
+                  setCustomTo("");
+                }}
+                className="flex-1"
+              >
+                <X className="h-4 w-4 mr-1" /> Clear
+              </Button>
             </div>
             <div className="md:col-span-1">
               <Button
