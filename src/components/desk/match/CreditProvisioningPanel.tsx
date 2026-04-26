@@ -32,7 +32,31 @@ export function CreditProvisioningPanel({
   onClose,
   currentBalance = 0,
 }: CreditProvisioningPanelProps) {
-  const [selected, setSelected] = useState<string>("starter");
+  const [selected, setSelected] = useState<CreditPackageId>("pack_50");
+  const [submitting, setSubmitting] = useState(false);
+  // Inline error message from a failed Paystack initialisation. Cleared
+  // when the user picks a different tier or hits Retry.
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handleSelect = (id: CreditPackageId) => {
+    setSelected(id);
+    if (checkoutError) setCheckoutError(null);
+  };
+
+  const handleProceed = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setCheckoutError(null);
+    try {
+      const { checkoutUrl } = await startCreditCheckout(selected);
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      setCheckoutError(
+        e instanceof Error ? e.message : "Could not start checkout. Please try again."
+      );
+      setSubmitting(false);
+    }
+  };
 
   return (
     <AnimatePresence>
