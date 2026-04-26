@@ -59,21 +59,46 @@ const CHARGING_ENTITY = {
 
 // ==============================================
 // TOKEN PACKAGES (ZAR pricing)
-// R1,799 = 20 credits, R6,299 = 100 credits, R26,999 = 500 credits
+// Pack pricing is the single source of truth — UIs read from
+// GET /token-purchase/packages so they cannot drift.
 // ==============================================
-const TOKEN_PACKAGES: Record<string, { 
-  credits: number; 
-  price_zar: number; 
-  price_cents: number; 
+const TOKEN_PACKAGES: Record<string, {
+  credits: number;
+  price_zar: number;
+  price_cents: number;
   label: string;
   pricePerCredit: string;
+  saving?: string;
 }> = {
-  single: { 
-    credits: 1, 
-    price_zar: 10, 
-    price_cents: 1000, 
-    label: "Trade Request",
+  single: {
+    credits: 1,
+    price_zar: 10,
+    price_cents: 1000,
+    label: "Single Credit",
     pricePerCredit: "10.00",
+  },
+  pack_10: {
+    credits: 10,
+    price_zar: 100,
+    price_cents: 10000,
+    label: "10 Credits",
+    pricePerCredit: "10.00",
+  },
+  pack_50: {
+    credits: 50,
+    price_zar: 450,
+    price_cents: 45000,
+    label: "50 Credits",
+    pricePerCredit: "9.00",
+    saving: "10% saving",
+  },
+  pack_200: {
+    credits: 200,
+    price_zar: 1600,
+    price_cents: 160000,
+    label: "200 Credits",
+    pricePerCredit: "8.00",
+    saving: "20% saving",
   },
 };
 
