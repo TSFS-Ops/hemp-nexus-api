@@ -676,7 +676,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     className="text-sm"
                     maxLength={500}
                   />
-                  <p className="text-[11px] text-muted-foreground">Minimum 10 characters. {trimmedReason.length}/500.</p>
+                  <p className="text-[11px] text-muted-foreground">Reason required. {trimmedReason.length}/500.</p>
                 </div>
 
                 <div className="flex items-start gap-2">
@@ -825,7 +825,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                         maxLength={500}
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Minimum 10 characters. {trimmedReason.length}/500.
+                        Reason required. {trimmedReason.length}/500.
                       </p>
                     </div>
 
