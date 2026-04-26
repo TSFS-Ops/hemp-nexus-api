@@ -227,7 +227,7 @@ export function AdminRevenueNotificationsPanel() {
             <SummaryStat label="Skipped" value={String(summary.skipped)} tone="muted" />
           </div>
 
-          {/* Filters */}
+          {/* Filters — row 1: search + event + status + recipient */}
           <div className="grid gap-3 md:grid-cols-12">
             <div className="md:col-span-4 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -264,19 +264,83 @@ export function AdminRevenueNotificationsPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="md:col-span-2">
-              <Select value={timeWindow} onValueChange={(v) => setTimeWindow(v as TimeWindowValue)}>
+            <div className="md:col-span-3">
+              <Select value={recipientFilter} onValueChange={setRecipientFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Window" />
+                  <SelectValue placeholder="Recipient" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_WINDOWS.map((w) => (
-                    <SelectItem key={w.value} value={w.value}>
-                      {w.label}
+                  <SelectItem value="all">All recipients</SelectItem>
+                  {recipientOptions.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Filters — row 2: date range preset + custom from/to + refresh */}
+          <div className="grid gap-3 md:grid-cols-12 items-end">
+            <div className="md:col-span-3">
+              <label className="text-[11px] uppercase tracking-wide text-muted-foreground block mb-1">
+                Date range
+              </label>
+              <Select value={preset} onValueChange={(v) => setPreset(v as PresetValue)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRESET_RANGES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-3">
+              <label className="text-[11px] uppercase tracking-wide text-muted-foreground block mb-1">
+                From
+              </label>
+              <Input
+                type="date"
+                value={customFrom}
+                disabled={preset !== "custom"}
+                max={customTo || toDateInputValue(new Date())}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+            </div>
+            <div className="md:col-span-3">
+              <label className="text-[11px] uppercase tracking-wide text-muted-foreground block mb-1">
+                To
+              </label>
+              <Input
+                type="date"
+                value={customTo}
+                disabled={preset !== "custom"}
+                min={customFrom || undefined}
+                max={toDateInputValue(new Date())}
+                onChange={(e) => setCustomTo(e.target.value)}
+              />
+            </div>
+            <div className="md:col-span-2 flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEventFilter("all");
+                  setStatusFilter("all");
+                  setRecipientFilter("all");
+                  setSearch("");
+                  setPreset("7d");
+                  setCustomFrom("");
+                  setCustomTo("");
+                }}
+                className="flex-1"
+              >
+                <X className="h-4 w-4 mr-1" /> Clear
+              </Button>
             </div>
             <div className="md:col-span-1">
               <Button
