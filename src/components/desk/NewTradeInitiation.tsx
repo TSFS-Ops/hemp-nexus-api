@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { sha256Hex, canonicalTermsPayload } from "@/lib/crypto";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
 const initiationSchema = z.object({
   commodity: z.string().trim().min(2, "Select or enter a commodity").max(120),
