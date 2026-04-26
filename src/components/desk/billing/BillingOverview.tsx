@@ -237,17 +237,18 @@ export function BillingOverview() {
               <div className="col-span-12 sm:col-span-3 sm:text-right">
                 <button
                   type="button"
-                  onClick={() => handlePurchase(pack.credits)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto"
+                  onClick={() => handlePurchase(pack)}
+                  disabled={purchasing !== null}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ backgroundColor: INK_GREEN }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
+                    if (purchasing === null) e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = INK_GREEN;
                   }}
                 >
-                  Purchase
+                  {purchasing === pack.id ? "Redirecting…" : "Purchase"}
                 </button>
               </div>
             </div>
