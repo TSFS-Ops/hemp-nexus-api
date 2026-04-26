@@ -74,8 +74,12 @@ export function BillingOverview() {
     }
     setOrgId(profile.org_id);
     const [walletRes, ledgerRes] = await Promise.all([
+      // `token_balances` is the canonical wallet — it is what
+      // `atomic_token_credit` (purchase) and `atomic_token_burn` (POI
+      // mint) mutate. Reading from `token_wallets` here previously
+      // caused a phantom-zero balance after a real top-up.
       supabase
-        .from("token_wallets")
+        .from("token_balances")
         .select("balance")
         .eq("org_id", profile.org_id)
         .maybeSingle(),
