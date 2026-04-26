@@ -16,6 +16,7 @@ import {
   type CreditPackageId,
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
+import { PaymentReferenceStatus } from "./PaymentReferenceStatus";
 
 interface LedgerEntry {
   id: string;
@@ -49,6 +50,10 @@ export function BillingOverview() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  // Reference picked up from the Paystack redirect query string — passed
+  // down to PaymentReferenceStatus so it can prioritise polling that ref.
+  const [activeReference, setActiveReference] = useState<string | null>(null);
   // Per-pack error message — when the Paystack initialisation fails we
   // surface the backend's reason inline beside the failing Purchase
   // button (with a Retry control), instead of just a transient toast.
@@ -67,6 +72,7 @@ export function BillingOverview() {
       setLoading(false);
       return;
     }
+    setOrgId(profile.org_id);
     const [walletRes, ledgerRes] = await Promise.all([
       supabase
         .from("token_wallets")
@@ -99,6 +105,7 @@ export function BillingOverview() {
     const reference =
       params.get("reference") || params.get("trxref") || params.get("tx_ref");
     if (!reference) return;
+    setActiveReference(reference);
     (async () => {
       try {
         if (status === "cancelled") {
@@ -197,6 +204,13 @@ export function BillingOverview() {
           </span>
         </p>
       </section>
+
+      {/* ── PAYSTACK REFERENCE STATUS ─────────────────────────── */}
+      <PaymentReferenceStatus
+        orgId={orgId}
+        activeReference={activeReference}
+        onCredited={() => void refresh()}
+      />
 
       {/* ── TOP-UP / PROVISIONING ─────────────────────────────── */}
       <section className="mb-20">
