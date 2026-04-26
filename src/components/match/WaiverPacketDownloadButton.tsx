@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { invokeEdgeFunction, describeEdgeError } from "@/lib/edge-invoke";
+import { invokeEdgeFunction, describeEdgeError, isSessionExpiredError } from "@/lib/edge-invoke";
 import { Button } from "@/components/ui/button";
 
 interface Props {
