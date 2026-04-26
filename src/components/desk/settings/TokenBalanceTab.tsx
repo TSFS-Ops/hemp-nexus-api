@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  startCreditCheckout,
+  verifyCreditCheckout,
+  type CreditPackageId,
+} from "@/lib/credit-checkout";
+import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
 
 interface LedgerEntry {
   id: string;
@@ -13,30 +19,42 @@ interface LedgerEntry {
   created_at: string;
 }
 
-const PACKS = [
+const PACKS: Array<{
+  id: CreditPackageId;
+  name: string;
+  price: string;
+  unit: string;
+  credits: number;
+  description: string;
+  cta: string;
+  highlight?: boolean;
+}> = [
   {
+    id: "single",
     name: "Pay-as-you-go",
     price: "R10",
     unit: "per credit",
     credits: 1,
-    description: "Buy credits on demand. No commitment, no expiry.",
+    description: "Buy a single credit on demand. No commitment, no expiry.",
     cta: "Purchase 1 credit",
   },
   {
+    id: "pack_50",
     name: "Starter Pack",
-    price: "R1,799",
-    unit: "200 credits",
-    credits: 200,
-    description: "For desks running multiple trades each week. Roughly 10% saving.",
+    price: "R450",
+    unit: "50 credits · 10% saving",
+    credits: 50,
+    description: "For desks running multiple trades each week.",
     cta: "Purchase Starter",
     highlight: true,
   },
   {
+    id: "pack_200",
     name: "Professional Pack",
-    price: "R6,299",
-    unit: "750 credits",
-    credits: 750,
-    description: "For high-volume institutional desks. Roughly 16% saving.",
+    price: "R1,600",
+    unit: "200 credits · 20% saving",
+    credits: 200,
+    description: "For high-volume institutional desks.",
     cta: "Purchase Professional",
   },
 ];
