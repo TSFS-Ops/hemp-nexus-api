@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { apiFetch, generateIdempotencyKey, ApiError } from "@/lib/api-client";
 import { useAsyncAction } from "@/hooks/use-async-action";
+import { handleApiError as toastApiError } from "@/lib/api-error-handler";
 import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -88,44 +89,61 @@ function dispatchEligibilityFailed(matchId: string, err: unknown): void {
   );
 }
 
+/**
+ * Wraps an Error with a backend `requestId` so the outer toast handler can
+ * show it via {@link extractRequestId}, even when we rethrow with a friendlier
+ * message. We also append "(trace: <id>)" to the message itself as a belt-and-
+ * braces fallback for any callsite that only logs `error.message`.
+ */
+function rethrowWithTrace(message: string, requestId: string | null): never {
+  const finalMessage = requestId ? `${message} (trace: ${requestId})` : message;
+  const err = new Error(finalMessage) as Error & { requestId?: string | null };
+  err.requestId = requestId;
+  throw err;
+}
+
 function handleApiError(err: unknown): never {
   // Prefer structured ApiError details so we can surface the real reason
   if (err instanceof ApiError) {
+    const trace = err.requestId ?? null;
     if (err.code === "ELIGIBILITY_FAILED" || err.status === 422) {
-      throw new Error(formatEligibilityMessage(err.details));
+      rethrowWithTrace(formatEligibilityMessage(err.details), trace);
     }
     if (err.code === "INSUFFICIENT_TOKENS" || /insufficient/i.test(err.message)) {
-      throw new Error("Insufficient credits. Purchase more credits from the Billing page.");
+      rethrowWithTrace("Insufficient credits. Purchase more credits from the Billing page.", trace);
     }
     if (err.code === "DISPUTE_ACTIVE" || /dispute/i.test(err.message)) {
-      throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");
+      rethrowWithTrace("Cannot proceed while an active dispute exists. Resolve the dispute first.", trace);
     }
     if (err.code === "STATE_CONFLICT" || err.code === "INVALID_STATE" || /already/i.test(err.message)) {
       throw new StateConflictError("This match has been updated by another action. Refreshing now…");
     }
     if (err.status === 403 || err.code === "FORBIDDEN" || /permission/i.test(err.message)) {
-      throw new Error("You do not have permission to modify this match.");
+      rethrowWithTrace("You do not have permission to modify this match.", trace);
     }
-    throw new Error(`${err.message} (request id: ${err.requestId ?? "n/a"}). If this persists, contact support@izenzo.co.za.`);
+    rethrowWithTrace(
+      `${err.message} If this persists, contact support@izenzo.co.za.`,
+      trace,
+    );
   }
 
   const msg = err instanceof Error ? err.message : String(err);
   if (msg.includes("INSUFFICIENT_TOKENS") || msg.includes("insufficient")) {
-    throw new Error("Insufficient credits. Purchase more credits from the Billing page.");
+    rethrowWithTrace("Insufficient credits. Purchase more credits from the Billing page.", null);
   }
   if (msg.includes("ELIGIBILITY_FAILED") || msg.includes("eligibility")) {
-    throw new Error(formatEligibilityMessage(null));
+    rethrowWithTrace(formatEligibilityMessage(null), null);
   }
   if (msg.includes("DISPUTE_ACTIVE") || msg.includes("dispute")) {
-    throw new Error("Cannot proceed while an active dispute exists. Resolve the dispute first.");
+    rethrowWithTrace("Cannot proceed while an active dispute exists. Resolve the dispute first.", null);
   }
   if (msg.includes("INVALID_STATE") || msg.includes("STATE_CONFLICT") || msg.includes("already")) {
     throw new StateConflictError("This match has been updated by another action. Refreshing now…");
   }
   if (msg.includes("FORBIDDEN") || msg.includes("permission")) {
-    throw new Error("You do not have permission to modify this match.");
+    rethrowWithTrace("You do not have permission to modify this match.", null);
   }
-  throw new Error(`Action failed: ${msg}. If this persists, contact support@izenzo.co.za.`);
+  rethrowWithTrace(`Action failed: ${msg}. If this persists, contact support@izenzo.co.za.`, null);
 }
 
 export function useMatchDetails(matchId: string | undefined) {
@@ -251,6 +269,7 @@ export function useMatchDetails(matchId: string | undefined) {
     {
       successMessage: undefined,
       errorMessage: "Failed to confirm intent. Please try again.",
+      traceContext: "POI generation",
     }
   );
 
@@ -291,7 +310,27 @@ export function useMatchDetails(matchId: string | undefined) {
           throw err;
         }
         dispatchEligibilityFailed(match.id, err);
-        handleApiError(err);
+        // Re-shape the server error into a user-friendly Error that still
+        // carries the backend `requestId` so the toast can show the trace id.
+        let rethrown: unknown = err;
+        try {
+          handleApiError(err);
+        } catch (shaped) {
+          rethrown = shaped;
+        }
+        // For POI generation we toast HERE (with the explicit traceContext
+        // "POI generation") so the trace id is labelled correctly. We then
+        // mark the error so the outer canonical handler skips it.
+        if (actionPath === "generate-poi") {
+          toastApiError(rethrown, {
+            traceContext: "POI generation",
+            errorMessage: "POI generation failed. Please try again.",
+          });
+          if (rethrown && typeof rethrown === "object") {
+            (rethrown as { __alreadyToasted?: boolean }).__alreadyToasted = true;
+          }
+        }
+        throw rethrown;
       }
 
       if (!updated || !updated.id) {
