@@ -133,6 +133,23 @@ export function EvidenceDebugPanel({
         <div id="evidence-debug-body" className="border-t border-border/60 px-3 py-2 space-y-0.5">
           <Row label="Match ID" value={<span className="font-mono">{matchId}</span>} />
           <Row label="Source" value={<span className="font-mono">match-evidence-counts (edge fn)</span>} />
+          <div className="flex items-start justify-between gap-2 py-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground shrink-0">Endpoint</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <code className="text-[11px] font-mono text-foreground truncate" title={restUrl}>
+                GET {restUrl}
+              </code>
+              <button
+                type="button"
+                onClick={copyUrl}
+                className="inline-flex items-center gap-1 rounded border border-input bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent shrink-0"
+                aria-label="Copy endpoint URL"
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
           <Row label="Fetched at" value={formatTimestamp(data?.fetchedAt)} />
           <div className="my-1 h-px bg-border/60" />
           <Row label="match_documents" value={data ? data.matchDocumentCount : "—"} mono />
