@@ -22,6 +22,8 @@ export type MatchEvidenceCounts = {
   notesCount: number;
   hasSupportingEvidence: boolean;
   waiverRequired: boolean;
+  /** Client-side timestamp (ISO) marking when the server response was received. */
+  fetchedAt: string;
 };
 
 export async function getMatchEvidenceCounts(matchId: string): Promise<MatchEvidenceCounts> {
