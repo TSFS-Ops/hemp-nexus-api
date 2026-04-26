@@ -287,6 +287,14 @@ function DisputesTab() {
       </Tabs>
     </>;
 }
+function RevenueTab() {
+  return <>
+      <TabHeader id="revenue" />
+      <Surface label="Credit purchases · public.token_ledger ⨝ public.organizations · ZAR revenue, top buyers, per-org timeline">
+        <AdminRevenuePanel />
+      </Surface>
+    </>;
+}
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
   const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "evidence-waivers", "health", "event-store", "analytics"]);
@@ -459,6 +467,7 @@ function HQLayout() {
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
+          <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
