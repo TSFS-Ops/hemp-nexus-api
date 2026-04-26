@@ -18,7 +18,6 @@
 //     to cancel deletion (hard-delete sweep handled by future scheduled job).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +39,6 @@ const withRequestId = (req: Request, body: Record<string, unknown>) => ({
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(withRequestId(req, { error: "method_not_allowed" }), 405);
-  try { assertIdempotencyKey(req); } catch (e: any) { return json(withRequestId(req, { error: e.message, code: e.code }), e.statusCode || 400); }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
