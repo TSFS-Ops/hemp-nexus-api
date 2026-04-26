@@ -12,7 +12,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, AlertTriangle, Coins } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialogAction, AlertDialogCancel, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  ScrollableAlertDialog,
+  ScrollableAlertDialogBody,
+  ScrollableAlertDialogFooter,
+  ScrollableAlertDialogHeader,
+} from "@/components/ui/scrollable-alert-dialog";
 const CREDITS_PER_MATCH = 1;
 interface BulkConfirmDialogProps {
   open: boolean;
@@ -78,13 +84,18 @@ export function BulkConfirmDialog({
     if (isSettling) return;
     onOpenChange(v);
   }}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
+  const hasEnough = remainingBalance >= 0;
+  return <ScrollableAlertDialog open={open} onOpenChange={v => {
+    // Prevent closing while processing
+    if (isSettling) return;
+    onOpenChange(v);
+  }}>
+        <ScrollableAlertDialogHeader>
           <AlertDialogTitle>
             {isSettling ? `Sending trade request…` : `Send trade request for ${matchCount} match${matchCount > 1 ? "es" : ""}?`}
           </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-4">
+        </ScrollableAlertDialogHeader>
+        <ScrollableAlertDialogBody className="space-y-4">
               {isSettling ? <div className="space-y-3 py-2">
                   <p className="text-sm text-muted-foreground">
                     Processing {matchCount} match{matchCount > 1 ? "es" : ""} sequentially. Please do not close this dialogue.
@@ -145,10 +156,8 @@ export function BulkConfirmDialog({
                       </div>
                     </div>}
                 </>}
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
+        </ScrollableAlertDialogBody>
+        <ScrollableAlertDialogFooter>
           <AlertDialogCancel disabled={isSettling}>
             {isSettling ? "Processing…" : "Cancel"}
           </AlertDialogCancel>
@@ -161,7 +170,6 @@ export function BulkConfirmDialog({
                 Confirm - deduct {totalCost.toLocaleString()} credits
               </>}
           </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>;
+        </ScrollableAlertDialogFooter>
+      </ScrollableAlertDialog>;
 }
