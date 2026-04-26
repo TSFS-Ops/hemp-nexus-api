@@ -184,7 +184,15 @@ Deno.serve(async (req: Request) => {
       }
 
       // Idempotency guard — token burns must never double-charge on retry.
+      // Header is REQUIRED (hard-mode).
       const patchKey = req.headers.get("Idempotency-Key");
+      if (!patchKey) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Idempotency-Key header is required",
+          400,
+        );
+      }
       const patchIdemOpts = {
         supabase: admin,
         orgId,
