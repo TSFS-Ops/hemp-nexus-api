@@ -62,6 +62,13 @@ export interface ReplayGuardOptions {
    * Defaults to 300 (5 minutes), matching the upstream library default.
    */
   toleranceSeconds?: number;
+  /**
+   * Edge-function name (used in structured decision logs). Defaults to
+   * "unknown" so older callers still produce queryable logs.
+   */
+  fnName?: string;
+  /** Caller's own request id, threaded into the decision log. */
+  requestId?: string | null;
 }
 
 export type ReplayGuardResult =
