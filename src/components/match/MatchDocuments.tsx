@@ -137,6 +137,11 @@ interface UploadDraft { docType: string; title: string; notes: string; visibilit
 
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
+  // Truncation state: when the server cap is hit we MUST surface a persistent
+  // banner — a sonner toast auto-dismisses in <4s and operators routinely
+  // missed it, leading to compliance reviews on incomplete document sets.
+  const [docsTruncated, setDocsTruncated] = useState(false);
+  const [docsTruncationWarning, setDocsTruncationWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
