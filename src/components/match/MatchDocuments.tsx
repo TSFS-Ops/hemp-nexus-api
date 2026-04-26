@@ -802,8 +802,24 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
               No documents uploaded yet
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
+            <div className="space-y-3">
+              {docsTruncated && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground"
+                >
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning" />
+                  <div>
+                    <div className="font-medium">Document list may be incomplete</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {docsTruncationWarning ||
+                        "The server returned a partial document set because this match has more documents than the per-request cap. Filter by date, type, or version to see the rest before relying on this list for compliance review."}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Document</TableHead>
