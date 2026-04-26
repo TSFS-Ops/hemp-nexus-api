@@ -11,8 +11,16 @@
  * drift that originally caused the "checkout coming online soon" stub.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { recordPaystackAttempt } from "@/components/desk/billing/PaymentReferenceStatus";
 
 export type CreditPackageId = "single" | "pack_10" | "pack_50" | "pack_200";
+
+const EXPECTED_CREDITS: Record<CreditPackageId, number> = {
+  single: 1,
+  pack_10: 10,
+  pack_50: 50,
+  pack_200: 200,
+};
 
 export interface StartCheckoutResult {
   checkoutUrl: string;
