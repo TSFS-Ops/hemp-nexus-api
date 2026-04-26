@@ -33,7 +33,7 @@ export function DashboardBreadcrumbs() {
   const isMatchDetail = pathname.startsWith(ROUTES.DASHBOARD_MATCHES + "/") && pathname !== ROUTES.DASHBOARD_MATCHES;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground mb-3 min-w-0">
       <Link to={ROUTES.DASHBOARD} className="flex items-center gap-1 hover:text-foreground transition-colors">
         <Home className="h-3 w-3" />
         <span>Console</span>
