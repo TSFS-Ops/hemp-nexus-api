@@ -51,6 +51,23 @@ export function handleApiError(
     return;
   }
 
+  // R1: surface the role-of-truth invariant trigger as a readable message
+  // instead of a raw Postgres "check_violation" string. The trigger fires
+  // when buyer_org_id == seller_org_id or the creator org is missing from
+  // both filled slots.
+  const rawMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  if (rawMessage.includes("matches_role_invariant")) {
+    toast.error(
+      "This trade can't be saved with your organisation on both sides. Please pick a different counterparty."
+    );
+    return;
+  }
+
   // API errors: use status-specific message or the server's error message
   if (isApiError(error)) {
     const statusMessage = STATUS_MESSAGES[error.status];

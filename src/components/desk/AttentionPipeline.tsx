@@ -73,25 +73,38 @@ export function AttentionPipeline() {
   const { data, isLoading } = useQuery({
     queryKey: ["desk-attention", user?.id],
     enabled: !!user,
-    queryFn: async (): Promise<AttentionItem[]> => {
+    queryFn: async (): Promise<{ items: AttentionItem[]; totalCount: number }> => {
       const { data: profile } = await supabase
         .from("profiles")
         .select("org_id")
         .eq("id", user!.id)
         .maybeSingle();
-      if (!profile?.org_id) return [];
+      if (!profile?.org_id) return { items: [], totalCount: 0 };
 
-      const { data: matches } = await supabase
+      const ATTN_LIMIT = 8;
+      const ATTN_STATES = [
+        "counterparty_sighted",
+        "buyer_committed",
+        "seller_committed",
+        "pending_finality",
+        "terms_pending",
+        "committed",
+      ];
+
+      const { data: matches, count } = await supabase
         .from("matches")
-        .select("id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at, expires_at")
+        .select(
+          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at, expires_at",
+          { count: "exact" }
+        )
         .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`)
-        .in("state", ["counterparty_sighted", "buyer_committed", "seller_committed", "pending_finality", "terms_pending", "committed"])
+        .in("state", ATTN_STATES)
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(ATTN_LIMIT);
 
-      if (!matches) return [];
+      if (!matches) return { items: [], totalCount: count ?? 0 };
 
-      return matches.map((m: any) => {
+      const items = matches.map((m: any) => {
         const isBuyer = m.buyer_org_id === profile.org_id;
         const counterparty = isBuyer ? m.seller_name : m.buyer_name;
         const qty = m.quantity_amount && m.quantity_unit
@@ -110,15 +123,20 @@ export function AttentionPipeline() {
           href: `/desk/deals/${m.id}`,
         };
       });
+
+      return { items, totalCount: count ?? items.length };
     },
   });
 
   const sorted = useMemo(() => {
-    if (!data) return [];
-    return [...data].sort(
+    if (!data?.items) return [];
+    return [...data.items].sort(
       (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
     );
   }, [data]);
+
+  const totalCount = data?.totalCount ?? sorted.length;
+  const hiddenCount = Math.max(0, totalCount - sorted.length);
 
   const highCount = sorted.filter((i) => i.priority === "high").length;
 
@@ -259,6 +277,15 @@ export function AttentionPipeline() {
               );
             })}
           </ul>
+        )}
+        {hiddenCount > 0 && !isLoading && sorted.length > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate("/desk/deals?status=matched")}
+            className="mt-2 w-full text-left text-[11px] text-muted-foreground hover:text-foreground px-3 py-2 rounded-md hover:bg-muted transition-colors"
+          >
+            Showing the {sorted.length} most recent · {hiddenCount} more open trade{hiddenCount === 1 ? "" : "s"} need attention. View all →
+          </button>
         )}
       </div>
     </section>
