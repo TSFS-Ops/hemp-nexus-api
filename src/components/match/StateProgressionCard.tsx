@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { routeTo } from "@/lib/routes.generated";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -147,6 +148,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const [waiverReason, setWaiverReason] = useState("");
   const [waiverCategory, setWaiverCategory] = useState<string>("");
   const [waiverSubmitting, setWaiverSubmitting] = useState(false);
+  const [serverWaiverRequired, setServerWaiverRequired] = useState(false);
   const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
@@ -274,23 +276,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const isPoiAction = actionPath === "generate-poi";
   const { data: evidenceCounts, refetch: refetchEvidence } = useQuery({
     queryKey: ["state-progression-evidence", match.id],
-    queryFn: async () => {
-      const [docsRes, govDocsRes, notesRes] = await Promise.all([
-        supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
-        supabase.from("governance_documents").select("id", { count: "exact", head: true }).eq("deal_reference_id", match.id),
-        supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
-      ]);
-      return {
-        documentCount: (docsRes.count ?? 0) + (govDocsRes.count ?? 0),
-        notesCount: notesRes.count ?? 0,
-      };
-    },
+    queryFn: () => getMatchEvidenceCounts(match.id),
     enabled: !!match.id && isPoiAction,
-    staleTime: 5_000,
+    staleTime: 0,
   });
   const documentCount = evidenceCounts?.documentCount ?? 0;
   const notesCount = evidenceCounts?.notesCount ?? 0;
-  const waiverRequired = isPoiAction && documentCount === 0 && notesCount === 0;
+  const waiverRequired = isPoiAction && (serverWaiverRequired || evidenceCounts?.waiverRequired === true);
   const trimmedReason = waiverReason.trim();
   const waiverReasonValid = !waiverRequired || trimmedReason.length > 0;
   const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
@@ -327,9 +319,12 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       let openWaiverRequired = waiverRequired;
       if (isPoiAction) {
         const fresh = await refetchEvidence();
-        const freshDocs = fresh.data?.documentCount ?? 0;
-        const freshNotes = fresh.data?.notesCount ?? 0;
-        openWaiverRequired = freshDocs === 0 && freshNotes === 0;
+        if (fresh.data) {
+          setServerWaiverRequired(false);
+          openWaiverRequired = fresh.data.waiverRequired;
+        } else {
+          openWaiverRequired = false;
+        }
       }
 
       if (openWaiverRequired) {
@@ -368,6 +363,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         };
       } else {
         // Evidence appeared mid-flight: skip waiver, let mint proceed normally.
+        setServerWaiverRequired(false);
         toast.info("Supporting evidence was added — proceeding without waiver.");
       }
     }
@@ -376,6 +372,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     setShowInlineWaiver(false);
     try {
       await onAction(actionPath, payload);
+      setServerWaiverRequired(false);
     } catch (err) {
       // Race recovery: server returned 409 EVIDENCE_WAIVER_REQUIRED (e.g. our
       // counts were stale and showed evidence that no longer exists at mint
@@ -387,6 +384,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           "Supporting documents and notes were removed before this Proof of Intent could be sealed. Please record an evidence waiver to continue.",
         );
         await refetchEvidence();
+        setServerWaiverRequired(true);
         setWaiverAcknowledged(false);
         setWaiverReason("");
         setWaiverCategory("");
@@ -397,6 +395,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       if (/WAIVER_NOT_APPLICABLE/i.test(message)) {
         toast.success("Supporting evidence was added in time — POI mint will retry without a waiver.");
         await refetchEvidence();
+        setServerWaiverRequired(false);
         setShowInlineWaiver(false);
         return;
       }
