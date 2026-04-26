@@ -490,6 +490,14 @@ export default function UsersManagement() {
                           <div className="flex gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
+                                <Button variant="ghost" size="sm" onClick={() => setJourneyUserId(user.id)} aria-label="View user journey">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>View user journey</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
                                 <Button variant="ghost" size="sm" onClick={() => { setSelectedUser(user); setShowResetDialog(true); }}>
                                   <Mail className="h-4 w-4" />
                                 </Button>
