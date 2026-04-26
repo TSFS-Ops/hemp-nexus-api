@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,13 +49,14 @@ import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
 import { AdminRevenueNotificationsPanel } from "@/components/admin/AdminRevenueNotificationsPanel";
+import { AdminRevenuePanel } from "@/components/admin/AdminRevenuePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "engagements" | "disputes" | "audit" | "settings";
+type TabId = "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -81,6 +82,11 @@ const TABS: {
   label: "Dispute Resolution",
   icon: AlertTriangle,
   blurb: "Flagged trades, escalations, force-resolve overrides."
+}, {
+  id: "revenue",
+  label: "Revenue & Sales",
+  icon: TrendingUp,
+  blurb: "Credit purchases, daily/monthly revenue, top buyers, per-org timeline."
 }, {
   id: "audit",
   label: "Audit & Health",
@@ -281,6 +287,14 @@ function DisputesTab() {
       </Tabs>
     </>;
 }
+function RevenueTab() {
+  return <>
+      <TabHeader id="revenue" />
+      <Surface label="Credit purchases · public.token_ledger ⨝ public.organizations · ZAR revenue, top buyers, per-org timeline">
+        <AdminRevenuePanel />
+      </Surface>
+    </>;
+}
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
   const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "evidence-waivers", "health", "event-store", "analytics"]);
@@ -453,6 +467,7 @@ function HQLayout() {
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
+          <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
