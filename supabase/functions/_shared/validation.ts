@@ -1,9 +1,18 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { ApiException } from "./errors.ts";
 
-// Match endpoint validation
+// Match endpoint validation.
+//
+// `id` is OPTIONAL by design: after the R1 role-of-truth hardening
+// (CounterpartySearch.tsx) the client deliberately omits `id` for the
+// counterparty slot when the result came from a web/AI discovery source —
+// those IDs are NOT org UUIDs and writing them through would either resolve
+// to null or, if they collide with a real org UUID, write the WRONG org into
+// the buyer/seller slot. The counterparty slot is left to be filled by the
+// `auto_link_engagement_on_signup` trigger when the partner signs up.
+// `name` remains required so audit logs and notifications always have a label.
 const partySchema = z.object({
-  id: z.string().trim().min(1).max(100),
+  id: z.string().trim().min(1).max(100).nullable().optional(),
   name: z.string().trim().min(1).max(200),
   org_id: z.string().uuid().nullable().optional(),
 });
