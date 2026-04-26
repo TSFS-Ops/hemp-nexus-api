@@ -7,6 +7,7 @@ import {
   verifyCreditCheckout,
   type CreditPackageId,
 } from "@/lib/credit-checkout";
+import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
 
 interface LedgerEntry {
   id: string;
@@ -64,6 +65,9 @@ export function TokenBalanceTab() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+  // Per-pack initiation error — surfaced inline beside the failing
+  // Purchase button (with Retry) instead of a transient toast.
+  const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
 
   const refresh = async () => {
     if (!user) return;
@@ -144,15 +148,28 @@ export function TokenBalanceTab() {
   const handlePurchase = async (pack: { id: CreditPackageId; name: string }) => {
     if (purchasing) return;
     setPurchasing(pack.id);
+    setPackErrors((prev) => {
+      if (!prev[pack.id]) return prev;
+      const { [pack.id]: _omit, ...rest } = prev;
+      return rest;
+    });
     try {
       const { checkoutUrl } = await startCreditCheckout(pack.id);
       window.location.href = checkoutUrl;
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : `${pack.name}: could not start checkout.`
-      );
+      const message =
+        e instanceof Error ? e.message : `${pack.name}: could not start checkout.`;
+      setPackErrors((prev) => ({ ...prev, [pack.id]: message }));
       setPurchasing(null);
     }
+  };
+
+  const dismissPackError = (id: CreditPackageId) => {
+    setPackErrors((prev) => {
+      if (!prev[id]) return prev;
+      const { [id]: _omit, ...rest } = prev;
+      return rest;
+    });
   };
 
   return (
@@ -179,37 +196,53 @@ export function TokenBalanceTab() {
           Top Up
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PACKS.map((pack) => (
-            <div
-              key={pack.name}
-              className="border border-border rounded-md p-8 hover:border-slate-400 transition-colors flex flex-col"
-            >
-              <p className="text-xs font-medium tracking-wider uppercase text-muted-foreground mb-4">
-                {pack.name}
-              </p>
-              <div className="mb-2">
-                <span className="font-mono text-3xl font-semibold text-foreground tracking-tight">
-                  {pack.price}
-                </span>
-              </div>
-              <p className="text-xs font-mono text-muted-foreground/70 mb-6">{pack.unit}</p>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
-                {pack.description}
-              </p>
-              <button
-                onClick={() => handlePurchase(pack)}
-                disabled={purchasing !== null}
-                className={[
-                  "w-full py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
-                  pack.highlight
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border border-border text-foreground hover:border-slate-900",
-                ].join(" ")}
+          {PACKS.map((pack) => {
+            const error = packErrors[pack.id];
+            const isPending = purchasing === pack.id;
+            return (
+              <div
+                key={pack.id}
+                className="border border-border rounded-md p-8 hover:border-slate-400 transition-colors flex flex-col"
               >
-                {purchasing === pack.id ? "Redirecting…" : pack.cta}
-              </button>
-            </div>
-          ))}
+                <p className="text-xs font-medium tracking-wider uppercase text-muted-foreground mb-4">
+                  {pack.name}
+                </p>
+                <div className="mb-2">
+                  <span className="font-mono text-3xl font-semibold text-foreground tracking-tight">
+                    {pack.price}
+                  </span>
+                </div>
+                <p className="text-xs font-mono text-muted-foreground/70 mb-6">{pack.unit}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-8 flex-1">
+                  {pack.description}
+                </p>
+                <button
+                  onClick={() => handlePurchase(pack)}
+                  disabled={purchasing !== null}
+                  aria-describedby={error ? `tbt-pack-error-${pack.id}` : undefined}
+                  className={[
+                    "w-full py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
+                    pack.highlight
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border border-border text-foreground hover:border-slate-900",
+                  ].join(" ")}
+                >
+                  {isPending ? "Redirecting…" : error ? "Try again" : pack.cta}
+                </button>
+                {error && (
+                  <div id={`tbt-pack-error-${pack.id}`} className="mt-4">
+                    <CheckoutErrorNotice
+                      message={error}
+                      retrying={isPending}
+                      variant="inline"
+                      onRetry={() => handlePurchase(pack)}
+                      onDismiss={() => dismissPackError(pack.id)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
+import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
 
 type Tier = {
   id: CreditPackageId;
@@ -34,18 +34,24 @@ export function CreditProvisioningPanel({
 }: CreditProvisioningPanelProps) {
   const [selected, setSelected] = useState<CreditPackageId>("pack_50");
   const [submitting, setSubmitting] = useState(false);
+  // Inline error message from a failed Paystack initialisation. Cleared
+  // when the user picks a different tier or hits Retry.
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handleSelect = (id: CreditPackageId) => {
+    setSelected(id);
+    if (checkoutError) setCheckoutError(null);
+  };
 
   const handleProceed = async () => {
     if (submitting) return;
     setSubmitting(true);
+    setCheckoutError(null);
     try {
       const { checkoutUrl } = await startCreditCheckout(selected);
-      // Full-page redirect — Paystack returns the user to the same URL
-      // with ?status=success&reference=… which BillingOverview /
-      // TokenBalanceTab will pick up and verify.
       window.location.href = checkoutUrl;
     } catch (e) {
-      toast.error(
+      setCheckoutError(
         e instanceof Error ? e.message : "Could not start checkout. Please try again."
       );
       setSubmitting(false);
@@ -123,7 +129,7 @@ export function CreditProvisioningPanel({
                   return (
                     <button
                       key={tier.id}
-                      onClick={() => setSelected(tier.id)}
+                      onClick={() => handleSelect(tier.id)}
                       className={`w-full text-left rounded-sm border p-4 transition-colors ${
                         active
                           ? "border-slate-900 bg-muted"
@@ -169,7 +175,18 @@ export function CreditProvisioningPanel({
 
             {/* Footer · Payment */}
             <footer className="px-8 pt-5 pb-8 border-t border-border bg-card">
+              {checkoutError && (
+                <div className="mb-4">
+                  <CheckoutErrorNotice
+                    message={checkoutError}
+                    retrying={submitting}
+                    onRetry={handleProceed}
+                    onDismiss={() => setCheckoutError(null)}
+                  />
+                </div>
+              )}
               <motion.button
+                type="button"
                 onClick={handleProceed}
                 disabled={submitting}
                 whileHover={submitting ? undefined : { scale: 0.99 }}
@@ -177,7 +194,11 @@ export function CreditProvisioningPanel({
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting ? "Redirecting to Paystack…" : "Proceed to Payment"}
+                {submitting
+                  ? "Redirecting to Paystack…"
+                  : checkoutError
+                    ? "Try again"
+                    : "Proceed to Payment"}
                 {!submitting && (
                   <span className="font-mono text-[11px] tracking-wider opacity-80">
                     R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}

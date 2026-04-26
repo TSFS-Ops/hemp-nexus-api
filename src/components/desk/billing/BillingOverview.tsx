@@ -15,6 +15,7 @@ import {
   verifyCreditCheckout,
   type CreditPackageId,
 } from "@/lib/credit-checkout";
+import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
 
 interface LedgerEntry {
   id: string;
@@ -48,6 +49,10 @@ export function BillingOverview() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+  // Per-pack error message — when the Paystack initialisation fails we
+  // surface the backend's reason inline beside the failing Purchase
+  // button (with a Retry control), instead of just a transient toast.
+  const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
 
   // Stable refresh that re-reads the wallet + recent ledger so we can
   // call it both on mount and after a successful Paystack verify.
@@ -86,9 +91,7 @@ export function BillingOverview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Handle the redirect-back from Paystack: ?status=success&reference=…
-  // Verify with the backend (idempotent), surface a toast, then strip
-  // the query params so a refresh doesn't re-toast.
+  // Process Paystack redirect-back ?status=…&reference=…
   useEffect(() => {
     if (!user) return;
     const params = new URLSearchParams(window.location.search);
@@ -96,7 +99,6 @@ export function BillingOverview() {
     const reference =
       params.get("reference") || params.get("trxref") || params.get("tx_ref");
     if (!reference) return;
-
     (async () => {
       try {
         if (status === "cancelled") {
@@ -104,13 +106,11 @@ export function BillingOverview() {
         } else {
           const result = await verifyCreditCheckout(reference);
           if (result.success) {
-            if (result.alreadyCredited) {
-              toast.success("Credits already applied to your wallet.");
-            } else {
-              toast.success(
-                `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
-              );
-            }
+            toast.success(
+              result.alreadyCredited
+                ? "Credits already applied to your wallet."
+                : `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
+            );
             await refresh();
           } else {
             toast.error(result.message ?? "Payment was not successful.");
@@ -132,18 +132,33 @@ export function BillingOverview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handlePurchase = async (pack: { id: CreditPackageId; credits: number }) => {
+  const handlePurchase = async (pack: { id: CreditPackageId }) => {
     if (purchasing) return;
     setPurchasing(pack.id);
+    // Clear any prior error for this pack on a fresh attempt so the
+    // user sees the spinner state rather than the stale message.
+    setPackErrors((prev) => {
+      if (!prev[pack.id]) return prev;
+      const { [pack.id]: _omit, ...rest } = prev;
+      return rest;
+    });
     try {
       const { checkoutUrl } = await startCreditCheckout(pack.id);
       window.location.href = checkoutUrl;
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Could not start checkout. Please try again."
-      );
+      const message =
+        e instanceof Error ? e.message : "Could not start checkout. Please try again.";
+      setPackErrors((prev) => ({ ...prev, [pack.id]: message }));
       setPurchasing(null);
     }
+  };
+
+  const dismissPackError = (id: CreditPackageId) => {
+    setPackErrors((prev) => {
+      if (!prev[id]) return prev;
+      const { [id]: _omit, ...rest } = prev;
+      return rest;
+    });
   };
 
   const displayBalance = balance ?? 0;
@@ -195,64 +210,79 @@ export function BillingOverview() {
         </div>
 
         <div className="space-y-3">
-          {PACKS.map((pack) => (
-            <div
-              key={pack.credits}
-              className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all"
-            >
-              {/* Credits column */}
-              <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
-                <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
-                  {pack.credits}
-                </span>
-                <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
-                  Credits
-                </span>
-              </div>
+          {PACKS.map((pack) => {
+            const error = packErrors[pack.id];
+            const isPending = purchasing === pack.id;
+            return (
+              <div key={pack.id} className="space-y-2">
+                <div className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all">
+                  {/* Credits column */}
+                  <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
+                    <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
+                      {pack.credits}
+                    </span>
+                    <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+                      Credits
+                    </span>
+                  </div>
 
-              {/* Price column */}
-              <div className="col-span-6 sm:col-span-3">
-                <p className="font-mono text-base text-foreground tabular-nums">
-                  {pack.price}
-                </p>
-                <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
-                  {pack.unit}
-                </p>
-              </div>
+                  {/* Price column */}
+                  <div className="col-span-6 sm:col-span-3">
+                    <p className="font-mono text-base text-foreground tabular-nums">
+                      {pack.price}
+                    </p>
+                    <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+                      {pack.unit}
+                    </p>
+                  </div>
 
-              {/* Saving badge column */}
-              <div className="col-span-6 sm:col-span-3">
-                {pack.saving ? (
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground border border-border px-2 py-1 rounded-sm">
-                    {pack.saving}
-                  </span>
-                ) : (
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
-                    Standard rate
-                  </span>
+                  {/* Saving badge column */}
+                  <div className="col-span-6 sm:col-span-3">
+                    {pack.saving ? (
+                      <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground border border-border px-2 py-1 rounded-sm">
+                        {pack.saving}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
+                        Standard rate
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action column */}
+                  <div className="col-span-12 sm:col-span-3 sm:text-right">
+                    <button
+                      type="button"
+                      onClick={() => handlePurchase(pack)}
+                      disabled={purchasing !== null}
+                      aria-describedby={error ? `pack-error-${pack.id}` : undefined}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: INK_GREEN }}
+                      onMouseEnter={(e) => {
+                        if (purchasing === null) e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = INK_GREEN;
+                      }}
+                    >
+                      {isPending ? "Redirecting…" : error ? "Try again" : "Purchase"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div id={`pack-error-${pack.id}`}>
+                    <CheckoutErrorNotice
+                      message={error}
+                      retrying={isPending}
+                      onRetry={() => handlePurchase(pack)}
+                      onDismiss={() => dismissPackError(pack.id)}
+                    />
+                  </div>
                 )}
               </div>
-
-              {/* Action column */}
-              <div className="col-span-12 sm:col-span-3 sm:text-right">
-                <button
-                  type="button"
-                  onClick={() => handlePurchase(pack)}
-                  disabled={purchasing !== null}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: INK_GREEN }}
-                  onMouseEnter={(e) => {
-                    if (purchasing === null) e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = INK_GREEN;
-                  }}
-                >
-                  {purchasing === pack.id ? "Redirecting…" : "Purchase"}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

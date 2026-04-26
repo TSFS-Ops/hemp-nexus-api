@@ -4,12 +4,11 @@
  * Centralises:
  *   - initiating Paystack checkout (`startCreditCheckout`)
  *   - verifying a Paystack reference after redirect (`verifyCreditCheckout`)
- *   - the canonical `PackageId` union understood by the backend
+ *   - the canonical `CreditPackageId` union understood by the backend
  *
  * Keeping this in one module ensures every Purchase button across the
- * desk (BillingOverview, TokenBalanceTab, CreditProvisioningPanel) talks
- * to the same backend contract — preventing the UI/backend drift that
- * caused the original "checkout coming online soon" stub.
+ * desk talks to the same backend contract — preventing the UI/backend
+ * drift that originally caused the "checkout coming online soon" stub.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,6 +23,10 @@ export interface StartCheckoutResult {
  * Initiates a Paystack checkout session for the given package and
  * returns the hosted-checkout URL. The caller is responsible for the
  * redirect (so it can decide between full-page navigate vs popup).
+ *
+ * Throws an Error with a user-readable message on failure. The message
+ * is taken from the backend's structured response when available so the
+ * caller can surface it verbatim in the UI.
  */
 export async function startCreditCheckout(
   packageId: CreditPackageId,
@@ -38,10 +41,16 @@ export async function startCreditCheckout(
   });
 
   if (error) {
-    throw new Error(error.message ?? "Could not start checkout");
+    // supabase.functions.invoke wraps non-2xx responses. The body is
+    // exposed via error.context in newer SDKs; fall back to message.
+    const ctx = (error as unknown as { context?: { error?: string; providerMessage?: string } }).context;
+    const detail = ctx?.providerMessage || ctx?.error || error.message;
+    throw new Error(detail || "Could not start checkout");
   }
   if (!data?.checkoutUrl || !data?.reference) {
-    throw new Error(data?.error ?? "Payment provider did not return a checkout URL");
+    const detail =
+      data?.providerMessage || data?.error || "Payment provider did not return a checkout URL";
+    throw new Error(detail);
   }
   return { checkoutUrl: data.checkoutUrl as string, reference: data.reference as string };
 }
