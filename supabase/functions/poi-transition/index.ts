@@ -117,7 +117,17 @@ Deno.serve(async (req: Request) => {
     const adminClient = createClient(supabaseUrl, serviceKey);
 
     // ── Idempotency: short-circuit duplicate transitions ──
+    // Header is REQUIRED (hard-mode) — POI state transitions are irreversible
+    // and re-firing them on retry can advance a match past where the user
+    // intended (e.g. discovery → committed twice charges twice in pathological
+    // cases). Refuse the call rather than silently letting the second through.
     const idempotencyKey = req.headers.get("idempotency-key") || req.headers.get("Idempotency-Key");
+    if (!idempotencyKey) {
+      return new Response(
+        JSON.stringify({ error: "Idempotency-Key header is required", code: "IDEMPOTENCY_KEY_REQUIRED" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const idemOpts = {
       supabase: adminClient,
       orgId: callerOrgId,
