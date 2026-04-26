@@ -959,7 +959,25 @@ function DealDocumentCard({
   onClick: () => void;
 }) {
   const accent = LANE_ACCENT[laneId];
-  const ageLabel = relativeAge(deal.created_at);
+  // Display the freshest activity, not the creation date - so a deal the user
+  // just opened doesn't read "3d ago" the moment they navigate back to the desk.
+  const activityIso = deal.last_activity_at || deal.created_at;
+  const ageLabel = relativeAge(activityIso);
+  const ageTooltip = (() => {
+    const ts = new Date(activityIso).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    switch (deal.last_activity_source) {
+      case "viewed":
+        return `Last viewed by you ${ts}`;
+      case "event":
+        return `Last activity ${ts}`;
+      case "created":
+      default:
+        return `Created ${ts}`;
+    }
+  })();
   const deadlineLabel = deadlineFromIso(deal.deadline_at);
   const initials = initialsOf(deal.counterparty);
 
