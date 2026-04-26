@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 import { apiFetch } from "@/lib/api-client";
 
 interface RegistryEntry {
