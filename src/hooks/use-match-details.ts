@@ -268,6 +268,7 @@ export function useMatchDetails(matchId: string | undefined) {
     {
       successMessage: undefined,
       errorMessage: "Failed to confirm intent. Please try again.",
+      traceContext: "POI generation",
     }
   );
 
