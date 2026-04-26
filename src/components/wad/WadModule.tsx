@@ -191,6 +191,9 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
                 </p>
               </div>
             </div>
+            <div className="p-4 border rounded-lg">
+              <EvidenceStrengthIndicator documentCount={govDocCount} />
+            </div>
             {gateFailures.length > 0 && (
               <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
                 <p className="text-sm font-medium text-destructive flex items-center gap-2">
