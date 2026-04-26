@@ -105,6 +105,7 @@ export function BillingOverview() {
     const reference =
       params.get("reference") || params.get("trxref") || params.get("tx_ref");
     if (!reference) return;
+    setActiveReference(reference);
     (async () => {
       try {
         if (status === "cancelled") {
