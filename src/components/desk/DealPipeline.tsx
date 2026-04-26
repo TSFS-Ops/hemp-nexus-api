@@ -283,6 +283,8 @@ function useSealedPage(orgId: string | null, page: number) {
             quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
             state: m.state ?? "",
             created_at: m.created_at,
+            last_activity_at: m.created_at,
+            last_activity_source: "created" as const,
             deadline_at: inferDeadline(m.created_at, "poi"),
             laneId: "poi" as const,
           };
