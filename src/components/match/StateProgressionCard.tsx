@@ -636,11 +636,12 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       </CardContent>
 
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent className="max-h-[90dvh] sm:max-h-[85vh] flex flex-col overflow-hidden sm:max-w-lg">
-          <AlertDialogHeader className="shrink-0">
+        <AlertDialogContent className="w-[calc(100vw-1rem)] max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] flex flex-col overflow-hidden p-0 sm:rounded-lg">
+          <AlertDialogHeader className="shrink-0 p-6 pb-3">
             <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "") || "Confirm action"}?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="flex-1 overflow-y-auto overscroll-contain -mx-6 px-6 space-y-3 max-h-[60dvh]">
+          </AlertDialogHeader>
+          <AlertDialogDescription asChild>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4 space-y-3 touch-pan-y [-webkit-overflow-scrolling:touch]">
                 <p>{nextDescription}</p>
                 {isFreeAction ? (
                   <div className="rounded-md border border-border p-3 text-sm">
@@ -763,9 +764,8 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </div>
                 )}
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="shrink-0 border-t border-border pt-4 mt-2">
+          </AlertDialogDescription>
+          <AlertDialogFooter className="shrink-0 border-t border-border bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDialogConfirm}
