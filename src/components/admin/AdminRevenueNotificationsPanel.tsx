@@ -48,13 +48,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { EmptyState } from "@/components/ui/error-state";
-import { Loader2, RefreshCw, Search, AlertTriangle, CheckCircle2, MinusCircle, CalendarIcon, X } from "lucide-react";
+import { Loader2, RefreshCw, Search, AlertTriangle, CheckCircle2, MinusCircle, X } from "lucide-react";
 import { format, formatDistanceToNow, subDays, startOfDay, endOfDay } from "date-fns";
-import { cn } from "@/lib/utils";
-import type { DateRange } from "react-day-picker";
 
 type EventType = "poi_minted" | "credits_purchased" | "wad_sealed";
 type StatusType = "sent" | "failed" | "skipped";
