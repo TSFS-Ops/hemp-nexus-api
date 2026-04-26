@@ -210,63 +210,79 @@ export function BillingOverview() {
         </div>
 
         <div className="space-y-3">
-          {PACKS.map((pack) => (
-            <div
-              key={pack.credits}
-              className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all"
-            >
-              {/* Credits column */}
-              <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
-                <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
-                  {pack.credits}
-                </span>
-                <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
-                  Credits
-                </span>
-              </div>
+          {PACKS.map((pack) => {
+            const error = packErrors[pack.id];
+            const isPending = purchasing === pack.id;
+            return (
+              <div key={pack.id} className="space-y-2">
+                <div className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all">
+                  {/* Credits column */}
+                  <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
+                    <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
+                      {pack.credits}
+                    </span>
+                    <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+                      Credits
+                    </span>
+                  </div>
 
-              {/* Price column */}
-              <div className="col-span-6 sm:col-span-3">
-                <p className="font-mono text-base text-foreground tabular-nums">
-                  {pack.price}
-                </p>
-                <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
-                  {pack.unit}
-                </p>
-              </div>
+                  {/* Price column */}
+                  <div className="col-span-6 sm:col-span-3">
+                    <p className="font-mono text-base text-foreground tabular-nums">
+                      {pack.price}
+                    </p>
+                    <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+                      {pack.unit}
+                    </p>
+                  </div>
 
-              {/* Saving badge column */}
-              <div className="col-span-6 sm:col-span-3">
-                {pack.saving ? (
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground border border-border px-2 py-1 rounded-sm">
-                    {pack.saving}
-                  </span>
-                ) : (
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
-                    Standard rate
-                  </span>
+                  {/* Saving badge column */}
+                  <div className="col-span-6 sm:col-span-3">
+                    {pack.saving ? (
+                      <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground border border-border px-2 py-1 rounded-sm">
+                        {pack.saving}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
+                        Standard rate
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action column */}
+                  <div className="col-span-12 sm:col-span-3 sm:text-right">
+                    <button
+                      type="button"
+                      onClick={() => handlePurchase(pack)}
+                      disabled={purchasing !== null}
+                      aria-describedby={error ? `pack-error-${pack.id}` : undefined}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: INK_GREEN }}
+                      onMouseEnter={(e) => {
+                        if (purchasing === null) e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = INK_GREEN;
+                      }}
+                    >
+                      {isPending ? "Redirecting…" : error ? "Try again" : "Purchase"}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div id={`pack-error-${pack.id}`}>
+                    <CheckoutErrorNotice
+                      message={error}
+                      retrying={isPending}
+                      onRetry={() => handlePurchase(pack)}
+                      onDismiss={() => dismissPackError(pack.id)}
+                    />
+                  </div>
                 )}
               </div>
-
-              {/* Action column */}
-              <div className="col-span-12 sm:col-span-3 sm:text-right">
-                <button
-                  type="button"
-                  onClick={() => handlePurchase(pack.credits)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto"
-                  style={{ backgroundColor: INK_GREEN }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = INK_GREEN;
-                  }}
-                >
-                  Purchase
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
