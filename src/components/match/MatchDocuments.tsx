@@ -446,23 +446,33 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         throw insertError;
       }
 
-      // Audit log
-      await supabase.from("audit_logs").insert({
-        org_id: effectiveOrgId,
-        actor_user_id: session.user.id,
-        action: "document.uploaded",
-        entity_type: "match_document",
-        entity_id: matchId,
-        metadata: {
-          document_id: docId,
-          filename: selectedFile.name,
-          doc_type: docType,
-          sha256_hash: sha256Hash,
-          file_size: selectedFile.size,
-          visibility: visibility,
-          title: title || null,
-        },
-      });
+      // Audit log (best-effort: client cannot insert into audit_logs under RLS,
+      // so failure here MUST NOT block the user-visible upload outcome. The
+      // canonical audit trail is written server-side by document/storage
+      // triggers and downstream edge functions).
+      try {
+        const { error: auditErr } = await supabase.from("audit_logs").insert({
+          org_id: effectiveOrgId,
+          actor_user_id: session.user.id,
+          action: "document.uploaded",
+          entity_type: "match_document",
+          entity_id: matchId,
+          metadata: {
+            document_id: docId,
+            filename: selectedFile.name,
+            doc_type: docType,
+            sha256_hash: sha256Hash,
+            file_size: selectedFile.size,
+            visibility: visibility,
+            title: title || null,
+          },
+        });
+        if (auditErr) {
+          console.warn("Client-side audit log write skipped (expected under RLS):", auditErr.message);
+        }
+      } catch (auditCatchErr) {
+        console.warn("Client-side audit log write threw:", auditCatchErr);
+      }
 
       // If this is a replacement upload, link it to the old version
       if (replacingDoc) {
