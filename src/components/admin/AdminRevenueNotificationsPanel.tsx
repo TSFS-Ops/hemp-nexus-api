@@ -263,7 +263,7 @@ export function AdminRevenueNotificationsPanel() {
           ) : rows.length === 0 ? (
             <EmptyState
               title="No revenue notifications match these filters"
-              description="Adjust the time window, event type, or search term to see more rows."
+              message="Adjust the time window, event type, or search term to see more rows."
             />
           ) : (
             <div className="border border-border rounded-sm overflow-x-auto">
