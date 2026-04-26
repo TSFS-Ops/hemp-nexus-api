@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
 
 /**
  * validate-upload - Server-side magic-byte validation for any uploaded file.
@@ -31,16 +32,13 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Verify caller is authenticated
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) {
+    let authCtx: Awaited<ReturnType<typeof authenticateRequest>>;
+    try {
+      authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
+    } catch {
       return new Response(JSON.stringify({ blocked: false, error: "Unauthorised" }), { status: 401, headers });
     }
+    const admin = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json();
     const { bucket, storage_path, client_mime, file_size } = body;
@@ -62,18 +60,28 @@ Deno.serve(async (req: Request) => {
 
     const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
 
-    // Confirm the caller has access via their own JWT (storage RLS applies).
-    // Only after that do we fall back to the service-role client to read
-    // the magic bytes (the SDK download API does not expose Range requests).
-    const { error: callerAccessError } = await userClient.storage.from(bucket).download(filePath);
-    if (callerAccessError) {
-      return new Response(JSON.stringify({
-        blocked: true,
-        reason: "Caller does not have access to this file",
-      }), { status: 403, headers });
-    }
+    if (bucket === "match-documents") {
+      const [pathOrgId, pathMatchId] = filePath.split("/");
+      if (!pathOrgId || !pathMatchId || pathOrgId !== authCtx.orgId) {
+        return new Response(JSON.stringify({
+          blocked: true,
+          reason: "Caller does not have access to this file",
+        }), { status: 403, headers });
+      }
 
-    const admin = createClient(supabaseUrl, serviceKey);
+      const { data: match, error: matchError } = await admin
+        .from("matches")
+        .select("org_id, buyer_org_id, seller_org_id")
+        .eq("id", pathMatchId)
+        .single();
+      const isPartyOrg = match && [match.org_id, match.buyer_org_id, match.seller_org_id].includes(authCtx.orgId);
+      if (matchError || !isPartyOrg) {
+        return new Response(JSON.stringify({
+          blocked: true,
+          reason: "Caller does not have access to this file",
+        }), { status: 403, headers });
+      }
+    }
 
     // Download the file (just need first 16 bytes but storage SDK downloads all)
     const { data: fileData, error: dlError } = await admin.storage.from(bucket).download(filePath);
@@ -91,11 +99,10 @@ Deno.serve(async (req: Request) => {
 
     if (result.blocked) {
       // Audit the server-side rejection
-      const { data: profile } = await admin.from("profiles").select("org_id").eq("id", user.id).single();
-      if (profile?.org_id) {
+      if (authCtx.orgId) {
         await admin.from("audit_logs").insert({
-          org_id: profile.org_id,
-          actor_user_id: user.id,
+          org_id: authCtx.orgId,
+          actor_user_id: authCtx.userId,
           action: "document.upload_blocked",
           entity_type: "match_documents",
           entity_id: null,
@@ -106,7 +113,7 @@ Deno.serve(async (req: Request) => {
             detected_mime: result.detectedMime,
             reason: result.blockReason,
           },
-        }).catch(() => {});
+        });
       }
     }
 
