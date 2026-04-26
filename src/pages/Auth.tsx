@@ -395,6 +395,29 @@ export default function Auth() {
             </div>
           )}
 
+          {/* Visible explanation for users who were silently bounced here from
+              a protected route. Without this, a user who clicked a deep link
+              while signed-out lands on /auth with no clue why. */}
+          {searchParams.get("expired") !== "1" && (() => {
+            const rt = searchParams.get("returnTo");
+            if (!rt) return null;
+            const safeRt = getSafeReturnTo(rt, "");
+            const labelPath = safeRt || "the page you requested";
+            return (
+              <div
+                role="status"
+                className="mb-4 rounded-md border border-sky-500/40 bg-sky-500/10 p-3 text-sm text-sky-900 dark:text-sky-200"
+              >
+                <div className="font-medium">Sign in to continue.</div>
+                <div className="text-xs opacity-90 mt-0.5 break-all">
+                  We sent you here because{" "}
+                  <span className="font-mono">{labelPath}</span>{" "}
+                  needs you to be signed in. We'll take you back as soon as you do.
+                </div>
+              </div>
+            );
+          })()}
+
           {!pageReady ? <div className="flex items-center justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/70" />
             </div> : verificationPending ? <VerificationPendingBlock email={email} onResend={resendVerification} loading={loading} cooldown={resendCooldown} onBack={() => {
