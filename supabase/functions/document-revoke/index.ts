@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * Document Revoke Endpoint
@@ -27,6 +28,7 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
+    assertIdempotencyKey(req);
 
     const url = new URL(req.url);
     const rawParts = url.pathname.split("/").filter(Boolean);

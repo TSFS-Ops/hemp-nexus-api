@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 /**
  * Document Review Endpoint - Upload Docs Spec §4.4
@@ -46,6 +47,7 @@ Deno.serve(async (req) => {
     if (req.method !== "PATCH" && req.method !== "POST") {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
+    assertIdempotencyKey(req);
 
     const url = new URL(req.url);
     const rawParts = url.pathname.split("/").filter(Boolean);
