@@ -77,30 +77,70 @@ const EVENT_LABELS: Record<EventType, string> = {
 
 const PAGE_SIZE = 100;
 
-const TIME_WINDOWS = [
+const PRESET_RANGES = [
   { value: "24h", label: "Last 24 hours", days: 1 },
   { value: "7d", label: "Last 7 days", days: 7 },
   { value: "30d", label: "Last 30 days", days: 30 },
   { value: "all", label: "All time", days: 0 },
+  { value: "custom", label: "Custom range", days: -1 },
 ] as const;
 
-type TimeWindowValue = typeof TIME_WINDOWS[number]["value"];
+type PresetValue = typeof PRESET_RANGES[number]["value"];
+
+const toDateInputValue = (d: Date) => format(d, "yyyy-MM-dd");
 
 export function AdminRevenueNotificationsPanel() {
   const [eventFilter, setEventFilter] = useState<"all" | EventType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | StatusType>("all");
+  const [recipientFilter, setRecipientFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [timeWindow, setTimeWindow] = useState<TimeWindowValue>("7d");
+  const [preset, setPreset] = useState<PresetValue>("7d");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   const [selected, setSelected] = useState<RevenueAuditRow | null>(null);
 
-  const sinceIso = useMemo(() => {
-    const win = TIME_WINDOWS.find((w) => w.value === timeWindow);
-    if (!win || win.days === 0) return null;
-    return subDays(new Date(), win.days).toISOString();
-  }, [timeWindow]);
+  // Resolve the active date range from preset OR custom inputs.
+  const { fromIso, toIso } = useMemo(() => {
+    if (preset === "custom") {
+      return {
+        fromIso: customFrom ? startOfDay(new Date(customFrom)).toISOString() : null,
+        toIso: customTo ? endOfDay(new Date(customTo)).toISOString() : null,
+      };
+    }
+    const p = PRESET_RANGES.find((r) => r.value === preset);
+    if (!p || p.days === 0 || p.days < 0) return { fromIso: null, toIso: null };
+    return { fromIso: subDays(new Date(), p.days).toISOString(), toIso: null };
+  }, [preset, customFrom, customTo]);
+
+  // Distinct recipients (used to populate the recipient dropdown). Cached
+  // separately so it doesn't refetch on every filter change.
+  const { data: recipientOptions = [] } = useQuery({
+    queryKey: ["admin-revenue-notifications-recipients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("revenue_notification_audit")
+        .select("recipient_email")
+        .order("recipient_email")
+        .limit(1000);
+      if (error) throw error;
+      const uniq = Array.from(
+        new Set((data || []).map((r: { recipient_email: string }) => r.recipient_email)),
+      );
+      return uniq;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["admin-revenue-notifications", eventFilter, statusFilter, search, timeWindow],
+    queryKey: [
+      "admin-revenue-notifications",
+      eventFilter,
+      statusFilter,
+      recipientFilter,
+      search,
+      fromIso,
+      toIso,
+    ],
     queryFn: async () => {
       let query = supabase
         .from("revenue_notification_audit")
@@ -110,7 +150,9 @@ export function AdminRevenueNotificationsPanel() {
 
       if (eventFilter !== "all") query = query.eq("event_type", eventFilter);
       if (statusFilter !== "all") query = query.eq("status", statusFilter);
-      if (sinceIso) query = query.gte("created_at", sinceIso);
+      if (recipientFilter !== "all") query = query.eq("recipient_email", recipientFilter);
+      if (fromIso) query = query.gte("created_at", fromIso);
+      if (toIso) query = query.lte("created_at", toIso);
       if (search.trim()) {
         const term = `%${search.trim()}%`;
         query = query.or(
