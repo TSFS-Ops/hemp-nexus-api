@@ -366,6 +366,9 @@ export default function UsersManagement() {
                       </Select>
                     )}
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 touch-target" onClick={() => setJourneyUserId(user.id)} aria-label="View user journey">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 touch-target" onClick={() => { setSelectedUser(user); setShowResetDialog(true); }}>
                         <Mail className="h-4 w-4" />
                       </Button>
