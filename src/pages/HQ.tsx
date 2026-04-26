@@ -56,7 +56,7 @@ import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "engagements" | "disputes" | "audit" | "settings";
+type TabId = "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -82,6 +82,11 @@ const TABS: {
   label: "Dispute Resolution",
   icon: AlertTriangle,
   blurb: "Flagged trades, escalations, force-resolve overrides."
+}, {
+  id: "revenue",
+  label: "Revenue & Sales",
+  icon: TrendingUp,
+  blurb: "Credit purchases, daily/monthly revenue, top buyers, per-org timeline."
 }, {
   id: "audit",
   label: "Audit & Health",
