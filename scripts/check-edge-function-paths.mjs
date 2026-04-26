@@ -44,29 +44,37 @@ function walk(dir, files = []) {
   return files;
 }
 
-// Captures: fetchEdgeFunction("path") OR fetchEdgeFunction<T>("path") OR
-// fetchEdgeFunction(`path/${id}`). We only need the leading literal segment.
-const CALL_RE =
-  /fetchEdgeFunction\s*(?:<[^>]+>)?\s*\(\s*[`'"]([^`'"$/]+)/g;
+// Captures three call shapes:
+//   fetchEdgeFunction("path") / fetchEdgeFunction<T>("path") / fetchEdgeFunction(`path/${id}`)
+//   supabase.functions.invoke("name", ...)
+//   functions/v1/name in URL strings (caught for raw fetch use)
+const PATTERNS = [
+  /fetchEdgeFunction\s*(?:<[^>]+>)?\s*\(\s*[`'"]([^`'"$/]+)/g,
+  /\.functions\.invoke\s*\(\s*[`'"]([^`'"$/]+)/g,
+  /\/functions\/v1\/([a-z0-9_-]+)/gi,
+];
 
 const issues = [];
 const seen = new Set();
 
 for (const file of walk(SRC_DIR)) {
   const src = readFileSync(file, "utf8");
-  let m;
-  while ((m = CALL_RE.exec(src)) !== null) {
-    const firstSegment = m[1].split("/")[0].split("?")[0];
-    if (!firstSegment) continue;
-    const key = `${firstSegment}::${file}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    if (!validFunctions.has(firstSegment)) {
-      issues.push({
-        file: relative(ROOT, file),
-        path: m[1],
-        firstSegment,
-      });
+  for (const re of PATTERNS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      const firstSegment = m[1].split("/")[0].split("?")[0];
+      if (!firstSegment) continue;
+      const key = `${firstSegment}::${file}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!validFunctions.has(firstSegment)) {
+        issues.push({
+          file: relative(ROOT, file),
+          path: m[1],
+          firstSegment,
+        });
+      }
     }
   }
 }
