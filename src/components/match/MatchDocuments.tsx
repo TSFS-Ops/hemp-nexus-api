@@ -54,7 +54,8 @@ import {
   Users,
   EyeOff,
   RefreshCw,
-  ClipboardCheck
+  ClipboardCheck,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
