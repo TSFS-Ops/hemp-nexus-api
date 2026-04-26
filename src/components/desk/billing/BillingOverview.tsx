@@ -16,6 +16,7 @@ import {
   type CreditPackageId,
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
+import { PaymentReferenceStatus } from "./PaymentReferenceStatus";
 
 interface LedgerEntry {
   id: string;
