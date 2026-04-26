@@ -101,6 +101,11 @@ Deno.serve(async (req) => {
   const path = url.pathname.split("/").pop();
   const isWebhook = path === "webhook";
 
+  // Lightweight request log — lets us confirm the function is being
+  // reached at all (and which sub-route) when debugging "checkout
+  // doesn't work" reports where no logs were appearing.
+  console.log(`[token-purchase] ${req.method} path=${path} origin=${req.headers.get("origin") ?? "—"}`);
+
   try {
     if (!PAYSTACK_SECRET_KEY) {
       console.error("PAYSTACK_SECRET_KEY is not configured");
@@ -111,6 +116,18 @@ Deno.serve(async (req) => {
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Sanity-log the key mode so we can spot test/live mismatches in
+    // the logs without ever exposing the secret itself.
+    if (req.method === "POST" && !isWebhook) {
+      const prefix = PAYSTACK_SECRET_KEY.slice(0, 7);
+      const mode = PAYSTACK_SECRET_KEY.startsWith("sk_live_")
+        ? "live"
+        : PAYSTACK_SECRET_KEY.startsWith("sk_test_")
+          ? "test"
+          : "unknown";
+      console.log(`[token-purchase] paystack key mode=${mode} prefix=${prefix}…`);
     }
 
     if (isWebhook) {
