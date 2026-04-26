@@ -720,16 +720,9 @@ export function AdminRevenuePanel() {
                         <TableCell className="text-sm">{r.org_name}</TableCell>
                       )}
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge variant="secondary" className="font-mono text-[10px] w-fit">
-                            {r.source === "audit_log" ? "audit_log" : r.source === "ledger:manual" ? "manual" : "ledger"}
-                          </Badge>
-                          {r.backfilled && (
-                            <Badge variant="outline" className="font-mono text-[10px] w-fit border-amber-500/40 text-amber-700 dark:text-amber-400">
-                              backfilled
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge variant="secondary" className="font-mono text-[10px] w-fit">
+                          {r.source === "audit_log" ? "audit_log" : r.source === "ledger:manual" ? "manual" : "ledger"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">
                         {r.package_id ?? "—"}
