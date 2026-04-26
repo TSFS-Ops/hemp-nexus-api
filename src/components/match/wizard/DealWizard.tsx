@@ -258,6 +258,18 @@ export function DealWizard({
       };
     }
     if (activeId === "poi") {
+      // POI already generated AND trading partner accepted → next action is Complete Trade.
+      // Without this branch, the focal banner kept saying "Generate a Proof of Intent"
+      // even though the POI was sealed and the in-card CTA correctly read "Complete Trade".
+      if (poiComplete && engagementAccepted) {
+        return {
+          tone: "action",
+          eyebrow: "Your turn",
+          title: "Complete the trade",
+          description: "Proof of Intent is sealed and the trading partner has accepted. Confirm completion to seal the evidence record. This action is free and irreversible.",
+          helpText: "Completion finalises the trade lifecycle on the audit ledger. After completion you can build the Signed Deal evidence bundle and generate the regulatory Evidence Pack.",
+        };
+      }
       return {
         tone: "action",
         eyebrow: "Your turn",
