@@ -12,11 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
-import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 import { CounterpartyRatingBadge } from "@/components/ratings/CounterpartyRatingBadge";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import type { Match } from "@/hooks/use-match-details";
 
 interface MatchHeroCardProps {
@@ -67,18 +64,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
   const userOrgId = useUserOrg();
   const inferredRole = getMatchRole(userOrgId, match as any);
 
-  // Governance document count for Evidence Strength Indicator
-  const { data: govDocCount } = useQuery({
-    queryKey: ["gov-doc-count", match.id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("governance_documents")
-        .select("id", { count: "exact", head: true })
-        .eq("deal_reference_id", match.id);
-      if (error) return 0;
-      return count ?? 0;
-    },
-  });
+
 
   let roleBadgeLabel: string | null = null;
   if (inferredRole === "buyer") {
@@ -255,10 +241,6 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             </div>
           </>
         )}
-
-        {/* Evidence Strength */}
-        <Separator className="my-6" />
-        <EvidenceStrengthIndicator documentCount={govDocCount ?? 0} />
 
         {isSettled && (
           <>

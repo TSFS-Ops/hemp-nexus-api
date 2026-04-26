@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 import { apiFetch } from "@/lib/api-client";
 
 interface RegistryEntry {
@@ -246,8 +245,6 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Evidence Strength Indicator */}
-        <EvidenceStrengthIndicator documentCount={submitted.length} />
         {/* Already submitted */}
         {submitted.length > 0 && (
           <div className="space-y-2">

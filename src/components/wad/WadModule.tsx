@@ -6,6 +6,7 @@ import { Loader2, FileCheck, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { WadStepper } from "./WadStepper";
 import { JurisdictionSelector } from "./JurisdictionSelector";
+import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 import type { Tables } from "@/integrations/supabase/types";
 import {
   fetchActiveWad,
@@ -31,11 +32,21 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   const [userOrgId, setUserOrgId] = useState<string | null>(null);
   const [jurisdictionSelected, setJurisdictionSelected] = useState(false);
   const [selectedJurisdiction, setSelectedJurisdiction] = useState<string | null>(null);
+  const [govDocCount, setGovDocCount] = useState<number>(0);
 
   useEffect(() => {
     loadUserOrg();
     loadWad();
+    loadGovDocCount();
   }, [match.id]);
+
+  const loadGovDocCount = async () => {
+    const { count } = await supabase
+      .from("governance_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("deal_reference_id", match.id);
+    setGovDocCount(count ?? 0);
+  };
 
   const loadUserOrg = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -179,6 +190,9 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
                   It is an evidence-grade "proof bundle".
                 </p>
               </div>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <EvidenceStrengthIndicator documentCount={govDocCount} />
             </div>
             {gateFailures.length > 0 && (
               <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
