@@ -111,11 +111,12 @@ function renderHarness(props: { matchId: string; isPoiAction?: boolean }) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-  return render(
+  const utils = render(
     <QueryClientProvider client={qc}>
       <PoiWaiverHarness {...props} />
     </QueryClientProvider>,
   );
+  return { ...utils, qc };
 }
 
 describe("POI evidence waiver banner — integration", () => {
