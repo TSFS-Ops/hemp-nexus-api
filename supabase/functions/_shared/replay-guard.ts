@@ -158,8 +158,21 @@ export async function assertNotReplayed(
   extraResponseHeaders: Record<string, string> = {},
 ): Promise<ReplayGuardResult> {
   const tolerance = opts.toleranceSeconds ?? 300;
+  const fnName = opts.fnName ?? "unknown";
+  const requestId = opts.requestId ?? null;
+
+  // Lazy import so functions that don't currently log don't pay the cost.
+  const { logWebhookDecision } = await import("./webhook-decision-log.ts");
 
   if (!opts.signature || opts.signature.length === 0) {
+    logWebhookDecision({
+      fn: fnName,
+      phase: "replay",
+      decision: "reject",
+      reason: "missing_signature",
+      source: opts.source,
+      requestId,
+    });
     return {
       ok: false,
       response: jsonResponse(MISSING_SIGNATURE_RESPONSE_BODY, 401, extraResponseHeaders),
@@ -173,6 +186,14 @@ export async function assertNotReplayed(
   if (opts.timestampHeader != null && opts.timestampHeader !== "") {
     const ts = parseTimestamp(opts.timestampHeader);
     if (ts == null) {
+      logWebhookDecision({
+        fn: fnName,
+        phase: "timestamp",
+        decision: "reject",
+        reason: "invalid_timestamp",
+        source: opts.source,
+        requestId,
+      });
       return {
         ok: false,
         response: jsonResponse(STALE_TIMESTAMP_RESPONSE_BODY, 401, extraResponseHeaders),
@@ -180,6 +201,16 @@ export async function assertNotReplayed(
     }
     const ageSeconds = Math.abs((Date.now() - ts) / 1000);
     if (ageSeconds > tolerance) {
+      logWebhookDecision({
+        fn: fnName,
+        phase: "timestamp",
+        decision: "reject",
+        reason: "stale_timestamp",
+        source: opts.source,
+        timestampAgeSeconds: ageSeconds,
+        requestId,
+        meta: { tolerance_seconds: tolerance },
+      });
       return {
         ok: false,
         response: jsonResponse(STALE_TIMESTAMP_RESPONSE_BODY, 401, extraResponseHeaders),
@@ -188,6 +219,7 @@ export async function assertNotReplayed(
   }
 
   const signatureHash = await sha256Hex(opts.signature);
+  const sigPrefix = signatureHash.slice(0, 8);
 
   const { error } = await supabase
     .from("webhook_replay_guard")
@@ -195,9 +227,14 @@ export async function assertNotReplayed(
 
   if (error) {
     if (isUniqueViolation(error)) {
-      console.warn("[replay-guard] replay rejected", {
+      logWebhookDecision({
+        fn: fnName,
+        phase: "replay",
+        decision: "reject",
+        reason: "replay_detected",
         source: opts.source,
-        signature_prefix: signatureHash.slice(0, 8),
+        signaturePrefix: sigPrefix,
+        requestId,
       });
       return {
         ok: false,
@@ -208,7 +245,22 @@ export async function assertNotReplayed(
     // is one we should not process, otherwise an attacker who can knock
     // the DB offline can replay freely. 503 signals the sender to retry
     // (their retry will succeed once the DB recovers).
-    console.error("[replay-guard] DB error during replay check", { error });
+    logWebhookDecision({
+      fn: fnName,
+      phase: "replay",
+      decision: "reject",
+      reason: "guard_unavailable",
+      source: opts.source,
+      signaturePrefix: sigPrefix,
+      requestId,
+      meta: {
+        db_error_code: (error as { code?: string }).code ?? null,
+        db_error_message:
+          typeof (error as { message?: string }).message === "string"
+            ? (error as { message?: string }).message?.slice(0, 200)
+            : null,
+      },
+    });
     return {
       ok: false,
       response: jsonResponse(
@@ -222,6 +274,16 @@ export async function assertNotReplayed(
       ),
     };
   }
+
+  logWebhookDecision({
+    fn: fnName,
+    phase: "replay",
+    decision: "accept",
+    reason: "ok",
+    source: opts.source,
+    signaturePrefix: sigPrefix,
+    requestId,
+  });
 
   return { ok: true };
 }
