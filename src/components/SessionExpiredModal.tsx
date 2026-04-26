@@ -102,9 +102,11 @@ export function SessionExpiredModal() {
           <AlertDialogDescription>{REASON_COPY[reason]}</AlertDialogDescription>
         </AlertDialogHeader>
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
-          Any draft you were editing on the deal terms, deal notes, match documents,
-          governance document submission, or new-trade form has been saved to this
-          browser and will be restored after you sign in again.
+          Form fields you were editing (deal terms, deal notes, document
+          details, governance submission, new-trade form) have been saved to
+          this browser and will be restored after you sign in again. You may
+          need to re-select any attached files, since browsers do not allow
+          file selections to be saved automatically.
         </div>
         {requestId && (
           <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">

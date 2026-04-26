@@ -180,7 +180,9 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         if (draft.title) setTitle(draft.title);
         if (draft.notes) setNotes(draft.notes);
         if (draft.visibility) setVisibility(draft.visibility);
-        toast.info("Your unsaved document form has been restored. Re-select the file to continue.");
+        toast.info("Document details restored from your previous session. Please re-select the file you wanted to upload — browsers do not allow saved file selections.", {
+          duration: 8000,
+        });
       }
     }
   }, [hasRestoredDraft]);
