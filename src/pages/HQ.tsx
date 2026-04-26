@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +49,7 @@ import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
 import { AdminRevenueNotificationsPanel } from "@/components/admin/AdminRevenueNotificationsPanel";
+import { AdminRevenuePanel } from "@/components/admin/AdminRevenuePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 
