@@ -68,8 +68,15 @@ export class EdgeInvokeError extends Error {
     // easy-to-miss bottom-right toast that confused clients in the past
     // (incident 2026-04-24: client repeatedly clicked "Download waiver
     // pack" without noticing the corner toast).
+    //
+    // To avoid spurious modals when an edge function returns 401 for
+    // resource-level reasons (e.g. a transient cold-boot, a momentary RLS
+    // hiccup, or a function that just hasn't validated the JWT correctly
+    // server-side), we **verify** the session is actually dead via a
+    // lightweight `auth.getUser()` round-trip BEFORE firing the modal.
+    // Only if the server confirms the JWT is invalid do we bounce the user.
     if (opts.code && SESSION_DEAD_CODES.has(opts.code)) {
-      notifySessionExpired(
+      void verifyAndNotifySessionExpired(
         opts.code as "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED",
         message,
         opts.requestId
@@ -85,6 +92,38 @@ export class EdgeInvokeError extends Error {
         context: opts.context,
       });
     }
+  }
+}
+
+/**
+ * Verifies the session is genuinely dead before triggering the global
+ * SessionExpiredModal. Avoids spurious bounces when an edge function
+ * returns 401 for non-auth reasons.
+ *
+ *   • NO_SESSION / REFRESH_FAILED — already verified locally; trust them.
+ *   • UNAUTHORIZED — call auth.getUser(); fire only if server says invalid.
+ */
+async function verifyAndNotifySessionExpired(
+  reason: "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED",
+  message: string,
+  requestId?: string
+): Promise<void> {
+  if (reason !== "UNAUTHORIZED") {
+    notifySessionExpired(reason, message, requestId);
+    return;
+  }
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    // If the server confirms a valid user → the 401 was resource-specific,
+    // not session death. Suppress the modal; the caller's friendly toast
+    // will still surface to the user.
+    if (!error && data?.user) return;
+    // Server confirms session is invalid → genuine expiry.
+    notifySessionExpired(reason, message, requestId);
+  } catch {
+    // Network error during verification — be conservative and fire the
+    // modal so the user can re-auth rather than being trapped in a 401 loop.
+    notifySessionExpired(reason, message, requestId);
   }
 }
 
