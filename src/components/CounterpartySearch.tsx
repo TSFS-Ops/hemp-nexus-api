@@ -19,6 +19,7 @@ import { ResultCardErrorBoundary } from "@/components/search/ResultCardErrorBoun
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
 import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import {
   AlertDialog,
   AlertDialogAction,
