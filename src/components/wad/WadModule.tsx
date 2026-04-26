@@ -32,11 +32,21 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
   const [userOrgId, setUserOrgId] = useState<string | null>(null);
   const [jurisdictionSelected, setJurisdictionSelected] = useState(false);
   const [selectedJurisdiction, setSelectedJurisdiction] = useState<string | null>(null);
+  const [govDocCount, setGovDocCount] = useState<number>(0);
 
   useEffect(() => {
     loadUserOrg();
     loadWad();
+    loadGovDocCount();
   }, [match.id]);
+
+  const loadGovDocCount = async () => {
+    const { count } = await supabase
+      .from("governance_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("deal_reference_id", match.id);
+    setGovDocCount(count ?? 0);
+  };
 
   const loadUserOrg = async () => {
     const { data: { session } } = await supabase.auth.getSession();
