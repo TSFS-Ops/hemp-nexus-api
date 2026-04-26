@@ -175,16 +175,35 @@ export function CreditProvisioningPanel({
 
             {/* Footer · Payment */}
             <footer className="px-8 pt-5 pb-8 border-t border-border bg-card">
+              {checkoutError && (
+                <div className="mb-4">
+                  <CheckoutErrorNotice
+                    message={checkoutError}
+                    retrying={submitting}
+                    onRetry={handleProceed}
+                    onDismiss={() => setCheckoutError(null)}
+                  />
+                </div>
+              )}
               <motion.button
-                whileHover={{ scale: 0.99 }}
-                whileTap={{ scale: 0.985 }}
+                type="button"
+                onClick={handleProceed}
+                disabled={submitting}
+                whileHover={submitting ? undefined : { scale: 0.99 }}
+                whileTap={submitting ? undefined : { scale: 0.985 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Proceed to Payment
-                <span className="font-mono text-[11px] tracking-wider opacity-80">
-                  R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}
-                </span>
+                {submitting
+                  ? "Redirecting to Paystack…"
+                  : checkoutError
+                    ? "Try again"
+                    : "Proceed to Payment"}
+                {!submitting && (
+                  <span className="font-mono text-[11px] tracking-wider opacity-80">
+                    R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}
+                  </span>
+                )}
               </motion.button>
 
               <p className="mt-4 text-center font-mono text-[9px] tracking-[0.3em] uppercase text-muted-foreground/70">
