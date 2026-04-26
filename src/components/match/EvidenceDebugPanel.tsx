@@ -11,8 +11,14 @@
  */
 
 import { useState } from "react";
-import { Bug, ChevronDown, ChevronUp, RefreshCw, Loader2 } from "lucide-react";
+import { Bug, ChevronDown, ChevronUp, RefreshCw, Loader2, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import type { MatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
+
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+const FUNCTIONS_BASE = PROJECT_ID
+  ? `https://${PROJECT_ID}.supabase.co/functions/v1`
+  : "";
 
 type Props = {
   matchId: string;
