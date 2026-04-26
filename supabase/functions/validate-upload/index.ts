@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
 
 /**
  * validate-upload - Server-side magic-byte validation for any uploaded file.
@@ -31,16 +32,15 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Verify caller is authenticated
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) {
+    let authCtx: Awaited<ReturnType<typeof authenticateRequest>>;
+    try {
+      authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
+    } catch {
       return new Response(JSON.stringify({ blocked: false, error: "Unauthorised" }), { status: 401, headers });
     }
+    const userClient = createClient(supabaseUrl, serviceKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     const body = await req.json();
     const { bucket, storage_path, client_mime, file_size } = body;
@@ -91,11 +91,10 @@ Deno.serve(async (req: Request) => {
 
     if (result.blocked) {
       // Audit the server-side rejection
-      const { data: profile } = await admin.from("profiles").select("org_id").eq("id", user.id).single();
-      if (profile?.org_id) {
+      if (authCtx.orgId) {
         await admin.from("audit_logs").insert({
-          org_id: profile.org_id,
-          actor_user_id: user.id,
+          org_id: authCtx.orgId,
+          actor_user_id: authCtx.userId,
           action: "document.upload_blocked",
           entity_type: "match_documents",
           entity_id: null,
