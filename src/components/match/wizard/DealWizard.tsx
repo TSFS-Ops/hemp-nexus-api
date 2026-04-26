@@ -17,6 +17,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import * as MatchState from "@/lib/match-state";
 import { useMatchSubTab } from "@/hooks/use-match-sub-tab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -60,8 +61,9 @@ export function DealWizard({
   engagementStatus
 }: DealWizardProps) {
   const currentState = match.state || "discovery";
-  const isSettled = match.status === "settled";
-  const isCompleted = currentState === "completed";
+  // R3: route status/state checks through the match-state SSOT
+  const isSettled = MatchState.isSettled(match.status);
+  const isCompleted = MatchState.isCompleted(currentState);
 
   // Determine step completion
   const searchComplete = true; // always, match exists
