@@ -636,12 +636,12 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       </CardContent>
 
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent className="w-[calc(100vw-1rem)] max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] flex flex-col overflow-hidden p-0 sm:rounded-lg">
+        <AlertDialogContent className="top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] w-[calc(100vw-1rem)] max-w-lg translate-y-0 sm:top-[50%] sm:bottom-auto sm:max-h-[85vh] sm:translate-y-[-50%] flex flex-col overflow-hidden p-0 sm:rounded-lg">
           <AlertDialogHeader className="shrink-0 p-6 pb-3">
             <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "") || "Confirm action"}?</AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription asChild>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4 space-y-3 touch-pan-y [-webkit-overflow-scrolling:touch]">
+            <div className="min-h-0 flex-1 overflow-y-scroll overscroll-contain px-6 pb-4 space-y-3 text-left touch-pan-y [-webkit-overflow-scrolling:touch]">
                 <p>{nextDescription}</p>
                 {isFreeAction ? (
                   <div className="rounded-md border border-border p-3 text-sm">
