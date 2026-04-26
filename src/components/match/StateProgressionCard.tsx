@@ -622,6 +622,18 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </div>
             ) : null}
 
+            {isPoiAction && (
+              <EvidenceDebugPanel
+                matchId={match.id}
+                data={evidenceCounts}
+                isLoading={evidenceLoading}
+                isFetching={evidenceFetching}
+                error={evidenceError}
+                onRefetch={() => { void refetchEvidence(); }}
+                effectiveWaiverRequired={waiverRequired}
+              />
+            )}
+
             {/* Button always renders when balance/credits are OK. The legitimacy
                 gate is enforced server-side and now honours admin test-mode bypass,
                 so we never silently hide the action — the warning above is advisory. */}
