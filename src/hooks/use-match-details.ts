@@ -233,7 +233,7 @@ export function useMatchDetails(matchId: string | undefined) {
           return;
         }
         dispatchEligibilityFailed(match.id, err);
-        handleApiError(err);
+        handleApiError(err, { traceContext: "POI generation" });
       }
 
       if (!updated || !updated.id || !updated.status) {
