@@ -17,6 +17,7 @@ import {
   Coins,
   Settings,
   Shield,
+  LogOut,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
