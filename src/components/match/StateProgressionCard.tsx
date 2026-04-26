@@ -28,15 +28,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  ScrollableAlertDialog,
+  ScrollableAlertDialogBody,
+  ScrollableAlertDialogFooter,
+  ScrollableAlertDialogHeader,
+} from "@/components/ui/scrollable-alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -723,13 +724,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         )}
       </CardContent>
 
-      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent className="top-[max(0.5rem,env(safe-area-inset-top))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] w-[calc(100vw-1rem)] max-w-lg translate-y-0 sm:top-[50%] sm:bottom-auto sm:max-h-[85vh] sm:translate-y-[-50%] flex flex-col overflow-hidden p-0 sm:rounded-lg">
-          <AlertDialogHeader className="shrink-0 p-6 pb-3">
-            <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "") || "Confirm action"}?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription asChild>
-            <div className="min-h-0 flex-1 overflow-y-scroll overscroll-contain px-6 pb-4 space-y-3 text-left touch-pan-y [-webkit-overflow-scrolling:touch]">
+      <ScrollableAlertDialog open={showDialog} onOpenChange={setShowDialog}>
+        <ScrollableAlertDialogHeader>
+          <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "") || "Confirm action"}?</AlertDialogTitle>
+        </ScrollableAlertDialogHeader>
+        <ScrollableAlertDialogBody className="space-y-3">
                 <p>{nextDescription}</p>
                 {isFreeAction ? (
                   <div className="rounded-md border border-border p-3 text-sm">
@@ -851,34 +850,32 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     </div>
                   </div>
                 )}
-              </div>
-          </AlertDialogDescription>
-          <AlertDialogFooter className="shrink-0 border-t border-border bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDialogConfirm}
-              disabled={!canConfirmDialog}
-            >
-              {waiverSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Recording waiver…
-                </>
-              ) : isFreeAction ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Confirm
-                </>
-              ) : (
-                <>
-                  <Coins className="h-4 w-4 mr-2" />
-                  Confirm - R10 ZAR
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </ScrollableAlertDialogBody>
+        <ScrollableAlertDialogFooter>
+          <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDialogConfirm}
+            disabled={!canConfirmDialog}
+          >
+            {waiverSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Recording waiver…
+              </>
+            ) : isFreeAction ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Confirm
+              </>
+            ) : (
+              <>
+                <Coins className="h-4 w-4 mr-2" />
+                Confirm - R10 ZAR
+              </>
+            )}
+          </AlertDialogAction>
+        </ScrollableAlertDialogFooter>
+      </ScrollableAlertDialog>
     </Card>
   );
 }
