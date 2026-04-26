@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle, Download, UserX, UserCheck } from "lucide-react";
+import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle, Download, UserX, UserCheck, Eye } from "lucide-react";
+import UserDetailDrawer from "./UserDetailDrawer";
 import {
   Select,
   SelectContent,
