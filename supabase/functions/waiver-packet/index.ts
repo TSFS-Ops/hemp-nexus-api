@@ -247,10 +247,11 @@ Deno.serve(async (req) => {
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    const { data: userData, error: userErr } = await userClient.auth.getUser(accessToken);
     if (userErr || !userData.user) {
       logDecision("maintenance", {
         source: "waiver-packet",
@@ -258,7 +259,7 @@ Deno.serve(async (req) => {
         requestId,
         reason: `auth_failed: ${userErr?.message ?? "no_user"}`,
       });
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Unauthorized", request_id: requestId }), {
         status: 401,
         headers: { ...headers, "Content-Type": "application/json" },
       });
