@@ -119,6 +119,7 @@ async function verifyAndNotifySessionExpired(
     // will still surface to the user.
     if (!error && data?.user) return;
     // Server confirms session is invalid → genuine expiry.
+    await supabase.auth.signOut({ scope: "local" }).catch(() => { /* noop */ });
     notifySessionExpired(reason, message, requestId);
   } catch {
     // Network error during verification — be conservative and fire the
@@ -259,10 +260,10 @@ function translateError(
   const rid = requestId || parsed?.requestId || parsed?.request_id;
 
   if (status === 401 || /unauthorized/i.test(serverMsg) || /unauthorized/i.test(body)) {
-    // Local storage still holds a token the server has invalidated (typical
-    // when the user signed out in another tab). Clear it so subsequent calls
-    // don't keep sending the dead JWT and producing the same 401 loop.
-    void supabase.auth.signOut({ scope: "local" }).catch(() => { /* noop */ });
+    // Do NOT clear local auth state here. Edge functions can return 401 for
+    // function-specific auth bugs/permission paths while the browser session
+    // is still valid. `verifyAndNotifySessionExpired()` performs a server
+    // getUser() check first; only that confirmed-dead path signs out locally.
     return new EdgeInvokeError(
       "Your session has expired. Please sign out and sign back in, then try again.",
       { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid, context }
