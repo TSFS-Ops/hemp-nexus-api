@@ -274,9 +274,17 @@ export function AttentionPipeline() {
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </li>
-              );
             })}
           </ul>
+        )}
+        {hiddenCount > 0 && !isLoading && sorted.length > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate("/desk/deals?status=matched")}
+            className="mt-2 w-full text-left text-[11px] text-muted-foreground hover:text-foreground px-3 py-2 rounded-md hover:bg-muted transition-colors"
+          >
+            Showing the {sorted.length} most recent · {hiddenCount} more open trade{hiddenCount === 1 ? "" : "s"} need attention. View all →
+          </button>
         )}
       </div>
     </section>
