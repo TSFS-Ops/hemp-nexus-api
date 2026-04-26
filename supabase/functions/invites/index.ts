@@ -6,6 +6,7 @@ import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateInput } from "../_shared/validation.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 
 const MAX_BODY_SIZE = 64 * 1024;
 
@@ -105,6 +106,7 @@ Deno.serve(async (req) => {
 
     // ── POST /invites/:id/accept ──
     if (req.method === "POST" && inviteId && action === "accept") {
+      assertIdempotencyKey(req);
       const invite = await fetchPendingInvite(inviteId);
       await verifyRecipient(invite);
 
@@ -131,6 +133,7 @@ Deno.serve(async (req) => {
 
     // ── POST /invites/:id/decline ──
     if (req.method === "POST" && inviteId && action === "decline") {
+      assertIdempotencyKey(req);
       const body = await req.json().catch(() => ({}));
       const { reason } = validateInput(declineSchema, body);
 
@@ -220,6 +223,7 @@ Deno.serve(async (req) => {
 
     // ── POST /invites ── Create invite
     if (req.method === "POST" && !inviteId) {
+      assertIdempotencyKey(req);
       const contentLength = req.headers.get("content-length");
       if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
         throw new ApiException("PAYLOAD_TOO_LARGE", "Request body too large", 413);
