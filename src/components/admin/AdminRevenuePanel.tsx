@@ -555,7 +555,7 @@ export function AdminRevenuePanel() {
               icon={TrendingUp}
               label="Revenue"
               value={ZAR.format(totals.revenue)}
-              hint={`${totals.paid} paid · ${totals.manual} manual`}
+              hint={`${totals.paid} paid · ${totals.manual} manual${totals.backfilled > 0 ? ` · ${totals.backfilled} backfilled` : ""}`}
               tone="success"
             />
             <Stat
@@ -720,9 +720,16 @@ export function AdminRevenuePanel() {
                         <TableCell className="text-sm">{r.org_name}</TableCell>
                       )}
                       <TableCell>
-                        <Badge variant="secondary" className="font-mono text-[10px]">
-                          {r.source}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="secondary" className="font-mono text-[10px] w-fit">
+                            {r.source === "audit_log" ? "audit_log" : r.source === "ledger:manual" ? "manual" : "ledger"}
+                          </Badge>
+                          {r.backfilled && (
+                            <Badge variant="outline" className="font-mono text-[10px] w-fit border-amber-500/40 text-amber-700 dark:text-amber-400">
+                              backfilled
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-mono text-xs">
                         {r.package_id ?? "—"}
@@ -734,7 +741,7 @@ export function AdminRevenuePanel() {
                         {r.amount_zar > 0 ? ZAR.format(r.amount_zar) : "—"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px] max-w-[180px] truncate">
-                        {r.payment_reference ?? r.request_id ?? "—"}
+                        {r.payment_reference ?? "—"}
                       </TableCell>
                     </TableRow>
                   ))}
