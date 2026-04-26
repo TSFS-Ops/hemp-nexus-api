@@ -105,6 +105,19 @@ Deno.serve(async (req: Request) => {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
 
+    // ─── Idempotency-Key required ──────────────────────────────
+    // Collapse mutates POI evidence-chain state; a retried POST without a
+    // key would otherwise create duplicate collapse events on the ledger.
+    const idempotencyKey =
+      req.headers.get("Idempotency-Key") || req.headers.get("idempotency-key");
+    if (!idempotencyKey) {
+      throw new ApiException(
+        "VALIDATION_ERROR",
+        "Idempotency-Key header is required",
+        400,
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 

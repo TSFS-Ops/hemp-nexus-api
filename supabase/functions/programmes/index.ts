@@ -52,6 +52,32 @@ Deno.serve(async (req) => {
 
     const method = req.method;
 
+    // ─── Idempotency-Key required on ALL mutating requests ──────
+    // Programme creates, participant adds, milestone updates, and fund-flow
+    // mutations are all financially material (programme budgets, beneficiary
+    // lists). We hard-require Idempotency-Key on every POST so a network
+    // retry from a flaky client connection cannot silently double-spend or
+    // duplicate a beneficiary. Header is intentionally not checked on
+    // GET/PATCH/DELETE — the SDK only attaches it on creates today and
+    // patches/deletes are naturally idempotent at the DB layer.
+    if (method === "POST") {
+      const idempotencyKey =
+        req.headers.get("Idempotency-Key") || req.headers.get("idempotency-key");
+      if (!idempotencyKey) {
+        return new Response(
+          JSON.stringify({
+            error: "Idempotency-Key header is required",
+            code: "IDEMPOTENCY_KEY_REQUIRED",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+
     // ─── GET /programmes ───────────────────────────────────────
     if (method === "GET" && pathParts.length <= 1) {
       const { data, error } = await supabaseUser

@@ -54,7 +54,8 @@ import {
   Users,
   EyeOff,
   RefreshCw,
-  ClipboardCheck
+  ClipboardCheck,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
@@ -137,6 +138,11 @@ interface UploadDraft { docType: string; title: string; notes: string; visibilit
 
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
+  // Truncation state: when the server cap is hit we MUST surface a persistent
+  // banner — a sonner toast auto-dismisses in <4s and operators routinely
+  // missed it, leading to compliance reviews on incomplete document sets.
+  const [docsTruncated, setDocsTruncated] = useState(false);
+  const [docsTruncationWarning, setDocsTruncationWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -209,9 +215,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // logic centralized with the same rules as downloads.
       const result = await listMatchDocuments(matchId, { order: "desc" });
       setDocuments(result.documents as unknown as MatchDocument[]);
-      if (result.truncated) {
-        toast.warning(result.warning || "Document list may be incomplete due to volume.");
-      }
+      setDocsTruncated(!!result.truncated);
+      setDocsTruncationWarning(result.truncated ? (result.warning || null) : null);
     } catch (err) {
       console.error("Error fetching documents:", err);
       const message = err instanceof Error ? err.message : "Failed to load documents";
@@ -798,8 +803,24 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
               No documents uploaded yet
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
+            <div className="space-y-3">
+              {docsTruncated && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground"
+                >
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning" />
+                  <div>
+                    <div className="font-medium">Document list may be incomplete</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {docsTruncationWarning ||
+                        "The server returned a partial document set because this match has more documents than the per-request cap. Filter by date, type, or version to see the rest before relying on this list for compliance review."}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Document</TableHead>
@@ -943,6 +964,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
 
