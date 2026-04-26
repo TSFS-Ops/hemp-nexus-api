@@ -275,7 +275,13 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   // a recorded, attributed decision before a credit-burning, irreversible
   // POI is sealed on the ledger.
   const isPoiAction = actionPath === "generate-poi";
-  const { data: evidenceCounts, refetch: refetchEvidence } = useQuery({
+  const {
+    data: evidenceCounts,
+    refetch: refetchEvidence,
+    isLoading: evidenceLoading,
+    isFetching: evidenceFetching,
+    error: evidenceError,
+  } = useQuery({
     queryKey: ["state-progression-evidence", match.id],
     queryFn: () => getMatchEvidenceCounts(match.id),
     enabled: !!match.id && isPoiAction,
