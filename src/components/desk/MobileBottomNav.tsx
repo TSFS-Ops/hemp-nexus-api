@@ -149,9 +149,10 @@ export function MobileBottomNav() {
                   </button>
                 )}
               </div>
+              </div>
 
-              {/* Account footer — signed-in identity & sign out */}
-              <div className="border-t border-border pt-4 mt-2 space-y-3">
+              {/* Account footer — pinned, always visible so sign out is always reachable */}
+              <div className="shrink-0 border-t border-border pt-4 mt-2 space-y-3">
                 {user?.email && (
                   <p className="text-xs text-muted-foreground/70 font-mono tracking-wide truncate px-1">
                     {user.email}
