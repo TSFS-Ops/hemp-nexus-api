@@ -3,6 +3,7 @@
  * Fetches engagement status and passes it down to enforce the POI hold-point.
  */
 
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
