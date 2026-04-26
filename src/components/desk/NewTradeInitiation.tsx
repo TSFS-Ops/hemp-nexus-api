@@ -181,6 +181,7 @@ export function NewTradeInitiation() {
       } = await supabase.from("matches").insert(insertRow).select("id").single();
       if (error) throw error;
       if (!data?.id) throw new Error("Match created but no id returned");
+      draft.clearDraft();
       toast.success("Trade initiated. Routing to the Match Compiler.");
       navigate(`/desk/match/${data.id}`, {
         replace: true
