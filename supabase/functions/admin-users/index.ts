@@ -109,7 +109,7 @@ async function handleListUsers(supabaseAdmin: any) {
   while (true) {
     const { data: batch } = await supabaseAdmin
       .from('profiles')
-      .select('id, email, full_name, org_id, status, created_at, organizations(name)')
+      .select('id, email, full_name, org_id, status, created_at, deletion_requested_at, deletion_reason, deletion_category, organizations(name)')
       .range(profileOffset, profileOffset + profilePageSize - 1);
     if (!batch || batch.length === 0) break;
     allProfiles.push(...batch);
@@ -147,6 +147,9 @@ async function handleListUsers(supabaseAdmin: any) {
       last_sign_in_at: authUser.last_sign_in_at,
       email_confirmed_at: authUser.email_confirmed_at,
       roles: userRoles.map((r: any) => r.role),
+      deletion_requested_at: profile?.deletion_requested_at || null,
+      deletion_reason: profile?.deletion_reason || null,
+      deletion_category: profile?.deletion_category || null,
     };
   });
 
