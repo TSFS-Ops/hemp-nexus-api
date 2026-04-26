@@ -64,6 +64,22 @@ export function useOrgLegitimacy() {
         };
       }
 
+      // Mirror the server's gate-posture short-circuit: if this org's posture
+      // is `wad_only`, verification is deferred to WaD certification gates and
+      // the legitimacy gate at poi_mint / outreach is OPEN. Don't render a
+      // "Verification required" banner the server isn't actually enforcing.
+      try {
+        const { data: posture } = await supabase.rpc("get_org_gate_position", {
+          _org_id: orgId,
+        });
+        if (posture === "wad_only") {
+          return { allowed: true, status: "approved", validUntil: null };
+        }
+      } catch {
+        // Posture lookup failure is non-fatal: fall through to the
+        // trade_approvals check so we keep the existing safe behaviour.
+      }
+
       const { data, error } = await supabase
         .from("trade_approvals")
         .select("status, valid_until")
