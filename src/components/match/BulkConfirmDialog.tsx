@@ -79,12 +79,6 @@ export function BulkConfirmDialog({
   const currentBalance = balance ?? 0;
   const remainingBalance = currentBalance - totalCost;
   const hasEnough = remainingBalance >= 0;
-  return <AlertDialog open={open} onOpenChange={v => {
-    // Prevent closing while processing
-    if (isSettling) return;
-    onOpenChange(v);
-  }}>
-  const hasEnough = remainingBalance >= 0;
   return <ScrollableAlertDialog open={open} onOpenChange={v => {
     // Prevent closing while processing
     if (isSettling) return;
