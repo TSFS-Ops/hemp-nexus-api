@@ -336,6 +336,10 @@ export function useMatchDetails(matchId: string | undefined) {
     {
       successMessage: undefined,
       errorMessage: "Action failed. Please try again.",
+      // POI generation is the most error-prone state transition (credit
+      // burn + ledger seal). Surface the backend trace id in the toast so
+      // users can paste it directly into a support report.
+      traceContext: "POI generation",
       // Allow callers (StateProgressionCard) to react to specific recoverable
       // errors like EVIDENCE_WAIVER_REQUIRED by reopening the waiver dialog.
       rethrow: true,
