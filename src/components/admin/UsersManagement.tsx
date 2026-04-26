@@ -68,6 +68,7 @@ export default function UsersManagement() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [journeyUserId, setJourneyUserId] = useState<string | null>(null);
   
 
   useEffect(() => {
