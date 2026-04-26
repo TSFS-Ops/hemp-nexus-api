@@ -303,41 +303,32 @@ Deno.serve(async (req) => {
       // the Paystack reference, so if the webhook path also fires for the
       // same payment the email queue dedupes — support gets exactly one
       // notification per real charge.
-      try {
+      {
         const { data: orgRow } = await supabase
           .from("organizations")
           .select("name")
           .eq("id", orgId)
           .maybeSingle();
         const orgName = (orgRow?.name as string) || `Org ${orgId.slice(0, 8)}`;
-        await supabase.functions.invoke("send-transactional-email", {
-          body: {
-            templateName: "revenue-event-notify",
-            recipientEmail: "support@izenzo.co.za",
-            idempotencyKey: `revenue-credits-purchased-${reference}`,
-            templateData: {
-              eventType: "credits_purchased",
-              headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
-              orgName,
-              orgId,
-              contactEmail: verifyData.data.customer?.email || userData.user.email || null,
-              details: {
-                "Credits added": credits,
-                "Amount (ZAR)": meta.price_zar ?? "—",
-                "Package ID": meta.package_id ?? "—",
-                "New balance": newBalance,
-                "Payment reference": reference,
-                Source: "verify-fallback",
-              },
-              consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
-              consoleLabel: "Open billing console",
-              occurredAt: new Date().toISOString(),
-              referenceId: reference,
-            },
+        await emitRevenueNotification(supabase, {
+          eventType: "credits_purchased",
+          idempotencyKey: `revenue-credits-purchased-${reference}`,
+          referenceId: reference,
+          orgId,
+          orgName,
+          contactEmail: verifyData.data.customer?.email || userData.user.email || null,
+          headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
+          details: {
+            "Credits added": credits,
+            "Amount (ZAR)": meta.price_zar ?? "—",
+            "Package ID": meta.package_id ?? "—",
+            "New balance": newBalance,
+            "Payment reference": reference,
+            Source: "verify-fallback",
           },
+          consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
+          consoleLabel: "Open billing console",
         });
-      } catch (notifErr) {
-        console.error(`[Verify] Revenue notify (credits_purchased) failed for ${reference}:`, notifErr);
       }
 
       console.log(`[Verify] Credited ${credits} credits to org ${orgId} (atomic). New balance: ${newBalance}`);
@@ -696,41 +687,32 @@ async function handleChargeSuccess(
   // Paystack reference, which is unique per charge — webhook + verify-fallback
   // race is safe because the second send is deduped by the email queue.
   // Look up org name (best-effort) for a more useful subject line.
-  try {
+  {
     const { data: orgRow } = await supabase
       .from("organizations")
       .select("name")
       .eq("id", orgId)
       .maybeSingle();
     const orgName = (orgRow?.name as string) || `Org ${orgId.slice(0, 8)}`;
-    await supabase.functions.invoke("send-transactional-email", {
-      body: {
-        templateName: "revenue-event-notify",
-        recipientEmail: "support@izenzo.co.za",
-        idempotencyKey: `revenue-credits-purchased-${reference}`,
-        templateData: {
-          eventType: "credits_purchased",
-          headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
-          orgName,
-          orgId,
-          contactEmail: customer?.email || null,
-          details: {
-            "Credits added": credits,
-            "Amount (ZAR)": metadata.price_zar ?? "—",
-            "Package ID": metadata.package_id ?? "—",
-            "New balance": newBalance,
-            "Payment reference": reference,
-          },
-          consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
-          consoleLabel: "Open billing console",
-          occurredAt: paid_at || new Date().toISOString(),
-          referenceId: reference,
-        },
+    await emitRevenueNotification(supabase, {
+      eventType: "credits_purchased",
+      idempotencyKey: `revenue-credits-purchased-${reference}`,
+      referenceId: reference,
+      orgId,
+      orgName,
+      contactEmail: customer?.email || null,
+      headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
+      details: {
+        "Credits added": credits,
+        "Amount (ZAR)": metadata.price_zar ?? "—",
+        "Package ID": metadata.package_id ?? "—",
+        "New balance": newBalance,
+        "Payment reference": reference,
       },
+      consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
+      consoleLabel: "Open billing console",
+      occurredAt: paid_at || new Date().toISOString(),
     });
-  } catch (notifErr) {
-    // Never fail the webhook because the notification failed.
-    console.error(`[Webhook] Revenue notify (credits_purchased) failed for ${reference}:`, notifErr);
   }
 
   console.log(`[Webhook] Credited ${credits} credits to org ${orgId} (atomic). New balance: ${newBalance}`);
