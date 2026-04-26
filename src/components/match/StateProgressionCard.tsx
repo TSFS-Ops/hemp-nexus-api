@@ -765,7 +765,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="shrink-0 border-t border-border pt-4 mt-2">
             <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDialogConfirm}
