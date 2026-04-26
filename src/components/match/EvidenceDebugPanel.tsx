@@ -73,6 +73,22 @@ export function EvidenceDebugPanel({
   effectiveWaiverRequired,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const restUrl = FUNCTIONS_BASE
+    ? `${FUNCTIONS_BASE}/match-evidence-counts/matches/${matchId}/evidence`
+    : `/functions/v1/match-evidence-counts/matches/${matchId}/evidence`;
+
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(restUrl);
+      setCopied(true);
+      toast.success("Endpoint URL copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Could not copy URL");
+    }
+  };
 
   const drift =
     typeof effectiveWaiverRequired === "boolean" &&
