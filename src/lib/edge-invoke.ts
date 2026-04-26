@@ -345,15 +345,19 @@ export async function invokeEdgeFunction<T = unknown>(
   const { body, method, headers, requireSession = true, label } = options;
   const metricsContext = label || functionName;
   assertFunctionPath(functionName, metricsContext);
-  await ensureFreshAccessToken({ requireSession, context: metricsContext });
+  const accessToken = await ensureFreshAccessToken({ requireSession, context: metricsContext });
 
   const isIdempotent = !body && (!method || method === "GET");
+  const finalHeaders: Record<string, string> = { ...(headers || {}) };
+  if (accessToken && !finalHeaders.Authorization && !finalHeaders.authorization) {
+    finalHeaders.Authorization = `Bearer ${accessToken}`;
+  }
 
   const doInvoke = async (): Promise<T> => {
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: body as Record<string, unknown> | undefined,
       method,
-      headers,
+      headers: finalHeaders,
     });
 
     if (error) {
