@@ -35,6 +35,16 @@ interface DealCard {
   quantityValue: number | null;
   state: string;
   created_at: string;
+  /**
+   * Last meaningful activity on the deal as observed by the current user.
+   * Computed as max(this user's match_ui_prefs.updated_at, latest match_events.created_at).
+   * Falls back to created_at when neither exists.
+   * This is what the card renders so a deal you opened five minutes ago does
+   * not appear as "3d ago" just because that's when it was created.
+   */
+  last_activity_at: string;
+  /** Where the activity timestamp came from, for tooltip clarity. */
+  last_activity_source: "viewed" | "event" | "created";
   /** Inferred deadline - uses explicit deal expiry if present, otherwise a
    *  lane-based heuristic so "nearest deadline" remains meaningful even when
    *  the underlying record has no SLA timestamp. */
@@ -42,9 +52,10 @@ interface DealCard {
   laneId: "draft" | "awaiting" | "poi";
 }
 
-type SortKey = "newest" | "oldest" | "volume_desc" | "deadline";
+type SortKey = "recent" | "newest" | "oldest" | "volume_desc" | "deadline";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "recent", label: "Recently active" },
   { value: "newest", label: "Newest first" },
   { value: "oldest", label: "Oldest first" },
   { value: "volume_desc", label: "Highest volume" },
