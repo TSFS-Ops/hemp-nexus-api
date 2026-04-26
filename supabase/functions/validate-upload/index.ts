@@ -105,7 +105,7 @@ Deno.serve(async (req: Request) => {
             detected_mime: result.detectedMime,
             reason: result.blockReason,
           },
-        }).catch(() => {});
+        });
       }
     }
 
