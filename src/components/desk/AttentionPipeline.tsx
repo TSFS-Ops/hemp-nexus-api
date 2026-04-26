@@ -129,11 +129,14 @@ export function AttentionPipeline() {
   });
 
   const sorted = useMemo(() => {
-    if (!data) return [];
-    return [...data].sort(
+    if (!data?.items) return [];
+    return [...data.items].sort(
       (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
     );
   }, [data]);
+
+  const totalCount = data?.totalCount ?? sorted.length;
+  const hiddenCount = Math.max(0, totalCount - sorted.length);
 
   const highCount = sorted.filter((i) => i.priority === "high").length;
 
