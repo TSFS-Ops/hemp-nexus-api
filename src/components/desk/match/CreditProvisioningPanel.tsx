@@ -32,7 +32,25 @@ export function CreditProvisioningPanel({
   onClose,
   currentBalance = 0,
 }: CreditProvisioningPanelProps) {
-  const [selected, setSelected] = useState<string>("starter");
+  const [selected, setSelected] = useState<CreditPackageId>("pack_50");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleProceed = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const { checkoutUrl } = await startCreditCheckout(selected);
+      // Full-page redirect — Paystack returns the user to the same URL
+      // with ?status=success&reference=… which BillingOverview /
+      // TokenBalanceTab will pick up and verify.
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not start checkout. Please try again."
+      );
+      setSubmitting(false);
+    }
+  };
 
   return (
     <AnimatePresence>
