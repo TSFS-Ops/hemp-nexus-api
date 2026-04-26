@@ -140,6 +140,7 @@ interface StateProgressionCardProps {
 
 export function StateProgressionCard({ match, onAction, loading, engagementStatus }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
+  const [showInlineWaiver, setShowInlineWaiver] = useState(false);
   const [recheckingBalance, setRecheckingBalance] = useState(false);
   const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
   const [waiverReason, setWaiverReason] = useState("");
@@ -317,6 +318,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       setWaiverAcknowledged(false);
       setWaiverReason("");
       setWaiverCategory("");
+      if (waiverRequired) {
+        setShowDialog(false);
+        setShowInlineWaiver(true);
+        return;
+      }
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
@@ -353,6 +359,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     }
 
     setShowDialog(false);
+    setShowInlineWaiver(false);
     try {
       await onAction(actionPath, payload);
     } catch (err) {
@@ -369,12 +376,14 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         setWaiverAcknowledged(false);
         setWaiverReason("");
         setWaiverCategory("");
-        setShowDialog(true);
+        setShowDialog(false);
+        setShowInlineWaiver(true);
         return;
       }
       if (/WAIVER_NOT_APPLICABLE/i.test(message)) {
         toast.success("Supporting evidence was added in time — POI mint will retry without a waiver.");
         await refetchEvidence();
+        setShowInlineWaiver(false);
         return;
       }
       throw err;
@@ -408,6 +417,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       }
     }
     setShowDialog(false);
+    setShowInlineWaiver(false);
   };
 
   return (
