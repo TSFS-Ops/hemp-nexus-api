@@ -19,11 +19,21 @@ Deno.serve(async (req) => {
       throw new ApiException("METHOD_NOT_ALLOWED", "Method not allowed", 405);
     }
 
+    // Accept BOTH path shapes so this endpoint can be reproduced from the
+    // edge URL directly (debugging) or from a friendlier REST-shaped path:
+    //   /functions/v1/match-evidence-counts/:matchId
+    //   /functions/v1/match-evidence-counts/matches/:matchId/evidence
     const rawParts = new URL(req.url).pathname.split("/").filter(Boolean);
     const parts = [...rawParts];
     if (parts[0] === "functions") parts.shift();
     if (parts[0] === "v1") parts.shift();
     if (parts[0] === "match-evidence-counts") parts.shift();
+    // REST alias: matches/:id/evidence
+    if (parts[0] === "matches" && parts.length >= 2) {
+      parts.shift(); // drop "matches"
+      // keep parts[0] = :id ; tolerate optional trailing "evidence" segment
+      if (parts[1] === "evidence") parts.splice(1, 1);
+    }
 
     const matchId = parts[0];
     if (!matchId) throw new ApiException("BAD_REQUEST", "Match ID is required", 400);

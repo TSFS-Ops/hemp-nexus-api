@@ -11,8 +11,14 @@
  */
 
 import { useState } from "react";
-import { Bug, ChevronDown, ChevronUp, RefreshCw, Loader2 } from "lucide-react";
+import { Bug, ChevronDown, ChevronUp, RefreshCw, Loader2, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import type { MatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
+
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+const FUNCTIONS_BASE = PROJECT_ID
+  ? `https://${PROJECT_ID}.supabase.co/functions/v1`
+  : "";
 
 type Props = {
   matchId: string;
@@ -67,6 +73,22 @@ export function EvidenceDebugPanel({
   effectiveWaiverRequired,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const restUrl = FUNCTIONS_BASE
+    ? `${FUNCTIONS_BASE}/match-evidence-counts/matches/${matchId}/evidence`
+    : `/functions/v1/match-evidence-counts/matches/${matchId}/evidence`;
+
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(restUrl);
+      setCopied(true);
+      toast.success("Endpoint URL copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Could not copy URL");
+    }
+  };
 
   const drift =
     typeof effectiveWaiverRequired === "boolean" &&
@@ -111,6 +133,23 @@ export function EvidenceDebugPanel({
         <div id="evidence-debug-body" className="border-t border-border/60 px-3 py-2 space-y-0.5">
           <Row label="Match ID" value={<span className="font-mono">{matchId}</span>} />
           <Row label="Source" value={<span className="font-mono">match-evidence-counts (edge fn)</span>} />
+          <div className="flex items-start justify-between gap-2 py-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground shrink-0">Endpoint</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <code className="text-[11px] font-mono text-foreground truncate" title={restUrl}>
+                GET {restUrl}
+              </code>
+              <button
+                type="button"
+                onClick={copyUrl}
+                className="inline-flex items-center gap-1 rounded border border-input bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent shrink-0"
+                aria-label="Copy endpoint URL"
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
           <Row label="Fetched at" value={formatTimestamp(data?.fetchedAt)} />
           <div className="my-1 h-px bg-border/60" />
           <Row label="match_documents" value={data ? data.matchDocumentCount : "—"} mono />
