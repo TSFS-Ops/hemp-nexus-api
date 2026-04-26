@@ -324,13 +324,20 @@ export function DealPipeline() {
   };
 
   const isSortKey = (v: unknown): v is SortKey =>
-    v === "newest" || v === "oldest" || v === "volume_desc" || v === "deadline";
+    v === "recent" ||
+    v === "newest" ||
+    v === "oldest" ||
+    v === "volume_desc" ||
+    v === "deadline";
   const isLaneFilter = (v: unknown): v is "all" | DealCard["laneId"] =>
     v === "all" || v === "draft" || v === "awaiting" || v === "poi";
   const isString = (v: unknown): v is string => typeof v === "string";
 
+  // Default sort is "Recently active" so the deal a user just had open
+  // (e.g. Daniel returning to a sealed deal he was reviewing seconds ago)
+  // surfaces at the top of its lane instead of being buried by creation date.
   const [sortKey, setSortKey] = useState<SortKey>(() =>
-    readStorage<SortKey>(SORT_KEY_STORAGE, "newest", isSortKey),
+    readStorage<SortKey>(SORT_KEY_STORAGE, "recent", isSortKey),
   );
 
   // Per-lane collapse state - persisted to localStorage so a user who prefers
