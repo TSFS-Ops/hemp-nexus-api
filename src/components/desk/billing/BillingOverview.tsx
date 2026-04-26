@@ -10,6 +10,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  startCreditCheckout,
+  verifyCreditCheckout,
+  type CreditPackageId,
+} from "@/lib/credit-checkout";
+import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
 
 interface LedgerEntry {
   id: string;
@@ -21,10 +27,16 @@ interface LedgerEntry {
   created_at: string;
 }
 
-const PACKS = [
-  { credits: 10, price: "R100", unit: "R10.00 / credit" },
-  { credits: 50, price: "R450", unit: "R9.00 / credit", saving: "10% saving" },
-  { credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
+const PACKS: Array<{
+  id: CreditPackageId;
+  credits: number;
+  price: string;
+  unit: string;
+  saving?: string;
+}> = [
+  { id: "pack_10", credits: 10, price: "R100", unit: "R10.00 / credit" },
+  { id: "pack_50", credits: 50, price: "R450", unit: "R9.00 / credit", saving: "10% saving" },
+  { id: "pack_200", credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
 ];
 
 // Dark institutional green, matches the "Sealed" tone used in compliance.
