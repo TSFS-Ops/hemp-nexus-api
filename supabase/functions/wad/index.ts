@@ -774,14 +774,24 @@ Deno.serve(async (req) => {
     if (req.method === "POST" && parts.length === 2 && parts[1] === "attest") {
       const wadId = parts[0];
 
-      // Idempotency-Key handling (optional). When the client supplies one, a
-      // repeat request with the SAME body returns the original 201 response
+      // Idempotency-Key handling. Header is REQUIRED (hard-mode) — attestations
+      // are appended to an immutable ledger; a retry without dedupe creates a
+      // duplicate attestation row that is then surfaced to compliance reviewers
+      // as a real second signature.
+      // A repeat request with the SAME body returns the original 201 response
       // (no second insert). A repeat with the SAME key but a DIFFERENT body
       // returns 409 IDEMPOTENCY_KEY_MISMATCH so the client knows it reused
       // a key incorrectly. Keys are scoped to (org, endpoint) and expire
       // after 24h via the idempotency_keys table default.
       const idempotencyKey =
         req.headers.get("Idempotency-Key") || req.headers.get("idempotency-key");
+      if (!idempotencyKey) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Idempotency-Key header is required",
+          400,
+        );
+      }
       const idempotencyEndpoint = `POST /wad/${wadId}/attest`;
 
       const rawBody = await req.text();
