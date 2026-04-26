@@ -444,7 +444,23 @@ function OwnersStep({
       toast.success("Beneficial owner declared.");
       await onChanged();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add owner");
+      // Surface the underlying database message (e.g. RLS rejection,
+      // unique-constraint violation when the same person is declared
+      // twice for the same company) so the operator can self-diagnose
+      // instead of seeing a bare "Failed to add owner".
+      const raw = err instanceof Error ? err.message : String(err);
+      let friendly = raw || "Failed to add owner";
+      if (/row-level security|violates row-level security/i.test(raw)) {
+        friendly =
+          "You don't have permission to declare a beneficial owner for this organisation. Contact an administrator if you believe this is a mistake.";
+      } else if (/duplicate key value|unique constraint/i.test(raw)) {
+        friendly =
+          "This person is already declared as a beneficial owner for this company.";
+      } else if (/check constraint.*ownership_percentage|ownership_percentage_check/i.test(raw)) {
+        friendly = "Ownership percentage must be greater than 0 and at most 100.";
+      }
+      console.error("[UBO add] failed", err);
+      toast.error(friendly, { duration: 8000 });
     } finally {
       setAdding(false);
     }
