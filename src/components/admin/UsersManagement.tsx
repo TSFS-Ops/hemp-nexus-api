@@ -334,6 +334,17 @@ export default function UsersManagement() {
                       </Badge>
                     )}
                   </div>
+                  {user.status === "pending_deletion" && (
+                    <div className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded p-2 space-y-0.5">
+                      <p><strong>Requested:</strong> {formatDateTime(user.deletion_requested_at)}</p>
+                      {user.deletion_category && (
+                        <p><strong>Category:</strong> {DELETION_CATEGORY_LABELS[user.deletion_category] || user.deletion_category}</p>
+                      )}
+                      {user.deletion_reason && (
+                        <p className="break-words"><strong>Reason:</strong> {user.deletion_reason}</p>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-2 border-t gap-2">
                     {user.status === "pending_deletion" ? (
                       <Badge variant="destructive" className="text-[10px]">
