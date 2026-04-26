@@ -16,6 +16,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import * as MatchState from "@/lib/match-state";
 import { useMatchSubTab } from "@/hooks/use-match-sub-tab";
@@ -81,19 +82,9 @@ export function DealWizard({
   // Supporting evidence presence (advisory, not gating — drives "fully complete" badge)
   const { data: evidenceCounts } = useQuery({
     queryKey: ["match-evidence-counts", match.id],
-    queryFn: async () => {
-      const [docsRes, govDocsRes, notesRes] = await Promise.all([
-        supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
-        supabase.from("governance_documents").select("id", { count: "exact", head: true }).eq("deal_reference_id", match.id),
-        supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
-      ]);
-      return {
-        documentCount: (docsRes.count ?? 0) + (govDocsRes.count ?? 0),
-        notesCount: notesRes.count ?? 0,
-      };
-    },
+    queryFn: () => getMatchEvidenceCounts(match.id),
     enabled: !!match.id,
-    staleTime: 10_000,
+    staleTime: 0,
   });
   const documentCount = evidenceCounts?.documentCount ?? 0;
   const notesCount = evidenceCounts?.notesCount ?? 0;
