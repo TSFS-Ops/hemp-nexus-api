@@ -42,6 +42,23 @@ function MatchDetailsContent() {
     handleSettle,
     handleStateAction,
   } = useMatchDetails(matchId);
+  // Record that this user just opened the match. The Deal Pipeline reads
+  // match_ui_prefs.updated_at to surface a true "last viewed" timestamp on
+  // each card, so a deal Daniel is actively reviewing no longer appears as
+  // "3d ago" just because that's when it was sealed. Fire-and-forget; any
+  // error is logged but never blocks the page.
+  useEffect(() => {
+    if (!matchId) return;
+    void (async () => {
+      try {
+        // Lazy import to avoid a hard coupling in the page module.
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase.rpc("touch_match_view", { _match_id: matchId });
+      } catch (err) {
+        console.warn("[MatchDetails] touch_match_view failed", err);
+      }
+    })();
+  }, [matchId]);
 
   // Fetch engagement status for this match to enforce the hold-point gate
   const { data: engagementData } = useQuery({
