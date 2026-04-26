@@ -23,6 +23,7 @@ import {
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();

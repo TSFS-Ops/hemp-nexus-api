@@ -12,6 +12,7 @@ import { decideIdempotency, hashAttestBody } from "../_shared/idempotency.ts";
 import { computeETag, ifNoneMatchMatches, notModifiedResponse } from "../_shared/etag.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
 import { safePdfText } from "../_shared/pdf-sanitizer.ts";
+import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
