@@ -99,8 +99,11 @@ export function MobileBottomNav() {
                 />
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="pb-safe rounded-t-2xl">
-              <SheetHeader>
+            <SheetContent
+              side="bottom"
+              className="pb-safe rounded-t-2xl max-h-[85dvh] flex flex-col"
+            >
+              <SheetHeader className="shrink-0">
                 <SheetTitle className="text-left">
                   <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted-foreground/70 block mb-1">
                     Workspace
@@ -109,6 +112,7 @@ export function MobileBottomNav() {
                 </SheetTitle>
               </SheetHeader>
 
+              <div className="flex-1 overflow-y-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
               <div className="grid grid-cols-1 gap-2 py-4">
                 {overflow.map((item) => {
                   const active = isActive(item.path);
