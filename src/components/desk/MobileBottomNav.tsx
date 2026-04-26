@@ -17,6 +17,7 @@ import {
   Coins,
   Settings,
   Shield,
+  LogOut,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,7 +34,7 @@ const PRIMARY: Item[] = [
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, signOut, user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (path: string, exact?: boolean) =>
@@ -143,6 +144,25 @@ export function MobileBottomNav() {
                     <span className="text-sm font-medium">Admin Panel</span>
                   </button>
                 )}
+              </div>
+
+              {/* Account footer — signed-in identity & sign out */}
+              <div className="border-t border-border pt-4 mt-2 space-y-3">
+                {user?.email && (
+                  <p className="text-xs text-muted-foreground/70 font-mono tracking-wide truncate px-1">
+                    {user.email}
+                  </p>
+                )}
+                <button
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    await signOut();
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors min-h-[56px] text-left"
+                >
+                  <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+                  <span className="text-sm font-medium">Sign out</span>
+                </button>
               </div>
             </SheetContent>
           </Sheet>
