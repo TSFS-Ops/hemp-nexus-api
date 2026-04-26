@@ -459,6 +459,9 @@ export default function CounterpartySearch() {
         setSelectedResults(failedIds);
       } else {
         setSelectedResults(new Set());
+        // All selected partners were created/deduped successfully — clear the
+        // session-expiry draft so the user isn't prompted to "resume" stale work.
+        draftSelection.clearDraft();
       }
 
       const total = created + duplicates + failed;
