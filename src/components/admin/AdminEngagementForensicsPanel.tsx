@@ -48,6 +48,7 @@ export function AdminEngagementForensicsPanel() {
   const [status, setStatus] = useState<string>("any");
   const [selected, setSelected] = useState<EngagementRow | null>(null);
 
+  const FORENSICS_LIMIT = 200;
   const { data: rows = [], isFetching, refetch } = useQuery({
     queryKey: ["admin-forensics", matchId, email, orgId, status],
     queryFn: async () => {
@@ -55,7 +56,7 @@ export function AdminEngagementForensicsPanel() {
         .from("poi_engagements")
         .select("id, match_id, org_id, counterparty_org_id, counterparty_email, engagement_status, created_at, responded_at")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(FORENSICS_LIMIT);
 
       if (matchId.trim()) q = q.ilike("match_id", `%${matchId.trim()}%`);
       if (email.trim()) q = q.ilike("counterparty_email", `%${email.trim()}%`);
@@ -68,6 +69,10 @@ export function AdminEngagementForensicsPanel() {
     },
     enabled: false,
   });
+  // Surface silent truncation: a forensics search returning exactly the cap is
+  // almost certainly truncated. Tell the admin to narrow filters rather than
+  // silently dropping rows past row 200.
+  const forensicsTruncated = rows.length >= FORENSICS_LIMIT;
 
   const statusVariant = (s: EngagementStatus) => {
     switch (s) {
