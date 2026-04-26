@@ -1,0 +1,49 @@
+import { fetchEdgeFunction } from "@/lib/edge-invoke";
+
+type MatchEvidenceCountsResponse = {
+  success?: boolean;
+  error?: string;
+  message?: string;
+  data?: {
+    match_id: string;
+    match_documents_count: number;
+    governance_documents_count: number;
+    document_count: number;
+    notes_count: number;
+    has_supporting_evidence: boolean;
+    waiver_required: boolean;
+  };
+};
+
+export type MatchEvidenceCounts = {
+  matchDocumentCount: number;
+  governanceDocumentCount: number;
+  documentCount: number;
+  notesCount: number;
+  hasSupportingEvidence: boolean;
+  waiverRequired: boolean;
+};
+
+export async function getMatchEvidenceCounts(matchId: string): Promise<MatchEvidenceCounts> {
+  const payload = await fetchEdgeFunction<MatchEvidenceCountsResponse>(
+    `match-evidence-counts/${matchId}`,
+    {
+      method: "GET",
+      label: "load supporting evidence count",
+    }
+  );
+
+  if (!payload || payload.success !== true || !payload.data) {
+    const msg = payload?.error || payload?.message || "Failed to load supporting evidence count";
+    throw new Error(msg);
+  }
+
+  return {
+    matchDocumentCount: payload.data.match_documents_count || 0,
+    governanceDocumentCount: payload.data.governance_documents_count || 0,
+    documentCount: payload.data.document_count || 0,
+    notesCount: payload.data.notes_count || 0,
+    hasSupportingEvidence: !!payload.data.has_supporting_evidence,
+    waiverRequired: !!payload.data.waiver_required,
+  };
+}
