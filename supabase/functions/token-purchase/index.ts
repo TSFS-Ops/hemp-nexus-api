@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
               headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
               orgName,
               orgId,
-              contactEmail: profile?.email || null,
+              contactEmail: verifyData.data.customer?.email || userData.user.email || null,
               details: {
                 "Credits added": credits,
                 "Amount (ZAR)": meta.price_zar ?? "—",
