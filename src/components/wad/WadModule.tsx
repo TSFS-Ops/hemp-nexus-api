@@ -6,6 +6,7 @@ import { Loader2, FileCheck, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { WadStepper } from "./WadStepper";
 import { JurisdictionSelector } from "./JurisdictionSelector";
+import { EvidenceStrengthIndicator } from "@/components/match/EvidenceStrengthIndicator";
 import type { Tables } from "@/integrations/supabase/types";
 import {
   fetchActiveWad,
