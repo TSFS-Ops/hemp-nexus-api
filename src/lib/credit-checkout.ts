@@ -60,7 +60,17 @@ export async function startCreditCheckout(
       data?.providerMessage || data?.error || "Payment provider did not return a checkout URL";
     throw new Error(detail);
   }
-  return { checkoutUrl: data.checkoutUrl as string, reference: data.reference as string };
+  const reference = data.reference as string;
+  // Persist locally so the Billing page can render this reference
+  // immediately on return (with status pending → credited) even if the
+  // ledger row hasn't appeared yet.
+  recordPaystackAttempt({
+    reference,
+    packageId,
+    expectedCredits: EXPECTED_CREDITS[packageId],
+    startedAt: new Date().toISOString(),
+  });
+  return { checkoutUrl: data.checkoutUrl as string, reference };
 }
 
 export interface VerifyCheckoutResult {
