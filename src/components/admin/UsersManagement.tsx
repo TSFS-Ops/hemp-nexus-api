@@ -430,16 +430,38 @@ export default function UsersManagement() {
                           ) : "-"}
                         </TableCell>
                         <TableCell>
-                          <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
-                            <SelectTrigger className="w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="suspended">Suspended</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {user.status === "pending_deletion" ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="destructive" className="cursor-help">
+                                  <UserX className="h-3 w-3 mr-1" />
+                                  Pending deletion
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <div className="space-y-1 text-xs">
+                                  <p><strong>Requested:</strong> {formatDateTime(user.deletion_requested_at)}</p>
+                                  {user.deletion_category && (
+                                    <p><strong>Category:</strong> {DELETION_CATEGORY_LABELS[user.deletion_category] || user.deletion_category}</p>
+                                  )}
+                                  {user.deletion_reason && (
+                                    <p><strong>Reason:</strong> {user.deletion_reason}</p>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="suspended">Suspended</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
