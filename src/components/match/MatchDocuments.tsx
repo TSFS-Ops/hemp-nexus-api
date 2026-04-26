@@ -372,6 +372,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // ── Server-side magic-byte re-validation via document-review ──
       // The file is now in storage. Call the edge function to validate server-side.
       // If the server rejects it, clean up the orphaned storage file.
+      let validateWarning: string | null = null;
       try {
         const validateResult = await fetchEdgeFunction<{ blocked?: boolean; reason?: string }>(
           "validate-upload",
@@ -393,8 +394,13 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           setUploading(false);
           return;
         }
-      } catch {
-        // If the validate-upload function is unavailable, proceed (client-side already validated)
+      } catch (validationErr) {
+        // If server-side validation cannot be reached, do not treat that as a
+        // dead sign-in session. The client-side magic-byte check already ran,
+        // and the real upload + DB write below are still protected by storage
+        // and table access rules.
+        console.warn("Upload validation unavailable; continuing after client-side validation", validationErr);
+        validateWarning = "Server validation was unavailable, so the upload used browser-side file checks only.";
       }
 
       // Sanitise filename: strip path traversal, null bytes, and non-printable chars
@@ -470,6 +476,9 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         }
       } else {
         toast.success("Document uploaded successfully");
+      }
+      if (validateWarning) {
+        toast.warning("Document uploaded, but server validation could not be completed. Browser-side file checks passed.");
       }
 
       resetForm();
