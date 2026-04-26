@@ -190,28 +190,21 @@ describe("POI evidence waiver banner — integration", () => {
   });
 
   it("flips banner OFF when the server response transitions from empty to populated", async () => {
-    // First render: no evidence → banner ON.
+    // Step 1: empty evidence → banner ON.
     mockedGet.mockResolvedValueOnce(seedCounts({}));
-    const { rerender } = renderHarness({ matchId: MATCH_ID });
+    const { qc } = renderHarness({ matchId: MATCH_ID });
 
     await waitFor(() =>
       expect(screen.getByTestId("poi-waiver-banner")).toBeInTheDocument(),
     );
 
-    // Now seed a doc + force a fresh QueryClient so the next render performs
-    // a new fetch with the new mock value (mirrors a refetch after upload).
+    // Step 2: a doc is uploaded → server now reports waiverRequired=false.
+    // Production flow refetches the evidence query; we simulate that by
+    // invalidating the cached query against the SAME QueryClient.
     mockedGet.mockResolvedValueOnce(
       seedCounts({ matchDocumentCount: 1 }),
     );
-
-    const qc2 = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: 0 } },
-    });
-    rerender(
-      <QueryClientProvider client={qc2}>
-        <PoiWaiverHarness matchId={MATCH_ID} />
-      </QueryClientProvider>,
-    );
+    await qc.invalidateQueries({ queryKey: ["state-progression-evidence"] });
 
     await waitFor(() =>
       expect(screen.getByTestId("poi-evidence-ok")).toBeInTheDocument(),
@@ -220,25 +213,19 @@ describe("POI evidence waiver banner — integration", () => {
   });
 
   it("flips banner ON when evidence is removed (server now reports waiverRequired=true)", async () => {
-    // Start populated, then empty.
+    // Start populated → banner OFF.
     mockedGet.mockResolvedValueOnce(
       seedCounts({ matchDocumentCount: 1 }),
     );
-    const { rerender } = renderHarness({ matchId: MATCH_ID });
+    const { qc } = renderHarness({ matchId: MATCH_ID });
 
     await waitFor(() =>
       expect(screen.getByTestId("poi-evidence-ok")).toBeInTheDocument(),
     );
 
+    // Doc removed → server now reports zero evidence.
     mockedGet.mockResolvedValueOnce(seedCounts({}));
-    const qc2 = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: 0 } },
-    });
-    rerender(
-      <QueryClientProvider client={qc2}>
-        <PoiWaiverHarness matchId={MATCH_ID} />
-      </QueryClientProvider>,
-    );
+    await qc.invalidateQueries({ queryKey: ["state-progression-evidence"] });
 
     await waitFor(() =>
       expect(screen.getByTestId("poi-waiver-banner")).toBeInTheDocument(),
