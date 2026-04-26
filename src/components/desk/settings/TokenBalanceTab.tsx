@@ -81,8 +81,10 @@ export function TokenBalanceTab() {
       return;
     }
     const [walletRes, ledgerRes] = await Promise.all([
+      // Read from `token_balances` (canonical wallet mutated by the
+      // atomic credit/burn RPCs), not the stale `token_wallets` table.
       supabase
-        .from("token_wallets")
+        .from("token_balances")
         .select("balance")
         .eq("org_id", profile.org_id)
         .maybeSingle(),
