@@ -751,6 +751,80 @@ export function AdminRevenuePanel() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pending settlement / paper-cuts */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+            <div>
+              <CardTitle>Pending settlement</CardTitle>
+              <CardDescription>
+                Purchases where the user clicked pay (
+                <span className="font-mono">credits.purchase_initiated</span>) but no
+                matching settlement (<span className="font-mono">credits.purchased</span>)
+                was ever recorded. Each row is either an abandoned checkout or a
+                webhook paper-cut worth investigating against Paystack.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {pending.length === 0 ? (
+            <EmptyState
+              title="No pending settlements in this window"
+              message="Every initiated purchase has a matching settlement record. Revenue is fully reconciled."
+            />
+          ) : (
+            <div className="border border-border rounded-sm overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Initiated</TableHead>
+                    <TableHead>Organisation</TableHead>
+                    <TableHead>Package</TableHead>
+                    <TableHead className="text-right">Credits</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Paystack reference</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pending.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        <div>{format(new Date(p.initiated_at), "yyyy-MM-dd HH:mm")}</div>
+                        <div className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(p.initiated_at), { addSuffix: true })}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{p.org_name}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.package_id ?? "—"}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {p.credits > 0 ? NUM.format(p.credits) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {p.amount_zar > 0 ? ZAR.format(p.amount_zar) : "—"}
+                      </TableCell>
+                      <TableCell className="font-mono text-[11px]">
+                        {p.reference}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {pending.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-3">
+              {pending.length} initiation{pending.length === 1 ? "" : "s"} without a
+              recorded settlement. Cross-check against Paystack: if money cleared,
+              backfill an audit log row with{" "}
+              <span className="font-mono">action='credits.purchased'</span> +{" "}
+              <span className="font-mono">metadata.backfilled = true</span>.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
