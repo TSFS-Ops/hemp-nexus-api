@@ -41,8 +41,14 @@ const verifySchema = z.object({
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  // Permissive list — the supabase-js client adds several `x-supabase-*`
+  // headers (api-version, client-platform, client-runtime, etc.) that
+  // must be allow-listed or the browser fails the CORS preflight before
+  // the request ever reaches this function. We accept everything to
+  // avoid silent drift the next time the SDK adds a new header.
+  'Access-Control-Allow-Headers': '*, authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, idempotency-key',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 // ==============================================
@@ -120,6 +126,11 @@ Deno.serve(async (req) => {
   const path = url.pathname.split("/").pop();
   const isWebhook = path === "webhook";
 
+  // Lightweight request log — lets us confirm the function is being
+  // reached at all (and which sub-route) when debugging "checkout
+  // doesn't work" reports where no logs were appearing.
+  console.log(`[token-purchase] ${req.method} path=${path} origin=${req.headers.get("origin") ?? "—"}`);
+
   try {
     if (!PAYSTACK_SECRET_KEY) {
       console.error("PAYSTACK_SECRET_KEY is not configured");
@@ -130,6 +141,18 @@ Deno.serve(async (req) => {
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Sanity-log the key mode so we can spot test/live mismatches in
+    // the logs without ever exposing the secret itself.
+    if (req.method === "POST" && !isWebhook) {
+      const prefix = PAYSTACK_SECRET_KEY.slice(0, 7);
+      const mode = PAYSTACK_SECRET_KEY.startsWith("sk_live_")
+        ? "live"
+        : PAYSTACK_SECRET_KEY.startsWith("sk_test_")
+          ? "test"
+          : "unknown";
+      console.log(`[token-purchase] paystack key mode=${mode} prefix=${prefix}…`);
     }
 
     if (isWebhook) {
