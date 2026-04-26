@@ -156,6 +156,67 @@ function useOrgId() {
 }
 
 /**
+ * Last-activity enrichment.
+ *
+ * For the visible set of match ids, fetch:
+ *   1. The current user's own match_ui_prefs.updated_at (per-user "last viewed").
+ *   2. The most recent match_events.created_at across the whole org's activity.
+ *
+ * The card's displayed timestamp is the max of those signals, falling back to
+ * the match's created_at when neither exists. This is what lets a deal Daniel
+ * just opened show "5m ago" instead of "3d ago".
+ *
+ * Both reads are bounded by the visible page (matchIds.length is at most
+ * ACTIVE_PAGE_SIZE + sealedWindow), so this never grows with table size.
+ * RLS already restricts both tables to the user's org, so we don't add
+ * extra filters here.
+ */
+function useLastActivity(matchIds: string[]) {
+  const { user } = useAuth();
+  const key = matchIds.length === 0 ? "" : [...matchIds].sort().join(",");
+
+  return useQuery({
+    queryKey: ["desk-pipeline-last-activity", user?.id, key],
+    enabled: !!user && matchIds.length > 0,
+    staleTime: 15_000, // re-fetch frequently so a deal opened in another tab climbs quickly
+    queryFn: async () => {
+      const result = new Map<string, { at: string; source: "viewed" | "event" }>();
+      if (!user || matchIds.length === 0) return result;
+
+      // Per-user "last viewed" via match_ui_prefs.
+      const { data: prefs } = await supabase
+        .from("match_ui_prefs")
+        .select("match_id, updated_at")
+        .eq("user_id", user.id)
+        .in("match_id", matchIds);
+
+      for (const p of prefs ?? []) {
+        if (!p.match_id || !p.updated_at) continue;
+        result.set(p.match_id, { at: p.updated_at, source: "viewed" });
+      }
+
+      // Most recent event per match. We pull all events for the visible page
+      // (capped, ordered desc) and keep only the newest per match_id.
+      const { data: events } = await supabase
+        .from("match_events")
+        .select("match_id, created_at")
+        .in("match_id", matchIds)
+        .order("created_at", { ascending: false })
+        .limit(matchIds.length * 5); // 5 most-recent slots per match is plenty
+
+      for (const e of events ?? []) {
+        if (!e.match_id || !e.created_at) continue;
+        const existing = result.get(e.match_id);
+        if (!existing || new Date(e.created_at).getTime() > new Date(existing.at).getTime()) {
+          result.set(e.match_id, { at: e.created_at, source: "event" });
+        }
+      }
+      return result;
+    },
+  });
+}
+
+/**
  * Active lanes (Draft + Awaiting) - bounded query.
  *
  * These states are bounded by business reality (an org rarely holds more than
