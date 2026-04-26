@@ -44,7 +44,20 @@ interface User {
   last_sign_in_at: string | null;
   email_confirmed_at: string | null;
   roles: string[];
+  deletion_requested_at: string | null;
+  deletion_reason: string | null;
+  deletion_category: string | null;
 }
+
+const DELETION_CATEGORY_LABELS: Record<string, string> = {
+  no_longer_needed: "No longer needed",
+  switched_provider: "Switched provider",
+  privacy_concerns: "Privacy concerns",
+  missing_features: "Missing features",
+  too_complex: "Too complex",
+  cost: "Cost",
+  other: "Other",
+};
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -187,7 +200,7 @@ export default function UsersManagement() {
   };
 
   const exportToCSV = (usersToExport: User[]) => {
-    const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status"];
+    const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status", "Deletion Requested", "Deletion Category", "Deletion Reason"];
     const rows = usersToExport.map((user) => [
       user.email,
       user.full_name || "",
@@ -197,6 +210,9 @@ export default function UsersManagement() {
       user.email_confirmed_at ? "Yes" : "No",
       getUserRoles(user),
       user.status,
+      user.deletion_requested_at ? new Date(user.deletion_requested_at).toISOString() : "",
+      user.deletion_category ? (DELETION_CATEGORY_LABELS[user.deletion_category] || user.deletion_category) : "",
+      user.deletion_reason || "",
     ]);
 
     const csvContent = [
@@ -318,17 +334,35 @@ export default function UsersManagement() {
                       </Badge>
                     )}
                   </div>
+                  {user.status === "pending_deletion" && (
+                    <div className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded p-2 space-y-0.5">
+                      <p><strong>Requested:</strong> {formatDateTime(user.deletion_requested_at)}</p>
+                      {user.deletion_category && (
+                        <p><strong>Category:</strong> {DELETION_CATEGORY_LABELS[user.deletion_category] || user.deletion_category}</p>
+                      )}
+                      {user.deletion_reason && (
+                        <p className="break-words"><strong>Reason:</strong> {user.deletion_reason}</p>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-2 border-t gap-2">
-                    <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
-                      <SelectTrigger className="w-28 h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="suspended">Suspended</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {user.status === "pending_deletion" ? (
+                      <Badge variant="destructive" className="text-[10px]">
+                        <UserX className="h-2.5 w-2.5 mr-0.5" />
+                        Pending deletion
+                      </Badge>
+                    ) : (
+                      <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
+                        <SelectTrigger className="w-28 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="suspended">Suspended</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 touch-target" onClick={() => { setSelectedUser(user); setShowResetDialog(true); }}>
                         <Mail className="h-4 w-4" />
@@ -414,16 +448,38 @@ export default function UsersManagement() {
                           ) : "-"}
                         </TableCell>
                         <TableCell>
-                          <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
-                            <SelectTrigger className="w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="suspended">Suspended</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {user.status === "pending_deletion" ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="destructive" className="cursor-help">
+                                  <UserX className="h-3 w-3 mr-1" />
+                                  Pending deletion
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <div className="space-y-1 text-xs">
+                                  <p><strong>Requested:</strong> {formatDateTime(user.deletion_requested_at)}</p>
+                                  {user.deletion_category && (
+                                    <p><strong>Category:</strong> {DELETION_CATEGORY_LABELS[user.deletion_category] || user.deletion_category}</p>
+                                  )}
+                                  {user.deletion_reason && (
+                                    <p><strong>Reason:</strong> {user.deletion_reason}</p>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Select value={user.status} onValueChange={(value) => handleUpdateStatus(user.id, value)}>
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="suspended">Suspended</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">

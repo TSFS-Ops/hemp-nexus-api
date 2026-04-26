@@ -1,0 +1,3 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS deletion_category text;
+COMMENT ON COLUMN public.profiles.deletion_category IS 'Category selected by user when self-deleting their account (no_longer_needed, switched_provider, privacy_concerns, missing_features, too_complex, cost, other).';
+COMMENT ON COLUMN public.profiles.deletion_reason IS 'Free-text reason supplied by user when self-deleting (max 500 chars). Required from 2026-04-26.';

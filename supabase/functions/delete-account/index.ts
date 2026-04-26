@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   const user = userData.user;
 
   // Parse confirmation payload.
-  let body: { confirmation?: string; reason?: string } = {};
+  let body: { confirmation?: string; reason?: string; category?: string } = {};
   try {
     body = await req.json();
   } catch {
@@ -60,6 +60,37 @@ Deno.serve(async (req) => {
   if (!body.confirmation || body.confirmation.trim().toLowerCase() !== (user.email ?? "").toLowerCase()) {
     return json(
       { error: "confirmation_mismatch", message: "Type your email exactly to confirm." },
+      400,
+    );
+  }
+
+  // Reason is now MANDATORY so platform admins can see why users leave.
+  const ALLOWED_CATEGORIES = new Set([
+    "no_longer_needed",
+    "switched_provider",
+    "privacy_concerns",
+    "missing_features",
+    "too_complex",
+    "cost",
+    "other",
+  ]);
+  const reasonText = (body.reason ?? "").trim();
+  const categoryRaw = (body.category ?? "").trim();
+  if (reasonText.length < 5) {
+    return json(
+      {
+        error: "reason_required",
+        message: "Tell us why you're leaving (at least 5 characters). This helps us improve.",
+      },
+      400,
+    );
+  }
+  if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
+    return json(
+      {
+        error: "category_required",
+        message: "Pick a reason category before deleting your account.",
+      },
       400,
     );
   }
@@ -137,7 +168,8 @@ Deno.serve(async (req) => {
     .update({
       status: "pending_deletion",
       deletion_requested_at: new Date().toISOString(),
-      deletion_reason: (body.reason ?? "").slice(0, 500) || null,
+      deletion_reason: reasonText.slice(0, 500),
+      deletion_category: categoryRaw,
       full_name: null,
       full_name_previous: null,
       email: placeholderEmail,
@@ -159,7 +191,8 @@ Deno.serve(async (req) => {
     target_id: user.id,
     details: {
       org_id: profile.org_id,
-      reason: body.reason ?? null,
+      reason: reasonText,
+      category: categoryRaw,
       grace_period_days: 30,
     },
     ip_address: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
