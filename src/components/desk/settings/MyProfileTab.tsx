@@ -121,20 +121,47 @@ function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: ()
         (typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : `del-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-      const { data, error } = await supabase.functions.invoke("delete-account", {
-        body: { confirmation, reason: reason.trim(), category },
-        headers: { "Idempotency-Key": idempotencyKey },
+      const requestId =
+        (typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `req-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        toast.error("Please sign in again before deleting your account.");
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+          "X-Request-Id": requestId,
+        },
+        body: JSON.stringify({ confirmation, reason: reason.trim(), category }),
       });
-      if (error) {
+
+      const data = (await response.json().catch(() => null)) as {
+        message?: string;
+        error?: string;
+        request_id?: string;
+      } | null;
+
+      if (!response.ok) {
+        const traceId = data?.request_id ?? response.headers.get("x-request-id") ?? requestId;
         const msg =
-          (data as { message?: string } | null)?.message ??
-          error.message ??
+          data?.message ??
+          data?.error ??
           "Could not delete account.";
-        toast.error(msg);
+        toast.error(`${msg} Trace: ${traceId}`);
         return;
       }
       toast.success(
-        (data as { message?: string } | null)?.message ??
+        data?.message ??
           "Account scheduled for deletion. You can sign in within 30 days to cancel.",
         { duration: 8000 },
       );
