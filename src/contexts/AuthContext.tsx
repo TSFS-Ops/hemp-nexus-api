@@ -271,10 +271,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // update our React state for us.
           fetchRoles(refreshed.session.user.id);
         } else {
-          // Session healthy - opportunistically refresh roles so a demoted
-          // user in an idle background tab is reflected within ~60s without
-          // needing realtime broadcasts.
-          fetchRoles(currentSession.user.id);
+          // Local session looks healthy, but the server may have invalidated
+          // it (e.g. user signed out in another tab, admin revoked, password
+          // changed elsewhere). getSession() only reads local storage, so we
+          // do a lightweight server-side check via getUser() to catch dead
+          // sessions before the next edge-function call 401s.
+          const { error: userErr } = await supabase.auth.getUser();
+          if (userErr) {
+            const msg = (userErr.message || "").toLowerCase();
+            const status = (userErr as { status?: number }).status;
+            if (status === 401 || status === 403 || /session|jwt|token/.test(msg)) {
+              triggerExpiry("HEALTH_CHECK_FAILED");
+              return;
+            }
+            // Other errors (network, 5xx) — skip this cycle.
+          } else {
+            // Server confirms session — opportunistically refresh roles so a
+            // demoted user in an idle background tab is reflected within ~60s.
+            fetchRoles(currentSession.user.id);
+          }
         }
       } catch {
         // Network error - don't treat as session expiry, just skip.
