@@ -110,9 +110,9 @@ Deno.serve(async (req) => {
     .select("id, org_id, status")
     .eq("id", user.id)
     .maybeSingle();
-  if (profileErr || !profile) return json({ error: "profile_not_found" }, 404);
+  if (profileErr || !profile) return json(withRequestId(req, { error: "profile_not_found" }), 404);
   if (profile.status === "pending_deletion") {
-    return json({ error: "already_pending_deletion" }, 409);
+    return json(withRequestId(req, { error: "already_pending_deletion" }), 409);
   }
 
   // 3. Sole-admin guard.
@@ -138,11 +138,11 @@ Deno.serve(async (req) => {
         .in("user_id", memberIds);
       if ((otherAdmins ?? []).length === 0) {
         return json(
-          {
+          withRequestId(req, {
             error: "sole_org_admin",
             message:
               "You are the only admin for this organisation. Promote a colleague to admin before deleting your account.",
-          },
+          }),
           409,
         );
       }
@@ -158,10 +158,10 @@ Deno.serve(async (req) => {
 
   if ((activePoiCount ?? 0) > 0) {
     return json(
-      {
+      withRequestId(req, {
         error: "active_obligations",
         message: `Your organisation has ${activePoiCount} live trade(s) in progress. Resolve or cancel them before deleting your account.`,
-      },
+      }),
       409,
     );
   }
@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
     .eq("id", user.id);
   if (updateErr) {
     console.error("[delete-account] profile update failed", updateErr);
-    return json({ error: "update_failed" }, 500);
+    return json(withRequestId(req, { error: "update_failed" }), 500);
   }
 
   // 6. Revoke all roles.
