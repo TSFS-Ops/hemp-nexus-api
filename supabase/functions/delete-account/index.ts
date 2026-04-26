@@ -23,7 +23,7 @@ import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, idempotency-key, x-request-id",
 };
 
 const json = (body: unknown, status = 200) =>
