@@ -58,6 +58,14 @@ export class ApiError extends Error {
     let requestId: string | undefined;
     let details: Record<string, unknown> | null = null;
 
+    // Prefer the response header so we still surface a trace id even when the
+    // body is empty / not JSON (e.g. gateway 5xx, CORS preflight failure).
+    requestId =
+      res.headers.get("x-request-id") ||
+      res.headers.get("sb-request-id") ||
+      res.headers.get("x-correlation-id") ||
+      undefined;
+
     try {
       const body = await res.json();
       // Handle nested envelope: { error: { code, message } } (governance-docs style)
@@ -70,9 +78,10 @@ export class ApiError extends Error {
       if (body.message) message = body.message;
       if (body.code) code = body.code;
       if (body.details && typeof body.details === 'object') details = body.details;
-      requestId = body.request_id || body.requestId || body.correlation_id;
+      // Body envelope wins over the header when both are present.
+      requestId = body.request_id || body.requestId || body.correlation_id || requestId;
     } catch {
-      // body wasn't JSON, use statusText
+      // body wasn't JSON, fall back to the header-derived requestId (if any).
     }
 
     return new ApiError(res.status, message, code, requestId, details);
