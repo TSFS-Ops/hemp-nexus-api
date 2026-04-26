@@ -205,6 +205,13 @@ export function BillingOverview() {
         </p>
       </section>
 
+      {/* ── PAYSTACK REFERENCE STATUS ─────────────────────────── */}
+      <PaymentReferenceStatus
+        orgId={orgId}
+        activeReference={activeReference}
+        onCredited={() => void refresh()}
+      />
+
       {/* ── TOP-UP / PROVISIONING ─────────────────────────────── */}
       <section className="mb-20">
         <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-border">
